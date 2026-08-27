@@ -1,0 +1,29 @@
+{
+  "base_sha": "834abb21030dd2963465efeb006f924ba676bef6",
+  "blockers": [
+    "development_push_failed:/usr/bin/gh auth git-credential get: 1: /usr/bin/gh: not found\nfatal: could not read Username for 'https://github.com/rbalam/EDARSA_HUB.git': terminal prompts disabled\n"
+  ],
+  "candidate_sha": "86c6e9b0e1a2f9be4de8c9ffe99b0d8550b3886b",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-27T16:04:30Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "tools/mirror_sync/agent_guard_orphan_reconciler_v2.py",
+    "tools/mirror_sync/test_agent_guard_orphan_reconciler_v2.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-agent-guard-orphan-reconcile-v2-20260827",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-08-27T23:15:12Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-27T16:04:24Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
