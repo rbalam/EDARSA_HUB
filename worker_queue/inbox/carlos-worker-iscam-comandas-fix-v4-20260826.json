@@ -1,0 +1,29 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "carlos-worker-iscam-comandas-fix-v4-20260826",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "84938283f4ddf6b437f96447d322ba7c09273013",
+  "objective": "Corregir Reportes ISCAM > Comandas de Venta para que registros historicos con Sync_Sales.items invalido no aborten todo el reporte. Mantener dbo.Sync_Sales como fuente del detalle y proteger OPENJSON con ISJSON. Modificar solo iscam_routes.py y no tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "iscam-comandas-v4-20260826"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "    \"CROSS APPLY OPENJSON(s.items) WITH (\"",
+      "new": "    \"CROSS APPLY OPENJSON(CASE WHEN ISJSON(s.items) = 1 THEN s.items ELSE N'[]' END) WITH (\"",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/inteligencia_comercial/iscam_routes.py"]}
+  ],
+  "human_summary_language": "es"
+}
