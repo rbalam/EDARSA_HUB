@@ -1,0 +1,30 @@
+{
+  "base_sha": "c6f18813779593ca739d89c59f2b48adcbf9c895",
+  "blockers": [
+    "check_failed:frontend_build"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-27T21:55:32Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/finanzas/cuentas_por_pagar.py",
+    "backend/tests/test_cxp_decision_dashboard_request_contract.py",
+    "frontend/src/components/finanzas/FinanzasDecisionPago.jsx",
+    "frontend/src/pages/Finanzas.js"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "finanzas-decision-pago-authoritative-v6-20260827",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-08-27T23:09:20Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-27T21:55:20Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
