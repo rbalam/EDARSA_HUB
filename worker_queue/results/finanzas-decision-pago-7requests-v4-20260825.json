@@ -11,7 +11,7 @@
   "job_id": "finanzas-decision-pago-7requests-v4-20260825",
   "percent_complete": 0,
   "production_touched": false,
-  "published_at_utc": "2026-08-26T23:59:59Z",
+  "published_at_utc": "2026-08-27T00:56:04Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
