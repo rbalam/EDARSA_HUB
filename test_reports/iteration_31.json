@@ -1,14 +1,7 @@
 {
   "summary": "FASE 11 RBAC Testing Complete: POST /api/users and POST /api/roles endpoints correctly protected with RBAC permissions. All 15 tests passed. SuperAdmin and Administrador (legacy fallback) can create users/roles. Usuario correctly denied (403). No auth correctly denied (403). POST /auth/register remains public. GET endpoints (FASE 9) no regression.",
-  "backend_issues": {
-    "critical": [],
-    "minor": []
-  },
-  "frontend_issues": {
-    "ui_bugs": [],
-    "integration_issues": [],
-    "design_issues": []
-  },
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
   "test_report_links": [
     "/app/backend/tests/test_rbac_fase11_post_endpoints.py",
     "/app/test_reports/pytest/pytest_rbac_fase11.xml"
@@ -22,78 +15,24 @@
     "rbac_helper.py whitelist correctly includes SISTEMA_USUARIOS_CREAR and SISTEMA_ROLES_CREAR",
     "Frontend Usuarios.js has matching RBAC_PERMISOS_PILOTO whitelist"
   ],
-  "updated_files": [
-    "/app/backend/tests/test_rbac_fase11_post_endpoints.py"
-  ],
-  "success_rate": {
-    "backend": "100% (15/15 tests passed)",
-    "frontend": "N/A (backend only testing)"
-  },
-  "test_credentials": {
-    "superadmin": {
-      "email": "ricardo@edarsa.com.mx",
-      "password": "Ricardo2024",
-      "role": "SuperAdministrador"
-    },
-    "admin": {
-      "email": "admin_fase11_test@edarsa.com.mx",
-      "password": "Admin2024!",
-      "role": "Administrador"
-    },
-    "usuario": {
-      "email": "test@inventario.com",
-      "password": "test123",
-      "role": "Usuario"
-    }
-  },
+  "updated_files": ["/app/backend/tests/test_rbac_fase11_post_endpoints.py"],
+  "success_rate": {"backend": "100% (15/15 tests passed)", "frontend": "N/A (backend only testing)"},
+  "test_credentials": "REDACTED: plaintext credentials are not stored in repository reports. Tests must obtain credentials from fixtures or the authorized runtime environment.",
   "seed_data_creation": "Test users created during tests are cleaned up automatically",
   "retest_needed": false,
   "should_main_agent_self_test": false,
-  "context_for_next_testing_agent": "FASE 11 RBAC POST endpoints fully tested. Key findings: 1) POST /api/users protected with SISTEMA_USUARIOS_CREAR permission + legacy fallback. 2) POST /api/roles protected with SISTEMA_ROLES_CREAR permission + legacy fallback. 3) Usuario role correctly denied (403). 4) No auth correctly denied (403). 5) POST /auth/register remains public but requires 'role' field. 6) GET /api/users and GET /api/roles (FASE 9) no regression. 7) All 3 test credentials work correctly.",
+  "context_for_next_testing_agent": "FASE 11 RBAC POST endpoints fully tested. Key findings: 1) POST /api/users protected with SISTEMA_USUARIOS_CREAR permission + legacy fallback. 2) POST /api/roles protected with SISTEMA_ROLES_CREAR permission + legacy fallback. 3) Usuario role correctly denied (403). 4) No auth correctly denied (403). 5) POST /auth/register remains public but requires 'role' field. 6) GET /api/users and GET /api/roles (FASE 9) no regression. Credentials must come from authorized fixtures/environment.",
   "features_tested": {
-    "post_users_superadmin": {
-      "status": "PASS",
-      "details": "SuperAdmin can create users via POST /api/users"
-    },
-    "post_users_admin_legacy": {
-      "status": "PASS",
-      "details": "Administrador can create users via legacy fallback (role_level >= 3)"
-    },
-    "post_users_usuario_denied": {
-      "status": "PASS",
-      "details": "Usuario correctly denied (403) for POST /api/users"
-    },
-    "post_users_no_auth_denied": {
-      "status": "PASS",
-      "details": "No auth correctly denied (403) for POST /api/users"
-    },
-    "post_roles_superadmin": {
-      "status": "PASS",
-      "details": "SuperAdmin can create roles via POST /api/roles"
-    },
-    "post_roles_admin_legacy": {
-      "status": "PASS",
-      "details": "Administrador can create roles via legacy fallback (role_level >= 3)"
-    },
-    "post_roles_usuario_denied": {
-      "status": "PASS",
-      "details": "Usuario correctly denied (403) for POST /api/roles"
-    },
-    "auth_register_public": {
-      "status": "PASS",
-      "details": "POST /auth/register remains public (requires 'role' field)"
-    },
-    "auth_login_no_regression": {
-      "status": "PASS",
-      "details": "All 3 test users can login successfully"
-    },
-    "get_users_no_regression": {
-      "status": "PASS",
-      "details": "GET /api/users works for SuperAdmin and Administrador (FASE 9)"
-    },
-    "get_roles_no_regression": {
-      "status": "PASS",
-      "details": "GET /api/roles works for SuperAdmin and Administrador (FASE 9)"
-    }
+    "post_users_superadmin": {"status": "PASS", "details": "SuperAdmin can create users via POST /api/users"},
+    "post_users_admin_legacy": {"status": "PASS", "details": "Administrador can create users via legacy fallback (role_level >= 3)"},
+    "post_users_usuario_denied": {"status": "PASS", "details": "Usuario correctly denied (403) for POST /api/users"},
+    "post_users_no_auth_denied": {"status": "PASS", "details": "No auth correctly denied (403) for POST /api/users"},
+    "post_roles_superadmin": {"status": "PASS", "details": "SuperAdmin can create roles via POST /api/roles"},
+    "post_roles_admin_legacy": {"status": "PASS", "details": "Administrador can create roles via legacy fallback (role_level >= 3)"},
+    "post_roles_usuario_denied": {"status": "PASS", "details": "Usuario correctly denied (403) for POST /api/roles"},
+    "auth_register_public": {"status": "PASS", "details": "POST /auth/register remains public (requires 'role' field)"},
+    "auth_login_no_regression": {"status": "PASS", "details": "Authorized test users can login successfully"},
+    "get_users_no_regression": {"status": "PASS", "details": "GET /api/users works for authorized SuperAdmin and Administrador fixtures (FASE 9)"},
+    "get_roles_no_regression": {"status": "PASS", "details": "GET /api/roles works for authorized SuperAdmin and Administrador fixtures (FASE 9)"}
   }
 }
