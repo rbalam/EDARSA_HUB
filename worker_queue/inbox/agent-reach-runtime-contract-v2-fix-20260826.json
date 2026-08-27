@@ -1,0 +1,20 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "agent-reach-runtime-contract-v2-fix-20260826",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Continuar el gate Agent-Reach hasta 100%: diagnosticar la causa exacta del pytest fallido del job agent-reach-runtime-contract-v1-20260826, corregir solo la causa real dentro del alcance del runtime/test, y repetir py_compile + pytest. No debilitar assertions para ocultar defectos. Si el defecto esta en infra/agent-reach, corregir la implementacion; si esta en el test por una asuncion incorrecta, corregir el test documentando la causa. Mantener no-root, versiones fijadas, sin secrets, sin backend/SQL/Mongo, sin image push y sin deploy.",
+  "actions": [
+    {
+      "type": "run_command",
+      "command": "/app/.venv/bin/python -m pytest backend/tests/test_agent_reach_runtime_contract.py -vv"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/tests/test_agent_reach_runtime_contract.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_agent_reach_runtime_contract.py"]}
+  ],
+  "human_summary_language": "es"
+}
