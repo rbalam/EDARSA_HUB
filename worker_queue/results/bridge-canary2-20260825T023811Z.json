@@ -13,7 +13,7 @@
   "job_id": "bridge-canary2-20260825T023811Z",
   "percent_complete": 0,
   "production_touched": false,
-  "published_at_utc": "2026-08-27T01:11:25Z",
+  "published_at_utc": "2026-08-27T01:15:02Z",
   "schema": "edarsahub.worker-result.v1",
   "source_branch": "Edarsahub_Desarrollo",
   "source_repo": "rbalam/EDARSA_HUB",
