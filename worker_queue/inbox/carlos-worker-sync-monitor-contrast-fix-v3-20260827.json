@@ -1,0 +1,28 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "carlos-worker-sync-monitor-contrast-fix-v3-20260827",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "84eb24b922ee9fa388406d578af5b91a523907a9",
+  "objective": "Corregir exclusivamente la legibilidad visual de /admin/sync-monitor en Preview agregando fondo oscuro explicito y texto blanco al contenedor raiz de SyncMonitor. No cambiar el tema global, no tocar otros modulos y no tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "sync-monitor-contrast-v3-20260827"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/SyncMonitor.js",
+      "old": "    <div className=\"space-y-6 p-6\" data-testid=\"sync-monitor-page\">",
+      "new": "    <div className=\"space-y-6 p-6 min-h-screen bg-slate-950 text-white\" data-testid=\"sync-monitor-page\">",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
