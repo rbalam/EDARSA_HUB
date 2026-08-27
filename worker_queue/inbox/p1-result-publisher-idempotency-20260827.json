@@ -1,0 +1,41 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "p1-result-publisher-idempotency-20260827",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Corregir el defecto P1 de republicacion infinita de worker-result. El publisher no debe crear un commit nuevo cuando el contenido semantico del resultado no cambio; published_at_utc es metadata dinamica y no debe provocar una publicacion. Debe seguir publicando cuando cambie certificacion, estado u otro campo real. Agregar prueba de regresion y ejecutar quality gate sin tocar produccion.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Medina Propuestas",
+    "chat": "worker-p1-idempotency"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "old": "def create_attestation(public: dict[str, Any]) -> Path | None:\n",
+      "new": "def semantic_public_payload(payload: dict[str, Any]) -> dict[str, Any]:\n    canonical = dict(payload)\n    canonical.pop(\"published_at_utc\", None)\n    return canonical\n\n\ndef create_attestation(public: dict[str, Any]) -> Path | None:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "old": "            destination.parent.mkdir(\n                parents=True,\n                exist_ok=True,\n            )\n\n            destination.write_text(\n",
+      "new": "            destination.parent.mkdir(\n                parents=True,\n                exist_ok=True,\n            )\n\n            if destination.is_file():\n                try:\n                    existing_public = load(destination)\n                except Exception:\n                    existing_public = {}\n                if semantic_public_payload(existing_public) == semantic_public_payload(public):\n                    marker.write_text(\n                        f\"already_present={now()}\\n\"\n                        f\"certification={public.get('certification')}\\n\",\n                        encoding=\"utf-8\",\n                    )\n                    create_attestation(public)\n                    return False\n\n            destination.write_text(\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_universal_job_result_publisher_idempotency.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nPUBLISHER = ROOT / 'tools' / 'mirror_sync' / 'universal_job_result_publisher.py'\n\n\ndef test_publisher_ignores_dynamic_published_timestamp_for_idempotency():\n    text = PUBLISHER.read_text(encoding='utf-8')\n    assert 'def semantic_public_payload' in text\n    assert 'canonical.pop(\\\"published_at_utc\\\", None)' in text\n    assert 'semantic_public_payload(existing_public) == semantic_public_payload(public)' in text\n\n\ndef test_publisher_still_allows_real_state_changes_to_publish():\n    text = PUBLISHER.read_text(encoding='utf-8')\n    assert 'canonical = dict(payload)' in text\n    assert text.count('canonical.pop(') == 1\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["tools/mirror_sync/universal_job_result_publisher.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_universal_job_result_publisher_idempotency.py"]}
+  ]
+}
