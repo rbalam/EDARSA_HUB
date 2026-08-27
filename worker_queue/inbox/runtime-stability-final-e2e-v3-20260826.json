@@ -1,0 +1,26 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "runtime-stability-final-e2e-v3-20260826",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "1208b7e1f12602aeaaa390e014f6c550a93be47e",
+  "objective": "Canario final E2E del Worker universal ya estabilizado. Validar consumo automatico sin reinicio manual, autorizacion RBAC SQL canonica de Ricardo, ejecucion determinista, checks PASS, integracion segura, publicacion remota, certificacion COMPLETE/100 y convergencia Edarsahub_Desarrollo con mirror/emergent-live. No tocar Produccion ni frentes funcionales.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "worker-runtime-stability-final-e2e"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/audits/runtime-stability-final-e2e-v3-20260826.md",
+      "content": "# Worker runtime stability final E2E v3\n\nRequester: ricardo@edarsa.com.mx\n\nPrueba final para certificar consumo automatico, RBAC SQL canonico, ejecucion determinista, resultado remoto, certificacion y convergencia mirror. Produccion no tocada.\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
