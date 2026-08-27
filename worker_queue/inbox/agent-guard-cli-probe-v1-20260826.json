@@ -1,0 +1,22 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "agent-guard-cli-probe-v1-20260826",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "84938283f4ddf6b437f96447d322ba7c09273013",
+  "objective": "Auditar de forma determinista el contrato CLI real de /usr/local/bin/agent_guard.py para identificar el comando soportado de cierre/liberacion de worktrees/scopes. Este job es solo de diagnostico y debe fallar el pytest mostrando el --help; no integrar cambios de producto.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_agent_guard_cli_probe_runtime.py",
+      "content": "import subprocess\nfrom pathlib import Path\n\n\ndef test_agent_guard_cli_help_probe():\n    guard = Path('/usr/local/bin/agent_guard.py')\n    assert guard.is_file(), 'AGENT_GUARD_NOT_FOUND'\n    result = subprocess.run(\n        ['/app/.venv/bin/python', str(guard), '--help'],\n        text=True,\n        stdout=subprocess.PIPE,\n        stderr=subprocess.STDOUT,\n        timeout=20,\n        check=False,\n    )\n    raise AssertionError('AGENT_GUARD_HELP_BEGIN\\n' + result.stdout + '\\nAGENT_GUARD_HELP_END')\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/tests/test_agent_guard_cli_probe_runtime.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_agent_guard_cli_probe_runtime.py"]}
+  ],
+  "human_summary_language": "es"
+}
