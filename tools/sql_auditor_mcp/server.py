@@ -8,8 +8,8 @@ Seguridad por capas:
 2. Solo acepta una sentencia SELECT/WITH.
 3. Bloquea keywords de escritura/DDL/ejecucion dinamica y comentarios SQL.
 4. Ejecuta en transaccion no-autocommit y hace rollback siempre.
-5. Requiere que las credenciales SQL usadas por los servidores tengan permisos
-   fisicos de solo lectura (SELECT + VIEW DEFINITION) como ultima barrera.
+5. Exige credenciales SQL fisicamente de solo lectura y valida privilegios
+   efectivos antes de ejecutar cualquier consulta del usuario.
 
 Nunca expone passwords ni API keys en las respuestas MCP.
 """
@@ -53,11 +53,81 @@ EXPECTED_RBAC_DATABASE = "EDARSAHUB"
 EXPECTED_RBAC_LOGIN = "HRLECTURA"
 EXPECTED_RBAC_USER = "HRLECTURA"
 
+# Credenciales exclusivas del Auditor. Nunca se guardan passwords en GitHub.
+# Cada servidor se habilita de manera explicita conforme se valida su login RO.
+LOCAL_READONLY_CREDENTIALS = {
+    "CIENFUEGOS": (
+        "EDARSA_SQL_AUDITOR_CF_USER",
+        "EDARSA_SQL_AUDITOR_CF_PASSWORD",
+    ),
+}
+
 BLOCKED_SQL_WORDS = {
     "INSERT", "UPDATE", "DELETE", "MERGE", "DROP", "ALTER", "TRUNCATE",
     "CREATE", "EXEC", "EXECUTE", "GRANT", "REVOKE", "DENY", "BACKUP",
     "RESTORE", "DBCC", "BULK", "OPENROWSET", "OPENDATASOURCE", "INTO",
     "USE", "DECLARE", "SET", "KILL", "SHUTDOWN", "RECONFIGURE",
+}
+
+DANGEROUS_DATABASE_PERMISSIONS = {
+    "ALTER",
+    "ALTER ANY APPLICATION ROLE",
+    "ALTER ANY ASSEMBLY",
+    "ALTER ANY CERTIFICATE",
+    "ALTER ANY CONTRACT",
+    "ALTER ANY DATABASE AUDIT",
+    "ALTER ANY DATABASE DDL TRIGGER",
+    "ALTER ANY DATABASE EVENT NOTIFICATION",
+    "ALTER ANY DATABASE EVENT SESSION",
+    "ALTER ANY DATABASE SCOPED CONFIGURATION",
+    "ALTER ANY DATASPACE",
+    "ALTER ANY EXTERNAL DATA SOURCE",
+    "ALTER ANY EXTERNAL FILE FORMAT",
+    "ALTER ANY FULLTEXT CATALOG",
+    "ALTER ANY MASK",
+    "ALTER ANY MESSAGE TYPE",
+    "ALTER ANY REMOTE SERVICE BINDING",
+    "ALTER ANY ROLE",
+    "ALTER ANY ROUTE",
+    "ALTER ANY SCHEMA",
+    "ALTER ANY SECURITY POLICY",
+    "ALTER ANY SENSITIVITY CLASSIFICATION",
+    "ALTER ANY SERVICE",
+    "ALTER ANY SYMMETRIC KEY",
+    "ALTER ANY USER",
+    "AUTHENTICATE",
+    "BACKUP DATABASE",
+    "BACKUP LOG",
+    "CONTROL",
+    "CREATE AGGREGATE",
+    "CREATE ASSEMBLY",
+    "CREATE CERTIFICATE",
+    "CREATE CONTRACT",
+    "CREATE DATABASE DDL EVENT NOTIFICATION",
+    "CREATE DEFAULT",
+    "CREATE FULLTEXT CATALOG",
+    "CREATE FUNCTION",
+    "CREATE MESSAGE TYPE",
+    "CREATE PROCEDURE",
+    "CREATE QUEUE",
+    "CREATE REMOTE SERVICE BINDING",
+    "CREATE ROLE",
+    "CREATE ROUTE",
+    "CREATE RULE",
+    "CREATE SCHEMA",
+    "CREATE SERVICE",
+    "CREATE SYMMETRIC KEY",
+    "CREATE SYNONYM",
+    "CREATE TABLE",
+    "CREATE TYPE",
+    "CREATE VIEW",
+    "CREATE XML SCHEMA COLLECTION",
+    "DELETE",
+    "EXECUTE",
+    "IMPERSONATE",
+    "INSERT",
+    "TAKE OWNERSHIP",
+    "UPDATE",
 }
 
 
@@ -73,12 +143,7 @@ def _row_to_dict(cursor: Any, row: Any) -> dict[str, Any]:
 
 
 def _authorize() -> dict[str, Any]:
-    """Fail-closed: valida requester contra RBAC SQL canonico, solo lectura.
-
-    Este agente usa pymssql de forma explicita para el canario RBAC porque sus
-    consultas parametrizadas usan marcadores %s. No modifica el repositorio de
-    autenticacion de EDARSAHUB ni cambia la conexion productiva del backend.
-    """
+    """Fail-closed: valida requester contra RBAC SQL canonico, solo lectura."""
     email = str(os.environ.get(REQUESTER_ENV) or "").strip().lower()
     if not email or "@" not in email:
         raise PermissionError(f"{REQUESTER_ENV} no configurado o invalido")
@@ -164,11 +229,9 @@ def _validate_readonly_sql(sql: str) -> str:
 
     text = sql.strip()
 
-    # Comentarios complican el analisis lexical y facilitan bypasses.
     if "--" in text or "/*" in text or "*/" in text:
         raise ValueError("SQL_COMMENTS_NOT_ALLOWED")
 
-    # Una sola sentencia. Se permite un unico ; final.
     without_final = text[:-1].rstrip() if text.endswith(";") else text
     if ";" in without_final:
         raise ValueError("MULTI_STATEMENT_SQL_NOT_ALLOWED")
@@ -181,7 +244,6 @@ def _validate_readonly_sql(sql: str) -> str:
         if re.search(rf"\b{re.escape(word)}\b", upper):
             raise ValueError(f"BLOCKED_SQL_KEYWORD:{word}")
 
-    # Bloqueo adicional a procedimientos extendidos / system procs.
     if re.search(r"\b(?:XP_|SP_)[A-Z0-9_]*\b", upper):
         raise ValueError("SYSTEM_PROCEDURES_NOT_ALLOWED")
 
@@ -207,7 +269,30 @@ def _masked_server(server: dict[str, Any]) -> dict[str, Any]:
         "system_type": server.get("system_type"),
         "system_type_normalized": server.get("system_type_normalized"),
         "config_origin": server.get("config_origin"),
+        "credential_source": server.get("credential_source"),
     }
+
+
+def _apply_local_readonly_credentials(server: dict[str, Any]) -> dict[str, Any]:
+    """Aplica credenciales RO locales por servidor, sin exponer secretos."""
+    result = dict(server)
+    name = _norm(result.get("name"))
+    env_pair = LOCAL_READONLY_CREDENTIALS.get(name)
+    if not env_pair:
+        return result
+
+    user_env, password_env = env_pair
+    username = str(os.environ.get(user_env) or "").strip()
+    password = os.environ.get(password_env)
+    if not username or not password:
+        raise PermissionError(
+            f"READONLY_CREDENTIALS_NOT_CONFIGURED:{name}:{user_env}:{password_env}"
+        )
+
+    result["username"] = username
+    result["password"] = password
+    result["credential_source"] = "LOCAL_ENV_READONLY"
+    return result
 
 
 async def _all_servers_masked() -> list[dict[str, Any]]:
@@ -235,7 +320,7 @@ async def _resolve_server(selector: str) -> dict[str, Any]:
     info = await get_server_connection_info(str(exact[0]["id"]))
     if not info:
         raise ValueError(f"SERVER_CONNECTION_INFO_UNAVAILABLE:{selector}")
-    return info
+    return _apply_local_readonly_credentials(info)
 
 
 def _connect(server: dict[str, Any]):
@@ -252,6 +337,53 @@ def _connect(server: dict[str, Any]):
     return get_external_sql_connection(config)
 
 
+def _assert_connection_is_readonly(cursor: Any) -> dict[str, Any]:
+    """Rechaza conexiones con privilegios incompatibles con el Auditor."""
+    cursor.execute(
+        """
+        SELECT
+            DB_NAME() AS database_name,
+            SUSER_SNAME() AS login_name,
+            USER_NAME() AS database_user,
+            IS_SRVROLEMEMBER('sysadmin') AS is_sysadmin,
+            IS_ROLEMEMBER('db_owner') AS is_db_owner,
+            IS_ROLEMEMBER('db_datareader') AS is_db_datareader,
+            IS_ROLEMEMBER('db_datawriter') AS is_db_datawriter,
+            HAS_PERMS_BY_NAME(DB_NAME(), 'DATABASE', 'SELECT') AS can_select
+        """
+    )
+    identity = _row_to_dict(cursor, cursor.fetchone())
+
+    if int(identity.get("is_sysadmin") or 0) != 0:
+        raise PermissionError("SQL_LOGIN_NOT_READONLY:SYSADMIN")
+    if int(identity.get("is_db_owner") or 0) != 0:
+        raise PermissionError("SQL_LOGIN_NOT_READONLY:DB_OWNER")
+    if int(identity.get("is_db_datawriter") or 0) != 0:
+        raise PermissionError("SQL_LOGIN_NOT_READONLY:DB_DATAWRITER")
+    if int(identity.get("can_select") or 0) != 1:
+        raise PermissionError("SQL_LOGIN_WITHOUT_SELECT")
+
+    cursor.execute(
+        "SELECT permission_name FROM fn_my_permissions(NULL, 'DATABASE')"
+    )
+    effective_permissions = {
+        _norm(row[0]) for row in cursor.fetchall() if row and row[0]
+    }
+    dangerous = sorted(effective_permissions & DANGEROUS_DATABASE_PERMISSIONS)
+    if dangerous:
+        raise PermissionError(
+            "SQL_LOGIN_NOT_READONLY:PERMISSIONS:" + ",".join(dangerous)
+        )
+
+    return {
+        "database": identity.get("database_name"),
+        "login": identity.get("login_name"),
+        "user": identity.get("database_user"),
+        "is_db_datareader": int(identity.get("is_db_datareader") or 0),
+        "effective_permissions": sorted(effective_permissions),
+    }
+
+
 def _execute_readonly(
     server: dict[str, Any],
     sql: str,
@@ -266,11 +398,11 @@ def _execute_readonly(
     try:
         conn = _connect(server)
         cursor = conn.cursor()
+        sql_identity = _assert_connection_is_readonly(cursor)
+
         if params is None:
             cursor.execute(checked_sql)
         else:
-            # get_external_sql_connection prefiere pymssql; si cae a pyodbc,
-            # adaptar los marcadores internos %s a ? sin alterar SQL del usuario.
             module_name = str(cursor.__class__.__module__).lower()
             executable_sql = (
                 checked_sql.replace("%s", "?")
@@ -293,10 +425,9 @@ def _execute_readonly(
             "rows_returned": len(preview),
             "truncated": truncated,
             "max_rows": max_rows,
+            "sql_identity": sql_identity,
         }
     finally:
-        # Aunque una sentencia peligrosa lograra atravesar el validador, no se
-        # confirma ninguna transaccion desde este agente.
         if conn is not None:
             try:
                 conn.rollback()
@@ -405,11 +536,7 @@ async def compare_readonly_queries(
     key_columns: list[str] | None = None,
     max_rows: int = MAX_ROWS_HARD,
 ) -> dict[str, Any]:
-    """Ejecuta dos SELECT y concilia sus resultados sin modificar ninguna BD.
-
-    Si key_columns se informa, devuelve llaves faltantes y filas diferentes.
-    Si no se informa, compara columnas, cantidad de filas y hash normalizado.
-    """
+    """Ejecuta dos SELECT y concilia sus resultados sin modificar ninguna BD."""
     auth = _authorize()
     source = await _resolve_server(source_server)
     hub = await _resolve_server(hub_server)
@@ -485,7 +612,5 @@ async def compare_readonly_queries(
 
 
 if __name__ == "__main__":
-    # Para pruebas locales puede usarse stdio. Para ChatGPT se recomienda
-    # streamable-http detras de HTTPS/tunel seguro.
     transport = os.environ.get("EDARSA_SQL_AUDITOR_TRANSPORT", "stdio")
     mcp.run(transport=transport)
