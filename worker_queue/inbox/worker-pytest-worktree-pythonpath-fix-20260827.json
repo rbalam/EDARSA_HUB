@@ -1,0 +1,56 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-pytest-worktree-pythonpath-fix-20260827",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "8c85fa5d4a027acb7ef11a9d6d986302e963cb2d",
+  "objective": "Corregir el executor determinista para que pytest ejecutado dentro de worktrees aislados pueda importar backend/tests y backend modules. Mantener /app/.venv/bin/python como interprete canonico. No tocar Produccion. Agregar regresion estatica del contrato. Debido a que el proceso dispatcher actual ya esta cargado sin el fix, validar este primer commit con py_compile y git_diff_check; la certificacion funcional con pytest se hara inmediatamente en un segundo job despues de integrar este fix.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "catalogo-ampliado-v1"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:\n    kind = str(check.get(\"type\"))\n    started = now()\n    if kind == \"git_diff_check\":",
+      "new": "def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:\n    kind = str(check.get(\"type\"))\n    started = now()\n    env_extra: dict[str, str] | None = None\n    if kind == \"git_diff_check\":",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "    elif kind == \"pytest\":\n        paths = [str(p) for p in check.get(\"paths\") or []]\n        cmd = [PYTHON_BIN, \"-m\", \"pytest\", \"-q\", *paths]\n        cwd = worktree",
+      "new": "    elif kind == \"pytest\":\n        paths = [str(p) for p in check.get(\"paths\") or []]\n        cmd = [PYTHON_BIN, \"-m\", \"pytest\", \"-q\", *paths]\n        cwd = worktree\n        backend_path = str(worktree / \"backend\")\n        existing_pythonpath = os.environ.get(\"PYTHONPATH\", \"\")\n        env_extra = {\n            \"PYTHONPATH\": backend_path\n            + (os.pathsep + existing_pythonpath if existing_pythonpath else \"\")\n        }",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        result = run(cmd, cwd=cwd, timeout=MAX_SECONDS)",
+      "new": "        result = run(\n            cmd,\n            cwd=cwd,\n            timeout=MAX_SECONDS,\n            env_extra=env_extra,\n        )",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_pytest_worktree_pythonpath_contract.py",
+      "content": "from pathlib import Path\n\n\nDISPATCHER = (\n    Path(__file__).resolve().parents[2]\n    / 'tools'\n    / 'mirror_sync'\n    / 'universal_job_dispatcher.py'\n)\n\n\ndef test_pytest_check_injects_worktree_backend_pythonpath():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'backend_path = str(worktree / \\\"backend\\\")' in text\n    assert '\\\"PYTHONPATH\\\": backend_path' in text\n    assert 'env_extra=env_extra' in text\n    assert 'PYTHON_BIN, \\\"-m\\\", \\\"pytest\\\"' in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "backend/tests/test_worker_pytest_worktree_pythonpath_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es"
+}
