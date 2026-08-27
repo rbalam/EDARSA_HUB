@@ -1,0 +1,29 @@
+{
+  "base_sha": "42068276c9c4431e97358df3a5d12682c5787153",
+  "blockers": [
+    "development_push_failed:/usr/bin/gh auth git-credential get: 1: /usr/bin/gh: not found\nfatal: could not read Username for 'https://github.com/rbalam/EDARSA_HUB.git': terminal prompts disabled\n"
+  ],
+  "candidate_sha": "123192452f0ca26d3ad9ceb0cd9869d31aa7cfc5",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-27T16:58:30Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_universal_job_dispatcher_python_runtime.py",
+    "tools/mirror_sync/universal_job_dispatcher.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-pytest-worktree-isolation-v1-20260827",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-08-27T23:20:10Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-27T16:58:25Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
