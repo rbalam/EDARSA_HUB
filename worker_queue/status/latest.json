@@ -1,48 +1,30 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "84938283f4ddf6b437f96447d322ba7c09273013",
-  "generated_at_utc": "2026-08-27T01:23:56Z",
+  "development_sha": "76806ea583fe0fc3be031b027c7a454ace1da8c3",
+  "generated_at_utc": "2026-08-27T17:29:44Z",
   "history": {
     "done_total_local": 5,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 56,
-    "results_total_local": 48
+    "rejected_total_local": 84,
+    "results_total_local": 74
   },
   "jobs": [
     {
-      "age_seconds": 2040,
-      "job_id": "agent-guard-cli-probe-v1-20260826",
+      "age_seconds": 3384,
+      "job_id": "CAVAS-BOS-V1-FUNDACION-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3029,
-      "job_id": "bos-executive-daily-brief-v1-kickoff-20260827-001",
+      "age_seconds": 3255,
+      "job_id": "carlos-worker-iscam-comandas-isjson-v6-20260827-a",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2148,
-      "job_id": "worker-agent-guard-cli-probe-20260826-1830",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 902,
-      "job_id": "worker-fix-untracked-scope-v1-20260827",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2836,
-      "job_id": "worker-load-backend-runtime-env-20260826-1824",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1207,
-      "job_id": "worker-readonly-sql-support-v2-20260826",
+      "age_seconds": 1874,
+      "job_id": "worker-pytest-worktree-isolation-v1-20260827",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -52,13 +34,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "runtime": {
-    "generation": "20260826-universal-job-worker-v1",
-    "last_cycle_utc": "2026-08-27T01:22:10Z",
-    "last_receive_utc": "2026-08-27T01:22:10Z",
-    "pid": "64980"
+    "generation": "20260827-universal-job-worker-sla-v2",
+    "last_cycle_utc": "2026-08-27T17:29:39Z",
+    "last_receive_utc": "2026-08-27T17:29:40Z",
+    "pid": "48954"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
