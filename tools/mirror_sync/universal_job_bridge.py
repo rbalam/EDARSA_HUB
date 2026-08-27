@@ -26,7 +26,15 @@ REJECTED = STATE / "rejected"
 DONE = STATE / "done"
 RESULTS = STATE / "results"
 REMOTE = os.environ.get("EDARSAHUB_QUEUE_REMOTE", "origin")
+CANONICAL_REMOTE = os.environ.get(
+    "EDARSAHUB_QUEUE_CANONICAL_REMOTE",
+    "https://github.com/rbalam/EDARSA_HUB.git",
+)
 QUEUE_BRANCH = os.environ.get("EDARSAHUB_QUEUE_BRANCH", "worker/requests")
+QUEUE_REF = os.environ.get(
+    "EDARSAHUB_QUEUE_REF",
+    "refs/remotes/edarsahub-worker-queue/worker/requests",
+)
 SCHEMA = "edarsahub.worker-job.v2"
 JOB_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
@@ -45,6 +53,21 @@ def git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
         check=check,
         env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
     )
+
+
+def resolve_queue_remote() -> str:
+    """Return a usable queue remote without requiring a local ``origin`` alias."""
+    configured = str(REMOTE or "").strip()
+    if configured and ("://" in configured or configured.startswith("git@")):
+        return configured
+    if configured:
+        probe = git("remote", "get-url", configured, check=False)
+        if probe.returncode == 0 and probe.stdout.strip():
+            return configured
+    canonical = str(CANONICAL_REMOTE or "").strip()
+    if not canonical:
+        raise RuntimeError("QUEUE_REMOTE_NOT_AVAILABLE")
+    return canonical
 
 
 def ensure_dirs() -> None:
@@ -172,9 +195,10 @@ def validate(job: Any) -> list[str]:
 
 
 def queue_files() -> list[str]:
-    git("fetch", "--quiet", REMOTE, QUEUE_BRANCH)
+    remote = resolve_queue_remote()
+    git("fetch", "--quiet", remote, f"+{QUEUE_BRANCH}:{QUEUE_REF}")
     listing = git(
-        "ls-tree", "-r", "--name-only", f"{REMOTE}/{QUEUE_BRANCH}", "worker_queue/inbox"
+        "ls-tree", "-r", "--name-only", QUEUE_REF, "worker_queue/inbox"
     )
     return [
         line.strip()
@@ -184,7 +208,7 @@ def queue_files() -> list[str]:
 
 
 def read_remote(path: str) -> str:
-    return git("show", f"{REMOTE}/{QUEUE_BRANCH}:{path}").stdout
+    return git("show", f"{QUEUE_REF}:{path}").stdout
 
 
 def already_claimed(name: str) -> bool:
