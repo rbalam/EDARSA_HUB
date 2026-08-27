@@ -5,7 +5,7 @@
   "target_branch": "Edarsahub_Desarrollo",
   "production_allowed": false,
   "base_sha": "b76b75bb99e7e6752079f847fafb3d592ad54f95",
-  "objective": "Endurecer el worker para eliminar starvation de la cola universal y evitar que el launcher quede bloqueado indefinidamente en refresh/health. Priorizar receive-dispatch-publish-health antes del mirror cycle y agregar timeouts fail-safe en el launcher. No tocar Produccion.",
+  "objective": "Endurecer el worker para que la cola universal sea siempre el primer plano de control de cada ciclo y para que ningun subprocess del worker o del launcher pueda bloquear indefinidamente la recepcion de jobs. Aplicar timeouts fail-safe a bridge, dispatcher, publisher, health, mirror check/apply/publish/finalize y reporting. No tocar Produccion.",
   "requester": {
     "email": "carlosruz@edarsa.com.mx",
     "source": "chatgpt",
@@ -18,14 +18,63 @@
       "path": "tools/mirror_sync/mirror_sync_worker.sh",
       "expected_count": 1,
       "old": "RUNTIME_GENERATION=\"20260826-canonical-python-v1\"",
-      "new": "RUNTIME_GENERATION=\"20260826-queue-priority-timeout-v2\""
+      "new": "RUNTIME_GENERATION=\"20260826-queue-priority-timeout-v3\""
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "expected_count": 1,
+      "old": "LOOP_SECONDS=\"${MIRROR_SYNC_LOOP_SECONDS:-60}\"\nRUNNING=1",
+      "new": "LOOP_SECONDS=\"${MIRROR_SYNC_LOOP_SECONDS:-60}\"\nWORKER_TOOL_TIMEOUT_SECONDS=\"${MIRROR_WORKER_TOOL_TIMEOUT_SECONDS:-120}\"\nWORKER_MIRROR_TIMEOUT_SECONDS=\"${MIRROR_WORKER_MIRROR_TIMEOUT_SECONDS:-180}\"\nWORKER_REPORTING_TIMEOUT_SECONDS=\"${MIRROR_WORKER_REPORTING_TIMEOUT_SECONDS:-120}\"\nRUNNING=1"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "expected_count": 1,
+      "old": "    \"$@\" >\"$OUT\" 2>&1\n    RC=$?",
+      "new": "    timeout \"$WORKER_TOOL_TIMEOUT_SECONDS\" \"$@\" >\"$OUT\" 2>&1\n    RC=$?"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "expected_count": 1,
+      "old": "    set +e; \"$CHECK\" >\"$CHECK_OUT\" 2>&1; CHECK_RC=$?; set -e",
+      "new": "    set +e; timeout \"$WORKER_MIRROR_TIMEOUT_SECONDS\" \"$CHECK\" >\"$CHECK_OUT\" 2>&1; CHECK_RC=$?; set -e"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "expected_count": 1,
+      "old": "    set +e; \"$PUBLISH\" --publish >\"$PUBLISH_OUT\" 2>&1; PUBLISH_RC=$?; set -e",
+      "new": "    set +e; timeout \"$WORKER_MIRROR_TIMEOUT_SECONDS\" \"$PUBLISH\" --publish >\"$PUBLISH_OUT\" 2>&1; PUBLISH_RC=$?; set -e"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "expected_count": 1,
+      "old": "    set +e; \"$FINALIZER\" \"$SNAPSHOT\"; FINALIZE_RC=$?; set -e",
+      "new": "    set +e; timeout \"$WORKER_MIRROR_TIMEOUT_SECONDS\" \"$FINALIZER\" \"$SNAPSHOT\"; FINALIZE_RC=$?; set -e"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "expected_count": 1,
+      "old": "        set +e; REPORT_OUT=\"$(\"$REPORTER\" 2>&1)\"; REPORT_RC=$?; set -e",
+      "new": "        set +e; REPORT_OUT=\"$(timeout \"$WORKER_REPORTING_TIMEOUT_SECONDS\" \"$REPORTER\" 2>&1)\"; REPORT_RC=$?; set -e"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "expected_count": 1,
+      "old": "        set +e; EXPORT_OUT=\"$(\"$AUDIT_EXPORTER\" 2>&1)\"; EXPORT_RC=$?; set -e",
+      "new": "        set +e; EXPORT_OUT=\"$(timeout \"$WORKER_REPORTING_TIMEOUT_SECONDS\" \"$AUDIT_EXPORTER\" 2>&1)\"; EXPORT_RC=$?; set -e"
     },
     {
       "type": "replace_text",
       "path": "tools/mirror_sync/mirror_sync_worker.sh",
       "expected_count": 1,
       "old": "while [ \"$RUNNING\" -eq 1 ]; do\n    run_cycle\n    receive_universal_jobs\n    dispatch_universal_jobs\n    publish_universal_results\n    publish_runtime_health\n    run_reporting_pipeline\n    [ \"$RUNNING\" -ne 0 ] || break\n    sleep \"$LOOP_SECONDS\" & wait $! || true\ndone",
-      "new": "while [ \"$RUNNING\" -eq 1 ]; do\n    # La cola de ChatGPT es el plano de control: atenderla antes de cualquier\n    # sincronizacion de mirror evita que un check/publish lento deje jobs sin consumir.\n    receive_universal_jobs\n    dispatch_universal_jobs\n    publish_universal_results\n    publish_runtime_health\n    run_cycle\n    run_reporting_pipeline\n    [ \"$RUNNING\" -ne 0 ] || break\n    sleep \"$LOOP_SECONDS\" & wait $! || true\ndone"
+      "new": "while [ \"$RUNNING\" -eq 1 ]; do\n    # La cola universal es el plano de control: atenderla antes de cualquier\n    # sincronizacion de mirror evita starvation aunque una tarea posterior sea lenta.\n    receive_universal_jobs\n    dispatch_universal_jobs\n    publish_universal_results\n    publish_runtime_health\n    run_cycle\n    run_reporting_pipeline\n    [ \"$RUNNING\" -ne 0 ] || break\n    sleep \"$LOOP_SECONDS\" & wait $! || true\ndone"
     },
     {
       "type": "replace_text",
@@ -54,12 +103,17 @@
       "expected_count": 1,
       "old": "    \"$PYTHON_BIN\" \"$HEALTH\" >/tmp/edarsahub-worker-health-launcher.log 2>&1 || true",
       "new": "    timeout \"$LAUNCHER_HEALTH_TIMEOUT_SECONDS\" \"$PYTHON_BIN\" \"$HEALTH\" >/tmp/edarsahub-worker-health-launcher.log 2>&1 || true"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_queue_priority_timeout_contract.py",
+      "content": "from pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[2]\nWORKER = ROOT / 'tools/mirror_sync/mirror_sync_worker.sh'\nLAUNCHER = ROOT / 'tools/mirror_sync/mirror_sync_supervisor_entrypoint.sh'\n\n\ndef read(path: Path) -> str:\n    return path.read_text(encoding='utf-8')\n\n\ndef test_queue_is_processed_before_mirror_cycle():\n    text = read(WORKER)\n    loop = text[text.index('while [ \\\"$RUNNING\\\" -eq 1 ]; do'):]\n    assert loop.index('receive_universal_jobs') < loop.index('run_cycle')\n    assert loop.index('dispatch_universal_jobs') < loop.index('run_cycle')\n    assert loop.index('publish_universal_results') < loop.index('run_cycle')\n    assert loop.index('publish_runtime_health') < loop.index('run_cycle')\n\n\ndef test_worker_subprocesses_are_timeout_bounded():\n    text = read(WORKER)\n    assert 'WORKER_TOOL_TIMEOUT_SECONDS=' in text\n    assert 'WORKER_MIRROR_TIMEOUT_SECONDS=' in text\n    assert 'WORKER_REPORTING_TIMEOUT_SECONDS=' in text\n    assert 'timeout \\\"$WORKER_TOOL_TIMEOUT_SECONDS\\\" \\\"$@\\\"' in text\n    assert 'timeout \\\"$WORKER_MIRROR_TIMEOUT_SECONDS\\\" \\\"$CHECK\\\"' in text\n    assert 'timeout \\\"$WORKER_MIRROR_TIMEOUT_SECONDS\\\" \\\"$PUBLISH\\\" --publish' in text\n    assert 'timeout \\\"$WORKER_MIRROR_TIMEOUT_SECONDS\\\" \\\"$FINALIZER\\\" \\\"$SNAPSHOT\\\"' in text\n    assert 'timeout \\\"$WORKER_REPORTING_TIMEOUT_SECONDS\\\" \\\"$REPORTER\\\"' in text\n    assert 'timeout \\\"$WORKER_REPORTING_TIMEOUT_SECONDS\\\" \\\"$AUDIT_EXPORTER\\\"' in text\n\n\ndef test_launcher_subprocesses_are_timeout_bounded():\n    text = read(LAUNCHER)\n    assert 'LAUNCHER_REFRESH_TIMEOUT_SECONDS=' in text\n    assert 'LAUNCHER_HEALTH_TIMEOUT_SECONDS=' in text\n    assert 'timeout \\\"$LAUNCHER_REFRESH_TIMEOUT_SECONDS\\\" \\\"$CHECK\\\"' in text\n    assert 'timeout \\\"$LAUNCHER_REFRESH_TIMEOUT_SECONDS\\\" \\\"$APPLY\\\"' in text\n    assert 'timeout \\\"$LAUNCHER_HEALTH_TIMEOUT_SECONDS\\\" \\\"$PYTHON_BIN\\\" \\\"$HEALTH\\\"' in text\n"
     }
   ],
   "checks": [
-    {
-      "type": "git_diff_check"
-    }
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/tests/test_worker_queue_priority_timeout_contract.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_worker_queue_priority_timeout_contract.py", "backend/tests/test_worker_canonical_python_runtime_contract.py", "backend/tests/test_universal_job_dispatcher_python_runtime.py"]}
   ],
   "human_summary_language": "es"
 }
