@@ -1,0 +1,31 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-BOS-V1-FUNDACION-01",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Alinear la fundacion funcional ya existente de Cavas con el contrato BOS aprobado sin reimplementar lo que ya esta operativo: conservar Satelites > Cavas, filtros corporativos, RBAC SQL, Cliente_Catalogo, inventario PZ/Kardex y rutas existentes; normalizar la navegacion para que la bitacora se presente como Movimientos / Consumos y ejecutar gates backend/frontend completos sobre Cavas. No crear tablas, columnas, permisos, fuentes, conexiones, catalogos ni logica paralela.",
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/config/enterpriseMenuConfig.js",
+      "old": "label: \"Cavas - Consumos\"",
+      "new": "label: \"Cavas - Movimientos / Consumos\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/CavaNavHeader.jsx",
+      "old": "{ label: 'Bitácora Consumos', path: '/cava-socios/consumos', icon: TrendingDown, active: currentPath === '/cava-socios/consumos' }",
+      "new": "{ label: 'Movimientos / Consumos', path: '/cava-socios/consumos', icon: TrendingDown, active: currentPath === '/cava-socios/consumos' }",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/cava_socios/routes.py", "backend/modules/cava_socios/service.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_cava_socios.py"]},
+    {"type": "frontend_build", "directory": "frontend"}
+  ]
+}
