@@ -1,0 +1,23 @@
+{
+  "base_sha": "84938283f4ddf6b437f96447d322ba7c09273013",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:AGENT_GUARD_WORKTREE_CREATE_FAILED:.vscode/tasks.json:1:1: error: AGENT_GUARD: Scope superpuesto con worker-worker-canonical-python-runtime-20260826: tools/mirror_sync/mirror_sync_supervisor_entrypoint.sh <-> tools/mirror_sync/mirror_sync_supervisor_entrypoint.sh\n"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-27T00:36:40Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-load-backend-runtime-env-20260826-1824",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-08-27T00:58:15Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-27T00:36:39Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
