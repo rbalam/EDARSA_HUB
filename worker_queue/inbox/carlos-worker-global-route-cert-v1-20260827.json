@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "carlos-worker-global-route-cert-v1-20260827",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4ebf301a259040a6176d82d37cadb3d2e4675707",
+  "production_allowed": false,
+  "objective": "Certificar que Carlos Ruz puede utilizar el Worker universal de extremo a extremo sin bootstrap manual: RBAC, intake, worktree, Agent Guard, Python canonico, pytest aislado, commit, integracion y publicacion remota.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Carlos universal worker final certification"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/audits/carlos-worker-global-route-cert-v1-20260827.md",
+      "content": "# Carlos Ruz Universal Worker final certification\n\nCanary E2E posterior a la correccion definitiva del runtime.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_comandas_invalid_json_contract.py",
+        "backend/tests/test_universal_job_dispatcher_python_runtime.py",
+        "backend/tests/test_worker_canonical_python_runtime_contract.py",
+        "backend/tests/test_worker_requester_rbac_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es"
+}
