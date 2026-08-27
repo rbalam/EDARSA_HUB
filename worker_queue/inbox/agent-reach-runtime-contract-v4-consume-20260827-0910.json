@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "agent-reach-runtime-contract-v4-consume-20260827-0910",
+  "created_at_utc": "2026-08-27T15:10:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Consumir y cerrar al 100% el gate de Agent-Reach. Tomar como antecedente agent-reach-runtime-contract-v3-correct-version-20260826, validar que la diferencia yt-dlp 2026.07.04 (runtime/CLI) vs 2026.7.4 (paquete Python normalizado) es intencional, aplicar o conservar la prueba de regresion correcta y ejecutar git_diff_check, py_compile y pytest hasta PASS. Si aparece un defecto real, aislar la causa y corregirla sin debilitar assertions. Publicar resultado final en worker_queue/results con evidencia de checks, commit resultante y worktree limpio.",
+  "acceptance": [
+    "job consumido por el worker universal existente",
+    "git_diff_check PASS",
+    "py_compile PASS",
+    "pytest backend/tests/test_agent_reach_runtime_contract.py PASS",
+    "resultado publicado en worker_queue/results",
+    "worktree limpio al finalizar",
+    "sin cambios a Produccion"
+  ],
+  "constraints": [
+    "no sustituir ni modificar el worker universal salvo defecto propio demostrado",
+    "no tocar Edarsahub_Produccion",
+    "production_allowed=false",
+    "no image push",
+    "no deploy",
+    "no secretos",
+    "no conexion directa del runtime a backend SQL o Mongo",
+    "no debilitar pruebas para ocultar defectos"
+  ],
+  "production_allowed": false,
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_agent_reach_runtime_contract.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nINFRA = ROOT / 'infra' / 'agent-reach'\nWORKFLOW = ROOT / '.github' / 'workflows' / 'agent-reach-runtime-audit.yml'\nVENDORED = ROOT / 'third_party' / 'agent-reach'\n\ndef read(path: Path) -> str:\n    return path.read_text(encoding='utf-8')\n\ndef test_canonical_agent_reach_files_exist():\n    required = [INFRA/'Dockerfile', INFRA/'README.md', INFRA/'build.sh', INFRA/'healthcheck.sh', INFRA/'requirements.lock', INFRA/'versions.lock', INFRA/'yt-dlp.conf', WORKFLOW, VENDORED/'pyproject.toml']\n    missing = [str(p.relative_to(ROOT)) for p in required if not p.is_file()]\n    assert not missing, f'Missing canonical Agent-Reach files: {missing}'\n\ndef test_versions_are_pinned_and_runtime_isolated():\n    versions = read(INFRA/'versions.lock')\n    requirements = read(INFRA/'requirements.lock')\n    assert 'AGENT_REACH_VERSION=1.5.0' in versions\n    assert 'DENO_VERSION=2.9.4' in versions\n    assert 'YTDLP_VERSION=2026.07.04' in versions\n    assert 'yt-dlp==2026.7.4' in requirements\n    assert 'PIP_VERSION=26.1.2' in versions\n    dockerfile = read(INFRA/'Dockerfile')\n    assert 'USER edarsa-agent-reach' in dockerfile\n    assert 'VIRTUAL_ENV=/opt/edarsa/agent-reach/venv' in dockerfile\n    assert '/root/.agent-reach' not in dockerfile\n    assert 'ffmpeg' in dockerfile and 'ffprobe' in dockerfile\n\ndef test_healthcheck_enforces_non_root_and_pinned_tools():\n    health = read(INFRA/'healthcheck.sh')\n    assert '[ \"$(id -u)\" -ne 0 ]' in health\n    for command in ('agent-reach','python','yt-dlp','deno','ffmpeg','ffprobe','curl'):\n        assert f'require_command {command}' in health\n    assert 'AGENT_REACH_HEALTHCHECK=PASS' in health\n\ndef test_build_and_ci_do_not_publish_or_deploy():\n    build = read(INFRA/'build.sh')\n    workflow = read(WORKFLOW)\n    for text in (build, workflow):\n        assert 'docker push' not in text\n        assert 'kubectl' not in text\n        assert 'helm ' not in text\n        assert 'IMAGE_PUSHED=0' in text\n        assert 'DEPLOY_EXECUTED=0' in text\n    assert 'contents: read' in workflow\n\ndef test_runtime_has_no_direct_backend_or_sql_contract():\n    combined = read(INFRA/'Dockerfile') + '\\n' + read(INFRA/'build.sh')\n    assert 'backend/' not in combined\n    assert 'sqlcmd' not in combined.lower()\n    assert 'mongo' not in combined.lower()\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/tests/test_agent_reach_runtime_contract.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_agent_reach_runtime_contract.py"]}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
