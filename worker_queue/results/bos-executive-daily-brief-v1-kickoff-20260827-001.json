@@ -15,7 +15,7 @@
   "job_id": "bos-executive-daily-brief-v1-kickoff-20260827-001",
   "percent_complete": 80,
   "production_touched": false,
-  "published_at_utc": "2026-08-27T00:59:47Z",
+  "published_at_utc": "2026-08-27T01:01:45Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
