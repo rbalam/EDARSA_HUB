@@ -174,3 +174,60 @@ def test_all_internal_python_subprocesses_are_canonical():
 
     assert "/usr/bin/python3" not in text
     assert "/usr/local/bin/python3" not in text
+
+
+def test_pytest_loads_missing_backend_runtime_env(tmp_path, monkeypatch):
+    module = load_dispatcher()
+    calls = []
+
+    backend = tmp_path / "backend"
+    backend.mkdir()
+    (backend / ".env").write_text(
+        "EDARSAHUB_SQL_HOST=db.example\n"
+        "EDARSAHUB_SQL_PORT=1433\n"
+        "EDARSAHUB_SQL_DATABASE=EDARSAHUB\n"
+        "EDARSAHUB_SQL_USER=worker\n"
+        "EDARSAHUB_SQL_PASSWORD=value with spaces\n",
+        encoding="utf-8",
+    )
+
+    def fake_run(args, **kwargs):
+        calls.append((args, kwargs))
+        return SimpleNamespace(returncode=0, stdout="ok")
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "run", fake_run)
+    monkeypatch.delenv("EDARSAHUB_SQL_HOST", raising=False)
+    monkeypatch.delenv("EDARSAHUB_SQL_PORT", raising=False)
+    monkeypatch.delenv("EDARSAHUB_SQL_DATABASE", raising=False)
+    monkeypatch.delenv("EDARSAHUB_SQL_USER", raising=False)
+    monkeypatch.delenv("EDARSAHUB_SQL_PASSWORD", raising=False)
+
+    module.run_check(
+        tmp_path,
+        {"type": "pytest", "paths": ["backend/tests/test_example.py"]},
+    )
+
+    env_extra = calls[0][1]["env_extra"]
+    assert env_extra["PYTHONPATH"] == str(backend)
+    assert env_extra["EDARSAHUB_SQL_HOST"] == "db.example"
+    assert env_extra["EDARSAHUB_SQL_PORT"] == "1433"
+    assert env_extra["EDARSAHUB_SQL_DATABASE"] == "EDARSAHUB"
+    assert env_extra["EDARSAHUB_SQL_USER"] == "worker"
+    assert env_extra["EDARSAHUB_SQL_PASSWORD"] == "value with spaces"
+
+
+def test_backend_runtime_env_does_not_override_process_env(tmp_path, monkeypatch):
+    module = load_dispatcher()
+    backend = tmp_path / "backend"
+    backend.mkdir()
+    (backend / ".env").write_text(
+        "EDARSAHUB_SQL_HOST=file-host\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setenv("EDARSAHUB_SQL_HOST", "process-host")
+
+    loaded = module.load_backend_runtime_env()
+
+    assert "EDARSAHUB_SQL_HOST" not in loaded

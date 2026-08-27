@@ -53,6 +53,34 @@ def resolve_canonical_python() -> str:
 PYTHON_BIN = resolve_canonical_python()
 
 
+def load_backend_runtime_env() -> dict[str, str]:
+    """Load missing runtime variables from backend/.env without shell evaluation."""
+    env_file = ROOT / "backend" / ".env"
+    loaded: dict[str, str] = {}
+    if not env_file.is_file():
+        return loaded
+
+    for raw_line in env_file.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[len("export "):].lstrip()
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
+            continue
+        if key in os.environ:
+            continue
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+            value = value[1:-1]
+        loaded[key] = value
+    return loaded
+
+
 def now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -271,7 +299,7 @@ def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:
 
         cmd = [PYTHON_BIN, "-m", "pytest", "-q", *paths]
         cwd = backend
-        env_extra = {"PYTHONPATH": str(backend)}
+        env_extra = {**load_backend_runtime_env(), "PYTHONPATH": str(backend)}
     elif kind == "frontend_build":
         directory = safe_path(worktree, str(check.get("directory", "frontend")))
         cmd = ["yarn", "build"]
