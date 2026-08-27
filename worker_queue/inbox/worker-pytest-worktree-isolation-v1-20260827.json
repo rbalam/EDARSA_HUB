@@ -1,0 +1,65 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-pytest-worktree-isolation-v1-20260827",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "42068276c9c4431e97358df3a5d12682c5787153",
+  "production_allowed": false,
+  "objective": "Corregir definitivamente el executor pytest del Worker para ejecutar desde el backend del worktree, con PYTHONPATH del backend del worktree y paths normalizados, evitando que el paquete tests top-level sombree backend/tests.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Worker universal"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "    elif kind == \"pytest\":\n        paths = [str(p) for p in check.get(\"paths\") or []]\n        cmd = [PYTHON_BIN, \"-m\", \"pytest\", \"-q\", *paths]\n        cwd = worktree\n",
+      "new": "    elif kind == \"pytest\":\n        backend = worktree / \"backend\"\n        if not backend.is_dir():\n            raise RuntimeError(\"PYTEST_BACKEND_NOT_FOUND\")\n        paths = []\n        for raw_path in check.get(\"paths\") or []:\n            path = str(raw_path)\n            if path == \"backend\":\n                path = \".\"\n            elif path.startswith(\"backend/\"):\n                path = path[len(\"backend/\"):]\n            paths.append(path)\n        cmd = [PYTHON_BIN, \"-m\", \"pytest\", \"-q\", *paths]\n        cwd = backend\n        env_extra = {\"PYTHONPATH\": str(backend)}\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "    try:\n        result = run(cmd, cwd=cwd, timeout=MAX_SECONDS)\n",
+      "new": "    try:\n        result = run(\n            cmd,\n            cwd=cwd,\n            timeout=MAX_SECONDS,\n            env_extra=locals().get(\"env_extra\"),\n        )\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_universal_job_dispatcher_python_runtime.py",
+      "expected_count": 1,
+      "old": "    assert calls[0][0] == [\n        \"/canonical/python\",\n        \"-m\",\n        \"pytest\",\n        \"-q\",\n        \"backend/tests/test_example.py\",\n    ]\n",
+      "new": "    assert calls[0][0] == [\n        \"/canonical/python\",\n        \"-m\",\n        \"pytest\",\n        \"-q\",\n        \"tests/test_example.py\",\n    ]\n    assert calls[0][1][\"cwd\"] == tmp_path / \"backend\"\n    assert calls[0][1][\"env_extra\"] == {\n        \"PYTHONPATH\": str(tmp_path / \"backend\")\n    }\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_universal_job_dispatcher_python_runtime.py",
+      "expected_count": 1,
+      "old": "    monkeypatch.setattr(module, \"run\", fake_run)\n    monkeypatch.setattr(\n        module,\n        \"PYTHON_BIN\",\n        \"/canonical/python\",\n    )\n\n    result = module.run_check(\n        tmp_path,\n        {\n            \"type\": \"pytest\",",
+      "new": "    monkeypatch.setattr(module, \"run\", fake_run)\n    monkeypatch.setattr(\n        module,\n        \"PYTHON_BIN\",\n        \"/canonical/python\",\n    )\n    (tmp_path / \"backend\").mkdir()\n\n    result = module.run_check(\n        tmp_path,\n        {\n            \"type\": \"pytest\"," 
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_universal_job_dispatcher_python_runtime.py",
+      "expected_count": 1,
+      "old": "    assert (\n        'cmd = [PYTHON_BIN, \"-m\", '\n        '\"pytest\", \"-q\", *paths]'\n    ) in text\n",
+      "new": "    assert (\n        'cmd = [PYTHON_BIN, \"-m\", '\n        '\"pytest\", \"-q\", *paths]'\n    ) in text\n    assert 'cwd = backend' in text\n    assert 'env_extra = {\"PYTHONPATH\": str(backend)}' in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "backend/tests/test_universal_job_dispatcher_python_runtime.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es"
+}
