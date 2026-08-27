@@ -3,6 +3,8 @@
   "job_id": "agent-reach-runtime-contract-v4-consume-20260827-0910",
   "created_at_utc": "2026-08-27T15:10:00Z",
   "requested_by": "chatgpt",
+  "requeue_requested_at_utc": "2026-08-27T15:12:00Z",
+  "requeue_reason": "force consumption and publication through universal worker",
   "target_repo": "rbalam/EDARSA_HUB",
   "target_branch": "Edarsahub_Desarrollo",
   "objective": "Consumir y cerrar al 100% el gate de Agent-Reach. Tomar como antecedente agent-reach-runtime-contract-v3-correct-version-20260826, validar que la diferencia yt-dlp 2026.07.04 (runtime/CLI) vs 2026.7.4 (paquete Python normalizado) es intencional, aplicar o conservar la prueba de regresion correcta y ejecutar git_diff_check, py_compile y pytest hasta PASS. Si aparece un defecto real, aislar la causa y corregirla sin debilitar assertions. Publicar resultado final en worker_queue/results con evidencia de checks, commit resultante y worktree limpio.",
