@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "76806ea583fe0fc3be031b027c7a454ace1da8c3",
-  "generated_at_utc": "2026-08-27T17:29:44Z",
+  "development_sha": "6de112f9c9f6c9a4dfad0349b78019976b6556bd",
+  "generated_at_utc": "2026-08-27T17:34:32Z",
   "history": {
     "done_total_local": 5,
     "pending_total_local": 0,
@@ -11,19 +11,13 @@
   },
   "jobs": [
     {
-      "age_seconds": 3384,
-      "job_id": "CAVAS-BOS-V1-FUNDACION-01",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3255,
+      "age_seconds": 3542,
       "job_id": "carlos-worker-iscam-comandas-isjson-v6-20260827-a",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1874,
+      "age_seconds": 2162,
       "job_id": "worker-pytest-worktree-isolation-v1-20260827",
       "reason": null,
       "state": "RESULT_READY"
@@ -34,12 +28,12 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
   "runtime": {
     "generation": "20260827-universal-job-worker-sla-v2",
-    "last_cycle_utc": "2026-08-27T17:29:39Z",
-    "last_receive_utc": "2026-08-27T17:29:40Z",
+    "last_cycle_utc": "2026-08-27T17:34:28Z",
+    "last_receive_utc": "2026-08-27T17:34:29Z",
     "pid": "48954"
   },
   "schema": "edarsahub.worker-health.v3",
