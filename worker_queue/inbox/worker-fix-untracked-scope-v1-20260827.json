@@ -1,0 +1,48 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-fix-untracked-scope-v1-20260827",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "84938283f4ddf6b437f96447d322ba7c09273013",
+  "objective": "Corregir el dispatcher determinista para que archivos nuevos dentro de directorios nuevos se detecten por ruta de archivo exacta y no como directorio agregado. Esto evita falsos unexpected_files/expected_files_unchanged como el observado en docs/bos/executive_daily_brief_v1.md. Agregar regresion y no tocar Produccion.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "worker-runtime-and-bos-contract"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "staged_or_untracked = git(\"status\", \"--porcelain=v1\", cwd=worktree).stdout.splitlines()",
+      "new": "staged_or_untracked = git(\"status\", \"--porcelain=v1\", \"--untracked-files=all\", cwd=worktree).stdout.splitlines()",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_universal_job_dispatcher_untracked_scope.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nDISPATCHER = ROOT / 'tools/mirror_sync/universal_job_dispatcher.py'\n\n\ndef test_dispatcher_expands_untracked_directories_to_exact_files():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert '\"--porcelain=v1\", \"--untracked-files=all\"' in text\n    assert 'unexpected_files:' in text\n    assert 'expected_files_unchanged:' in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "backend/tests/test_universal_job_dispatcher_untracked_scope.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_universal_job_dispatcher_untracked_scope.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es"
+}
