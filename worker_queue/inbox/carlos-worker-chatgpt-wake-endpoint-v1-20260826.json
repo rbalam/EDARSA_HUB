@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "carlos-worker-chatgpt-wake-endpoint-v1-20260826",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "945feac70ce4e57afa985168599d46e7d28579aa",
+  "objective": "Permitir que un push de un nuevo job de ChatGPT a worker/requests despierte inmediatamente el Worker del runtime Preview sin ejecutar comandos arbitrarios y sin tocar Produccion. El endpoint solo acepta el SHA del HEAD real de worker/requests, verifica ese SHA contra origin/worker/requests y lanza un script fijo que ejecuta bridge, dispatcher, publisher y health con lock. Agregar workflow de GitHub Actions limitado a worker_queue/inbox/**.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "chatgpt-wake-endpoint-v1-20260826"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "tools/mirror_sync/trigger_universal_worker_now.sh",
+      "content": "#!/usr/bin/env bash\nset -euo pipefail\n\nROOT=\"${EDARSAHUB_ROOT:-/app}\"\nDIR=\"$ROOT/tools/mirror_sync\"\nSTATE=\"$ROOT/.git/universal-worker-queue\"\nLOCK=\"$STATE/trigger-now.lock\"\nmkdir -p \"$STATE\"\n\nif [ -x \"$ROOT/.venv/bin/python\" ]; then\n  PYTHON_BIN=\"$ROOT/.venv/bin/python\"\nelse\n  PYTHON_BIN=\"$(command -v python3 2>/dev/null || command -v python 2>/dev/null || true)\"\nfi\n\nif [ -z \"${PYTHON_BIN:-}\" ] || [ ! -x \"$PYTHON_BIN\" ]; then\n  echo \"ABORT=WORKER_PYTHON_NOT_EXECUTABLE\"\n  exit 4\nfi\n\nexec 9>\"$LOCK\"\nif command -v flock >/dev/null 2>&1; then\n  if ! flock -n 9; then\n    echo \"UNIVERSAL_WORKER_TRIGGER=BUSY\"\n    exit 0\n  fi\nfi\n\n\"$PYTHON_BIN\" \"$DIR/universal_job_bridge.py\" receive\n\nCOUNT=0\nwhile [ \"$COUNT\" -lt 25 ]; do\n  COUNT=$((COUNT + 1))\n  OUT=\"$(\"$PYTHON_BIN\" \"$DIR/universal_job_dispatcher.py\" 2>&1 || true)\"\n  printf '%s\\n' \"$OUT\"\n  \"$PYTHON_BIN\" \"$DIR/universal_job_result_publisher.py\" || true\n  if printf '%s\\n' \"$OUT\" | grep -q 'UNIVERSAL_DISPATCHER=NO_PENDING_JOBS'; then\n    break\n  fi\n  if printf '%s\\n' \"$OUT\" | grep -q 'UNIVERSAL_DISPATCHER=BUSY'; then\n    break\n  fi\ndone\n\n\"$PYTHON_BIN\" \"$DIR/runtime_health_publisher.py\" || true\necho \"UNIVERSAL_WORKER_TRIGGER=COMPLETE\"\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/server.py",
+      "old": "@app.get(\"/api/health\")\nasync def health_check():\n    \"\"\"\n    Endpoint de salud vital. La infraestructura (Docker/Kubernetes) hará ping aquí.\n    Si el servidor se bloquea, la infraestructura lo detectará y reiniciará el nodo.\n    \"\"\"\n    return {\"status\": \"operativo\", \"sistema\": \"EDARSA HUB\", \"version\": \"1.0\"}\n",
+      "new": "@app.get(\"/api/health\")\nasync def health_check():\n    \"\"\"\n    Endpoint de salud vital. La infraestructura (Docker/Kubernetes) hará ping aquí.\n    Si el servidor se bloquea, la infraestructura lo detectará y reiniciará el nodo.\n    \"\"\"\n    return {\"status\": \"operativo\", \"sistema\": \"EDARSA HUB\", \"version\": \"1.0\"}\n\n\n@app.post(\"/api/internal/worker/wake\")\nasync def wake_universal_worker(request: Request):\n    \"\"\"Despierta el Worker determinista sin aceptar comandos ni payload ejecutable.\n\n    El caller debe enviar X-Worker-Queue-Sha y ese SHA debe ser exactamente el\n    HEAD remoto actual de worker/requests. La autorizacion del trabajo real\n    permanece dentro de universal_job_bridge.py mediante RBAC SQL canonico.\n    \"\"\"\n    import re\n    import subprocess\n\n    requested_sha = (request.headers.get(\"X-Worker-Queue-Sha\") or \"\").strip().lower()\n    if not re.fullmatch(r\"[0-9a-f]{40}\", requested_sha):\n        raise HTTPException(status_code=400, detail=\"INVALID_QUEUE_SHA\")\n\n    root = Path(\"/app\")\n    fetch = subprocess.run(\n        [\"git\", \"fetch\", \"origin\", \"worker/requests\"],\n        cwd=str(root),\n        text=True,\n        stdout=subprocess.PIPE,\n        stderr=subprocess.STDOUT,\n        timeout=30,\n    )\n    if fetch.returncode != 0:\n        raise HTTPException(status_code=503, detail=\"QUEUE_FETCH_FAILED\")\n\n    head = subprocess.run(\n        [\"git\", \"rev-parse\", \"origin/worker/requests\"],\n        cwd=str(root),\n        text=True,\n        stdout=subprocess.PIPE,\n        stderr=subprocess.STDOUT,\n        timeout=10,\n    )\n    if head.returncode != 0:\n        raise HTTPException(status_code=503, detail=\"QUEUE_HEAD_UNAVAILABLE\")\n\n    actual_sha = head.stdout.strip().lower()\n    if actual_sha != requested_sha:\n        raise HTTPException(status_code=409, detail=\"QUEUE_SHA_MISMATCH\")\n\n    trigger = root / \"tools\" / \"mirror_sync\" / \"trigger_universal_worker_now.sh\"\n    if not trigger.is_file():\n        raise HTTPException(status_code=503, detail=\"WORKER_TRIGGER_NOT_INSTALLED\")\n\n    log_dir = root / \".git\" / \"universal-worker-queue\" / \"runtime\"\n    log_dir.mkdir(parents=True, exist_ok=True)\n    log_path = log_dir / \"wake-trigger.log\"\n    log_handle = open(log_path, \"ab\", buffering=0)\n    try:\n        subprocess.Popen(\n            [\"bash\", str(trigger)],\n            cwd=str(root),\n            stdout=log_handle,\n            stderr=subprocess.STDOUT,\n            start_new_session=True,\n        )\n    finally:\n        log_handle.close()\n\n    return {\"accepted\": True, \"queue_sha\": actual_sha, \"production_allowed\": False}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": ".github/workflows/worker-queue-wake.yml",
+      "content": "name: Worker Queue Wake\n\non:\n  push:\n    branches:\n      - worker/requests\n    paths:\n      - 'worker_queue/inbox/**'\n\npermissions:\n  contents: read\n\nconcurrency:\n  group: edarsahub-worker-wake\n  cancel-in-progress: false\n\njobs:\n  wake-preview-worker:\n    runs-on: ubuntu-latest\n    timeout-minutes: 2\n    steps:\n      - name: Wake deterministic EDARSAHUB worker\n        env:\n          QUEUE_SHA: ${{ github.sha }}\n          WAKE_URL: https://erp-crm-enterprise-1.preview.emergentagent.com/api/internal/worker/wake\n        run: |\n          curl --fail-with-body --silent --show-error \\\n            --retry 3 --retry-delay 2 \\\n            --connect-timeout 10 --max-time 30 \\\n            -X POST \\\n            -H \"X-Worker-Queue-Sha: ${QUEUE_SHA}\" \\\n            \"${WAKE_URL}\"\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/server.py"]}
+  ],
+  "human_summary_language": "es"
+}
