@@ -1,0 +1,28 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-control-plane-runtime-cert-v1-20260827",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "834abb21030dd2963465efeb006f924ba676bef6",
+  "objective": "Certificar con el worker determinista que el nuevo control plane y el universal worker estan realmente vivos en runtime, no solo presentes en codigo. El gate debe comprobar heartbeat fresco, PID vivo, generacion runtime actual, status fresco del control plane, ausencia de Produccion y contratos estaticos de supervision. Si el runtime sigue stale, bloquear sin integrar ni falsear PASS.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "cxp-decision-pago"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_control_plane_runtime_cert.py",
+      "content": "import json\nimport os\nimport re\nimport time\nfrom datetime import datetime\nfrom pathlib import Path\n\nROOT = Path('/app')\nRUNTIME = ROOT / '.git' / 'universal-worker-queue' / 'runtime'\nCONTROL_STATUS = RUNTIME / 'control_plane_status.json'\nWORKER_SCRIPT = ROOT / 'tools' / 'mirror_sync' / 'universal_job_worker.sh'\nMIRROR_SCRIPT = ROOT / 'tools' / 'mirror_sync' / 'mirror_sync_worker.sh'\nCONTROL = ROOT / 'tools' / 'mirror_sync' / 'worker_control_plane.py'\n\n\ndef _age_seconds(value: str) -> float:\n    dt = datetime.fromisoformat(value.replace('Z', '+00:00'))\n    return max(0.0, time.time() - dt.timestamp())\n\n\ndef _pid_alive(pid: int) -> bool:\n    try:\n        os.kill(pid, 0)\n        return True\n    except OSError:\n        return False\n\n\ndef test_runtime_worker_heartbeat_is_fresh_and_pid_alive():\n    receive = (RUNTIME / 'last_receive_utc').read_text(encoding='utf-8').strip()\n    age = _age_seconds(receive)\n    assert age <= 120, f'HEARTBEAT_STALE:{age:.1f}s:{receive}'\n    pid = int((RUNTIME / 'pid').read_text(encoding='utf-8').strip())\n    assert _pid_alive(pid), f'PID_DEAD:{pid}'\n\n\ndef test_runtime_generation_matches_current_worker_script():\n    script = WORKER_SCRIPT.read_text(encoding='utf-8')\n    match = re.search(r'^RUNTIME_GENERATION=\\\"([^\\\"]+)\\\"', script, re.MULTILINE)\n    assert match, 'RUNTIME_GENERATION_NOT_FOUND_IN_SCRIPT'\n    actual = (RUNTIME / 'generation').read_text(encoding='utf-8').strip()\n    assert actual == match.group(1), f'GENERATION_STALE:expected={match.group(1)}:actual={actual}'\n\n\ndef test_control_plane_runtime_status_is_fresh_and_safe():\n    assert CONTROL_STATUS.is_file(), 'CONTROL_PLANE_STATUS_MISSING'\n    payload = json.loads(CONTROL_STATUS.read_text(encoding='utf-8'))\n    assert payload.get('schema') == 'edarsahub.worker-control-plane.v1'\n    assert payload.get('production_touched') is False\n    age = _age_seconds(payload['at_utc'])\n    assert age <= 120, f'CONTROL_PLANE_STALE:{age:.1f}s:{payload[\"at_utc\"]}'\n    runtime = payload.get('runtime') or {}\n    assert runtime.get('pid_alive') is True\n    assert runtime.get('runtime_repair_needed') is False\n\n\ndef test_supervision_contract_is_installed():\n    mirror = MIRROR_SCRIPT.read_text(encoding='utf-8')\n    control = CONTROL.read_text(encoding='utf-8')\n    assert 'start_control_plane' in mirror\n    assert 'ensure_control_plane' in mirror\n    assert 'ensure_universal_worker' in mirror\n    assert 'HEARTBEAT_STALE' in control\n    assert 'PID_DEAD' in control\n    assert 'AGENT_GUARD_ORPHAN_QUARANTINED' in control\n    assert 'STALE_PROCESSING_REQUEUED' in control\n    assert 'Edarsahub_Produccion' not in control\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/tests/test_worker_control_plane_runtime_cert.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_worker_control_plane_contract.py", "backend/tests/test_worker_control_plane_runtime_cert.py"]}
+  ],
+  "human_summary_language": "es"
+}
