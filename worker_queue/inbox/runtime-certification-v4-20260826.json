@@ -1,0 +1,26 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "runtime-certification-v4-20260826",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "2ee54326e409a9dbb6765ec900bc8eeb7cdb17fb",
+  "objective": "Certificar el runtime actual del Worker universal: consumo automatico, RBAC SQL canonico, intake desacoplado, ejecucion determinista, publicacion de resultado, health fresco y convergencia Edarsahub_Desarrollo/mirror sin tocar Produccion.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "runtime-certification-v4"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/audits/runtime-certification-v4-20260826.md",
+      "content": "# Runtime certification v4\n\nRequester: ricardo@edarsa.com.mx\n\nCanario de certificacion operacional del Worker universal sobre HEAD actual. Debe demostrar consumo automatico, ejecucion determinista, resultado remoto, health fresco y convergencia mirror. Produccion no tocada.\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
