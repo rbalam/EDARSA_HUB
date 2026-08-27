@@ -1,0 +1,65 @@
+name: Worker Runtime Recovery Probe
+
+on:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - '.github/workflows/worker-runtime-recovery-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: edarsahub-worker-runtime-recovery
+  cancel-in-progress: false
+
+jobs:
+  probe-and-wake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      HUB_URL: https://erp-crm-enterprise-1.preview.emergentagent.com
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve worker queue head
+        id: queue
+        shell: bash
+        run: |
+          set -euo pipefail
+          QUEUE_SHA="$(git ls-remote origin refs/heads/worker/requests | awk '{print $1}')"
+          test "${#QUEUE_SHA}" -eq 40
+          echo "queue_sha=$QUEUE_SHA" >> "$GITHUB_OUTPUT"
+          echo "QUEUE_SHA=$QUEUE_SHA"
+
+      - name: Probe Preview health
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 --max-time 30 \
+            "$HUB_URL/api/health"
+
+      - name: Wake universal worker if endpoint is installed
+        shell: bash
+        env:
+          QUEUE_SHA: ${{ steps.queue.outputs.queue_sha }}
+        run: |
+          set -euo pipefail
+          HTTP_CODE="$(curl --silent --show-error \
+            --connect-timeout 10 --max-time 30 \
+            -o /tmp/wake-body.txt -w '%{http_code}' \
+            -X POST \
+            -H "X-Worker-Queue-Sha: ${QUEUE_SHA}" \
+            "$HUB_URL/api/internal/worker/wake" || true)"
+          cat /tmp/wake-body.txt || true
+          echo "WAKE_HTTP_CODE=$HTTP_CODE"
+          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "202" ]; then
+            echo "WORKER_WAKE_ACCEPTED=1"
+            exit 0
+          fi
+          echo "WORKER_WAKE_ACCEPTED=0"
+          exit 12
