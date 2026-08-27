@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "d0520776f4f88be02e82a00a4af403f8e397a21e",
-  "generated_at_utc": "2026-08-27T22:56:21Z",
+  "generated_at_utc": "2026-08-27T22:58:25Z",
   "history": {
     "done_total_local": 5,
     "pending_total_local": 0,
@@ -11,13 +11,13 @@
   },
   "jobs": [
     {
-      "age_seconds": 3298,
+      "age_seconds": 3422,
       "job_id": "worker-fix-pytest-runtime-env-v1-20260827",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 281,
+      "age_seconds": 405,
       "job_id": "worker-readonly-sql-support-v5-20260827",
       "reason": null,
       "state": "RESULT_READY"
@@ -32,8 +32,8 @@
   "queue_running": 0,
   "runtime": {
     "generation": "20260827-universal-job-worker-sla-v2",
-    "last_cycle_utc": "2026-08-27T22:56:15Z",
-    "last_receive_utc": "2026-08-27T22:56:16Z",
+    "last_cycle_utc": "2026-08-27T22:58:25Z",
+    "last_receive_utc": "2026-08-27T22:58:15Z",
     "pid": "3628"
   },
   "schema": "edarsahub.worker-health.v3",
