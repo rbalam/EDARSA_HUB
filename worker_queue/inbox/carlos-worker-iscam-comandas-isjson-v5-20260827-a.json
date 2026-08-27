@@ -1,0 +1,35 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "carlos-worker-iscam-comandas-isjson-v5-20260827-a",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "834abb21030dd2963465efeb006f924ba676bef6",
+  "objective": "Corregir exclusivamente Reportes ISCAM > Comandas para que valores historicos invalidos en dbo.Sync_Sales.items no hagan fallar OPENJSON. Preservar la logica, columnas, fuente y contratos actuales, usando CASE WHEN ISJSON(s.items) = 1 THEN s.items ELSE N'[]' END antes de OPENJSON. Agregar una prueba de regresion determinista especifica para JSON invalido. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "iscam-comandas-isjson-v5-20260827-a"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "_OPENJSON_ITEMS = (\n    \"CROSS APPLY OPENJSON(s.items) WITH (\"\n    \"  prod_id NVARCHAR(60) '$.id',\"\n    \"  prod_name NVARCHAR(250) '$.name',\"\n    \"  cantidad DECIMAL(18,3) '$.quantity',\"\n    \"  precio DECIMAL(18,4) '$.price',\"\n    \"  importe DECIMAL(18,4) '$.total'\"\n    \") j\"\n)",
+      "new": "_OPENJSON_ITEMS = (\n    \"CROSS APPLY OPENJSON(CASE WHEN ISJSON(s.items) = 1 THEN s.items ELSE N'[]' END) WITH (\"\n    \"  prod_id NVARCHAR(60) '$.id',\"\n    \"  prod_name NVARCHAR(250) '$.name',\"\n    \"  cantidad DECIMAL(18,3) '$.quantity',\"\n    \"  precio DECIMAL(18,4) '$.price',\"\n    \"  importe DECIMAL(18,4) '$.total'\"\n    \") j\"\n)",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_openjson_invalid_json_guard.py",
+      "content": "from pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[2]\nROUTES = ROOT / \"backend\" / \"modules\" / \"inteligencia_comercial\" / \"iscam_routes.py\"\n\n\ndef source():\n    return ROUTES.read_text(encoding=\"utf-8\")\n\n\ndef test_iscam_openjson_guards_invalid_sync_sales_items_json():\n    text = source()\n    guarded = \"CROSS APPLY OPENJSON(CASE WHEN ISJSON(s.items) = 1 THEN s.items ELSE N'[]' END) WITH (\"\n    assert guarded in text\n    assert \"CROSS APPLY OPENJSON(s.items) WITH (\" not in text\n\n\ndef test_iscam_openjson_keeps_existing_comandas_schema_and_source_contract():\n    text = source()\n    assert \"prod_id NVARCHAR(60) '$.id'\" in text\n    assert \"prod_name NVARCHAR(250) '$.name'\" in text\n    assert \"@iscam_router.get(\\\"/comandas\\\")\" in text\n    assert \"FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}\" in text\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/inteligencia_comercial/iscam_routes.py", "backend/tests/test_iscam_openjson_invalid_json_guard.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_iscam_openjson_invalid_json_guard.py"]}
+  ],
+  "human_summary_language": "es"
+}
