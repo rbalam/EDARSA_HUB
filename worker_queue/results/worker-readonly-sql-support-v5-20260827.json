@@ -1,0 +1,23 @@
+{
+  "base_sha": "d0520776f4f88be02e82a00a4af403f8e397a21e",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:REPLACE_TARGET_MISSING:tools/mirror_sync/sql_readonly_audit.py"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-27T22:51:40Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-readonly-sql-support-v5-20260827",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-08-28T07:38:04Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-27T22:51:28Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
