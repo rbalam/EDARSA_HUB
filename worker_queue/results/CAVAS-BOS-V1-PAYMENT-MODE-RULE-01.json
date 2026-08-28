@@ -1,0 +1,28 @@
+{
+  "base_sha": "e66f16159f0c226a80b57920776e4402671e4cb1",
+  "blockers": [
+    "development_push_failed:/usr/bin/gh auth git-credential get: 1: /usr/bin/gh: not found\nfatal: could not read Username for 'https://github.com/rbalam/EDARSA_HUB.git': terminal prompts disabled\n"
+  ],
+  "candidate_sha": "6dcbdbbea6a30fb9d313759f849296acc639cd3e",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-28T05:32:36Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "docs/EKS/consolidado/EKS_CAVAS_002_CONTRATOS_COBROS_Y_ACTIVACION.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-BOS-V1-PAYMENT-MODE-RULE-01",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-08-28T06:01:43Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-28T05:32:27Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
