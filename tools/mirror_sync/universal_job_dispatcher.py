@@ -114,6 +114,18 @@ def git(*args: str, cwd: Path | None = None, check: bool = True):
     return result
 
 
+def resolve_repository_credential_helper() -> str:
+    result = git(
+        "config",
+        "--local",
+        "--get",
+        "credential.helper",
+        cwd=ROOT,
+        check=False,
+    )
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+
 def ensure_dirs() -> None:
     for path in (PENDING, PROCESSING, DONE, REJECTED, RESULTS, WORKTREES):
         path.mkdir(parents=True, exist_ok=True)
@@ -302,6 +314,14 @@ def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:
         env_extra = {**load_backend_runtime_env(), "PYTHONPATH": str(backend)}
     elif kind == "frontend_build":
         directory = safe_path(worktree, str(check.get("directory", "frontend")))
+        canonical_node_modules = ROOT / "frontend" / "node_modules"
+        canonical_bin = canonical_node_modules / ".bin"
+        env_extra = {}
+        if canonical_node_modules.is_dir():
+            env_extra["NODE_PATH"] = str(canonical_node_modules)
+        if canonical_bin.is_dir():
+            current_path = os.environ.get("PATH", "")
+            env_extra["PATH"] = f"{canonical_bin}:{current_path}" if current_path else str(canonical_bin)
         cmd = ["yarn", "build"]
         cwd = directory
     else:
@@ -397,8 +417,20 @@ def integrate(head: str, base_sha: str) -> tuple[bool, str]:
                 "repository_artifact_guard_failed:"
                 + check.stdout[-1000:]
             )
+    credential_helper = resolve_repository_credential_helper()
+    if not credential_helper:
+        return False, "development_push_credential_helper_missing"
     push = run(
-        ["git", "push", REMOTE, f"{head}:refs/heads/{DEV_BRANCH}"],
+        [
+            "git",
+            "-c",
+            "credential.helper=",
+            "-c",
+            f"credential.helper={credential_helper}",
+            "push",
+            REMOTE,
+            f"{head}:refs/heads/{DEV_BRANCH}",
+        ],
         cwd=ROOT,
         env_extra={"EDARSA_ALLOW_PUSH": "1"},
     )

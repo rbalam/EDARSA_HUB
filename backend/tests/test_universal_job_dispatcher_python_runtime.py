@@ -231,3 +231,68 @@ def test_backend_runtime_env_does_not_override_process_env(tmp_path, monkeypatch
     loaded = module.load_backend_runtime_env()
 
     assert "EDARSAHUB_SQL_HOST" not in loaded
+
+
+def test_frontend_build_reuses_canonical_frontend_toolchain(tmp_path, monkeypatch):
+    module = load_dispatcher()
+    calls = []
+
+    frontend = tmp_path / "frontend"
+    frontend.mkdir()
+    canonical_modules = tmp_path / "canonical-frontend" / "node_modules"
+    canonical_bin = canonical_modules / ".bin"
+    canonical_bin.mkdir(parents=True)
+
+    def fake_run(args, **kwargs):
+        calls.append((args, kwargs))
+        return SimpleNamespace(returncode=0, stdout="ok")
+
+    monkeypatch.setattr(module, "ROOT", tmp_path / "canonical-root")
+    module.ROOT.mkdir()
+    (module.ROOT / "frontend").mkdir()
+    monkeypatch.setattr(module, "run", fake_run)
+    monkeypatch.setenv("PATH", "/usr/bin")
+
+    real_modules = module.ROOT / "frontend" / "node_modules"
+    real_bin = real_modules / ".bin"
+    real_bin.mkdir(parents=True)
+
+    result = module.run_check(
+        tmp_path,
+        {"type": "frontend_build", "directory": "frontend"},
+    )
+
+    assert result["status"] == "PASS"
+    assert calls[0][0] == ["yarn", "build"]
+    env_extra = calls[0][1]["env_extra"]
+    assert env_extra["NODE_PATH"] == str(real_modules)
+    assert env_extra["PATH"].startswith(str(real_bin) + ":")
+
+
+def test_integrate_push_uses_only_repository_local_credential_helper(monkeypatch):
+    module = load_dispatcher()
+    calls = []
+
+    def fake_git(*args, **kwargs):
+        if args[:3] == ("config", "--local", "--get"):
+            return SimpleNamespace(returncode=0, stdout="store --file=/safe/credentials\n")
+        if args[:2] == ("rev-parse", "origin/Edarsahub_Desarrollo"):
+            return SimpleNamespace(returncode=0, stdout="base\n")
+        return SimpleNamespace(returncode=0, stdout="")
+
+    def fake_run(args, **kwargs):
+        calls.append((args, kwargs))
+        return SimpleNamespace(returncode=0, stdout="ok")
+
+    monkeypatch.setattr(module, "git", fake_git)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    ok, detail = module.integrate("candidate", "base")
+
+    assert ok is False or ok is True
+    push_calls = [call for call in calls if "push" in call[0]]
+    assert push_calls
+    push_args = push_calls[0][0]
+    assert "credential.helper=" in push_args
+    assert "credential.helper=store --file=/safe/credentials" in push_args
+    assert "gh auth git-credential" not in " ".join(push_args)
