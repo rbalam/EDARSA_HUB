@@ -1,0 +1,28 @@
+{
+  "base_sha": "2ee54326e409a9dbb6765ec900bc8eeb7cdb17fb",
+  "blockers": [
+    "unexpected_files:docs/worker/",
+    "expected_files_unchanged:docs/worker/SLA_RUNTIME_V2.md"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-27T03:55:29Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "docs/worker/"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-sla-runtime-activation-20260827",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-08-28T07:38:36Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-27T03:55:27Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
