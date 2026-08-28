@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "eb015e01699a67d61c0a524d575e99f787924e1e",
-  "generated_at_utc": "2026-08-28T06:06:57Z",
+  "generated_at_utc": "2026-08-28T06:16:40Z",
   "history": {
     "done_total_local": 5,
     "pending_total_local": 0,
@@ -11,7 +11,7 @@
   },
   "jobs": [
     {
-      "age_seconds": 2060,
+      "age_seconds": 2643,
       "job_id": "CAVAS-BOS-V1-PAYMENT-MODE-RULE-01",
       "reason": null,
       "state": "RESULT_READY"
@@ -26,8 +26,8 @@
   "queue_running": 0,
   "runtime": {
     "generation": "20260827-universal-job-worker-sla-v2",
-    "last_cycle_utc": "2026-08-28T06:06:56Z",
-    "last_receive_utc": "2026-08-28T06:06:46Z",
+    "last_cycle_utc": "2026-08-28T06:16:30Z",
+    "last_receive_utc": "2026-08-28T06:16:31Z",
     "pid": "1955"
   },
   "schema": "edarsahub.worker-health.v3",
