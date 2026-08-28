@@ -1,0 +1,50 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "000-worker-agent-guard-stale-claim-selfheal-v1-20260827",
+  "created_at_utc": "2026-08-28T01:19:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Retirar de forma segura claims obsoletos de Agent Guard que pertenecen a jobs terminales del worker y reconstruir el gate de Agent-Reach. Endurecer universal_job_dispatcher para que, cuando worktree-create falle exclusivamente por Scope superpuesto con un agent_id worker-*, verifique primero evidencia terminal local del job bloqueador; solo entonces descubra mediante --help el subcomando oficial de liberacion disponible en agent_guard.py, lo ejecute de forma acotada al agent_id/task_id bloqueador y reintente worktree-create una sola vez. Nunca liberar claims sin evidencia terminal. No tocar Produccion.",
+  "acceptance": [
+    "dispatcher compila",
+    "la liberacion solo aplica a claims worker-* con resultado terminal local",
+    "no se manipulan archivos internos de Agent Guard directamente",
+    "worktree-create se reintenta como maximo una vez tras liberacion oficial exitosa",
+    "tests del dispatcher PASS",
+    "resultado publicado",
+    "production_touched=false"
+  ],
+  "constraints": [
+    "no borrar manualmente archivos bajo .git/agent-guard",
+    "usar exclusivamente CLI oficial agent_guard.py para liberar",
+    "fail closed si no existe subcomando oficial compatible",
+    "no tocar Edarsahub_Produccion",
+    "no force push",
+    "no secretos"
+  ],
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "def prepare_worktree(\n    job_id: str,\n    base_sha: str,\n    allowed_paths: list[str],\n) -> tuple[Path, str]:",
+      "new": "def _terminal_worker_job_exists(job_id: str) -> bool:\n    candidates = [\n        RESULTS / f\"{job_id}.json\",\n        DONE / f\"{job_id}.json\",\n        REJECTED / f\"{job_id}.json\",\n    ]\n    return any(path.is_file() for path in candidates)\n\n\ndef _release_terminal_agent_guard_claim(guard: Path, output: str) -> bool:\n    matches = re.findall(r\"Scope superpuesto con (worker-[A-Za-z0-9._-]+):\", output)\n    if not matches:\n        return False\n\n    help_result = run([PYTHON_BIN, str(guard), \"--help\"], cwd=ROOT)\n    if help_result.returncode != 0:\n        return False\n\n    for agent_id in dict.fromkeys(matches):\n        job_id = agent_id[len(\"worker-\"):]\n        if not _terminal_worker_job_exists(job_id):\n            continue\n\n        for subcommand in (\"release\", \"unregister\", \"worktree-remove\"):\n            if not re.search(rf\"(?m)^\\s*{re.escape(subcommand)}(?:\\s|$)\", help_result.stdout):\n                continue\n            subhelp = run([PYTHON_BIN, str(guard), subcommand, \"--help\"], cwd=ROOT)\n            if subhelp.returncode != 0:\n                continue\n            command = [PYTHON_BIN, str(guard), subcommand]\n            if \"--agent-id\" in subhelp.stdout:\n                command.extend([\"--agent-id\", agent_id])\n            if \"--task-id\" in subhelp.stdout:\n                command.extend([\"--task-id\", job_id])\n            if len(command) == 3:\n                continue\n            released = run(command, cwd=ROOT)\n            if released.returncode == 0:\n                return True\n    return False\n\n\ndef prepare_worktree(\n    job_id: str,\n    base_sha: str,\n    allowed_paths: list[str],\n) -> tuple[Path, str]:"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "    created = run(\n        command,\n        cwd=ROOT,\n    )\n    if created.returncode != 0:\n        raise RuntimeError(\n            f\"AGENT_GUARD_WORKTREE_CREATE_FAILED:{created.stdout[-2000:]}\"\n        )",
+      "new": "    created = run(\n        command,\n        cwd=ROOT,\n    )\n    if created.returncode != 0 and _release_terminal_agent_guard_claim(guard, created.stdout):\n        created = run(\n            command,\n            cwd=ROOT,\n        )\n    if created.returncode != 0:\n        raise RuntimeError(\n            f\"AGENT_GUARD_WORKTREE_CREATE_FAILED:{created.stdout[-2000:]}\"\n        )"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["tools/mirror_sync/universal_job_dispatcher.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_universal_job_dispatcher_python_runtime.py", "backend/tests/test_worker_control_plane_contract.py"]}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
