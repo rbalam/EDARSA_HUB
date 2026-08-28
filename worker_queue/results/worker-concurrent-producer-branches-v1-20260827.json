@@ -17,7 +17,7 @@
   "job_id": "worker-concurrent-producer-branches-v1-20260827",
   "percent_complete": 80,
   "production_touched": false,
-  "published_at_utc": "2026-08-27T23:15:57Z",
+  "published_at_utc": "2026-08-28T06:47:29Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
