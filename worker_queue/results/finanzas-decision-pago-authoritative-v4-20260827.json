@@ -11,7 +11,7 @@
   "job_id": "finanzas-decision-pago-authoritative-v4-20260827",
   "percent_complete": 0,
   "production_touched": false,
-  "published_at_utc": "2026-08-28T06:36:39Z",
+  "published_at_utc": "2026-08-28T07:12:56Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
