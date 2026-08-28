@@ -1,0 +1,28 @@
+{
+  "base_sha": "2ee54326e409a9dbb6765ec900bc8eeb7cdb17fb",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-27T03:46:21Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_agent_guard_cli_materialize_20260826.py",
+    "docs/audits/agent_guard_cli_help_20260826.txt"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-agent-guard-cli-materialize-20260826-2125",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-08-28T06:45:58Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-27T03:46:16Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
