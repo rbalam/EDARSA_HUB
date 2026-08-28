@@ -1,0 +1,19 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-BOS-V1-PAYMENT-MODE-RULE-01",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Documentar como regla vinculante de Cavas BOS V1.0 la exclusividad de fuente de cobro: en modo integrado con POS/ERP/comandero externo Cavas no acepta ni registra cobros manuales; solo refleja obligaciones, saldos y pagos sincronizados/canonicos. En modo standalone sin sistema transaccional integrado Cavas puede habilitar registro de cobros limitado y auditado. Nunca puede haber dos fuentes simultaneas de verdad para el mismo pago. No implementar proveedor nuevo ni duplicar infraestructura transversal en este job.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/EKS/consolidado/EKS_CAVAS_002_CONTRATOS_COBROS_Y_ACTIVACION.md",
+      "content": "# EKS CAVAS 002 - Contratos, cobros y activacion\n\n## Estado\nRegla vinculante para Cavas BOS V1.0.\n\n## Principio\nCavas gobierna contrato, obligacion, saldo contractual, estado de cuenta y reglas de activacion. La fuente financiera del cobro depende del modo operativo, pero solo una fuente puede ser autoritativa para cada pago.\n\n## Modo integrado\nCuando la Unidad/cliente dispone de POS, ERP, comandero u otra plataforma transaccional homologada e integrada con EDARSAHUB:\n\n- Cavas NO captura pagos manuales.\n- Cavas NO confirma pagos por declaracion de usuario.\n- Anticipos, parcialidades, liquidaciones, renovaciones y otros cobros se realizan en el sistema transaccional integrado.\n- EDARSAHUB recibe/sincroniza la transaccion por el mecanismo canonico.\n- Cavas aplica la transaccion al contrato correspondiente y recalcula saldo/estado/umbral de activacion.\n- El bloqueo debe ser backend-authoritative; ocultar un boton en frontend no es suficiente.\n\n## Modo standalone\nSolo cuando Portal Cavas opera sin POS/ERP/comandero transaccional integrado puede habilitarse un registro de cobro propio limitado a Cavas. Debe conservar importe, moneda, medio, referencia, comprobante/evidencia, fecha operativa, usuario, contrato, estado y auditoria.\n\n## Exclusividad de fuente\nNunca pueden estar habilitados simultaneamente el cobro manual Cavas y un proveedor transaccional externo autoritativo para la misma operacion. La configuracion efectiva debe resolverse desde infraestructura/configuracion canonica existente; no hardcodear Soft, MPRO, Odoo, Toast u otro proveedor en la logica de dominio.\n\n## Contrato y activacion\nContrato celebrado, cobranza, asignacion fisica y beneficios Cavas son estados independientes. Un anticipo o pago parcial puede cerrar comercialmente la venta cuando la politica lo permita, pero los beneficios se activan solo al alcanzar el umbral configurable y cumplir requisitos contractuales/documentales. Las excepciones requieren autorizacion trazable y nunca alteran el porcentaje real pagado.\n\n## Evidencia minima de pagos integrados\nCada pago aplicado debe poder trazar: contrato, sistema origen, unidad, ticket/transaccion, fecha operativa, importe, moneda, medio, estado y referencia canonica. Migraciones historicas o conciliaciones excepcionales deben quedar identificadas como tales y auditadas.\n\n## Maximas BOS aplicables\nNo Mongo nuevo. No LIVE fuera de sincronizacion. No hardcodes funcionales. No fuentes financieras paralelas. No duplicar conexiones/helpers/proveedores. Backend authoritative. Reutilizar filtros, unidades, fechas operativas, zonas horarias, monedas, RBAC, auditoria y conectividad canonica existente.\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
