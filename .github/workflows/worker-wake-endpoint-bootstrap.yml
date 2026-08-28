@@ -1,0 +1,193 @@
+name: Worker Wake Endpoint Bootstrap
+
+on:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - '.github/workflows/worker-wake-endpoint-bootstrap.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: edarsahub-worker-wake-endpoint-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  install-endpoint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install guarded worker wake endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('backend/server.py')
+          text = path.read_text(encoding='utf-8')
+          route = '@app.post("/api/internal/worker/wake")'
+          if route in text:
+              print('WORKER_WAKE_ENDPOINT_ALREADY_PRESENT=1')
+              raise SystemExit(0)
+
+          marker = '# ==========================================\n# ENDPOINTS FALLBACK TABLERO EJECUTIVO (EDARSA HUB)'
+          if marker not in text:
+              raise SystemExit('BOOTSTRAP_MARKER_NOT_FOUND')
+
+          block = r'''
+# ==========================================
+# CONTROL INTERNO DEL WORKER UNIVERSAL
+# Recovery remoto determinista: stale-only, sin shell arbitrario.
+# ==========================================
+@app.post("/api/internal/worker/wake")
+async def wake_universal_worker(request: Request):
+    import fcntl
+    import re
+    import subprocess
+    import time as _time
+    from datetime import datetime as _dt, timezone as _tz
+    from pathlib import Path as _Path
+
+    supplied_sha = (request.headers.get("X-Worker-Queue-Sha") or "").strip().lower()
+    if not re.fullmatch(r"[0-9a-f]{40}", supplied_sha):
+        raise HTTPException(status_code=400, detail="INVALID_WORKER_QUEUE_SHA")
+
+    try:
+        remote = subprocess.run(
+            ["git", "ls-remote", "origin", "refs/heads/worker/requests"],
+            cwd=str(ROOT_DIR.parent),
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=20,
+            check=False,
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+        )
+    except Exception:
+        raise HTTPException(status_code=503, detail="WORKER_QUEUE_SHA_UNAVAILABLE")
+
+    if remote.returncode != 0 or not remote.stdout.strip():
+        raise HTTPException(status_code=503, detail="WORKER_QUEUE_SHA_UNAVAILABLE")
+
+    expected_sha = remote.stdout.split()[0].strip().lower()
+    if supplied_sha != expected_sha:
+        raise HTTPException(status_code=403, detail="WORKER_QUEUE_SHA_MISMATCH")
+
+    runtime_dir = ROOT_DIR.parent / ".git" / "universal-worker-queue" / "runtime"
+    heartbeat = runtime_dir / "last_receive_utc"
+    heartbeat_age = None
+    try:
+        raw = heartbeat.read_text(encoding="utf-8").strip().replace("Z", "+00:00")
+        heartbeat_age = max(0.0, _time.time() - _dt.fromisoformat(raw).timestamp())
+    except Exception:
+        heartbeat_age = None
+
+    # Fail-safe: nunca reiniciar un Worker sano desde el endpoint remoto.
+    if heartbeat_age is not None and heartbeat_age <= 90:
+        return {
+            "status": "already_healthy",
+            "worker_stale": False,
+            "heartbeat_age_seconds": round(heartbeat_age, 3),
+            "production_touched": False,
+        }
+
+    lock_path = _Path("/tmp/edarsahub-worker-wake.lock")
+    cooldown_path = _Path("/tmp/edarsahub-worker-wake.last")
+    lock_path.touch(exist_ok=True)
+    with lock_path.open("r+") as lock:
+        try:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise HTTPException(status_code=409, detail="WORKER_WAKE_ALREADY_IN_PROGRESS")
+
+        now_ts = _time.time()
+        try:
+            last_ts = float(cooldown_path.read_text(encoding="utf-8").strip())
+        except Exception:
+            last_ts = 0.0
+        if now_ts - last_ts < 30:
+            raise HTTPException(status_code=429, detail="WORKER_WAKE_COOLDOWN")
+
+        result = subprocess.run(
+            ["supervisorctl", "restart", "edarsahub-mirror-sync"],
+            cwd=str(ROOT_DIR.parent),
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=30,
+            check=False,
+        )
+        if result.returncode != 0:
+            logging.error("[WORKER_WAKE] supervisor restart failed rc=%s", result.returncode)
+            raise HTTPException(status_code=503, detail="WORKER_RESTART_FAILED")
+
+        cooldown_path.write_text(str(now_ts), encoding="utf-8")
+        logging.warning("[WORKER_WAKE] stale runtime restart accepted")
+        return JSONResponse(
+            status_code=202,
+            content={
+                "status": "restart_accepted",
+                "worker_stale": True,
+                "heartbeat_age_seconds": round(heartbeat_age, 3) if heartbeat_age is not None else None,
+                "production_touched": False,
+            },
+        )
+
+'''
+          text = text.replace(marker, block + marker, 1)
+          path.write_text(text, encoding='utf-8')
+          print('WORKER_WAKE_ENDPOINT_INSTALLED=1')
+          PY
+
+      - name: Validate endpoint contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile backend/server.py
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('backend/server.py').read_text(encoding='utf-8')
+          required = [
+              '@app.post("/api/internal/worker/wake")',
+              'X-Worker-Queue-Sha',
+              'refs/heads/worker/requests',
+              'heartbeat_age <= 90',
+              '["supervisorctl", "restart", "edarsahub-mirror-sync"]',
+              'WORKER_WAKE_COOLDOWN',
+              'production_touched',
+          ]
+          missing = [item for item in required if item not in text]
+          if missing:
+              raise SystemExit('MISSING_CONTRACT:' + ','.join(missing))
+          prohibited = ['shell=True', 'os.system(', 'eval(', 'exec(']
+          bad = [item for item in prohibited if item in text[text.index('@app.post("/api/internal/worker/wake")'):text.index('# ENDPOINTS FALLBACK TABLERO EJECUTIVO')]]
+          if bad:
+              raise SystemExit('PROHIBITED_WORKER_WAKE_PATTERN:' + ','.join(bad))
+          print('WORKER_WAKE_CONTRACT=PASS')
+          PY
+          git diff --check
+
+      - name: Commit endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- backend/server.py; then
+            echo "NO_CHANGES=1"
+            exit 0
+          fi
+          git config user.name "EDARSAHUB Bootstrap"
+          git config user.email "bootstrap@edarsahub.local"
+          git add -- backend/server.py
+          git commit -m "fix(worker): add guarded runtime wake endpoint"
+          git fetch origin Edarsahub_Desarrollo
+          git rebase origin/Edarsahub_Desarrollo
+          git push origin HEAD:Edarsahub_Desarrollo
