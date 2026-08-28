@@ -11,7 +11,7 @@
   "job_id": "carlos-worker-immediate-dispatch-v1-20260826",
   "percent_complete": 0,
   "production_touched": false,
-  "published_at_utc": "2026-08-28T06:23:44Z",
+  "published_at_utc": "2026-08-28T06:28:33Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
