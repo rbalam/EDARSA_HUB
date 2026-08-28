@@ -6,6 +6,7 @@ on:
       - Edarsahub_Desarrollo
     paths:
       - '.github/workflows/worker-runtime-recovery-probe.yml'
+      - 'worker_queue/triggers/runtime-recovery/**'
   workflow_dispatch:
 
 permissions:
