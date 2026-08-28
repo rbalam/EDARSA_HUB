@@ -1,0 +1,4 @@
+trigger=runtime-recovery
+requested_at_local=2026-08-27T22:01:00-06:00
+production_touched=false
+reason=activate-universal-worker-runtime-recovery
