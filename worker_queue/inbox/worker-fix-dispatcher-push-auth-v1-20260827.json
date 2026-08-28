@@ -1,0 +1,34 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-fix-dispatcher-push-auth-v1-20260827",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Corregir exclusivamente la autenticacion de git push del universal_job_dispatcher reutilizando el credential.helper local canonico y credential.useHttpPath=true, igual que universal_job_result_publisher. Fallar cerrado si no existe helper local. No instalar gh, no hardcodear tokens, no tocar Produccion.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Robots-Netpay-Toast-Menu-Servidores-BOS-2"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "    push = run(\n        [\"git\", \"push\", REMOTE, f\"{head}:refs/heads/{DEV_BRANCH}\"],\n        cwd=ROOT,\n        env_extra={\"EDARSA_ALLOW_PUSH\": \"1\"},\n    )\n    if push.returncode != 0:\n        return False, f\"development_push_failed:{push.stdout[-1000:]}\"",
+      "new": "    credential_helper = git(\n        \"config\",\n        \"--local\",\n        \"--get\",\n        \"credential.helper\",\n        cwd=ROOT,\n        check=False,\n    ).stdout.strip()\n    if not credential_helper:\n        return False, \"development_push_credentials_missing\"\n\n    push = run(\n        [\n            \"git\",\n            \"-c\",\n            f\"credential.helper={credential_helper}\",\n            \"-c\",\n            \"credential.useHttpPath=true\",\n            \"push\",\n            REMOTE,\n            f\"{head}:refs/heads/{DEV_BRANCH}\",\n        ],\n        cwd=ROOT,\n        env_extra={\"EDARSA_ALLOW_PUSH\": \"1\"},\n    )\n    if push.returncode != 0:\n        return False, f\"development_push_failed:{push.stdout[-1000:]}\"",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_universal_job_dispatcher_push_auth.py",
+      "content": "from pathlib import Path\n\n\ndef test_dispatcher_push_uses_local_credential_helper_fail_closed():\n    root = Path(__file__).resolve().parents[2]\n    text = (root / 'tools/mirror_sync/universal_job_dispatcher.py').read_text(encoding='utf-8')\n    assert 'credential.helper' in text\n    assert 'credential.useHttpPath=true' in text\n    assert 'development_push_credentials_missing' in text\n    assert '/usr/bin/gh' not in text\n    assert 'gh auth git-credential' not in text\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["tools/mirror_sync/universal_job_dispatcher.py", "backend/tests/test_universal_job_dispatcher_push_auth.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_universal_job_dispatcher_push_auth.py", "backend/tests/test_universal_job_dispatcher_python_runtime.py"]}
+  ],
+  "human_summary_language": "es"
+}
