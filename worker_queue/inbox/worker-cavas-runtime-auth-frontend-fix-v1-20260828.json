@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-cavas-runtime-auth-frontend-fix-v1-20260828",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Corregir dos defectos de infraestructura del Worker que bloquean Cavas: 1) la integracion a Edarsahub_Desarrollo debe usar explicitamente el credential.helper local canonico del repo y no caer en el helper global gh inexistente; 2) frontend_build ejecutado en worktree temporal debe reutilizar el toolchain frontend canonico de /app/frontend mediante PATH y NODE_PATH, sin instalar dependencias nuevas ni modificar package manifests. Agregar regresiones. No tocar Cavas ni Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "def git(*args: str, cwd: Path | None = None, check: bool = True):\n    result = run([\"git\", *args], cwd=cwd, check=False)\n    if check and result.returncode != 0:\n        raise RuntimeError(f\"GIT_FAILED:{' '.join(args)}:{result.stdout[-2000:]}\")\n    return result\n\n\ndef ensure_dirs() -> None:\n",
+      "new": "def git(*args: str, cwd: Path | None = None, check: bool = True):\n    result = run([\"git\", *args], cwd=cwd, check=False)\n    if check and result.returncode != 0:\n        raise RuntimeError(f\"GIT_FAILED:{' '.join(args)}:{result.stdout[-2000:]}\")\n    return result\n\n\ndef resolve_repository_credential_helper() -> str:\n    result = git(\n        \"config\",\n        \"--local\",\n        \"--get\",\n        \"credential.helper\",\n        cwd=ROOT,\n        check=False,\n    )\n    return result.stdout.strip() if result.returncode == 0 else \"\"\n\n\ndef ensure_dirs() -> None:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "    elif kind == \"frontend_build\":\n        directory = safe_path(worktree, str(check.get(\"directory\", \"frontend\")))\n        cmd = [\"yarn\", \"build\"]\n        cwd = directory\n",
+      "new": "    elif kind == \"frontend_build\":\n        directory = safe_path(worktree, str(check.get(\"directory\", \"frontend\")))\n        canonical_node_modules = ROOT / \"frontend\" / \"node_modules\"\n        canonical_bin = canonical_node_modules / \".bin\"\n        env_extra = {}\n        if canonical_node_modules.is_dir():\n            env_extra[\"NODE_PATH\"] = str(canonical_node_modules)\n        if canonical_bin.is_dir():\n            current_path = os.environ.get(\"PATH\", \"\")\n            env_extra[\"PATH\"] = f\"{canonical_bin}:{current_path}\" if current_path else str(canonical_bin)\n        cmd = [\"yarn\", \"build\"]\n        cwd = directory\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "    push = run(\n        [\"git\", \"push\", REMOTE, f\"{head}:refs/heads/{DEV_BRANCH}\"],\n        cwd=ROOT,\n        env_extra={\"EDARSA_ALLOW_PUSH\": \"1\"},\n    )\n",
+      "new": "    credential_helper = resolve_repository_credential_helper()\n    if not credential_helper:\n        return False, \"development_push_credential_helper_missing\"\n    push = run(\n        [\n            \"git\",\n            \"-c\",\n            \"credential.helper=\",\n            \"-c\",\n            f\"credential.helper={credential_helper}\",\n            \"push\",\n            REMOTE,\n            f\"{head}:refs/heads/{DEV_BRANCH}\",\n        ],\n        cwd=ROOT,\n        env_extra={\"EDARSA_ALLOW_PUSH\": \"1\"},\n    )\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_universal_job_dispatcher_python_runtime.py",
+      "old": "    loaded = module.load_backend_runtime_env()\n\n    assert \"EDARSAHUB_SQL_HOST\" not in loaded\n",
+      "new": "    loaded = module.load_backend_runtime_env()\n\n    assert \"EDARSAHUB_SQL_HOST\" not in loaded\n\n\ndef test_frontend_build_reuses_canonical_frontend_toolchain(tmp_path, monkeypatch):\n    module = load_dispatcher()\n    calls = []\n\n    frontend = tmp_path / \"frontend\"\n    frontend.mkdir()\n    canonical_modules = tmp_path / \"canonical-frontend\" / \"node_modules\"\n    canonical_bin = canonical_modules / \".bin\"\n    canonical_bin.mkdir(parents=True)\n\n    def fake_run(args, **kwargs):\n        calls.append((args, kwargs))\n        return SimpleNamespace(returncode=0, stdout=\"ok\")\n\n    monkeypatch.setattr(module, \"ROOT\", tmp_path / \"canonical-root\")\n    module.ROOT.mkdir()\n    (module.ROOT / \"frontend\").mkdir()\n    monkeypatch.setattr(module, \"run\", fake_run)\n    monkeypatch.setenv(\"PATH\", \"/usr/bin\")\n\n    real_modules = module.ROOT / \"frontend\" / \"node_modules\"\n    real_bin = real_modules / \".bin\"\n    real_bin.mkdir(parents=True)\n\n    result = module.run_check(\n        tmp_path,\n        {\"type\": \"frontend_build\", \"directory\": \"frontend\"},\n    )\n\n    assert result[\"status\"] == \"PASS\"\n    assert calls[0][0] == [\"yarn\", \"build\"]\n    env_extra = calls[0][1][\"env_extra\"]\n    assert env_extra[\"NODE_PATH\"] == str(real_modules)\n    assert env_extra[\"PATH\"].startswith(str(real_bin) + \":\")\n\n\ndef test_integrate_push_uses_only_repository_local_credential_helper(monkeypatch):\n    module = load_dispatcher()\n    calls = []\n\n    def fake_git(*args, **kwargs):\n        if args[:3] == (\"config\", \"--local\", \"--get\"):\n            return SimpleNamespace(returncode=0, stdout=\"store --file=/safe/credentials\\n\")\n        if args[:2] == (\"rev-parse\", \"origin/Edarsahub_Desarrollo\"):\n            return SimpleNamespace(returncode=0, stdout=\"base\\n\")\n        return SimpleNamespace(returncode=0, stdout=\"\")\n\n    def fake_run(args, **kwargs):\n        calls.append((args, kwargs))\n        return SimpleNamespace(returncode=0, stdout=\"ok\")\n\n    monkeypatch.setattr(module, \"git\", fake_git)\n    monkeypatch.setattr(module, \"run\", fake_run)\n\n    ok, detail = module.integrate(\"candidate\", \"base\")\n\n    assert ok is False or ok is True\n    push_calls = [call for call in calls if \"push\" in call[0]]\n    assert push_calls\n    push_args = push_calls[0][0]\n    assert \"credential.helper=\" in push_args\n    assert \"credential.helper=store --file=/safe/credentials\" in push_args\n    assert \"gh auth git-credential\" not in \" \".join(push_args)\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["tools/mirror_sync/universal_job_dispatcher.py", "backend/tests/test_universal_job_dispatcher_python_runtime.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_universal_job_dispatcher_python_runtime.py"]}
+  ],
+  "human_summary_language": "es"
+}
