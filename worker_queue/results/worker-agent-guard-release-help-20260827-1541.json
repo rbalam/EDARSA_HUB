@@ -10,7 +10,7 @@
   "job_id": "worker-agent-guard-release-help-20260827-1541",
   "percent_complete": 0,
   "production_touched": false,
-  "published_at_utc": "2026-08-28T06:47:09Z",
+  "published_at_utc": "2026-08-28T07:34:53Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
