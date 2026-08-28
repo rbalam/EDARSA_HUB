@@ -10,7 +10,7 @@
   "job_id": "carlos-worker-global-route-cert-v1-20260827",
   "percent_complete": 0,
   "production_touched": false,
-  "published_at_utc": "2026-08-27T22:58:47Z",
+  "published_at_utc": "2026-08-28T06:06:07Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
