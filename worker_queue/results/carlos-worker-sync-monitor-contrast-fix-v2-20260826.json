@@ -10,7 +10,7 @@
   "job_id": "carlos-worker-sync-monitor-contrast-fix-v2-20260826",
   "percent_complete": 0,
   "production_touched": false,
-  "published_at_utc": "2026-08-28T06:09:47Z",
+  "published_at_utc": "2026-08-28T06:32:42Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
