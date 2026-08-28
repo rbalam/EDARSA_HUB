@@ -14,7 +14,7 @@
   "job_id": "agent-reach-runtime-contract-v1-20260826",
   "percent_complete": 80,
   "production_touched": false,
-  "published_at_utc": "2026-08-28T06:19:49Z",
+  "published_at_utc": "2026-08-28T06:54:07Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
