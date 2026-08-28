@@ -15,7 +15,7 @@
   "job_id": "worker-agent-guard-cli-materialize-20260826-2125",
   "percent_complete": 80,
   "production_touched": false,
-  "published_at_utc": "2026-08-28T07:34:11Z",
+  "published_at_utc": "2026-08-28T07:49:48Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
