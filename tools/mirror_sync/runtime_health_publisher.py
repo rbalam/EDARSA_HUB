@@ -194,12 +194,18 @@ def runtime_summary() -> dict[str, str | None]:
         "generation": read_text(RUNTIME / "generation"),
         "last_cycle_utc": read_text(RUNTIME / "last_cycle_utc"),
         "last_receive_utc": read_text(RUNTIME / "last_receive_utc"),
+        "current_job_id": read_text(RUNTIME / "current_job_id"),
+        "last_terminal_utc": read_text(RUNTIME / "last_terminal_utc"),
     }
 
 
 def payload() -> dict:
     head = git("rev-parse", "HEAD").stdout.strip()
     jobs = queue_jobs()
+    active = [job for job in jobs if job["state"] in {"PENDING", "RUNNING", "BLOCKED"}]
+    pending_only = [job for job in jobs if job["state"] == "PENDING"]
+    oldest_pending_age = max((int(job.get("age_seconds") or 0) for job in pending_only), default=0)
+    intake_sla_seconds = 30
     return {
         "schema": "edarsahub.worker-health.v3",
         "generated_at_utc": now(),
@@ -207,6 +213,10 @@ def payload() -> dict:
         "development_sha": head,
         "branch": git("branch", "--show-current").stdout.strip(),
         "queue_pending": sum(j["state"] == "PENDING" for j in jobs),
+        "queue_depth": len(active),
+        "oldest_pending_age_seconds": oldest_pending_age,
+        "intake_sla_seconds": intake_sla_seconds,
+        "intake_sla_breached": oldest_pending_age > intake_sla_seconds,
         "queue_running": sum(j["state"] == "RUNNING" for j in jobs),
         "queue_blocked": sum(j["state"] == "BLOCKED" for j in jobs),
         "queue_rejected_recent": sum(j["state"] == "REJECTED" for j in jobs),

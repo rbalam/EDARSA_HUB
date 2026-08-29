@@ -212,7 +212,12 @@ def read_remote(path: str) -> str:
 
 
 def already_claimed(name: str) -> bool:
-    return any((folder / name).exists() for folder in (PENDING, PROCESSING, DONE, REJECTED))
+    # worker_queue/inbox is immutable audit history. A job is actionable only
+    # when no local lifecycle/terminal evidence exists for its job_id.
+    return any(
+        (folder / name).exists()
+        for folder in (PENDING, PROCESSING, DONE, REJECTED, RESULTS)
+    )
 
 
 def write_rejection(source: str, reason: list[str], raw: str = "") -> None:

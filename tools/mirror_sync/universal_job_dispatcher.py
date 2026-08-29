@@ -32,6 +32,7 @@ PROCESSING = STATE / "processing"
 DONE = STATE / "done"
 REJECTED = STATE / "rejected"
 RESULTS = STATE / "results"
+RUNTIME = STATE / "runtime"
 WORKTREES = Path(os.environ.get("EDARSAHUB_JOB_WORKTREES", "/tmp/edarsahub-worker-jobs"))
 LOCK_FILE = STATE / "dispatcher.lock"
 REMOTE = os.environ.get("EDARSAHUB_QUEUE_REMOTE", "origin")
@@ -478,6 +479,8 @@ def process_one(path: Path) -> int:
 
     processing = PROCESSING / path.name
     os.replace(path, processing)
+    RUNTIME.mkdir(parents=True, exist_ok=True)
+    (RUNTIME / "current_job_id").write_text(job_id + "\n", encoding="utf-8")
     result: dict[str, Any] = {
         "schema": "edarsahub.worker-result.v2",
         "job_id": job_id,
@@ -491,6 +494,7 @@ def process_one(path: Path) -> int:
 
     worktree: Path | None = None
     branch = ""
+    agent_guard_claim_created = False
     try:
         if job.get("schema") != "edarsahub.worker-job.v2":
             raise ValueError("UNSUPPORTED_JOB_SCHEMA")
@@ -512,6 +516,7 @@ def process_one(path: Path) -> int:
             base_sha,
             requested_paths,
         )
+        agent_guard_claim_created = True
         result["job_branch"] = branch
 
         allowed_files: set[str] = set()
@@ -566,12 +571,15 @@ def process_one(path: Path) -> int:
         result["quality_gate"] = "FAIL"
         result["summary_es"] = "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada."
     finally:
-        release_ok, release_detail = release_agent_guard_claim(job_id)
-        result["agent_guard_release"] = "PASS" if release_ok else "FAIL"
-        if not release_ok:
-            result["blockers"].append("agent_guard_release_failed:" + release_detail)
-            result["quality_gate"] = "FAIL"
-            result["certification"] = "NOT_CERTIFIED"
+        if agent_guard_claim_created:
+            release_ok, release_detail = release_agent_guard_claim(job_id)
+            result["agent_guard_release"] = "PASS" if release_ok else "FAIL"
+            if not release_ok:
+                result["blockers"].append("agent_guard_release_failed:" + release_detail)
+                result["quality_gate"] = "FAIL"
+                result["certification"] = "NOT_CERTIFIED"
+        else:
+            result["agent_guard_release"] = "NOT_REQUIRED"
         if worktree is not None:
             git("worktree", "remove", "--force", str(worktree), check=False)
         if branch:
@@ -580,6 +588,13 @@ def process_one(path: Path) -> int:
         write_json(RESULTS / path.name, result)
         target = DONE / path.name if result["status"] == "INTEGRATED" else REJECTED / path.name
         os.replace(processing, target)
+        (RUNTIME / "last_terminal_utc").write_text(result["completed_at_utc"] + "\n", encoding="utf-8")
+        current_job = RUNTIME / "current_job_id"
+        try:
+            if current_job.read_text(encoding="utf-8").strip() == job_id:
+                current_job.unlink()
+        except OSError:
+            pass
     print(json.dumps({"job_id": job_id, "status": result["status"], "blockers": result["blockers"]}, ensure_ascii=False))
     return 0
 

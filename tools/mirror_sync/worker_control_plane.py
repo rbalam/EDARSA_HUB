@@ -35,6 +35,7 @@ RUNTIME = STATE / "runtime"
 PROCESSING = STATE / "processing"
 PENDING = STATE / "pending"
 RESULTS = STATE / "results"
+REJECTED = STATE / "rejected"
 PUBLISHED = STATE / "published"
 AGENT_GUARD = GIT / "agent-guard"
 AGENT_QUARANTINE = GIT / "agent-guard-quarantine"
@@ -283,6 +284,8 @@ def reconcile_agent_guard_orphans() -> dict[str, int]:
 def requeue_stale_processing() -> int:
     PENDING.mkdir(parents=True, exist_ok=True)
     PROCESSING.mkdir(parents=True, exist_ok=True)
+    REJECTED.mkdir(parents=True, exist_ok=True)
+    RESULTS.mkdir(parents=True, exist_ok=True)
     requeued = 0
     for path in PROCESSING.glob("*.json"):
         try:
@@ -291,15 +294,41 @@ def requeue_stale_processing() -> int:
             continue
         if age < PROCESSING_GRACE:
             continue
+        try:
+            envelope = json.loads(path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            audit("STALE_PROCESSING_INVALID_ENVELOPE", job_file=path.name, error=str(exc))
+            continue
+        retry_count = int(envelope.get("_worker_stale_requeue_count") or 0)
+        if retry_count >= 1:
+            job = envelope.get("job") if isinstance(envelope.get("job"), dict) else {}
+            job_id = str(job.get("job_id") or path.stem)
+            completed = utc_now()
+            result = {
+                "schema": "edarsahub.worker-result.v2",
+                "job_id": job_id,
+                "status": "BLOCKED",
+                "quality_gate": "FAIL",
+                "certification": "NOT_CERTIFIED",
+                "percent_complete": 0,
+                "production_touched": False,
+                "blockers": ["processing_stale_after_single_requeue"],
+                "completed_at_utc": completed,
+                "summary_es": "El job excedio el SLA de processing despues de un unico reintento seguro y fue cerrado terminalmente para no bloquear la cola."
+            }
+            atomic_json(RESULTS / path.name, result)
+            os.replace(path, REJECTED / path.name)
+            (RUNTIME / "last_terminal_utc").write_text(completed + "\n", encoding="utf-8")
+            audit("STALE_PROCESSING_TERMINATED", job_file=path.name, age_seconds=int(age))
+            continue
         target = PENDING / path.name
         if target.exists():
             continue
-        try:
-            os.replace(path, target)
-            requeued += 1
-            audit("STALE_PROCESSING_REQUEUED", job_file=path.name, age_seconds=int(age))
-        except OSError as exc:
-            audit("STALE_PROCESSING_REQUEUE_FAILED", job_file=path.name, error=str(exc))
+        envelope["_worker_stale_requeue_count"] = retry_count + 1
+        atomic_json(path, envelope)
+        os.replace(path, target)
+        requeued += 1
+        audit("STALE_PROCESSING_REQUEUED", job_file=path.name, age_seconds=int(age), retry_count=retry_count + 1)
     return requeued
 
 
