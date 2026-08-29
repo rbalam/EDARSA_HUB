@@ -15,7 +15,7 @@
   "job_id": "chatgpt-deterministic-cert-20260825-005",
   "percent_complete": 80,
   "production_touched": false,
-  "published_at_utc": "2026-08-28T07:45:18Z",
+  "published_at_utc": "2026-08-29T18:46:36Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
