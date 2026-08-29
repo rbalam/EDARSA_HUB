@@ -627,3 +627,12 @@ docs/reports/
 .config/
 .copilot/
 .emergent/markers/
+
+# Respaldos y dumps de auditoría (no deben entrar al repo)
+*.bak_*
+*.backup
+*.backup_*
+*.orig
+*.old
+auditorias_p*/
+auditorias_canonicas/
