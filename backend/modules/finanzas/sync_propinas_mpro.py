@@ -658,7 +658,7 @@ def sincronizar_propinas_mpro(
                 {'insertados': 0, 'actualizados': 0, 'omitidos': 0, 'errores': 1},
                 'ERROR', str(e)
             )
-        except:
+        except Exception:
             pass
     
     resultado['duracion_segundos'] = int((datetime.now() - inicio).total_seconds())

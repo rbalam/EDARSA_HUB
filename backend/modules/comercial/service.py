@@ -2639,7 +2639,7 @@ def get_last_valid_snapshot_edarsahub(server_id: str) -> Dict:
     import logging
     
     try:
-        conn = get_edarsahub_pymssql_connection(timeout=10, login_timeout=10)
+        conn = get_edarsahub_pymssql_connection(timeout=10, login_timeout=10)  # noqa: F821
         cursor = conn.cursor(as_dict=True)
         
         # Buscar el registro más reciente para este servidor

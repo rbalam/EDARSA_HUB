@@ -435,7 +435,7 @@ def sincronizar_a_edarsahub_mpro(
     except Exception as e:
         try:
             conn.rollback()
-        except:
+        except Exception:
             pass
         logger.error(f"[SYNC_MPRO] Error en sincronización: {e}")
         raise
@@ -597,7 +597,7 @@ def sincronizar_unidad_mpro(
                     duracion_segundos=resultado['duracion_segundos'],
                     tipo_ejecucion='MANUAL'
                 )
-        except:
+        except Exception:
             pass
     
     return resultado

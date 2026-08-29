@@ -72,6 +72,26 @@ async def registrar_justificacion(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/umbral")
+async def obtener_umbral_justificacion(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Obtiene el umbral actual para determinar tipo de justificación.
+    
+    - Si diferencia_valor <= umbral → SIMPLE (solo texto)
+    - Si diferencia_valor > umbral → COMPLETA (texto + evidencia)
+    """
+    try:
+        db = get_db()
+        just_svc = JustificacionService(db)
+        
+        umbral = await just_svc.obtener_umbral_actual()
+        return {"umbral_justificacion_simple": umbral, "moneda": "MXN"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{justificacion_id}")
 async def obtener_justificacion(
     justificacion_id: str,
@@ -172,26 +192,6 @@ async def verificar_justificaciones_workflow(
         
         resultado = await just_svc.verificar_workflow_completamente_justificado(workflow_id)
         return resultado
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/umbral")
-async def obtener_umbral_justificacion(
-    current_user: Dict[str, Any] = Depends(get_current_user)
-):
-    """
-    Obtiene el umbral actual para determinar tipo de justificación.
-    
-    - Si diferencia_valor <= umbral → SIMPLE (solo texto)
-    - Si diferencia_valor > umbral → COMPLETA (texto + evidencia)
-    """
-    try:
-        db = get_db()
-        just_svc = JustificacionService(db)
-        
-        umbral = await just_svc.obtener_umbral_actual()
-        return {"umbral_justificacion_simple": umbral, "moneda": "MXN"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

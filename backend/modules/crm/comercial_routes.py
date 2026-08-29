@@ -182,7 +182,6 @@ async def _get_vtiger_cuentas(search: Optional[str], limit: int, offset: int):
     NUNCA hace llamadas HTTP directas a Vtiger API.
     """
     import pymssql
-    import os
     
     logger.info(f"[CRM] _get_vtiger_cuentas (SQL-First) llamado con search={search}, limit={limit}, offset={offset}")
     

@@ -740,7 +740,7 @@ class StagingProcessor:
                 staging_id
             ))
             conn.commit()
-        except:
+        except Exception:
             pass
     
     # ============================================================
@@ -772,7 +772,7 @@ class StagingProcessor:
                 if conflict.get('MensajeError'):
                     try:
                         conflict['ConflictDetails'] = json.loads(conflict['MensajeError'])
-                    except:
+                    except Exception:
                         pass
                 conflicts.append(conflict)
             
@@ -823,7 +823,7 @@ class StagingProcessor:
                 try:
                     conflict_info = json.loads(staging['MensajeError'])
                     existing_id = conflict_info.get('registro_existente')
-                except:
+                except Exception:
                     pass
             
             if accion == MatchAction.CREAR_NUEVO:

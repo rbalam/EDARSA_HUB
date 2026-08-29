@@ -312,7 +312,7 @@ def _safe_float(value):
         f = float(value)
         # Ignorar valores negativos (centinelas como -1)
         return f if f >= 0 else 0.0
-    except:
+    except Exception:
         return 0.0
 
 
@@ -322,7 +322,7 @@ def _safe_int(value):
         return 0
     try:
         return int(value)
-    except:
+    except Exception:
         return 0
 
 
@@ -610,7 +610,7 @@ def validate_json_items(sales: List[Dict]) -> Dict[str, int]:
                 if isinstance(items, str):
                     json.loads(items)
                 stats["validos"] += 1
-            except:
+            except Exception:
                 stats["invalidos"] += 1
     
     return stats
@@ -661,7 +661,7 @@ def validate_importes(sales: List[Dict]) -> Dict[str, Any]:
                     items_con_importe += 1
                 else:
                     items_sin_importe += 1
-        except:
+        except Exception:
             pass
     
     total_items = items_con_importe + items_sin_importe
@@ -806,7 +806,7 @@ def insert_sales_to_sync_sales(sales: List[Dict], unidad_codigo: str) -> Dict[st
                 '{numero_ticket}',
                 N'{unidad_codigo}',
                 {monto_total},
-                {Pax},
+                {pax},
                 '{numero_ticket}',
                 '{fecha_str}'
             )

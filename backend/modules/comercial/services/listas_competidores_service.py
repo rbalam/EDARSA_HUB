@@ -242,11 +242,11 @@ def crear_lista_competidores(
     ) VALUES (
         '{lista_id}',
         N'{nombre_lista.replace("'", "''")}',
-        {f"N'{Descripcion.replace(chr(39), chr(39)+chr(39))}'" if Descripcion else 'NULL'},
-        {EmpresaID if EmpresaID else 'NULL'},
-        {UnidadNegocioID if UnidadNegocioID else 'NULL'},
-        {f"N'{Segmento}'" if Segmento else 'NULL'},
-        {f"N'{Categoria}'" if Categoria else 'NULL'},
+        {f"N'{descripcion.replace(chr(39), chr(39)+chr(39))}'" if descripcion else 'NULL'},
+        {empresa_id if empresa_id else 'NULL'},
+        {unidad_negocio_pk if unidad_negocio_pk else 'NULL'},
+        {f"N'{segmento}'" if segmento else 'NULL'},
+        {f"N'{categoria}'" if categoria else 'NULL'},
         {f"N'{color}'" if color else 'NULL'},
         1,
         GETDATE(),
@@ -507,8 +507,8 @@ def agregar_competidor_a_lista(
             # Si existe pero está inactivo, reactivar
             reactivate_query = f"""
             UPDATE Comercial_CompetidoresListasDetalle
-            SET Activo = 1, Orden = {Orden}, 
-                Notas = {f"N'{Notas.replace(chr(39), chr(39)+chr(39))}'" if Notas else 'NULL'},
+            SET Activo = 1, Orden = {orden}, 
+                Notas = {f"N'{notas.replace(chr(39), chr(39)+chr(39))}'" if notas else 'NULL'},
                 FechaModificacion = GETDATE(), ModificadoPor = N'{usuario}'
             WHERE ListaDetalleID = '{existing[0]['ListaDetalleID']}'
             """
@@ -525,8 +525,8 @@ def agregar_competidor_a_lista(
                 '{detalle_id}',
                 '{lista_id}',
                 '{competidor_id}',
-                {Orden},
-                {f"N'{Notas.replace(chr(39), chr(39)+chr(39))}'" if Notas else 'NULL'},
+                {orden},
+                {f"N'{notas.replace(chr(39), chr(39)+chr(39))}'" if notas else 'NULL'},
                 1,
                 GETDATE(),
                 N'{usuario}'

@@ -256,7 +256,7 @@ def execute_query_on_server(
 # ============================================================
 
 def _normalizar_fecha_operacion_value(value):
-    from datetime import date, datetime
+    from datetime import date
 
     if value is None:
         return None
@@ -281,7 +281,7 @@ def _normalizar_fecha_operacion_value(value):
 
 
 def _normalizar_fecha_hora_value(value):
-    from datetime import date, datetime, time
+    from datetime import date, time
 
     if value is None:
         return None
@@ -389,7 +389,6 @@ def _normalizar_distinct_key(value):
 
 
 def _is_number_for_operational_group(value):
-    from decimal import Decimal
 
     if isinstance(value, bool):
         return False

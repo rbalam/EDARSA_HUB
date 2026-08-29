@@ -31,7 +31,7 @@ for p in ROOT.rglob("*.py"):
 
     try:
         txt = p.read_text(errors="ignore")
-    except:
+    except Exception:
         continue
         
     for i, line in enumerate(txt.splitlines(), start=1):

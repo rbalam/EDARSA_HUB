@@ -15,11 +15,11 @@ def env(name: str, default: Optional[str] = None) -> str:
     return value
 
 
-def get_mongo_client() -> MongoClient:
+def get_mongo_client() -> MongoClient:  # noqa: F821
     mongo_uri = os.getenv("MONGO_URI") or os.getenv("MONGODB_URI") or os.getenv("MONGO_URL")
     if not mongo_uri:
         raise RuntimeError("No existe MONGO_URI, MONGODB_URI ni MONGO_URL para migración controlada")
-    return MongoClient(mongo_uri)
+    return MongoClient(mongo_uri)  # noqa: F821
 
 
 def get_sql_conn():

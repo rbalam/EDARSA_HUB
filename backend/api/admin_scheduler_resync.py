@@ -884,7 +884,7 @@ async def obtener_historial_resync(
             if r.get('DetallesJSON'):
                 try:
                     detalles = json.loads(r['DetallesJSON'])
-                except:
+                except Exception:
                     detalles = {}
             
             # Filtrar por unidad si se especificó

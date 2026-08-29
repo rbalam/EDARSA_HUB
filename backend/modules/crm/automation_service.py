@@ -159,7 +159,7 @@ class PipelineAutomationService:
         
         try:
             condicion = json.loads(condicion_json) if condicion_json else {}
-        except:
+        except Exception:
             condicion = {}
         
         # Si no hay condición específica, aplicar siempre
@@ -190,7 +190,7 @@ class PipelineAutomationService:
         
         try:
             accion = json.loads(accion_json) if accion_json else {}
-        except:
+        except Exception:
             return {"error": "JSON de acción inválido"}
         
         tipo_accion = accion.get('tipo')

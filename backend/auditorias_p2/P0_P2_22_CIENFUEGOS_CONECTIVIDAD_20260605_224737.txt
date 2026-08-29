@@ -1,4 +1,0 @@
-
-### 3. LOGIN SQL CIENFUEGOS
-VALIDANDO_LOGIN: host=servercienfuegos.ddns.net, port=6669, database=softrestaurant95pro, user=REDACTED, pass=REDACTED
-FAIL_LOGIN_PYMSSQL_CIENFUEGOS: OperationalError - (20002, b'DB-Lib error message 20002, severity 9:\nAdaptive Server connection failed (servercienfuegos.ddns.net)\nDB-Lib error message 20002, severity 9:\nAdaptive Server connection failed (servercienfuegos.ddns.net)\n')

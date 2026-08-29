@@ -599,28 +599,28 @@ def health_check_empresa_resolver() -> HealthCheckResult:
     try:
         empresas_rows = _execute_query("SELECT COUNT(*) as c FROM Sistema_Empresas WHERE Activo = 1")
         empresas_count = empresas_rows[0]['c'] if empresas_rows else 0
-    except:
+    except Exception:
         empresas_count = 0
         errors.append("No se pudo contar Sistema_Empresas")
     
     try:
         aliases_rows = _execute_query("SELECT COUNT(*) as c FROM Sistema_EmpresasAlias WHERE Activo = 1")
         aliases_count = aliases_rows[0]['c'] if aliases_rows else 0
-    except:
+    except Exception:
         aliases_count = 0
         errors.append("No se pudo contar Sistema_EmpresasAlias")
     
     try:
         servidores_rows = _execute_query("SELECT COUNT(*) as c FROM Servidores_Conexiones WHERE activo = 1")
         servidores_count = servidores_rows[0]['c'] if servidores_rows else 0
-    except:
+    except Exception:
         servidores_count = 0
         errors.append("No se pudo contar Servidores_Conexiones")
     
     try:
         relaciones_rows = _execute_query("SELECT COUNT(*) as c FROM Sistema_EmpresasServidores WHERE Activo = 1")
         relaciones_count = relaciones_rows[0]['c'] if relaciones_rows else 0
-    except:
+    except Exception:
         relaciones_count = 0
         errors.append("No se pudo contar Sistema_EmpresasServidores")
     

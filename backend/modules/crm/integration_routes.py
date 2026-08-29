@@ -129,7 +129,7 @@ async def listar_conectores(
                 if conector.get(field):
                     try:
                         conector[field] = json.loads(conector[field])
-                    except:
+                    except Exception:
                         pass
             # Convertir UUIDs a string
             for field in ['EmpresaID', 'CreatedBy', 'UpdatedBy']:
@@ -163,7 +163,7 @@ async def obtener_conector(conector_id: int):
             if conector.get(field):
                 try:
                     conector[field] = json.loads(conector[field])
-                except:
+                except Exception:
                     pass
         
         for field in ['EmpresaID', 'CreatedBy', 'UpdatedBy']:
@@ -545,7 +545,7 @@ async def listar_staging_leads(
             if lead.get('DatosExternosJSON'):
                 try:
                     lead['DatosExternosJSON'] = json.loads(lead['DatosExternosJSON'])
-                except:
+                except Exception:
                     pass
             leads.append(lead)
         
@@ -593,7 +593,7 @@ async def listar_staging_oportunidades(
             if opp.get('DatosExternosJSON'):
                 try:
                     opp['DatosExternosJSON'] = json.loads(opp['DatosExternosJSON'])
-                except:
+                except Exception:
                     pass
             opps.append(opp)
         
@@ -640,7 +640,7 @@ async def listar_staging_cuentas(
             if cuenta.get('DatosExternosJSON'):
                 try:
                     cuenta['DatosExternosJSON'] = json.loads(cuenta['DatosExternosJSON'])
-                except:
+                except Exception:
                     pass
             cuentas.append(cuenta)
         
@@ -679,7 +679,7 @@ async def obtener_sync_log(
             if log.get('Detalles'):
                 try:
                     log['Detalles'] = json.loads(log['Detalles'])
-                except:
+                except Exception:
                     pass
             logs.append(log)
         

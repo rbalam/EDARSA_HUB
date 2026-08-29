@@ -221,7 +221,6 @@ def get_sucursales_mpro(server_id: str) -> List[Dict[str, str]]:
 # =============================================================================
 
 def upsert_kpi_diario(kpi: KPIsDiariosV2) -> Dict[str, Any]:
-    from decimal import Decimal
 
     """
     Inserta o actualiza un KPI diario en vw_Comercial_KPIs_Diarios_v2_Runtime.
@@ -406,7 +405,6 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
     logger = logging.getLogger(__name__)
 
     # V1.0-COMERCIAL-ABIERTAS-PROPINAS
-    from decimal import Decimal
 
     propinas_calculadas = (
         ventas.propinas_abiertas
@@ -502,7 +500,6 @@ def upsert_ventas_dia_abiertas(ventas: VentasDiaAbiertasV2) -> Dict[str, Any]:
     # GUARD RAIL P0.H (REPOSITORY): BLOQUEAR FECHA FUTURA
     # Esta es la ÚLTIMA línea de defensa antes de escribir en SQL
     # =================================================================
-    from datetime import datetime
     import pytz
     mexico_tz = pytz.timezone('America/Mexico_City')
     fecha_hoy_mx = datetime.now(mexico_tz).date()

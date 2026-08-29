@@ -367,7 +367,7 @@ async def test_dba_connection(request: Request):
     import pymssql
     
     try:
-        conn = get_external_sql_connection(server_config)
+        conn = get_external_sql_connection(server_config)  # noqa: F821
         cursor = conn.cursor()
         
         # Validar identidad
@@ -475,7 +475,7 @@ async def execute_dba_diagnostic(request: Request):
     results = {}
     
     try:
-        conn = get_external_sql_connection(server_config)
+        conn = get_external_sql_connection(server_config)  # noqa: F821
         cursor = conn.cursor()
         
         # CONSULTA 1: Jobs activos

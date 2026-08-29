@@ -183,7 +183,6 @@ def _sql_int(value, default=0):
 
 
 def _sql_build_hash(server_id: str, sucursal_id: str, fecha: str, kpis: dict) -> str:
-    import hashlib
     payload = {
         "server_id": server_id,
         "sucursal_id": str(sucursal_id),

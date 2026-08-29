@@ -84,7 +84,7 @@ def _safe_float(val) -> float:
         return float(val)
     try:
         return float(val)
-    except:
+    except Exception:
         return 0.0
 
 
@@ -340,7 +340,7 @@ def get_sync_monitor_data() -> Dict[str, Any]:
             if sync_start and sync_end:
                 try:
                     duration = (sync_end - sync_start).total_seconds()
-                except:
+                except Exception:
                     pass
             
             status = _calculate_status(sync_start, original_status, sync_type, ult.get("error_message"))

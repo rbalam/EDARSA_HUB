@@ -163,7 +163,7 @@ class RepositoryCortesCajaEdarsahub:
         finally:
             try:
                 conn.close()
-            except:
+            except Exception:
                 pass
     
     def listar_cortes_por_server_id(

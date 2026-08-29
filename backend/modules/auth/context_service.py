@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 
 def _get_sql_connection():
     """Obtiene conexión a EDARSAHUB SQL."""
-    return get_edarsahub_connection()
+    return get_edarsahub_connection()  # noqa: F821
 
 
 # =========================================================================

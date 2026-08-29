@@ -36,7 +36,7 @@ def _safe_decimal(value) -> float:
         return float(value)
     try:
         return float(value)
-    except:
+    except Exception:
         return 0.0
 
 

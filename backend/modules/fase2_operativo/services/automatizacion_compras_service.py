@@ -374,7 +374,7 @@ class AutomatizacionComprasService:
         if isinstance(detalle_anterior, str):
             try:
                 detalle_anterior = json.loads(detalle_anterior)
-            except:
+            except Exception:
                 detalle_anterior = []
         
         detalle_nuevo = []
@@ -817,7 +817,7 @@ class AutomatizacionComprasService:
             if field in doc and isinstance(doc[field], str):
                 try:
                     doc[field] = json.loads(doc[field])
-                except:
+                except Exception:
                     pass
         
         return doc

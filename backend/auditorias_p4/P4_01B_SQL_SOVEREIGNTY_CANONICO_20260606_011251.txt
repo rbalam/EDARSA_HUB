@@ -1,6 +1,0 @@
-==================================================
-P4-01B SQL SOVEREIGNTY CANONICO
-Timestamp: 20260606_011251
-==================================================
-Backup creado: auditorias_p4/backup_p4_01b_20260606_011251
-Archivos SQL-First creados

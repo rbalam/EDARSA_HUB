@@ -973,7 +973,7 @@ async def comercial_v2_dashboard(
                         fm = fm.date()
                     if fecha_max_datos is None or fm > fecha_max_datos:
                         fecha_max_datos = fm
-                except:
+                except Exception:
                     pass
 
         if fecha_max_datos is None:
@@ -1546,7 +1546,7 @@ async def comercial_v2_ventas_dia(
                     diff = ahora - snapshot_dt
                     minutos_desde_actualizacion = int(diff.total_seconds() / 60)
                     dato_vencido = minutos_desde_actualizacion > 10
-                except:
+                except Exception:
                     minutos_desde_actualizacion = None
                     dato_vencido = True
             else:

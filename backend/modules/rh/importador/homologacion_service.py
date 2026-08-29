@@ -153,11 +153,11 @@ def poblar_catalogo_sucursales(server: Dict, usuario: str = "Sistema") -> Dict:
                 cursor.execute(f"""
                     IF NOT EXISTS (
                         SELECT 1 FROM RH_Homologacion_Equivalencias 
-                        WHERE Tipo = 'SUCURSAL' AND Valor_Origen = N'{escape_sql(Valor_Origen)}'
+                        WHERE Tipo = 'SUCURSAL' AND Valor_Origen = N'{escape_sql(valor_origen)}'
                     )
                     INSERT INTO RH_Homologacion_Equivalencias 
                     (Tipo, Valor_Origen, Valor_Normalizado, CatalogoID, Estado, Usuario_Aprobador)
-                    VALUES ('SUCURSAL', N'{escape_sql(Valor_Origen)}', '{Valor_Normalizado}', {catalogo_id}, 'Aprobado', '{escape_sql(usuario)}')
+                    VALUES ('SUCURSAL', N'{escape_sql(valor_origen)}', '{valor_normalizado}', {catalogo_id}, 'Aprobado', '{escape_sql(usuario)}')
                 """)
                 resultado['equivalencias_creadas'] += 1
                 
@@ -225,11 +225,11 @@ def poblar_catalogo_departamentos(server: Dict, usuario: str = "Sistema") -> Dic
                 cursor.execute(f"""
                     IF NOT EXISTS (
                         SELECT 1 FROM RH_Homologacion_Equivalencias 
-                        WHERE Tipo = 'DEPARTAMENTO' AND Valor_Origen = N'{escape_sql(Valor_Origen)}'
+                        WHERE Tipo = 'DEPARTAMENTO' AND Valor_Origen = N'{escape_sql(valor_origen)}'
                     )
                     INSERT INTO RH_Homologacion_Equivalencias 
                     (Tipo, Valor_Origen, Valor_Normalizado, CatalogoID, Estado, Usuario_Aprobador)
-                    VALUES ('DEPARTAMENTO', N'{escape_sql(Valor_Origen)}', '{Valor_Normalizado}', {catalogo_id}, 'Aprobado', '{escape_sql(usuario)}')
+                    VALUES ('DEPARTAMENTO', N'{escape_sql(valor_origen)}', '{valor_normalizado}', {catalogo_id}, 'Aprobado', '{escape_sql(usuario)}')
                 """)
                 resultado['equivalencias_creadas'] += 1
                 
@@ -297,11 +297,11 @@ def poblar_catalogo_puestos(server: Dict, usuario: str = "Sistema") -> Dict:
                 cursor.execute(f"""
                     IF NOT EXISTS (
                         SELECT 1 FROM RH_Homologacion_Equivalencias 
-                        WHERE Tipo = 'PUESTO' AND Valor_Origen = N'{escape_sql(Valor_Origen)}'
+                        WHERE Tipo = 'PUESTO' AND Valor_Origen = N'{escape_sql(valor_origen)}'
                     )
                     INSERT INTO RH_Homologacion_Equivalencias 
                     (Tipo, Valor_Origen, Valor_Normalizado, CatalogoID, Estado, Usuario_Aprobador)
-                    VALUES ('PUESTO', N'{escape_sql(Valor_Origen)}', '{Valor_Normalizado}', {catalogo_id}, 'Aprobado', '{escape_sql(usuario)}')
+                    VALUES ('PUESTO', N'{escape_sql(valor_origen)}', '{valor_normalizado}', {catalogo_id}, 'Aprobado', '{escape_sql(usuario)}')
                 """)
                 resultado['equivalencias_creadas'] += 1
                 

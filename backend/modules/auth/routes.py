@@ -846,7 +846,6 @@ async def forgot_password(request_data: ForgotPasswordRequest, request: Request)
     # IMPORTANTE: NO usar Origin/Referer de la petición: el usuario puede entrar
     # por un host alterno (ej. *.preview.emergentcf.cloud) que el proxy bloquea
     # con 403. El enlace SIEMPRE debe apuntar al dominio público canónico.
-    import os
     origin = os.environ.get("FRONTEND_URL", "https://erp-crm-enterprise-1.preview.emergentagent.com")
     
     result = request_password_reset(

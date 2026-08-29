@@ -136,7 +136,7 @@ class CavaSociosReportService:
             else:
                 dt = datetime.strptime(str(date_str), '%Y-%m-%d')
             return dt.strftime('%d/%m/%Y')
-        except:
+        except Exception:
             return str(date_str)
     
     def _create_info_table(self, data: List[tuple], col_widths: List = None) -> Table:

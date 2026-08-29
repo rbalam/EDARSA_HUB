@@ -111,7 +111,7 @@ def _sql_row_to_api_dict(row: Dict) -> Dict:
             return val
         try:
             return json.loads(val) if val else None
-        except:
+        except Exception:
             return None
     
     # API-SEC1: NO exponer api_key descifrada en el listado
@@ -275,7 +275,7 @@ async def create_api_connection(data: Dict, created_by: str = "system") -> Dict:
     if isinstance(hora_replica, str):
         try:
             hora_replica = int(hora_replica.split(':')[0])
-        except:
+        except Exception:
             hora_replica = 4
     
     config_json = json.dumps(data.get('config') or {})
@@ -360,7 +360,7 @@ async def update_api_connection(api_id: str, data: Dict, updated_by: str = "syst
         try:
             from core.secret_manager import encrypt_secret
             api_key_encrypted = encrypt_secret(data['api_key'])
-        except:
+        except Exception:
             api_key_encrypted = data['api_key']
     
     # 4. Construir UPDATE dinámico
@@ -804,7 +804,7 @@ async def execute_test_query(
                     error_msg = str(err_json['error'])[:200]
                 elif isinstance(err_json, dict) and 'detail' in err_json:
                     error_msg = str(err_json['detail'])[:200]
-            except:
+            except Exception:
                 pass
             
             result = {
@@ -847,7 +847,7 @@ async def execute_test_query(
             },
             executed_by
         )
-    except:
+    except Exception:
         pass
     
     return result

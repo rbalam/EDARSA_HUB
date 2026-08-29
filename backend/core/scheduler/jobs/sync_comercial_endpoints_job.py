@@ -85,7 +85,7 @@ class SyncComercialEndpointsJob:
         if self._conn:
             try:
                 self._conn.close()
-            except:
+            except Exception:
                 pass
             self._conn = None
     

@@ -2084,7 +2084,7 @@ async def comercial_metas(
     # SQL-FIRST: Consultar tabla sincronizada
     try:
         import pymssql
-        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)  # noqa: F821
         cursor = conn.cursor()
         
         now = datetime.now()
@@ -2418,7 +2418,7 @@ async def comercial_ticket_perfecto(
     # SQL-FIRST: Consultar tabla sincronizada
     try:
         import pymssql
-        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)  # noqa: F821
         cursor = conn.cursor()
         
         # Determinar rango de fechas (default últimos 7 días)
@@ -2717,7 +2717,7 @@ async def comercial_ventas_tiempo(
         logging.info(f"[NO-LIVE] ventas-tiempo {server.get('name')}: Consultando EDARSAHUB SQL, período {fecha_ini} a {fecha_fin}")
         
         try:
-            conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=10)
+            conn = get_edarsahub_pymssql_connection(timeout=15, login_timeout=10)  # noqa: F821
             cursor = conn.cursor(as_dict=True)
             
             # Ventas por hora desde Sync_Ventas_PorHora
@@ -2824,7 +2824,7 @@ async def comercial_ventas_tiempo(
             fuente_pax_hoy = "SIN_DATOS_CANONICOS_DIA"
 
             try:
-                conn_hoy = get_edarsahub_pymssql_connection(timeout=10, login_timeout=10)
+                conn_hoy = get_edarsahub_pymssql_connection(timeout=10, login_timeout=10)  # noqa: F821
                 cursor_hoy = conn_hoy.cursor(as_dict=True)
 
                 # Intentar leer desde Comercial_Ventas_Dia_Abiertas_v2 (canónica)
@@ -2963,7 +2963,7 @@ async def comercial_mesas(
 
     conn = None
     try:
-        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)  # noqa: F821
         cursor = conn.cursor(as_dict=True)
 
         sucursal_val = (sucursal or "").strip()
@@ -3528,7 +3528,7 @@ async def comercial_reporte_pax(
     # SQL-FIRST: Consultar tabla sincronizada
     try:
         import pymssql
-        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)
+        conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)  # noqa: F821
         cursor = conn.cursor()
         
         # Determinar rango de fechas (default últimos 7 días)

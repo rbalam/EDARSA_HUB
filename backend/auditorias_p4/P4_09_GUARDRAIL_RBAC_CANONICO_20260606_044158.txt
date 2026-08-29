@@ -1,1 +1,0 @@
-PASS RBAC runtime usa Usuario_* canónico

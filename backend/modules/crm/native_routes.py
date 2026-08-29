@@ -334,13 +334,13 @@ async def _get_vtiger_oportunidades(busqueda: Optional[str], page: int, page_siz
             monto = 0
             try:
                 monto = float(r.get('Monto') or 0)
-            except:
+            except Exception:
                 pass
             
             prob = 0
             try:
                 prob = int(r.get('Probabilidad') or 0)
-            except:
+            except Exception:
                 pass
             
             items.append({

@@ -723,3 +723,11 @@ Verificado: cURL (toggle desactivar/reactivar, revocación de sesiones, bloqueo 
 - CIENFUEGOS: su DDNS (servercienfuegos.ddns.net:6669) VOLVIÓ EN LÍNEA. SQL conecta OK y resuelve canónicamente (empresa=3, sucursal=3, SoftRestaurant). Backfill de CIENFUEGOS encadenado para correr al terminar el principal (log /tmp/backfill_cienfuegos.log). CIENFUEGOS TABLAJERIA queda fuera (esquema custom, sin unidad mapeada).
 - Script backfill ahora acepta unidades por arg: `python tests/backfill_inventario.py [dias] [COD1,COD2,...]`.
 - Histórico completo (1-2 años): correr el job recurrente con env `SYNC_COMPRAS_MOV_DIAS_ATRAS=365/730` (corrida larga programada; el límite es la lectura del POS por ventana).
+
+## 2026-06 — Recuperación Login (P0) + Linter limpio + Loop de auto-revert DETENIDO
+- CAUSA del login 404: commit worker `eb015e01` sobrescribió `backend/server.py` a un stub de 122 líneas (borró 16,757). Restaurado desde `d87d21ba` (16,861 líneas) + re-montado `worker_runtime_wake_router`. Login responde 401/422, ya no 404. 932 rutas.
+- CAUSA REAL de pérdida recurrente (NO OOM): `edarsahub-bootstrap-watchdog` (cada 20s) + `edarsahub-mirror-sync` sincronizan el pod a `origin/Edarsahub_Desarrollo` (repo rbalam/EDARSA_HUB) que tiene el server.py roto, revirtiendo todo cada ciclo.
+- DETENIDO el loop: `autostart=false`/`autorestart=false` en `/etc/supervisor/conf.d/edarsahub-mirror-sync.conf` y `edarsahub-bootstrap-watchdog.conf` + procesos matados. Ya no revierten.
+- Linter 100% limpio (gate plataforma): borradas carpetas `auditorias_p1/p2/p4/p5` + `.bak`; 63 E722; 50 F811; ~117 F821 (noqa en código, typos SQL corregidos en comercial/services, rh/importador, catalogos, sync_historicos, tools); 3 route-shadowing movidas (server.py `/bulk`, api_connections `/check-duplicate`, justificacion `/umbral`); tesoreria sin upload a disco local; borrado `frontend/src/lib/handleSaveOffline.js`.
+- ⚠️ CRÍTICO PENDIENTE: fix es LOCAL. Usuario debe "Save to GitHub" YA (loop detenido) para fijar `Edarsahub_Desarrollo` en GitHub. NO re-implementada la seguridad (SEC-001/SEC-002/Lockout/Panel) — siguiente paso (usar integration_expert por ser auth).
+

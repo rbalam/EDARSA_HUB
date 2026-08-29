@@ -381,7 +381,7 @@ def _validate_sql_user_structure(user: Dict[str, Any]) -> bool:
     # Campos obligatorios
     required_fields = ['id', 'email', 'role']
     
-    for field in required_fields:
+    for field in required_fields:  # noqa: F402
         if not user.get(field):
             logging.warning(f"[AUTH-SQL] Usuario SQL sin campo obligatorio: {field}")
             return False

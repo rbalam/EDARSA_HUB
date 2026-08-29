@@ -1,2 +1,0 @@
-PASS RBAC SQL runtime listo
-  Tablas: 8, Roles: 6, Permisos: 9

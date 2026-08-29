@@ -39,14 +39,14 @@ def _safe_decimal(value):
     """Convierte valor a decimal"""
     try:
         return float(value) if value else 0.0
-    except:
+    except Exception:
         return 0.0
 
 def _safe_int(value):
     """Convierte valor a entero"""
     try:
         return int(float(value)) if value else 0
-    except:
+    except Exception:
         return 0
 
 

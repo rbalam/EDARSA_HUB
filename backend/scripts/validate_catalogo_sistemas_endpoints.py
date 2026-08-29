@@ -370,7 +370,7 @@ def main():
                     global API_URL
                     API_URL = line.split('=', 1)[1].strip()
                     break
-    except:
+    except Exception:
         pass
     
     print(f"API URL: {API_URL}")

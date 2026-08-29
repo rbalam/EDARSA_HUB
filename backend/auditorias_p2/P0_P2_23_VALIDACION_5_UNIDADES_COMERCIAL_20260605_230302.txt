@@ -1,7 +1,0 @@
-
-### UNIDADES + SERVIDOR (JOIN)
-130MID: servidor=130° MERIDA, system_type=SOFTRESTAURANT_PRO, activo=True
-130QRO: servidor=ManagmentPro, system_type=MPRO, activo=True
-CIENFUEGOS: servidor=CIENFUEGOS, system_type=SOFTRESTAURANT_PRO, activo=True
-ESTELAR: servidor=LA ESTELAR, system_type=SOFTRESTAURANT_PRO, activo=True
-ORIGEN: servidor=ManagmentPro, system_type=MPRO, activo=True

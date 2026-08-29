@@ -17,7 +17,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import List
 
 from .repository import (
     list_api_connections,
@@ -128,6 +128,24 @@ async def list_apis(credentials: HTTPAuthorizationCredentials = Depends(security
     except Exception as e:
         logging.error(f"[API_CONNECTIONS] Error inesperado: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/check-duplicate")
+async def check_dup(
+    name: str = None,
+    url: str = None,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Verifica si existe una conexión con el mismo nombre o URL."""
+    get_current_user(credentials)
+    if not name and not url:
+        raise HTTPException(status_code=400, detail="Proporciona name o url")
+
+    duplicate = check_duplicate_api(name or '', url or '')
+    return {
+        "exists": duplicate is not None,
+        "duplicate": duplicate
+    }
 
 
 @router.get("/{api_id}")
@@ -300,24 +318,6 @@ async def sync_to_mongo(credentials: HTTPAuthorizationCredentials = Depends(secu
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/check-duplicate")
-async def check_dup(
-    name: str = None,
-    url: str = None,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-):
-    """Verifica si existe una conexión con el mismo nombre o URL."""
-    get_current_user(credentials)
-    if not name and not url:
-        raise HTTPException(status_code=400, detail="Proporciona name o url")
-
-    duplicate = check_duplicate_api(name or '', url or '')
-    return {
-        "exists": duplicate is not None,
-        "duplicate": duplicate
-    }
-
-
 # ============================================================================
 # ENDPOINTS - TEST QUERY (CONSULTAS SQL CONTROLADAS)
 # ============================================================================
@@ -445,7 +445,7 @@ async def test_query_draft(
                     "message": f"Consulta ejecutada ({len(rows)} filas)"
                 }
 
-            except:
+            except Exception:
                 return {
                     "success": True,
                     "status_code": 200,

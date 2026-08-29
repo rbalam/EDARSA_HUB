@@ -389,7 +389,7 @@ def safe_decimal(value: Any, default: Decimal = Decimal("0")) -> Decimal:
         return default
     try:
         return Decimal(str(value))
-    except:
+    except Exception:
         return default
 
 
@@ -399,5 +399,5 @@ def safe_int(value: Any, default: int = 0) -> int:
         return default
     try:
         return int(value)
-    except:
+    except Exception:
         return default

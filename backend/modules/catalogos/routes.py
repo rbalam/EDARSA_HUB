@@ -169,7 +169,7 @@ async def solicitar_sistema(
     # Verificar duplicados
     check_query = f"""
         SELECT COUNT(*) as cnt FROM Sistema_Catalogo 
-        WHERE Descripcion = '{Descripcion.replace("'", "''")}'
+        WHERE Descripcion = '{descripcion.replace("'", "''")}'
     """
     try:
         result = execute_sql_query(
@@ -720,7 +720,7 @@ async def obtener_matriz_autorizacion(
         tipo = cur.fetchone()
 
         if not tipo:
-            raise HTTPException(
+            raise HTTPException(  # noqa: F821
                 status_code=404,
                 detail="Tipo de autorizacion no encontrado",
             )

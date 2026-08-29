@@ -681,7 +681,7 @@ def sincronizar_unidad_softrestaurant(
                     duracion_segundos=resultado['duracion_segundos'],
                     tipo_ejecucion='MANUAL'
                 )
-        except:
+        except Exception:
             pass
     
     return resultado

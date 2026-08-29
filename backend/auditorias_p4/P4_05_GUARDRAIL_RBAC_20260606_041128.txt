@@ -1,2 +1,0 @@
-PASS RBAC SQL empresa/unidad/sucursal base listo
-  Roles: 6, Permisos: 9

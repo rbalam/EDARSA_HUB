@@ -303,7 +303,7 @@ async def obtener_sync_log(
             if log.get('DetallesJSON'):
                 try:
                     log['DetallesJSON'] = json.loads(log['DetallesJSON'])
-                except:
+                except Exception:
                     pass
             logs.append(log)
         

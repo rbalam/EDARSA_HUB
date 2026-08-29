@@ -476,7 +476,7 @@ class SyncHistoricosRepository:
         query = f"""
         UPDATE Sync_Control_Ejecuciones
         SET 
-            Status = '{Status}',
+            Status = '{status}',
             RegistrosProcesados = {registros_procesados},
             RegistrosInsertados = {registros_insertados},
             RegistrosActualizados = {registros_actualizados},
@@ -493,7 +493,7 @@ class SyncHistoricosRepository:
         query = f"""
         SELECT TOP 1 *
         FROM Sync_Control_Ejecuciones
-        WHERE ServerID = '{ServerID}'
+        WHERE ServerID = '{server_id}'
           AND SyncType = '{sync_type}'
           AND Status = 'SUCCESS'
         ORDER BY FinishedAtMexico DESC

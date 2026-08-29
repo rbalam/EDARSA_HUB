@@ -873,10 +873,10 @@ def get_compras_adapter(system_type: str):
     st = (system_type or "").upper()
 
     if "SOFT" in st:
-        return softrestaurant_pro_adapter
+        return softrestaurant_pro_adapter  # noqa: F821
 
     if "MPRO" in st or "MANAGEMENT" in st or "MANAGMENT" in st:
-        return mpro_adapter
+        return mpro_adapter  # noqa: F821
 
     return None
 

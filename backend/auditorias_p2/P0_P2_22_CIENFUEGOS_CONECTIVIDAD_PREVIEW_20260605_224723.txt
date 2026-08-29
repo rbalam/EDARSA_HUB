@@ -1,4 +1,0 @@
-
-### 2. TEST SOCKET
-TEST_SOCKET: host=servercienfuegos.ddns.net, port=6669
-OK_SOCKET_CIENFUEGOS: Puerto accesible

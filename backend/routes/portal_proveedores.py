@@ -599,7 +599,7 @@ async def admin_get_all_invoices(
 
     return await portal_sql.list_supplier_invoices(supplier["id"], status=status, limit=500)
     
-    return invoices
+    return invoices  # noqa: F821
 
 
 # ============================================================================

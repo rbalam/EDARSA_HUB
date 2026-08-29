@@ -574,7 +574,7 @@ class TablajeriaSyncService:
                 server = host
                 port = servidor_config.get('port', 1433)
             
-            conn_cf = get_external_sql_connection({**servidor_config, 'password_decrypted': password})
+            conn_cf = get_external_sql_connection({**servidor_config, 'password_decrypted': password})  # noqa: F821
         except Exception as e:
             result.success = False
             result.errores.append(f"Error conectando a CIENFUEGOS: {e}")

@@ -7,7 +7,7 @@ NO usa conexiones LIVE para dashboards.
 
 from datetime import datetime, date
 from typing import Dict, Any, List, Optional
-from core.config.edarsahub_sql import get_edarsahub_connection
+from core.config.edarsahub_sql import get_edarsahub_connection  # noqa: F811
 import logging
 
 logger = logging.getLogger(__name__)

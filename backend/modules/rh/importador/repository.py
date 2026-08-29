@@ -308,20 +308,20 @@ async def insertar_staging(
         VALUES (
             N'{nombre}',
             {f"'{curp}'" if curp else 'NULL'},
-            {f"'{RFC}'" if RFC else 'NULL'},
+            {f"'{rfc}'" if rfc else 'NULL'},
             {f"'{clabe}'" if clabe else 'NULL'},
             {f"'{num_emp}'" if num_emp else 'NULL'},
             {f"N'{suc_nombre}'" if suc_nombre else 'NULL'},
             {suc_id},
-            {f"N'{Puesto_Nombre}'" if Puesto_Nombre else 'NULL'},
+            {f"N'{puesto_nombre}'" if puesto_nombre else 'NULL'},
             {puesto_id},
             {f"N'{area}'" if area else 'NULL'},
             {f"'{sexo}'" if sexo else 'NULL'},
-            {Edad},
-            {f"N'{Antiguedad}'" if Antiguedad else 'NULL'},
+            {edad},
+            {f"N'{antiguedad}'" if antiguedad else 'NULL'},
             {sueldo},
-            {f"N'{Metodo_Pago}'" if Metodo_Pago else 'NULL'},
-            '{Fuente}',
+            {f"N'{metodo_pago}'" if metodo_pago else 'NULL'},
+            '{fuente}',
             {f"N'{archivo}'" if archivo else 'NULL'},
             {linea},
             N'{usuario_safe}',
@@ -522,7 +522,7 @@ async def insertar_bitacora(
         )
         OUTPUT INSERTED.BitacoraID
         VALUES (
-            '{Fuente}',
+            '{fuente}',
             {f"N'{archivo}'" if archivo else 'NULL'},
             {int(datos.get('Total_Registros_Leidos', 0))},
             {int(datos.get('Total_Insertados', 0))},
@@ -532,7 +532,7 @@ async def insertar_bitacora(
             {int(datos.get('Total_Errores', 0))},
             {f"N'{usuario}'" if usuario else 'NULL'},
             {int(datos.get('Duracion_Segundos')) if datos.get('Duracion_Segundos') else 'NULL'},
-            '{Estado}',
+            '{estado}',
             {f"N'{detalle_str}'" if detalle_str else 'NULL'}
         )
     """
@@ -676,7 +676,7 @@ async def buscar_duplicados_por_nombre_sucursal(
         SELECT ColaboradorID, Nombre_Completo, CURP, RFC, SucursalID, PuestoID
         FROM RH_Colaboradores_Expediente
         WHERE UPPER(Nombre_Completo) = '{nombre_safe}' 
-          AND SucursalID = {int(SucursalID)}
+          AND SucursalID = {int(sucursal_id)}
           AND Colaborador_Activo = 1
     """
     return execute_hub_query(server, query)

@@ -294,7 +294,7 @@ def verificar_duplicado_en_maestro(server: Dict, curp: Optional[str], rfc: Optio
         cursor.execute(f"""
             SELECT ColaboradorID, Nombre_Completo
             FROM RH_Colaboradores_Expediente
-            WHERE CURP = '{escape_sql(CURP)}'
+            WHERE CURP = '{escape_sql(curp)}'
         """)
         result = cursor.fetchone()
         if result:
@@ -306,7 +306,7 @@ def verificar_duplicado_en_maestro(server: Dict, curp: Optional[str], rfc: Optio
         cursor.execute(f"""
             SELECT ColaboradorID, Nombre_Completo
             FROM RH_Colaboradores_Expediente
-            WHERE RFC = '{escape_sql(RFC)}'
+            WHERE RFC = '{escape_sql(rfc)}'
         """)
         result = cursor.fetchone()
         if result:
@@ -411,8 +411,8 @@ def aprobar_registro(
                 OUTPUT INSERTED.ColaboradorID
                 VALUES (
                     N'{nombre}',
-                    {f"'{curp_val}'" if CURP else 'NULL'},
-                    {f"'{rfc_val}'" if RFC else 'NULL'},
+                    {f"'{curp_val}'" if curp else 'NULL'},
+                    {f"'{rfc_val}'" if rfc else 'NULL'},
                     {f"'{num_emp}'" if num_emp else 'NULL'},
                     {f"'{sexo}'" if sexo else 'NULL'},
                     'ACTIVO',

@@ -582,7 +582,7 @@ class CargosLogRepository(SQLBaseRepository):
         import json
         try:
             detalle_dict = json.loads(detalle) if detalle else {}
-        except:
+        except Exception:
             detalle_dict = {"raw": detalle}
         
         return {

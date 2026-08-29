@@ -6,7 +6,7 @@ EDARSA HUB - Módulo Tablajería
 """
 
 from .routes import router
-from .schemas import *
+from .schemas import *  # noqa: F403
 from .sync_service import TablajeriaSyncService
 
 __all__ = [

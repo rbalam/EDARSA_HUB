@@ -60,7 +60,7 @@ for t in tables:
         cur.execute(f"SELECT TOP 3 * FROM {t} ORDER BY 1 DESC")
         for r in cur.fetchall():
             print(r)
-    except:
+    except Exception:
         pass
 
 cn.close()

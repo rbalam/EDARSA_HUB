@@ -1,7 +1,0 @@
-============================================================
-EDARSAHUB - REPORTE CIERRE P1 20260605_144406
-============================================================
-
-### 1. SQL-FIRST - VARIABLES Y CONEXION
-
-### 2. RBAC - NIVELJERARQUIA Y SIN HARDCODE DE EMAILS

@@ -154,7 +154,6 @@ def _acquire_sync_lock_sync(run_id: str, pid: int) -> bool:
     - Locks vencidos se marcan TIMEOUT dentro de la misma transacción.
     - Ante cualquier error opera fail-closed: no inicia el job.
     """
-    from datetime import timedelta
     from zoneinfo import ZoneInfo
 
     conn = None

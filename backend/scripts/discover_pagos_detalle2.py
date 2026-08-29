@@ -17,7 +17,7 @@ import pymssql
 from core.scheduler.jobs.inteligencia_comercial_sync_job import get_unidades_negocio_pos, get_pos_config_for_unidad
 
 def conn_for(codigo):
-    u = get_unidades_negocio_pos([codigo]); 
+    u = get_unidades_negocio_pos([codigo]) 
     if not u: return None
     cfg = get_pos_config_for_unidad(u[0])
     if not cfg or not cfg.get("host"): return None

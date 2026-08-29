@@ -386,7 +386,6 @@ async def health_check_ia():
     """
     Verifica que el módulo de Pricing IA con GPT-5.2 está operativo.
     """
-    import os
     
     llm_key_configured = bool(os.environ.get('EMERGENT_LLM_KEY'))
     

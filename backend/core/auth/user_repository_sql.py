@@ -809,7 +809,6 @@ def find_user_by_id_sql(user_id: str, include_password: bool = False) -> Optiona
 __all__ = [
     'AuthRepositorySQL',
     'compare_user_mongo_vs_sql',
-    'list_auth_migration_differences',
     'validate_superadmin_rule',
     # RBAC-SCOPE-G: Funciones de escritura SQL
     'create_user_sql',

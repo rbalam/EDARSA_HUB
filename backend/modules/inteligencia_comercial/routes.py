@@ -1619,7 +1619,7 @@ async def get_productos_subfamilia(
     except Exception as e:
         logger.error(f"[INTELIGENCIA] Error productos-subfamilia: {e}")
         return {"success": False, "_error": str(e), "productos": []}
-async def get_ventas_casas(
+async def get_ventas_casas(  # noqa: F811
     unidad: Optional[str] = Query(None),
     periodo: Optional[str] = Query(None, description="dia | semana | mes | anio"),
     fecha_inicio: Optional[str] = Query(None),
@@ -1697,7 +1697,7 @@ async def get_unidades_negocio(request: Request):
                     if str(u.get("unidad_negocio_pk") or "") in allowed
                 ]
             return {"success": True, "_source": "FALLBACK_UNIDADES_SERVICE", "unidades": lista}
-        except:
+        except Exception:
             return {"success": False, "unidades": [], "error": str(e)}
 
 

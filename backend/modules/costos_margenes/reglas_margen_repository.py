@@ -42,7 +42,7 @@ def _safe_decimal(value, default=Decimal('0')) -> Decimal:
         return default
     try:
         return Decimal(str(value))
-    except:
+    except Exception:
         return default
 
 
@@ -54,7 +54,7 @@ def _safe_isoformat(value) -> Optional[str]:
         return value
     try:
         return value.isoformat()
-    except:
+    except Exception:
         return str(value)
 
 

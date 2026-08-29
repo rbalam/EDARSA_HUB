@@ -59,7 +59,6 @@ COLLECTION_TO_TABLE_MAP = {
     # FASE B-P2-B: Automatización Compras
     "automatizaciones_operativas_compras": "Operativo_TareasCompras",
     "automatizaciones_bitacora": "Operativo_BitacoraCompras",
-    "pedidos_procesados_automatizacion": "Operativo_PedidosProcesados",
     "inventarios_fisicos_procesados": "Compras_Inventarios_Fisicos_Sync",
 }
 
@@ -358,7 +357,7 @@ class SQLBaseRepository:
             cursor.close()
             conn.close()
             return exists
-        except:
+        except Exception:
             return False
     
     def _row_to_dict(self, row: Dict) -> Dict:
@@ -387,7 +386,7 @@ class SQLBaseRepository:
                 try:
                     json_key = mapped_key.replace("_json", "").replace("json", "")
                     result[json_key] = json.loads(value)
-                except:
+                except Exception:
                     result[mapped_key] = value
             else:
                 result[mapped_key] = value
@@ -484,7 +483,7 @@ class SQLBaseRepository:
             cursor.close()
             conn.close()
             return self._cached_columns
-        except:
+        except Exception:
             return []
     
     def _build_order_clause(self, sort: Optional[List[tuple]]) -> str:

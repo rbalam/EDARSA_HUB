@@ -188,8 +188,8 @@ async def health_check(
             "alcance": ["La Estelar", "Cienfuegos", "130 Mérida"],
             "mongodb_connected": True,
             "colecciones": {
-                "propinas_control": propinas_control_exists,
-                "propinas_config": propinas_config_exists
+                "propinas_control": propinas_control_exists,  # noqa: F821
+                "propinas_config": propinas_config_exists  # noqa: F821
             }
         }
     except Exception as e:

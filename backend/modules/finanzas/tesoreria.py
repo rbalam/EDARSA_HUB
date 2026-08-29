@@ -653,16 +653,11 @@ async def subir_ficha_deposito(
         # Leer archivo
         contents = await file.read()
         
-        # Guardar temporalmente
-        upload_dir = "/app/uploads/fichas_deposito"
-        os.makedirs(upload_dir, exist_ok=True)
-        
+        # NOTA: OCR simulado (ver TODO). No se persiste el archivo en disco local
+        # del pod (incompatible con despliegue). Al integrar OCR real, usar
+        # almacenamiento de objetos (Emergent Object Storage).
         timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
         filename = f"{cuadre_id}_{timestamp}_{file.filename}"
-        filepath = os.path.join(upload_dir, filename)
-        
-        with open(filepath, 'wb') as f:
-            f.write(contents)
         
         # Por ahora devolver datos simulados del OCR
         # TODO: Integrar OCR real (Google Vision, Azure, etc.)
@@ -682,7 +677,7 @@ async def subir_ficha_deposito(
         return {
             "message": "Ficha cargada exitosamente. Valide los datos extraídos.",
             "ocr_data": ocr_data,
-            "filepath": filepath
+            "filepath": filename
         }
     except HTTPException:
         raise

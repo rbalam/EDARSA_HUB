@@ -687,7 +687,7 @@ class RBACRepositorySQL:
                 if row[9]:
                     try:
                         detalles = json.loads(row[9])
-                    except:
+                    except Exception:
                         pass
                 
                 logs.append({

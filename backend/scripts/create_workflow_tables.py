@@ -98,7 +98,7 @@ def execute_sql_file():
             print("\nTablas existentes:")
             for t in existing:
                 print(f"  • {t[0]}")
-        except:
+        except Exception:
             pass
     
     cursor.close()

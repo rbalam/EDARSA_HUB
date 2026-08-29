@@ -1420,7 +1420,6 @@ async def notificar_test(current_user: Dict = Depends(get_current_user)):
 
 
 # Importar json para el WebSocket
-import json
 
 
 # ============================================================================

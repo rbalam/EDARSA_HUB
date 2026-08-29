@@ -169,7 +169,7 @@ def get_compras_params_sql(server_id: str, sucursal: str) -> Optional[Dict]:
                 import json
                 try:
                     dias_inhabiles = json.loads(row['dias_inhabiles'])
-                except:
+                except Exception:
                     dias_inhabiles = []
             
             result = {
@@ -311,7 +311,7 @@ def get_all_compras_params_sql() -> List[Dict]:
             if row.get('dias_inhabiles'):
                 try:
                     dias_inhabiles = json.loads(row['dias_inhabiles'])
-                except:
+                except Exception:
                     pass
             
             result.append({
