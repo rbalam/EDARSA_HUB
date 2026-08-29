@@ -441,6 +441,21 @@ def integrate(head: str, base_sha: str) -> tuple[bool, str]:
     return after == head, after
 
 
+def release_agent_guard_claim(job_id: str) -> tuple[bool, str]:
+    safe_id = re.sub(r"[^A-Za-z0-9._-]", "-", job_id)
+    agent_id = f"worker-{safe_id}"
+    guard = ROOT / ".git" / "agent-guard" / "bin" / "agent_guard.py"
+    if not guard.is_file():
+        return False, "AGENT_GUARD_NOT_FOUND"
+    released = run(
+        [PYTHON_BIN, str(guard), "release", "--agent-id", agent_id],
+        cwd=ROOT,
+    )
+    if released.returncode != 0:
+        return False, released.stdout[-1000:]
+    return True, released.stdout[-1000:]
+
+
 def process_one(path: Path) -> int:
     envelope = load_envelope(path)
     job = envelope["job"]
@@ -538,14 +553,20 @@ def process_one(path: Path) -> int:
         result["quality_gate"] = "FAIL"
         result["summary_es"] = "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada."
     finally:
-        result["completed_at_utc"] = now()
-        write_json(RESULTS / path.name, result)
-        target = DONE / path.name if result["status"] == "INTEGRATED" else REJECTED / path.name
-        os.replace(processing, target)
+        release_ok, release_detail = release_agent_guard_claim(job_id)
+        result["agent_guard_release"] = "PASS" if release_ok else "FAIL"
+        if not release_ok:
+            result["blockers"].append("agent_guard_release_failed:" + release_detail)
+            result["quality_gate"] = "FAIL"
+            result["certification"] = "NOT_CERTIFIED"
         if worktree is not None:
             git("worktree", "remove", "--force", str(worktree), check=False)
         if branch:
             git("branch", "-D", branch, check=False)
+        result["completed_at_utc"] = now()
+        write_json(RESULTS / path.name, result)
+        target = DONE / path.name if result["status"] == "INTEGRATED" else REJECTED / path.name
+        os.replace(processing, target)
     print(json.dumps({"job_id": job_id, "status": result["status"], "blockers": result["blockers"]}, ensure_ascii=False))
     return 0
 
