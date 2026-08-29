@@ -31,7 +31,7 @@ DEV_BRANCH = os.environ.get("EDARSAHUB_DEV_BRANCH", "Edarsahub_Desarrollo")
 ORPHAN_SECONDS = int(os.environ.get("EDARSAHUB_PROCESSING_ORPHAN_SECONDS", "2100"))
 CLAIM_STALE_SECONDS = int(os.environ.get("EDARSAHUB_CLAIM_STALE_SECONDS", "900"))
 GUARD = ROOT / ".git" / "agent-guard" / "bin" / "agent_guard.py"
-PYTHON = ROOT / ".venv" / "bin" / "python"
+PYTHON = Path("/root/.venv/bin/python")
 
 def now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

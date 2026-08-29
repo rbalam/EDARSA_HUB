@@ -19,10 +19,10 @@ def load_dispatcher():
     return module
 
 
-def test_dispatcher_prefers_repository_virtualenv():
+def test_dispatcher_prefers_runtime_virtualenv():
     module = load_dispatcher()
 
-    expected = ROOT / ".venv" / "bin" / "python"
+    expected = Path("/root/.venv/bin/python")
 
     if expected.is_file() and os.access(expected, os.X_OK):
         assert module.PYTHON_BIN == str(expected)
@@ -35,6 +35,11 @@ def test_dispatcher_falls_back_to_sys_executable(
     module = load_dispatcher()
 
     monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(
+        module,
+        "RUNTIME_PYTHON",
+        tmp_path / "missing-runtime-python",
+    )
     monkeypatch.setattr(
         module.sys,
         "executable",
@@ -65,6 +70,11 @@ def test_dispatcher_prefers_executable_repo_python(
     repo_python.chmod(0o755)
 
     monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(
+        module,
+        "RUNTIME_PYTHON",
+        tmp_path / "missing-runtime-python",
+    )
     monkeypatch.setattr(
         module.sys,
         "executable",

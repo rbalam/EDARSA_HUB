@@ -16,8 +16,15 @@ DIR="$ROOT/tools/mirror_sync"
 WORKER="$DIR/mirror_sync_worker.sh"
 
 resolve_worker_python() {
-  if [ -x "$ROOT/.venv/bin/python" ]; then printf '%s\n' "$ROOT/.venv/bin/python"; return 0; fi
-  command -v python3 2>/dev/null || command -v python 2>/dev/null || true
+    if [ -x "/root/.venv/bin/python" ]; then
+        printf '%s\n' "/root/.venv/bin/python"
+        return 0
+    fi
+    if [ -x "$ROOT/.venv/bin/python" ]; then
+        printf '%s\n' "$ROOT/.venv/bin/python"
+        return 0
+    fi
+    command -v python3 2>/dev/null || command -v python 2>/dev/null || true
 }
 PYTHON_BIN="$(resolve_worker_python)"
 if [ -z "$PYTHON_BIN" ] || [ ! -x "$PYTHON_BIN" ]; then echo "ABORT=WORKER_PYTHON_NOT_EXECUTABLE"; exit 4; fi

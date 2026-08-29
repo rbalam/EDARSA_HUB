@@ -12,10 +12,10 @@ def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_worker_prefers_repository_virtualenv():
+def test_worker_prefers_runtime_virtualenv():
     text = read(WORKER)
 
-    assert '$ROOT/.venv/bin/python' in text
+    assert '"/root/.venv/bin/python"' in text
     assert 'PYTHON_BIN="$(resolve_worker_python)"' in text
     assert "EDARSAHUB_WORKER_PYTHON" not in text
 
@@ -61,10 +61,10 @@ def test_universal_worker_tools_use_canonical_python():
     assert 'python3 "$HEALTH_PUBLISHER"' not in universal_text
 
 
-def test_launcher_uses_same_canonical_python_contract():
+def test_launcher_uses_same_runtime_python_contract():
     text = read(LAUNCHER)
 
-    assert '$ROOT/.venv/bin/python' in text
+    assert '"/root/.venv/bin/python"' in text
     assert 'PYTHON_BIN="$(resolve_worker_python)"' in text
     assert "EDARSAHUB_WORKER_PYTHON" not in text
 

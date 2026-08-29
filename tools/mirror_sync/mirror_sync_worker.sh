@@ -16,7 +16,14 @@ DIR="$ROOT/tools/mirror_sync"
 RUNTIME_GENERATION="20260827-mirror-runtime-control-plane-v3"
 
 resolve_worker_python() {
-    if [ -x "$ROOT/.venv/bin/python" ]; then printf '%s\n' "$ROOT/.venv/bin/python"; return 0; fi
+    if [ -x "/root/.venv/bin/python" ]; then
+        printf '%s\n' "/root/.venv/bin/python"
+        return 0
+    fi
+    if [ -x "$ROOT/.venv/bin/python" ]; then
+        printf '%s\n' "$ROOT/.venv/bin/python"
+        return 0
+    fi
     command -v python3 2>/dev/null || command -v python 2>/dev/null || true
 }
 
