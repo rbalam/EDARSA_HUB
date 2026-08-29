@@ -1,18 +1,24 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "eb015e01699a67d61c0a524d575e99f787924e1e",
-  "generated_at_utc": "2026-08-28T06:16:40Z",
+  "development_sha": "28fdc89c205b311ff1b51660fcc7b8737c301815",
+  "generated_at_utc": "2026-08-29T13:08:29Z",
   "history": {
-    "done_total_local": 5,
+    "done_total_local": 6,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 98,
-    "results_total_local": 88
+    "rejected_total_local": 101,
+    "results_total_local": 92
   },
   "jobs": [
     {
-      "age_seconds": 2643,
-      "job_id": "CAVAS-BOS-V1-PAYMENT-MODE-RULE-01",
+      "age_seconds": 101,
+      "job_id": "cxp-frontend-build-baseline-v2-20260828",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 91,
+      "job_id": "worker-reconcile-preserve-v2-20260828",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -22,13 +28,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
   "runtime": {
     "generation": "20260827-universal-job-worker-sla-v2",
-    "last_cycle_utc": "2026-08-28T06:16:30Z",
-    "last_receive_utc": "2026-08-28T06:16:31Z",
-    "pid": "1955"
+    "last_cycle_utc": "2026-08-29T13:08:19Z",
+    "last_receive_utc": "2026-08-29T13:08:22Z",
+    "pid": "1881"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
