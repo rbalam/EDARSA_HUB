@@ -1,0 +1,24 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-e2e10-20260829T232255Z-10443-09",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Canario E2E de confiabilidad de cola 9/10.",
+  "human_summary_language": "es",
+  "enqueued_at_utc": "2026-08-29T23:24:29.452450+00:00",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "worker_queue/e2e_canaries/worker-e2e10-20260829T232255Z-10443.txt",
+      "old": "STEP=8",
+      "new": "STEP=9",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
