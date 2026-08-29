@@ -1,0 +1,17 @@
+# EDARSAHUB critical architecture ownership.
+#
+# GitHub branch protection must require CODEOWNER review
+# for these rules to become an enforcement boundary.
+
+/backend/server.py @rbalam
+/backend/modules/auth/ @rbalam
+/tools/mirror_sync/ @rbalam
+/tools/bootstrap/ @rbalam
+
+/.env @rbalam
+/.env.* @rbalam
+/backend/.env @rbalam
+/backend/.env.* @rbalam
+
+/.github/workflows/ @rbalam
+/.github/CODEOWNERS @rbalam

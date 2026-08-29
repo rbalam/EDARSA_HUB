@@ -1,1 +1,0 @@
-{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"canal":{"$numberInt":"1"},"modulo":{"$numberInt":"1"},"evento":{"$numberInt":"1"},"activo":{"$numberInt":"1"}},"name":"idx_config_lookup","unique":true}],"uuid":"1a43b19144e047ec9a1896897fbff9fd","collectionName":"notification_config","type":"collection"}

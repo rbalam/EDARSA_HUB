@@ -1,0 +1,85 @@
+name: EDARSAHUB Safety Gate
+
+on:
+  pull_request:
+    branches:
+      - Edarsahub_Desarrollo
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  destructive-diff:
+    name: destructive-diff
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve base
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "${{ github.base_ref }}"
+          echo "BASE_SHA=$(git merge-base HEAD origin/${{ github.base_ref }})" >> "$GITHUB_ENV"
+
+      - name: Reject destructive changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/repository_safety/destructive_diff_guard.py \
+            --base "$BASE_SHA" \
+            --head HEAD
+
+  backend-contract:
+    name: backend-contract
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install backend dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+
+          if [ -f backend/requirements.txt ]; then
+            pip install -r backend/requirements.txt
+          elif [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            echo "No requirements file found"
+            exit 1
+          fi
+
+      - name: Compile safety layer
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/repository_safety/destructive_diff_guard.py \
+            tools/repository_safety/backend_route_smoke.py
+
+      - name: Safety regression tests
+        shell: bash
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          python -m pytest -q \
+            tests/test_destructive_diff_guard_contract.py \
+            tests/test_backend_route_smoke_contract.py \
+            tests/test_shared_app_sync_safety_contract.py
+
+      - name: Backend OpenAPI smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/repository_safety/backend_route_smoke.py

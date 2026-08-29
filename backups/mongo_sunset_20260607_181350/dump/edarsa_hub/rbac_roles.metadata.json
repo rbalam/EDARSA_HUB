@@ -1,1 +1,0 @@
-{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"nombre":{"$numberInt":"1"}},"name":"nombre_1","unique":true},{"v":{"$numberInt":"2"},"key":{"activo":{"$numberInt":"1"}},"name":"activo_1"}],"uuid":"bc8ee82707884e038d37e01a56934bee","collectionName":"rbac_roles","type":"collection"}

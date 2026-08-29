@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SAFETY_GUARD="/app/tools/mirror_sync/shared_app_safety_guard.sh"
+test -r "$SAFETY_GUARD" || {
+    echo "ABORT=SHARED_APP_SAFETY_GUARD_MISSING"
+    exit 90
+}
+. "$SAFETY_GUARD"
+edarsahub_require_sync_enabled || exit $?
+edarsahub_require_clean_shared_app || exit $?
+
+
 MIRROR_SYNC_GUARD="/app/tools/mirror_sync/mirror_sync_guard.sh"
 
 test -r "$MIRROR_SYNC_GUARD" || {

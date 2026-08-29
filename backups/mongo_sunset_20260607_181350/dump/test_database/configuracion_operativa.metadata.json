@@ -1,1 +1,0 @@
-{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"clave":{"$numberInt":"1"}},"name":"idx_clave_unique","unique":true}],"uuid":"b0f7742ef1054565a9b416d32f570998","collectionName":"configuracion_operativa","type":"collection"}
