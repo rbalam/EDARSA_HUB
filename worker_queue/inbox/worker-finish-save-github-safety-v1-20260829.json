@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-finish-save-github-safety-v1-20260829",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "350176d77f2c0d7bfa2ac0caa63abdaea9d50af1",
+  "objective": "Cerrar el hardening pendiente del Worker sin tocar trabajo de Emergent: anti-clobber obligatorio para write_file sobre archivos existentes y single-writer no bloqueante para el result publisher. No modificar backend/server.py ni ningun archivo fuera del alcance declarado. No limpiar worktrees ni /app dirty. No tocar Produccion.",
+  "requester": {"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1.0","chat":"save-to-github-finalization"},
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "    if kind == \"write_file\":\n        target.parent.mkdir(parents=True, exist_ok=True)\n        target.write_text(action[\"content\"], encoding=\"utf-8\")\n        return relative\n",
+      "new": "    if kind == \"write_file\":\n        content = action[\"content\"]\n        if target.exists():\n            if \"expected_sha256\" not in action:\n                raise RuntimeError(\n                    f\"WRITE_EXISTING_REQUIRES_EXPECTED_SHA256:{relative}\"\n                )\n            current_size = target.stat().st_size\n            new_size = len(content.encode(\"utf-8\"))\n            if current_size >= 4096 and new_size < int(current_size * 0.75):\n                raise RuntimeError(\n                    f\"WRITE_FILE_LARGE_SHRINK_BLOCKED:{relative}:\"\n                    f\"current={current_size}:new={new_size}\"\n                )\n        target.parent.mkdir(parents=True, exist_ok=True)\n        target.write_text(content, encoding=\"utf-8\")\n        return relative\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "expected_count": 1,
+      "old": "import json\nimport os\nimport shutil\nimport subprocess\nimport tempfile\n",
+      "new": "import fcntl\nimport json\nimport os\nimport shutil\nimport subprocess\nimport tempfile\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "expected_count": 1,
+      "old": "ATTESTATIONS = REPORT_DIR / \"test_attestations\"\nWORKTREE_PARENT = Path(\n",
+      "new": "ATTESTATIONS = REPORT_DIR / \"test_attestations\"\nPUBLISH_LOCK = STATE / \"result_publisher.lock\"\nWORKTREE_PARENT = Path(\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "expected_count": 1,
+      "old": "def main() -> int:\n    RESULTS.mkdir(parents=True, exist_ok=True)\n    count = 0\n    errors = 0\n\n    for path in sorted(RESULTS.glob(\"*.json\")):\n        try:\n            if publish_one(path):\n                count += 1\n        except Exception as exc:\n            errors += 1\n            print(\n                f\"UNIVERSAL_RESULT_PUBLISH_ERROR=\"\n                f\"{path.name}:{type(exc).__name__}:{exc}\"\n            )\n\n    print(f\"UNIVERSAL_RESULTS_PUBLISHED_COUNT={count}\")\n    print(f\"UNIVERSAL_RESULTS_PUBLISH_ERROR_COUNT={errors}\")\n\n    return 1 if errors else 0\n",
+      "new": "def main() -> int:\n    RESULTS.mkdir(parents=True, exist_ok=True)\n    PUBLISH_LOCK.parent.mkdir(parents=True, exist_ok=True)\n\n    with PUBLISH_LOCK.open(\"a+\", encoding=\"utf-8\") as lock_handle:\n        try:\n            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)\n        except BlockingIOError:\n            print(\"UNIVERSAL_RESULT_PUBLISHER_SINGLE_WRITER=BUSY\")\n            return 0\n\n        count = 0\n        errors = 0\n\n        for path in sorted(RESULTS.glob(\"*.json\")):\n            try:\n                if publish_one(path):\n                    count += 1\n            except Exception as exc:\n                errors += 1\n                print(\n                    f\"UNIVERSAL_RESULT_PUBLISH_ERROR=\"\n                    f\"{path.name}:{type(exc).__name__}:{exc}\"\n                )\n\n        print(f\"UNIVERSAL_RESULTS_PUBLISHED_COUNT={count}\")\n        print(f\"UNIVERSAL_RESULTS_PUBLISH_ERROR_COUNT={errors}\")\n\n        return 1 if errors else 0\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_save_github_safety_contract.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nDISPATCHER = ROOT / \"tools\" / \"mirror_sync\" / \"universal_job_dispatcher.py\"\nPUBLISHER = ROOT / \"tools\" / \"mirror_sync\" / \"universal_job_result_publisher.py\"\n\n\ndef test_existing_write_requires_hash_and_blocks_large_shrink():\n    source = DISPATCHER.read_text(encoding=\"utf-8\")\n    assert \"WRITE_EXISTING_REQUIRES_EXPECTED_SHA256\" in source\n    assert \"WRITE_FILE_LARGE_SHRINK_BLOCKED\" in source\n    assert \"current_size >= 4096\" in source\n    assert \"new_size < int(current_size * 0.75)\" in source\n\n\ndef test_result_publisher_is_single_writer():\n    source = PUBLISHER.read_text(encoding=\"utf-8\")\n    assert \"import fcntl\" in source\n    assert 'PUBLISH_LOCK = STATE / \"result_publisher.lock\"' in source\n    assert \"fcntl.LOCK_EX | fcntl.LOCK_NB\" in source\n    assert \"UNIVERSAL_RESULT_PUBLISHER_SINGLE_WRITER=BUSY\" in source\n\n\ndef test_safety_job_does_not_touch_application_runtime():\n    protected = {\"backend/server.py\", \"backend/modules/auth/routes.py\"}\n    changed = {\n        \"tools/mirror_sync/universal_job_dispatcher.py\",\n        \"tools/mirror_sync/universal_job_result_publisher.py\",\n        \"backend/tests/test_worker_save_github_safety_contract.py\",\n    }\n    assert protected.isdisjoint(changed)\n"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"},
+    {"type":"py_compile","paths":["tools/mirror_sync/universal_job_dispatcher.py","tools/mirror_sync/universal_job_result_publisher.py"]},
+    {"type":"pytest","paths":["backend/tests/test_worker_save_github_safety_contract.py","backend/tests/test_worker_three_properties_contract.py","backend/tests/test_universal_job_dispatcher_python_runtime.py"]}
+  ],
+  "human_summary_language": "es"
+}
