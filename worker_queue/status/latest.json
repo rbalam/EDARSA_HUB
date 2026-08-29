@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "b2eb7b7f1fa7788a62139d69abce297aa06e4e44",
-  "generated_at_utc": "2026-08-29T18:34:03Z",
+  "generated_at_utc": "2026-08-29T18:43:16Z",
   "history": {
     "done_total_local": 7,
     "pending_total_local": 0,
@@ -11,7 +11,7 @@
   },
   "jobs": [
     {
-      "age_seconds": 701,
+      "age_seconds": 1253,
       "job_id": "worker-result-publisher-recovery-v1-20260829",
       "reasons": [
         "ACTIONS_REQUIRED"
@@ -20,31 +20,31 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 749,
+      "age_seconds": 1302,
       "job_id": "000-worker-agent-guard-stale-claim-selfheal-v2-20260829",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 963,
+      "age_seconds": 1516,
       "job_id": "000-worker-git-auth-fallback-v2-20260829",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 944,
+      "age_seconds": 1497,
       "job_id": "CAVAS-BOS-V1-ROUTER-REGISTRATION-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1734,
+      "age_seconds": 2287,
       "job_id": "worker-agent-guard-release-lifecycle-v1-20260829",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 742,
+      "age_seconds": 1295,
       "job_id": "worker-queue-atomic-claim-v1-20260829",
       "reason": null,
       "state": "RESULT_READY"
@@ -59,8 +59,8 @@
   "queue_running": 0,
   "runtime": {
     "generation": "20260827-universal-job-worker-sla-v2",
-    "last_cycle_utc": "2026-08-29T18:33:54Z",
-    "last_receive_utc": "2026-08-29T18:33:55Z",
+    "last_cycle_utc": "2026-08-29T18:43:13Z",
+    "last_receive_utc": "2026-08-29T18:43:15Z",
     "pid": "1486"
   },
   "schema": "edarsahub.worker-health.v3",
