@@ -14,7 +14,7 @@
   "job_id": "worker-agent-guard-cli-probe-20260826-1830",
   "percent_complete": 80,
   "production_touched": false,
-  "published_at_utc": "2026-08-28T07:49:58Z",
+  "published_at_utc": "2026-08-29T18:55:28Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
