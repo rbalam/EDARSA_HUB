@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-queue-atomic-claim-v1-20260829",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "4f8ba3e1aaa2ad808cc7e6e835ea6645d2a82f7e",
+  "objective": "Eliminar la carrera que permite que el mismo inbox vuelva a materializarse en pending mientras ya esta processing/done. Implementar claim local persistente y atomico por nombre de job usando O_CREAT|O_EXCL en un directorio claims. El claim debe sobrevivir al movimiento pending->processing->done/rejected. Un receive concurrente debe contar SKIPPED y nunca volver a escribir pending. Mantener el mecanismo manual de recuperacion posible eliminando selectivamente el claim local. Agregar regresion. No tocar Produccion.",
+  "requester": {"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1.0","chat":"catalogo-ampliado-v1"},
+  "actions": [
+    {
+      "type":"replace_text",
+      "path":"tools/mirror_sync/universal_job_bridge.py",
+      "old":"RESULTS = STATE / \"results\"\n",
+      "new":"RESULTS = STATE / \"results\"\nCLAIMS = STATE / \"claims\"\n",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"tools/mirror_sync/universal_job_bridge.py",
+      "old":"    for path in (PENDING, PROCESSING, REJECTED, DONE, RESULTS):\n        path.mkdir(parents=True, exist_ok=True)\n",
+      "new":"    for path in (PENDING, PROCESSING, REJECTED, DONE, RESULTS, CLAIMS):\n        path.mkdir(parents=True, exist_ok=True)\n",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"tools/mirror_sync/universal_job_bridge.py",
+      "old":"def already_claimed(name: str) -> bool:\n    return any((folder / name).exists() for folder in (PENDING, PROCESSING, DONE, REJECTED))\n",
+      "new":"def already_claimed(name: str) -> bool:\n    return (CLAIMS / name).exists() or any((folder / name).exists() for folder in (PENDING, PROCESSING, DONE, REJECTED))\n\n\ndef claim_once(name: str) -> bool:\n    claim = CLAIMS / name\n    try:\n        fd = os.open(claim, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)\n    except FileExistsError:\n        return False\n    with os.fdopen(fd, \"w\", encoding=\"utf-8\") as handle:\n        handle.write(datetime.now(timezone.utc).isoformat() + \"\\n\")\n    return True\n",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"tools/mirror_sync/universal_job_bridge.py",
+      "old":"        if already_claimed(name):\n            skipped += 1\n            continue\n        raw = read_remote(path)\n",
+      "new":"        if already_claimed(name) or not claim_once(name):\n            skipped += 1\n            continue\n        raw = read_remote(path)\n",
+      "expected_count":1
+    },
+    {
+      "type":"write_file",
+      "path":"backend/tests/test_worker_queue_atomic_claim_contract.py",
+      "content":"from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nBRIDGE = ROOT / 'tools' / 'mirror_sync' / 'universal_job_bridge.py'\n\n\ndef test_bridge_has_persistent_atomic_claim():\n    text = BRIDGE.read_text(encoding='utf-8')\n    assert 'CLAIMS = STATE / \"claims\"' in text\n    assert 'os.O_WRONLY | os.O_CREAT | os.O_EXCL' in text\n    assert 'except FileExistsError:' in text\n    assert 'already_claimed(name) or not claim_once(name)' in text\n\n\ndef test_claim_is_not_removed_by_receive_or_dispatch_lifecycle():\n    text = BRIDGE.read_text(encoding='utf-8')\n    receive = text[text.index('def receive()'):text.index('def status()')]\n    assert 'unlink' not in receive\n    assert 'CLAIMS / name' not in receive or 'claim_once(name)' in receive\n"
+    }
+  ],
+  "checks":[
+    {"type":"py_compile","paths":["tools/mirror_sync/universal_job_bridge.py","backend/tests/test_worker_queue_atomic_claim_contract.py"]},
+    {"type":"pytest","paths":["backend/tests/test_worker_queue_atomic_claim_contract.py"]},
+    {"type":"git_diff_check"}
+  ],
+  "human_summary_language":"es"
+}
