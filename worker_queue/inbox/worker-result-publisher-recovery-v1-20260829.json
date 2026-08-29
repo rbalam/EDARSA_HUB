@@ -1,0 +1,31 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-result-publisher-recovery-v1-20260829",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "4f8ba3e1aaa2ad808cc7e6e835ea6645d2a82f7e",
+  "objective": "Recuperar el canal canonico de publicacion de resultados del universal worker. Hay resultados locales en estado RESULT_READY que no aparecen en worker_queue/results remoto, incluyendo cxp-frontend-build-baseline-v2-20260828. Auditar y corregir universal_job_result_publisher y su wiring/runtime para que publique resultados pendientes de forma idempotente, segura ante concurrencia y sin perder evidencia. Tras la correccion, forzar una pasada segura del publicador y verificar que los RESULT_READY locales queden disponibles en worker_queue/results. No modificar funcionalidad CxP, no borrar resultados/inbox, no limpiar trabajo ajeno y no tocar Produccion.",
+  "requester": {"email":"ricardo@edarsa.com.mx","source":"chatgpt","project":"V1.0","chat":"cxp-decision-analysis"},
+  "constraints": [
+    "Preservar Edarsahub_Desarrollo como fuente canonica",
+    "No tocar Edarsahub_Produccion",
+    "No borrar ni sobrescribir evidencia existente",
+    "No marcar publicado hasta confirmar push remoto",
+    "No sustituir el worker ni usar una ruta paralela de resultados",
+    "Mantener fail-closed y concurrencia segura"
+  ],
+  "acceptance": [
+    "cxp-frontend-build-baseline-v2-20260828 aparece en worker_queue/results remoto o se reporta un blocker tecnico exacto",
+    "Los resultados RESULT_READY pendientes se publican o quedan con blocker exacto",
+    "El publicador sigue siendo idempotente",
+    "worker_queue/status/latest.json refleja estado consistente",
+    "production_touched=false"
+  ],
+  "checks": [
+    {"type":"git_diff_check"},
+    {"type":"py_compile","paths":["tools/mirror_sync/universal_job_result_publisher.py"]},
+    {"type":"pytest","paths":["backend/tests/test_universal_job_result_publisher_contract.py"]}
+  ],
+  "human_summary_language":"es"
+}
