@@ -169,7 +169,7 @@ async def crear_perfil(
         logger.info(f"[API] Perfil digital creado para unidad {data.unidad_negocio_pk}")
         return perfil
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[API] Error creando perfil: {e}")
         raise HTTPException(status_code=500, detail="Error interno al crear perfil")

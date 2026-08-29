@@ -13,7 +13,7 @@ async def get_catalogos_disponibles(current_user: Dict = Depends(get_current_use
     try:
         return repo.get_catalogos_disponibles()
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.put("/config/{catalogo_id}/niveles")
@@ -27,7 +27,7 @@ async def put_catalogo_niveles(
         repo.upsert_niveles_catalogo(catalogo_id, body, current_user)
         return {"ok": True, "message": "Niveles de aprobación guardados en SQL"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/permisos/usuario/{user_id}")
@@ -39,7 +39,7 @@ async def get_permisos_catalogo(
     try:
         return repo.get_permisos_catalogo_usuario(user_id)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/permisos")
@@ -52,7 +52,7 @@ async def post_permisos_catalogo(
         repo.upsert_permisos_catalogo(body, current_user)
         return {"ok": True, "message": "Permisos guardados en SQL"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/solicitudes")
@@ -64,7 +64,7 @@ async def get_solicitudes_catalogo(
     try:
         return repo.listar_solicitudes_catalogo(limit)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/solicitudes")
@@ -77,7 +77,7 @@ async def post_solicitud_catalogo(
         repo.crear_solicitud_catalogo(body, current_user)
         return {"ok": True, "message": "Solicitud creada en SQL"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.put("/solicitudes/{solicitud_id}/estado")
@@ -95,7 +95,7 @@ async def put_estado_solicitud_catalogo(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/tareas")
@@ -107,7 +107,7 @@ async def get_tareas(
     try:
         return repo.listar_tareas(limit)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/tareas")
@@ -120,4 +120,4 @@ async def post_tarea(
         repo.crear_tarea(body, current_user)
         return {"ok": True, "message": "Tarea creada en SQL"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

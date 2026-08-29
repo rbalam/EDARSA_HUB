@@ -202,7 +202,7 @@ async def solicitar_sistema(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/sistemas")
@@ -273,7 +273,7 @@ async def crear_sistema(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.put("/sistemas/{sistema_id}")
@@ -326,7 +326,7 @@ async def actualizar_sistema(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.patch("/sistemas/{sistema_id}/toggle-activo")
@@ -377,7 +377,7 @@ async def toggle_sistema_activo(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.patch("/sistemas/{sistema_id}/autorizar")
@@ -436,7 +436,7 @@ async def autorizar_sistema(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.patch("/sistemas/{sistema_id}/rechazar")
@@ -495,7 +495,7 @@ async def rechazar_sistema(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================

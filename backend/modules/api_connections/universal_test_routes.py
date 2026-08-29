@@ -587,7 +587,7 @@ async def execute_api_connection_test(
     try:
         full_url = _build_safe_url(base_url, request.endpoint_path or '')
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"URL inválida: {e}")
+        raise HTTPException(status_code=400, detail=f"URL inválida")
     
     # 10. Preparar headers (incluir API key si existe, pero NUNCA exponer)
     headers = dict(request.headers or {})

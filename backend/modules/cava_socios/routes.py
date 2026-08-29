@@ -191,7 +191,7 @@ async def get_dashboard(
         return service.obtener_dashboard(scope["empresa_id"])
     except Exception as e:
         logger.error(f"[CavaSocios] Error en dashboard: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/socios")
@@ -213,7 +213,7 @@ async def listar_socios(
         return service.listar_socios(scope["empresa_id"], estatus, skip, limit)
     except Exception as e:
         logger.error(f"[CavaSocios] Error listando socios: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/socios/{socio_id}")
@@ -238,7 +238,7 @@ async def obtener_socio(
         raise
     except Exception as e:
         logger.error(f"[CavaSocios] Error obteniendo socio: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/socios")
@@ -258,10 +258,10 @@ async def crear_socio(
         usuario_id = current_user.get('public_uuid') or current_user.get('id', '')
         return service.crear_socio(scope["empresa_id"], data.model_dump(), usuario_id)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CavaSocios] Error creando socio: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.put("/socios/{socio_id}")
@@ -282,10 +282,10 @@ async def actualizar_socio(
         usuario_id = current_user.get('public_uuid') or current_user.get('id', '')
         return service.actualizar_socio(socio_id, scope["empresa_id"], data.model_dump(), usuario_id)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CavaSocios] Error actualizando socio: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/clientes-canonicos")
@@ -307,7 +307,7 @@ async def listar_clientes_canonicos(
         return service.listar_clientes_canonicos(scope["empresa_id"], search, skip, limit)
     except Exception as e:
         logger.error(f"[CavaSocios] Error buscando clientes canónicos: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/socios/promover-cliente")
@@ -327,10 +327,10 @@ async def promover_cliente_canonico(
         usuario_id = current_user.get('public_uuid') or current_user.get('id', '')
         return service.promover_cliente_canonico(scope["empresa_id"], data.model_dump(), usuario_id)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CavaSocios] Error promoviendo cliente a socio: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/clientes-canonicos/sync")
@@ -351,7 +351,7 @@ async def sincronizar_clientes_canonicos(
         return service.sincronizar_clientes_canonicos(scope["empresa_id"], data.cliente_ids, usuario_id)
     except Exception as e:
         logger.error(f"[CavaSocios] Error sincronizando clientes canónicos: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/inventario-inicial")
@@ -377,10 +377,10 @@ async def registrar_inventario_inicial(
             usuario_id=usuario_id
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CavaSocios] Error registrando inventario inicial: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/kardex")
@@ -415,7 +415,7 @@ async def obtener_kardex(
         )
     except Exception as e:
         logger.error(f"[CavaSocios] Error consultando Kardex: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/inventario-fisico/hoja")
@@ -440,7 +440,7 @@ async def obtener_hoja_inventario_fisico(
         )
     except Exception as e:
         logger.error(f"[CavaSocios] Error generando hoja de inventario físico: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/inventario-fisico/aplicar")
@@ -467,7 +467,7 @@ async def aplicar_ajustes_inventario_fisico(
         )
     except Exception as e:
         logger.error(f"[CavaSocios] Error aplicando ajustes de inventario físico: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/inventario")
@@ -500,7 +500,7 @@ async def obtener_inventario(
         )
     except Exception as e:
         logger.error(f"[CavaSocios] Error consultando inventario global: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/consumos")
@@ -527,7 +527,7 @@ async def obtener_consumos(
         )
     except Exception as e:
         logger.error(f"[CavaSocios] Error consultando consumos globales: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/botellas/{botella_id}/etiqueta")
@@ -546,10 +546,10 @@ async def obtener_etiqueta_botella(
         service = get_cava_socios_service()
         return service.obtener_etiqueta_botella(botella_id, scope["empresa_id"])
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CavaSocios] Error obteniendo etiqueta de botella: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 
@@ -579,10 +579,10 @@ async def registrar_botella(
             usuario_id,
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CavaSocios] Error registrando botella: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/botellas/{botella_id}/consumo")
@@ -608,10 +608,10 @@ async def registrar_consumo(
             usuario_id,
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CavaSocios] Error registrando consumo: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ==================== REPORTES PDF ====================
@@ -662,7 +662,7 @@ async def descargar_ficha_socio(
         raise
     except Exception as e:
         logger.error(f"[CavaSocios] Error generando ficha PDF: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/reportes/socio/{socio_id}/consumos", summary="Descargar Historial de Consumos PDF")
@@ -712,7 +712,7 @@ async def descargar_historial_consumos(
         raise
     except Exception as e:
         logger.error(f"[CavaSocios] Error generando historial consumos PDF: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/reportes/socio/{socio_id}/estado-cuenta", summary="Descargar Estado de Cuenta PDF")
@@ -762,7 +762,7 @@ async def descargar_estado_cuenta(
         raise
     except Exception as e:
         logger.error(f"[CavaSocios] Error generando estado de cuenta PDF: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ==================== ENVÍO DE REPORTES (EMAIL / WHATSAPP) ====================
@@ -856,7 +856,7 @@ async def enviar_reporte_socio(
         raise
     except Exception as e:
         logger.error(f"[CavaSocios] Error enviando reporte: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/socios/{socio_id}/enviar-todos-reportes", summary="Enviar Todos los Reportes")
@@ -929,4 +929,4 @@ async def enviar_todos_reportes_socio(
         raise
     except Exception as e:
         logger.error(f"[CavaSocios] Error enviando todos los reportes: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

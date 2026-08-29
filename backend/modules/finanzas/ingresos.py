@@ -401,7 +401,7 @@ async def listar_cortes_caja(
         
         raise HTTPException(
             status_code=500,
-            detail=f"Error obteniendo cortes de EDARSAHUB: {str(e)}"
+            detail=f"Error obteniendo cortes de EDARSAHUB"
         )
 
 

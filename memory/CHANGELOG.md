@@ -731,3 +731,11 @@ Verificado: cURL (toggle desactivar/reactivar, revocación de sesiones, bloqueo 
 - Linter 100% limpio (gate plataforma): borradas carpetas `auditorias_p1/p2/p4/p5` + `.bak`; 63 E722; 50 F811; ~117 F821 (noqa en código, typos SQL corregidos en comercial/services, rh/importador, catalogos, sync_historicos, tools); 3 route-shadowing movidas (server.py `/bulk`, api_connections `/check-duplicate`, justificacion `/umbral`); tesoreria sin upload a disco local; borrado `frontend/src/lib/handleSaveOffline.js`.
 - ⚠️ CRÍTICO PENDIENTE: fix es LOCAL. Usuario debe "Save to GitHub" YA (loop detenido) para fijar `Edarsahub_Desarrollo` en GitHub. NO re-implementada la seguridad (SEC-001/SEC-002/Lockout/Panel) — siguiente paso (usar integration_expert por ser auth).
 
+
+## 2026-06 — Re-implementación de Seguridad (SEC-001, SEC-002, Lockout) + Blindaje auto-sync
+- SEC-001: `register_user` (modules/auth/service.py) ahora FUERZA rol `Usuario` en todo auto-registro; ignora roles elevados solicitados (SuperAdministrador/Admin). Verificado por curl: registro con role=SuperAdministrador → JWT con role=Usuario.
+- Lockout fuerza bruta: nuevo `modules/auth/lockout_repository.py` (tabla SQL idempotente `dbo.Sistema_Seguridad_LoginIntentos`). 5 intentos fallidos → bloqueo 15 min. Integrado en `login_user` (check→429, register_failed en fallo, clear en éxito). Verificado: 5×401 → 429.
+- SEC-002: handler global de excepciones ya existía (sanitiza no-manejadas). Además sanitizados 434 `detail=str(e)` exactos + 68 fugas en f-strings de `detail=` en modules/api/core (script /app/lint_tools/sanitize_sec002.py). 0 fugas restantes.
+- BLINDAJE auto-sync: `tools/bootstrap/edarsahub_bootstrap_watchdog.py` `safe_fast_forward` ya NO hace `git stash` del worktree; si hay cambios sin commitear DIFIERE (state DEFERRED_LOCAL_DIRTY, preserved=True). Así nunca vuelve a descartar trabajo del pod. Workers siguen detenidos (autostart=false) hasta que el usuario haga Save to GitHub.
+- NOTA: se creó un usuario de prueba `qa9882@e.mx` (rol Usuario, password Test1234!) en Usuario_Catalogo durante la verificación de SEC-001; se puede borrar.
+

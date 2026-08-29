@@ -1169,7 +1169,7 @@ async def crear_tipo_sync(
         creado = crear_tipo(body.dict(exclude_none=True))
         return {'success': True, 'tipo': creado}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
 
 
 @router.put("/resync/catalogo/{codigo}")
@@ -1184,7 +1184,7 @@ async def actualizar_tipo_sync(
         actualizado = actualizar_tipo(codigo, body.dict(exclude_none=True))
         return {'success': True, 'tipo': actualizado}
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
 
 
 @router.patch("/resync/catalogo/{codigo}/toggle")
@@ -1197,7 +1197,7 @@ async def toggle_tipo_sync(
     try:
         return {'success': True, 'tipo': toggle_activo(codigo)}
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
 
 
 @router.post("/resync/resolve")

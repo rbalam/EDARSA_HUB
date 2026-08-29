@@ -65,7 +65,7 @@ def _execute_readonly_query(query: str) -> List[Dict]:
         return result or []
     except Exception as e:
         logger.error(f"[DATA-QUALITY] Error ejecutando query: {e}")
-        raise HTTPException(status_code=500, detail=f"Error SQL: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error SQL")
 
 
 # =============================================================================

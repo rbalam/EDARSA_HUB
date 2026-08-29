@@ -509,7 +509,7 @@ async def get_estadisticas_staging(current_user: dict = Depends(get_current_user
         }
     except Exception as e:
         logger.error(f"Error obteniendo estadísticas: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/staging/pendientes", summary="Listar candidatos a aprobación")
@@ -536,7 +536,7 @@ async def get_pendientes_aprobacion(
         }
     except Exception as e:
         logger.error(f"Error obteniendo pendientes: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/staging/incompletos", summary="Listar registros incompletos")
@@ -561,7 +561,7 @@ async def get_incompletos(
         }
     except Exception as e:
         logger.error(f"Error obteniendo incompletos: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/staging/excluidos", summary="Listar registros excluidos (auditoría)")
@@ -586,7 +586,7 @@ async def get_excluidos(
         }
     except Exception as e:
         logger.error(f"Error obteniendo excluidos: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/staging/{staging_id}", summary="Obtener detalle de un registro")
@@ -611,7 +611,7 @@ async def get_registro_detalle(
         raise
     except Exception as e:
         logger.error(f"Error obteniendo registro {staging_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/staging/aprobar/{staging_id}", summary="Aprobar un registro")
@@ -642,7 +642,7 @@ async def post_aprobar_registro(
         }
     except Exception as e:
         logger.error(f"Error aprobando registro {staging_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/staging/rechazar/{staging_id}", summary="Rechazar un registro")
@@ -669,7 +669,7 @@ async def post_rechazar_registro(
         }
     except Exception as e:
         logger.error(f"Error rechazando registro {staging_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/staging/observar/{staging_id}", summary="Marcar registro para revisión")
@@ -696,7 +696,7 @@ async def post_observar_registro(
         }
     except Exception as e:
         logger.error(f"Error observando registro {staging_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/staging/aprobar-lote", summary="Aprobar múltiples registros")
@@ -731,7 +731,7 @@ async def post_aprobar_lote(
         }
     except Exception as e:
         logger.error(f"Error en aprobación en lote: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 
@@ -764,7 +764,7 @@ async def post_ejecutar_homologacion(current_user: dict = Depends(get_current_us
         }
     except Exception as e:
         logger.error(f"Error en homologación: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/homologacion/estadisticas", summary="Estadísticas de homologación")
@@ -787,7 +787,7 @@ async def get_estadisticas_homologacion(current_user: dict = Depends(get_current
         }
     except Exception as e:
         logger.error(f"Error obteniendo estadísticas: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/homologacion/equivalencias", summary="Listar equivalencias")
@@ -811,7 +811,7 @@ async def get_equivalencias(
         }
     except Exception as e:
         logger.error(f"Error obteniendo equivalencias: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/homologacion/verificar", summary="Verificar si homologación está completa")
@@ -838,7 +838,7 @@ async def get_verificar_homologacion(current_user: dict = Depends(get_current_us
         }
     except Exception as e:
         logger.error(f"Error verificando homologación: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/homologacion/actualizar-staging", summary="Actualizar staging con IDs")
@@ -859,4 +859,4 @@ async def post_actualizar_staging_ids(current_user: dict = Depends(get_current_u
         }
     except Exception as e:
         logger.error(f"Error actualizando staging: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

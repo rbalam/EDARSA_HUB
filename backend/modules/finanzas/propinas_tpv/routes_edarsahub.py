@@ -123,7 +123,7 @@ async def resumen_propinas_edarsahub(
         
     except Exception as e:
         logger.error(f"Error obteniendo resumen EDARSAHUB: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -179,7 +179,7 @@ async def detalle_propinas_edarsahub(
         
     except Exception as e:
         logger.error(f"Error obteniendo detalle EDARSAHUB: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -236,7 +236,7 @@ async def listado_propinas_edarsahub(
         
     except Exception as e:
         logger.error(f"Error listando propinas EDARSAHUB: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -272,7 +272,7 @@ async def unidades_disponibles(
         
     except Exception as e:
         logger.error(f"Error obteniendo unidades: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -432,7 +432,7 @@ async def formas_pago_disponibles(
         
     except Exception as e:
         logger.error(f"Error obteniendo formas de pago: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -465,7 +465,7 @@ async def status_sincronizacion(
         
     except Exception as e:
         logger.error(f"Error obteniendo status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -530,4 +530,4 @@ async def obtener_propina_por_id(
         raise
     except Exception as e:
         logger.error(f"Error obteniendo propina {propina_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

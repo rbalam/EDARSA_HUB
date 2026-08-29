@@ -44,7 +44,7 @@ async def crear_lead(data: LeadCreate, current_user: dict = Depends(get_current_
         return result
     except Exception as e:
         logger.error(f"[CRM] Error creando lead: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/leads", summary="Listar Leads")
@@ -72,7 +72,7 @@ async def listar_leads(
         return result
     except Exception as e:
         logger.error(f"[CRM] Error listando leads: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 async def _get_vtiger_leads_as_native(busqueda: Optional[str], page: int, page_size: int):
@@ -187,7 +187,7 @@ async def actualizar_lead(
         raise
     except Exception as e:
         logger.error(f"[CRM] Error actualizando lead: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.delete("/leads/{lead_id}", summary="Eliminar Lead")
@@ -205,7 +205,7 @@ async def eliminar_lead(
         raise
     except Exception as e:
         logger.error(f"[CRM] Error eliminando lead: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/leads/{lead_id}/descalificar", response_model=LeadResponse, summary="Descalificar Lead")
@@ -226,7 +226,7 @@ async def descalificar_lead(
         raise
     except Exception as e:
         logger.error(f"[CRM] Error descalificando lead: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/leads/{lead_id}/convertir", summary="Convertir Lead")
@@ -249,10 +249,10 @@ async def convertir_lead(
         )
         return result
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CRM] Error convirtiendo lead: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -267,7 +267,7 @@ async def crear_oportunidad(data: OportunidadCreate, current_user: dict = Depend
         return result
     except Exception as e:
         logger.error(f"[CRM] Error creando oportunidad: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/oportunidades", summary="Listar Oportunidades")
@@ -296,7 +296,7 @@ async def listar_oportunidades(
         return result
     except Exception as e:
         logger.error(f"[CRM] Error listando oportunidades: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 async def _get_vtiger_oportunidades(busqueda: Optional[str], page: int, page_size: int):
@@ -401,7 +401,7 @@ async def listar_contactos(
         return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'total_pages': 0}
     except Exception as e:
         logger.error(f"[CRM] Error listando contactos: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 async def _get_vtiger_contactos(busqueda: Optional[str], page: int, page_size: int):
@@ -509,12 +509,12 @@ async def cambiar_etapa_oportunidad(
             raise HTTPException(status_code=404, detail="Oportunidad no encontrada")
         return result
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"[CRM] Error cambiando etapa: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/oportunidades/{oportunidad_id}/cerrar", response_model=OportunidadResponse, summary="Cerrar Oportunidad")
@@ -536,7 +536,7 @@ async def cerrar_oportunidad(
         raise
     except Exception as e:
         logger.error(f"[CRM] Error cerrando oportunidad: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -554,7 +554,7 @@ async def listar_pipelines(
         return {"pipelines": result}
     except Exception as e:
         logger.error(f"[CRM] Error obteniendo pipelines: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/pipelines/{pipeline_id}/kanban", summary="Vista Kanban")
@@ -573,7 +573,7 @@ async def obtener_kanban(
         raise
     except Exception as e:
         logger.error(f"[CRM] Error obteniendo kanban: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -588,7 +588,7 @@ async def obtener_catalogos(current_user: dict = Depends(get_current_user)):
         return result
     except Exception as e:
         logger.error(f"[CRM] Error obteniendo catálogos: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/catalogos/{nombre}", summary="Obtener catálogo específico")
@@ -601,10 +601,10 @@ async def obtener_catalogo(
         result = CRMNativeService.obtener_catalogo(nombre)
         return {"catalogo": nombre, "items": result}
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CRM] Error obteniendo catálogo {nombre}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -622,4 +622,4 @@ async def obtener_dashboard(
         return result
     except Exception as e:
         logger.error(f"[CRM] Error obteniendo dashboard: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

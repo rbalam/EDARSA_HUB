@@ -114,11 +114,11 @@ async def crear_propuesta_cargo(
         )
         return resultado
     except NoElegibleParaCargoError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except ResponsabilidadNoEncontradaError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except CargosServiceError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
 
 
 # ==================== CONSULTAS ====================
@@ -234,7 +234,7 @@ async def obtener_cargo(
     try:
         return await service.obtener_cargo(cargo_id)
     except CargoNoEncontradoError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
 
 
 @router.get(
@@ -252,7 +252,7 @@ async def obtener_log_cargo(
     try:
         return await service.obtener_log_cargo(cargo_id)
     except CargoNoEncontradoError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
 
 
 # ==================== ACCIONES ====================
@@ -287,11 +287,11 @@ async def autorizar_cargo(
             motivo_codigo=request.motivo_codigo
         )
     except CargoNoEncontradoError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except TransicionInvalidaError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except PermisoInsuficienteError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=403, detail="Error interno del servidor")
 
 
 @router.post(
@@ -323,11 +323,11 @@ async def aplicar_cargo(
             motivo_codigo=request.motivo_codigo
         )
     except CargoNoEncontradoError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except TransicionInvalidaError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except PermisoInsuficienteError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=403, detail="Error interno del servidor")
 
 
 @router.post(
@@ -358,11 +358,11 @@ async def rechazar_cargo(
             motivo_codigo=request.motivo_codigo
         )
     except CargoNoEncontradoError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except TransicionInvalidaError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except PermisoInsuficienteError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=403, detail="Error interno del servidor")
 
 
 @router.post(
@@ -395,11 +395,11 @@ async def revertir_cargo(
             motivo_codigo=request.motivo_codigo
         )
     except CargoNoEncontradoError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except TransicionInvalidaError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except PermisoInsuficienteError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=403, detail="Error interno del servidor")
 
 
 @router.post(
@@ -430,8 +430,8 @@ async def cancelar_cargo(
             motivo_codigo=request.motivo_codigo
         )
     except CargoNoEncontradoError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except TransicionInvalidaError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except PermisoInsuficienteError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=403, detail="Error interno del servidor")

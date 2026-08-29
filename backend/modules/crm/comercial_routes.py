@@ -173,7 +173,7 @@ async def listar_cuentas(
         )
     except Exception as e:
         logger.error(f"[CRM] Error listando cuentas: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 async def _get_vtiger_cuentas(search: Optional[str], limit: int, offset: int):
@@ -260,10 +260,10 @@ async def crear_cuenta(
             **result
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CRM] Error creando cuenta: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/cuentas/{cuenta_id}")
@@ -284,7 +284,7 @@ async def obtener_cuenta(
         raise
     except Exception as e:
         logger.error(f"[CRM] Error obteniendo cuenta: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/cuentas/{cuenta_id}/ligar-cliente")
@@ -306,10 +306,10 @@ async def ligar_cliente(
             **result
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CRM] Error ligando cliente: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================
@@ -335,7 +335,7 @@ async def listar_clientes(
         )
     except Exception as e:
         logger.error(f"[CRM] Error listando clientes: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================
@@ -361,7 +361,7 @@ async def listar_solicitudes_alta(
         )
     except Exception as e:
         logger.error(f"[CRM] Error listando solicitudes: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/clientes/solicitudes")
@@ -382,10 +382,10 @@ async def crear_solicitud_alta(
             **result
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CRM] Error creando solicitud: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/clientes/solicitudes/{solicitud_id}/enviar")
@@ -406,10 +406,10 @@ async def enviar_solicitud(
             **result
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CRM] Error enviando solicitud: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/clientes/solicitudes/{solicitud_id}/autorizar")
@@ -435,10 +435,10 @@ async def autorizar_solicitud(
             **result
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CRM] Error autorizando solicitud: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/clientes/solicitudes/{solicitud_id}/rechazar")
@@ -460,10 +460,10 @@ async def rechazar_solicitud(
             **result
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CRM] Error rechazando solicitud: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================
@@ -495,7 +495,7 @@ async def listar_actividades(
         )
     except Exception as e:
         logger.error(f"[CRM] Error listando actividades: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/actividades")
@@ -516,10 +516,10 @@ async def crear_actividad(
             **result
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CRM] Error creando actividad: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/actividades/{actividad_id}/cerrar")
@@ -547,7 +547,7 @@ async def cerrar_actividad(
         }
     except Exception as e:
         logger.error(f"[CRM] Error cerrando actividad: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================
@@ -646,7 +646,7 @@ async def listar_cotizaciones(
         )
     except Exception as e:
         logger.error(f"[CRM] Error listando cotizaciones: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/cotizaciones/{cotizacion_id}")
@@ -665,7 +665,7 @@ async def obtener_cotizacion(
         raise
     except Exception as e:
         logger.error(f"[CRM] Error obteniendo cotización: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/cotizaciones")
@@ -686,10 +686,10 @@ async def crear_cotizacion(
             **result
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CRM] Error creando cotización: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/cotizaciones/{cotizacion_id}/enviar")
@@ -706,10 +706,10 @@ async def enviar_cotizacion(
         
         return {"success": True, "mensaje": "Cotización enviada", **result}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CRM] Error enviando cotización: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/cotizaciones/{cotizacion_id}/aprobar")
@@ -726,10 +726,10 @@ async def aprobar_cotizacion(
         
         return {"success": True, "mensaje": "Cotización aprobada", **result}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CRM] Error aprobando cotización: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================
@@ -783,7 +783,7 @@ async def listar_pedidos(
         )
     except Exception as e:
         logger.error(f"[CRM] Error listando pedidos: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/pedidos-venta/{pedido_id}")
@@ -802,7 +802,7 @@ async def obtener_pedido(
         raise
     except Exception as e:
         logger.error(f"[CRM] Error obteniendo pedido: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/pedidos-venta")
@@ -823,10 +823,10 @@ async def crear_pedido(
             **result
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CRM] Error creando pedido: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/pedidos-venta/{pedido_id}/confirmar")
@@ -843,10 +843,10 @@ async def confirmar_pedido(
         
         return {"success": True, "mensaje": "Pedido confirmado", **result}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CRM] Error confirmando pedido: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================
@@ -908,7 +908,7 @@ async def listar_remisiones(
         )
     except Exception as e:
         logger.error(f"[CRM] Error listando remisiones: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/remisiones-venta/{remision_id}")
@@ -927,7 +927,7 @@ async def obtener_remision(
         raise
     except Exception as e:
         logger.error(f"[CRM] Error obteniendo remisión: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/remisiones-venta")
@@ -948,10 +948,10 @@ async def crear_remision(
             **result
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CRM] Error creando remisión: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/remisiones-venta/{remision_id}/entregar")
@@ -971,7 +971,7 @@ async def registrar_entrega(
         
         return {"success": True, "mensaje": "Entrega registrada", **result}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CRM] Error registrando entrega: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

@@ -242,7 +242,7 @@ async def obtener_corte_z(
         raise
     except Exception as e:
         logger.error(f"Error obteniendo corte Z: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/cuadres")
@@ -315,7 +315,7 @@ async def listar_cuadres(
         raise
     except Exception as e:
         logger.error(f"[CUADRES_SQL] Error listando cuadres: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/cuadres/resumen")
@@ -378,7 +378,7 @@ async def obtener_resumen_cuadres(
         raise
     except Exception as e:
         logger.error(f"[RESUMEN_SQL] Error obteniendo resumen: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/cuadres/{cuadre_id}")
@@ -418,7 +418,7 @@ async def obtener_cuadre(
         raise
     except Exception as e:
         logger.error(f"[CUADRE_SQL] Error obteniendo cuadre: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/cuadres")
@@ -507,7 +507,7 @@ async def crear_cuadre(
         raise
     except Exception as e:
         logger.error(f"[CUADRE_SQL] Error creando cuadre: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.put("/cuadres/{cuadre_id}")
@@ -571,7 +571,7 @@ async def actualizar_cuadre(
         raise
     except Exception as e:
         logger.error(f"[CUADRE_SQL] Error actualizando cuadre: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.delete("/cuadres/{cuadre_id}")
@@ -617,7 +617,7 @@ async def eliminar_cuadre(
         raise
     except Exception as e:
         logger.error(f"[CUADRE_SQL] Error eliminando cuadre: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/cuadres/{cuadre_id}/ficha-deposito")
@@ -683,7 +683,7 @@ async def subir_ficha_deposito(
         raise
     except Exception as e:
         logger.error(f"Error subiendo ficha de depósito: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/cuadres/{cuadre_id}/validar-ficha")
@@ -765,7 +765,7 @@ async def validar_ficha_deposito(
         raise
     except Exception as e:
         logger.error(f"[CUADRE_SQL] Error validando ficha: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/sucursales")

@@ -55,7 +55,7 @@ async def obtener_configuracion_sla(
         logger.error(f"Error obteniendo configuración SLA: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Error obteniendo configuración: {str(e)}"
+            detail=f"Error obteniendo configuración"
         )
 
 
@@ -90,7 +90,7 @@ async def actualizar_configuracion_sla(
         logger.error(f"Error actualizando configuración SLA: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Error actualizando configuración: {str(e)}"
+            detail=f"Error actualizando configuración"
         )
 
 
@@ -119,7 +119,7 @@ async def obtener_metricas_sla(
         logger.error(f"Error obteniendo métricas SLA: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Error obteniendo métricas: {str(e)}"
+            detail=f"Error obteniendo métricas"
         )
 
 
@@ -153,7 +153,7 @@ async def obtener_tareas_proximas_vencer(
         logger.error(f"Error obteniendo tareas próximas a vencer: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Error obteniendo tareas: {str(e)}"
+            detail=f"Error obteniendo tareas"
         )
 
 
@@ -187,7 +187,7 @@ async def obtener_tareas_vencidas(
         logger.error(f"Error obteniendo tareas vencidas: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Error obteniendo tareas: {str(e)}"
+            detail=f"Error obteniendo tareas"
         )
 
 
@@ -222,7 +222,7 @@ async def actualizar_estados_sla(
         logger.error(f"Error actualizando estados SLA: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Error actualizando estados: {str(e)}"
+            detail=f"Error actualizando estados"
         )
 
 
@@ -301,7 +301,7 @@ async def obtener_sla_tarea(
         logger.error(f"Error obteniendo SLA de tarea {tarea_id}: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Error obteniendo SLA: {str(e)}"
+            detail=f"Error obteniendo SLA"
         )
 
 

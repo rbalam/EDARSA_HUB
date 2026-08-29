@@ -62,7 +62,7 @@ async def listar_reglas(
         }
     except Exception as e:
         logger.error(f"[CRM-Automation] Error listando reglas: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/reglas", summary="Crear Regla de Automatización")
@@ -93,7 +93,7 @@ async def crear_regla(
         return result
     except Exception as e:
         logger.error(f"[CRM-Automation] Error creando regla: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ==================== ENDPOINTS SLA ====================
@@ -118,7 +118,7 @@ async def verificar_sla(
         return result
     except Exception as e:
         logger.error(f"[CRM-Automation] Error verificando SLA: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ==================== ENDPOINTS ESTADÍSTICAS ====================
@@ -140,7 +140,7 @@ async def obtener_estadisticas(
         return result
     except Exception as e:
         logger.error(f"[CRM-Automation] Error obteniendo estadísticas: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ==================== ENDPOINT TRIGGER MANUAL ====================
@@ -172,4 +172,4 @@ async def ejecutar_trigger_cambio_etapa(
         }
     except Exception as e:
         logger.error(f"[CRM-Automation] Error ejecutando trigger: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

@@ -124,10 +124,10 @@ async def list_apis(credentials: HTTPAuthorizationCredentials = Depends(security
         }
     except RuntimeError as e:
         logging.error(f"[API_CONNECTIONS] Error listando: {e}")
-        raise HTTPException(status_code=503, detail=f"Error accediendo a base de datos: {e}")
+        raise HTTPException(status_code=503, detail=f"Error accediendo a base de datos")
     except Exception as e:
         logging.error(f"[API_CONNECTIONS] Error inesperado: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/check-duplicate")
@@ -163,9 +163,9 @@ async def get_api(api_id: str, credentials: HTTPAuthorizationCredentials = Depen
     except HTTPException:
         raise
     except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=f"Error accediendo a base de datos: {e}")
+        raise HTTPException(status_code=503, detail=f"Error accediendo a base de datos")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -195,13 +195,13 @@ async def create_api(
         }
     except ValueError as e:
         # Duplicado u otro error de validación
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except RuntimeError as e:
         # Error de base de datos
-        raise HTTPException(status_code=503, detail=f"Error guardando en EDARSAHUB SQL: {e}")
+        raise HTTPException(status_code=503, detail=f"Error guardando en EDARSAHUB SQL")
     except Exception as e:
         logging.error(f"[API_CONNECTIONS] Error creando: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.put("/{api_id}")
@@ -234,12 +234,12 @@ async def update_api(
             "source": "EDARSAHUB_SQL"
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=f"Error actualizando en EDARSAHUB SQL: {e}")
+        raise HTTPException(status_code=503, detail=f"Error actualizando en EDARSAHUB SQL")
     except Exception as e:
         logging.error(f"[API_CONNECTIONS] Error actualizando: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.delete("/{api_id}")
@@ -258,12 +258,12 @@ async def delete_api(api_id: str, credentials: HTTPAuthorizationCredentials = De
             "source": "EDARSAHUB_SQL"
         }
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=f"Error eliminando en EDARSAHUB SQL: {e}")
+        raise HTTPException(status_code=503, detail=f"Error eliminando en EDARSAHUB SQL")
     except Exception as e:
         logging.error(f"[API_CONNECTIONS] Error eliminando: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -312,10 +312,10 @@ async def sync_to_mongo(credentials: HTTPAuthorizationCredentials = Depends(secu
             **result
         }
     except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=str(e))
+        raise HTTPException(status_code=503, detail="Error interno del servidor")
     except Exception as e:
         logging.error(f"[API_CONNECTIONS] Error sincronizando: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================

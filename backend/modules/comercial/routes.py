@@ -2892,7 +2892,7 @@ async def comercial_ventas_tiempo(
     
     except Exception as e:
         logging.error(f"Error en ventas-tiempo: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 

@@ -218,7 +218,7 @@ async def listar_reglas_endpoint(
         raise HTTPException(status_code=400, detail={'error': e.codigo, 'mensaje': e.mensaje})
     except Exception as e:
         logger.error(f"[ALERTAS_MARGEN] Error listando reglas: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/reglas")
@@ -265,7 +265,7 @@ async def crear_regla_endpoint(
         raise HTTPException(status_code=400, detail={'error': e.codigo, 'mensaje': e.mensaje})
     except Exception as e:
         logger.error(f"[ALERTAS_MARGEN] Error creando regla: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/reglas/{regla_id}")
@@ -288,7 +288,7 @@ async def obtener_regla_endpoint(
         raise HTTPException(status_code=404, detail={'error': e.codigo, 'mensaje': e.mensaje})
     except Exception as e:
         logger.error(f"[ALERTAS_MARGEN] Error obteniendo regla: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.put("/reglas/{regla_id}")
@@ -329,7 +329,7 @@ async def actualizar_regla_endpoint(
         raise HTTPException(status_code=status, detail={'error': e.codigo, 'mensaje': e.mensaje})
     except Exception as e:
         logger.error(f"[ALERTAS_MARGEN] Error actualizando regla: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.delete("/reglas/{regla_id}")
@@ -358,7 +358,7 @@ async def desactivar_regla_endpoint(
         raise HTTPException(status_code=404, detail={'error': e.codigo, 'mensaje': e.mensaje})
     except Exception as e:
         logger.error(f"[ALERTAS_MARGEN] Error desactivando regla: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # =============================================================================
@@ -411,7 +411,7 @@ async def resolver_regla_endpoint(
         raise
     except Exception as e:
         logger.error(f"[ALERTAS_MARGEN] Error resolviendo regla: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/evaluar")
@@ -454,7 +454,7 @@ async def evaluar_margen_endpoint(
         raise
     except Exception as e:
         logger.error(f"[ALERTAS_MARGEN] Error evaluando margen: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # =============================================================================
@@ -484,7 +484,7 @@ async def obtener_umbrales_endpoint(
         raise
     except Exception as e:
         logger.error(f"[ALERTAS_MARGEN] Error obteniendo umbrales: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/estadisticas")
@@ -512,4 +512,4 @@ async def obtener_estadisticas_endpoint(
         raise
     except Exception as e:
         logger.error(f"[ALERTAS_MARGEN] Error obteniendo estadísticas: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

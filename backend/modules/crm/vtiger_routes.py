@@ -401,7 +401,7 @@ async def execute_vtiger_sync_manual(
         result = await execute_vtiger_sync(None)
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/sync/status")

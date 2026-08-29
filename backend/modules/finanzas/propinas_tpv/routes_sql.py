@@ -190,7 +190,7 @@ async def inicializar_modulo_sql(
         raise
     except Exception as e:
         logger.error(f"Error inicializando módulo SQL: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -227,7 +227,7 @@ async def sincronizar_propinas_sql(
         return result
     except Exception as e:
         logger.error(f"Error en sincronización SQL: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -256,7 +256,7 @@ async def resumen_propinas_sql(
         return result
     except Exception as e:
         logger.error(f"Error obteniendo resumen SQL: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router_sql.get(
@@ -289,7 +289,7 @@ async def listar_propinas_sql(
         return result
     except Exception as e:
         logger.error(f"Error listando propinas SQL: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -316,7 +316,7 @@ async def obtener_config_sql(
         return config
     except Exception as e:
         logger.error(f"Error obteniendo config SQL: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router_sql.get(
@@ -334,7 +334,7 @@ async def listar_configs_sql(
         return {"success": True, "configs": configs}
     except Exception as e:
         logger.error(f"Error listando configs: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router_sql.post(
@@ -371,7 +371,7 @@ async def crear_config_sql(
         raise
     except Exception as e:
         logger.error(f"Error creando config: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router_sql.put(
@@ -406,7 +406,7 @@ async def actualizar_config_sql(
         raise
     except Exception as e:
         logger.error(f"Error actualizando config: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -426,7 +426,7 @@ async def cache_stats(
         service = PropinasTPVSQLService(db)
         return await service.obtener_cache_stats()
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router_sql.post(
@@ -447,7 +447,7 @@ async def invalidar_cache(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -485,7 +485,7 @@ async def detectar_esquema(
         raise
     except Exception as e:
         logger.error(f"Error detectando esquema: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router_sql.get(
@@ -552,7 +552,7 @@ async def detectar_esquema_todos(
         }
     except Exception as e:
         logger.error(f"Error detectando esquemas: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router_sql.get(
@@ -612,7 +612,7 @@ async def preview_propinas(
         }
     except Exception as e:
         logger.error(f"Error en preview: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -639,7 +639,7 @@ async def obtener_propina_sql(
         raise
     except Exception as e:
         logger.error(f"Error obteniendo propina: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router_sql.put(
@@ -665,7 +665,7 @@ async def registrar_pago_sql(
         )
         return result
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"Error registrando pago: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

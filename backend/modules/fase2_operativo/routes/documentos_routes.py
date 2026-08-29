@@ -110,13 +110,13 @@ async def descargar_excel_workflow(
         
     except WorkflowNoEncontradoError as e:
         logger.warning(f"Workflow no encontrado: {workflow_id}")
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     
     except Exception as e:
         logger.error(f"Error al generar Excel: {e}")
         raise HTTPException(
             status_code=500, 
-            detail=f"Error al generar documento: {str(e)}"
+            detail=f"Error al generar documento"
         )
 
 
@@ -202,13 +202,13 @@ async def descargar_pdf_workflow(
         
     except WorkflowNoEncontradoError as e:
         logger.warning(f"Workflow no encontrado para PDF: {workflow_id}")
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     
     except Exception as e:
         logger.error(f"Error al generar PDF: {e}")
         raise HTTPException(
             status_code=500, 
-            detail=f"Error al generar documento PDF: {str(e)}"
+            detail=f"Error al generar documento PDF"
         )
 
 
@@ -243,13 +243,13 @@ async def obtener_datos_workflow(
         }
         
     except WorkflowNoEncontradoError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     
     except Exception as e:
         logger.error(f"Error al obtener datos: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Error al obtener datos: {str(e)}"
+            detail=f"Error al obtener datos"
         )
 
 
@@ -279,13 +279,13 @@ async def obtener_resumen_workflow(
         }
         
     except WorkflowNoEncontradoError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     
     except Exception as e:
         logger.error(f"Error al obtener resumen: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Error al obtener resumen: {str(e)}"
+            detail=f"Error al obtener resumen"
         )
 
 

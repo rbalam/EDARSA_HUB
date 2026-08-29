@@ -235,7 +235,7 @@ async def get_todas_configuraciones():
         logger.error(f"[CONFIG_OPERATIVA] Error obteniendo todas las configuraciones: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error: {str(e)}"
+            detail=f"Error"
         )
 
 
@@ -260,7 +260,7 @@ async def get_configuracion_operativa(unidad_id: str):
         logger.error(f"[CONFIG_OPERATIVA] Error obteniendo configuración de {unidad_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error obteniendo configuración: {str(e)}"
+            detail=f"Error obteniendo configuración"
         )
 
 
@@ -361,7 +361,7 @@ async def update_configuracion_operativa(
         logger.error(f"[CONFIG_OPERATIVA] Error actualizando configuración de {unidad_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error actualizando configuración: {str(e)}"
+            detail=f"Error actualizando configuración"
         )
 
 
@@ -401,7 +401,7 @@ async def probar_fecha_operacion(
         logger.error(f"[CONFIG_OPERATIVA] Error probando FechaOperacion de {unidad_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error calculando FechaOperacion: {str(e)}"
+            detail=f"Error calculando FechaOperacion"
         )
 
 

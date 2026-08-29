@@ -66,7 +66,7 @@ async def crear_tarea(
             data=tarea
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/{tarea_id}")
@@ -90,7 +90,7 @@ async def obtener_tarea(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("")
@@ -148,7 +148,7 @@ async def listar_tareas(
         return {"items": tareas, "total": len(tareas)}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.patch("/{tarea_id}/asignar", response_model=OperacionResponse)
@@ -178,9 +178,9 @@ async def asignar_tarea(
             data=tarea
         )
     except TareaNoEncontradaError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.patch("/{tarea_id}/reasignar", response_model=OperacionResponse)
@@ -210,11 +210,11 @@ async def reasignar_tarea(
             data=tarea
         )
     except TareaNoEncontradaError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except TareaYaCompletadaError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.patch("/{tarea_id}/completar", response_model=OperacionResponse)
@@ -238,11 +238,11 @@ async def completar_tarea(
             data=tarea
         )
     except TareaNoEncontradaError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except TareaYaCompletadaError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.patch("/{tarea_id}/en-progreso", response_model=OperacionResponse)
@@ -266,9 +266,9 @@ async def marcar_en_progreso(
             data=tarea
         )
     except TareaNoEncontradaError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/{tarea_id}/historial")
@@ -287,7 +287,7 @@ async def obtener_historial_tarea(
         historial = await tarea_svc.obtener_historial_tarea(tarea_id)
         return {"historial": historial, "total": len(historial)}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/marcar-vencidas", response_model=OperacionResponse)
@@ -310,4 +310,4 @@ async def marcar_tareas_vencidas(
             data={"tareas_marcadas": cantidad}
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

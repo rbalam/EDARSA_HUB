@@ -141,7 +141,7 @@ async def listar_conectores(
         
     except Exception as e:
         logger.error(f"[Integration] Error listando conectores: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 
@@ -176,7 +176,7 @@ async def obtener_conector(conector_id: int):
         raise
     except Exception as e:
         logger.error(f"[Integration] Error obteniendo conector: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 
@@ -235,7 +235,7 @@ async def crear_conector(data: ConectorCreate):
     except Exception as e:
         conn.rollback()
         logger.error(f"[Integration] Error creando conector: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 
@@ -290,7 +290,7 @@ async def actualizar_conector(conector_id: int, data: ConectorUpdate):
     except Exception as e:
         conn.rollback()
         logger.error(f"[Integration] Error actualizando conector: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 
@@ -317,7 +317,7 @@ async def eliminar_conector(conector_id: int):
         raise
     except Exception as e:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 
@@ -385,7 +385,7 @@ async def test_conector_guardado(conector_id: int):
         raise
     except Exception as e:
         logger.error(f"[Integration] Error testing conector: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 
@@ -488,7 +488,7 @@ async def ejecutar_sync(conector_id: int, data: SyncRequest):
     except Exception as e:
         conn.rollback()
         logger.error(f"[Integration] Error en sync: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 
@@ -553,7 +553,7 @@ async def listar_staging_leads(
         
     except Exception as e:
         logger.error(f"[Integration] Error listando staging leads: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 
@@ -600,7 +600,7 @@ async def listar_staging_oportunidades(
         return {"oportunidades": opps, "total": len(opps)}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 
@@ -647,7 +647,7 @@ async def listar_staging_cuentas(
         return {"cuentas": cuentas, "total": len(cuentas)}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 
@@ -686,7 +686,7 @@ async def obtener_sync_log(
         return {"logs": logs, "total": len(logs)}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 
@@ -751,7 +751,7 @@ async def procesar_staging(conector_id: int, data: ProcessStagingRequest):
         raise
     except Exception as e:
         logger.error(f"[Integration] Error procesando staging: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 
@@ -867,7 +867,7 @@ async def resolver_conflicto(
         raise
     except Exception as e:
         logger.error(f"[Integration] Error resolviendo conflicto: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 

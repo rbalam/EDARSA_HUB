@@ -101,15 +101,15 @@ async def calcular_responsabilidad(
         return resultado
         
     except ModuloDesactivadoError as e:
-        raise HTTPException(status_code=503, detail=str(e))
+        raise HTTPException(status_code=503, detail="Error interno del servidor")
     except WorkflowNoEncontradoError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except CalculoYaExisteError as e:
-        raise HTTPException(status_code=409, detail=str(e))
+        raise HTTPException(status_code=409, detail="Error interno del servidor")
     except SinDiferenciasError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno")
 
 
 # ==================== CONSULTAS ====================
@@ -142,7 +142,7 @@ async def obtener_por_workflow(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno")
 
 
 @router.get(
@@ -178,7 +178,7 @@ async def listar_responsabilidades(
         )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno")
 
 
 # ==================== CONFIGURACIÓN ====================
@@ -211,7 +211,7 @@ async def obtener_configuracion(
         return await service.obtener_configuracion()
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno")
 
 
 @router.put(
@@ -239,7 +239,7 @@ async def actualizar_configuracion(
         )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno")
 
 
 # ==================== INICIALIZACIÓN ====================
@@ -267,7 +267,7 @@ async def inicializar_configuracion(
         )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno")
 
 
 # ==================== MÉTRICAS DASHBOARD ====================
@@ -299,7 +299,7 @@ async def obtener_metricas(
         return metricas
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno")
 
 
 def _get_authenticated_responsabilidad_actor(current_user: dict):
@@ -327,17 +327,17 @@ def _get_authenticated_responsabilidad_actor(current_user: dict):
 def _handle_aprobacion_error(e: Exception):
     """Maneja errores comunes de aprobaciones."""
     if isinstance(e, AprobacionesDesactivadasError):
-        raise HTTPException(status_code=503, detail=str(e))
+        raise HTTPException(status_code=503, detail="Error interno del servidor")
     elif isinstance(e, ResponsabilidadNoEncontradaError):
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     elif isinstance(e, TransicionInvalidaError):
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     elif isinstance(e, PermisoInsuficienteError):
-        raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=403, detail="Error interno del servidor")
     elif isinstance(e, ValueError):
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail="Error interno del servidor")
     else:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno")
 
 
 @router.post(
@@ -589,7 +589,7 @@ async def listar_pendientes_aprobacion(
         return await service.obtener_pendientes_aprobacion()
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno")
 
 
 @router.get(
@@ -609,7 +609,7 @@ async def listar_en_disputa(
         return await service.obtener_en_disputa()
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno")
 
 
 @router.get(
@@ -630,6 +630,6 @@ async def obtener_historial(
         return await service.obtener_historial(responsabilidad_id)
         
     except ResponsabilidadNoEncontradaError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno")

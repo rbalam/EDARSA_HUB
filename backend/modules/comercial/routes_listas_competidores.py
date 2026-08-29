@@ -101,7 +101,7 @@ async def endpoint_listar_listas(
         }
     except Exception as e:
         logger.error(f"[LISTAS] Error listando: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post(
@@ -134,7 +134,7 @@ async def endpoint_crear_lista(
         }
     except Exception as e:
         logger.error(f"[LISTAS] Error creando: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get(
@@ -161,7 +161,7 @@ async def endpoint_obtener_lista(
         raise
     except Exception as e:
         logger.error(f"[LISTAS] Error obteniendo: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.put(
@@ -194,7 +194,7 @@ async def endpoint_actualizar_lista(
         }
     except Exception as e:
         logger.error(f"[LISTAS] Error actualizando: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.delete(
@@ -220,7 +220,7 @@ async def endpoint_desactivar_lista(
         }
     except Exception as e:
         logger.error(f"[LISTAS] Error desactivando: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # =============================================================================
@@ -253,7 +253,7 @@ async def endpoint_listar_competidores_lista(
         }
     except Exception as e:
         logger.error(f"[LISTAS] Error listando competidores: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post(
@@ -283,10 +283,10 @@ async def endpoint_agregar_competidor(
             "mensaje": "Competidor agregado a la lista"
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[LISTAS] Error agregando competidor: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.delete(
@@ -314,7 +314,7 @@ async def endpoint_quitar_competidor(
         }
     except Exception as e:
         logger.error(f"[LISTAS] Error quitando competidor: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # =============================================================================
@@ -343,4 +343,4 @@ async def endpoint_listas_de_competidor(
         }
     except Exception as e:
         logger.error(f"[LISTAS] Error obteniendo listas de competidor: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

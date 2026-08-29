@@ -81,13 +81,19 @@ def safe_fast_forward() -> dict:
     left, right = [int(v) for v in counts.stdout.split()[:2]]
     if left != 0 or right <= 0:
         return {"state":"NON_FF", "local_ahead":left, "remote_ahead":right}
-    stash = preserve_dirty_worktree()
+    # BLINDAJE: nunca sobrescribir trabajo local en curso. Si el worktree tiene
+    # cambios sin commitear (staged/unstaged/untracked), DIFERIR el fast-forward
+    # en lugar de hacer stash (que antes descartaba el trabajo activo del pod).
+    dirty = run(["git", "status", "--porcelain"], timeout=20)
+    if dirty.stdout.strip():
+        audit("FAST_FORWARD_DEFERRED", reason="LOCAL_WORK_DIRTY", local=local, remote=remote)
+        return {"state": "DEFERRED_LOCAL_DIRTY", "local": local, "remote": remote, "preserved": True}
     ff = run(["git", "merge", "--ff-only", f"{REMOTE}/{DEV}"], timeout=120)
     if ff.returncode != 0:
-        return {"state":"FF_FAILED", "stash":stash, "output":ff.stdout[-800:]}
+        return {"state":"FF_FAILED", "output":ff.stdout[-800:]}
     new_head = run(["git", "rev-parse", "HEAD"], timeout=20).stdout.strip()
-    audit("FAST_FORWARD_APPLIED", from_sha=local, to_sha=new_head, stash=stash)
-    return {"state":"FF_APPLIED", "from":local, "to":new_head, "stash":stash}
+    audit("FAST_FORWARD_APPLIED", from_sha=local, to_sha=new_head)
+    return {"state":"FF_APPLIED", "from":local, "to":new_head}
 
 
 def cycle() -> dict:

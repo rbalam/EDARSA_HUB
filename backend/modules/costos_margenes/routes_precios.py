@@ -340,7 +340,7 @@ async def simular_precio(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error en simulación: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error en simulación")
 
 
 # ==================== SOLICITUDES CRUD ====================
@@ -398,9 +398,9 @@ async def crear_solicitud(
         return SolicitudCambioPrecioResponse(**solicitud)
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error creando solicitud: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creando solicitud")
 
 
 @router.get("/solicitudes-precio", response_model=SolicitudesListResponse)
@@ -465,7 +465,7 @@ async def listar_solicitudes_precio(
         )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error listando solicitudes: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error listando solicitudes")
 
 
 @router.get("/solicitudes-precio/{solicitud_id}", response_model=SolicitudCambioPrecioResponse)
@@ -497,7 +497,7 @@ async def obtener_solicitud_precio(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error obteniendo solicitud: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo solicitud")
 
 
 # ==================== ACCIONES DEL FLUJO ====================
@@ -549,11 +549,11 @@ async def enviar_solicitud(
         )
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error enviando solicitud: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error enviando solicitud")
 
 
 @router.post("/solicitudes-precio/{solicitud_id}/aprobar", response_model=AccionSolicitudResponse)
@@ -622,11 +622,11 @@ async def aprobar_solicitud(
         )
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error aprobando solicitud: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error aprobando solicitud")
 
 
 @router.post("/solicitudes-precio/{solicitud_id}/rechazar", response_model=AccionSolicitudResponse)
@@ -693,11 +693,11 @@ async def rechazar_solicitud(
         )
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error rechazando solicitud: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error rechazando solicitud")
 
 
 @router.post("/solicitudes-precio/{solicitud_id}/aplicar", response_model=AccionSolicitudResponse)
@@ -763,11 +763,11 @@ async def aplicar_solicitud(
         )
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error aplicando solicitud: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error aplicando solicitud")
 
 
 @router.post("/solicitudes-precio/{solicitud_id}/cancelar", response_model=AccionSolicitudResponse)
@@ -824,11 +824,11 @@ async def cancelar_solicitud(
         )
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error cancelando solicitud: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error cancelando solicitud")
 
 
 # ==================== HISTORIAL ====================
@@ -867,4 +867,4 @@ async def obtener_historial(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error obteniendo historial: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo historial")

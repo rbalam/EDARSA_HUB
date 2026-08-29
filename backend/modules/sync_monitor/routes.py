@@ -39,7 +39,7 @@ async def get_sync_monitor() -> Dict[str, Any]:
         return data
     except Exception as e:
         logger.error(f"[SYNC_MONITOR] Error en endpoint: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/sync-monitor/kpis")
@@ -58,7 +58,7 @@ async def get_sync_monitor_kpis() -> Dict[str, Any]:
         }
     except Exception as e:
         logger.error(f"[SYNC_MONITOR] Error en kpis: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/sync-monitor/servidor/{server_id}")
@@ -90,4 +90,4 @@ async def get_sync_monitor_servidor(server_id: str) -> Dict[str, Any]:
         raise
     except Exception as e:
         logger.error(f"[SYNC_MONITOR] Error detalle servidor: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

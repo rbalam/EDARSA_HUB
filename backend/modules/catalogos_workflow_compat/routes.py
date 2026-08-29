@@ -68,9 +68,9 @@ async def compat_post_solicitud_catalogo(body: Dict, current_user: Dict = Depend
     try:
         solicitud_id = repo.crear_solicitud_catalogo(body, current_user)
     except PermissionError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=403, detail="Error interno del servidor")
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     return {"ok": True, "message": "Solicitud creada en SQL (compat)", "solicitud_id": solicitud_id}
 
 @router.post("/sistema/solicitudes/{solicitud_id}/aprobar")
@@ -78,9 +78,9 @@ async def compat_aprobar_solicitud(solicitud_id: int, body: Dict, current_user: 
     try:
         updated = repo.aprobar_solicitud(solicitud_id, body, current_user)
     except PermissionError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=403, detail="Error interno del servidor")
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     if not updated:
         raise HTTPException(status_code=404, detail="Solicitud no encontrada")
     return {"ok": True, "message": "Solicitud aprobada en SQL (compat)"}
@@ -98,9 +98,9 @@ async def compat_liberar_solicitud(solicitud_id: int, body: Dict, current_user: 
     try:
         updated = repo.liberar_solicitud(solicitud_id, body, current_user)
     except PermissionError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+        raise HTTPException(status_code=403, detail="Error interno del servidor")
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     if not updated:
         raise HTTPException(status_code=404, detail="Solicitud no encontrada")
     return {"ok": True, "message": "Solicitud liberada y aplicada en SQL (compat)"}

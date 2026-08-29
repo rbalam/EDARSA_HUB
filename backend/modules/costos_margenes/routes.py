@@ -642,7 +642,7 @@ async def obtener_resumen(
             source_type=SourceType.EDARSAHUB_SQL
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error obteniendo resumen: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo resumen")
 
 
 # ==================== PRODUCTOS ====================
@@ -875,7 +875,7 @@ async def listar_productos(
             source_type=SourceType.EDARSAHUB_SQL,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error obteniendo productos: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo productos")
 
 
 # ==================== RECETA ====================
@@ -976,7 +976,7 @@ async def obtener_receta_producto(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error obteniendo receta: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo receta")
 
 
 # ==================== INSUMOS ====================
@@ -1048,7 +1048,7 @@ async def obtener_insumos_producto(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error obteniendo insumos: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo insumos")
 
 
 # ==================== SYNC STATUS ====================
@@ -1102,7 +1102,7 @@ async def obtener_sync_status(
             estado=SourceType(data.get('estado', 'EDARSAHUB_SQL'))
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error obteniendo sync status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo sync status")
 
 
 # ==================== UNIDADES DE NEGOCIO ====================
@@ -1137,7 +1137,7 @@ async def listar_unidades_negocio(
             "es_corporativo": not permission.get("restriccion_sucursal")
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error obteniendo unidades de negocio: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo unidades de negocio")
 
 
 # ==================== FAMILIAS Y SUBFAMILIAS ====================
@@ -1182,7 +1182,7 @@ async def listar_familias(
             "source_type": "EDARSAHUB_SQL"
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error obteniendo familias: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo familias")
 
 
 @router.get("/subfamilias")
@@ -1225,7 +1225,7 @@ async def listar_subfamilias(
             "source_type": "EDARSAHUB_SQL"
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error obteniendo subfamilias: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo subfamilias")
 
 
 # ==================== EXPORTACIÓN ====================
@@ -1356,4 +1356,4 @@ async def exportar_productos_csv(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generando exportación: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generando exportación")

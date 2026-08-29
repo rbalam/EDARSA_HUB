@@ -151,7 +151,7 @@ async def crear_trigger(
         raise
     except Exception as e:
         logger.error(f"[CRM-Triggers] Error creando trigger: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.patch("/{trigger_id}/toggle", summary="Activar/Desactivar Trigger")

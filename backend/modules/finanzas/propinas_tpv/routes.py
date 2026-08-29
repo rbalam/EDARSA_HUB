@@ -232,7 +232,7 @@ async def sincronizar_propinas(
         return result
     except Exception as e:
         logger.error(f"Error en sincronización de propinas: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post(
@@ -266,7 +266,7 @@ async def inicializar_modulo(
         raise
     except Exception as e:
         logger.error(f"Error inicializando módulo: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -311,7 +311,7 @@ async def detectar_esquema(
         raise
     except Exception as e:
         logger.error(f"Error detectando esquema: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get(
@@ -397,7 +397,7 @@ async def detectar_esquema_todos(
         }
     except Exception as e:
         logger.error(f"Error detectando esquemas: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get(
@@ -470,7 +470,7 @@ async def preview_propinas(
         }
     except Exception as e:
         logger.error(f"Error en preview: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -499,7 +499,7 @@ async def resumen_propinas(
         return result
     except Exception as e:
         logger.error(f"Error obteniendo resumen: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get(
@@ -532,7 +532,7 @@ async def listar_propinas(
         return result
     except Exception as e:
         logger.error(f"Error listando propinas: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -554,7 +554,7 @@ async def listar_configs(
         return {"configs": configs, "total": len(configs)}
     except Exception as e:
         logger.error(f"Error listando configs: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get(
@@ -577,7 +577,7 @@ async def obtener_config(
         return config
     except Exception as e:
         logger.error(f"Error obteniendo config: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post(
@@ -599,7 +599,7 @@ async def crear_config(
         return {"id": config_id, "message": "Configuración creada"}
     except Exception as e:
         logger.error(f"Error creando config: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.put(
@@ -627,7 +627,7 @@ async def actualizar_config(
         raise
     except Exception as e:
         logger.error(f"Error actualizando config: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -654,7 +654,7 @@ async def obtener_propina(
         raise
     except Exception as e:
         logger.error(f"Error obteniendo propina: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.put(
@@ -679,7 +679,7 @@ async def registrar_pago(
         )
         return result
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"Error registrando pago: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

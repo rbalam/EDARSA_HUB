@@ -75,6 +75,16 @@ async def register_user(user_data: UserCreate) -> Dict[str, Any]:
     user_dict = user_data.model_dump()
     del user_dict['password']
     user = User(**user_dict)
+
+    # SEC-001: el AUTO-REGISTRO nunca puede asignarse un rol elevado
+    # (SUPERADMIN/ADMIN/Supervisor). Se fuerza siempre el rol base 'Usuario'.
+    # La elevación de privilegios solo puede hacerla un admin vía CRUD de usuarios.
+    SAFE_ROLE = "Usuario"
+    if (user.role or "").strip() != SAFE_ROLE:
+        logger.warning(
+            f"SEC-001: auto-registro solicitó rol '{user.role}' para {user.email}; forzado a '{SAFE_ROLE}'"
+        )
+    user.role = SAFE_ROLE
     
     # Preparar payload SQL-only para Usuario_Catalogo.
     doc = user.model_dump()
@@ -102,21 +112,37 @@ async def login_user(email: str, password: str) -> Dict[str, Any]:
     """
     import logging
     logger = logging.getLogger(__name__)
-    
+
+    from modules.auth import lockout_repository as lockout
+
+    # Protección contra fuerza bruta: si la cuenta está bloqueada, rechazar
+    locked_until = lockout.check_lockout(email)
+    if locked_until:
+        logger.warning(f"Login bloqueado (lockout activo) para {email} hasta {locked_until}")
+        raise HTTPException(
+            status_code=429,
+            detail="Cuenta temporalmente bloqueada por múltiples intentos fallidos. Intenta de nuevo más tarde.",
+        )
+
     user = await repo.find_user_by_email(email, include_password=True)
     logger.info(f"Login attempt for {email}: user found = {user is not None}")
     
     if not user:
         logger.warning(f"Login failed: user {email} not found")
+        lockout.register_failed_attempt(email)
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
     
     if not verify_password(password, user['password']):
         logger.warning(f"Login failed: invalid password for {email}")
+        lockout.register_failed_attempt(email)
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
     
     if not user.get('active', True):
         raise HTTPException(status_code=401, detail="Usuario inactivo")
-    
+
+    # Login exitoso: limpiar contador de intentos fallidos
+    lockout.clear_attempts(email)
+
     # Generar token
     token = create_token(user['id'], user['email'], user['role'])
     
@@ -644,7 +670,7 @@ async def update_user_permissions(user_id: str, permissions: Dict, current_user:
         if conn:
             conn.rollback()
         logging.error(f"[RBAC-SCOPE-E-HARDENED] Error SQL al actualizar alcance: {e}")
-        raise HTTPException(status_code=500, detail=f"Error al guardar alcance en SQL: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al guardar alcance en SQL")
 
     except Exception as e:
         if conn:

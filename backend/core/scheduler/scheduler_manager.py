@@ -271,7 +271,7 @@ class SchedulerManager:
             await job_logger.finish_execution(
                 log_entry=log_entry,
                 status="failed",
-                error_detail=str(e)
+                error_detail="Error interno del servidor"
             )
         finally:
             await lock.release()
@@ -329,7 +329,7 @@ class SchedulerManager:
             await job_logger.finish_execution(
                 log_entry=log_entry,
                 status="failed",
-                error_detail=str(e)
+                error_detail="Error interno del servidor"
             )
         finally:
             await lock.release()
@@ -387,7 +387,7 @@ class SchedulerManager:
             await job_logger.finish_execution(
                 log_entry=log_entry,
                 status="failed",
-                error_detail=str(e)
+                error_detail="Error interno del servidor"
             )
         finally:
             await lock.release()
@@ -439,7 +439,7 @@ class SchedulerManager:
             logger.info(f"[SYNC_CXP] Completado: {result.get('facturas_persistidas')} facturas")
         except Exception as e:
             logger.error(f"[SYNC_CXP] Error: {e}")
-            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail="Error interno del servidor")
         finally:
             await lock.release()
 
@@ -499,7 +499,7 @@ class SchedulerManager:
             await job_logger.finish_execution(
                 log_entry=log_entry,
                 status="failed",
-                error_detail=str(e)
+                error_detail="Error interno del servidor"
             )
         finally:
             await lock.release()
@@ -562,7 +562,7 @@ class SchedulerManager:
             await job_logger.finish_execution(
                 log_entry=log_entry,
                 status="failed",
-                error_detail=str(e)
+                error_detail="Error interno del servidor"
             )
         finally:
             await lock.release()
@@ -657,7 +657,7 @@ class SchedulerManager:
             await job_logger.finish_execution(
                 log_entry=log_entry,
                 status="failed",
-                error_detail=str(e)
+                error_detail="Error interno del servidor"
             )
         finally:
             await lock.release()
@@ -713,7 +713,7 @@ class SchedulerManager:
             await job_logger.finish_execution(
                 log_entry=log_entry,
                 status="failed",
-                error_detail=str(e)
+                error_detail="Error interno del servidor"
             )
         finally:
             await lock.release()
@@ -757,7 +757,7 @@ class SchedulerManager:
             logger.info(f"[CRM_SYNC] Completado en {result.get('duracion_ms', 0)}ms")
         except Exception as e:
             logger.error(f"[CRM_SYNC] Error: {e}")
-            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail="Error interno del servidor")
         finally:
             await lock.release()
     
@@ -800,7 +800,7 @@ class SchedulerManager:
             logger.info(f"[CRM_SLA] Completado en {result.get('duracion_ms', 0)}ms")
         except Exception as e:
             logger.error(f"[CRM_SLA] Error: {e}")
-            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail="Error interno del servidor")
         finally:
             await lock.release()
     
@@ -842,7 +842,7 @@ class SchedulerManager:
             logger.info(f"[CRM_ACT] Completado en {result.get('duracion_ms', 0)}ms")
         except Exception as e:
             logger.error(f"[CRM_ACT] Error: {e}")
-            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail="Error interno del servidor")
         finally:
             await lock.release()
     
@@ -887,7 +887,7 @@ class SchedulerManager:
             logger.info(f"[VTIGER_SYNC] Completado en {result.get('duracion_ms', 0)}ms")
         except Exception as e:
             logger.error(f"[VTIGER_SYNC] Error: {e}")
-            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail="Error interno del servidor")
         finally:
             await lock.release()
     
@@ -1023,7 +1023,7 @@ class SchedulerManager:
             logger.info(f"[INTELIGENCIA_SYNC] Completado - {result.get('registros_insertados', 0)} registros insertados")
         except Exception as e:
             logger.error(f"[INTELIGENCIA_SYNC] Error: {e}")
-            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail="Error interno del servidor")
         finally:
             await lock.release()
     
@@ -1060,7 +1060,7 @@ class SchedulerManager:
             )
         except Exception as e:
             logger.error(f"[NETPAY_SYNC] Error: {e}")
-            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail="Error interno del servidor")
         finally:
             await lock.release()
 
@@ -1093,7 +1093,7 @@ class SchedulerManager:
             logger.info(f"[ALERTAS_EXC] Completado: {result.get('notificadas', 0)} notificadas")
         except Exception as e:
             logger.error(f"[ALERTAS_EXC] Error: {e}")
-            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail="Error interno del servidor")
         finally:
             await lock.release()
 
@@ -1126,7 +1126,7 @@ class SchedulerManager:
             logger.info(f"[RESUMEN_DIARIO_EXC] Completado: {result.get('total', 0)} excepciones")
         except Exception as e:
             logger.error(f"[RESUMEN_DIARIO_EXC] Error: {e}")
-            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail=str(e))
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail="Error interno del servidor")
         finally:
             await lock.release()
 

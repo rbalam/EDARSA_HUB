@@ -202,7 +202,7 @@ async def obtener_auditoria(
         )
         return service.obtener(auditoria_id, unidades_permitidas)
     except AuditoriaNoEncontradaError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
 
 
 @router.post(
@@ -239,9 +239,9 @@ async def crear_auditoria(
     except HTTPException:
         raise
     except ConfiguracionInvalidaError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.put(
@@ -284,9 +284,9 @@ async def actualizar_auditoria(
             data=auditoria
         )
     except AuditoriaNoEncontradaError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except ConfiguracionInvalidaError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
 
 
 @router.delete(
@@ -316,7 +316,7 @@ async def eliminar_auditoria(
             message="Auditoría eliminada"
         )
     except AuditoriaNoEncontradaError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
 
 
 # =============================================================================
@@ -351,7 +351,7 @@ async def activar_auditoria(
             data=auditoria
         )
     except AuditoriaNoEncontradaError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
 
 
 @router.post(
@@ -382,7 +382,7 @@ async def desactivar_auditoria(
             data=auditoria
         )
     except AuditoriaNoEncontradaError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
 
 
 @router.post(
@@ -423,8 +423,8 @@ async def ejecutar_auditoria(
     except HTTPException:
         raise
     except AuditoriaNoEncontradaError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except EjecucionDuplicadaError as e:
-        raise HTTPException(status_code=409, detail=str(e))
+        raise HTTPException(status_code=409, detail="Error interno del servidor")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

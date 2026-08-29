@@ -340,7 +340,7 @@ async def crear_asignacion(
             server_id=unidad.get("server_id", "")
         )
     except ValueError as e:
-        raise HTTPException(status_code=409, detail=str(e))
+        raise HTTPException(status_code=409, detail="Error interno del servidor")
     
     # 6. Auditoría
     await servicio_auditoria.registrar(
@@ -453,7 +453,7 @@ async def actualizar_asignacion(
             usuario_modificacion=current_user.get("email", "")
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     
     # Auditoría
     cambios = {}

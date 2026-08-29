@@ -61,11 +61,11 @@ async def registrar_decision(
             data=decision
         )
     except WorkflowNoEnAuditoriaError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except DecisionInvalidaError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/decisiones/procesar", response_model=OperacionResponse)
@@ -102,11 +102,11 @@ async def procesar_decision_completa(
             data=resultado
         )
     except WorkflowNoEnAuditoriaError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except DecisionInvalidaError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/decisiones/{decision_id}")
@@ -129,7 +129,7 @@ async def obtener_decision(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/workflow/{workflow_id}/decisiones")
@@ -147,7 +147,7 @@ async def obtener_decisiones_workflow(
         decisiones = await audit_svc.obtener_decisiones_workflow(workflow_id)
         return {"items": decisiones, "total": len(decisiones)}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/workflow/{workflow_id}/ultima-decision")
@@ -168,7 +168,7 @@ async def obtener_ultima_decision(
         
         return decision
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/pendientes")
@@ -186,7 +186,7 @@ async def obtener_pendientes_auditoria(
         workflows = await audit_svc.obtener_workflows_pendientes_auditoria(limit)
         return {"items": workflows, "total": len(workflows)}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/resumen")
@@ -208,7 +208,7 @@ async def obtener_resumen_auditoria(
             "workflows_pendientes_auditoria": len(pendientes)
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("")
@@ -241,4 +241,4 @@ async def listar_decisiones(
         return {"items": [], "total": 0, "message": "Proporcione al menos un filtro"}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

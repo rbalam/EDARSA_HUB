@@ -385,7 +385,7 @@ async def ejecutar_detector_manual(
             "estadisticas": resultado
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/compras/detector/estado")

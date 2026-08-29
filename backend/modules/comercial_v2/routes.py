@@ -1246,7 +1246,7 @@ async def comercial_v2_kpis_diarios(
         raise
     except Exception as e:
         logger.error(f"KPIs diarios v2 error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 
@@ -1322,7 +1322,7 @@ async def comercial_v2_kpis_diarios_unidad(
         raise
     except Exception as e:
         logger.error(f"KPIs diarios unidad error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 
@@ -1369,7 +1369,7 @@ async def comercial_v2_kpis_mensuales(
         raise
     except Exception as e:
         logger.error(f"KPIs mensuales v2 error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # =============================================================================
@@ -1742,7 +1742,7 @@ async def comercial_v2_ventas_dia(
         raise
     except Exception as e:
         logger.error(f"Ventas día v2 error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # =============================================================================
@@ -1777,7 +1777,7 @@ async def comercial_v2_unidades(
         raise
     except Exception as e:
         logger.error(f"Unidades v2 error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # =============================================================================
@@ -1816,7 +1816,7 @@ async def comercial_v2_sync_status(
         raise
     except Exception as e:
         logger.error(f"Sync status v2 error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # =============================================================================

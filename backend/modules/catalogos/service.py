@@ -121,7 +121,7 @@ class CatalogosService:
             )
         except Exception as e:
             logger.error(f"Error listando catálogo {tabla}: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Error interno del servidor")
     
     async def obtener_registro(self, tabla: str, id_valor: int) -> Dict:
         """Obtiene un registro específico."""
@@ -154,10 +154,10 @@ class CatalogosService:
                 id=nuevo_id
             )
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail="Error interno del servidor")
         except Exception as e:
             logger.error(f"Error creando registro en {tabla}: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Error interno del servidor")
     
     async def actualizar_registro(
         self,
@@ -184,10 +184,10 @@ class CatalogosService:
                 id=id_valor
             )
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail="Error interno del servidor")
         except Exception as e:
             logger.error(f"Error actualizando registro en {tabla}: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Error interno del servidor")
     
     async def desactivar_registro(self, tabla: str, id_valor: int) -> CatalogoRegistroResponse:
         """Desactiva un registro (soft delete)."""
@@ -211,7 +211,7 @@ class CatalogosService:
             )
         except Exception as e:
             logger.error(f"Error desactivando registro: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Error interno del servidor")
     
     async def activar_registro(self, tabla: str, id_valor: int) -> CatalogoRegistroResponse:
         """Reactiva un registro."""
@@ -235,7 +235,7 @@ class CatalogosService:
             )
         except Exception as e:
             logger.error(f"Error activando registro: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Error interno del servidor")
     
     # ========================================================================
     # ADMINISTRACIÓN
@@ -252,7 +252,7 @@ class CatalogosService:
             }
         except Exception as e:
             logger.error(f"Error ejecutando DDL: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Error interno del servidor")
     
     async def verificar_tablas_nuevas(self) -> Dict:
         """Verifica el estado de las tablas nuevas."""

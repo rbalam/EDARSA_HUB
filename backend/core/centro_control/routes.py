@@ -455,7 +455,7 @@ async def obtener_salud_sistema(current_user: Dict = Depends(get_current_user)):
             mensaje=f"Error generando reporte de salud: {str(e)[:200]}",
             severidad="critical"
         )
-        raise HTTPException(status_code=500, detail=f"Error obteniendo salud del sistema: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo salud del sistema")
 
 
 @router.get("/salud/resumen")
@@ -484,7 +484,7 @@ async def obtener_resumen_ejecutivo(current_user: Dict = Depends(get_current_use
         
     except Exception as e:
         logger.error(f"[CENTRO CONTROL] Error en resumen ejecutivo: {e}")
-        raise HTTPException(status_code=500, detail=f"Error generando resumen: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generando resumen")
 
 # ============================================================================
 # ENDPOINTS: DETECCIÓN DE REGRESIONES
@@ -561,7 +561,7 @@ async def ejecutar_checks_regresion(
         
     except Exception as e:
         logger.error(f"[CENTRO CONTROL] Error en checks de regresión: {e}")
-        raise HTTPException(status_code=500, detail=f"Error ejecutando checks: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error ejecutando checks")
 
 
 @router.get("/regresiones/{modulo}")
@@ -596,7 +596,7 @@ async def obtener_regresiones_modulo(
         )
     except Exception as e:
         logger.error(f"[CENTRO CONTROL] Error en regresiones de {modulo}: {e}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error")
 
 # ============================================================================
 # ENDPOINTS: FUENTES DE DATOS
@@ -639,7 +639,7 @@ async def obtener_estado_fuentes(current_user: Dict = Depends(get_current_user))
         
     except Exception as e:
         logger.error(f"[CENTRO CONTROL] Error obteniendo fuentes: {e}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error")
 
 # ============================================================================
 # ENDPOINTS: ALERTAS
@@ -764,7 +764,7 @@ async def obtener_matriz_resolucion(current_user: Dict = Depends(get_current_use
         
     except Exception as e:
         logger.error(f"[CENTRO CONTROL] Error obteniendo matriz: {e}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error")
 
 # ============================================================================
 # ENDPOINTS: ESTADO GENERAL (PING)
@@ -860,7 +860,7 @@ async def obtener_estado_general(current_user: Dict = Depends(get_current_user))
         
     except Exception as e:
         logger.error(f"[CENTRO CONTROL] Error en estado general: {e}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error")
 
 # ============================================================================
 # ENDPOINTS: JOBS Y AUTOMATIZACIONES
@@ -1069,7 +1069,7 @@ async def crear_scheduler_job(
         raise
     except Exception as e:
         logger.error(f"[CENTRO CONTROL] Error creando job: {e}")
-        raise HTTPException(status_code=500, detail=str(e)[:500])
+        raise HTTPException(status_code=500, detail="Error interno del servidor"[:500])
 
 
 @router.post("/jobs/{job_id}/run")
@@ -1159,7 +1159,7 @@ async def ejecutar_scheduler_job_manual(
         raise
     except Exception as e:
         logger.error(f"[CENTRO CONTROL] Error ejecutando job manual: {e}")
-        raise HTTPException(status_code=500, detail=str(e)[:500])
+        raise HTTPException(status_code=500, detail="Error interno del servidor"[:500])
 
 
 # ============================================================================
@@ -1628,7 +1628,7 @@ async def listar_destinatarios(
         }
     except Exception as e:
         logger.error(f"[RECIPIENTS] Error listando destinatarios: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/destinatarios/resumen")
@@ -1640,7 +1640,7 @@ async def resumen_destinatarios(current_user: Dict = Depends(get_current_user)):
         return get_recipients_summary()
     except Exception as e:
         logger.error(f"[RECIPIENTS] Error obteniendo resumen: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/destinatarios")
@@ -1671,10 +1671,10 @@ async def crear_destinatario(
             "destinatario": recipient
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[RECIPIENTS] Error creando destinatario: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.put("/destinatarios/{recipient_id}")
@@ -1702,10 +1702,10 @@ async def actualizar_destinatario(
             "destinatario": recipient
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[RECIPIENTS] Error actualizando destinatario: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.delete("/destinatarios/{recipient_id}")
@@ -1723,7 +1723,7 @@ async def eliminar_destinatario(
             "message": "Destinatario eliminado correctamente"
         }
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[RECIPIENTS] Error eliminando destinatario: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

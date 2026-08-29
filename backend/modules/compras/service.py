@@ -103,7 +103,7 @@ async def obtener_inventarios_fisicos(
         raise  # Re-lanzar HTTPExceptions
     except Exception as e:
         log_compras_error("inventarios-fisicos", server_id, "QUERY_ERROR", str(e), system_type)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -264,7 +264,7 @@ async def obtener_detalle_factura(server_id: str, folio: str) -> List[Dict]:
         raise
     except Exception as e:
         log_compras_error("detalle-factura", server_id, "QUERY_ERROR", str(e), system_type)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -326,7 +326,7 @@ async def obtener_facturas_proveedor(
         raise
     except Exception as e:
         log_compras_error("facturas-proveedor", server_id, "QUERY_ERROR", str(e), system_type)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 __all__ = [

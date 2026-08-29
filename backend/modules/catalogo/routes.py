@@ -111,4 +111,4 @@ async def obtener_clasificacion(
             "source_type": "EDARSAHUB_SQL",
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error obteniendo clasificación: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo clasificación")

@@ -70,7 +70,7 @@ async def obtener_resumen_dashboard(
         )
         return resumen
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/alertas")
@@ -105,7 +105,7 @@ async def obtener_alertas(
             "tiene_alertas_criticas": any(a["severidad"] == "ALTA" for a in alertas)
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/workflows/por-estado")
@@ -131,7 +131,7 @@ async def obtener_workflows_por_estado(
             "total": total
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/tareas/por-estado")
@@ -157,7 +157,7 @@ async def obtener_tareas_por_estado(
             "total": total
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/tareas/vencidas/conteo")
@@ -182,7 +182,7 @@ async def obtener_conteo_tareas_vencidas(
             "detalle": vencidas[:10] if vencidas else []  # Primeras 10
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/kpis")
@@ -236,4 +236,4 @@ async def obtener_kpis(
             }
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

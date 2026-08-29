@@ -53,7 +53,7 @@ def execute_query(sql: str, params: tuple = ()) -> List[Dict[str, Any]]:
         return rows
     except Exception as e:
         logging.error(f"[ADMIN_SQL] Error ejecutando query: {e}")
-        raise HTTPException(status_code=500, detail=f"Error de base de datos: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error de base de datos")
 
 
 def execute_write(sql: str, params: tuple = (), fetch: bool = False) -> List[Dict[str, Any]]:
@@ -71,7 +71,7 @@ def execute_write(sql: str, params: tuple = (), fetch: bool = False) -> List[Dic
         return rows
     except Exception as e:
         logging.error(f"[ADMIN_SQL] Error en escritura: {e}")
-        raise HTTPException(status_code=500, detail=f"Error de base de datos: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error de base de datos")
     finally:
         cn.close()
 
@@ -730,7 +730,7 @@ async def save_permisos_catalogos(payload: dict, current_user: dict = Depends(ge
         raise
     except Exception as e:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=f"Error guardando permisos de catálogos: {e}")
+        raise HTTPException(status_code=500, detail=f"Error guardando permisos de catálogos")
     finally:
         conn.close()
 
@@ -835,7 +835,7 @@ async def update_role_sql(role_id: str, role_data: dict, current_user: dict = De
         raise
     except Exception as e:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=f"Error guardando permisos del rol: {e}")
+        raise HTTPException(status_code=500, detail=f"Error guardando permisos del rol")
     finally:
         conn.close()
 
@@ -866,7 +866,7 @@ async def create_role_sql(role_data: dict, current_user: dict = Depends(get_curr
 
     except Exception as e:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=f"Error creando rol: {e}")
+        raise HTTPException(status_code=500, detail=f"Error creando rol")
     finally:
         conn.close()
 

@@ -63,13 +63,13 @@ async def registrar_justificacion(
             data=resultado
         )
     except JustificacionInvalidaError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except EvidenciaRequeridaError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except JustificacionYaExisteError as e:
-        raise HTTPException(status_code=409, detail=str(e))
+        raise HTTPException(status_code=409, detail="Error interno del servidor")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/umbral")
@@ -89,7 +89,7 @@ async def obtener_umbral_justificacion(
         umbral = await just_svc.obtener_umbral_actual()
         return {"umbral_justificacion_simple": umbral, "moneda": "MXN"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/{justificacion_id}")
@@ -112,7 +112,7 @@ async def obtener_justificacion(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("")
@@ -151,7 +151,7 @@ async def listar_justificaciones(
         return {"items": [], "total": 0, "message": "Proporcione al menos un filtro"}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/workflow/{workflow_id}")
@@ -169,7 +169,7 @@ async def obtener_justificaciones_workflow(
         justificaciones = await just_svc.obtener_justificaciones_workflow(workflow_id)
         return {"items": justificaciones, "total": len(justificaciones)}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/workflow/{workflow_id}/verificar")
@@ -193,7 +193,7 @@ async def verificar_justificaciones_workflow(
         resultado = await just_svc.verificar_workflow_completamente_justificado(workflow_id)
         return resultado
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/determinar-tipo")
@@ -218,4 +218,4 @@ async def determinar_tipo_justificacion(
             "requiere_evidencia": tipo == TipoJustificacion.COMPLETA
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

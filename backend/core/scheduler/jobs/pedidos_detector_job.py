@@ -394,7 +394,7 @@ class PedidosDetectorJob:
                 processed_count=stats["pedidos_detectados"],
                 success_count=stats["pedidos_nuevos"],
                 failed_count=stats["fallidos"],
-                error_detail=str(e),
+                error_detail="Error interno del servidor",
                 message=f"Error: {str(e)}"
             )
             

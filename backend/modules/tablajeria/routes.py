@@ -129,7 +129,7 @@ async def listar_plantillas(
         
     except Exception as e:
         logger.error(f"[Tablajeria] Error listando plantillas: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 
@@ -180,7 +180,7 @@ async def obtener_plantilla(plantilla_id: str):
         raise
     except Exception as e:
         logger.error(f"[Tablajeria] Error obteniendo plantilla: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 
@@ -208,7 +208,7 @@ async def publicar_plantilla(plantilla_id: str):
         raise
     except Exception as e:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 
@@ -240,7 +240,7 @@ async def listar_servidores_tablajeria():
         return {"servidores": servidores, "total": len(servidores)}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 
@@ -310,7 +310,7 @@ async def obtener_sync_log(
         return {"logs": logs, "total": len(logs)}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 
@@ -370,7 +370,7 @@ async def obtener_estadisticas(empresa_id: Optional[str] = None):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 
@@ -426,7 +426,7 @@ async def listar_ordenes(
         
     except Exception as e:
         logger.error(f"[Tablajeria] Error listando órdenes: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/ordenes/{orden_id}")
@@ -452,7 +452,7 @@ async def obtener_orden(
         raise
     except Exception as e:
         logger.error(f"[Tablajeria] Error obteniendo orden: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/ordenes")
@@ -483,10 +483,10 @@ async def crear_orden(
         }
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[Tablajeria] Error creando orden: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/ordenes/captura-directa")
@@ -521,10 +521,10 @@ async def crear_orden_captura_directa(
         }
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[Tablajeria] Error creando orden captura directa: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.put("/ordenes/{orden_id}/iniciar")
@@ -552,10 +552,10 @@ async def iniciar_ejecucion_orden(
         }
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[Tablajeria] Error iniciando orden: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 class ResultadosOrdenRequest(BaseModel):
@@ -603,10 +603,10 @@ async def registrar_resultados_orden(
         }
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[Tablajeria] Error registrando resultados: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 class CerrarOrdenRequest(BaseModel):
@@ -701,10 +701,10 @@ async def cerrar_orden(
         return response
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[Tablajeria] Error cerrando orden: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 class CancelarOrdenRequest(BaseModel):
@@ -742,10 +742,10 @@ async def cancelar_orden(
         }
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[Tablajeria] Error cancelando orden: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 class AutorizarOrdenRequest(BaseModel):
@@ -786,10 +786,10 @@ async def autorizar_orden(
         }
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[Tablajeria] Error autorizando orden: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================
@@ -872,7 +872,7 @@ async def obtener_estadisticas_ordenes(
         
     except Exception as e:
         logger.error(f"[Tablajeria] Error obteniendo stats órdenes: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
     finally:
         conn.close()
 
@@ -927,7 +927,7 @@ async def procesar_cierre_fase6(
         
     except Exception as e:
         logger.error(f"[FASE6] Error en proceso cierre: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/ordenes/{orden_id}/fase6/afectar-inventario")
@@ -941,10 +941,10 @@ async def afectar_inventario(
         resultado = service.afectar_inventario_orden(orden_id, current_user.get('id'))
         return resultado
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[FASE6] Error afectando inventario: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/ordenes/{orden_id}/fase6/calcular-costeo")
@@ -978,10 +978,10 @@ async def calcular_costeo(
         return resultado
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[FASE6] Error calculando costeo: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/ordenes/{orden_id}/fase6/generar-poliza")
@@ -995,10 +995,10 @@ async def generar_poliza(
         resultado = service.generar_poliza_produccion(orden_id, current_user.get('id'))
         return resultado
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[FASE6] Error generando póliza: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/fase6/config-contable/{empresa_id}")
@@ -1029,7 +1029,7 @@ async def obtener_config_contable(
         }
     except Exception as e:
         logger.error(f"[FASE6] Error obteniendo config: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.put("/fase6/config-contable/{empresa_id}")
@@ -1065,7 +1065,7 @@ async def guardar_config_contable(
             
     except Exception as e:
         logger.error(f"[FASE6] Error guardando config: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 
@@ -1097,7 +1097,7 @@ async def get_dashboard_kpis(
         return service.get_kpis_generales(empresa_id, fecha_inicio, fecha_fin)
     except Exception as e:
         logger.error(f"[Dashboard] Error obteniendo KPIs: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/dashboard/rendimientos-plantilla")
@@ -1118,7 +1118,7 @@ async def get_rendimientos_por_plantilla(
         return service.get_rendimientos_por_plantilla(limit)
     except Exception as e:
         logger.error(f"[Dashboard] Error obteniendo rendimientos por plantilla: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/dashboard/tendencia")
@@ -1139,7 +1139,7 @@ async def get_tendencia_rendimientos(
         return service.get_tendencia_rendimientos(dias)
     except Exception as e:
         logger.error(f"[Dashboard] Error obteniendo tendencia: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/dashboard/top-mermas")
@@ -1160,7 +1160,7 @@ async def get_top_mermas(
         return service.get_top_mermas(limit)
     except Exception as e:
         logger.error(f"[Dashboard] Error obteniendo top mermas: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/dashboard/alertas")
@@ -1181,7 +1181,7 @@ async def get_alertas_rendimiento(
         return service.get_alertas_rendimiento(umbral)
     except Exception as e:
         logger.error(f"[Dashboard] Error obteniendo alertas: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/dashboard/resumen-costeo")
@@ -1203,7 +1203,7 @@ async def get_resumen_costeo(
         return service.get_resumen_costeo(fecha_inicio, fecha_fin)
     except Exception as e:
         logger.error(f"[Dashboard] Error obteniendo resumen costeo: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ============================================================================
@@ -1300,7 +1300,7 @@ async def exportar_ordenes(
         
     except Exception as e:
         logger.error(f"[Reportes] Error exportando órdenes: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/reportes/mermas")
@@ -1378,7 +1378,7 @@ async def exportar_mermas(
         
     except Exception as e:
         logger.error(f"[Reportes] Error exportando mermas: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/reportes/costeo")
@@ -1443,4 +1443,4 @@ async def exportar_costeo(
         
     except Exception as e:
         logger.error(f"[Reportes] Error exportando costeo: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

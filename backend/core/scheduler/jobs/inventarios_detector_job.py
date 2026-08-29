@@ -273,7 +273,7 @@ class InventariosDetectorJob:
                 status="error",
                 processed_count=self.stats["inventarios_procesados"],
                 failed_count=self.stats["inventarios_error"],
-                error_detail=str(e),
+                error_detail="Error interno del servidor",
                 extra_metadata={"stats": self.stats}
             )
             

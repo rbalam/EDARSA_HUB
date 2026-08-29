@@ -778,7 +778,7 @@ class RHIncidenciasService:
             
         except Exception as e:
             logging.error(f"Error importando Excel: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Error procesando archivo: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error procesando archivo")
     
     def generar_plantilla_excel(self) -> bytes:
         """

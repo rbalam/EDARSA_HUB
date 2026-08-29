@@ -98,9 +98,9 @@ async def crear_workflow(
             data=resultado
         )
     except WorkflowYaExisteError as e:
-        raise HTTPException(status_code=409, detail=str(e))
+        raise HTTPException(status_code=409, detail="Error interno del servidor")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/{workflow_id}")
@@ -130,7 +130,7 @@ async def obtener_workflow(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("")
@@ -183,7 +183,7 @@ async def listar_workflows(
         
         return resultado
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.patch("/{workflow_id}/estado", response_model=OperacionResponse)
@@ -216,11 +216,11 @@ async def cambiar_estado_workflow(
             data=workflow
         )
     except WorkflowNoEncontradoError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except TransicionInvalidaError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/{workflow_id}/escalar", response_model=OperacionResponse)
@@ -250,11 +250,11 @@ async def escalar_workflow(
             data=resultado
         )
     except WorkflowNoEncontradoError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Error interno del servidor")
     except TransicionInvalidaError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/{workflow_id}/resumen")
@@ -286,4 +286,4 @@ async def obtener_resumen_workflow(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

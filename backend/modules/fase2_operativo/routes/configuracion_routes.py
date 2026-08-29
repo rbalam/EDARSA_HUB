@@ -47,7 +47,7 @@ async def obtener_parametros_operativos(
         parametros = await config_svc.obtener_parametros_operativos()
         return parametros
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/todas")
@@ -64,7 +64,7 @@ async def listar_todas_configuraciones(
         configuraciones = await config_svc.listar_todas()
         return {"items": configuraciones, "total": len(configuraciones)}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/{clave}")
@@ -87,7 +87,7 @@ async def obtener_configuracion(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.patch("/{clave}", response_model=OperacionResponse)
@@ -117,9 +117,9 @@ async def actualizar_configuracion(
             data=config
         )
     except ValorInvalidoError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # Endpoints específicos para configuraciones conocidas
@@ -138,7 +138,7 @@ async def obtener_umbral_justificacion(
         umbral = await config_svc.obtener_umbral_justificacion()
         return {"clave": "UMBRAL_JUSTIFICACION_SIMPLE", "valor": umbral, "moneda": "MXN"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.patch("/umbral-justificacion/valor", response_model=OperacionResponse)
@@ -161,9 +161,9 @@ async def actualizar_umbral_justificacion(
             data=config
         )
     except ValorInvalidoError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/dias-limite-tarea/valor")
@@ -180,7 +180,7 @@ async def obtener_dias_limite_tarea(
         dias = await config_svc.obtener_dias_limite_tarea()
         return {"clave": "DIAS_LIMITE_TAREA_DEFAULT", "valor": dias}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.patch("/dias-limite-tarea/valor", response_model=OperacionResponse)
@@ -203,9 +203,9 @@ async def actualizar_dias_limite_tarea(
             data=config
         )
     except ValorInvalidoError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/max-ciclos-reasignacion/valor")
@@ -222,7 +222,7 @@ async def obtener_max_ciclos_reasignacion(
         max_ciclos = await config_svc.obtener_max_ciclos_reasignacion()
         return {"clave": "MAX_CICLOS_REASIGNACION", "valor": max_ciclos}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.patch("/max-ciclos-reasignacion/valor", response_model=OperacionResponse)
@@ -245,6 +245,6 @@ async def actualizar_max_ciclos_reasignacion(
             data=config
         )
     except ValorInvalidoError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
