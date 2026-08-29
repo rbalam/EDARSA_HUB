@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "b2eb7b7f1fa7788a62139d69abce297aa06e4e44",
-  "generated_at_utc": "2026-08-29T20:48:10Z",
+  "development_sha": "350176d77f2c0d7bfa2ac0caa63abdaea9d50af1",
+  "generated_at_utc": "2026-08-29T20:53:04Z",
   "history": {
     "done_total_local": 7,
     "pending_total_local": 0,
@@ -11,7 +11,7 @@
   },
   "jobs": [
     {
-      "age_seconds": 740,
+      "age_seconds": 1034,
       "job_id": "worker-universal-queue-sla-v3-20260829",
       "reason": null,
       "state": "RESULT_READY"
@@ -25,10 +25,10 @@
   "queue_result_ready_recent": 1,
   "queue_running": 0,
   "runtime": {
-    "generation": "20260827-universal-job-worker-sla-v2",
-    "last_cycle_utc": "2026-08-29T20:48:02Z",
-    "last_receive_utc": "2026-08-29T20:48:03Z",
-    "pid": "1656"
+    "generation": "20260827-universal-job-worker-selfheal-v3",
+    "last_cycle_utc": "2026-08-29T20:53:00Z",
+    "last_receive_utc": "2026-08-29T20:53:01Z",
+    "pid": "302854"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
