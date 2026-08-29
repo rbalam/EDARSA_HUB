@@ -11,7 +11,7 @@
   "job_id": "CAVAS-BOS-V1-FUNDACION-01",
   "percent_complete": 0,
   "production_touched": false,
-  "published_at_utc": "2026-08-29T20:37:03Z",
+  "published_at_utc": "2026-08-29T20:40:06Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
