@@ -2,12 +2,12 @@
   "schema": "edarsahub.worker-job.v2",
   "job_id": "000-worker-agent-guard-stale-claim-selfheal-v1-20260827",
   "created_at_utc": "2026-08-28T01:19:00Z",
-  "requeue_requested_at_utc": "2026-08-28T05:07:00Z",
+  "requeue_requested_at_utc": "2026-08-29T13:09:00Z",
   "requested_by": "chatgpt",
   "target_repo": "rbalam/EDARSA_HUB",
   "target_branch": "Edarsahub_Desarrollo",
   "production_allowed": false,
-  "objective": "Arreglar de forma permanente el ciclo de vida de claims de Agent Guard para jobs del Worker. Cuando worktree-create falle exclusivamente por Scope superpuesto con un agent_id worker-*, verificar que el job bloqueador ya sea terminal mediante evidencia local en RESULTS/DONE/REJECTED. Solo entonces usar exclusivamente el CLI oficial agent_guard.py para liberar el claim terminal, y reintentar worktree-create una sola vez. Nunca liberar claims activos ni tocar archivos internos de .git/agent-guard. Despues del fix, ejecutar regresiones y publicar resultado. No tocar Produccion.",
+  "objective": "Arreglar de forma permanente el ciclo de vida de claims de Agent Guard para jobs del Worker. Cuando worktree-create falle exclusivamente por Scope superpuesto con un agent_id worker-*, verificar que el job bloqueador ya sea terminal mediante evidencia local en RESULTS/DONE/REJECTED. Solo entonces usar exclusivamente el CLI oficial agent_guard.py para liberar el claim terminal, y reintentar worktree-create una sola vez. Nunca liberar claims activos ni tocar archivos internos de .git/agent-guard. Reejecutar ahora que el dispatcher actual ya contiene resolucion de credential.helper para publicar el commit sin depender de gh. Despues del fix, ejecutar regresiones y publicar resultado. No tocar Produccion.",
   "acceptance": [
     "dispatcher compila",
     "solo claims worker-* de jobs terminales pueden liberarse",
@@ -15,6 +15,7 @@
     "se usa CLI oficial Agent Guard y nunca borrado manual",
     "worktree-create se reintenta maximo una vez",
     "tests de regresion PASS",
+    "candidate integrado a Edarsahub_Desarrollo",
     "resultado publicado",
     "production_touched=false"
   ],
