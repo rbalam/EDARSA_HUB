@@ -1,0 +1,131 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-universal-queue-sla-v4-20260829",
+  "created_at_utc": "2026-08-29T21:05:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Cerrar el SLA operativo del Worker universal sin depender de un base_sha fijo y corregir el cleanup de Agent Guard cuando el job falla antes de crear claim/worktree. Inbox es historico, RESULTS deduplica, current_job_id/last_terminal_utc quedan persistidos, queue_depth/oldest_pending_age_seconds/intake_sla_breached se publican, processing stale se reencola maximo una vez y luego termina BLOCKED. No rutas especiales por usuario. No tocar Produccion.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Worker universal SLA queue"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "def already_claimed(name: str) -> bool:\n    return any((folder / name).exists() for folder in (PENDING, PROCESSING, DONE, REJECTED))\n",
+      "new": "def already_claimed(name: str) -> bool:\n    # worker_queue/inbox is immutable audit history. A job is actionable only\n    # when no local lifecycle/terminal evidence exists for its job_id.\n    return any(\n        (folder / name).exists()\n        for folder in (PENDING, PROCESSING, DONE, REJECTED, RESULTS)\n    )\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "RESULTS = STATE / \"results\"\nWORKTREES = Path(os.environ.get(\"EDARSAHUB_JOB_WORKTREES\", \"/tmp/edarsahub-worker-jobs\"))",
+      "new": "RESULTS = STATE / \"results\"\nRUNTIME = STATE / \"runtime\"\nWORKTREES = Path(os.environ.get(\"EDARSAHUB_JOB_WORKTREES\", \"/tmp/edarsahub-worker-jobs\"))",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "    processing = PROCESSING / path.name\n    os.replace(path, processing)\n    result: dict[str, Any] = {",
+      "new": "    processing = PROCESSING / path.name\n    os.replace(path, processing)\n    RUNTIME.mkdir(parents=True, exist_ok=True)\n    (RUNTIME / \"current_job_id\").write_text(job_id + \"\\n\", encoding=\"utf-8\")\n    result: dict[str, Any] = {",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "    worktree: Path | None = None\n    branch = \"\"\n    try:",
+      "new": "    worktree: Path | None = None\n    branch = \"\"\n    agent_guard_claim_created = False\n    try:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        worktree, branch = prepare_worktree(\n            job_id,\n            base_sha,\n            requested_paths,\n        )\n        result[\"job_branch\"] = branch",
+      "new": "        worktree, branch = prepare_worktree(\n            job_id,\n            base_sha,\n            requested_paths,\n        )\n        agent_guard_claim_created = True\n        result[\"job_branch\"] = branch",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "    finally:\n        release_ok, release_detail = release_agent_guard_claim(job_id)\n        result[\"agent_guard_release\"] = \"PASS\" if release_ok else \"FAIL\"\n        if not release_ok:\n            result[\"blockers\"].append(\"agent_guard_release_failed:\" + release_detail)\n            result[\"quality_gate\"] = \"FAIL\"\n            result[\"certification\"] = \"NOT_CERTIFIED\"",
+      "new": "    finally:\n        if agent_guard_claim_created:\n            release_ok, release_detail = release_agent_guard_claim(job_id)\n            result[\"agent_guard_release\"] = \"PASS\" if release_ok else \"FAIL\"\n            if not release_ok:\n                result[\"blockers\"].append(\"agent_guard_release_failed:\" + release_detail)\n                result[\"quality_gate\"] = \"FAIL\"\n                result[\"certification\"] = \"NOT_CERTIFIED\"\n        else:\n            result[\"agent_guard_release\"] = \"NOT_REQUIRED\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        target = DONE / path.name if result[\"status\"] == \"INTEGRATED\" else REJECTED / path.name\n        os.replace(processing, target)\n    print(json.dumps({\"job_id\": job_id, \"status\": result[\"status\"], \"blockers\": result[\"blockers\"]}, ensure_ascii=False))",
+      "new": "        target = DONE / path.name if result[\"status\"] == \"INTEGRATED\" else REJECTED / path.name\n        os.replace(processing, target)\n        (RUNTIME / \"last_terminal_utc\").write_text(result[\"completed_at_utc\"] + \"\\n\", encoding=\"utf-8\")\n        current_job = RUNTIME / \"current_job_id\"\n        try:\n            if current_job.read_text(encoding=\"utf-8\").strip() == job_id:\n                current_job.unlink()\n        except OSError:\n            pass\n    print(json.dumps({\"job_id\": job_id, \"status\": result[\"status\"], \"blockers\": result[\"blockers\"]}, ensure_ascii=False))",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/worker_control_plane.py",
+      "old": "RESULTS = STATE / \"results\"\nPUBLISHED = STATE / \"published\"",
+      "new": "RESULTS = STATE / \"results\"\nREJECTED = STATE / \"rejected\"\nPUBLISHED = STATE / \"published\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/worker_control_plane.py",
+      "old": "def requeue_stale_processing() -> int:\n    PENDING.mkdir(parents=True, exist_ok=True)\n    PROCESSING.mkdir(parents=True, exist_ok=True)\n    requeued = 0\n    for path in PROCESSING.glob(\"*.json\"):\n        try:\n            age = epoch() - path.stat().st_mtime\n        except OSError:\n            continue\n        if age < PROCESSING_GRACE:\n            continue\n        target = PENDING / path.name\n        if target.exists():\n            continue\n        try:\n            os.replace(path, target)\n            requeued += 1\n            audit(\"STALE_PROCESSING_REQUEUED\", job_file=path.name, age_seconds=int(age))\n        except OSError as exc:\n            audit(\"STALE_PROCESSING_REQUEUE_FAILED\", job_file=path.name, error=str(exc))\n    return requeued\n",
+      "new": "def requeue_stale_processing() -> int:\n    PENDING.mkdir(parents=True, exist_ok=True)\n    PROCESSING.mkdir(parents=True, exist_ok=True)\n    REJECTED.mkdir(parents=True, exist_ok=True)\n    RESULTS.mkdir(parents=True, exist_ok=True)\n    requeued = 0\n    for path in PROCESSING.glob(\"*.json\"):\n        try:\n            age = epoch() - path.stat().st_mtime\n        except OSError:\n            continue\n        if age < PROCESSING_GRACE:\n            continue\n        try:\n            envelope = json.loads(path.read_text(encoding=\"utf-8\"))\n        except Exception as exc:\n            audit(\"STALE_PROCESSING_INVALID_ENVELOPE\", job_file=path.name, error=str(exc))\n            continue\n        retry_count = int(envelope.get(\"_worker_stale_requeue_count\") or 0)\n        if retry_count >= 1:\n            job = envelope.get(\"job\") if isinstance(envelope.get(\"job\"), dict) else {}\n            job_id = str(job.get(\"job_id\") or path.stem)\n            completed = utc_now()\n            result = {\n                \"schema\": \"edarsahub.worker-result.v2\",\n                \"job_id\": job_id,\n                \"status\": \"BLOCKED\",\n                \"quality_gate\": \"FAIL\",\n                \"certification\": \"NOT_CERTIFIED\",\n                \"percent_complete\": 0,\n                \"production_touched\": False,\n                \"blockers\": [\"processing_stale_after_single_requeue\"],\n                \"completed_at_utc\": completed,\n                \"summary_es\": \"El job excedio el SLA de processing despues de un unico reintento seguro y fue cerrado terminalmente para no bloquear la cola.\"\n            }\n            atomic_json(RESULTS / path.name, result)\n            os.replace(path, REJECTED / path.name)\n            (RUNTIME / \"last_terminal_utc\").write_text(completed + \"\\n\", encoding=\"utf-8\")\n            audit(\"STALE_PROCESSING_TERMINATED\", job_file=path.name, age_seconds=int(age))\n            continue\n        target = PENDING / path.name\n        if target.exists():\n            continue\n        envelope[\"_worker_stale_requeue_count\"] = retry_count + 1\n        atomic_json(path, envelope)\n        os.replace(path, target)\n        requeued += 1\n        audit(\"STALE_PROCESSING_REQUEUED\", job_file=path.name, age_seconds=int(age), retry_count=retry_count + 1)\n    return requeued\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/runtime_health_publisher.py",
+      "old": "def runtime_summary() -> dict[str, str | None]:\n    return {\n        \"pid\": read_text(RUNTIME / \"pid\"),\n        \"generation\": read_text(RUNTIME / \"generation\"),\n        \"last_cycle_utc\": read_text(RUNTIME / \"last_cycle_utc\"),\n        \"last_receive_utc\": read_text(RUNTIME / \"last_receive_utc\"),\n    }\n",
+      "new": "def runtime_summary() -> dict[str, str | None]:\n    return {\n        \"pid\": read_text(RUNTIME / \"pid\"),\n        \"generation\": read_text(RUNTIME / \"generation\"),\n        \"last_cycle_utc\": read_text(RUNTIME / \"last_cycle_utc\"),\n        \"last_receive_utc\": read_text(RUNTIME / \"last_receive_utc\"),\n        \"current_job_id\": read_text(RUNTIME / \"current_job_id\"),\n        \"last_terminal_utc\": read_text(RUNTIME / \"last_terminal_utc\"),\n    }\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/runtime_health_publisher.py",
+      "old": "def payload() -> dict:\n    head = git(\"rev-parse\", \"HEAD\").stdout.strip()\n    jobs = queue_jobs()\n    return {",
+      "new": "def payload() -> dict:\n    head = git(\"rev-parse\", \"HEAD\").stdout.strip()\n    jobs = queue_jobs()\n    active = [job for job in jobs if job[\"state\"] in {\"PENDING\", \"RUNNING\", \"BLOCKED\"}]\n    pending_only = [job for job in jobs if job[\"state\"] == \"PENDING\"]\n    oldest_pending_age = max((int(job.get(\"age_seconds\") or 0) for job in pending_only), default=0)\n    intake_sla_seconds = 30\n    return {",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/runtime_health_publisher.py",
+      "old": "        \"queue_pending\": sum(j[\"state\"] == \"PENDING\" for j in jobs),\n        \"queue_running\": sum(j[\"state\"] == \"RUNNING\" for j in jobs),",
+      "new": "        \"queue_pending\": sum(j[\"state\"] == \"PENDING\" for j in jobs),\n        \"queue_depth\": len(active),\n        \"oldest_pending_age_seconds\": oldest_pending_age,\n        \"intake_sla_seconds\": intake_sla_seconds,\n        \"intake_sla_breached\": oldest_pending_age > intake_sla_seconds,\n        \"queue_running\": sum(j[\"state\"] == \"RUNNING\" for j in jobs),",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_universal_queue_sla_contract.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nBRIDGE = ROOT / 'tools/mirror_sync/universal_job_bridge.py'\nDISPATCHER = ROOT / 'tools/mirror_sync/universal_job_dispatcher.py'\nCONTROL = ROOT / 'tools/mirror_sync/worker_control_plane.py'\nHEALTH = ROOT / 'tools/mirror_sync/runtime_health_publisher.py'\n\n\ndef test_inbox_is_history_and_results_deduplicate_jobs():\n    text = BRIDGE.read_text(encoding='utf-8')\n    assert '(PENDING, PROCESSING, DONE, REJECTED, RESULTS)' in text\n    assert 'worker_queue/inbox is immutable audit history' in text\n\n\ndef test_dispatcher_tracks_runtime_and_only_releases_created_claims():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'agent_guard_claim_created = False' in text\n    assert 'agent_guard_claim_created = True' in text\n    assert 'if agent_guard_claim_created:' in text\n    assert 'agent_guard_release\"] = \"NOT_REQUIRED\"' in text\n    assert 'current_job_id' in text\n    assert 'last_terminal_utc' in text\n\n\ndef test_stale_processing_is_requeued_once_then_terminal():\n    text = CONTROL.read_text(encoding='utf-8')\n    assert '_worker_stale_requeue_count' in text\n    assert 'retry_count >= 1' in text\n    assert 'processing_stale_after_single_requeue' in text\n\n\ndef test_health_exposes_sla_metrics():\n    text = HEALTH.read_text(encoding='utf-8')\n    for token in ('queue_depth','oldest_pending_age_seconds','intake_sla_seconds','intake_sla_breached','current_job_id','last_terminal_utc'):\n        assert token in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/worker_control_plane.py",
+        "tools/mirror_sync/runtime_health_publisher.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_agent_guard_release_lifecycle_contract.py",
+        "backend/tests/test_worker_requester_rbac_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es"
+}
