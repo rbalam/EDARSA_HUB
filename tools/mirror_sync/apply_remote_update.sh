@@ -254,64 +254,35 @@ else
 fi
 
 echo
-echo "===== 11. FAST-FORWARD LOCAL WITH INDEX PRESERVATION ====="
+echo "===== 11. SAFE LOCAL FAST-FORWARD ====="
 
-INDEX_RESTORE_REQUIRED=NO
-
-restore_staged_index() {
-    if [ "$INDEX_RESTORE_REQUIRED" != "YES" ]; then
-        return 0
-    fi
-
-    if [ -s "$STAGED_PATCH_BEFORE" ]; then
-        git apply --cached --binary "$STAGED_PATCH_BEFORE" || {
-            echo "ABORT=STAGED_INDEX_RESTORE_FAILED"
-            return 1
-        }
-    fi
-
-    INDEX_RESTORE_REQUIRED=NO
-    return 0
-}
-
-restore_on_exit() {
-    RC=$?
-
-    if [ "$INDEX_RESTORE_REQUIRED" = "YES" ]; then
-        restore_staged_index || true
-    fi
-
-    exit "$RC"
-}
-
-trap restore_on_exit EXIT
-
+# /app is a shared developer workspace. Never mutate HEAD/index/worktree
+# while any local work exists. The Worker uses isolated worktrees; local
+# convergence is deferred until /app is completely clean.
 if [ "$LOCAL_BEFORE" != "$TARGET" ]; then
-    if [ "$STAGED" -gt 0 ]; then
-        # Solo limpia temporalmente el indice. El working tree conserva
-        # tanto el contenido staged como el unstaged.
-        git reset --mixed "$LOCAL_BEFORE"
-        INDEX_RESTORE_REQUIRED=YES
+    if [ "$STAGED" -gt 0 ] || [ "$TRACKED" -gt 0 ] || [ "$UNTRACKED_COUNT_BEFORE" -gt 0 ]; then
+        echo "DECISION=DEFER_LOCAL_DIRTY"
+        echo "LOCAL_FAST_FORWARD_EXECUTED=NO"
+        echo "LOCAL_WORK_PRESERVED=YES"
+        LOCAL_AFTER="$LOCAL_BEFORE"
+    else
+        git merge --ff-only "$TARGET"
+
+        LOCAL_AFTER="$(git rev-parse HEAD)"
+
+        echo "LOCAL_AFTER=$LOCAL_AFTER"
+
+        test "$LOCAL_AFTER" = "$TARGET" || {
+            echo "ABORT=LOCAL_FAST_FORWARD_FAILED"
+            exit 50
+        }
+
+        echo "LOCAL_FAST_FORWARD_EXECUTED=YES"
     fi
-
-    git merge --ff-only "$TARGET"
-
-    LOCAL_AFTER="$(git rev-parse HEAD)"
-
-    echo "LOCAL_AFTER=$LOCAL_AFTER"
-
-    test "$LOCAL_AFTER" = "$TARGET" || {
-        echo "ABORT=LOCAL_FAST_FORWARD_FAILED"
-        exit 50
-    }
-
-    restore_staged_index
 else
     LOCAL_AFTER="$LOCAL_BEFORE"
     echo "LOCAL_ALREADY_AT_TARGET=YES"
 fi
-
-trap - EXIT
 
 echo
 echo "===== 12. VERIFY LOCAL WORK PRESERVATION ====="
