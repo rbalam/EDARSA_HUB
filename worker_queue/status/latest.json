@@ -1,24 +1,51 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "28fdc89c205b311ff1b51660fcc7b8737c301815",
-  "generated_at_utc": "2026-08-29T13:08:29Z",
+  "development_sha": "b2eb7b7f1fa7788a62139d69abce297aa06e4e44",
+  "generated_at_utc": "2026-08-29T18:32:44Z",
   "history": {
-    "done_total_local": 6,
+    "done_total_local": 7,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 101,
-    "results_total_local": 92
+    "rejected_total_local": 110,
+    "results_total_local": 100
   },
   "jobs": [
     {
-      "age_seconds": 101,
-      "job_id": "cxp-frontend-build-baseline-v2-20260828",
+      "age_seconds": 621,
+      "job_id": "worker-result-publisher-recovery-v1-20260829",
+      "reasons": [
+        "ACTIONS_REQUIRED"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 670,
+      "job_id": "000-worker-agent-guard-stale-claim-selfheal-v2-20260829",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 91,
-      "job_id": "worker-reconcile-preserve-v2-20260828",
+      "age_seconds": 884,
+      "job_id": "000-worker-git-auth-fallback-v2-20260829",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 865,
+      "job_id": "CAVAS-BOS-V1-ROUTER-REGISTRATION-01",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1655,
+      "job_id": "worker-agent-guard-release-lifecycle-v1-20260829",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 663,
+      "job_id": "worker-queue-atomic-claim-v1-20260829",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -27,14 +54,14 @@
   "queue_blocked": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_rejected_recent": 1,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "runtime": {
     "generation": "20260827-universal-job-worker-sla-v2",
-    "last_cycle_utc": "2026-08-29T13:08:19Z",
-    "last_receive_utc": "2026-08-29T13:08:22Z",
-    "pid": "1881"
+    "last_cycle_utc": "2026-08-29T18:32:37Z",
+    "last_receive_utc": "2026-08-29T18:32:39Z",
+    "pid": "1486"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
