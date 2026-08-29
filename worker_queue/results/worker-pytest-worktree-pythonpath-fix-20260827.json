@@ -11,7 +11,7 @@
   "job_id": "worker-pytest-worktree-pythonpath-fix-20260827",
   "percent_complete": 0,
   "production_touched": false,
-  "published_at_utc": "2026-08-28T07:52:35Z",
+  "published_at_utc": "2026-08-29T19:02:12Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
