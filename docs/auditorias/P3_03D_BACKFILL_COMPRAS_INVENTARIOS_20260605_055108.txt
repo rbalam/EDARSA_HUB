@@ -1,8 +1,0 @@
-
-=== P3-03D Test Fri Jun  5 05:51:08 UTC 2026 ===
-{
-    "detail": "Not authenticated"
-}
-{
-    "detail": "Not authenticated"
-}
