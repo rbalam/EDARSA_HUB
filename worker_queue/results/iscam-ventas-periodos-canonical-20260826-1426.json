@@ -11,7 +11,7 @@
   "job_id": "iscam-ventas-periodos-canonical-20260826-1426",
   "percent_complete": 0,
   "production_touched": false,
-  "published_at_utc": "2026-08-28T07:48:03Z",
+  "published_at_utc": "2026-08-29T18:51:33Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
