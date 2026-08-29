@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "b2eb7b7f1fa7788a62139d69abce297aa06e4e44",
-  "generated_at_utc": "2026-08-29T20:40:18Z",
+  "generated_at_utc": "2026-08-29T20:45:02Z",
   "history": {
     "done_total_local": 7,
     "pending_total_local": 0,
@@ -11,7 +11,7 @@
   },
   "jobs": [
     {
-      "age_seconds": 267,
+      "age_seconds": 552,
       "job_id": "worker-universal-queue-sla-v3-20260829",
       "reason": null,
       "state": "RESULT_READY"
@@ -26,8 +26,8 @@
   "queue_running": 0,
   "runtime": {
     "generation": "20260827-universal-job-worker-sla-v2",
-    "last_cycle_utc": "2026-08-29T20:40:14Z",
-    "last_receive_utc": "2026-08-29T20:40:15Z",
+    "last_cycle_utc": "2026-08-29T20:45:02Z",
+    "last_receive_utc": "2026-08-29T20:45:02Z",
     "pid": "1656"
   },
   "schema": "edarsahub.worker-health.v3",
