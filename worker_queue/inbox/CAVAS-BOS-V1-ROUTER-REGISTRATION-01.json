@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-BOS-V1-ROUTER-REGISTRATION-01",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Corregir el defecto demostrado por test: el router existente modules.cava_socios.routes no esta montado en la app FastAPI efectiva. Reutilizar exactamente ese router, sin duplicar rutas, auth, RBAC ni logica Cavas. No tocar Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/server.py",
+      "old": "from modules.worker_runtime_wake.routes import router as worker_runtime_wake_router\n",
+      "new": "from modules.worker_runtime_wake.routes import router as worker_runtime_wake_router\nfrom modules.cava_socios.routes import router as cava_socios_router\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/server.py",
+      "old": "app.include_router(worker_runtime_wake_router, prefix=\"/api\")\n",
+      "new": "app.include_router(worker_runtime_wake_router, prefix=\"/api\")\napp.include_router(cava_socios_router)\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/server.py", "backend/modules/cava_socios/routes.py", "backend/modules/cava_socios/service.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_cava_socios.py"]}
+  ],
+  "human_summary_language": "es"
+}
