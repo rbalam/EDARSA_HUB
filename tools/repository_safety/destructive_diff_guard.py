@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 CRITICAL_FILES = {
     "backend/server.py",
+    "backend/core/security.py",
 }
 
 CRITICAL_PREFIXES = (
@@ -41,7 +42,19 @@ def git(*args: str) -> str:
     return result.stdout
 
 
+def historical_backup(path: str) -> bool:
+    name = Path(path).name.lower()
+    return (
+        name.endswith(".bak")
+        or ".bak_" in name
+        or name.endswith(".backup")
+        or ".backup_" in name
+    )
+
+
 def critical(path: str) -> bool:
+    if historical_backup(path):
+        return False
     if path in CRITICAL_FILES:
         return True
     return any(path.startswith(prefix) for prefix in CRITICAL_PREFIXES)
@@ -52,11 +65,10 @@ def file_at(ref: str, path: str) -> str | None:
         ["git", "-C", str(ROOT), "show", f"{ref}:{path}"],
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
-        text=True,
     )
     if result.returncode != 0:
         return None
-    return result.stdout
+    return result.stdout.decode("utf-8", errors="surrogateescape")
 
 
 def lines(text: str | None) -> int:
@@ -73,20 +85,24 @@ def changed_paths(base: str, head: str) -> list[str]:
 def validate_file_loss(base: str, head: str, path: str) -> list[str]:
     errors = []
 
+    # Non-runtime artifacts, including arbitrary binaries, are never decoded.
+    if not critical(path):
+        return errors
+
     before = file_at(base, path)
     after = file_at(head, path)
 
     if before is None:
         return errors
 
-    if after is None and critical(path):
+    if after is None:
         errors.append(f"CRITICAL_FILE_DELETED:{path}")
         return errors
 
     before_count = lines(before)
     after_count = lines(after)
 
-    if critical(path) and before_count > 0:
+    if before_count > 0:
         loss = max(0, before_count - after_count)
         ratio = loss / before_count
 
