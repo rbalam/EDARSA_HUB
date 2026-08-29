@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "000-worker-git-auth-fallback-v2-20260829",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Robustecer la autenticacion del push del executor. Mantener primero el credential.helper local canonico; si el push falla por autenticacion, reintentar una sola vez con helpers Git limpiados para permitir el GIT_ASKPASS heredado del runtime. No exponer secretos, no hardcodear tokens y no tocar Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "    push = run(\n        [\n            \"git\",\n            \"-c\",\n            \"credential.helper=\",\n            \"-c\",\n            f\"credential.helper={credential_helper}\",\n            \"push\",\n            REMOTE,\n            f\"{head}:refs/heads/{DEV_BRANCH}\",\n        ],\n        cwd=ROOT,\n        env_extra={\"EDARSA_ALLOW_PUSH\": \"1\"},\n    )\n    if push.returncode != 0:\n        return False, f\"development_push_failed:{push.stdout[-1000:]}\"\n",
+      "new": "    push_args = [\n        \"git\",\n        \"-c\",\n        \"credential.helper=\",\n        \"-c\",\n        f\"credential.helper={credential_helper}\",\n        \"push\",\n        REMOTE,\n        f\"{head}:refs/heads/{DEV_BRANCH}\",\n    ]\n    push = run(\n        push_args,\n        cwd=ROOT,\n        env_extra={\"EDARSA_ALLOW_PUSH\": \"1\"},\n    )\n    if push.returncode != 0 and (\n        \"could not read Username\" in push.stdout\n        or \"Authentication failed\" in push.stdout\n        or \"credential\" in push.stdout.lower()\n    ):\n        push = run(\n            [\n                \"git\",\n                \"-c\",\n                \"credential.helper=\",\n                \"push\",\n                REMOTE,\n                f\"{head}:refs/heads/{DEV_BRANCH}\",\n            ],\n            cwd=ROOT,\n            env_extra={\"EDARSA_ALLOW_PUSH\": \"1\"},\n        )\n    if push.returncode != 0:\n        return False, f\"development_push_failed:{push.stdout[-1000:]}\"\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_universal_job_dispatcher_python_runtime.py",
+      "old": "    assert \"EDARSAHUB_SQL_HOST\" not in loaded\n",
+      "new": "    assert \"EDARSAHUB_SQL_HOST\" not in loaded\n\n\ndef test_integrate_retries_auth_with_askpass_fallback(monkeypatch):\n    module = load_dispatcher()\n    calls = []\n\n    def fake_git(*args, **kwargs):\n        if args[:3] == (\"config\", \"--local\", \"--get\"):\n            return SimpleNamespace(returncode=0, stdout=\"store --file=/safe/credentials\\n\")\n        if args[:2] == (\"rev-parse\", \"origin/Edarsahub_Desarrollo\"):\n            return SimpleNamespace(returncode=0, stdout=\"base\\n\")\n        return SimpleNamespace(returncode=0, stdout=\"\")\n\n    def fake_run(args, **kwargs):\n        calls.append((args, kwargs))\n        if \"push\" in args and any(\"credential.helper=store\" in x for x in args):\n            return SimpleNamespace(returncode=128, stdout=\"fatal: could not read Username for https://github.com: terminal prompts disabled\")\n        return SimpleNamespace(returncode=0, stdout=\"ok\")\n\n    monkeypatch.setattr(module, \"git\", fake_git)\n    monkeypatch.setattr(module, \"run\", fake_run)\n\n    module.integrate(\"candidate\", \"base\")\n\n    pushes = [args for args, _ in calls if \"push\" in args]\n    assert len(pushes) == 2\n    assert any(\"credential.helper=store --file=/safe/credentials\" in x for x in pushes[0])\n    assert \"credential.helper=\" in pushes[1]\n    assert not any(\"credential.helper=store\" in x for x in pushes[1])\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["tools/mirror_sync/universal_job_dispatcher.py", "backend/tests/test_universal_job_dispatcher_python_runtime.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_universal_job_dispatcher_python_runtime.py"]}
+  ],
+  "human_summary_language": "es"
+}
