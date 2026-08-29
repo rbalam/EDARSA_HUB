@@ -11,7 +11,7 @@
   "job_id": "worker-multijob-queue-policy-v1-20260827",
   "percent_complete": 0,
   "production_touched": false,
-  "published_at_utc": "2026-08-28T07:52:14Z",
+  "published_at_utc": "2026-08-29T19:01:26Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
