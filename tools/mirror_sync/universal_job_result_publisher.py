@@ -9,6 +9,7 @@ queue results branch as NOT_CERTIFIED/BLOCKED evidence.
 
 from __future__ import annotations
 
+import fcntl
 import json
 import os
 import shutil
@@ -28,6 +29,7 @@ DEV_BRANCH = "Edarsahub_Desarrollo"
 MIRROR_BRANCH = "mirror/emergent-live"
 REPORT_DIR = Path(os.environ.get("MIRROR_SYNC_REPORT_STATE_DIR", "/app/.git/mirror-sync/reporting"))
 ATTESTATIONS = REPORT_DIR / "test_attestations"
+PUBLISH_LOCK = STATE / "result_publisher.lock"
 WORKTREE_PARENT = Path(
     os.environ.get(
         "EDARSAHUB_QUEUE_PUBLISH_WORKTREE_PARENT",
@@ -558,24 +560,33 @@ def publish_one(path: Path) -> bool:
 
 def main() -> int:
     RESULTS.mkdir(parents=True, exist_ok=True)
-    count = 0
-    errors = 0
+    PUBLISH_LOCK.parent.mkdir(parents=True, exist_ok=True)
 
-    for path in sorted(RESULTS.glob("*.json")):
+    with PUBLISH_LOCK.open("a+", encoding="utf-8") as lock_handle:
         try:
-            if publish_one(path):
-                count += 1
-        except Exception as exc:
-            errors += 1
-            print(
-                f"UNIVERSAL_RESULT_PUBLISH_ERROR="
-                f"{path.name}:{type(exc).__name__}:{exc}"
-            )
+            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            print("UNIVERSAL_RESULT_PUBLISHER_SINGLE_WRITER=BUSY")
+            return 0
 
-    print(f"UNIVERSAL_RESULTS_PUBLISHED_COUNT={count}")
-    print(f"UNIVERSAL_RESULTS_PUBLISH_ERROR_COUNT={errors}")
+        count = 0
+        errors = 0
 
-    return 1 if errors else 0
+        for path in sorted(RESULTS.glob("*.json")):
+            try:
+                if publish_one(path):
+                    count += 1
+            except Exception as exc:
+                errors += 1
+                print(
+                    f"UNIVERSAL_RESULT_PUBLISH_ERROR="
+                    f"{path.name}:{type(exc).__name__}:{exc}"
+                )
+
+        print(f"UNIVERSAL_RESULTS_PUBLISHED_COUNT={count}")
+        print(f"UNIVERSAL_RESULTS_PUBLISH_ERROR_COUNT={errors}")
+
+        return 1 if errors else 0
 
 
 if __name__ == "__main__":

@@ -272,8 +272,21 @@ def apply_action(worktree: Path, action: dict[str, Any]) -> str:
         return relative
 
     if kind == "write_file":
+        content = action["content"]
+        if target.exists():
+            if "expected_sha256" not in action:
+                raise RuntimeError(
+                    f"WRITE_EXISTING_REQUIRES_EXPECTED_SHA256:{relative}"
+                )
+            current_size = target.stat().st_size
+            new_size = len(content.encode("utf-8"))
+            if current_size >= 4096 and new_size < int(current_size * 0.75):
+                raise RuntimeError(
+                    f"WRITE_FILE_LARGE_SHRINK_BLOCKED:{relative}:"
+                    f"current={current_size}:new={new_size}"
+                )
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(action["content"], encoding="utf-8")
+        target.write_text(content, encoding="utf-8")
         return relative
 
     if kind == "delete_file":
