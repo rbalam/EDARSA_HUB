@@ -1,17 +1,78 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "278c782d9499afe7ee2dc55e091988ac657e0586",
-  "generated_at_utc": "2026-08-29T23:24:05Z",
+  "generated_at_utc": "2026-08-29T23:28:10Z",
   "history": {
     "done_total_local": 9,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 111,
-    "results_total_local": 103
+    "rejected_total_local": 121,
+    "results_total_local": 113
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [],
+  "jobs": [
+    {
+      "age_seconds": 206,
+      "job_id": "worker-e2e10-20260829T232255Z-10443-01",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 202,
+      "job_id": "worker-e2e10-20260829T232255Z-10443-02",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 197,
+      "job_id": "worker-e2e10-20260829T232255Z-10443-03",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 191,
+      "job_id": "worker-e2e10-20260829T232255Z-10443-04",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 186,
+      "job_id": "worker-e2e10-20260829T232255Z-10443-05",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 181,
+      "job_id": "worker-e2e10-20260829T232255Z-10443-06",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 176,
+      "job_id": "worker-e2e10-20260829T232255Z-10443-07",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 170,
+      "job_id": "worker-e2e10-20260829T232255Z-10443-08",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 166,
+      "job_id": "worker-e2e10-20260829T232255Z-10443-09",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 162,
+      "job_id": "worker-e2e10-20260829T232255Z-10443-10",
+      "reason": null,
+      "state": "RESULT_READY"
+    }
+  ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -19,14 +80,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 0,
+  "queue_result_ready_recent": 10,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-08-29T23:23:56Z",
-    "last_receive_utc": "2026-08-29T23:23:57Z",
-    "last_terminal_utc": null,
+    "last_cycle_utc": "2026-08-29T23:28:08Z",
+    "last_receive_utc": "2026-08-29T23:28:09Z",
+    "last_terminal_utc": "2026-08-29T23:25:27Z",
     "pid": "7249"
   },
   "schema": "edarsahub.worker-health.v3",
