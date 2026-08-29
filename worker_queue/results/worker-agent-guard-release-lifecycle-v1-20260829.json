@@ -1,0 +1,22 @@
+{
+  "blockers": [
+    "dispatcher_exception:RuntimeError:BASE_SHA_MISMATCH:expected=28fdc89c205b311ff1b51660fcc7b8737c301815:actual=4f8ba3e1aaa2ad808cc7e6e835ea6645d2a82f7e"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-29T18:05:09Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-agent-guard-release-lifecycle-v1-20260829",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-08-29T18:56:54Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-29T18:05:08Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
