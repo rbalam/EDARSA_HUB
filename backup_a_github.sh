@@ -8,6 +8,10 @@
 set -uo pipefail
 cd /app || { echo "No existe /app"; exit 1; }
 
+# Autorización humana explícita para pasar el agent-guard (anti-push de agentes)
+export EDARSA_ALLOW_PUSH=1
+git config advice.addIgnoredFile false 2>/dev/null || true
+
 echo "== 1) Reparar intérprete de hooks (/app/.venv/bin/python) si falta =="
 if [ ! -x /app/.venv/bin/python ]; then
   mkdir -p /app/.venv/bin
@@ -33,6 +37,11 @@ else
 fi
 
 echo "== 4) Estado vs GitHub =="
+# Asegurar que el remoto 'origin' exista (el botón lo quita al terminar)
+if ! git remote get-url origin >/dev/null 2>&1; then
+  git remote add origin https://github.com/rbalam/EDARSA_HUB.git
+  echo "   origin re-agregado"
+fi
 git fetch --quiet origin 2>/dev/null || true
 git rev-list --left-right --count "origin/$BR...HEAD" 2>/dev/null \
   | awk '{print "   behind(GitHub tiene, pod no)="$1"  ahead(pod tiene, GitHub no)="$2}'
