@@ -377,7 +377,12 @@ def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:
 
 def changed_files(worktree: Path, base_sha: str) -> list[str]:
     result = git("diff", "--name-only", base_sha, "--", cwd=worktree)
-    staged_or_untracked = git("status", "--porcelain=v1", cwd=worktree).stdout.splitlines()
+    staged_or_untracked = git(
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+        cwd=worktree,
+    ).stdout.splitlines()
     names = {line.strip() for line in result.stdout.splitlines() if line.strip()}
     for line in staged_or_untracked:
         if len(line) >= 4:
