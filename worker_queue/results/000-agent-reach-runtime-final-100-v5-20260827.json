@@ -11,7 +11,7 @@
   "job_id": "000-agent-reach-runtime-final-100-v5-20260827",
   "percent_complete": 0,
   "production_touched": false,
-  "published_at_utc": "2026-08-30T01:36:31Z",
+  "published_at_utc": "2026-08-30T01:39:41Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
