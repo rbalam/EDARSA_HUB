@@ -15,7 +15,7 @@
   "job_id": "CAVAS-BOS-V1-ROUTER-REGISTRATION-01",
   "percent_complete": 80,
   "production_touched": false,
-  "published_at_utc": "2026-08-30T01:42:00Z",
+  "published_at_utc": "2026-08-30T01:45:15Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
