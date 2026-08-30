@@ -11,7 +11,7 @@
   "job_id": "000-runtime-self-heal-worker-v2-20260826",
   "percent_complete": 0,
   "production_touched": false,
-  "published_at_utc": "2026-08-30T01:48:40Z",
+  "published_at_utc": "2026-08-30T01:51:52Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
