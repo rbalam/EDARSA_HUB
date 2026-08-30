@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "1dac860149309ededc25560165f52618e37c4cb8",
-  "generated_at_utc": "2026-08-30T01:27:10Z",
+  "generated_at_utc": "2026-08-30T01:33:53Z",
   "history": {
     "done_total_local": 19,
     "pending_total_local": 0,
@@ -13,61 +13,61 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 614,
+      "age_seconds": 1018,
       "job_id": "worker-e2e-independent-20260830T011627Z-10928-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 608,
+      "age_seconds": 1011,
       "job_id": "worker-e2e-independent-20260830T011627Z-10928-02",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 601,
+      "age_seconds": 1005,
       "job_id": "worker-e2e-independent-20260830T011627Z-10928-03",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 595,
+      "age_seconds": 998,
       "job_id": "worker-e2e-independent-20260830T011627Z-10928-04",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 589,
+      "age_seconds": 992,
       "job_id": "worker-e2e-independent-20260830T011627Z-10928-05",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 583,
+      "age_seconds": 986,
       "job_id": "worker-e2e-independent-20260830T011627Z-10928-06",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 577,
+      "age_seconds": 980,
       "job_id": "worker-e2e-independent-20260830T011627Z-10928-07",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 569,
+      "age_seconds": 972,
       "job_id": "worker-e2e-independent-20260830T011627Z-10928-08",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 561,
+      "age_seconds": 964,
       "job_id": "worker-e2e-independent-20260830T011627Z-10928-09",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 555,
+      "age_seconds": 958,
       "job_id": "worker-e2e-independent-20260830T011627Z-10928-10",
       "reason": null,
       "state": "RESULT_READY"
@@ -85,8 +85,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-08-30T01:27:01Z",
-    "last_receive_utc": "2026-08-30T01:27:02Z",
+    "last_cycle_utc": "2026-08-30T01:33:51Z",
+    "last_receive_utc": "2026-08-30T01:33:52Z",
     "last_terminal_utc": "2026-08-30T01:17:55Z",
     "pid": "8117"
   },
