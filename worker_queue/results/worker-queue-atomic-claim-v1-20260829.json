@@ -1,0 +1,23 @@
+{
+  "blockers": [
+    "dispatcher_exception:RuntimeError:BASE_SHA_MISMATCH:expected=4f8ba3e1aaa2ad808cc7e6e835ea6645d2a82f7e:actual=b2eb7b7f1fa7788a62139d69abce297aa06e4e44",
+    "agent_guard_release_failed:.vscode/tasks.json:1:1: error: AGENT_GUARD: RuntimeError: Claim no encontrado\n"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-08-29T18:21:41Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-queue-atomic-claim-v1-20260829",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-08-30T02:12:50Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-08-29T18:21:40Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
