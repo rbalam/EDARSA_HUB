@@ -16,7 +16,7 @@
   "job_id": "CAVAS-BOS-V1-CORE-MODEL-02",
   "percent_complete": 80,
   "production_touched": false,
-  "published_at_utc": "2026-08-30T01:34:26Z",
+  "published_at_utc": "2026-08-30T01:37:34Z",
   "quality_gate": "FAIL",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
