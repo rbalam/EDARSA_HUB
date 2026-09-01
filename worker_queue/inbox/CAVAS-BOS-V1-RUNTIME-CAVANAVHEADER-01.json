@@ -1,0 +1,22 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-BOS-V1-RUNTIME-CAVANAVHEADER-01",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Corregir el error runtime de Preview Can't find variable: CavaNavHeader en SociosListContent. El componente ya existe y otras pantallas Cavas lo importan; agregar exclusivamente el import faltante en SociosList.jsx, validar build y no tocar Produccion ni cambiar arquitectura.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SociosList.jsx",
+      "old": "import { useAccessContext } from '../../hooks/useAccessContext';\n\nconst PAGE_SIZE = 15;",
+      "new": "import { useAccessContext } from '../../hooks/useAccessContext';\nimport CavaNavHeader from './CavaNavHeader';\n\nconst PAGE_SIZE = 15;",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "frontend_build", "directory": "frontend"}
+  ],
+  "human_summary_language": "es"
+}
