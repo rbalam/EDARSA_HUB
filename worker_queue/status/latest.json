@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "d1edd4d1a10008cb5cc27d48bdc77a6b51c5039e",
-  "generated_at_utc": "2026-09-02T04:16:12Z",
+  "generated_at_utc": "2026-09-02T12:15:31Z",
   "history": {
     "done_total_local": 24,
     "pending_total_local": 0,
@@ -24,10 +24,10 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-02T04:16:11Z",
-    "last_receive_utc": "2026-09-02T04:16:11Z",
+    "last_cycle_utc": "2026-09-02T12:15:23Z",
+    "last_receive_utc": "2026-09-02T12:15:23Z",
     "last_terminal_utc": "2026-09-02T02:50:24Z",
-    "pid": "48055"
+    "pid": "10228"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
