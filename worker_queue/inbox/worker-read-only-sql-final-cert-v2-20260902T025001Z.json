@@ -1,0 +1,31 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-read-only-sql-final-cert-v2-20260902T025001Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "024caebcd0581b979527b5fda4455ad113757b18",
+  "mode": "READ_ONLY_SQL",
+  "production_allowed": false,
+  "objective": "Certificar el modo READ_ONLY_SQL del worker contra EDARSAHUB SQL sin ejecutar escrituras.",
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "database_identity",
+          "sql": "SELECT DB_NAME() AS database_name"
+        },
+        {
+          "name": "canonical_users_count",
+          "sql": "SELECT COUNT_BIG(*) AS usuario_count FROM dbo.Usuario_Catalogo"
+        },
+        {
+          "name": "canonical_roles_sample",
+          "sql": "SELECT TOP 5 RolID, CodigoRol, NombreRol FROM dbo.Usuario_Roles ORDER BY RolID"
+        }
+      ]
+    }
+  ]
+}
