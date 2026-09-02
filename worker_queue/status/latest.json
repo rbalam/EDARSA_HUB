@@ -1,25 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "1be038e4b7a63986667dd6a412bed919f0f05511",
-  "generated_at_utc": "2026-09-02T02:23:19Z",
+  "generated_at_utc": "2026-09-02T02:24:29Z",
   "history": {
     "done_total_local": 22,
-    "pending_total_local": 1,
+    "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 124,
-    "results_total_local": 127
+    "rejected_total_local": 125,
+    "results_total_local": 128
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 11,
-      "job_id": "worker-zero-touch-ricardo-v3-20260902T022248Z",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 1093,
+      "age_seconds": 1163,
       "job_id": "000-WORKER-FINAL-CLOSE-100-V1-20260901",
       "reasons": [
         "INVALID_JSON"
@@ -28,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1903,
+      "age_seconds": 1973,
       "job_id": "cxp-frontend-build-isolate-v1-20260901",
       "reasons": [
         "ACTIONS_REQUIRED"
@@ -37,51 +31,57 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2656,
+      "age_seconds": 2727,
       "job_id": "CAVAS-BOS-V1-RUNTIME-CAVANAVHEADER-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2217,
+      "age_seconds": 2288,
       "job_id": "worker-read-only-sql-gate0-v1-20260901",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 36,
+      "age_seconds": 107,
       "job_id": "worker-zero-touch-carlos-v3-20260902T022214Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2,
+      "age_seconds": 72,
       "job_id": "worker-zero-touch-carlos-v3-20260902T022248Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 34,
+      "age_seconds": 105,
       "job_id": "worker-zero-touch-ricardo-v3-20260902T022214Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 70,
+      "job_id": "worker-zero-touch-ricardo-v3-20260902T022248Z",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "oldest_pending_age_seconds": 11,
+  "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
-  "queue_pending": 1,
+  "queue_pending": 0,
   "queue_rejected_recent": 2,
-  "queue_result_ready_recent": 5,
+  "queue_result_ready_recent": 6,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-02T02:23:18Z",
-    "last_receive_utc": "2026-09-02T02:23:18Z",
-    "last_terminal_utc": "2026-09-02T02:23:17Z",
+    "last_cycle_utc": "2026-09-02T02:24:20Z",
+    "last_receive_utc": "2026-09-02T02:24:20Z",
+    "last_terminal_utc": "2026-09-02T02:23:19Z",
     "pid": "8664"
   },
   "schema": "edarsahub.worker-health.v3",
