@@ -1,0 +1,29 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-zero-touch-e2e-20260902T122109Z-02",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Zero-touch E2E certification canary 02. Validate deterministic worker intake and git diff without changing repository content.",
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "#!/usr/bin/env python3",
+      "new": "#!/usr/bin/env python3",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "requester": {
+    "chat": "worker-zero-touch-certification",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "V1.0",
+    "source": "chatgpt"
+  }
+}
