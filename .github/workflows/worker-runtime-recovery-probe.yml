@@ -20,6 +20,8 @@ jobs:
   probe-and-wake:
     runs-on: ubuntu-latest
     timeout-minutes: 4
+    env:
+      HUB_URL: https://erp-crm-enterprise-1.preview.emergentagent.com
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,44 +36,27 @@ jobs:
           echo "queue_sha=$QUEUE_SHA" >> "$GITHUB_OUTPUT"
           echo "QUEUE_SHA=$QUEUE_SHA"
 
-      - name: Resolve active Preview endpoint
-        id: preview
+      - name: Probe confirmed EDARSAHUB backend route
         shell: bash
         run: |
           set -euo pipefail
-          candidates=(
-            "https://erp-crm-enterprise-1.preview.emergentagent.com"
-            "https://stock-tracker-990.preview.emergentagent.com"
-            "https://edarsa-hub-preview.emergentagent.com"
-          )
-          selected=""
-          for base in "${candidates[@]}"; do
-            body_file="$(mktemp)"
-            code="$(curl --silent --show-error \
-              --connect-timeout 10 --max-time 30 \
-              -o "$body_file" -w '%{http_code}' \
-              "$base/api/health" || true)"
-            echo "PREVIEW_PROBE_URL=$base HTTP_CODE=$code"
-            head -c 300 "$body_file" || true
-            echo
-            rm -f "$body_file"
-            if [ "$code" = "200" ]; then
-              selected="$base"
-              break
-            fi
-          done
-          if [ -z "$selected" ]; then
-            echo "ACTIVE_PREVIEW_NOT_FOUND=1"
-            exit 13
+          code="$(curl --silent --show-error \
+            --connect-timeout 10 --max-time 30 \
+            -o /tmp/backend-probe-body.txt -w '%{http_code}' \
+            "$HUB_URL/api/v2/comercial/dashboard?fecha_inicio=2026-08-31&fecha_fin=2026-08-31" || true)"
+          echo "BACKEND_PROBE_HTTP_CODE=$code"
+          head -c 500 /tmp/backend-probe-body.txt || true
+          echo
+          if [ "$code" = "000" ] || [ "$code" = "404" ]; then
+            echo "BACKEND_ROUTE_NOT_REACHABLE=1"
+          else
+            echo "BACKEND_ROUTE_REACHABLE=1"
           fi
-          echo "hub_url=$selected" >> "$GITHUB_OUTPUT"
-          echo "ACTIVE_PREVIEW_URL=$selected"
 
       - name: Wake canonical Universal Worker
         shell: bash
         env:
           QUEUE_SHA: ${{ steps.queue.outputs.queue_sha }}
-          HUB_URL: ${{ steps.preview.outputs.hub_url }}
         run: |
           set -euo pipefail
           HTTP_CODE="$(curl --silent --show-error \
