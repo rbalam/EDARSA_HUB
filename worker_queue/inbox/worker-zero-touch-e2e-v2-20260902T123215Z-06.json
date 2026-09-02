@@ -1,0 +1,21 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-zero-touch-e2e-v2-20260902T123215Z-06",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Canario E2E V2 06/10: mutacion real aislada para certificar el worker universal.",
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "worker_queue/e2e_canaries/worker-zero-touch-e2e-v2-20260902T123215Z-06.txt",
+      "content": "EDARSAHUB_WORKER_E2E_V2=worker-zero-touch-e2e-v2-20260902T123215Z-06\nCERT_SLOT=06\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
