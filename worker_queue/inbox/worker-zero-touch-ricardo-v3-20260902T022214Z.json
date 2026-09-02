@@ -1,0 +1,32 @@
+{
+  "actions": [
+    {
+      "content": "job_id=worker-zero-touch-ricardo-v3-20260902T022214Z\nrequested_by=ricardo@edarsa.com.mx\nzero_touch=true\n",
+      "path": "worker_queue/zero_touch/worker-zero-touch-ricardo-v3-20260902T022214Z.txt",
+      "type": "write_file"
+    }
+  ],
+  "allowed_paths": [
+    "worker_queue/zero_touch/worker-zero-touch-ricardo-v3-20260902T022214Z.txt"
+  ],
+  "base_sha": "8411a399362e7cd76bc1f01c63f6ae39bd7a9e07",
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "worker-zero-touch-ricardo-v3-20260902T022214Z",
+  "objective": "Canario zero-touch Ricardo: certificar intake, ejecucion determinista, aislamiento, publicacion y terminalizacion.",
+  "production_allowed": false,
+  "requested_at_utc": "2026-09-02T02:22:23Z",
+  "requester": {
+    "chat": "worker-zero-touch-certification",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "V1.0",
+    "source": "chatgpt"
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
