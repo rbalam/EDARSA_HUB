@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "c643c7c2ba8202c74c8e5e3129acc595278d1de7",
-  "generated_at_utc": "2026-09-02T03:23:07Z",
+  "generated_at_utc": "2026-09-02T03:24:21Z",
   "history": {
     "done_total_local": 24,
     "pending_total_local": 0,
@@ -13,31 +13,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2411,
+      "age_seconds": 2486,
       "job_id": "worker-read-only-sql-final-cert-20260902T024232Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1962,
+      "age_seconds": 2037,
       "job_id": "worker-read-only-sql-final-cert-v2-20260902T025001Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3589,
-      "job_id": "worker-zero-touch-carlos-v3-20260902T022248Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3587,
-      "job_id": "worker-zero-touch-ricardo-v3-20260902T022248Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3458,
+      "age_seconds": 3533,
       "job_id": "worker-zero-touch-ricardo-v4-20260902T022456Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -50,13 +38,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 5,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-02T03:23:06Z",
-    "last_receive_utc": "2026-09-02T03:23:06Z",
+    "last_cycle_utc": "2026-09-02T03:24:19Z",
+    "last_receive_utc": "2026-09-02T03:24:20Z",
     "last_terminal_utc": "2026-09-02T02:50:24Z",
     "pid": "9465"
   },
