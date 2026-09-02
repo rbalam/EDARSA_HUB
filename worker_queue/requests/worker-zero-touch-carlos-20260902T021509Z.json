@@ -1,0 +1,28 @@
+{
+  "job": {
+    "actions": [
+      {
+        "content": "job_id=worker-zero-touch-carlos-20260902T021509Z\nrequested_by=carlosruz@edarsa.com.mx\nzero_touch=true\n",
+        "path": "worker_queue/zero_touch/worker-zero-touch-carlos-20260902T021509Z.txt",
+        "type": "write_file"
+      }
+    ],
+    "allowed_paths": [
+      "worker_queue/zero_touch/worker-zero-touch-carlos-20260902T021509Z.txt"
+    ],
+    "base_sha": "8411a399362e7cd76bc1f01c63f6ae39bd7a9e07",
+    "checks": [
+      {
+        "type": "git_diff_check"
+      }
+    ],
+    "job_id": "worker-zero-touch-carlos-20260902T021509Z",
+    "production": false,
+    "requested_at_utc": "2026-09-02T02:15:17Z",
+    "requested_by": "carlosruz@edarsa.com.mx",
+    "source_branch": "Edarsahub_Desarrollo",
+    "source_repo": "rbalam/EDARSA_HUB",
+    "summary_es": "Canario zero-touch para certificar intake, ejecución determinista, aislamiento, publicación y terminalización."
+  },
+  "schema": "edarsahub.worker-request.v1"
+}
