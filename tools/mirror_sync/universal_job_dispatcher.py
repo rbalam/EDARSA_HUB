@@ -40,20 +40,13 @@ DEV_BRANCH = "Edarsahub_Desarrollo"
 MAX_SECONDS = int(os.environ.get("EDARSAHUB_JOB_MAX_SECONDS", "1800"))
 JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
-ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build"}
-
-RUNTIME_PYTHON = Path("/root/.venv/bin/python")
-
+ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit"}
 
 def resolve_canonical_python() -> str:
     """Resolve the interpreter shared by every Python worker subprocess."""
-    if RUNTIME_PYTHON.is_file() and os.access(RUNTIME_PYTHON, os.X_OK):
-        return str(RUNTIME_PYTHON)
-
     repo_python = ROOT / ".venv" / "bin" / "python"
     if repo_python.is_file() and os.access(repo_python, os.X_OK):
         return str(repo_python)
-
     return sys.executable
 
 
@@ -332,6 +325,16 @@ def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:
         cmd = [PYTHON_BIN, "-m", "pytest", "-q", *paths]
         cwd = backend
         env_extra = {**load_backend_runtime_env(), "PYTHONPATH": str(backend)}
+    elif kind == "sql_readonly_audit":
+        helper = worktree / "tools" / "mirror_sync" / "sql_readonly_audit.py"
+        if not helper.is_file():
+            helper = ROOT / "tools" / "mirror_sync" / "sql_readonly_audit.py"
+        backend = worktree / "backend"
+        if not backend.is_dir():
+            backend = ROOT / "backend"
+        cmd = [PYTHON_BIN, str(helper), "--queries-json", json.dumps(check.get("queries") or [], ensure_ascii=False)]
+        cwd = worktree
+        env_extra = {**load_backend_runtime_env(), "PYTHONPATH": str(backend)}
     elif kind == "frontend_build":
         directory = safe_path(worktree, str(check.get("directory", "frontend")))
         canonical_node_modules = ROOT / "frontend" / "node_modules"
@@ -515,6 +518,34 @@ def process_one(path: Path) -> int:
         if expected_base and expected_base != base_sha:
             raise RuntimeError(f"BASE_SHA_MISMATCH:expected={expected_base}:actual={base_sha}")
         result["base_sha"] = base_sha
+
+        if str(job.get("mode") or "") == "READ_ONLY_SQL":
+            if job.get("actions") not in (None, []):
+                raise RuntimeError("READ_ONLY_SQL_ACTIONS_FORBIDDEN")
+            checks = job.get("checks") or []
+            if not checks or any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+                raise RuntimeError("READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED")
+            check_results = []
+            for check in checks:
+                check_result = run_check(ROOT, check)
+                check_results.append(check_result)
+                if check_result["status"] != "PASS":
+                    result["blockers"].append("check_failed:sql_readonly_audit")
+                    break
+            result["checks"] = check_results
+            result["files_changed"] = []
+            result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
+            result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
+            if not result["blockers"]:
+                result["status"] = "READ_ONLY_COMPLETE"
+                result["percent_complete"] = 100
+                result["certification"] = "CERTIFIED_READ_ONLY"
+                result["summary_es"] = "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion."
+            else:
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+            return 0
+
         requested_paths = sorted(
             {
                 str(action.get("path"))
@@ -597,7 +628,7 @@ def process_one(path: Path) -> int:
             git("branch", "-D", branch, check=False)
         result["completed_at_utc"] = now()
         write_json(RESULTS / path.name, result)
-        target = DONE / path.name if result["status"] == "INTEGRATED" else REJECTED / path.name
+        target = DONE / path.name if result["status"] in {"INTEGRATED", "READ_ONLY_COMPLETE"} else REJECTED / path.name
         os.replace(processing, target)
         (RUNTIME / "last_terminal_utc").write_text(result["completed_at_utc"] + "\n", encoding="utf-8")
         current_job = RUNTIME / "current_job_id"

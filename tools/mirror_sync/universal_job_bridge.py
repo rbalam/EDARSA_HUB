@@ -38,7 +38,7 @@ QUEUE_REF = os.environ.get(
 SCHEMA = "edarsahub.worker-job.v2"
 JOB_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
-ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build"}
+ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit"}
 MAX_ACTIONS = int(os.environ.get("EDARSAHUB_JOB_MAX_ACTIONS", "100"))
 MAX_TEXT_BYTES = int(os.environ.get("EDARSAHUB_JOB_MAX_TEXT_BYTES", "2000000"))
 REQUIRE_REQUESTER = os.environ.get("EDARSAHUB_WORKER_REQUIRE_REQUESTER", "0") == "1"
@@ -138,6 +138,18 @@ def validate_check(check: Any, index: int) -> list[str]:
         directory = check.get("directory", "frontend")
         if not safe_repo_path(directory):
             return [f"{prefix}_INVALID_DIRECTORY"]
+    if kind == "sql_readonly_audit":
+        queries = check.get("queries")
+        if not isinstance(queries, list) or not queries:
+            return [f"{prefix}_QUERIES_REQUIRED"]
+        for item in queries:
+            if not isinstance(item, dict):
+                return [f"{prefix}_QUERY_NOT_OBJECT"]
+            if not str(item.get("name") or "").strip():
+                return [f"{prefix}_QUERY_NAME_REQUIRED"]
+            sql = item.get("sql")
+            if not isinstance(sql, str) or not sql.strip():
+                return [f"{prefix}_QUERY_SQL_REQUIRED"]
     return []
 
 
@@ -177,15 +189,25 @@ def validate(job: Any) -> list[str]:
             value = requester.get(field)
             if value is not None and not isinstance(value, str):
                 errors.append(f"REQUESTER_{field.upper()}_MUST_BE_STRING")
+    mode = str(job.get("mode") or "MUTATION")
     actions = job.get("actions")
-    if not isinstance(actions, list) or not actions:
-        errors.append("ACTIONS_REQUIRED")
-    elif len(actions) > MAX_ACTIONS:
-        errors.append("TOO_MANY_ACTIONS")
+    if mode == "READ_ONLY_SQL":
+        if actions not in (None, []):
+            errors.append("READ_ONLY_SQL_ACTIONS_FORBIDDEN")
     else:
-        for index, action in enumerate(actions, 1):
-            errors.extend(validate_action(action, index))
+        if not isinstance(actions, list) or not actions:
+            errors.append("ACTIONS_REQUIRED")
+        elif len(actions) > MAX_ACTIONS:
+            errors.append("TOO_MANY_ACTIONS")
+        else:
+            for index, action in enumerate(actions, 1):
+                errors.extend(validate_action(action, index))
     checks = job.get("checks", [{"type": "git_diff_check"}])
+    if mode == "READ_ONLY_SQL":
+        if not isinstance(checks, list) or not checks:
+            errors.append("READ_ONLY_SQL_CHECK_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+            errors.append("READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED")
     if not isinstance(checks, list):
         errors.append("CHECKS_MUST_BE_LIST")
     else:
