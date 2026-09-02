@@ -1,0 +1,4 @@
+job_id=worker-zero-touch-ricardo-v4-20260902T022456Z
+requested_by=ricardo@edarsa.com.mx
+zero_touch=true
+execution_mode=sequential
