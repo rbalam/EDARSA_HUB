@@ -1,0 +1,31 @@
+{
+  "actions": [],
+  "base_sha": "024caebcd0581b979527b5fda4455ad113757b18",
+  "checks": [
+    {
+      "queries": [
+        {
+          "name": "database_identity",
+          "sql": "SELECT DB_NAME() AS database_name"
+        },
+        {
+          "name": "canonical_users_count",
+          "sql": "SELECT COUNT_BIG(*) AS usuario_count FROM dbo.Usuario_Catalogo"
+        },
+        {
+          "name": "canonical_roles_sample",
+          "sql": "SELECT TOP 5 RolID, CodigoRol, NombreRol FROM dbo.Usuario_Roles ORDER BY RolID"
+        }
+      ],
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "worker-read-only-sql-final-cert-20260902T024232Z",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Certificar el modo READ_ONLY_SQL del worker universal contra la conexion SQL canonica sin ejecutar escrituras.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
