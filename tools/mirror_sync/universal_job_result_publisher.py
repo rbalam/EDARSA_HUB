@@ -24,7 +24,18 @@ STATE = ROOT / ".git" / "universal-worker-queue"
 RESULTS = STATE / "results"
 PUBLISHED = STATE / "published"
 QUEUE_BRANCH = os.environ.get("EDARSAHUB_QUEUE_BRANCH", "worker/requests")
+RESULT_BRANCH = os.environ.get(
+    "EDARSAHUB_RESULT_BRANCH",
+    "worker/results",
+)
 REMOTE = os.environ.get("EDARSAHUB_QUEUE_REMOTE", "origin")
+GIT_TIMEOUT_SECONDS = int(
+    os.environ.get("EDARSAHUB_RESULT_GIT_TIMEOUT_SECONDS", "30")
+)
+
+RESULT_BATCH_SIZE = int(
+    os.environ.get("EDARSAHUB_RESULT_BATCH_SIZE", "2")
+)
 DEV_BRANCH = "Edarsahub_Desarrollo"
 MIRROR_BRANCH = "mirror/emergent-live"
 REPORT_DIR = Path(os.environ.get("MIRROR_SYNC_REPORT_STATE_DIR", "/app/.git/mirror-sync/reporting"))
@@ -57,12 +68,20 @@ def run(args: list[str], cwd: Path | None = None) -> subprocess.CompletedProcess
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         check=False,
+        timeout=GIT_TIMEOUT_SECONDS,
         env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
     )
 
 
 def git(*args: str, cwd: Path | None = None, check: bool = True) -> subprocess.CompletedProcess[str]:
-    result = run(["git", *args], cwd=cwd)
+    try:
+        result = run(["git", *args], cwd=cwd)
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            f"GIT_TIMEOUT:{' '.join(args)}:"
+            f"timeout={GIT_TIMEOUT_SECONDS}s"
+        ) from exc
+
     if check and result.returncode != 0:
         raise RuntimeError(f"GIT_FAILED:{' '.join(args)}:{result.stdout[-1500:]}")
     return result
@@ -270,8 +289,8 @@ def prepare_queue_worktree() -> tuple[Path, str]:
     A temporary clone keeps publication isolated while preserving the
     canonical Agent Guard contract.
     """
-    git("fetch", REMOTE, QUEUE_BRANCH)
-    base = git("rev-parse", f"{REMOTE}/{QUEUE_BRANCH}").stdout.strip()
+    git("fetch", REMOTE, RESULT_BRANCH)
+    base = git("rev-parse", f"{REMOTE}/{RESULT_BRANCH}").stdout.strip()
 
     WORKTREE_PARENT.mkdir(parents=True, exist_ok=True)
 
@@ -341,6 +360,56 @@ def prepare_queue_worktree() -> tuple[Path, str]:
     return worktree_root, base
 
 
+def marker_satisfied(marker: Path, public: dict[str, Any]) -> bool:
+    if not marker.exists():
+        return False
+
+    marker_text = marker.read_text(
+        encoding="utf-8",
+        errors="replace",
+    )
+
+    desired = str(public.get("certification") or "")
+
+    # Todo resultado ya publicado es terminal para el publisher,
+    # salvo la unica promocion permitida:
+    # evidencia previa no certificada -> CERTIFIED.
+    if desired != "CERTIFIED":
+        return True
+
+    return "certification=CERTIFIED" in marker_text
+
+
+
+def result_identity(path: Path, payload: dict[str, Any]) -> str:
+    """Return the canonical remote identity for a result.
+
+    The authoritative identity is the embedded job_id. The local filename
+    is only a storage key and may differ for historical/concurrency artifacts.
+    """
+    value = str(payload.get("job_id") or "").strip()
+
+    if value:
+        if any(
+            ch not in
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
+            for ch in value
+        ):
+            raise ValueError("INVALID_JOB_ID")
+        return value
+
+    fallback = path.stem
+
+    if not fallback or any(
+        ch not in
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
+        for ch in fallback
+    ):
+        raise ValueError("INVALID_JOB_ID")
+
+    return fallback
+
+
 def publish_one(path: Path) -> bool:
     PUBLISHED.mkdir(parents=True, exist_ok=True)
     marker = PUBLISHED / path.name
@@ -348,20 +417,9 @@ def publish_one(path: Path) -> bool:
     result = load(path)
     public = sanitize(result)
 
-    if marker.exists():
-        marker_text = marker.read_text(
-            encoding="utf-8",
-            errors="replace",
-        )
-        desired = public.get("certification")
-        if (
-            desired == "CERTIFIED"
-            and "certification=CERTIFIED" in marker_text
-        ):
-            return False
-    job_id = str(public.get("job_id") or path.stem)
-    if not job_id or any(ch not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-" for ch in job_id):
-        raise ValueError("INVALID_JOB_ID")
+    if marker_satisfied(marker, public):
+        return False
+    job_id = result_identity(path, public)
 
     last_error = None
 
@@ -439,13 +497,13 @@ def publish_one(path: Path) -> bool:
             git(
                 "fetch",
                 REMOTE,
-                QUEUE_BRANCH,
+                RESULT_BRANCH,
                 cwd=worktree,
             )
 
             current = git(
                 "rev-parse",
-                f"{REMOTE}/{QUEUE_BRANCH}",
+                f"{REMOTE}/{RESULT_BRANCH}",
                 cwd=worktree,
             ).stdout.strip()
 
@@ -469,24 +527,32 @@ def publish_one(path: Path) -> bool:
             push_env = os.environ.copy()
             push_env["EDARSA_ALLOW_PUSH"] = "1"
 
-            push = subprocess.run(
-                [
-                    "git",
-                    "push",
-                    REMOTE,
-                    f"{commit}:refs/heads/{QUEUE_BRANCH}",
-                ],
-                cwd=str(worktree),
-                env=push_env,
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-            )
+            try:
+                push = subprocess.run(
+                    [
+                        "git",
+                        "push",
+                        REMOTE,
+                        f"{commit}:refs/heads/{RESULT_BRANCH}",
+                    ],
+                    cwd=str(worktree),
+                    env=push_env,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    timeout=GIT_TIMEOUT_SECONDS,
+                )
+            except subprocess.TimeoutExpired as exc:
+                raise RuntimeError(
+                    "QUEUE_RESULT_PUSH_TIMEOUT:"
+                    f"{job_id}:"
+                    f"timeout={GIT_TIMEOUT_SECONDS}s"
+                ) from exc
 
             if push.returncode != 0:
                 output = push.stdout[-1500:]
 
-                # Otro escritor pudo mover worker/requests
+                # Otro escritor pudo mover worker/results
                 # entre el recheck y el push. Reintentar
                 # desde el nuevo HEAD es seguro porque el
                 # artefacto se reconstruye en un clone limpio.
@@ -571,8 +637,35 @@ def main() -> int:
 
         count = 0
         errors = 0
+        attempted = 0
+
+        if RESULT_BATCH_SIZE < 1:
+            raise RuntimeError(
+                "INVALID_RESULT_BATCH_SIZE:"
+                f"{RESULT_BATCH_SIZE}"
+            )
 
         for path in sorted(RESULTS.glob("*.json")):
+            marker = PUBLISHED / path.name
+
+            try:
+                public = sanitize(load(path))
+            except Exception:
+                # Los errores de parsing deben seguir entrando por
+                # publish_one para producir evidencia/error normal.
+                public = None
+
+            if (
+                public is not None
+                and marker_satisfied(marker, public)
+            ):
+                continue
+
+            if attempted >= RESULT_BATCH_SIZE:
+                break
+
+            attempted += 1
+
             try:
                 if publish_one(path):
                     count += 1
@@ -580,11 +673,27 @@ def main() -> int:
                 errors += 1
                 print(
                     f"UNIVERSAL_RESULT_PUBLISH_ERROR="
-                    f"{path.name}:{type(exc).__name__}:{exc}"
+                    f"{path.name}:"
+                    f"{type(exc).__name__}:"
+                    f"{exc}"
                 )
 
-        print(f"UNIVERSAL_RESULTS_PUBLISHED_COUNT={count}")
-        print(f"UNIVERSAL_RESULTS_PUBLISH_ERROR_COUNT={errors}")
+        print(
+            "UNIVERSAL_RESULTS_ATTEMPTED_COUNT="
+            f"{attempted}"
+        )
+        print(
+            "UNIVERSAL_RESULTS_PUBLISHED_COUNT="
+            f"{count}"
+        )
+        print(
+            "UNIVERSAL_RESULTS_PUBLISH_ERROR_COUNT="
+            f"{errors}"
+        )
+        print(
+            "UNIVERSAL_RESULTS_BATCH_SIZE="
+            f"{RESULT_BATCH_SIZE}"
+        )
 
         return 1 if errors else 0
 

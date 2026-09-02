@@ -14,7 +14,10 @@ import tempfile
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
 STATE = ROOT / ".git" / "universal-worker-queue"
 REMOTE = os.environ.get("EDARSAHUB_QUEUE_REMOTE", "origin")
-BRANCH = os.environ.get("EDARSAHUB_QUEUE_BRANCH", "worker/requests")
+HEALTH_BRANCH = os.environ.get(
+    "EDARSAHUB_HEALTH_BRANCH",
+    "worker/health",
+)
 MIN_INTERVAL = int(os.environ.get("EDARSAHUB_HEARTBEAT_SECONDS", "60"))
 STALE_SECONDS = int(os.environ.get("EDARSAHUB_JOB_STALE_SECONDS", "180"))
 TERMINAL_RETENTION_SECONDS = int(
@@ -246,8 +249,8 @@ def main() -> int:
         print("WORKER_HEALTH_PUBLISH=SKIPPED_INTERVAL")
         return 0
 
-    git("fetch", REMOTE, BRANCH)
-    base = git("rev-parse", f"{REMOTE}/{BRANCH}").stdout.strip()
+    git("fetch", REMOTE, HEALTH_BRANCH)
+    base = git("rev-parse", f"{REMOTE}/{HEALTH_BRANCH}").stdout.strip()
 
     WT = Path(tempfile.mkdtemp(prefix="edarsahub-worker-health-publish-"))
     shutil.rmtree(WT, ignore_errors=True)
@@ -280,13 +283,13 @@ def main() -> int:
             cwd=WT,
         )
         commit = git("rev-parse", "HEAD", cwd=WT).stdout.strip()
-        git("fetch", REMOTE, BRANCH)
-        if git("rev-parse", f"{REMOTE}/{BRANCH}").stdout.strip() != base:
+        git("fetch", REMOTE, HEALTH_BRANCH)
+        if git("rev-parse", f"{REMOTE}/{HEALTH_BRANCH}").stdout.strip() != base:
             raise RuntimeError("QUEUE_BRANCH_MOVED")
         push_env = os.environ.copy()
         push_env["EDARSA_ALLOW_PUSH"] = "1"
         push = subprocess.run(
-            ["git", "push", REMOTE, f"{commit}:refs/heads/{BRANCH}"],
+            ["git", "push", REMOTE, f"{commit}:refs/heads/{HEALTH_BRANCH}"],
             cwd=str(WT),
             env=push_env,
             text=True,
