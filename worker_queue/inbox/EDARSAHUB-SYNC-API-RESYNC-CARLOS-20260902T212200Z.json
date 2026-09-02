@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "EDARSAHUB-SYNC-API-RESYNC-CARLOS-20260902T212200Z",
+  "created_at_utc": "2026-09-02T21:22:00Z",
+  "requested_by": "chatgpt",
+  "requester_email": "carlosruz@edarsa.com.mx",
+  "request_source": "chatgpt",
+  "project": "V1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Corregir el subsistema de Servidores/API locales y el Re-sync Manual de EDARSAHUB Preview para que las conexiones API guardadas se prueben con sus credenciales reales, los timeouts configurados funcionen correctamente y el DRY RUN de re-sincronizacion consulte la base/origen real. El objetivo operativo es poder recuperar bajo demanda ventas, tickets, PAX y KPIs faltantes sin esperar al job programado. Validar especialmente ORIGEN LOCAL y LA ESTELAR para el 31/08/2026.",
+  "acceptance": [
+    "Validar la autorizacion de carlosruz@edarsa.com.mx mediante el RBAC SQL canonico antes de modificar codigo; no hardcodear ni hacer bypass.",
+    "Corregir Probar Conexion para que una API guardada use internamente la API key descifrada y nunca envie ***CONFIGURED*** como x-api-key ni exponga secretos en UI, logs o resultados.",
+    "Corregir las pruebas de consulta/conectividad para que el frontend no corte a 15000 ms cuando el usuario selecciona 30, 60 o 120 segundos; usar timeout por solicitud con margen razonable sin aumentar indiscriminadamente el timeout global.",
+    "Distinguir diagnosticos de API ONLINE/SQL ONLINE, API ONLINE/SQL ERROR, 401/403, TIMEOUT/NETWORK y configuracion invalida.",
+    "Corregir _ejecutar_dry_run del Re-sync Manual para que ejecute la consulta contra el servidor origen canonico y no contra EDARSAHUB por usar get_sql_connection() incorrectamente.",
+    "Alinear DRY RUN y REAL para que ambos resuelvan la misma unidad, fuente y rango de fechas antes de cualquier escritura.",
+    "Probar ORIGEN LOCAL con la configuracion existente en Servidores_Conexiones y demostrar conectividad real o devolver una causa tecnica precisa.",
+    "Probar Re-sync Manual de LA ESTELAR para 2026-08-31 a 2026-08-31 primero en DRY RUN. Si el origen contiene ventas, el resultado no debe ser Procesados: 0 por consultar la base equivocada.",
+    "No ejecutar el modo REAL de re-sincronizacion hasta que el DRY RUN sea coherente y las pruebas/validator aprueben.",
+    "Ejecutar pruebas dirigidas y entregar evidencia de archivos modificados, diff minimo, pruebas, estado final y cualquier bloqueo.",
+    "Dejar Edarsahub_Desarrollo funcional en Preview con el cambio aplicado por el flujo canonico y sin tocar produccion."
+  ],
+  "constraints": [
+    "production_allowed=false y no modificar Edarsahub_Produccion.",
+    "No modificar directamente bases SQL con DML manual para maquillar datos; el objetivo es corregir la logica de conexion y sincronizacion.",
+    "No exponer API keys, passwords, tokens ni secretos en resultados, commits o logs.",
+    "Mantener intacto lo que ya funciona y realizar el cambio minimo necesario.",
+    "Usar Edarsahub_Desarrollo como fuente canonica de codigo y respetar agent_guard/worktree, validadores y controles de concurrencia existentes.",
+    "No usar el runtime EDARSA_SQL_AUDITOR como mecanismo de correccion; este job corresponde al Universal Worker de EDARSAHUB.",
+    "Si una parte esta bloqueada, completar las partes seguras y reportar exactamente el bloqueo sin inventar exito."
+  ],
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "zero_touch": true
+}
