@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "cxp-frontend-build-isolate-v1-20260901",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "8793e5ca4833c31966083956026d08e619cab5e1",
+  "objective": "Aislar la causa exacta del frontend_build basal que bloquea CxP, sin modificar funcionalidad CxP ni Produccion. Ejecutar por etapas el pipeline real definido en frontend/package.json: prebuild/validate:navigation y build/craco build. Determinar si falla navegacion, resolucion de dependencias/binarios, compilacion JSX/TS, ESLint, memoria/entorno u otra causa. Publicar blocker exacto con comando/etapa/archivo/mensaje sanitizado. No corregir todavia la causa: este job es diagnostico determinista y debe dejar evidencia suficiente para una orden de reparacion minima.",
+  "requester": {"email":"ricardo@edarsa.com.mx","source":"chatgpt","project":"V1.0","chat":"cxp-decision-analysis"},
+  "constraints": [
+    "No modificar logica de negocio",
+    "No modificar archivos CxP",
+    "No tocar Edarsahub_Produccion",
+    "No aumentar timeout global",
+    "No ocultar errores con CI=false ni desactivar lint/gates",
+    "No instalar o actualizar dependencias como solucion",
+    "Preservar evidencia del fallo exacto"
+  ],
+  "diagnostics": [
+    "Registrar versiones de node y yarn disponibles",
+    "Verificar existencia de frontend/yarn.lock y node_modules sin mutarlos",
+    "Ejecutar yarn validate:navigation de forma independiente",
+    "Ejecutar el build real de frontend y capturar la primera causa fatal",
+    "Clasificar la falla por etapa y archivo cuando aplique"
+  ],
+  "acceptance": [
+    "El resultado identifica la primera causa fatal exacta de frontend_build",
+    "El resultado distingue prebuild de craco build",
+    "Incluye archivo y mensaje sanitizado cuando el error proviene del codigo",
+    "No integra cambios funcionales",
+    "production_touched=false"
+  ],
+  "checks": [
+    {"type":"frontend_build"}
+  ],
+  "human_summary_language":"es"
+}
