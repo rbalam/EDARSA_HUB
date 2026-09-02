@@ -1,0 +1,30 @@
+{
+  "base_sha": "43a09e9314bdfdd1bda1040170992a0cf7630922",
+  "blockers": [],
+  "candidate_sha": "8793e5ca4833c31966083956026d08e619cab5e1",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-02T01:46:21Z",
+  "development_sha": "8793e5ca4833c31966083956026d08e619cab5e1",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_worker_sql_readonly_audit.py",
+    "tools/mirror_sync/sql_readonly_audit.py",
+    "tools/mirror_sync/universal_job_bridge.py",
+    "tools/mirror_sync/universal_job_dispatcher.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-read-only-sql-gate0-v1-20260901",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-02T01:50:17Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-02T01:46:14Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
