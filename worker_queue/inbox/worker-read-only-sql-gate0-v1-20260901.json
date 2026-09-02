@@ -1,0 +1,101 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-read-only-sql-gate0-v1-20260901",
+  "created_at_utc": "2026-09-02T01:45:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "GATE 0: habilitar en el Worker universal existente un modo determinista READ_ONLY_SQL reutilizando exclusivamente core.sql_first.db.readonly_sql_connection. Debe aceptar checks sql_readonly_audit sin acciones de repo, rechazar DDL/DML/multiples statements peligrosos, ejecutar solo SELECT/WITH, publicar evidencia en el resultado y no crear commit para jobs read-only. Corregir tambien la precedencia Python canonica a /app/.venv/bin/python -> sys.executable. No tocar Produccion ni crear conexiones SQL paralelas.",
+  "acceptance": [
+    "el schema v2 acepta mode=READ_ONLY_SQL con actions=[]",
+    "READ_ONLY_SQL solo admite checks sql_readonly_audit",
+    "sql_readonly_audit reutiliza readonly_sql_connection existente",
+    "SELECT/WITH seguros permitidos",
+    "INSERT/UPDATE/DELETE/MERGE/EXEC/CREATE/ALTER/DROP/TRUNCATE/SELECT INTO y multiples statements rechazados",
+    "jobs READ_ONLY_SQL no crean worktree ni commit de implementacion",
+    "resultado terminal READ_ONLY_COMPLETE cuando todos los checks pasan",
+    "dispatcher considera READ_ONLY_COMPLETE como DONE",
+    "Python canonico: /app/.venv/bin/python y sys.executable solamente como fallback",
+    "tests de regresion PASS",
+    "production_touched=false"
+  ],
+  "constraints": [
+    "usar el Worker universal existente",
+    "no crear otro worker",
+    "no DDL ni DML",
+    "no tocar Produccion",
+    "no hardcodes de secretos",
+    "no conexion SQL paralela",
+    "reutilizar core.sql_first.db.readonly_sql_connection",
+    "runtime determinista",
+    "no ejecutar shell suministrado por jobs"
+  ],
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\"}",
+      "new": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\", \"sql_readonly_audit\"}"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    if kind == \"frontend_build\":\n        directory = check.get(\"directory\", \"frontend\")\n        if not safe_repo_path(directory):\n            return [f\"{prefix}_INVALID_DIRECTORY\"]\n    return []",
+      "new": "    if kind == \"frontend_build\":\n        directory = check.get(\"directory\", \"frontend\")\n        if not safe_repo_path(directory):\n            return [f\"{prefix}_INVALID_DIRECTORY\"]\n    if kind == \"sql_readonly_audit\":\n        queries = check.get(\"queries\")\n        if not isinstance(queries, list) or not queries:\n            return [f\"{prefix}_QUERIES_REQUIRED\"]\n        for item in queries:\n            if not isinstance(item, dict):\n                return [f\"{prefix}_QUERY_NOT_OBJECT\"]\n            if not str(item.get(\"name\") or \"\").strip():\n                return [f\"{prefix}_QUERY_NAME_REQUIRED\"]\n            sql = item.get(\"sql\")\n            if not isinstance(sql, str) or not sql.strip():\n                return [f\"{prefix}_QUERY_SQL_REQUIRED\"]\n    return []"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    actions = job.get(\"actions\")\n    if not isinstance(actions, list) or not actions:\n        errors.append(\"ACTIONS_REQUIRED\")\n    elif len(actions) > MAX_ACTIONS:\n        errors.append(\"TOO_MANY_ACTIONS\")\n    else:\n        for index, action in enumerate(actions, 1):\n            errors.extend(validate_action(action, index))\n    checks = job.get(\"checks\", [{\"type\": \"git_diff_check\"}])",
+      "new": "    mode = str(job.get(\"mode\") or \"MUTATION\")\n    actions = job.get(\"actions\")\n    if mode == \"READ_ONLY_SQL\":\n        if actions not in (None, []):\n            errors.append(\"READ_ONLY_SQL_ACTIONS_FORBIDDEN\")\n    else:\n        if not isinstance(actions, list) or not actions:\n            errors.append(\"ACTIONS_REQUIRED\")\n        elif len(actions) > MAX_ACTIONS:\n            errors.append(\"TOO_MANY_ACTIONS\")\n        else:\n            for index, action in enumerate(actions, 1):\n                errors.extend(validate_action(action, index))\n    checks = job.get(\"checks\", [{\"type\": \"git_diff_check\"}])\n    if mode == \"READ_ONLY_SQL\":\n        if not isinstance(checks, list) or not checks:\n            errors.append(\"READ_ONLY_SQL_CHECK_REQUIRED\")\n        elif any(not isinstance(c, dict) or c.get(\"type\") != \"sql_readonly_audit\" for c in checks):\n            errors.append(\"READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED\")"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\"}",
+      "new": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\", \"sql_readonly_audit\"}"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "RUNTIME_PYTHON = Path(\"/root/.venv/bin/python\")\n\n\ndef resolve_canonical_python() -> str:\n    \"\"\"Resolve the interpreter shared by every Python worker subprocess.\"\"\"\n    if RUNTIME_PYTHON.is_file() and os.access(RUNTIME_PYTHON, os.X_OK):\n        return str(RUNTIME_PYTHON)\n\n    repo_python = ROOT / \".venv\" / \"bin\" / \"python\"\n    if repo_python.is_file() and os.access(repo_python, os.X_OK):\n        return str(repo_python)\n\n    return sys.executable",
+      "new": "def resolve_canonical_python() -> str:\n    \"\"\"Resolve the interpreter shared by every Python worker subprocess.\"\"\"\n    repo_python = ROOT / \".venv\" / \"bin\" / \"python\"\n    if repo_python.is_file() and os.access(repo_python, os.X_OK):\n        return str(repo_python)\n    return sys.executable"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "    elif kind == \"frontend_build\":\n        directory = safe_path(worktree, str(check.get(\"directory\", \"frontend\")))",
+      "new": "    elif kind == \"sql_readonly_audit\":\n        helper = worktree / \"tools\" / \"mirror_sync\" / \"sql_readonly_audit.py\"\n        if not helper.is_file():\n            helper = ROOT / \"tools\" / \"mirror_sync\" / \"sql_readonly_audit.py\"\n        backend = worktree / \"backend\"\n        if not backend.is_dir():\n            backend = ROOT / \"backend\"\n        cmd = [PYTHON_BIN, str(helper), \"--queries-json\", json.dumps(check.get(\"queries\") or [], ensure_ascii=False)]\n        cwd = worktree\n        env_extra = {**load_backend_runtime_env(), \"PYTHONPATH\": str(backend)}\n    elif kind == \"frontend_build\":\n        directory = safe_path(worktree, str(check.get(\"directory\", \"frontend\")))"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        result[\"base_sha\"] = base_sha\n        requested_paths = sorted(",
+      "new": "        result[\"base_sha\"] = base_sha\n\n        if str(job.get(\"mode\") or \"\") == \"READ_ONLY_SQL\":\n            if job.get(\"actions\") not in (None, []):\n                raise RuntimeError(\"READ_ONLY_SQL_ACTIONS_FORBIDDEN\")\n            checks = job.get(\"checks\") or []\n            if not checks or any(not isinstance(c, dict) or c.get(\"type\") != \"sql_readonly_audit\" for c in checks):\n                raise RuntimeError(\"READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED\")\n            check_results = []\n            for check in checks:\n                check_result = run_check(ROOT, check)\n                check_results.append(check_result)\n                if check_result[\"status\"] != \"PASS\":\n                    result[\"blockers\"].append(\"check_failed:sql_readonly_audit\")\n                    break\n            result[\"checks\"] = check_results\n            result[\"files_changed\"] = []\n            result[\"tests\"] = \"PASS\" if check_results and all(x[\"status\"] == \"PASS\" for x in check_results) else \"FAIL\"\n            result[\"quality_gate\"] = \"PASS\" if not result[\"blockers\"] else \"FAIL\"\n            if not result[\"blockers\"]:\n                result[\"status\"] = \"READ_ONLY_COMPLETE\"\n                result[\"percent_complete\"] = 100\n                result[\"certification\"] = \"CERTIFIED_READ_ONLY\"\n                result[\"summary_es\"] = \"El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.\"\n            else:\n                result[\"percent_complete\"] = 0\n                result[\"certification\"] = \"NOT_CERTIFIED\"\n            return 0\n\n        requested_paths = sorted("
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        target = DONE / path.name if result[\"status\"] == \"INTEGRATED\" else REJECTED / path.name",
+      "new": "        target = DONE / path.name if result[\"status\"] in {\"INTEGRATED\", \"READ_ONLY_COMPLETE\"} else REJECTED / path.name"
+    },
+    {
+      "type": "write_file",
+      "path": "tools/mirror_sync/sql_readonly_audit.py",
+      "content": "#!/usr/bin/env python3\nfrom __future__ import annotations\n\nimport argparse\nimport json\nimport re\nimport sys\nfrom datetime import date, datetime\nfrom decimal import Decimal\nfrom pathlib import Path\nfrom typing import Any\n\nROOT = Path(__file__).resolve().parents[2]\nBACKEND = ROOT / 'backend'\nif str(BACKEND) not in sys.path:\n    sys.path.insert(0, str(BACKEND))\n\nFORBIDDEN = re.compile(r'\\b(insert|update|delete|merge|exec(?:ute)?|create|alter|drop|truncate|grant|revoke|deny|backup|restore|dbcc|use|waitfor|kill)\\b', re.I)\nSELECT_INTO = re.compile(r'\\bselect\\b[\\s\\S]*?\\binto\\b', re.I)\n\ndef _strip_literals_and_comments(sql: str) -> str:\n    text = re.sub(r'/\\*.*?\\*/', ' ', sql, flags=re.S)\n    text = re.sub(r'--[^\\n\\r]*', ' ', text)\n    text = re.sub(r\"N?'(?:''|[^'])*'\", \"''\", text)\n    return text\n\ndef validate_readonly_sql(sql: str) -> str:\n    if not isinstance(sql, str) or not sql.strip():\n        raise ValueError('SQL_REQUIRED')\n    normalized = _strip_literals_and_comments(sql).strip()\n    body = normalized[:-1].rstrip() if normalized.endswith(';') else normalized\n    if ';' in body:\n        raise ValueError('MULTI_STATEMENT_FORBIDDEN')\n    first = re.match(r'^([A-Za-z]+)', body)\n    if not first or first.group(1).upper() not in {'SELECT', 'WITH'}:\n        raise ValueError('ONLY_SELECT_OR_WITH_ALLOWED')\n    if FORBIDDEN.search(body):\n        raise ValueError('DML_DDL_OR_CONTROL_FORBIDDEN')\n    if SELECT_INTO.search(body):\n        raise ValueError('SELECT_INTO_FORBIDDEN')\n    return sql.strip()\n\ndef _json_value(value: Any) -> Any:\n    if isinstance(value, (datetime, date)):\n        return value.isoformat()\n    if isinstance(value, Decimal):\n        return str(value)\n    if isinstance(value, bytes):\n        return value.hex()\n    return value\n\ndef execute_queries(queries: list[dict[str, Any]], max_rows: int = 200) -> dict[str, Any]:\n    from core.sql_first.db import readonly_sql_connection\n    evidence = []\n    with readonly_sql_connection('default') as conn:\n        for item in queries:\n            name = str(item.get('name') or '').strip()\n            sql = validate_readonly_sql(str(item.get('sql') or ''))\n            cur = conn.cursor()\n            cur.execute(sql)\n            columns = [d[0] for d in (cur.description or [])]\n            rows = cur.fetchmany(max_rows + 1) if cur.description else []\n            truncated = len(rows) > max_rows\n            rows = rows[:max_rows]\n            evidence.append({\n                'name': name,\n                'columns': columns,\n                'rows': [[_json_value(v) for v in row] for row in rows],\n                'row_count_returned': len(rows),\n                'truncated': truncated,\n            })\n        try:\n            conn.rollback()\n        except Exception:\n            pass\n    return {'status': 'PASS', 'mode': 'READ_ONLY_SQL', 'connection': 'readonly_sql_connection:default', 'evidence': evidence}\n\ndef main() -> int:\n    parser = argparse.ArgumentParser()\n    parser.add_argument('--queries-json', required=True)\n    parser.add_argument('--max-rows', type=int, default=200)\n    args = parser.parse_args()\n    try:\n        queries = json.loads(args.queries_json)\n        if not isinstance(queries, list) or not queries:\n            raise ValueError('QUERIES_REQUIRED')\n        for item in queries:\n            if not isinstance(item, dict) or not str(item.get('name') or '').strip():\n                raise ValueError('QUERY_NAME_REQUIRED')\n        result = execute_queries(queries, max_rows=max(1, min(args.max_rows, 500)))\n        print(json.dumps(result, ensure_ascii=False, sort_keys=True))\n        return 0\n    except Exception as exc:\n        print(json.dumps({'status': 'FAIL', 'error': f'{type(exc).__name__}:{exc}'}, ensure_ascii=False, sort_keys=True))\n        return 2\n\nif __name__ == '__main__':\n    raise SystemExit(main())\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_sql_readonly_audit.py",
+      "content": "from __future__ import annotations\n\nimport importlib.util\nfrom pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nHELPER = ROOT / 'tools' / 'mirror_sync' / 'sql_readonly_audit.py'\nBRIDGE = ROOT / 'tools' / 'mirror_sync' / 'universal_job_bridge.py'\nDISPATCHER = ROOT / 'tools' / 'mirror_sync' / 'universal_job_dispatcher.py'\n\ndef load_helper():\n    spec = importlib.util.spec_from_file_location('worker_sql_readonly_audit', HELPER)\n    module = importlib.util.module_from_spec(spec)\n    assert spec and spec.loader\n    spec.loader.exec_module(module)\n    return module\n\ndef test_readonly_validator_accepts_select_and_with():\n    m = load_helper()\n    assert m.validate_readonly_sql('SELECT TOP 1 name FROM sys.tables')\n    assert m.validate_readonly_sql('WITH x AS (SELECT 1 AS n) SELECT n FROM x;')\n\ndef test_readonly_validator_rejects_mutation_and_multistatement():\n    m = load_helper()\n    blocked = [\n        'INSERT INTO x VALUES (1)',\n        'UPDATE x SET a=1',\n        'DELETE FROM x',\n        'MERGE x USING y ON 1=1 WHEN MATCHED THEN UPDATE SET a=1;',\n        'EXEC sp_who',\n        'CREATE TABLE x(a int)',\n        'ALTER TABLE x ADD b int',\n        'DROP TABLE x',\n        'TRUNCATE TABLE x',\n        'SELECT * INTO x FROM sys.tables',\n        'SELECT 1; SELECT 2',\n        'WITH x AS (SELECT 1 n) UPDATE t SET a=1',\n    ]\n    for sql in blocked:\n        try:\n            m.validate_readonly_sql(sql)\n        except ValueError:\n            pass\n        else:\n            raise AssertionError(sql)\n\ndef test_worker_contract_exposes_readonly_mode_without_shell_execution():\n    bridge = BRIDGE.read_text(encoding='utf-8')\n    dispatcher = DISPATCHER.read_text(encoding='utf-8')\n    assert 'sql_readonly_audit' in bridge\n    assert 'READ_ONLY_SQL_ACTIONS_FORBIDDEN' in bridge\n    assert 'READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED' in bridge\n    assert 'sql_readonly_audit' in dispatcher\n    assert 'READ_ONLY_COMPLETE' in dispatcher\n    assert 'readonly_sql_connection' in HELPER.read_text(encoding='utf-8')\n    assert 'shell=True' not in dispatcher\n\ndef test_worker_python_precedence_is_repo_venv_then_sys_executable():\n    dispatcher = DISPATCHER.read_text(encoding='utf-8')\n    resolver = dispatcher.split('def resolve_canonical_python()', 1)[1].split('PYTHON_BIN =', 1)[0]\n    assert 'ROOT / \".venv\" / \"bin\" / \"python\"' in resolver\n    assert 'return sys.executable' in resolver\n    assert '/root/.venv/bin/python' not in resolver\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["tools/mirror_sync/universal_job_bridge.py", "tools/mirror_sync/universal_job_dispatcher.py", "tools/mirror_sync/sql_readonly_audit.py", "backend/tests/test_worker_sql_readonly_audit.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_worker_sql_readonly_audit.py"]}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
