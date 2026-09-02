@@ -42,11 +42,27 @@ JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
 ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit"}
 
+RUNTIME_PYTHON = Path("/root/.venv/bin/python")
+
+
 def resolve_canonical_python() -> str:
     """Resolve the interpreter shared by every Python worker subprocess."""
     repo_python = ROOT / ".venv" / "bin" / "python"
-    if repo_python.is_file() and os.access(repo_python, os.X_OK):
+    repo_venv_config = ROOT / ".venv" / "pyvenv.cfg"
+
+    if (
+        repo_venv_config.is_file()
+        and repo_python.is_file()
+        and os.access(repo_python, os.X_OK)
+    ):
         return str(repo_python)
+
+    if (
+        RUNTIME_PYTHON.is_file()
+        and os.access(RUNTIME_PYTHON, os.X_OK)
+    ):
+        return str(RUNTIME_PYTHON)
+
     return sys.executable
 
 

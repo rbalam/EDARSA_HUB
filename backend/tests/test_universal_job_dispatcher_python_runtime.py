@@ -69,6 +69,13 @@ def test_dispatcher_prefers_executable_repo_python(
     )
     repo_python.chmod(0o755)
 
+    (tmp_path / ".venv" / "pyvenv.cfg").write_text(
+        "home = /usr/local/bin\n"
+        "include-system-site-packages = false\n"
+        "version = 3.11.16\n",
+        encoding="utf-8",
+    )
+
     monkeypatch.setattr(module, "ROOT", tmp_path)
     monkeypatch.setattr(
         module,
