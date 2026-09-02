@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "48028b5bd9382b732eacdba63a0e4f8016136510",
-  "generated_at_utc": "2026-09-02T02:43:44Z",
+  "generated_at_utc": "2026-09-02T02:44:55Z",
   "history": {
     "done_total_local": 23,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2318,
+      "age_seconds": 2389,
       "job_id": "000-WORKER-FINAL-CLOSE-100-V1-20260901",
       "reasons": [
         "INVALID_JSON"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3128,
+      "age_seconds": 3199,
       "job_id": "cxp-frontend-build-isolate-v1-20260901",
       "reasons": [
         "ACTIONS_REQUIRED"
@@ -31,43 +31,43 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 49,
+      "age_seconds": 120,
       "job_id": "worker-read-only-sql-final-cert-20260902T024232Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3443,
+      "age_seconds": 3514,
       "job_id": "worker-read-only-sql-gate0-v1-20260901",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1262,
+      "age_seconds": 1333,
       "job_id": "worker-zero-touch-carlos-v3-20260902T022214Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1227,
+      "age_seconds": 1298,
       "job_id": "worker-zero-touch-carlos-v3-20260902T022248Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1259,
+      "age_seconds": 1331,
       "job_id": "worker-zero-touch-ricardo-v3-20260902T022214Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1225,
+      "age_seconds": 1296,
       "job_id": "worker-zero-touch-ricardo-v3-20260902T022248Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1096,
+      "age_seconds": 1167,
       "job_id": "worker-zero-touch-ricardo-v4-20260902T022456Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -85,8 +85,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-02T02:43:44Z",
-    "last_receive_utc": "2026-09-02T02:43:34Z",
+    "last_cycle_utc": "2026-09-02T02:44:46Z",
+    "last_receive_utc": "2026-09-02T02:44:47Z",
     "last_terminal_utc": "2026-09-02T02:42:55Z",
     "pid": "7244"
   },
