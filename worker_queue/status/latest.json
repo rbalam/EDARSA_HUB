@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "1be038e4b7a63986667dd6a412bed919f0f05511",
-  "generated_at_utc": "2026-09-02T02:24:29Z",
+  "generated_at_utc": "2026-09-02T02:25:41Z",
   "history": {
-    "done_total_local": 22,
+    "done_total_local": 23,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 125,
-    "results_total_local": 128
+    "results_total_local": 129
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1163,
+      "age_seconds": 1235,
       "job_id": "000-WORKER-FINAL-CLOSE-100-V1-20260901",
       "reasons": [
         "INVALID_JSON"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1973,
+      "age_seconds": 2045,
       "job_id": "cxp-frontend-build-isolate-v1-20260901",
       "reasons": [
         "ACTIONS_REQUIRED"
@@ -31,38 +31,44 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2727,
+      "age_seconds": 2798,
       "job_id": "CAVAS-BOS-V1-RUNTIME-CAVANAVHEADER-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2288,
+      "age_seconds": 2359,
       "job_id": "worker-read-only-sql-gate0-v1-20260901",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 107,
+      "age_seconds": 178,
       "job_id": "worker-zero-touch-carlos-v3-20260902T022214Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 72,
+      "age_seconds": 144,
       "job_id": "worker-zero-touch-carlos-v3-20260902T022248Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 105,
+      "age_seconds": 176,
       "job_id": "worker-zero-touch-ricardo-v3-20260902T022214Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 70,
+      "age_seconds": 141,
       "job_id": "worker-zero-touch-ricardo-v3-20260902T022248Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 12,
+      "job_id": "worker-zero-touch-ricardo-v4-20260902T022456Z",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -74,14 +80,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 2,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 7,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-02T02:24:20Z",
-    "last_receive_utc": "2026-09-02T02:24:20Z",
-    "last_terminal_utc": "2026-09-02T02:23:19Z",
+    "last_cycle_utc": "2026-09-02T02:25:33Z",
+    "last_receive_utc": "2026-09-02T02:25:34Z",
+    "last_terminal_utc": "2026-09-02T02:25:28Z",
     "pid": "8664"
   },
   "schema": "edarsahub.worker-health.v3",
