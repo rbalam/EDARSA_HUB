@@ -52,18 +52,6 @@ def supervisor_restart(reason: str) -> bool:
     return ok
 
 
-def preserve_dirty_worktree() -> str | None:
-    status = run(["git", "status", "--porcelain"], timeout=20)
-    if status.returncode != 0 or not status.stdout.strip():
-        return None
-    label = "bootstrap-preserve-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    result = run(["git", "stash", "push", "--include-untracked", "-m", label], timeout=120)
-    if result.returncode != 0:
-        raise RuntimeError("STASH_FAILED:" + result.stdout[-1200:])
-    audit("WORKTREE_PRESERVED", label=label)
-    return label
-
-
 def safe_fast_forward() -> dict:
     fetch = run(["git", "fetch", "--quiet", REMOTE, DEV], timeout=90)
     if fetch.returncode != 0:
@@ -84,7 +72,7 @@ def safe_fast_forward() -> dict:
     # BLINDAJE: nunca sobrescribir trabajo local en curso. Si el worktree tiene
     # cambios sin commitear (staged/unstaged/untracked), DIFERIR el fast-forward
     # en lugar de hacer stash (que antes descartaba el trabajo activo del pod).
-    dirty = run(["git", "status", "--porcelain"], timeout=20)
+    dirty = run(["git", "status", "--porcelain=v1", "--untracked-files=all"], timeout=20)
     if dirty.stdout.strip():
         audit("FAST_FORWARD_DEFERRED", reason="LOCAL_WORK_DIRTY", local=local, remote=remote)
         return {"state": "DEFERRED_LOCAL_DIRTY", "local": local, "remote": remote, "preserved": True}
@@ -102,11 +90,29 @@ def cycle() -> dict:
     age = age_seconds(RUNTIME / "last_receive_utc")
     stale = age is None or age > MAX_STALE
     restarted = False
+
+    # Bootstrap owns mirror lifecycle only. The universal worker has a
+    # canonical external owner and must never be restarted indirectly by
+    # bouncing mirror-sync.
     if ff.get("state") == "FF_APPLIED":
         restarted = supervisor_restart("FAST_FORWARD_APPLIED")
     elif stale:
-        restarted = supervisor_restart("WORKER_HEARTBEAT_STALE")
-    payload = {"schema":"edarsahub.bootstrap-watchdog.v1","at_utc":now(),"ff":ff,"worker_receive_age_seconds":age,"worker_stale":stale,"restart_requested":restarted,"production_touched":False}
+        audit(
+            "UNIVERSAL_WORKER_STALE_OBSERVED",
+            worker_receive_age_seconds=age,
+            action="DEFER_TO_CANONICAL_WORKER_OWNER",
+        )
+
+    payload = {
+        "schema": "edarsahub.bootstrap-watchdog.v1",
+        "at_utc": now(),
+        "ff": ff,
+        "worker_receive_age_seconds": age,
+        "worker_stale": stale,
+        "restart_requested": restarted,
+        "worker_restart_owner": "EXTERNAL_CANONICAL_OWNER",
+        "production_touched": False,
+    }
     STATUS.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True)+"\n", encoding="utf-8")
     return payload
 
