@@ -202,24 +202,22 @@ def preserve_and_fast_forward() -> dict[str, Any]:
         if local_ahead != 0 or remote_ahead <= 0:
             return {"ff": "SKIP_NON_FF", "local_ahead": local_ahead, "remote_ahead": remote_ahead}
 
-        dirty = run(["git", "status", "--porcelain"], timeout=20).stdout.strip()
+        dirty = run(
+            ["git", "status", "--porcelain=v1", "--untracked-files=all"],
+            timeout=20,
+        ).stdout.strip()
         stash_ref = None
         if dirty:
-            label = f"control-plane-preserve-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}"
-            result = run(["git", "stash", "push", "--include-untracked", "-m", label], timeout=90)
-            if result.returncode != 0:
-                audit("WORKTREE_PRESERVE_FAILED", output=result.stdout[-1200:])
-                return {"ff": "PRESERVE_FAILED"}
-            stash_ref = label
-            audit("WORKTREE_PRESERVED", label=label)
+            audit("FAST_FORWARD_DEFERRED_LOCAL_DIRTY")
+            return {"ff": "DEFER_LOCAL_DIRTY"}
 
         ff = run(["git", "merge", "--ff-only", f"{REMOTE}/{DEV_BRANCH}"], timeout=60)
         if ff.returncode != 0:
             audit("FAST_FORWARD_FAILED", output=ff.stdout[-1200:], stash=stash_ref)
             return {"ff": "FAILED", "stash": stash_ref}
         new_head = git_output("rev-parse", "HEAD")
-        audit("FAST_FORWARD_APPLIED", from_sha=local, to_sha=new_head, stash=stash_ref)
-        return {"ff": "APPLIED", "from": local, "to": new_head, "stash": stash_ref}
+        audit("FAST_FORWARD_APPLIED", from_sha=local, to_sha=new_head)
+        return {"ff": "APPLIED", "from": local, "to": new_head}
     except Exception as exc:
         audit("FAST_FORWARD_EXCEPTION", error=str(exc))
         return {"ff": "ERROR", "error": str(exc)}

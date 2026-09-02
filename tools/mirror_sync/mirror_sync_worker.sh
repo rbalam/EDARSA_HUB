@@ -69,11 +69,31 @@ run_tool(){
 
 extract_snapshot(){ awk -F= '$1=="SNAPSHOT_COMMIT"{v=$2} $1=="MIRROR_HEAD"{v=$2} END{if(v!="")print v}'; }
 
+canonical_universal_worker_pid(){
+    local pid=""
+    [ -r "$UNIVERSAL_STATE/pid" ] || return 1
+    pid="$(cat "$UNIVERSAL_STATE/pid" 2>/dev/null || true)"
+    case "$pid" in
+        ''|*[!0-9]*) return 1 ;;
+    esac
+    kill -0 "$pid" 2>/dev/null || return 1
+    ps -o args= -p "$pid" 2>/dev/null | grep -Fq 'bash /app/tools/mirror_sync/universal_job_worker.sh' || return 1
+    printf '%s\n' "$pid"
+}
+
 start_universal_worker(){
-    [ -r "$UNIVERSAL_WORKER" ] || { log "UNIVERSAL_JOB_WORKER_AVAILABLE=NO"; return 1; }
-    /bin/bash "$UNIVERSAL_WORKER" & UNIVERSAL_PID=$!
-    mkdir -p "$UNIVERSAL_STATE"; printf '%s\n' "$UNIVERSAL_PID" > "$UNIVERSAL_STATE/parent_child_pid"
-    log "UNIVERSAL_JOB_WORKER_STARTED_BY_MIRROR=YES"; log "UNIVERSAL_JOB_WORKER_PID=$UNIVERSAL_PID"
+    local existing=""
+    existing="$(canonical_universal_worker_pid 2>/dev/null || true)"
+    if [ -n "$existing" ]; then
+        UNIVERSAL_PID=""
+        log "UNIVERSAL_JOB_WORKER_OWNERSHIP=EXTERNAL"
+        log "UNIVERSAL_JOB_WORKER_PID=$existing"
+        return 0
+    fi
+
+    log "UNIVERSAL_JOB_WORKER_OWNERSHIP=ABSENT"
+    log "UNIVERSAL_JOB_WORKER_START_BY_MIRROR=FORBIDDEN"
+    return 1
 }
 
 start_control_plane(){
@@ -87,7 +107,18 @@ stop_child(){ local PID="${1:-}"; [ -n "$PID" ] || return 0; if kill -0 "$PID" 2
 stop_universal_worker(){ stop_child "$UNIVERSAL_PID"; UNIVERSAL_PID=""; }
 stop_control_plane(){ stop_child "$CONTROL_PID"; CONTROL_PID=""; }
 
-ensure_universal_worker(){ if [ -z "${UNIVERSAL_PID:-}" ] || ! kill -0 "$UNIVERSAL_PID" 2>/dev/null; then [ -z "${UNIVERSAL_PID:-}" ] || wait "$UNIVERSAL_PID" 2>/dev/null || true; log "UNIVERSAL_JOB_WORKER_NOT_RUNNING=YES"; start_universal_worker || true; fi; }
+ensure_universal_worker(){
+    local existing=""
+    existing="$(canonical_universal_worker_pid 2>/dev/null || true)"
+    if [ -n "$existing" ]; then
+        log "UNIVERSAL_JOB_WORKER_OWNERSHIP=EXTERNAL"
+        log "UNIVERSAL_JOB_WORKER_PID=$existing"
+        return 0
+    fi
+    log "UNIVERSAL_JOB_WORKER_NOT_RUNNING=YES"
+    log "UNIVERSAL_JOB_WORKER_START_BY_MIRROR=FORBIDDEN"
+    return 0
+}
 ensure_control_plane(){ if [ -z "${CONTROL_PID:-}" ] || ! kill -0 "$CONTROL_PID" 2>/dev/null; then [ -z "${CONTROL_PID:-}" ] || wait "$CONTROL_PID" 2>/dev/null || true; log "CONTROL_PLANE_NOT_RUNNING=YES"; start_control_plane || true; fi; }
 
 run_cycle(){

@@ -35,11 +35,22 @@ def test_runtime_self_heal_detects_generation_heartbeat_and_pid():
 
 def test_worktree_recovery_is_preserving_and_fast_forward_only():
     text = CONTROL.read_text(encoding="utf-8")
-    assert '"stash", "push", "--include-untracked"' in text
-    assert '"merge", "--ff-only"' in text
-    assert "WORKTREE_PRESERVED" in text
-    assert "reset", "--hard" not in text
-    assert "push", "--force" not in text
+
+    # El contrato FF autoritativo usa rev-list para comprobar
+    # que local no tenga commits exclusivos y que remoto esté adelante.
+    assert '"rev-list", "--left-right", "--count"' in text
+    assert "local_ahead != 0 or remote_ahead <= 0" in text
+
+    assert "DEFER_LOCAL_DIRTY" in text
+    assert "FAST_FORWARD_DEFERRED_LOCAL_DIRTY" in text
+
+    assert '"stash", "push", "--include-untracked"' not in text
+    assert '"reset"' not in text
+    assert '"clean"' not in text
+    assert '"rebase"' not in text
+
+    assert "FAST_FORWARD_APPLIED" in text
+    assert "SKIP_NON_FF" in text
 
 
 def test_stale_processing_is_idempotently_requeued():
