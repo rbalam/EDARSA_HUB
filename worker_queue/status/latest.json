@@ -1,17 +1,30 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "1dac860149309ededc25560165f52618e37c4cb8",
-  "generated_at_utc": "2026-08-30T03:04:48Z",
+  "generated_at_utc": "2026-09-02T01:51:28Z",
   "history": {
-    "done_total_local": 19,
+    "done_total_local": 20,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 121,
-    "results_total_local": 123
+    "results_total_local": 124
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [],
+  "jobs": [
+    {
+      "age_seconds": 745,
+      "job_id": "CAVAS-BOS-V1-RUNTIME-CAVANAVHEADER-01",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 306,
+      "job_id": "worker-read-only-sql-gate0-v1-20260901",
+      "reason": null,
+      "state": "RESULT_READY"
+    }
+  ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -19,15 +32,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 0,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-08-30T03:04:41Z",
-    "last_receive_utc": "2026-08-30T03:04:41Z",
-    "last_terminal_utc": "2026-08-30T01:17:55Z",
-    "pid": "8117"
+    "last_cycle_utc": "2026-09-02T01:51:24Z",
+    "last_receive_utc": "2026-09-02T01:51:25Z",
+    "last_terminal_utc": "2026-09-02T01:46:21Z",
+    "pid": "12787"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
