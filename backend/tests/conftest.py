@@ -9,12 +9,22 @@ Responsabilidades:
 """
 
 from pathlib import Path
+import sys
 
 from dotenv import load_dotenv
 
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[1]
 _ENV_FILE = _BACKEND_ROOT / ".env"
+
+# El repositorio tambien contiene /app/tests.
+# Los tests del backend usan historicamente el contrato
+# tests.test_config, por lo que backend debe tener precedencia.
+_backend_root_text = str(_BACKEND_ROOT)
+if sys.path[0] != _backend_root_text:
+    if _backend_root_text in sys.path:
+        sys.path.remove(_backend_root_text)
+    sys.path.insert(0, _backend_root_text)
 
 load_dotenv(_ENV_FILE, override=False)
 
