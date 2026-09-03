@@ -1,0 +1,109 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SOFTRESTAURANT-CLOSED-SALES-CONTRACT-CARLOS-20260903T011500Z",
+  "created_at_utc": "2026-09-03T01:15:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "7ddffd22d4eb3e3d39397a0f86cefbf8358e0e7a",
+  "production_allowed": false,
+  "objective": "Alinear la sincronizacion de Ventas Cerradas de SoftRestaurant con el reporte oficial por turnos cerrados e idempresa. Corregir la omision de tickets cuyo cheque no tiene cierre individual pero pertenece a un turno cerrado, hacer que DRY RUN y REAL usen el mismo contrato y forzar el autoreinicio controlado del sincronizador de Preview sin tocar Produccion.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+      "expected_count": 1,
+      "old": "        \"unidad_codigo\": context.unidad_codigo,\n        \"sucursal_id\": context.sucursal_origen_id,\n",
+      "new": "        \"unidad_codigo\": context.unidad_codigo,\n        \"empresa_id\": context.empresa_id,\n        \"sucursal_id\": context.sucursal_origen_id,\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+      "expected_count": 1,
+      "old": "        if distinct_num_cheques is not None:\n            row[\"num_cheques\"] = len(distinct_num_cheques)\n",
+      "new": "        if distinct_num_cheques is not None and not row.get(\"num_cheques\"):\n            row[\"num_cheques\"] = len(distinct_num_cheques)\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+      "expected_count": 1,
+      "old": "QUERY_SOFTRESTAURANT_VENTAS_CERRADAS = \"\"\"\nSELECT \n    fecha as fecha_hora,\n    folio as folio,\n    total as ventas_total,\n    ISNULL(propina, 0) as propinas,\n    ISNULL(nopersonas, 1) as num_personas\nFROM cheques\nWHERE fecha >= DATEADD(DAY, -1, CONVERT(DATETIME, REPLACE('{fecha_inicio}', '-', ''), 112))\n  AND fecha < DATEADD(DAY, 2, CONVERT(DATETIME, REPLACE('{fecha_fin}', '-', ''), 112))\n  AND cancelado = 0\n  AND cierre IS NOT NULL  -- Solo cheques cerrados\nORDER BY fecha\n\"\"\"\n\n",
+      "new": "QUERY_SOFTRESTAURANT_VENTAS_CERRADAS = \"\"\"\nSELECT\n    t.apertura AS fecha_hora,\n    ch.folio AS folio,\n    1 AS num_cheques,\n    ISNULL(ch.totalalimentossindescuentos, 0) AS alimentos,\n    ISNULL(ch.totalbebidassindescuentos, 0) AS bebidas,\n    ISNULL(ch.totalotrossindescuentos, 0) AS otros,\n    ISNULL(ch.totalcortesias, 0) AS cortesias,\n    ISNULL(ch.totaldescuentos, 0) AS descuentos,\n    ISNULL(ch.subtotal, 0) AS subtotal,\n    ISNULL(ch.totalimpuesto1, 0) AS iva,\n    ISNULL(ch.total, 0) AS ventas_total,\n    ISNULL(ch.propina, 0) AS propinas,\n    ISNULL(ch.total, 0) + ISNULL(ch.propina, 0) AS total_con_propina,\n    ISNULL(ch.nopersonas, 0) AS num_personas\nFROM cheques AS ch\nINNER JOIN turnos AS t\n    ON t.idturno = ch.idturno\n   AND t.idempresa = ch.idempresa\nWHERE t.apertura >= DATEADD(DAY, -1, CONVERT(DATETIME, REPLACE('{fecha_inicio}', '-', ''), 112))\n  AND t.apertura < DATEADD(DAY, 2, CONVERT(DATETIME, REPLACE('{fecha_fin}', '-', ''), 112))\n  AND ch.idempresa = '{empresa_id}'\n  AND t.idempresa = '{empresa_id}'\n  AND t.cierre IS NOT NULL\n  AND ch.cancelado = 0\nORDER BY t.apertura, ch.folio\n\"\"\"\n\n\ndef build_softrestaurant_ventas_cerradas_query(\n    server_config: Dict[str, Any],\n    fecha_inicio: date,\n    fecha_fin: date,\n) -> str:\n    \"\"\"Construye el SELECT oficial de ventas cerradas por turno.\"\"\"\n    empresa_id = str(\n        (server_config or {}).get(\"empresa_id\") or \"\"\n    ).strip()\n    if not empresa_id:\n        raise ValueError(\n            \"La conexion SoftRestaurant no tiene empresa_id canonica\"\n        )\n\n    empresa_sql = empresa_id.replace(\"'\", \"''\")\n    return QUERY_SOFTRESTAURANT_VENTAS_CERRADAS.format(\n        fecha_inicio=fecha_inicio.isoformat(),\n        fecha_fin=fecha_fin.isoformat(),\n        empresa_id=empresa_sql,\n    )\n\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+      "expected_count": 1,
+      "old": "        # Ejecutar query\n        query = QUERY_SOFTRESTAURANT_VENTAS_CERRADAS.format(\n            fecha_inicio=fecha_inicio.isoformat(),\n            fecha_fin=fecha_fin.isoformat()\n        )\n",
+      "new": "        # Ejecutar exactamente el contrato del reporte oficial por turnos.\n        query = build_softrestaurant_ventas_cerradas_query(\n            server_config,\n            fecha_inicio,\n            fecha_fin,\n        )\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "    from modules.comercial_v2.sync_comercial_edarsahub import (\n        ConnectionStatus,\n        execute_query_on_server,\n        get_server_connection_config,\n    )\n    from core.query_catalog import get_query_for_server\n",
+      "new": "    from modules.comercial_v2.sync_comercial_edarsahub import (\n        ConnectionStatus,\n        _agrupar_ventas_cerradas_por_fecha_operacion,\n        build_softrestaurant_ventas_cerradas_query,\n        execute_query_on_server,\n        get_server_connection_config,\n    )\n    from modules.comercial_v2.schemas import (\n        SistemaOrigen,\n        UnidadNegocioConfig,\n    )\n    from core.query_catalog import get_query_for_server\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "        # P2-21: Obtener query desde catálogo central\n        query_template = get_query_for_server(config, 'comercial_ventas_cerradas')\n        \n        if not query_template:\n            # Fallback a queries legacy si no está en catálogo\n            sistema = unidad_config.get('sistema', '').upper()\n            if 'SOFT' in sistema:\n                query_template = \"\"\"\n                SELECT \n                    CAST(fecha AS DATE) AS fecha_operacion,\n                    SUM(total) AS ventas_total,\n                    SUM(ISNULL(propina, 0)) AS propinas_total,\n                    COUNT(DISTINCT folio) AS tickets_total,\n                    SUM(ISNULL(nopersonas, 1)) AS pax_total\n                FROM cheques\n                WHERE CAST(fecha AS DATE) BETWEEN @fecha_inicio AND @fecha_fin\n                  AND cancelado = 0\n                  AND cierre IS NOT NULL\n                GROUP BY CAST(fecha AS DATE)\n                ORDER BY fecha_operacion\n                \"\"\"\n            else:  # MPRO\n                query_template = \"\"\"\n                SELECT \n                    CAST(ve.Vn_Fecha AS DATE) AS fecha_operacion,\n                    SUM(ve.Vn_Precio_Neto_Importe) AS ventas_total,\n                    0 AS propinas_total,\n                    COUNT(DISTINCT ve.Vn_Folio) AS tickets_total,\n                    SUM(ISNULL(c.Co_Personas, 1)) AS pax_total\n                FROM Venta_Encabezado ve\n                LEFT JOIN Comanda c ON ve.Vn_Documento = c.Co_Folio AND ve.Sc_Cve_Sucursal = c.Sc_Cve_Sucursal\n                WHERE CAST(ve.Vn_Fecha AS DATE) BETWEEN @fecha_inicio AND @fecha_fin\n                  AND ve.Sc_Cve_Sucursal = @sucursal_id\n                GROUP BY CAST(ve.Vn_Fecha AS DATE)\n                ORDER BY fecha_operacion\n                \"\"\"\n        \n        # Reemplazar parámetros\n        query = query_template.replace('@fecha_inicio', f\"'{fecha_inicio}'\")\n        query = query.replace('@fecha_fin', f\"'{fecha_fin}'\")\n        sucursal_id = unidad_config.get('sucursal_id', 'DEFAULT')\n        query = query.replace('@sucursal_id', f\"'{sucursal_id}'\")\n",
+      "new": "        sistema = str(\n            unidad_config.get('sistema') or ''\n        ).strip().upper()\n\n        if sistema == 'SOFTRESTAURANT':\n            # DRY RUN y REAL comparten el contrato oficial por turnos.\n            query = build_softrestaurant_ventas_cerradas_query(\n                config,\n                fecha_inicio,\n                fecha_fin,\n            )\n            query_source = 'SOFTRESTAURANT_REPORTE_TURNOS'\n        else:\n            # MPRO conserva el catálogo central de consultas.\n            query_template = get_query_for_server(\n                config,\n                'comercial_ventas_cerradas',\n            )\n            if not query_template:\n                query_template = \"\"\"\n                SELECT\n                    CAST(ve.Vn_Fecha AS DATE) AS fecha_operacion,\n                    SUM(ve.Vn_Precio_Neto_Importe) AS ventas_total,\n                    0 AS propinas_total,\n                    COUNT(DISTINCT ve.Vn_Folio) AS tickets_total,\n                    SUM(ISNULL(c.Co_Personas, 1)) AS pax_total\n                FROM Venta_Encabezado ve\n                LEFT JOIN Comanda c ON ve.Vn_Documento = c.Co_Folio AND ve.Sc_Cve_Sucursal = c.Sc_Cve_Sucursal\n                WHERE CAST(ve.Vn_Fecha AS DATE) BETWEEN @fecha_inicio AND @fecha_fin\n                  AND ve.Sc_Cve_Sucursal = @sucursal_id\n                GROUP BY CAST(ve.Vn_Fecha AS DATE)\n                ORDER BY fecha_operacion\n                \"\"\"\n                query_source = 'MPRO_LEGACY_FALLBACK'\n            else:\n                query_source = 'CATALOGO'\n\n            query = query_template.replace(\n                '@fecha_inicio',\n                f\"'{fecha_inicio}'\",\n            )\n            query = query.replace(\n                '@fecha_fin',\n                f\"'{fecha_fin}'\",\n            )\n            sucursal_id = unidad_config.get(\n                'sucursal_id',\n                'DEFAULT',\n            )\n            query = query.replace(\n                '@sucursal_id',\n                f\"'{sucursal_id}'\",\n            )\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "        detalle = []\n        for d in datos:\n            detalle.append({\n                'fecha': str(d['fecha_operacion']),\n                'accion': 'INSERT/UPDATE',\n                'ventas_total': float(d['ventas_total'] or 0),\n                'propinas_total': float(d['propinas_total'] or 0),\n                'tickets_total': int(d['tickets_total'] or 0),\n                'pax_total': int(d['pax_total'] or 0)\n            })\n",
+      "new": "        if sistema == 'SOFTRESTAURANT':\n            soft_config = UnidadNegocioConfig(\n                unidad_negocio_pk=str(\n                    unidad_config.get('unidad_negocio_pk') or ''\n                ),\n                unidad_negocio_nombre=unidad_config['nombre'],\n                server_id=unidad_config['server_id'],\n                sucursal_id=unidad_config.get(\n                    'sucursal_id',\n                    'DEFAULT',\n                ),\n                sucursal_nombre=unidad_config['nombre'],\n                sistema_origen=SistemaOrigen.SOFTRESTAURANT,\n                activo=True,\n            )\n            datos = _agrupar_ventas_cerradas_por_fecha_operacion(\n                datos,\n                soft_config,\n                fecha_inicio=fecha_inicio,\n                fecha_fin=fecha_fin,\n            )\n\n        detalle = []\n        for d in datos:\n            fecha_detalle = (\n                d.get('fecha_operacion')\n                or d.get('fecha')\n            )\n            ventas_detalle = float(\n                d.get('ventas_total') or 0\n            )\n            propinas_detalle = float(\n                d.get('propinas_total')\n                if d.get('propinas_total') is not None\n                else d.get('propinas') or 0\n            )\n            tickets_detalle = int(\n                d.get('tickets_total')\n                if d.get('tickets_total') is not None\n                else d.get('num_cheques') or 0\n            )\n            pax_detalle = int(\n                d.get('pax_total')\n                if d.get('pax_total') is not None\n                else d.get('num_personas') or 0\n            )\n            detalle.append({\n                'fecha': str(fecha_detalle),\n                'accion': 'INSERT/UPDATE',\n                'ventas_total': ventas_detalle,\n                'propinas_total': propinas_detalle,\n                'total_con_propina': float(\n                    d.get('total_con_propina')\n                    or ventas_detalle + propinas_detalle\n                ),\n                'tickets_total': tickets_detalle,\n                'pax_total': pax_detalle,\n                'alimentos': float(d.get('alimentos') or 0),\n                'bebidas': float(d.get('bebidas') or 0),\n                'otros': float(d.get('otros') or 0),\n                'cortesias': float(d.get('cortesias') or 0),\n                'descuentos': float(d.get('descuentos') or 0),\n                'subtotal': float(d.get('subtotal') or 0),\n                'iva': float(d.get('iva') or 0),\n            })\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "            'query_source': 'CATALOGO' if get_query_for_server(config, 'comercial_ventas_cerradas') else 'LEGACY_FALLBACK',\n",
+      "new": "            'query_source': query_source,\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "expected_count": 1,
+      "old": "RUNTIME_GENERATION=\"20260827-mirror-runtime-control-plane-v3\"",
+      "new": "RUNTIME_GENERATION=\"20260903-softrestaurant-closed-sales-contract-v1\""
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_softrestaurant_closed_sales_report_contract.py",
+      "content": "from datetime import date, datetime\nfrom decimal import Decimal\n\nfrom core.utils import operational_window\nfrom modules.comercial_v2 import sync_comercial_edarsahub as sync_module\nfrom modules.comercial_v2.mappers import map_softrestaurant_ventas_cerradas\nfrom modules.comercial_v2.schemas import SistemaOrigen, UnidadNegocioConfig\n\n\ndef _config():\n    return UnidadNegocioConfig(\n        unidad_negocio_pk=\"unit-estelar\",\n        unidad_negocio_nombre=\"LA ESTELAR\",\n        server_id=\"server-estelar\",\n        sucursal_id=\"DEFAULT\",\n        sucursal_nombre=\"LA ESTELAR\",\n        sistema_origen=SistemaOrigen.SOFTRESTAURANT,\n        activo=True,\n    )\n\n\ndef test_query_matches_official_softrestaurant_turn_contract():\n    query = sync_module.build_softrestaurant_ventas_cerradas_query(\n        {\"empresa_id\": \"EST\"},\n        date(2026, 8, 31),\n        date(2026, 8, 31),\n    )\n\n    assert \"INNER JOIN turnos AS t\" in query\n    assert \"t.idturno = ch.idturno\" in query\n    assert \"t.cierre IS NOT NULL\" in query\n    assert \"ch.cierre IS NOT NULL\" not in query\n    assert \"ch.idempresa = 'EST'\" in query\n    assert \"t.idempresa = 'EST'\" in query\n    assert \"t.apertura\" in query\n    assert \"ISNULL(ch.nopersonas, 0) AS num_personas\" in query\n    assert \"1 AS num_cheques\" in query\n\n\ndef test_grouping_preserves_count_rows_for_official_report(monkeypatch):\n    monkeypatch.setattr(\n        operational_window,\n        \"get_fecha_operacion\",\n        lambda unidad_pk, value: date(2026, 8, 31),\n    )\n    rows = [\n        {\n            \"fecha_hora\": datetime(2026, 8, 31, 9, 0),\n            \"folio\": \"100\",\n            \"num_cheques\": 1,\n            \"ventas_total\": Decimal(\"100.00\"),\n            \"propinas\": Decimal(\"10.00\"),\n            \"num_personas\": 1,\n        },\n        {\n            \"fecha_hora\": datetime(2026, 8, 31, 9, 1),\n            \"folio\": \"100\",\n            \"num_cheques\": 1,\n            \"ventas_total\": Decimal(\"200.00\"),\n            \"propinas\": Decimal(\"20.00\"),\n            \"num_personas\": 2,\n        },\n    ]\n\n    result = sync_module._agrupar_ventas_cerradas_por_fecha_operacion(\n        rows,\n        _config(),\n        fecha_inicio=date(2026, 8, 31),\n        fecha_fin=date(2026, 8, 31),\n    )\n\n    assert len(result) == 1\n    assert result[0][\"num_cheques\"] == 2\n    assert result[0][\"num_personas\"] == 3\n    assert result[0][\"ventas_total\"] == Decimal(\"300.00\")\n\n\ndef test_mapper_matches_la_estelar_official_summary():\n    kpi = map_softrestaurant_ventas_cerradas(\n        {\n            \"fecha\": date(2026, 8, 31),\n            \"ventas_total\": Decimal(\"22345.00\"),\n            \"propinas\": Decimal(\"2232.50\"),\n            \"num_cheques\": 22,\n            \"num_personas\": 48,\n        },\n        _config(),\n        \"RESYNC-ESTELAR-CONTRACT\",\n    )\n\n    assert kpi.ventas_total == Decimal(\"22345.00\")\n    assert kpi.propinas_total == Decimal(\"2232.50\")\n    assert kpi.tickets_total == 22\n    assert kpi.pax_total == 48\n    assert kpi.ticket_promedio == Decimal(\"22345.00\") / Decimal(\"22\")\n    assert kpi.pax_promedio == Decimal(\"22345.00\") / Decimal(\"48\")\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+        "backend/api/admin_scheduler_resync.py",
+        "backend/tests/test_softrestaurant_closed_sales_report_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_softrestaurant_closed_sales_report_contract.py",
+        "backend/tests/test_admin_scheduler_resync_origin_contract.py",
+        "backend/tests/test_comercial_v2_closed_dashboard_source.py"
+      ]
+    }
+  ]
+}
