@@ -1,0 +1,68 @@
+name: Estelar Official Aggregate Bootstrap
+# Rerun after aligning legacy empresa_id contract with daily aggregate.
+
+on:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - '.github/workflows/estelar-official-aggregate-bootstrap.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: estelar-official-aggregate-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  apply-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      EDARSAHUB_SQL_HOST: localhost
+      EDARSAHUB_SQL_PORT: '1433'
+      EDARSAHUB_SQL_DATABASE: bootstrap_test
+      EDARSAHUB_SQL_USER: bootstrap_test
+      EDARSAHUB_SQL_PASSWORD: bootstrap_test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply deterministic LA ESTELAR patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/bootstrap_estelar_aggregate.py
+
+      - name: Install backend test dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/requirements-bootstrap.txt
+          python -m pip install -q -r /tmp/requirements-bootstrap.txt
+
+      - name: Validate Python and tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile backend/modules/comercial_v2/sync_comercial_edarsahub.py backend/tests/test_estelar_softrestaurant_official_aggregate_bootstrap.py
+          cd backend
+          python -m pytest -q tests/test_estelar_softrestaurant_official_aggregate_bootstrap.py tests/test_softrestaurant_empresa_id_autodiscovery_contract.py tests/test_admin_scheduler_resync_origin_contract.py
+          cd ..
+          git diff --check
+
+      - name: Commit validated change to Development
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "EDARSAHUB Bootstrap"
+          git config user.email "bootstrap@edarsahub.local"
+          git add -- backend/modules/comercial_v2/sync_comercial_edarsahub.py backend/tests/test_estelar_softrestaurant_official_aggregate_bootstrap.py
+          git commit -m "fix(estelar): use official SoftRestaurant daily aggregate"
+          git fetch origin Edarsahub_Desarrollo
+          git rebase origin/Edarsahub_Desarrollo
+          git push origin HEAD:Edarsahub_Desarrollo
