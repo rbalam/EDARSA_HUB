@@ -1,0 +1,112 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-RESYNC-MANUAL-FIX-CARLOS-20260903T001200Z",
+  "created_at_utc": "2026-09-03T00:12:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Corregir de forma determinista el Re-sync Manual de EDARSAHUB Preview para que resuelva la unidad canonica y su sistema correctamente, consulte el servidor origen real en DRY RUN, propague fallos honestamente y construya el handler REAL con unidad_negocio_pk valida. No ejecutar ninguna re-sincronizacion REAL ni tocar Produccion.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "        return {\n            'server_id': str(server_data.get('server_id', '')),\n            'sistema': server_data.get('servidor_system_type') or server_data.get('system_type') or 'UNKNOWN',\n            'sucursal_id': server_data.get('sucursal_origen_id') or server_data.get('sucursal_id') or 'DEFAULT',\n            'nombre': server_data.get('unidad_negocio_nombre') or unidad_negocio_id,\n            'host': server_data.get('host'),\n            'activo': server_data.get('servidor_activo', True)\n        }",
+      "new": "        raw_sistema = str(\n            server_data.get('servidor_system_type')\n            or server_data.get('system_type')\n            or 'UNKNOWN'\n        ).strip().upper()\n        if 'SOFT' in raw_sistema:\n            sistema = 'SOFTRESTAURANT'\n        elif 'MPRO' in raw_sistema or 'MANAG' in raw_sistema:\n            sistema = 'MPRO'\n        else:\n            sistema = raw_sistema or 'UNKNOWN'\n\n        return {\n            'unidad_negocio_pk': str(server_data.get('unidad_negocio_pk', '')),\n            'server_id': str(server_data.get('server_id', '')),\n            'sistema': sistema,\n            'sucursal_id': server_data.get('sucursal_origen_id') or server_data.get('sucursal_id') or 'DEFAULT',\n            'nombre': server_data.get('unidad_negocio_nombre') or unidad_negocio_id,\n            'host': server_data.get('host'),\n            'activo': server_data.get('servidor_activo', True)\n        }"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "def _validar_conectividad(server_id: str) -> Dict[str, Any]:",
+      "new": "def _validar_conectividad(\n    server_id: str,\n    unidad_negocio_pk: Optional[str] = None,\n) -> Dict[str, Any]:"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "        config = get_server_connection_config(server_id)",
+      "new": "        config = get_server_connection_config(\n            server_id,\n            unidad_negocio_pk,\n        )"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "    validacion_conectividad = _validar_conectividad(unidad['server_id'])",
+      "new": "    validacion_conectividad = _validar_conectividad(\n        unidad['server_id'],\n        unidad.get('unidad_negocio_pk'),\n    )"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "        'conectividad': _validar_conectividad(unidad['server_id']),",
+      "new": "        'conectividad': _validar_conectividad(\n            unidad['server_id'],\n            unidad.get('unidad_negocio_pk'),\n        ),"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "    from modules.comercial_v2.sync_comercial_edarsahub import get_server_connection_config\n    from core.query_catalog import get_query_for_server\n    import pymssql",
+      "new": "    from modules.comercial_v2.sync_comercial_edarsahub import (\n        ConnectionStatus,\n        execute_query_on_server,\n        get_server_connection_config,\n    )\n    from core.query_catalog import get_query_for_server"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "        config = get_server_connection_config(unidad_config['server_id'])",
+      "new": "        config = get_server_connection_config(\n            unidad_config['server_id'],\n            unidad_config.get('unidad_negocio_pk'),\n        )"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "        conn = get_sql_connection()\n        cursor = conn.cursor(as_dict=True)\n        \n        cursor.execute(query)\n        datos = cursor.fetchall()\n        conn.close()",
+      "new": "        datos, connection_status = execute_query_on_server(config, query)\n        if connection_status != ConnectionStatus.ONLINE:\n            return {\n                'success': False,\n                'modo': 'DRY_RUN',\n                'records_processed': 0,\n                'registros_afectados': 0,\n                'connection_status': str(connection_status),\n                'error_message': (\n                    'No fue posible consultar el servidor origen durante el DRY RUN: '\n                    f'{connection_status}'\n                ),\n            }"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "        resultado_simulado = await _ejecutar_dry_run(\n            request.unidad_negocio_id,\n            unidad,\n            request.fecha_inicio,\n            request.fecha_fin\n        )\n        \n        _registrar_en_bitacora(",
+      "new": "        resultado_simulado = await _ejecutar_dry_run(\n            request.unidad_negocio_id,\n            unidad,\n            request.fecha_inicio,\n            request.fecha_fin\n        )\n\n        if not resultado_simulado.get('success'):\n            error_msg = (\n                resultado_simulado.get('error_message')\n                or 'El DRY RUN no pudo consultar el servidor origen.'\n            )\n            _registrar_en_bitacora(\n                job_name=f\"RESYNC_{request.tipo_sync}\",\n                run_id=sync_run_id,\n                accion='DRY_RUN_FAILED',\n                server_id=unidad['server_id'],\n                detalles={\n                    'unidad': request.unidad_negocio_id,\n                    'fecha_inicio': str(request.fecha_inicio),\n                    'fecha_fin': str(request.fecha_fin),\n                    'motivo': request.motivo,\n                    'usuario': user_email,\n                },\n                exito=False,\n                error_mensaje=error_msg,\n            )\n            _registrar_resync_log(\n                request, current_user, 'FAILED', error_msg, unidad, 0\n            )\n            return ResyncResponse(\n                success=False,\n                ejecucion_id=ejecucion_id,\n                sync_run_id=sync_run_id,\n                modo='DRY_RUN',\n                tipo_sync=request.tipo_sync,\n                unidad_negocio_id=request.unidad_negocio_id,\n                fecha_inicio=request.fecha_inicio.isoformat(),\n                fecha_fin=request.fecha_fin.isoformat(),\n                validacion_previa=validacion_previa,\n                resultado=resultado_simulado,\n                error_message=error_msg,\n            )\n        \n        _registrar_en_bitacora("
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "        # Crear config usando el formato oficial\n        config = UnidadNegocioConfig(\n            unidad_negocio_id=unidad_negocio_id,\n            unidad_negocio_nombre=unidad_config['nombre'],\n            server_id=unidad_config['server_id'],\n            sucursal_id=unidad_config['sucursal_id'],\n            sucursal_nombre=unidad_config['nombre'],\n            sistema_origen=SistemaOrigen.SOFTRESTAURANT if unidad_config['sistema'] == 'SOFTRESTAURANT' else SistemaOrigen.MPRO,\n            activo=True\n        )\n        \n        # Ejecutar handler oficial según sistema\n        if unidad_config['sistema'] == 'SOFTRESTAURANT':",
+      "new": "        # Crear config usando identificadores y sistema canónicos.\n        unidad_negocio_pk = str(\n            unidad_config.get('unidad_negocio_pk') or ''\n        ).strip()\n        if not unidad_negocio_pk:\n            return {\n                'success': False,\n                'error_message': 'unidad_negocio_pk canónica no disponible',\n            }\n\n        sistema = str(unidad_config.get('sistema') or '').strip().upper()\n        if sistema not in {'SOFTRESTAURANT', 'MPRO'}:\n            return {\n                'success': False,\n                'error_message': f'Sistema origen no soportado: {sistema}',\n            }\n\n        config = UnidadNegocioConfig(\n            unidad_negocio_pk=unidad_negocio_pk,\n            unidad_negocio_nombre=unidad_config['nombre'],\n            server_id=unidad_config['server_id'],\n            sucursal_id=unidad_config['sucursal_id'],\n            sucursal_nombre=unidad_config['nombre'],\n            sistema_origen=(\n                SistemaOrigen.SOFTRESTAURANT\n                if sistema == 'SOFTRESTAURANT'\n                else SistemaOrigen.MPRO\n            ),\n            activo=True\n        )\n        \n        # Ejecutar handler oficial según sistema\n        if sistema == 'SOFTRESTAURANT':"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_admin_scheduler_resync_origin_runtime.py",
+      "content": "from datetime import date\nimport inspect\n\nimport pytest\n\nfrom api import admin_scheduler_resync as module\nfrom modules.comercial_v2.schemas import ConnectionStatus\n\n\ndef test_get_unidad_config_normalizes_softrestaurant_pro_and_preserves_pk(monkeypatch):\n    monkeypatch.setattr(\n        module,\n        \"get_server_by_unidad_codigo\",\n        lambda codigo: {\n            \"unidad_negocio_pk\": \"unit-pk-estelar\",\n            \"server_id\": \"server-estelar\",\n            \"servidor_system_type\": \"SOFTRESTAURANT_PRO\",\n            \"sucursal_origen_id\": None,\n            \"unidad_negocio_nombre\": \"LA ESTELAR\",\n            \"host\": \"example.invalid\",\n            \"servidor_activo\": True,\n        },\n    )\n\n    result = module._get_unidad_config(\"ESTELAR\")\n\n    assert result[\"unidad_negocio_pk\"] == \"unit-pk-estelar\"\n    assert result[\"server_id\"] == \"server-estelar\"\n    assert result[\"sistema\"] == \"SOFTRESTAURANT\"\n    assert result[\"sucursal_id\"] == \"DEFAULT\"\n\n\n@pytest.mark.asyncio\nasync def test_dry_run_uses_canonical_origin_executor(monkeypatch):\n    from core import query_catalog\n    from modules.comercial_v2 import sync_comercial_edarsahub as sync_module\n\n    captured = {}\n\n    def fake_get_server_connection_config(server_id, unidad_negocio_pk=None):\n        captured[\"server_id\"] = server_id\n        captured[\"unidad_negocio_pk\"] = unidad_negocio_pk\n        return {\"id\": server_id, \"activo\": True}\n\n    def fake_execute_query_on_server(config, query):\n        captured[\"config\"] = config\n        captured[\"query\"] = query\n        return ([{\n            \"fecha_operacion\": date(2026, 8, 31),\n            \"ventas_total\": 22345,\n            \"propinas_total\": 2232.50,\n            \"tickets_total\": 22,\n            \"pax_total\": 48,\n        }], ConnectionStatus.ONLINE)\n\n    monkeypatch.setattr(\n        sync_module,\n        \"get_server_connection_config\",\n        fake_get_server_connection_config,\n    )\n    monkeypatch.setattr(\n        sync_module,\n        \"execute_query_on_server\",\n        fake_execute_query_on_server,\n    )\n    monkeypatch.setattr(\n        query_catalog,\n        \"get_query_for_server\",\n        lambda config, code: (\n            \"SELECT CAST(fecha AS DATE) AS fecha_operacion, \"\n            \"SUM(total) AS ventas_total, SUM(ISNULL(propina, 0)) AS propinas_total, \"\n            \"COUNT(DISTINCT folio) AS tickets_total, \"\n            \"SUM(ISNULL(nopersonas, 1)) AS pax_total \"\n            \"FROM cheques WHERE CAST(fecha AS DATE) BETWEEN @fecha_inicio AND @fecha_fin \"\n            \"GROUP BY CAST(fecha AS DATE)\"\n        ),\n    )\n    monkeypatch.setattr(\n        module,\n        \"get_sql_connection\",\n        lambda: (_ for _ in ()).throw(AssertionError(\"EDARSAHUB connection must not be used\")),\n    )\n\n    result = await module._ejecutar_dry_run(\n        \"ESTELAR\",\n        {\n            \"unidad_negocio_pk\": \"unit-pk-estelar\",\n            \"server_id\": \"server-estelar\",\n            \"sistema\": \"SOFTRESTAURANT\",\n            \"sucursal_id\": \"DEFAULT\",\n        },\n        date(2026, 8, 31),\n        date(2026, 8, 31),\n    )\n\n    assert result[\"success\"] is True\n    assert result[\"records_processed\"] == 1\n    assert result[\"detalle\"][0][\"tickets_total\"] == 22\n    assert captured[\"unidad_negocio_pk\"] == \"unit-pk-estelar\"\n    assert \"2026-08-31\" in captured[\"query\"]\n\n\n@pytest.mark.asyncio\nasync def test_dry_run_reports_origin_offline(monkeypatch):\n    from core import query_catalog\n    from modules.comercial_v2 import sync_comercial_edarsahub as sync_module\n\n    monkeypatch.setattr(\n        sync_module,\n        \"get_server_connection_config\",\n        lambda server_id, unidad_negocio_pk=None: {\"id\": server_id, \"activo\": True},\n    )\n    monkeypatch.setattr(\n        sync_module,\n        \"execute_query_on_server\",\n        lambda config, query: ([], ConnectionStatus.OFFLINE),\n    )\n    monkeypatch.setattr(\n        query_catalog,\n        \"get_query_for_server\",\n        lambda config, code: \"SELECT CAST(fecha AS DATE) AS fecha_operacion FROM cheques WHERE CAST(fecha AS DATE) BETWEEN @fecha_inicio AND @fecha_fin\",\n    )\n\n    result = await module._ejecutar_dry_run(\n        \"ESTELAR\",\n        {\n            \"unidad_negocio_pk\": \"unit-pk-estelar\",\n            \"server_id\": \"server-estelar\",\n            \"sistema\": \"SOFTRESTAURANT\",\n            \"sucursal_id\": \"DEFAULT\",\n        },\n        date(2026, 8, 31),\n        date(2026, 8, 31),\n    )\n\n    assert result[\"success\"] is False\n    assert result[\"records_processed\"] == 0\n    assert \"servidor origen\" in result[\"error_message\"]\n\n\n@pytest.mark.asyncio\nasync def test_real_sync_builds_canonical_softrestaurant_config(monkeypatch):\n    from modules.comercial_v2 import sync_comercial_edarsahub as sync_module\n\n    captured = {}\n\n    class FakeResult:\n        success = True\n        records_processed = 1\n        records_inserted = 0\n        records_updated = 1\n        records_skipped = 0\n        records_errored = 0\n        duration_seconds = 1\n        error_message = None\n\n    def fake_sync(config, fecha_inicio, fecha_fin, run_id):\n        captured[\"config\"] = config\n        captured[\"run_id\"] = run_id\n        return FakeResult()\n\n    monkeypatch.setattr(\n        sync_module,\n        \"sync_softrestaurant_ventas_cerradas\",\n        fake_sync,\n    )\n\n    result = await module._ejecutar_sync_real(\n        \"ESTELAR\",\n        {\n            \"unidad_negocio_pk\": \"unit-pk-estelar\",\n            \"server_id\": \"server-estelar\",\n            \"sistema\": \"SOFTRESTAURANT\",\n            \"sucursal_id\": \"DEFAULT\",\n            \"nombre\": \"LA ESTELAR\",\n        },\n        date(2026, 8, 31),\n        date(2026, 8, 31),\n        \"run-estelar\",\n    )\n\n    assert result[\"success\"] is True\n    assert captured[\"config\"].unidad_negocio_pk == \"unit-pk-estelar\"\n    assert captured[\"config\"].sistema_origen.value == \"SOFTRESTAURANT\"\n\n\ndef test_execute_endpoint_has_honest_dry_run_failure_guard():\n    source = inspect.getsource(module.ejecutar_resync)\n    assert \"if not resultado_simulado.get('success')\" in source\n    assert \"DRY_RUN_FAILED\" in source\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/api/admin_scheduler_resync.py",
+        "backend/tests/test_admin_scheduler_resync_origin_runtime.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_admin_scheduler_resync_origin_runtime.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
