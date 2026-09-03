@@ -1,0 +1,19 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-zero-touch-canary-v2-20260903T222600Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Ejecutar un canario zero-touch fresco del Worker universal para certificar pickup automatico desde worker/requests, ejecucion determinista, commit/push seguro a Edarsahub_Desarrollo, publicacion automatica del resultado y convergencia con mirror/emergent-live. No modificar infraestructura del Worker, Mirror o Watchdog.",
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "worker_queue/e2e_canaries/worker-zero-touch-canary-v2-20260903T222600Z.txt",
+      "content": "job_id=worker-zero-touch-canary-v2-20260903T222600Z\nrequested_at_utc=2026-09-03T22:26:00Z\ncanary=zero-touch-v2\nproduction_touched=false\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ]
+}
