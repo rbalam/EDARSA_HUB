@@ -238,6 +238,65 @@ def payload() -> dict:
     }
 
 
+
+def resolve_runtime_git_credential_helper() -> str:
+    """Return the canonical non-interactive Git credential helper.
+
+    The worker runtime cannot depend on an ephemeral credential-cache socket
+    or the gh CLI.  The credential file itself is provisioned outside the
+    repository and is never read or logged by this module.
+    """
+    configured = subprocess.run(
+        [
+            "git",
+            "config",
+            "--local",
+            "--get",
+            "credential.helper",
+        ],
+        cwd=str(APP_ROOT),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+    ).stdout.strip()
+
+    if configured and not configured.startswith("cache "):
+        return configured
+
+    credential_file = Path("/root/.git-credentials")
+    if credential_file.is_file():
+        return f"store --file={credential_file}"
+
+    return configured
+
+
+def runtime_git_command(*args: str) -> list[str]:
+    helper = resolve_runtime_git_credential_helper()
+    cmd = [
+        "git",
+        "-c",
+        "credential.helper=",
+    ]
+    if helper:
+        cmd.extend(
+            [
+                "-c",
+                f"credential.helper={helper}",
+                "-c",
+                "credential.useHttpPath=true",
+            ]
+        )
+    cmd.extend(args)
+    return cmd
+
+
+def runtime_git_env() -> dict[str, str]:
+    env = dict(os.environ)
+    env.setdefault("HOME", "/root")
+    env["GIT_TERMINAL_PROMPT"] = "0"
+    return env
+
 def main() -> int:
     STATE.mkdir(parents=True, exist_ok=True)
     last = (
