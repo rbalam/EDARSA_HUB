@@ -44,6 +44,22 @@ const formatDateTime = (isoString) => {
 
 const RIESGO_COLOR = { ALTO: 'destructive', MEDIO: 'outline', BAJO: 'secondary' };
 
+const formatMoney = (value) => {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '-';
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(number);
+};
+
+const formatInteger = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.trunc(number).toLocaleString('es-MX') : '-';
+};
+
 export default function ResyncPanel() {
   const [options, setOptions] = useState({ tipos_sync: [], unidades: [], grupos: [] });
   const [loadingOptions, setLoadingOptions] = useState(true);
@@ -399,28 +415,94 @@ export default function ResyncPanel() {
             <CardTitle className="flex items-center gap-2"><Layers className="w-5 h-5" /> Resultados de Ejecución</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {batchResults.map((r, idx) => (
-              <Alert key={idx} variant={r.data.success ? 'default' : 'destructive'} data-testid={`result-${r.tipo.codigo}`}>
-                <AlertTitle className="flex items-center gap-2">
-                  {r.data.success ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <XCircle className="w-4 h-4 text-red-600" />}
-                  {r.tipo.nombre} <Badge variant="outline" className="ml-1">{r.data.modo}</Badge>
-                </AlertTitle>
-                <AlertDescription>
-                  {r.data.success ? (
-                    <div className="text-sm mt-1">
-                      <span>Run ID: <span className="font-mono">{r.data.sync_run_id}</span></span>
-                      {r.data.resultado && (
-                        <span className="ml-3">Procesados: {r.data.resultado.records_processed || 0}
-                          {r.data.modo === 'REAL' && ` · Insertados: ${r.data.resultado.records_inserted || 0} · Actualizados: ${r.data.resultado.records_updated || 0}`}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-sm mt-1">{r.data.error_message}</p>
-                  )}
-                </AlertDescription>
-              </Alert>
-            ))}
+            {batchResults.map((r, idx) => {
+              const resultado = r.data.resultado || {};
+              const detalle = Array.isArray(resultado.detalle)
+                ? resultado.detalle
+                : (Array.isArray(r.data.detalle) ? r.data.detalle : []);
+              const querySource = resultado.query_source || r.data.query_source || '-';
+
+              return (
+                <Alert key={idx} variant={r.data.success ? 'default' : 'destructive'} data-testid={`result-${r.tipo.codigo}`}>
+                  <AlertTitle className="flex items-center gap-2">
+                    {r.data.success ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <XCircle className="w-4 h-4 text-red-600" />}
+                    {r.tipo.nombre} <Badge variant="outline" className="ml-1">{r.data.modo}</Badge>
+                  </AlertTitle>
+                  <AlertDescription>
+                    {r.data.success ? (
+                      <div className="text-sm mt-1 space-y-3">
+                        <div>
+                          <span>Run ID: <span className="font-mono">{r.data.sync_run_id}</span></span>
+                          {r.data.resultado && (
+                            <span className="ml-3">Procesados: {resultado.records_processed || 0}
+                              {r.data.modo === 'REAL' && ` · Insertados: ${resultado.records_inserted || 0} · Actualizados: ${resultado.records_updated || 0}`}
+                            </span>
+                          )}
+                        </div>
+
+                        {r.data.modo === 'DRY_RUN' && (
+                          <div className="space-y-2" data-testid={`dry-run-detail-${r.tipo.codigo}`}>
+                            <div className="flex flex-wrap gap-x-6 gap-y-1 rounded-md border bg-white px-3 py-2 text-xs text-zinc-600">
+                              <span><strong>Fuente de consulta:</strong> <span className="font-mono">{querySource}</span></span>
+                              <span><strong>Registros detallados:</strong> {detalle.length}</span>
+                            </div>
+
+                            {detalle.length > 0 ? (
+                              <div className="overflow-x-auto rounded-md border bg-white">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow>
+                                      <TableHead className="whitespace-nowrap">Fecha</TableHead>
+                                      <TableHead className="text-right whitespace-nowrap">Venta</TableHead>
+                                      <TableHead className="text-right whitespace-nowrap">Propina</TableHead>
+                                      <TableHead className="text-right whitespace-nowrap">Total c/ propina</TableHead>
+                                      <TableHead className="text-right whitespace-nowrap">PAX</TableHead>
+                                      <TableHead className="text-right whitespace-nowrap">Cheques</TableHead>
+                                      <TableHead className="text-right whitespace-nowrap">Alimentos</TableHead>
+                                      <TableHead className="text-right whitespace-nowrap">Bebidas</TableHead>
+                                      <TableHead className="text-right whitespace-nowrap">Otros</TableHead>
+                                      <TableHead className="text-right whitespace-nowrap">Cortesías</TableHead>
+                                      <TableHead className="text-right whitespace-nowrap">Descuentos</TableHead>
+                                      <TableHead className="text-right whitespace-nowrap">Subtotal</TableHead>
+                                      <TableHead className="text-right whitespace-nowrap">IVA</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {detalle.map((fila, detalleIdx) => (
+                                      <TableRow key={`${fila.fecha || 'sin-fecha'}-${detalleIdx}`}>
+                                        <TableCell className="font-mono whitespace-nowrap">{fila.fecha || '-'}</TableCell>
+                                        <TableCell className="text-right whitespace-nowrap font-medium">{formatMoney(fila.ventas_total)}</TableCell>
+                                        <TableCell className="text-right whitespace-nowrap">{formatMoney(fila.propinas_total)}</TableCell>
+                                        <TableCell className="text-right whitespace-nowrap">{formatMoney(fila.total_con_propina)}</TableCell>
+                                        <TableCell className="text-right">{formatInteger(fila.pax_total)}</TableCell>
+                                        <TableCell className="text-right">{formatInteger(fila.tickets_total)}</TableCell>
+                                        <TableCell className="text-right whitespace-nowrap">{formatMoney(fila.alimentos)}</TableCell>
+                                        <TableCell className="text-right whitespace-nowrap">{formatMoney(fila.bebidas)}</TableCell>
+                                        <TableCell className="text-right whitespace-nowrap">{formatMoney(fila.otros)}</TableCell>
+                                        <TableCell className="text-right whitespace-nowrap">{formatMoney(fila.cortesias)}</TableCell>
+                                        <TableCell className="text-right whitespace-nowrap">{formatMoney(fila.descuentos)}</TableCell>
+                                        <TableCell className="text-right whitespace-nowrap">{formatMoney(fila.subtotal)}</TableCell>
+                                        <TableCell className="text-right whitespace-nowrap">{formatMoney(fila.iva)}</TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            ) : (
+                              <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                                El backend no devolvió filas de detalle para este DRY RUN. No ejecute REAL hasta validar la respuesta.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm mt-1">{r.data.error_message}</p>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              );
+            })}
           </CardContent>
         </Card>
       )}
