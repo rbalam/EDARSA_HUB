@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SOFTRESTAURANT-EMPRESA-ID-AUTODISCOVERY-R2-CARLOS-20260903T023000Z",
+  "created_at_utc": "2026-09-03T02:30:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2e8df498261cc403239d08ac1b148725672b9be7",
+  "production_allowed": false,
+  "objective": "Resolver el error 'La conexion SoftRestaurant no tiene empresa_id canonica' sin hardcodear EST. Mantener Servidores_Conexiones.empresa_id como prioridad. Si viene vacio, descubrir de forma read-only los idempresa de turnos cerrados del rango y aceptar solo un candidato unico. Cero o multiples candidatos deben bloquear. DRY RUN y REAL deben compartir exactamente el mismo constructor de consulta. No tocar Produccion.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+      "expected_count": 1,
+      "old": "def build_softrestaurant_ventas_cerradas_query(\n    server_config: Dict[str, Any],\n    fecha_inicio: date,\n    fecha_fin: date,\n) -> str:\n    \"\"\"Construye el SELECT oficial de ventas cerradas por turno.\"\"\"\n    empresa_id = str(\n        (server_config or {}).get(\"empresa_id\") or \"\"\n    ).strip()\n    if not empresa_id:\n        raise ValueError(\n            \"La conexion SoftRestaurant no tiene empresa_id canonica\"\n        )\n\n    empresa_sql = empresa_id.replace(\"'\", \"''\")\n    return QUERY_SOFTRESTAURANT_VENTAS_CERRADAS.format(\n        fecha_inicio=fecha_inicio.isoformat(),\n        fecha_fin=fecha_fin.isoformat(),\n        empresa_id=empresa_sql,\n    )\n",
+      "new": "def build_softrestaurant_ventas_cerradas_query(\n    server_config: Dict[str, Any],\n    fecha_inicio: date,\n    fecha_fin: date,\n) -> str:\n    \"\"\"Construye el SELECT oficial de ventas cerradas por turno.\n\n    empresa_id se toma primero del catalogo canonico. Si la conexion legacy no\n    lo tiene, se descubre en modo read-only desde turnos cerrados del mismo\n    rango y solo se acepta cuando existe un unico candidato.\n    \"\"\"\n    empresa_id = str(\n        (server_config or {}).get(\"empresa_id\") or \"\"\n    ).strip()\n\n    if not empresa_id:\n        discovery_query = \"\"\"\nSELECT DISTINCT\n    LTRIM(RTRIM(CONVERT(NVARCHAR(100), t.idempresa))) AS empresa_id\nFROM turnos AS t\nWHERE t.apertura >= DATEADD(DAY, -1, CONVERT(DATETIME, REPLACE('{fecha_inicio}', '-', ''), 112))\n  AND t.apertura < DATEADD(DAY, 2, CONVERT(DATETIME, REPLACE('{fecha_fin}', '-', ''), 112))\n  AND t.cierre IS NOT NULL\n  AND NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(100), t.idempresa))), '') IS NOT NULL\nORDER BY empresa_id\n\"\"\".format(\n            fecha_inicio=fecha_inicio.isoformat(),\n            fecha_fin=fecha_fin.isoformat(),\n        )\n        discovery_rows, discovery_status = execute_query_on_server(\n            server_config,\n            discovery_query,\n        )\n        if discovery_status != ConnectionStatus.ONLINE:\n            raise ValueError(\n                \"No fue posible resolver idempresa desde el origen SoftRestaurant\"\n            )\n\n        candidates = sorted({\n            str(row.get(\"empresa_id\") or \"\").strip()\n            for row in discovery_rows or []\n            if str(row.get(\"empresa_id\") or \"\").strip()\n        })\n        if len(candidates) == 1:\n            empresa_id = candidates[0]\n            logger.info(\n                \"SoftRestaurant empresa_id resuelta desde turnos cerrados del rango\"\n            )\n        elif not candidates:\n            raise ValueError(\n                \"No se encontro idempresa en turnos cerrados del rango solicitado\"\n            )\n        else:\n            raise ValueError(\n                \"Se encontraron multiples idempresa en el origen SoftRestaurant; \"\n                \"configure empresa_id canonica antes de sincronizar\"\n            )\n\n    empresa_sql = empresa_id.replace(\"'\", \"''\")\n    return QUERY_SOFTRESTAURANT_VENTAS_CERRADAS.format(\n        fecha_inicio=fecha_inicio.isoformat(),\n        fecha_fin=fecha_fin.isoformat(),\n        empresa_id=empresa_sql,\n    )\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_softrestaurant_empresa_id_autodiscovery_contract.py",
+      "content": "from pathlib import Path\n\n\nSOURCE = (\n    Path(__file__).resolve().parents[1]\n    / 'modules'\n    / 'comercial_v2'\n    / 'sync_comercial_edarsahub.py'\n).read_text(encoding='utf-8')\n\n\ndef test_empresa_id_prefers_catalog_and_has_safe_read_only_fallback():\n    assert '(server_config or {}).get(\"empresa_id\")' in SOURCE\n    assert 'SELECT DISTINCT' in SOURCE\n    assert 'FROM turnos AS t' in SOURCE\n    assert 't.cierre IS NOT NULL' in SOURCE\n    assert 'execute_query_on_server(' in SOURCE\n    assert 'len(candidates) == 1' in SOURCE\n    assert 'multiples idempresa' in SOURCE\n\n\ndef test_official_query_still_filters_both_cheques_and_turnos():\n    assert \"ch.idempresa = '{empresa_id}'\" in SOURCE\n    assert \"t.idempresa = '{empresa_id}'\" in SOURCE\n    assert 'AND ch.cancelado = 0' in SOURCE\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+        "backend/tests/test_softrestaurant_empresa_id_autodiscovery_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_softrestaurant_empresa_id_autodiscovery_contract.py",
+        "backend/tests/test_softrestaurant_closed_sales_report_contract.py",
+        "backend/tests/test_resync_system_type_normalization_r4.py",
+        "backend/tests/test_admin_scheduler_resync_origin_contract.py"
+      ]
+    }
+  ]
+}
