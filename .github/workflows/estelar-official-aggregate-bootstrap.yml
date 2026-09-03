@@ -36,8 +36,9 @@ jobs:
         run: |
           set -euo pipefail
           python -m py_compile backend/modules/comercial_v2/sync_comercial_edarsahub.py backend/tests/test_estelar_softrestaurant_official_aggregate_bootstrap.py
+          python -m pip install -q pytest
           cd backend
-          pytest -q tests/test_estelar_softrestaurant_official_aggregate_bootstrap.py tests/test_softrestaurant_empresa_id_autodiscovery_contract.py tests/test_admin_scheduler_resync_origin_contract.py
+          python -m pytest -q tests/test_estelar_softrestaurant_official_aggregate_bootstrap.py tests/test_softrestaurant_empresa_id_autodiscovery_contract.py tests/test_admin_scheduler_resync_origin_contract.py
           cd ..
           git diff --check
 
