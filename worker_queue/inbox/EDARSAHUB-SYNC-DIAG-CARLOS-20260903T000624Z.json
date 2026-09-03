@@ -1,0 +1,52 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SYNC-DIAG-CARLOS-20260903T000624Z",
+  "created_at_utc": "2026-09-03T00:06:24Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Validar por el Universal Worker y mediante RBAC SQL canonico la identidad del solicitante, permisos de Servidores y Scheduler, configuracion de las APIs locales ORIGEN/ManagementPro, mapeo de LA ESTELAR y estado de ventas/KPIs del 31-08-2026 antes de aplicar correcciones deterministas al modulo de conexiones y Re-sync Manual.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "requester_role",
+          "sql": "SELECT TOP 5 uc.UsuarioID, uc.Email, uc.Username, uc.Activo, ur.CodigoRol, ur.NombreRol FROM dbo.Usuario_Catalogo uc LEFT JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID = uc.UsuarioID AND ISNULL(ura.Activo,1)=1 LEFT JOIN dbo.Usuario_Roles ur ON ur.RolID = ura.RolID AND ISNULL(ur.Activo,1)=1 WHERE LOWER(uc.Email)=LOWER('carlosruz@edarsa.com.mx') ORDER BY ISNULL(ura.EsPrincipal,0) DESC"
+        },
+        {
+          "name": "requester_permissions",
+          "sql": "SELECT DISTINCT CONCAT(m.CodigoModulo,'_',a.CodigoAccion) AS PermissionCode, ISNULL(prm.RestriccionSucursal,0) AS RestriccionSucursal FROM dbo.Usuario_Catalogo uc INNER JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID=uc.UsuarioID AND ISNULL(ura.Activo,1)=1 INNER JOIN dbo.Usuario_Roles r ON r.RolID=ura.RolID AND ISNULL(r.Activo,1)=1 INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID=r.RolID AND ISNULL(prm.Activo,1)=1 AND ISNULL(prm.Permitido,0)=1 INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID AND ISNULL(m.Activo,1)=1 INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID AND ISNULL(a.Activo,1)=1 WHERE LOWER(uc.Email)=LOWER('carlosruz@edarsa.com.mx') AND CONCAT(m.CodigoModulo,'_',a.CodigoAccion) IN ('SERVIDORES_VER','SISTEMA_SERVIDORES_VER','SCHEDULER_VER','SCHEDULER_ADMIN') ORDER BY PermissionCode"
+        },
+        {
+          "name": "requester_company_scope",
+          "sql": "SELECT uea.EmpresaID, ISNULL(uea.Activo,1) AS Activo FROM dbo.Usuario_EmpresasAsignacion uea INNER JOIN dbo.Usuario_Catalogo uc ON uc.UsuarioID=uea.UsuarioID WHERE LOWER(uc.Email)=LOWER('carlosruz@edarsa.com.mx') ORDER BY uea.EmpresaID"
+        },
+        {
+          "name": "api_local_connections",
+          "sql": "SELECT CAST(id AS varchar(50)) AS id, nombre, system_type, tipo_conexion, host, port, database_name, api_url, activo, EmpresaID, visible_en_operaciones, queries_configured FROM dbo.Servidores_Conexiones WHERE tipo_conexion='API_LOCAL' AND (UPPER(nombre) LIKE '%ORIGEN%' OR UPPER(nombre) LIKE '%MANAGEMENT%' OR UPPER(database_name) LIKE '%ORIGEN%' OR UPPER(database_name) LIKE '%CLOUD%') ORDER BY nombre"
+        },
+        {
+          "name": "estelar_unit_mapping",
+          "sql": "SELECT CAST(u.id AS varchar(50)) AS unidad_negocio_pk, u.codigo, u.nombre, CAST(u.server_id AS varchar(50)) AS server_id, u.sucursal_origen_id, u.system_type, u.activo AS unidad_activa, s.nombre AS servidor_nombre, s.system_type AS servidor_system_type, s.activo AS servidor_activo, s.EmpresaID FROM dbo.Unidades_Negocio u LEFT JOIN dbo.Servidores_Conexiones s ON CAST(u.server_id AS varchar(50))=CAST(s.id AS varchar(50)) WHERE UPPER(u.codigo) IN ('ESTELAR','LAESTELAR','LA-ESTELAR') OR UPPER(u.nombre) LIKE '%ESTELAR%' ORDER BY u.codigo"
+        },
+        {
+          "name": "estelar_kpi_20260831",
+          "sql": "SELECT unidad_negocio_id, unidad_negocio_nombre, fecha_operacion, ventas_total, propinas_total, tickets_total, pax_total, sync_run_id, activo FROM dbo.Comercial_KPIs_Diarios_v2 WHERE UPPER(unidad_negocio_nombre) LIKE '%ESTELAR%' AND fecha_operacion='2026-08-31' ORDER BY fecha_operacion"
+        },
+        {
+          "name": "estelar_sync_sales_20260831",
+          "sql": "SELECT UnidadNegocio, CAST(FechaHora AS date) AS Fecha, COUNT(DISTINCT NumeroTicket) AS Tickets, SUM(ISNULL(MontoTotal,0)) AS Venta, MAX(FechaHora) AS UltimaFechaHora FROM dbo.Sync_Sales WHERE UPPER(UnidadNegocio) LIKE '%ESTELAR%' AND FechaHora>='2026-08-31' AND FechaHora<'2026-09-01' GROUP BY UnidadNegocio, CAST(FechaHora AS date)"
+        }
+      ]
+    }
+  ]
+}
