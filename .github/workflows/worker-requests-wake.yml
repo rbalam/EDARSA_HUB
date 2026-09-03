@@ -1,0 +1,26 @@
+name: Worker Requests Wake
+
+on:
+  push:
+    branches:
+      - worker/requests
+
+permissions:
+  contents: read
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Resolve queue SHA and wake Universal Worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          QUEUE_SHA="$(git ls-remote https://github.com/rbalam/EDARSA_HUB.git refs/heads/worker/requests | awk '{print $1}')"
+          test "${#QUEUE_SHA}" -eq 40
+          HTTP_CODE="$(curl --silent --show-error --location --output /tmp/wake.json --write-out '%{http_code}' --request POST 'https://erp-crm-enterprise-1.preview.emergentagent.com/api/internal/worker/wake' --header "X-Worker-Queue-Sha: $QUEUE_SHA" --header 'Content-Type: application/json' --data '{}')"
+          cat /tmp/wake.json || true
+          echo
+          echo "WAKE_HTTP_CODE=$HTTP_CODE"
+          test "$HTTP_CODE" = "200" -o "$HTTP_CODE" = "202"
