@@ -1,0 +1,30 @@
+{
+  "base_sha": "7ddffd22d4eb3e3d39397a0f86cefbf8358e0e7a",
+  "blockers": [],
+  "candidate_sha": "d924496738b825b04453efd584c75781e2ccc6c2",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-03T01:29:20Z",
+  "development_sha": "d924496738b825b04453efd584c75781e2ccc6c2",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/api/admin_scheduler_resync.py",
+    "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+    "backend/tests/test_softrestaurant_closed_sales_report_contract.py",
+    "tools/mirror_sync/mirror_sync_worker.sh"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SOFTRESTAURANT-CLOSED-SALES-CONTRACT-CARLOS-20260903T011500Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-03T01:29:36Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-03T01:29:12Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
