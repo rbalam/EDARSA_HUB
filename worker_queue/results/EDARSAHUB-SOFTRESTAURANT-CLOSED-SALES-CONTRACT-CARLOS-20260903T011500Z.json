@@ -2,8 +2,11 @@
   "base_sha": "7ddffd22d4eb3e3d39397a0f86cefbf8358e0e7a",
   "blockers": [],
   "candidate_sha": "d924496738b825b04453efd584c75781e2ccc6c2",
-  "certification": "PENDING_AUDIT_EVIDENCE",
+  "certification": "CERTIFIED",
+  "certification_basis": "SHA_BOUND_ATTESTATION_PLUS_DESCENDANT_CONVERGENCE",
+  "certified_source_sha": "d924496738b825b04453efd584c75781e2ccc6c2",
   "completed_at_utc": "2026-09-03T01:29:20Z",
+  "converged_head": "938a5955b4fe519a8e7f326f0e2606e54df60c96",
   "development_sha": "d924496738b825b04453efd584c75781e2ccc6c2",
   "executor": "chatgpt-deterministic",
   "files_changed": [
@@ -15,9 +18,9 @@
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "EDARSAHUB-SOFTRESTAURANT-CLOSED-SALES-CONTRACT-CARLOS-20260903T011500Z",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-09-03T01:29:36Z",
+  "published_at_utc": "2026-09-03T01:30:15Z",
   "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
@@ -26,5 +29,5 @@
   "status": "INTEGRATED",
   "summary_es": "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
   "tests": "PASS",
-  "work_completion": "PENDING_CERTIFICATION"
+  "work_completion": "COMPLETE"
 }
