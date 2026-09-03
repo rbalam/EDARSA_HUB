@@ -168,6 +168,7 @@ def get_server_connection_config(
         "activo": True,
         "unidad_negocio_pk": context.unidad_negocio_pk,
         "unidad_codigo": context.unidad_codigo,
+        "empresa_id": context.empresa_id,
         "sucursal_id": context.sucursal_origen_id,
     }
 
@@ -592,7 +593,7 @@ def _agrupar_ventas_cerradas_por_fecha_operacion(rows, config, fecha_inicio=None
     rows_agrupadas = []
     for row in agrupadas.values():
         distinct_num_cheques = row.pop("_distinct_num_cheques", None)
-        if distinct_num_cheques is not None:
+        if distinct_num_cheques is not None and not row.get("num_cheques"):
             row["num_cheques"] = len(distinct_num_cheques)
 
         distinct_num_folios = row.pop("_distinct_num_folios", None)
@@ -610,19 +611,55 @@ def _agrupar_ventas_cerradas_por_fecha_operacion(rows, config, fecha_inicio=None
 # -------------------- SOFTRESTAURANT --------------------
 
 QUERY_SOFTRESTAURANT_VENTAS_CERRADAS = """
-SELECT 
-    fecha as fecha_hora,
-    folio as folio,
-    total as ventas_total,
-    ISNULL(propina, 0) as propinas,
-    ISNULL(nopersonas, 1) as num_personas
-FROM cheques
-WHERE fecha >= DATEADD(DAY, -1, CONVERT(DATETIME, REPLACE('{fecha_inicio}', '-', ''), 112))
-  AND fecha < DATEADD(DAY, 2, CONVERT(DATETIME, REPLACE('{fecha_fin}', '-', ''), 112))
-  AND cancelado = 0
-  AND cierre IS NOT NULL  -- Solo cheques cerrados
-ORDER BY fecha
+SELECT
+    t.apertura AS fecha_hora,
+    ch.folio AS folio,
+    1 AS num_cheques,
+    ISNULL(ch.totalalimentossindescuentos, 0) AS alimentos,
+    ISNULL(ch.totalbebidassindescuentos, 0) AS bebidas,
+    ISNULL(ch.totalotrossindescuentos, 0) AS otros,
+    ISNULL(ch.totalcortesias, 0) AS cortesias,
+    ISNULL(ch.totaldescuentos, 0) AS descuentos,
+    ISNULL(ch.subtotal, 0) AS subtotal,
+    ISNULL(ch.totalimpuesto1, 0) AS iva,
+    ISNULL(ch.total, 0) AS ventas_total,
+    ISNULL(ch.propina, 0) AS propinas,
+    ISNULL(ch.total, 0) + ISNULL(ch.propina, 0) AS total_con_propina,
+    ISNULL(ch.nopersonas, 0) AS num_personas
+FROM cheques AS ch
+INNER JOIN turnos AS t
+    ON t.idturno = ch.idturno
+   AND t.idempresa = ch.idempresa
+WHERE t.apertura >= DATEADD(DAY, -1, CONVERT(DATETIME, REPLACE('{fecha_inicio}', '-', ''), 112))
+  AND t.apertura < DATEADD(DAY, 2, CONVERT(DATETIME, REPLACE('{fecha_fin}', '-', ''), 112))
+  AND ch.idempresa = '{empresa_id}'
+  AND t.idempresa = '{empresa_id}'
+  AND t.cierre IS NOT NULL
+  AND ch.cancelado = 0
+ORDER BY t.apertura, ch.folio
 """
+
+
+def build_softrestaurant_ventas_cerradas_query(
+    server_config: Dict[str, Any],
+    fecha_inicio: date,
+    fecha_fin: date,
+) -> str:
+    """Construye el SELECT oficial de ventas cerradas por turno."""
+    empresa_id = str(
+        (server_config or {}).get("empresa_id") or ""
+    ).strip()
+    if not empresa_id:
+        raise ValueError(
+            "La conexion SoftRestaurant no tiene empresa_id canonica"
+        )
+
+    empresa_sql = empresa_id.replace("'", "''")
+    return QUERY_SOFTRESTAURANT_VENTAS_CERRADAS.format(
+        fecha_inicio=fecha_inicio.isoformat(),
+        fecha_fin=fecha_fin.isoformat(),
+        empresa_id=empresa_sql,
+    )
 
 QUERY_SOFTRESTAURANT_VENTAS_ABIERTAS = """
 SELECT 
@@ -698,10 +735,11 @@ def sync_softrestaurant_ventas_cerradas(
             result.error_message = f"No se encontró configuración para server_id {config.server_id}"
             return result
         
-        # Ejecutar query
-        query = QUERY_SOFTRESTAURANT_VENTAS_CERRADAS.format(
-            fecha_inicio=fecha_inicio.isoformat(),
-            fecha_fin=fecha_fin.isoformat()
+        # Ejecutar exactamente el contrato del reporte oficial por turnos.
+        query = build_softrestaurant_ventas_cerradas_query(
+            server_config,
+            fecha_inicio,
+            fecha_fin,
         )
         
         rows, conn_status = execute_query_on_server(server_config, query)

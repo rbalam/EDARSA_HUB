@@ -13,7 +13,7 @@ edarsahub_require_clean_shared_app || exit $?
 
 ROOT="/app"
 DIR="$ROOT/tools/mirror_sync"
-RUNTIME_GENERATION="20260827-mirror-runtime-control-plane-v3"
+RUNTIME_GENERATION="20260903-softrestaurant-closed-sales-contract-v1"
 
 resolve_worker_python() {
     if [ -x "/root/.venv/bin/python" ]; then

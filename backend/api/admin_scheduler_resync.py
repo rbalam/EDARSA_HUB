@@ -1294,8 +1294,14 @@ async def _ejecutar_dry_run(
     """
     from modules.comercial_v2.sync_comercial_edarsahub import (
         ConnectionStatus,
+        _agrupar_ventas_cerradas_por_fecha_operacion,
+        build_softrestaurant_ventas_cerradas_query,
         execute_query_on_server,
         get_server_connection_config,
+    )
+    from modules.comercial_v2.schemas import (
+        SistemaOrigen,
+        UnidadNegocioConfig,
     )
     from core.query_catalog import get_query_for_server
     
@@ -1308,30 +1314,27 @@ async def _ejecutar_dry_run(
         if not config:
             return {'success': False, 'error_message': 'Config de servidor no encontrada'}
         
-        # P2-21: Obtener query desde catálogo central
-        query_template = get_query_for_server(config, 'comercial_ventas_cerradas')
-        
-        if not query_template:
-            # Fallback a queries legacy si no está en catálogo
-            sistema = unidad_config.get('sistema', '').upper()
-            if 'SOFT' in sistema:
+        sistema = str(
+            unidad_config.get('sistema') or ''
+        ).strip().upper()
+
+        if sistema == 'SOFTRESTAURANT':
+            # DRY RUN y REAL comparten el contrato oficial por turnos.
+            query = build_softrestaurant_ventas_cerradas_query(
+                config,
+                fecha_inicio,
+                fecha_fin,
+            )
+            query_source = 'SOFTRESTAURANT_REPORTE_TURNOS'
+        else:
+            # MPRO conserva el catálogo central de consultas.
+            query_template = get_query_for_server(
+                config,
+                'comercial_ventas_cerradas',
+            )
+            if not query_template:
                 query_template = """
-                SELECT 
-                    CAST(fecha AS DATE) AS fecha_operacion,
-                    SUM(total) AS ventas_total,
-                    SUM(ISNULL(propina, 0)) AS propinas_total,
-                    COUNT(DISTINCT folio) AS tickets_total,
-                    SUM(ISNULL(nopersonas, 1)) AS pax_total
-                FROM cheques
-                WHERE CAST(fecha AS DATE) BETWEEN @fecha_inicio AND @fecha_fin
-                  AND cancelado = 0
-                  AND cierre IS NOT NULL
-                GROUP BY CAST(fecha AS DATE)
-                ORDER BY fecha_operacion
-                """
-            else:  # MPRO
-                query_template = """
-                SELECT 
+                SELECT
                     CAST(ve.Vn_Fecha AS DATE) AS fecha_operacion,
                     SUM(ve.Vn_Precio_Neto_Importe) AS ventas_total,
                     0 AS propinas_total,
@@ -1344,12 +1347,26 @@ async def _ejecutar_dry_run(
                 GROUP BY CAST(ve.Vn_Fecha AS DATE)
                 ORDER BY fecha_operacion
                 """
-        
-        # Reemplazar parámetros
-        query = query_template.replace('@fecha_inicio', f"'{fecha_inicio}'")
-        query = query.replace('@fecha_fin', f"'{fecha_fin}'")
-        sucursal_id = unidad_config.get('sucursal_id', 'DEFAULT')
-        query = query.replace('@sucursal_id', f"'{sucursal_id}'")
+                query_source = 'MPRO_LEGACY_FALLBACK'
+            else:
+                query_source = 'CATALOGO'
+
+            query = query_template.replace(
+                '@fecha_inicio',
+                f"'{fecha_inicio}'",
+            )
+            query = query.replace(
+                '@fecha_fin',
+                f"'{fecha_fin}'",
+            )
+            sucursal_id = unidad_config.get(
+                'sucursal_id',
+                'DEFAULT',
+            )
+            query = query.replace(
+                '@sucursal_id',
+                f"'{sucursal_id}'",
+            )
         
         datos, connection_status = execute_query_on_server(config, query)
         if connection_status != ConnectionStatus.ONLINE:
@@ -1365,15 +1382,70 @@ async def _ejecutar_dry_run(
                 ),
             }
         
+        if sistema == 'SOFTRESTAURANT':
+            soft_config = UnidadNegocioConfig(
+                unidad_negocio_pk=str(
+                    unidad_config.get('unidad_negocio_pk') or ''
+                ),
+                unidad_negocio_nombre=unidad_config['nombre'],
+                server_id=unidad_config['server_id'],
+                sucursal_id=unidad_config.get(
+                    'sucursal_id',
+                    'DEFAULT',
+                ),
+                sucursal_nombre=unidad_config['nombre'],
+                sistema_origen=SistemaOrigen.SOFTRESTAURANT,
+                activo=True,
+            )
+            datos = _agrupar_ventas_cerradas_por_fecha_operacion(
+                datos,
+                soft_config,
+                fecha_inicio=fecha_inicio,
+                fecha_fin=fecha_fin,
+            )
+
         detalle = []
         for d in datos:
+            fecha_detalle = (
+                d.get('fecha_operacion')
+                or d.get('fecha')
+            )
+            ventas_detalle = float(
+                d.get('ventas_total') or 0
+            )
+            propinas_detalle = float(
+                d.get('propinas_total')
+                if d.get('propinas_total') is not None
+                else d.get('propinas') or 0
+            )
+            tickets_detalle = int(
+                d.get('tickets_total')
+                if d.get('tickets_total') is not None
+                else d.get('num_cheques') or 0
+            )
+            pax_detalle = int(
+                d.get('pax_total')
+                if d.get('pax_total') is not None
+                else d.get('num_personas') or 0
+            )
             detalle.append({
-                'fecha': str(d['fecha_operacion']),
+                'fecha': str(fecha_detalle),
                 'accion': 'INSERT/UPDATE',
-                'ventas_total': float(d['ventas_total'] or 0),
-                'propinas_total': float(d['propinas_total'] or 0),
-                'tickets_total': int(d['tickets_total'] or 0),
-                'pax_total': int(d['pax_total'] or 0)
+                'ventas_total': ventas_detalle,
+                'propinas_total': propinas_detalle,
+                'total_con_propina': float(
+                    d.get('total_con_propina')
+                    or ventas_detalle + propinas_detalle
+                ),
+                'tickets_total': tickets_detalle,
+                'pax_total': pax_detalle,
+                'alimentos': float(d.get('alimentos') or 0),
+                'bebidas': float(d.get('bebidas') or 0),
+                'otros': float(d.get('otros') or 0),
+                'cortesias': float(d.get('cortesias') or 0),
+                'descuentos': float(d.get('descuentos') or 0),
+                'subtotal': float(d.get('subtotal') or 0),
+                'iva': float(d.get('iva') or 0),
             })
         
         return {
@@ -1384,7 +1456,7 @@ async def _ejecutar_dry_run(
             'registros_que_se_sincronizarian': len(detalle),
             'registros_extraidos': len(detalle),
             'registros_afectados': 0,
-            'query_source': 'CATALOGO' if get_query_for_server(config, 'comercial_ventas_cerradas') else 'LEGACY_FALLBACK',
+            'query_source': query_source,
             'detalle': detalle
         }
         
