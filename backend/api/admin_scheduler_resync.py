@@ -188,9 +188,22 @@ def _get_unidad_config(unidad_negocio_id: str) -> Optional[Dict[str, Any]]:
             logger.warning(f"[RESYNC] Unidad {unidad_negocio_id} no encontrada en catálogo central")
             return None
         
+        raw_sistema = str(
+            server_data.get('servidor_system_type')
+            or server_data.get('system_type')
+            or 'UNKNOWN'
+        ).strip().upper()
+        if 'SOFT' in raw_sistema:
+            sistema = 'SOFTRESTAURANT'
+        elif 'MPRO' in raw_sistema or 'MANAG' in raw_sistema:
+            sistema = 'MPRO'
+        else:
+            sistema = raw_sistema or 'UNKNOWN'
+
         return {
+            'unidad_negocio_pk': str(server_data.get('unidad_negocio_pk', '')),
             'server_id': str(server_data.get('server_id', '')),
-            'sistema': server_data.get('servidor_system_type') or server_data.get('system_type') or 'UNKNOWN',
+            'sistema': sistema,
             'sucursal_id': server_data.get('sucursal_origen_id') or server_data.get('sucursal_id') or 'DEFAULT',
             'nombre': server_data.get('unidad_negocio_nombre') or unidad_negocio_id,
             'host': server_data.get('host'),
@@ -205,7 +218,10 @@ def _get_unidad_config(unidad_negocio_id: str) -> Optional[Dict[str, Any]]:
 # VALIDACIONES
 # =============================================================================
 
-def _validar_conectividad(server_id: str) -> Dict[str, Any]:
+def _validar_conectividad(
+    server_id: str,
+    unidad_negocio_pk: Optional[str] = None,
+) -> Dict[str, Any]:
     """
     Valida conectividad al servidor origen usando el mismo método que el sync oficial.
     
@@ -220,7 +236,10 @@ def _validar_conectividad(server_id: str) -> Dict[str, Any]:
             ConnectionStatus
         )
         
-        config = get_server_connection_config(server_id)
+        config = get_server_connection_config(
+            server_id,
+            unidad_negocio_pk,
+        )
         
         if not config:
             return {'conectado': False, 'error': 'Servidor no encontrado en Servidores_Conexiones'}
@@ -476,7 +495,10 @@ async def validar_resync(
         }
     
     # Validar conectividad
-    validacion_conectividad = _validar_conectividad(unidad['server_id'])
+    validacion_conectividad = _validar_conectividad(
+        unidad['server_id'],
+        unidad.get('unidad_negocio_pk'),
+    )
     
     # Validar días existentes
     validacion_dias = _validar_dias_existentes(
@@ -681,7 +703,10 @@ async def ejecutar_resync(
 
     # Validación previa
     validacion_previa = {
-        'conectividad': _validar_conectividad(unidad['server_id']),
+        'conectividad': _validar_conectividad(
+            unidad['server_id'],
+            unidad.get('unidad_negocio_pk'),
+        ),
         'dias_existentes': _validar_dias_existentes(
             request.unidad_negocio_id,
             request.fecha_inicio,
@@ -748,6 +773,43 @@ async def ejecutar_resync(
             request.fecha_inicio,
             request.fecha_fin
         )
+
+        if not resultado_simulado.get('success'):
+            error_msg = (
+                resultado_simulado.get('error_message')
+                or 'El DRY RUN no pudo consultar el servidor origen.'
+            )
+            _registrar_en_bitacora(
+                job_name=f"RESYNC_{request.tipo_sync}",
+                run_id=sync_run_id,
+                accion='DRY_RUN_FAILED',
+                server_id=unidad['server_id'],
+                detalles={
+                    'unidad': request.unidad_negocio_id,
+                    'fecha_inicio': str(request.fecha_inicio),
+                    'fecha_fin': str(request.fecha_fin),
+                    'motivo': request.motivo,
+                    'usuario': user_email,
+                },
+                exito=False,
+                error_mensaje=error_msg,
+            )
+            _registrar_resync_log(
+                request, current_user, 'FAILED', error_msg, unidad, 0
+            )
+            return ResyncResponse(
+                success=False,
+                ejecucion_id=ejecucion_id,
+                sync_run_id=sync_run_id,
+                modo='DRY_RUN',
+                tipo_sync=request.tipo_sync,
+                unidad_negocio_id=request.unidad_negocio_id,
+                fecha_inicio=request.fecha_inicio.isoformat(),
+                fecha_fin=request.fecha_fin.isoformat(),
+                validacion_previa=validacion_previa,
+                resultado=resultado_simulado,
+                error_message=error_msg,
+            )
         
         _registrar_en_bitacora(
             job_name=f"RESYNC_{request.tipo_sync}",
@@ -1230,12 +1292,18 @@ async def _ejecutar_dry_run(
     Ejecuta simulación de sync (extrae datos pero NO escribe).
     P2-21: Usa catálogo central de queries.
     """
-    from modules.comercial_v2.sync_comercial_edarsahub import get_server_connection_config
+    from modules.comercial_v2.sync_comercial_edarsahub import (
+        ConnectionStatus,
+        execute_query_on_server,
+        get_server_connection_config,
+    )
     from core.query_catalog import get_query_for_server
-    import pymssql
     
     try:
-        config = get_server_connection_config(unidad_config['server_id'])
+        config = get_server_connection_config(
+            unidad_config['server_id'],
+            unidad_config.get('unidad_negocio_pk'),
+        )
         
         if not config:
             return {'success': False, 'error_message': 'Config de servidor no encontrada'}
@@ -1283,12 +1351,19 @@ async def _ejecutar_dry_run(
         sucursal_id = unidad_config.get('sucursal_id', 'DEFAULT')
         query = query.replace('@sucursal_id', f"'{sucursal_id}'")
         
-        conn = get_sql_connection()
-        cursor = conn.cursor(as_dict=True)
-        
-        cursor.execute(query)
-        datos = cursor.fetchall()
-        conn.close()
+        datos, connection_status = execute_query_on_server(config, query)
+        if connection_status != ConnectionStatus.ONLINE:
+            return {
+                'success': False,
+                'modo': 'DRY_RUN',
+                'records_processed': 0,
+                'registros_afectados': 0,
+                'connection_status': str(connection_status),
+                'error_message': (
+                    'No fue posible consultar el servidor origen durante el DRY RUN: '
+                    f'{connection_status}'
+                ),
+            }
         
         detalle = []
         for d in datos:
@@ -1338,19 +1413,39 @@ async def _ejecutar_sync_real(
             SistemaOrigen
         )
         
-        # Crear config usando el formato oficial
+        # Crear config usando identificadores y sistema canónicos.
+        unidad_negocio_pk = str(
+            unidad_config.get('unidad_negocio_pk') or ''
+        ).strip()
+        if not unidad_negocio_pk:
+            return {
+                'success': False,
+                'error_message': 'unidad_negocio_pk canónica no disponible',
+            }
+
+        sistema = str(unidad_config.get('sistema') or '').strip().upper()
+        if sistema not in {'SOFTRESTAURANT', 'MPRO'}:
+            return {
+                'success': False,
+                'error_message': f'Sistema origen no soportado: {sistema}',
+            }
+
         config = UnidadNegocioConfig(
-            unidad_negocio_id=unidad_negocio_id,
+            unidad_negocio_pk=unidad_negocio_pk,
             unidad_negocio_nombre=unidad_config['nombre'],
             server_id=unidad_config['server_id'],
             sucursal_id=unidad_config['sucursal_id'],
             sucursal_nombre=unidad_config['nombre'],
-            sistema_origen=SistemaOrigen.SOFTRESTAURANT if unidad_config['sistema'] == 'SOFTRESTAURANT' else SistemaOrigen.MPRO,
+            sistema_origen=(
+                SistemaOrigen.SOFTRESTAURANT
+                if sistema == 'SOFTRESTAURANT'
+                else SistemaOrigen.MPRO
+            ),
             activo=True
         )
         
         # Ejecutar handler oficial según sistema
-        if unidad_config['sistema'] == 'SOFTRESTAURANT':
+        if sistema == 'SOFTRESTAURANT':
             resultado = sync_softrestaurant_ventas_cerradas(
                 config=config,
                 fecha_inicio=fecha_inicio,
