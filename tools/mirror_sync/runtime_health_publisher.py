@@ -254,7 +254,7 @@ def resolve_runtime_git_credential_helper() -> str:
             "--get",
             "credential.helper",
         ],
-        cwd=str(APP_ROOT),
+        cwd=str(ROOT),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -314,7 +314,7 @@ def main() -> int:
     WT = Path(tempfile.mkdtemp(prefix="edarsahub-worker-health-publish-"))
     shutil.rmtree(WT, ignore_errors=True)
     origin_url = git("remote", "get-url", REMOTE).stdout.strip()
-    clone = run(["git", "clone", "--quiet", "--no-checkout", origin_url, str(WT)], ROOT)
+    clone = run(runtime_git_command("clone", "--quiet", "--no-checkout", origin_url, str(WT)), ROOT)
     if clone.returncode != 0 or not WT.is_dir():
         raise RuntimeError(f"HEALTH_WORKTREE_NOT_CREATED:{clone.stdout[-800:]}")
 
@@ -347,8 +347,7 @@ def main() -> int:
             raise RuntimeError("QUEUE_BRANCH_MOVED")
         push_env = os.environ.copy()
         push_env["EDARSA_ALLOW_PUSH"] = "1"
-        push = subprocess.run(
-            ["git", "push", REMOTE, f"{commit}:refs/heads/{HEALTH_BRANCH}"],
+        push = subprocess.run(runtime_git_command("push", REMOTE, f"{commit}:refs/heads/{HEALTH_BRANCH}"),
             cwd=str(WT),
             env=push_env,
             text=True,
