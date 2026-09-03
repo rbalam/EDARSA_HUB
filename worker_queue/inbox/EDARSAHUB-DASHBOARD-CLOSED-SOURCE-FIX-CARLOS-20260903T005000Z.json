@@ -1,0 +1,63 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-DASHBOARD-CLOSED-SOURCE-FIX-CARLOS-20260903T005000Z",
+  "created_at_utc": "2026-09-03T00:50:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Corregir el Tablero Ejecutivo para que los acumulados y tarjetas de periodos cerrados lean la tabla KPI base ya actualizada por el Re-sync REAL, y no queden sustituidos por un snapshot abierto historico/obsoleto de la vista Runtime. Mantener la vista Runtime para lecturas que no excluyen el dia operativo actual. No tocar Produccion ni ejecutar DML directo.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/repository_readonly.py",
+      "expected_count": 1,
+      "old": "    \"\"\"KPIs agregados del dashboard; el día vigente puede excluirse del acumulado.\"\"\"\n    where_clauses = [\n        f\"k.fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'\"\n    ]\n\n    unidad_filter = _unidad_filter_runtime(unidades_permitidas)",
+      "new": "    \"\"\"KPIs agregados del dashboard; el día vigente puede excluirse del acumulado.\"\"\"\n    # El dashboard separa expresamente el día operativo vigente. Cuando ese\n    # día se excluye, la fuente correcta es la tabla cerrada base. La vista\n    # Runtime puede superponer snapshots abiertos históricos y ocultar un\n    # Re-sync REAL ya confirmado.\n    kpi_source = (\n        \"dbo.Comercial_KPIs_Diarios_v2\"\n        if excluir_dia_operativo_actual\n        else \"dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\"\n    )\n    where_clauses = [\n        f\"k.fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'\"\n    ]\n\n    if excluir_dia_operativo_actual:\n        where_clauses.extend([\n            \"ISNULL(k.activo, 1) = 1\",\n            \"ISNULL(k.es_demo, 0) = 0\",\n        ])\n\n    unidad_filter = _unidad_filter_runtime(unidades_permitidas)"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/repository_readonly.py",
+      "expected_count": 1,
+      "old": "    \"\"\"KPIs por unidad; el día vigente puede excluirse del acumulado.\"\"\"\n    where_clauses = [\n        f\"k.fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'\"\n    ]\n\n    unidad_filter = _unidad_filter_runtime(unidades_permitidas)",
+      "new": "    \"\"\"KPIs por unidad; el día vigente puede excluirse del acumulado.\"\"\"\n    # Las tarjetas cerradas deben reflejar el KPI persistido por el Re-sync.\n    # La vista Runtime se conserva para escenarios que incluyen el día vigente.\n    kpi_source = (\n        \"dbo.Comercial_KPIs_Diarios_v2\"\n        if excluir_dia_operativo_actual\n        else \"dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\"\n    )\n    where_clauses = [\n        f\"k.fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'\"\n    ]\n\n    if excluir_dia_operativo_actual:\n        where_clauses.extend([\n            \"ISNULL(k.activo, 1) = 1\",\n            \"ISNULL(k.es_demo, 0) = 0\",\n        ])\n\n    unidad_filter = _unidad_filter_runtime(unidades_permitidas)"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/repository_readonly.py",
+      "expected_count": 2,
+      "old": "    FROM vw_Comercial_KPIs_Diarios_v2_Runtime AS k",
+      "new": "    FROM {kpi_source} AS k"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_comercial_v2_closed_dashboard_source.py",
+      "content": "from datetime import date\n\nfrom modules.comercial_v2 import repository_readonly as module\n\n\ndef _install_capture(monkeypatch, rows):\n    queries = []\n\n    monkeypatch.setattr(\n        module,\n        'runtime_dia_operativo_actual_predicate',\n        lambda alias, mode: '1 = 1',\n    )\n    monkeypatch.setattr(\n        module,\n        '_execute_readonly_query',\n        lambda query: queries.append(query) or rows,\n    )\n    return queries\n\n\ndef test_closed_dashboard_totals_use_persisted_base_table(monkeypatch):\n    queries = _install_capture(monkeypatch, [{}])\n\n    module.get_kpis_diarios_agregados(\n        date(2026, 8, 31),\n        date(2026, 8, 31),\n        excluir_dia_operativo_actual=True,\n    )\n\n    query = queries[0]\n    assert 'FROM dbo.Comercial_KPIs_Diarios_v2 AS k' in query\n    assert 'ISNULL(k.activo, 1) = 1' in query\n    assert 'ISNULL(k.es_demo, 0) = 0' in query\n    assert 'vw_Comercial_KPIs_Diarios_v2_Runtime AS k' not in query\n\n\ndef test_closed_dashboard_cards_use_persisted_base_table(monkeypatch):\n    queries = _install_capture(monkeypatch, [])\n\n    module.get_kpis_por_unidad(\n        date(2026, 8, 31),\n        date(2026, 8, 31),\n        excluir_dia_operativo_actual=True,\n    )\n\n    query = queries[0]\n    assert 'FROM dbo.Comercial_KPIs_Diarios_v2 AS k' in query\n    assert 'ISNULL(k.activo, 1) = 1' in query\n    assert 'ISNULL(k.es_demo, 0) = 0' in query\n    assert 'vw_Comercial_KPIs_Diarios_v2_Runtime AS k' not in query\n\n\ndef test_runtime_source_remains_for_non_closed_read(monkeypatch):\n    queries = _install_capture(monkeypatch, [{}])\n\n    module.get_kpis_diarios_agregados(\n        date(2026, 8, 31),\n        date(2026, 8, 31),\n        excluir_dia_operativo_actual=False,\n    )\n\n    query = queries[0]\n    assert 'FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime AS k' in query\n    assert 'ISNULL(k.activo, 1) = 1' not in query\n    assert 'ISNULL(k.es_demo, 0) = 0' not in query\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial_v2/repository_readonly.py",
+        "backend/tests/test_comercial_v2_closed_dashboard_source.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_v2_closed_dashboard_source.py"
+      ]
+    }
+  ]
+}
