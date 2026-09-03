@@ -1,0 +1,46 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ESTELAR-OFFICIAL-AGGREGATE-R5-20260903T223500Z",
+  "created_at_utc": "2026-09-03T22:35:00Z",
+  "requester": {"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9e3c673bd0a5a89f58fcbc8da071c9e8127dd8c3",
+  "production_allowed": false,
+  "objective": "LA ESTELAR: aplicar ya la consulta agregada oficial SoftRestaurant para Ventas Cerradas, conservando autodiscovery seguro de idempresa. Usar cancelado=0, solo turnos cerrados y ventana operativa 09:00:00 a 08:59:59. DRY RUN y REAL deben consumir el resultado agregado diario sin reconstruir ticket por ticket. Referencia validada 31/08/2026: Ventas 22345.00, Propina 2232.50, PAX 48, Cheques 22. No tocar frontend, menu, RBAC ni Produccion.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+      "expected_count": 1,
+      "old": "QUERY_SOFTRESTAURANT_VENTAS_CERRADAS = \"\"\"\nSELECT\n    t.apertura AS fecha_hora,\n    ch.folio AS folio,\n    1 AS num_cheques,\n    ISNULL(ch.totalalimentossindescuentos, 0) AS alimentos,\n    ISNULL(ch.totalbebidassindescuentos, 0) AS bebidas,\n    ISNULL(ch.totalotrossindescuentos, 0) AS otros,\n    ISNULL(ch.totalcortesias, 0) AS cortesias,\n    ISNULL(ch.totaldescuentos, 0) AS descuentos,\n    ISNULL(ch.subtotal, 0) AS subtotal,\n    ISNULL(ch.totalimpuesto1, 0) AS iva,\n    ISNULL(ch.total, 0) AS ventas_total,\n    ISNULL(ch.propina, 0) AS propinas,\n    ISNULL(ch.total, 0) + ISNULL(ch.propina, 0) AS total_con_propina,\n    ISNULL(ch.nopersonas, 0) AS num_personas\nFROM cheques AS ch\nINNER JOIN turnos AS t\n    ON t.idturno = ch.idturno\n   AND t.idempresa = ch.idempresa\nWHERE t.apertura >= DATEADD(DAY, -1, CONVERT(DATETIME, REPLACE('{fecha_inicio}', '-', ''), 112))\n  AND t.apertura < DATEADD(DAY, 2, CONVERT(DATETIME, REPLACE('{fecha_fin}', '-', ''), 112))\n  AND ch.idempresa = '{empresa_id}'\n  AND t.idempresa = '{empresa_id}'\n  AND t.cierre IS NOT NULL\n  AND ch.cancelado = 0\nORDER BY t.apertura, ch.folio\n\"\"\"",
+      "new": "QUERY_SOFTRESTAURANT_VENTAS_CERRADAS_DIA = \"\"\"\nSELECT\n    CONVERT(datetime, '{fecha_operacion} 12:00:00 AM') AS fecha_hora,\n    CONVERT(date, '{fecha_operacion}') AS fecha_operacion,\n    SUM(totalalimentossindescuentos) AS alimentos,\n    SUM(totalbebidassindescuentos) AS bebidas,\n    SUM(totalotrossindescuentos) AS otros,\n    SUM(totalcortesias) AS cortesias,\n    SUM(totaldescuentos) AS descuentos,\n    SUM(subtotal) AS subtotal,\n    SUM(totalimpuesto1) AS iva,\n    SUM(total) AS ventas_total,\n    SUM(propina) AS propinas,\n    SUM(total + propina) AS total_con_propina,\n    SUM(nopersonas) AS num_personas,\n    COUNT(folio) AS num_cheques\nFROM cheques\nWHERE idempresa = '{empresa_id}'\n  AND idturno IN (\n      SELECT idturno FROM turnos\n      WHERE idempresa = '{empresa_id}'\n        AND apertura BETWEEN '{inicio_operativo}' AND '{fin_operativo}'\n        AND cierre IS NOT NULL\n  )\n  AND cancelado = 0\n\"\"\""
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+      "expected_count": 1,
+      "old": "    empresa_sql = empresa_id.replace(\"'\", \"''\")\n    return QUERY_SOFTRESTAURANT_VENTAS_CERRADAS.format(\n        fecha_inicio=fecha_inicio.isoformat(),\n        fecha_fin=fecha_fin.isoformat(),\n        empresa_id=empresa_sql,\n    )",
+      "new": "    empresa_sql = empresa_id.replace(\"'\", \"''\")\n    bloques = []\n    fecha_actual = fecha_inicio\n    while fecha_actual <= fecha_fin:\n        fecha_siguiente = fecha_actual + timedelta(days=1)\n        bloques.append(QUERY_SOFTRESTAURANT_VENTAS_CERRADAS_DIA.format(\n            fecha_operacion=fecha_actual.strftime('%Y-%m-%d'),\n            empresa_id=empresa_sql,\n            inicio_operativo=fecha_actual.strftime('%Y-%m-%d 09:00:00'),\n            fin_operativo=fecha_siguiente.strftime('%Y-%m-%d 08:59:59'),\n        ))\n        fecha_actual = fecha_siguiente\n    return \"\\nUNION ALL\\n\".join(bloques)"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+      "expected_count": 1,
+      "old": "        sistema_origen = getattr(config, \"sistema_origen\", None)\n\n        if sistema_origen == SistemaOrigen.MPRO:\n            # MPRO entrega Vn_Fecha como fecha comercial con hora 00:00:00.\n            # Aplicar nuevamente la ventana operativa desplaza el registro\n            # artificialmente al día anterior.\n            fecha_operacion = _normalizar_fecha_operacion_value(\n                fecha_hora\n            )\n        elif sistema_origen == SistemaOrigen.SOFTRESTAURANT:\n            # SoftRestaurant sí entrega un timestamp real del cheque.\n            fecha_operacion = _normalizar_fecha_operacion_value(\n                get_fecha_operacion(unidad_negocio_pk, fecha_hora)\n            )",
+      "new": "        sistema_origen = getattr(config, \"sistema_origen\", None)\n        fecha_operacion_query = row_dict.get(\"fecha_operacion\")\n\n        if fecha_operacion_query is not None:\n            fecha_operacion = _normalizar_fecha_operacion_value(fecha_operacion_query)\n        elif sistema_origen == SistemaOrigen.MPRO:\n            fecha_operacion = _normalizar_fecha_operacion_value(fecha_hora)\n        elif sistema_origen == SistemaOrigen.SOFTRESTAURANT:\n            fecha_operacion = _normalizar_fecha_operacion_value(\n                get_fecha_operacion(unidad_negocio_pk, fecha_hora)\n            )"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_estelar_softrestaurant_official_aggregate_r5.py",
+      "content": "from datetime import date\nfrom modules.comercial_v2 import sync_comercial_edarsahub as sync_module\n\ndef test_estelar_uses_official_aggregate_contract():\n    query = sync_module.build_softrestaurant_ventas_cerradas_query({'empresa_id':'EST'}, date(2026,8,31), date(2026,8,31))\n    for fragment in (\n        'SUM(total) AS ventas_total',\n        'SUM(propina) AS propinas',\n        'SUM(nopersonas) AS num_personas',\n        'COUNT(folio) AS num_cheques',\n        \"WHERE idempresa = 'EST'\",\n        \"apertura BETWEEN '2026-08-31 09:00:00' AND '2026-09-01 08:59:59'\",\n        'AND cierre IS NOT NULL',\n        'AND cancelado = 0',\n    ): assert fragment in query\n    assert 'JOIN turnos' not in query\n    assert 'ch.folio AS folio' not in query\n"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"},
+    {"type":"py_compile","paths":["backend/modules/comercial_v2/sync_comercial_edarsahub.py","backend/tests/test_estelar_softrestaurant_official_aggregate_r5.py"]},
+    {"type":"pytest","paths":["backend/tests/test_estelar_softrestaurant_official_aggregate_r5.py","backend/tests/test_softrestaurant_empresa_id_autodiscovery_contract.py","backend/tests/test_admin_scheduler_resync_origin_contract.py"]}
+  ]
+}
