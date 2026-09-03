@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-RESYNC-SYSTEMTYPE-NORMALIZATION-CARLOS-20260903T021500Z",
+  "created_at_utc": "2026-09-03T02:15:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "87235798aefdb906064f72a55ac9c0900ba65311",
+  "production_allowed": false,
+  "objective": "Blindar el Re-sync Manual para reconocer de forma canonica SOFTRESTAURANT_PRO, SOFTRESTAURANT y demas variantes mediante normalize_system_type tanto en DRY RUN como en REAL. El DRY RUN de LA ESTELAR no debe caer en CATALOGO/MPRO; debe usar SOFTRESTAURANT_REPORTE_TURNOS y devolver un marcador de contrato verificable. No tocar Produccion.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "from core.server_registry import get_server_by_unidad_codigo\n",
+      "new": "from core.server_registry import get_server_by_unidad_codigo\nfrom core.system_type_utils import normalize_system_type\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "        raw_sistema = str(\n            server_data.get('servidor_system_type')\n            or server_data.get('system_type')\n            or 'UNKNOWN'\n        ).strip().upper()\n        if 'SOFT' in raw_sistema:\n            sistema = 'SOFTRESTAURANT'\n        elif 'MPRO' in raw_sistema or 'MANAG' in raw_sistema:\n            sistema = 'MPRO'\n        else:\n            sistema = raw_sistema or 'UNKNOWN'\n",
+      "new": "        raw_sistema = str(\n            server_data.get('servidor_system_type')\n            or server_data.get('system_type')\n            or 'UNKNOWN'\n        ).strip()\n        sistema_normalizado = normalize_system_type(raw_sistema)\n        if sistema_normalizado == 'SOFTRESTAURANT':\n            sistema = 'SOFTRESTAURANT'\n        elif sistema_normalizado == 'MANAGEMENTPRO':\n            sistema = 'MPRO'\n        else:\n            sistema = 'UNKNOWN'\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "        sistema = str(\n            unidad_config.get('sistema') or ''\n        ).strip().upper()\n\n        if sistema == 'SOFTRESTAURANT':\n",
+      "new": "        sistema_raw = str(\n            unidad_config.get('sistema') or ''\n        ).strip()\n        sistema_normalizado = normalize_system_type(sistema_raw)\n        sistema = (\n            'SOFTRESTAURANT'\n            if sistema_normalizado == 'SOFTRESTAURANT'\n            else 'MPRO'\n            if sistema_normalizado == 'MANAGEMENTPRO'\n            else 'UNKNOWN'\n        )\n\n        if sistema == 'SOFTRESTAURANT':\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "            'query_source': query_source,\n            'detalle': detalle\n",
+      "new": "            'query_source': query_source,\n            'system_type_raw': sistema_raw,\n            'system_type_normalized': sistema_normalizado,\n            'backend_contract_version': 'softrestaurant-turnos-v2',\n            'detalle': detalle\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "        sistema = str(unidad_config.get('sistema') or '').strip().upper()\n        if sistema not in {'SOFTRESTAURANT', 'MPRO'}:\n",
+      "new": "        sistema_raw = str(unidad_config.get('sistema') or '').strip()\n        sistema_normalizado = normalize_system_type(sistema_raw)\n        sistema = (\n            'SOFTRESTAURANT'\n            if sistema_normalizado == 'SOFTRESTAURANT'\n            else 'MPRO'\n            if sistema_normalizado == 'MANAGEMENTPRO'\n            else 'UNKNOWN'\n        )\n        if sistema not in {'SOFTRESTAURANT', 'MPRO'}:\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_resync_system_type_normalization.py",
+      "content": "from pathlib import Path\n\n\nSOURCE = Path(__file__).resolve().parents[1] / 'api' / 'admin_scheduler_resync.py'\nTEXT = SOURCE.read_text(encoding='utf-8')\n\n\ndef _section(start, end):\n    return TEXT.split(start, 1)[1].split(end, 1)[0]\n\n\ndef test_unit_config_uses_global_system_type_normalizer():\n    section = _section('def _get_unidad_config(', '# =============================================================================\\n# VALIDACIONES')\n    assert 'normalize_system_type(raw_sistema)' in section\n    assert \"sistema_normalizado == 'SOFTRESTAURANT'\" in section\n    assert \"sistema_normalizado == 'MANAGEMENTPRO'\" in section\n\n\ndef test_dry_run_normalizes_softrestaurant_pro_before_branching():\n    section = _section('async def _ejecutar_dry_run(', 'async def _ejecutar_sync_real(')\n    assert 'normalize_system_type(sistema_raw)' in section\n    assert \"query_source = 'SOFTRESTAURANT_REPORTE_TURNOS'\" in section\n    assert \"'backend_contract_version': 'softrestaurant-turnos-v2'\" in section\n    assert \"'system_type_normalized': sistema_normalizado\" in section\n\n\ndef test_real_run_uses_same_normalized_system_contract():\n    section = _section('async def _ejecutar_sync_real(', '@router.get(\"/resync/history\")')\n    assert 'normalize_system_type(sistema_raw)' in section\n    assert \"if sistema == 'SOFTRESTAURANT'\" in section\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/api/admin_scheduler_resync.py",
+        "backend/tests/test_resync_system_type_normalization.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_resync_system_type_normalization.py",
+        "backend/tests/test_softrestaurant_closed_sales_report_contract.py",
+        "backend/tests/test_admin_scheduler_resync_origin_contract.py"
+      ]
+    }
+  ]
+}
