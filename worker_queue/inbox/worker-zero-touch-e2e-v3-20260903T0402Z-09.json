@@ -1,0 +1,11 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-zero-touch-e2e-v3-20260903T0402Z-09",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Canario E2E V3 09/10: mutacion real aislada para certificar Worker + mirror + watchdog + publicacion GitHub sin intervencion manual en /app.",
+  "human_summary_language": "es",
+  "actions": [{"type":"write_file","path":"worker_queue/e2e_canaries/worker-zero-touch-e2e-v3-20260903T0402Z-09.txt","content":"EDARSAHUB_WORKER_E2E_V3=worker-zero-touch-e2e-v3-20260903T0402Z-09\nCERT_SLOT=09\n"}],
+  "checks": [{"type":"git_diff_check"}]
+}
