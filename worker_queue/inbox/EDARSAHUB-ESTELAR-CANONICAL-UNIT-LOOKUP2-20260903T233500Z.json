@@ -1,0 +1,17 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ESTELAR-CANONICAL-UNIT-LOOKUP2-20260903T233500Z",
+  "created_at_utc": "2026-09-03T23:35:00Z",
+  "requester": {"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "364a617f6f1210b7d58139a72cf6d8c4bcce6923",
+  "production_allowed": false,
+  "objective": "Resolver en solo lectura el codigo canonico, server_id y sucursal_origen_id de LA ESTELAR para ejecutar la validacion y resync comercial del 31/08/2026.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {"type":"sql_readonly_audit","queries":[{"name":"la_estelar_unidad_canonica","sql":"SELECT u.codigo, u.nombre, u.server_id, u.sucursal_origen_id, s.system_type, s.activo AS servidor_activo FROM dbo.Unidades_Negocio AS u LEFT JOIN dbo.Servidores_Conexiones AS s ON s.id = u.server_id WHERE UPPER(u.nombre) LIKE '%ESTELAR%' OR UPPER(u.codigo) LIKE '%ESTELAR%' ORDER BY u.codigo"}]}
+  ]
+}
