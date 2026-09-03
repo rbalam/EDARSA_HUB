@@ -1,0 +1,112 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-RESYNC-MANUAL-FIX-CARLOS-R2-20260903T001500Z",
+  "created_at_utc": "2026-09-03T00:15:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Reintentar la correccion determinista ya validada del Re-sync Manual. El intento anterior supero todas las pruebas pero no se integro porque el commit de wake movio Edarsahub_Desarrollo durante la integracion. Aplicar el mismo alcance sin ejecutar ninguna re-sincronizacion REAL ni tocar Produccion.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "        return {\n            'server_id': str(server_data.get('server_id', '')),\n            'sistema': server_data.get('servidor_system_type') or server_data.get('system_type') or 'UNKNOWN',\n            'sucursal_id': server_data.get('sucursal_origen_id') or server_data.get('sucursal_id') or 'DEFAULT',\n            'nombre': server_data.get('unidad_negocio_nombre') or unidad_negocio_id,\n            'host': server_data.get('host'),\n            'activo': server_data.get('servidor_activo', True)\n        }",
+      "new": "        raw_sistema = str(\n            server_data.get('servidor_system_type')\n            or server_data.get('system_type')\n            or 'UNKNOWN'\n        ).strip().upper()\n        if 'SOFT' in raw_sistema:\n            sistema = 'SOFTRESTAURANT'\n        elif 'MPRO' in raw_sistema or 'MANAG' in raw_sistema:\n            sistema = 'MPRO'\n        else:\n            sistema = raw_sistema or 'UNKNOWN'\n\n        return {\n            'unidad_negocio_pk': str(server_data.get('unidad_negocio_pk', '')),\n            'server_id': str(server_data.get('server_id', '')),\n            'sistema': sistema,\n            'sucursal_id': server_data.get('sucursal_origen_id') or server_data.get('sucursal_id') or 'DEFAULT',\n            'nombre': server_data.get('unidad_negocio_nombre') or unidad_negocio_id,\n            'host': server_data.get('host'),\n            'activo': server_data.get('servidor_activo', True)\n        }"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "def _validar_conectividad(server_id: str) -> Dict[str, Any]:",
+      "new": "def _validar_conectividad(\n    server_id: str,\n    unidad_negocio_pk: Optional[str] = None,\n) -> Dict[str, Any]:"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "        config = get_server_connection_config(server_id)",
+      "new": "        config = get_server_connection_config(\n            server_id,\n            unidad_negocio_pk,\n        )"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "    validacion_conectividad = _validar_conectividad(unidad['server_id'])",
+      "new": "    validacion_conectividad = _validar_conectividad(\n        unidad['server_id'],\n        unidad.get('unidad_negocio_pk'),\n    )"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "        'conectividad': _validar_conectividad(unidad['server_id']),",
+      "new": "        'conectividad': _validar_conectividad(\n            unidad['server_id'],\n            unidad.get('unidad_negocio_pk'),\n        ),"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "    from modules.comercial_v2.sync_comercial_edarsahub import get_server_connection_config\n    from core.query_catalog import get_query_for_server\n    import pymssql",
+      "new": "    from modules.comercial_v2.sync_comercial_edarsahub import (\n        ConnectionStatus,\n        execute_query_on_server,\n        get_server_connection_config,\n    )\n    from core.query_catalog import get_query_for_server"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "        config = get_server_connection_config(unidad_config['server_id'])",
+      "new": "        config = get_server_connection_config(\n            unidad_config['server_id'],\n            unidad_config.get('unidad_negocio_pk'),\n        )"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "        conn = get_sql_connection()\n        cursor = conn.cursor(as_dict=True)\n        \n        cursor.execute(query)\n        datos = cursor.fetchall()\n        conn.close()",
+      "new": "        datos, connection_status = execute_query_on_server(config, query)\n        if connection_status != ConnectionStatus.ONLINE:\n            return {\n                'success': False,\n                'modo': 'DRY_RUN',\n                'records_processed': 0,\n                'registros_afectados': 0,\n                'connection_status': str(connection_status),\n                'error_message': (\n                    'No fue posible consultar el servidor origen durante el DRY RUN: '\n                    f'{connection_status}'\n                ),\n            }"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "        resultado_simulado = await _ejecutar_dry_run(\n            request.unidad_negocio_id,\n            unidad,\n            request.fecha_inicio,\n            request.fecha_fin\n        )\n        \n        _registrar_en_bitacora(",
+      "new": "        resultado_simulado = await _ejecutar_dry_run(\n            request.unidad_negocio_id,\n            unidad,\n            request.fecha_inicio,\n            request.fecha_fin\n        )\n\n        if not resultado_simulado.get('success'):\n            error_msg = (\n                resultado_simulado.get('error_message')\n                or 'El DRY RUN no pudo consultar el servidor origen.'\n            )\n            _registrar_en_bitacora(\n                job_name=f\"RESYNC_{request.tipo_sync}\",\n                run_id=sync_run_id,\n                accion='DRY_RUN_FAILED',\n                server_id=unidad['server_id'],\n                detalles={\n                    'unidad': request.unidad_negocio_id,\n                    'fecha_inicio': str(request.fecha_inicio),\n                    'fecha_fin': str(request.fecha_fin),\n                    'motivo': request.motivo,\n                    'usuario': user_email,\n                },\n                exito=False,\n                error_mensaje=error_msg,\n            )\n            _registrar_resync_log(\n                request, current_user, 'FAILED', error_msg, unidad, 0\n            )\n            return ResyncResponse(\n                success=False,\n                ejecucion_id=ejecucion_id,\n                sync_run_id=sync_run_id,\n                modo='DRY_RUN',\n                tipo_sync=request.tipo_sync,\n                unidad_negocio_id=request.unidad_negocio_id,\n                fecha_inicio=request.fecha_inicio.isoformat(),\n                fecha_fin=request.fecha_fin.isoformat(),\n                validacion_previa=validacion_previa,\n                resultado=resultado_simulado,\n                error_message=error_msg,\n            )\n        \n        _registrar_en_bitacora("
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "        # Crear config usando el formato oficial\n        config = UnidadNegocioConfig(\n            unidad_negocio_id=unidad_negocio_id,\n            unidad_negocio_nombre=unidad_config['nombre'],\n            server_id=unidad_config['server_id'],\n            sucursal_id=unidad_config['sucursal_id'],\n            sucursal_nombre=unidad_config['nombre'],\n            sistema_origen=SistemaOrigen.SOFTRESTAURANT if unidad_config['sistema'] == 'SOFTRESTAURANT' else SistemaOrigen.MPRO,\n            activo=True\n        )\n        \n        # Ejecutar handler oficial según sistema\n        if unidad_config['sistema'] == 'SOFTRESTAURANT':",
+      "new": "        # Crear config usando identificadores y sistema canónicos.\n        unidad_negocio_pk = str(\n            unidad_config.get('unidad_negocio_pk') or ''\n        ).strip()\n        if not unidad_negocio_pk:\n            return {\n                'success': False,\n                'error_message': 'unidad_negocio_pk canónica no disponible',\n            }\n\n        sistema = str(unidad_config.get('sistema') or '').strip().upper()\n        if sistema not in {'SOFTRESTAURANT', 'MPRO'}:\n            return {\n                'success': False,\n                'error_message': f'Sistema origen no soportado: {sistema}',\n            }\n\n        config = UnidadNegocioConfig(\n            unidad_negocio_pk=unidad_negocio_pk,\n            unidad_negocio_nombre=unidad_config['nombre'],\n            server_id=unidad_config['server_id'],\n            sucursal_id=unidad_config['sucursal_id'],\n            sucursal_nombre=unidad_config['nombre'],\n            sistema_origen=(\n                SistemaOrigen.SOFTRESTAURANT\n                if sistema == 'SOFTRESTAURANT'\n                else SistemaOrigen.MPRO\n            ),\n            activo=True\n        )\n        \n        # Ejecutar handler oficial según sistema\n        if sistema == 'SOFTRESTAURANT':"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_admin_scheduler_resync_origin_contract.py",
+      "content": "from pathlib import Path\n\n\nSOURCE = Path(__file__).resolve().parents[1] / 'api' / 'admin_scheduler_resync.py'\n\n\ndef _section(text, start, end):\n    return text.split(start, 1)[1].split(end, 1)[0]\n\n\ndef test_manual_resync_dry_run_uses_origin_connection():\n    text = SOURCE.read_text(encoding='utf-8')\n    dry_run = _section(text, 'async def _ejecutar_dry_run(', 'async def _ejecutar_sync_real(')\n    assert 'execute_query_on_server(config, query)' in dry_run\n    assert 'conn = get_sql_connection()' not in dry_run\n    assert \"unidad_config.get('unidad_negocio_pk')\" in dry_run\n    assert 'ConnectionStatus.ONLINE' in dry_run\n\n\ndef test_manual_resync_normalizes_system_and_preserves_unit_pk():\n    text = SOURCE.read_text(encoding='utf-8')\n    config = _section(text, 'def _get_unidad_config(', '# =============================================================================\\n# VALIDACIONES')\n    assert \"'unidad_negocio_pk': str(server_data.get('unidad_negocio_pk', ''))\" in config\n    assert \"if 'SOFT' in raw_sistema\" in config\n    assert \"sistema = 'SOFTRESTAURANT'\" in config\n\n\ndef test_manual_resync_real_uses_canonical_pydantic_field():\n    text = SOURCE.read_text(encoding='utf-8')\n    real = _section(text, 'async def _ejecutar_sync_real(', '@router.get(\"/resync/history\")')\n    assert 'unidad_negocio_pk=unidad_negocio_pk' in real\n    assert 'unidad_negocio_id=unidad_negocio_id' not in real\n    assert \"if sistema == 'SOFTRESTAURANT'\" in real\n\n\ndef test_manual_resync_dry_run_failure_is_not_reported_as_success():\n    text = SOURCE.read_text(encoding='utf-8')\n    endpoint = _section(text, 'async def ejecutar_resync(', '@router.get(\"/resync/history\")')\n    assert \"if not resultado_simulado.get('success')\" in endpoint\n    assert \"accion='DRY_RUN_FAILED'\" in endpoint\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/api/admin_scheduler_resync.py",
+        "backend/tests/test_admin_scheduler_resync_origin_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_admin_scheduler_resync_origin_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
