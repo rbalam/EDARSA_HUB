@@ -30,6 +30,7 @@ import json
 from core.security import get_current_user
 from core.rbac.middleware import require_permission, require_explicit_permission
 from core.server_registry import get_server_by_unidad_codigo
+from core.system_type_utils import normalize_system_type
 
 logger = logging.getLogger(__name__)
 
@@ -1314,9 +1315,17 @@ async def _ejecutar_dry_run(
         if not config:
             return {'success': False, 'error_message': 'Config de servidor no encontrada'}
         
-        sistema = str(
+        sistema_raw = str(
             unidad_config.get('sistema') or ''
-        ).strip().upper()
+        ).strip()
+        sistema_normalizado = normalize_system_type(sistema_raw)
+        sistema = (
+            'SOFTRESTAURANT'
+            if sistema_normalizado == 'SOFTRESTAURANT'
+            else 'MPRO'
+            if sistema_normalizado == 'MANAGEMENTPRO'
+            else 'UNKNOWN'
+        )
 
         if sistema == 'SOFTRESTAURANT':
             # DRY RUN y REAL comparten el contrato oficial por turnos.
@@ -1457,6 +1466,9 @@ async def _ejecutar_dry_run(
             'registros_extraidos': len(detalle),
             'registros_afectados': 0,
             'query_source': query_source,
+            'system_type_raw': sistema_raw,
+            'system_type_normalized': sistema_normalizado,
+            'backend_contract_version': 'softrestaurant-turnos-v2',
             'detalle': detalle
         }
         
@@ -1495,7 +1507,15 @@ async def _ejecutar_sync_real(
                 'error_message': 'unidad_negocio_pk canónica no disponible',
             }
 
-        sistema = str(unidad_config.get('sistema') or '').strip().upper()
+        sistema_raw = str(unidad_config.get('sistema') or '').strip()
+        sistema_normalizado = normalize_system_type(sistema_raw)
+        sistema = (
+            'SOFTRESTAURANT'
+            if sistema_normalizado == 'SOFTRESTAURANT'
+            else 'MPRO'
+            if sistema_normalizado == 'MANAGEMENTPRO'
+            else 'UNKNOWN'
+        )
         if sistema not in {'SOFTRESTAURANT', 'MPRO'}:
             return {
                 'success': False,
