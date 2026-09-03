@@ -1,31 +1,37 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "f8fd25b59450056572876720e03daeabf7cc07f7",
-  "generated_at_utc": "2026-09-03T23:19:26Z",
+  "generated_at_utc": "2026-09-03T23:20:41Z",
   "history": {
     "done_total_local": 54,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 158,
-    "results_total_local": 191
+    "rejected_total_local": 159,
+    "results_total_local": 192
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 400,
+      "age_seconds": 475,
       "job_id": "EDARSAHUB-ESTELAR-OFFICIAL-AGGREGATE-R5-20260903T223500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 397,
+      "age_seconds": 472,
       "job_id": "EDARSAHUB-ESTELAR-OFFICIAL-AGGREGATE-R6-20260903T224100Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2965,
+      "age_seconds": 5,
+      "job_id": "EDARSAHUB-ESTELAR-OFFICIAL-AGGREGATE-R7-20260903T232000Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3040,
       "job_id": "worker-zero-touch-canary-v2-20260903T222600Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -38,14 +44,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-03T23:19:23Z",
-    "last_receive_utc": "2026-09-03T23:19:23Z",
-    "last_terminal_utc": "2026-09-03T23:12:48Z",
+    "last_cycle_utc": "2026-09-03T23:20:40Z",
+    "last_receive_utc": "2026-09-03T23:20:35Z",
+    "last_terminal_utc": "2026-09-03T23:20:36Z",
     "pid": "283"
   },
   "schema": "edarsahub.worker-health.v3",
