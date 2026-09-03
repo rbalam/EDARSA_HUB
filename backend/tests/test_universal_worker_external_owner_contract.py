@@ -31,8 +31,8 @@ def test_external_owner_is_supervisor_managed():
 def test_external_owner_has_canonical_runtime_intervals():
     body = text(CONF)
 
-    assert 'UNIVERSAL_WORKER_INTAKE_SECONDS="10"' in body
-    assert 'UNIVERSAL_WORKER_RESULT_SECONDS="10"' in body
+    assert 'UNIVERSAL_WORKER_INTAKE_SECONDS="5"' in body
+    assert 'UNIVERSAL_WORKER_RESULT_SECONDS="5"' in body
     assert 'UNIVERSAL_WORKER_HEALTH_SECONDS="30"' in body
     assert 'UNIVERSAL_WORKER_RECONCILE_SECONDS="30"' in body
     assert 'UNIVERSAL_WORKER_DISPATCH_IDLE_SECONDS="2"' in body
