@@ -1,0 +1,2 @@
+EDARSAHUB_WORKER_E2E_V4=worker-zero-touch-e2e-v4-20260903-03
+CERT_SLOT=03
