@@ -645,14 +645,58 @@ def build_softrestaurant_ventas_cerradas_query(
     fecha_inicio: date,
     fecha_fin: date,
 ) -> str:
-    """Construye el SELECT oficial de ventas cerradas por turno."""
+    """Construye el SELECT oficial de ventas cerradas por turno.
+
+    empresa_id se toma primero del catalogo canonico. Si la conexion legacy no
+    lo tiene, se descubre en modo read-only desde turnos cerrados del mismo
+    rango y solo se acepta cuando existe un unico candidato.
+    """
     empresa_id = str(
         (server_config or {}).get("empresa_id") or ""
     ).strip()
+
     if not empresa_id:
-        raise ValueError(
-            "La conexion SoftRestaurant no tiene empresa_id canonica"
+        discovery_query = """
+SELECT DISTINCT
+    LTRIM(RTRIM(CONVERT(NVARCHAR(100), t.idempresa))) AS empresa_id
+FROM turnos AS t
+WHERE t.apertura >= DATEADD(DAY, -1, CONVERT(DATETIME, REPLACE('{fecha_inicio}', '-', ''), 112))
+  AND t.apertura < DATEADD(DAY, 2, CONVERT(DATETIME, REPLACE('{fecha_fin}', '-', ''), 112))
+  AND t.cierre IS NOT NULL
+  AND NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(100), t.idempresa))), '') IS NOT NULL
+ORDER BY empresa_id
+""".format(
+            fecha_inicio=fecha_inicio.isoformat(),
+            fecha_fin=fecha_fin.isoformat(),
         )
+        discovery_rows, discovery_status = execute_query_on_server(
+            server_config,
+            discovery_query,
+        )
+        if discovery_status != ConnectionStatus.ONLINE:
+            raise ValueError(
+                "No fue posible resolver idempresa desde el origen SoftRestaurant"
+            )
+
+        candidates = sorted({
+            str(row.get("empresa_id") or "").strip()
+            for row in discovery_rows or []
+            if str(row.get("empresa_id") or "").strip()
+        })
+        if len(candidates) == 1:
+            empresa_id = candidates[0]
+            logger.info(
+                "SoftRestaurant empresa_id resuelta desde turnos cerrados del rango"
+            )
+        elif not candidates:
+            raise ValueError(
+                "No se encontro idempresa en turnos cerrados del rango solicitado"
+            )
+        else:
+            raise ValueError(
+                "Se encontraron multiples idempresa en el origen SoftRestaurant; "
+                "configure empresa_id canonica antes de sincronizar"
+            )
 
     empresa_sql = empresa_id.replace("'", "''")
     return QUERY_SOFTRESTAURANT_VENTAS_CERRADAS.format(
