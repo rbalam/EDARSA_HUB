@@ -250,9 +250,24 @@ def get_kpis_diarios_agregados(
     excluir_dia_operativo_actual: bool = False,
 ) -> Dict:
     """KPIs agregados del dashboard; el día vigente puede excluirse del acumulado."""
+    # El dashboard separa expresamente el día operativo vigente. Cuando ese
+    # día se excluye, la fuente correcta es la tabla cerrada base. La vista
+    # Runtime puede superponer snapshots abiertos históricos y ocultar un
+    # Re-sync REAL ya confirmado.
+    kpi_source = (
+        "dbo.Comercial_KPIs_Diarios_v2"
+        if excluir_dia_operativo_actual
+        else "dbo.vw_Comercial_KPIs_Diarios_v2_Runtime"
+    )
     where_clauses = [
         f"k.fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'"
     ]
+
+    if excluir_dia_operativo_actual:
+        where_clauses.extend([
+            "ISNULL(k.activo, 1) = 1",
+            "ISNULL(k.es_demo, 0) = 0",
+        ])
 
     unidad_filter = _unidad_filter_runtime(unidades_permitidas)
     if unidad_filter:
@@ -287,7 +302,7 @@ def get_kpis_diarios_agregados(
              ELSE 0 END as pax_promedio,
         MIN(k.fecha_operacion) as fecha_min,
         MAX(k.fecha_operacion) as fecha_max
-    FROM vw_Comercial_KPIs_Diarios_v2_Runtime AS k
+    FROM {kpi_source} AS k
     WHERE {' AND '.join(where_clauses)}
     """
 
@@ -303,9 +318,22 @@ def get_kpis_por_unidad(
     excluir_dia_operativo_actual: bool = False,
 ) -> List[Dict]:
     """KPIs por unidad; el día vigente puede excluirse del acumulado."""
+    # Las tarjetas cerradas deben reflejar el KPI persistido por el Re-sync.
+    # La vista Runtime se conserva para escenarios que incluyen el día vigente.
+    kpi_source = (
+        "dbo.Comercial_KPIs_Diarios_v2"
+        if excluir_dia_operativo_actual
+        else "dbo.vw_Comercial_KPIs_Diarios_v2_Runtime"
+    )
     where_clauses = [
         f"k.fecha_operacion BETWEEN '{fecha_inicio.isoformat()}' AND '{fecha_fin.isoformat()}'"
     ]
+
+    if excluir_dia_operativo_actual:
+        where_clauses.extend([
+            "ISNULL(k.activo, 1) = 1",
+            "ISNULL(k.es_demo, 0) = 0",
+        ])
 
     unidad_filter = _unidad_filter_runtime(unidades_permitidas)
     if unidad_filter:
@@ -342,7 +370,7 @@ def get_kpis_por_unidad(
              ELSE 0 END as pax_promedio,
         MIN(k.fecha_operacion) as fecha_min,
         MAX(k.fecha_operacion) as fecha_max
-    FROM vw_Comercial_KPIs_Diarios_v2_Runtime AS k
+    FROM {kpi_source} AS k
     WHERE {' AND '.join(where_clauses)}
     GROUP BY k.unidad_negocio_pk
     ORDER BY ventas_total DESC
