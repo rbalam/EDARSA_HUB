@@ -1,29 +1,31 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "9e3c673bd0a5a89f58fcbc8da071c9e8127dd8c3",
-  "generated_at_utc": "2026-09-03T22:54:10Z",
+  "development_sha": "f8fd25b59450056572876720e03daeabf7cc07f7",
+  "generated_at_utc": "2026-09-03T23:12:53Z",
   "history": {
     "done_total_local": 54,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 156,
-    "results_total_local": 189
+    "rejected_total_local": 158,
+    "results_total_local": 191
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2975,
-      "job_id": "worker-zero-touch-canary-20260903T220300Z",
-      "reasons": [
-        "INVALID_SCHEMA",
-        "ACTIONS_REQUIRED"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+      "age_seconds": 7,
+      "job_id": "EDARSAHUB-ESTELAR-OFFICIAL-AGGREGATE-R5-20260903T223500Z",
+      "reason": null,
+      "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1449,
+      "age_seconds": 4,
+      "job_id": "EDARSAHUB-ESTELAR-OFFICIAL-AGGREGATE-R6-20260903T224100Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2572,
       "job_id": "worker-zero-touch-canary-v2-20260903T222600Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -35,16 +37,16 @@
   "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 1,
+  "queue_rejected_recent": 0,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-03T22:54:06Z",
-    "last_receive_utc": "2026-09-03T22:54:07Z",
-    "last_terminal_utc": "2026-09-03T22:30:01Z",
-    "pid": "217"
+    "last_cycle_utc": "2026-09-03T23:12:48Z",
+    "last_receive_utc": "2026-09-03T23:12:49Z",
+    "last_terminal_utc": "2026-09-03T23:12:48Z",
+    "pid": "283"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
