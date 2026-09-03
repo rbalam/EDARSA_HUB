@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "14f18902f3d9268a631cbe2a6be96a2f0734eb59",
-  "generated_at_utc": "2026-09-03T23:56:16Z",
+  "generated_at_utc": "2026-09-03T23:57:27Z",
   "history": {
     "done_total_local": 57,
     "pending_total_local": 0,
@@ -13,43 +13,43 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1403,
+      "age_seconds": 1474,
       "job_id": "EDARSAHUB-ESTELAR-CANONICAL-UNIT-LOOKUP-20260903T233200Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1278,
+      "age_seconds": 1349,
       "job_id": "EDARSAHUB-ESTELAR-CANONICAL-UNIT-LOOKUP2-20260903T233500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1127,
+      "age_seconds": 1198,
       "job_id": "EDARSAHUB-ESTELAR-FINAL-DRYRUN-REAL-20260903T234000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1118,
+      "age_seconds": 1189,
       "job_id": "EDARSAHUB-ESTELAR-FINAL2-DRYRUN-REAL-20260903T233630Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2610,
+      "age_seconds": 2681,
       "job_id": "EDARSAHUB-ESTELAR-OFFICIAL-AGGREGATE-R5-20260903T223500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2607,
+      "age_seconds": 2678,
       "job_id": "EDARSAHUB-ESTELAR-OFFICIAL-AGGREGATE-R6-20260903T224100Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2140,
+      "age_seconds": 2211,
       "job_id": "EDARSAHUB-ESTELAR-OFFICIAL-AGGREGATE-R7-20260903T232000Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -67,8 +67,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-03T23:56:15Z",
-    "last_receive_utc": "2026-09-03T23:56:15Z",
+    "last_cycle_utc": "2026-09-03T23:57:26Z",
+    "last_receive_utc": "2026-09-03T23:57:27Z",
     "last_terminal_utc": "2026-09-03T23:37:37Z",
     "pid": "283"
   },
