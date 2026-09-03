@@ -35,7 +35,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip install -q -r backend/requirements.txt
+          grep -v '^emergentintegrations==' backend/requirements.txt > /tmp/requirements-bootstrap.txt
+          python -m pip install -q -r /tmp/requirements-bootstrap.txt
 
       - name: Validate Python and tests
         shell: bash
