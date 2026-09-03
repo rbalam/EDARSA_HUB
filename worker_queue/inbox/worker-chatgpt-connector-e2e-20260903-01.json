@@ -1,0 +1,21 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-chatgpt-connector-e2e-20260903-01",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Validar extremo a extremo que ChatGPT puede escribir directamente en worker/requests, que el Worker universal consume el Job sin intervención manual y publica resultado certificado.",
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "worker_queue/e2e_canaries/worker-chatgpt-connector-e2e-20260903-01.txt",
+      "content": "ChatGPT GitHub connector -> worker/requests -> Universal Worker E2E PASS candidate.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
