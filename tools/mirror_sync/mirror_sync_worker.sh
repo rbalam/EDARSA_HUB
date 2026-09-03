@@ -13,7 +13,8 @@ edarsahub_require_clean_shared_app || exit $?
 
 ROOT="/app"
 DIR="$ROOT/tools/mirror_sync"
-RUNTIME_GENERATION="20260903-softrestaurant-closed-sales-contract-v1"
+DEV_BRANCH="Edarsahub_Desarrollo"
+RUNTIME_GENERATION="20260903-preview-backend-reload-v2"
 
 resolve_worker_python() {
     if [ -x "/root/.venv/bin/python" ]; then
@@ -40,6 +41,8 @@ UNIVERSAL_WORKER="$DIR/universal_job_worker.sh"
 CONTROL_PLANE="$DIR/worker_control_plane.py"
 
 STATE_DIR="$ROOT/.git/mirror-sync"
+PREVIEW_BACKEND_TREE_STATE="$STATE_DIR/preview_backend_tree_sha"
+PREVIEW_BACKEND_RELOAD_ATTEMPT="$STATE_DIR/preview_backend_reload_attempt_epoch"
 ENABLE_FLAG="$STATE_DIR/ENABLED"
 PERSISTENT_STOP="$STATE_DIR/STOP"
 TEMP_STOP="/tmp/edarsahub-mirror-sync/STOP"
@@ -57,6 +60,73 @@ log(){ printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 shutdown_worker(){ RUNNING=0; log "WORKER_SIGNAL_RECEIVED=YES"; }
 trap shutdown_worker TERM INT HUP
 is_authorized(){ [ ! -e "$PERSISTENT_STOP" ] && [ ! -e "$TEMP_STOP" ] && [ -e "$ENABLE_FLAG" ]; }
+
+maybe_reload_preview_backend(){
+    local branch env_name backend_tree previous_tree now last_attempt status_out tmp_file
+
+    branch="$(git -C "$ROOT" branch --show-current 2>/dev/null || true)"
+    if [ "$branch" != "$DEV_BRANCH" ]; then
+        log "PREVIEW_BACKEND_RELOAD=SKIP_BRANCH"
+        return 0
+    fi
+
+    env_name="$(printf '%s' "${EDARSA_ENV:-${APP_ENV:-${ENVIRONMENT:-PREVIEW}}}" | tr '[:lower:]' '[:upper:]')"
+    case "$env_name" in
+        *PROD*)
+            log "PREVIEW_BACKEND_RELOAD=BLOCKED_PRODUCTION_ENV"
+            log "PRODUCTION_TOUCHED=NO"
+            return 0
+            ;;
+    esac
+
+    backend_tree="$(git -C "$ROOT" rev-parse HEAD:backend 2>/dev/null || true)"
+    [ -n "$backend_tree" ] || { log "PREVIEW_BACKEND_RELOAD=BACKEND_TREE_UNAVAILABLE"; return 0; }
+
+    previous_tree="$(cat "$PREVIEW_BACKEND_TREE_STATE" 2>/dev/null || true)"
+    if [ "$previous_tree" = "$backend_tree" ]; then
+        log "PREVIEW_BACKEND_RUNTIME=CURRENT"
+        return 0
+    fi
+
+    now="$(date +%s)"
+    last_attempt="$(cat "$PREVIEW_BACKEND_RELOAD_ATTEMPT" 2>/dev/null || echo 0)"
+    case "$last_attempt" in ''|*[!0-9]*) last_attempt=0;; esac
+    if [ $((now - last_attempt)) -lt 300 ]; then
+        log "PREVIEW_BACKEND_RELOAD=COOLDOWN"
+        return 0
+    fi
+
+    mkdir -p "$STATE_DIR"
+    printf '%s\n' "$now" > "$PREVIEW_BACKEND_RELOAD_ATTEMPT"
+    log "PREVIEW_BACKEND_RELOAD_REQUIRED=YES"
+    log "PREVIEW_BACKEND_TREE=$backend_tree"
+
+    if ! supervisorctl restart backend > /tmp/edarsahub-preview-backend-restart.log 2>&1; then
+        cat /tmp/edarsahub-preview-backend-restart.log || true
+        log "PREVIEW_BACKEND_RELOAD=FAILED"
+        log "PRODUCTION_TOUCHED=NO"
+        return 0
+    fi
+    cat /tmp/edarsahub-preview-backend-restart.log || true
+    sleep 4
+
+    status_out="$(supervisorctl status backend 2>&1 || true)"
+    printf '%s\n' "$status_out"
+    case "$status_out" in
+        *RUNNING*|*STARTING*) ;;
+        *)
+            log "PREVIEW_BACKEND_RELOAD=STATUS_NOT_HEALTHY"
+            log "PRODUCTION_TOUCHED=NO"
+            return 0
+            ;;
+    esac
+
+    tmp_file="$PREVIEW_BACKEND_TREE_STATE.tmp.$$"
+    printf '%s\n' "$backend_tree" > "$tmp_file"
+    mv -f "$tmp_file" "$PREVIEW_BACKEND_TREE_STATE"
+    log "PREVIEW_BACKEND_RELOAD_COMPLETE=YES"
+    log "PRODUCTION_TOUCHED=NO"
+}
 
 run_tool(){
     local NAME="$1" TIMEOUT_SECONDS="$2"; shift 2
@@ -157,7 +227,8 @@ case "$LOOP_SECONDS" in ''|*[!0-9]*) echo "ABORT=INVALID_LOOP_SECONDS"; exit 2;;
 [ "$LOOP_SECONDS" -ge 10 ] || { echo "ABORT=LOOP_SECONDS_TOO_LOW"; exit 3; }
 
 log "MIRROR_WORKER_STARTED=YES"; log "RUNTIME_GENERATION=$RUNTIME_GENERATION"; log "LOOP_SECONDS=$LOOP_SECONDS"
+maybe_reload_preview_backend
 start_control_plane || true
 start_universal_worker || true
-while [ "$RUNNING" -eq 1 ]; do ensure_control_plane; ensure_universal_worker; run_cycle; ensure_control_plane; ensure_universal_worker; run_reporting_pipeline; [ "$RUNNING" -ne 0 ] || break; sleep "$LOOP_SECONDS" & wait $! || true; done
+while [ "$RUNNING" -eq 1 ]; do ensure_control_plane; ensure_universal_worker; run_cycle; maybe_reload_preview_backend; ensure_control_plane; ensure_universal_worker; run_reporting_pipeline; [ "$RUNNING" -ne 0 ] || break; sleep "$LOOP_SECONDS" & wait $! || true; done
 stop_universal_worker; stop_control_plane; log "MIRROR_WORKER_STOPPED=YES"; exit 0
