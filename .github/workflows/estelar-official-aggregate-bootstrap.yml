@@ -19,6 +19,12 @@ jobs:
   apply-and-validate:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      EDARSAHUB_SQL_HOST: localhost
+      EDARSAHUB_SQL_PORT: '1433'
+      EDARSAHUB_SQL_DATABASE: bootstrap_test
+      EDARSAHUB_SQL_USER: bootstrap_test
+      EDARSAHUB_SQL_PASSWORD: bootstrap_test
     steps:
       - name: Checkout
         uses: actions/checkout@v4
