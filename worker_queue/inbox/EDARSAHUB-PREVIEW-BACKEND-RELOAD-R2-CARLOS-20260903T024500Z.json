@@ -1,0 +1,66 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PREVIEW-BACKEND-RELOAD-R2-CARLOS-20260903T024500Z",
+  "created_at_utc": "2026-09-03T02:45:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c44d9237fa809766c0ab6d9442895a916caff7ce",
+  "production_allowed": false,
+  "objective": "Hacer que el runtime de Preview recargue automaticamente el servicio backend cuando el arbol backend de Edarsahub_Desarrollo cambie. La recarga debe estar protegida por rama de desarrollo, bloqueo explicito de ambientes PROD, servicio fijo backend y marca idempotente por SHA del arbol backend. No publicar ni tocar Edarsahub_Produccion.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "expected_count": 1,
+      "old": "ROOT=\"/app\"\nDIR=\"$ROOT/tools/mirror_sync\"\nRUNTIME_GENERATION=\"20260903-softrestaurant-closed-sales-contract-v1\"\n",
+      "new": "ROOT=\"/app\"\nDIR=\"$ROOT/tools/mirror_sync\"\nDEV_BRANCH=\"Edarsahub_Desarrollo\"\nRUNTIME_GENERATION=\"20260903-preview-backend-reload-v2\"\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "expected_count": 1,
+      "old": "STATE_DIR=\"$ROOT/.git/mirror-sync\"\nENABLE_FLAG=\"$STATE_DIR/ENABLED\"\n",
+      "new": "STATE_DIR=\"$ROOT/.git/mirror-sync\"\nPREVIEW_BACKEND_TREE_STATE=\"$STATE_DIR/preview_backend_tree_sha\"\nPREVIEW_BACKEND_RELOAD_ATTEMPT=\"$STATE_DIR/preview_backend_reload_attempt_epoch\"\nENABLE_FLAG=\"$STATE_DIR/ENABLED\"\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "expected_count": 1,
+      "old": "is_authorized(){ [ ! -e \"$PERSISTENT_STOP\" ] && [ ! -e \"$TEMP_STOP\" ] && [ -e \"$ENABLE_FLAG\" ]; }\n\nrun_tool(){\n",
+      "new": "is_authorized(){ [ ! -e \"$PERSISTENT_STOP\" ] && [ ! -e \"$TEMP_STOP\" ] && [ -e \"$ENABLE_FLAG\" ]; }\n\nmaybe_reload_preview_backend(){\n    local branch env_name backend_tree previous_tree now last_attempt status_out tmp_file\n\n    branch=\"$(git -C \"$ROOT\" branch --show-current 2>/dev/null || true)\"\n    if [ \"$branch\" != \"$DEV_BRANCH\" ]; then\n        log \"PREVIEW_BACKEND_RELOAD=SKIP_BRANCH\"\n        return 0\n    fi\n\n    env_name=\"$(printf '%s' \"${EDARSA_ENV:-${APP_ENV:-${ENVIRONMENT:-PREVIEW}}}\" | tr '[:lower:]' '[:upper:]')\"\n    case \"$env_name\" in\n        *PROD*)\n            log \"PREVIEW_BACKEND_RELOAD=BLOCKED_PRODUCTION_ENV\"\n            log \"PRODUCTION_TOUCHED=NO\"\n            return 0\n            ;;\n    esac\n\n    backend_tree=\"$(git -C \"$ROOT\" rev-parse HEAD:backend 2>/dev/null || true)\"\n    [ -n \"$backend_tree\" ] || { log \"PREVIEW_BACKEND_RELOAD=BACKEND_TREE_UNAVAILABLE\"; return 0; }\n\n    previous_tree=\"$(cat \"$PREVIEW_BACKEND_TREE_STATE\" 2>/dev/null || true)\"\n    if [ \"$previous_tree\" = \"$backend_tree\" ]; then\n        log \"PREVIEW_BACKEND_RUNTIME=CURRENT\"\n        return 0\n    fi\n\n    now=\"$(date +%s)\"\n    last_attempt=\"$(cat \"$PREVIEW_BACKEND_RELOAD_ATTEMPT\" 2>/dev/null || echo 0)\"\n    case \"$last_attempt\" in ''|*[!0-9]*) last_attempt=0;; esac\n    if [ $((now - last_attempt)) -lt 300 ]; then\n        log \"PREVIEW_BACKEND_RELOAD=COOLDOWN\"\n        return 0\n    fi\n\n    mkdir -p \"$STATE_DIR\"\n    printf '%s\\n' \"$now\" > \"$PREVIEW_BACKEND_RELOAD_ATTEMPT\"\n    log \"PREVIEW_BACKEND_RELOAD_REQUIRED=YES\"\n    log \"PREVIEW_BACKEND_TREE=$backend_tree\"\n\n    if ! supervisorctl restart backend > /tmp/edarsahub-preview-backend-restart.log 2>&1; then\n        cat /tmp/edarsahub-preview-backend-restart.log || true\n        log \"PREVIEW_BACKEND_RELOAD=FAILED\"\n        log \"PRODUCTION_TOUCHED=NO\"\n        return 0\n    fi\n    cat /tmp/edarsahub-preview-backend-restart.log || true\n    sleep 4\n\n    status_out=\"$(supervisorctl status backend 2>&1 || true)\"\n    printf '%s\\n' \"$status_out\"\n    case \"$status_out\" in\n        *RUNNING*|*STARTING*) ;;\n        *)\n            log \"PREVIEW_BACKEND_RELOAD=STATUS_NOT_HEALTHY\"\n            log \"PRODUCTION_TOUCHED=NO\"\n            return 0\n            ;;\n    esac\n\n    tmp_file=\"$PREVIEW_BACKEND_TREE_STATE.tmp.$$\"\n    printf '%s\\n' \"$backend_tree\" > \"$tmp_file\"\n    mv -f \"$tmp_file\" \"$PREVIEW_BACKEND_TREE_STATE\"\n    log \"PREVIEW_BACKEND_RELOAD_COMPLETE=YES\"\n    log \"PRODUCTION_TOUCHED=NO\"\n}\n\nrun_tool(){\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "expected_count": 1,
+      "old": "log \"MIRROR_WORKER_STARTED=YES\"; log \"RUNTIME_GENERATION=$RUNTIME_GENERATION\"; log \"LOOP_SECONDS=$LOOP_SECONDS\"\nstart_control_plane || true\nstart_universal_worker || true\nwhile [ \"$RUNNING\" -eq 1 ]; do ensure_control_plane; ensure_universal_worker; run_cycle; ensure_control_plane; ensure_universal_worker; run_reporting_pipeline; [ \"$RUNNING\" -ne 0 ] || break; sleep \"$LOOP_SECONDS\" & wait $! || true; done\n",
+      "new": "log \"MIRROR_WORKER_STARTED=YES\"; log \"RUNTIME_GENERATION=$RUNTIME_GENERATION\"; log \"LOOP_SECONDS=$LOOP_SECONDS\"\nmaybe_reload_preview_backend\nstart_control_plane || true\nstart_universal_worker || true\nwhile [ \"$RUNNING\" -eq 1 ]; do ensure_control_plane; ensure_universal_worker; run_cycle; maybe_reload_preview_backend; ensure_control_plane; ensure_universal_worker; run_reporting_pipeline; [ \"$RUNNING\" -ne 0 ] || break; sleep \"$LOOP_SECONDS\" & wait $! || true; done\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_preview_backend_reload_runtime_contract.py",
+      "content": "from pathlib import Path\n\n\nSCRIPT = (\n    Path(__file__).resolve().parents[2]\n    / 'tools'\n    / 'mirror_sync'\n    / 'mirror_sync_worker.sh'\n).read_text(encoding='utf-8')\n\n\ndef test_reload_is_development_and_production_guarded():\n    assert 'DEV_BRANCH=\"Edarsahub_Desarrollo\"' in SCRIPT\n    assert 'if [ \"$branch\" != \"$DEV_BRANCH\" ]' in SCRIPT\n    assert 'PREVIEW_BACKEND_RELOAD=BLOCKED_PRODUCTION_ENV' in SCRIPT\n    assert 'PRODUCTION_TOUCHED=NO' in SCRIPT\n\n\ndef test_reload_is_idempotent_by_backend_tree():\n    assert 'git -C \"$ROOT\" rev-parse HEAD:backend' in SCRIPT\n    assert 'PREVIEW_BACKEND_TREE_STATE=\"$STATE_DIR/preview_backend_tree_sha\"' in SCRIPT\n    assert 'PREVIEW_BACKEND_RUNTIME=CURRENT' in SCRIPT\n    assert 'PREVIEW_BACKEND_RELOAD_COMPLETE=YES' in SCRIPT\n\n\ndef test_reload_uses_only_fixed_backend_service_and_cooldown():\n    assert SCRIPT.count('supervisorctl restart backend') == 1\n    assert 'supervisorctl status backend' in SCRIPT\n    assert 'PREVIEW_BACKEND_RELOAD=COOLDOWN' in SCRIPT\n    assert 'maybe_reload_preview_backend' in SCRIPT\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_preview_backend_reload_runtime_contract.py",
+        "backend/tests/test_resync_system_type_normalization_r4.py",
+        "backend/tests/test_softrestaurant_closed_sales_report_contract.py"
+      ]
+    }
+  ]
+}
