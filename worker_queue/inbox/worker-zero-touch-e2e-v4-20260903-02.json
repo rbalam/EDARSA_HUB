@@ -1,0 +1,11 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-zero-touch-e2e-v4-20260903-02",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Certificar un ciclo independiente zero-touch post-cambio del Worker universal sin modificar infraestructura ni produccion.",
+  "human_summary_language": "es",
+  "actions": [{"type":"write_file","path":"worker_queue/e2e_canaries/worker-zero-touch-e2e-v4-20260903-02.txt","content":"EDARSAHUB_WORKER_E2E_V4=worker-zero-touch-e2e-v4-20260903-02\nCERT_SLOT=02\n"}],
+  "checks": [{"type":"git_diff_check"}]
+}
