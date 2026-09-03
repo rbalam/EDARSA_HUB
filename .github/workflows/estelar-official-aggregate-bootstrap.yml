@@ -1,4 +1,5 @@
 name: Estelar Official Aggregate Bootstrap
+# Rerun after aligning legacy empresa_id contract with daily aggregate.
 
 on:
   push:
