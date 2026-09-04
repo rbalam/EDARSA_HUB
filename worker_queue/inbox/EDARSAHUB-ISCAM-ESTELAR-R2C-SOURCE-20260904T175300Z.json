@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-ESTELAR-R2C-SOURCE-20260904T175300Z",
+  "created_at_utc": "2026-09-04T17:53:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "65a58556dc7e25c36907a2476cdb975149c24a69",
+  "production_allowed": false,
+  "objective": "R2C de ISCAM ESTELAR. Reintentar exclusivamente el cambio de fuente de /inteligencia/iscam/ventas-periodos desde dbo.Sync_Sales a dbo.vw_Comercial_KPIs_Diarios_v2_Runtime sobre el HEAD actual de Desarrollo. Los intentos previos quedaron bloqueados por prueba mal ubicada y luego BASE_SHA_MISMATCH. Esta version usa el base_sha actual confirmado y no mueve Desarrollo despues de encolar. No resincronizar datos ni tocar Produccion en este job.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "    pexpr = _period_sql(\"s.FechaHora\", gb)\n    if desde or hasta:\n        d, h = _rango_fechas(desde, hasta)\n        where, params = \"AND s.FechaHora >= %s AND s.FechaHora < %s\", (unidad, d, h)\n    else:\n        where, params = \"AND s.FechaHora >= DATEADD(MONTH, %s, CAST(GETDATE() AS DATE))\", (unidad, -int(meses))\n",
+      "new": "    pexpr = _period_sql(\"k.fecha_operacion\", gb)\n    if desde or hasta:\n        d, h = _rango_fechas(desde, hasta)\n        where, params = \"AND k.fecha_operacion >= %s AND k.fecha_operacion < %s\", (unidad, d, h)\n    else:\n        where, params = \"AND k.fecha_operacion >= DATEADD(MONTH, %s, CAST(GETDATE() AS DATE))\", (unidad, -int(meses))\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "        SELECT {pexpr} AS periodo, SUM(s.MontoTotal) AS venta_total,\n               COUNT(*) AS cheques, SUM(s.Pax) AS clientes\n        FROM dbo.Sync_Sales s\n        WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED' {where}\n",
+      "new": "        SELECT {pexpr} AS periodo, SUM(ISNULL(k.ventas_total,0)) AS venta_total,\n               SUM(ISNULL(k.tickets_total,0)) AS cheques, SUM(ISNULL(k.pax_total,0)) AS clientes\n        FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime k\n        WHERE k.unidad_negocio_id = %s {where}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "    return {\"success\": True, \"source\": \"Sync_Sales (canónica)\", \"unidad\": unidad,\n            \"group_by\": gb, \"periodos\": data}\n",
+      "new": "    return {\"success\": True, \"source\": \"vw_Comercial_KPIs_Diarios_v2_Runtime (canónica V2)\", \"unidad\": unidad,\n            \"group_by\": gb, \"periodos\": data}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_ventas_periodos_runtime_v2_contract_r2c.py",
+      "content": "from pathlib import Path\n\n\ndef _block():\n    text = Path('modules/inteligencia_comercial/iscam_routes.py').read_text(encoding='utf-8')\n    return text.split('@iscam_router.get(\\\"/ventas-periodos\\\")', 1)[1].split('@iscam_router.get(\\\"/ventas-periodos/productos\\\")', 1)[0]\n\n\ndef test_iscam_ventas_periodos_uses_runtime_v2_header():\n    block = _block()\n    assert 'dbo.vw_Comercial_KPIs_Diarios_v2_Runtime' in block\n    assert 'k.fecha_operacion' in block\n    assert 'k.ventas_total' in block\n    assert 'k.tickets_total' in block\n    assert 'k.pax_total' in block\n    assert 'dbo.Sync_Sales' not in block\n    assert \"s.status = 'COMPLETED'\" not in block\n\n\ndef test_iscam_ventas_periodos_keeps_public_response_contract():\n    block = _block()\n    for key in ('periodo', 'venta_total', 'cheques', 'clientes', 'cheque_promedio', 'consumo_promedio'):\n        assert key in block\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/inteligencia_comercial/iscam_routes.py", "backend/tests/test_iscam_ventas_periodos_runtime_v2_contract_r2c.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_iscam_ventas_periodos_runtime_v2_contract_r2c.py"]}
+  ]
+}
