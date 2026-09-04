@@ -1,0 +1,28 @@
+{
+  "base_sha": "65a58556dc7e25c36907a2476cdb975149c24a69",
+  "blockers": [],
+  "candidate_sha": "78547f63083f95d1bce03c834117711e61b92f86",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-04T17:54:25Z",
+  "development_sha": "78547f63083f95d1bce03c834117711e61b92f86",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/inteligencia_comercial/iscam_routes.py",
+    "backend/tests/test_iscam_ventas_periodos_runtime_v2_contract_r2c.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-ESTELAR-R2C-SOURCE-20260904T175300Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-04T17:55:07Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-04T17:54:20Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
