@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "14f18902f3d9268a631cbe2a6be96a2f0734eb59",
-  "generated_at_utc": "2026-09-04T05:12:11Z",
+  "generated_at_utc": "2026-09-04T05:13:22Z",
   "history": {
     "done_total_local": 62,
     "pending_total_local": 0,
@@ -13,37 +13,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 549,
+      "age_seconds": 620,
       "job_id": "EDARSAHUB-RECON-CF-ORIGEN-QRO-JAN-AUG-20260904T050500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 430,
+      "age_seconds": 500,
       "job_id": "EDARSAHUB-RECON-DIAG-CF-20260103-20260904T050400Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 189,
+      "age_seconds": 260,
       "job_id": "EDARSAHUB-RECON-DIAG-CF-20260731-20260904T050900Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 142,
+      "age_seconds": 213,
       "job_id": "EDARSAHUB-RECON-DIAG-CF-20260731-R2-20260904T051100Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 58,
+      "age_seconds": 129,
       "job_id": "EDARSAHUB-RECON-DIAG-QRO-20260731-20260904T051200Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 367,
+      "age_seconds": 438,
       "job_id": "worker-zero-touch-canary-v3-20260904T050300Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -61,8 +61,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-04T05:12:06Z",
-    "last_receive_utc": "2026-09-04T05:12:06Z",
+    "last_cycle_utc": "2026-09-04T05:13:17Z",
+    "last_receive_utc": "2026-09-04T05:13:18Z",
     "last_terminal_utc": "2026-09-04T05:11:12Z",
     "pid": "290"
   },
