@@ -1,0 +1,33 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-ESTELAR-MONTHLY-AUDIT-20260904T203500Z",
+  "created_at_utc": "2026-09-04T20:35:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Auditoria SQL de solo lectura para verificar que la fuente canonica V2 de LA ESTELAR contiene ventas mensuales de enero a septiembre de 2026, con foco en julio, agosto y septiembre, antes de cerrar la correccion de Reportes ISCAM Ventas por Periodo.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "estelar_meses_2026_runtime_v2",
+          "sql": "SELECT CONVERT(char(7), k.fecha_operacion, 120) AS periodo, SUM(ISNULL(k.ventas_total,0)) AS venta_total, SUM(ISNULL(k.tickets_total,0)) AS cheques, SUM(ISNULL(k.pax_total,0)) AS clientes FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime k WHERE k.unidad_negocio_id = 'ESTELAR' AND k.fecha_operacion >= '2026-01-01' AND k.fecha_operacion < '2026-10-01' GROUP BY CONVERT(char(7), k.fecha_operacion, 120) ORDER BY periodo"
+        },
+        {
+          "name": "estelar_julio_agosto_septiembre_diario_runtime_v2",
+          "sql": "SELECT k.fecha_operacion, ISNULL(k.ventas_total,0) AS venta_total, ISNULL(k.tickets_total,0) AS cheques, ISNULL(k.pax_total,0) AS clientes, ISNULL(k.propinas_total,0) AS propinas FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime k WHERE k.unidad_negocio_id = 'ESTELAR' AND k.fecha_operacion >= '2026-07-01' AND k.fecha_operacion < '2026-10-01' ORDER BY k.fecha_operacion"
+        }
+      ]
+    }
+  ]
+}
