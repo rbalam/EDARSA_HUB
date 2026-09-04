@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-CLOSE-CF-ORPHANS-R2-20260904T163500Z",
+  "created_at_utc": "2026-09-04T16:35:00Z",
+  "requester": {"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b24778ca390e4331f713faa1ab1db6d84ff77921",
+  "production_allowed": false,
+  "objective": "Cerrar definitivamente las filas huerfanas CIENFUEGOS 2026-03-12 y 2026-03-22 usando una operacion explicita de repositorio. Antes de mutar, DRY RUN oficial SoftRestaurant por cada fecha debe devolver cero. La operacion debe ser soft-deactivate puntual, idempotente y con guard de exactamente una fila activa por fecha. Luego verificar cero filas activas. No tocar Produccion.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/comercial_v2/kpi_cleanup.py",
+      "content": "from typing import Dict\n\nfrom .repository_comercial_edarsahub import _execute_query\n\n\ndef soft_deactivate_kpi_diario(unidad_codigo: str, fecha_operacion: str, motivo: str) -> Dict[str, object]:\n    unidad_codigo = str(unidad_codigo or '').strip()\n    fecha_operacion = str(fecha_operacion or '').strip()\n    motivo = str(motivo or '').strip()\n    if not unidad_codigo or not fecha_operacion or not motivo:\n        raise ValueError('unidad_codigo, fecha_operacion y motivo son obligatorios')\n\n    rows = _execute_query(f\"\"\"\n        SELECT id, activo\n        FROM dbo.Comercial_KPIs_Diarios_v2\n        WHERE unidad_negocio_id = '{unidad_codigo}'\n          AND fecha_operacion = '{fecha_operacion}'\n          AND ISNULL(activo,1)=1\n    \"\"\")\n    if len(rows) != 1:\n        raise RuntimeError(f'Guard de fila activa fallo para {unidad_codigo}/{fecha_operacion}: {len(rows)}')\n\n    row_id = str(rows[0]['id'])\n    _execute_query(f\"\"\"\n        UPDATE dbo.Comercial_KPIs_Diarios_v2\n           SET activo = 0,\n               fecha_ultima_actualizacion = SYSUTCDATETIME()\n         WHERE id = '{row_id}'\n           AND ISNULL(activo,1)=1\n    \"\"\")\n\n    after = _execute_query(f\"\"\"\n        SELECT COUNT(*) AS activos\n        FROM dbo.Comercial_KPIs_Diarios_v2\n        WHERE unidad_negocio_id = '{unidad_codigo}'\n          AND fecha_operacion = '{fecha_operacion}'\n          AND ISNULL(activo,1)=1\n    \"\"\")\n    activos = int((after[0] or {}).get('activos') or 0) if after else 0\n    if activos != 0:\n        raise RuntimeError(f'Soft deactivate no se confirmo para {unidad_codigo}/{fecha_operacion}')\n    return {'unidad': unidad_codigo, 'fecha': fecha_operacion, 'activo': False, 'motivo': motivo}\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_close_cf_orphans_r2.py",
+      "content": "import asyncio\nfrom datetime import date\n\nfrom api.admin_scheduler_resync import _ejecutar_dry_run, _get_unidad_config, _execute_edarsahub_query\nfrom modules.comercial_v2.kpi_cleanup import soft_deactivate_kpi_diario\n\nDATES = ['2026-03-12','2026-03-22']\n\ndef is_zero(dry):\n    detalle = dry.get('detalle') or []\n    if not detalle:\n        return True\n    assert len(detalle) == 1, dry\n    r = detalle[0]\n    return float(r.get('ventas_total') or 0)==0 and float(r.get('propinas_total') or 0)==0 and int(r.get('tickets_total') or 0)==0 and int(r.get('pax_total') or 0)==0\n\ndef test_close_cf_orphans_r2():\n    unidad = _get_unidad_config('CIENFUEGOS')\n    assert unidad\n    for ds in DATES:\n        d = date.fromisoformat(ds)\n        dry = asyncio.run(_ejecutar_dry_run('CIENFUEGOS', unidad, d, d))\n        assert dry.get('success') is True, dry\n        assert is_zero(dry), (ds, dry)\n        result = soft_deactivate_kpi_diario('CIENFUEGOS', ds, 'Conciliacion Jan-Ago 2026: fila presente solo en HUB; origen oficial sin movimientos')\n        assert result['activo'] is False\n\n    rows = _execute_edarsahub_query(\"\"\"SELECT CONVERT(varchar(10),fecha_operacion,23) AS fecha_operacion FROM dbo.Comercial_KPIs_Diarios_v2 WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion IN ('2026-03-12','2026-03-22') AND ISNULL(activo,1)=1\"\"\")\n    assert rows == [], rows\n"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"},
+    {"type":"py_compile","paths":["backend/modules/comercial_v2/kpi_cleanup.py","backend/tests/test_close_cf_orphans_r2.py"]},
+    {"type":"pytest","paths":["backend/tests/test_close_cf_orphans_r2.py"]}
+  ]
+}
