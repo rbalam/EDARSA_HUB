@@ -1,0 +1,29 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PREVIEW-CONVERGENCE-ISCAM-ESTELAR-20260904T211000Z",
+  "created_at_utc": "2026-09-04T21:10:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Recuperacion controlada del Preview de EDARSAHUB para aplicar al checkout local /app el HEAD remoto de Edarsahub_Desarrollo mediante el actualizador canonico seguro, verificar que el codigo ISCAM Ventas por Periodo ya use Runtime V2 y reiniciar exclusivamente el servicio backend de Preview. Si /app esta sucio, pausado o no es un fast-forward seguro, el job debe fallar sin limpiar, resetear, stash ni sobrescribir trabajo local. Produccion no se toca.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_preview_runtime_convergence_iscam_estelar.py",
+      "content": "import os\nimport subprocess\nimport time\nfrom pathlib import Path\n\n\ndef _run(cmd, timeout=240):\n    return subprocess.run(cmd, cwd='/app', text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout, check=False)\n\n\ndef test_preview_runtime_converges_and_backend_reloads():\n    env_name = str(os.getenv('EDARSA_ENV') or os.getenv('APP_ENV') or os.getenv('ENVIRONMENT') or 'PREVIEW').upper()\n    assert 'PROD' not in env_name, f'PRODUCTION_ENV_BLOCKED:{env_name}'\n\n    apply = _run(['/app/tools/mirror_sync/apply_remote_update.sh'])\n    assert apply.returncode == 0, 'SAFE_APPLY_FAILED\\n' + apply.stdout[-4000:]\n\n    local = _run(['git', '-C', '/app', 'rev-parse', 'HEAD'], timeout=30)\n    remote = _run(['git', '-C', '/app', 'rev-parse', 'origin/Edarsahub_Desarrollo'], timeout=30)\n    assert local.returncode == 0 and remote.returncode == 0\n    assert local.stdout.strip() == remote.stdout.strip(), f'PREVIEW_HEAD_STILL_STALE:{local.stdout.strip()}!={remote.stdout.strip()}'\n\n    route_path = Path('/app/backend/modules/inteligencia_comercial/iscam_routes.py')\n    route = route_path.read_text(encoding='utf-8')\n    block = route.split('@iscam_router.get(\\\"/ventas-periodos\\\")', 1)[1].split('@iscam_router.get(\\\"/ventas-periodos/productos\\\")', 1)[0]\n    assert 'dbo.vw_Comercial_KPIs_Diarios_v2_Runtime' in block\n    assert 'dbo.Sync_Sales' not in block\n\n    restart = _run(['supervisorctl', 'restart', 'backend'], timeout=60)\n    assert restart.returncode == 0, 'BACKEND_RESTART_FAILED\\n' + restart.stdout[-2000:]\n    time.sleep(4)\n    status = _run(['supervisorctl', 'status', 'backend'], timeout=30)\n    assert status.returncode == 0\n    assert ('RUNNING' in status.stdout or 'STARTING' in status.stdout), 'BACKEND_NOT_HEALTHY\\n' + status.stdout[-2000:]\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/tests/test_preview_runtime_convergence_iscam_estelar.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_preview_runtime_convergence_iscam_estelar.py"]}
+  ]
+}
