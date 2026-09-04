@@ -1,0 +1,20 @@
+{
+  "branch": "Edarsahub_Desarrollo",
+  "environment": "PREVIEW",
+  "local_head": "14f18902f3d9268a631cbe2a6be96a2f0734eb59",
+  "mirror_enabled": true,
+  "mirror_stop": false,
+  "production_touched": false,
+  "remote_head": "e291d7333ee485f0967b44d0ec1410752801694c",
+  "schema": "edarsahub.preview-diagnostic.v3",
+  "status_porcelain": "M tools/mirror_sync/universal_job_result_publisher.py\n?? backend/tests/test_universal_job_result_publisher_git_auth_contract.py",
+  "supervisor_status": {
+    "output": "backend                          RUNNING   pid 263, uptime 1:39:28\ncode-server                      RUNNING   pid 265, uptime 1:39:28\nedarsahub-audit-relay            RUNNING   pid 267, uptime 1:39:28\nedarsahub-bootstrap-watchdog     FATAL     Exited too quickly (process log may have details)\nedarsahub-mirror-sync            FATAL     Exited too quickly (process log may have details)\nedarsahub-universal-worker       RUNNING   pid 272, uptime 1:39:28\nfrontend                         RUNNING   pid 274, uptime 1:39:28\nmongodb                          RUNNING   pid 275, uptime 1:39:28\nnginx-code-proxy                 RUNNING   pid 262, uptime 1:39:28\nwebhook-crond                    RUNNING   pid 195331, uptime 0:07:26\n",
+    "returncode": 3
+  },
+  "sync_pause": false,
+  "temp_mirror_stop": false,
+  "temp_worker_stop": false,
+  "topology": "0\t28",
+  "worker_stop": false
+}
