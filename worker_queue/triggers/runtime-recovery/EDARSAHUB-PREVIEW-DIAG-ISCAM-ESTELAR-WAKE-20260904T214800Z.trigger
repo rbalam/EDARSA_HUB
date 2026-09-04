@@ -1,0 +1,4 @@
+job_id=EDARSAHUB-PREVIEW-DIAG-ISCAM-ESTELAR-20260904T214700Z
+reason=wake universal worker for non-destructive Preview diagnostic
+queue_sha=7a2c713c6bfdfd28aa538859351298b1769eb3f9
+production_allowed=false
