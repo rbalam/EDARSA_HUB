@@ -1,0 +1,22 @@
+{
+  "blockers": [
+    "dispatcher_exception:RuntimeError:BASE_SHA_MISMATCH:expected=66d2485784becccc698d3f6b82b46a4453b01599:actual=8b72933c9f151954f417c12d665606daab58c1c2"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-04T16:05:28Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-CHECK-CF-ORPHANS-20260904T153400Z",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-04T16:06:30Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-04T16:05:27Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
