@@ -1,0 +1,19 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-zero-touch-canary-v3-20260904T050300Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Ejecutar un canario E2E zero-touch del Worker universal para validar intake, dispatch, worktree aislado, integracion a Desarrollo y publicacion del resultado, sin tocar Produccion ni modificar infraestructura del propio Worker.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "worker_queue/e2e_canaries/worker-zero-touch-canary-v3-20260904T050300Z.txt",
+      "content": "EDARSAHUB_WORKER_ZERO_TOUCH_CANARY_V3\njob_id=worker-zero-touch-canary-v3-20260904T050300Z\nproduction_touched=false\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
