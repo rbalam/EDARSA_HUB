@@ -1,0 +1,22 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PREVIEW-DIAG-ISCAM-ESTELAR-R3-20260904T221200Z",
+  "created_at_utc": "2026-09-04T22:12:00Z",
+  "requester": {"email": "carlosruz@edarsa.com.mx", "source": "chatgpt", "project": "V1", "chat": "EDARSAHUB-CONCILIACIONES"},
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e291d7333ee485f0967b44d0ec1410752801694c",
+  "production_allowed": false,
+  "objective": "Diagnosticar de forma no destructiva el runtime Preview de EDARSAHUB y dejar evidencia integrada sin mover Edarsahub_Desarrollo despues de encolar. Registrar rama, HEAD local/remoto, topologia, estado git, flags de sincronizacion y supervisor. No reset, clean, stash, force, fast-forward ni reinicios. Produccion no se toca.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {"type": "write_file", "path": "backend/tests/preview_diag_iscam_estelar_r3_evidence.json", "content": "{\n  \"status\": \"PENDING\",\n  \"production_touched\": false\n}\n"},
+    {"type": "write_file", "path": "backend/tests/test_preview_diag_iscam_estelar_r3.py", "content": "import json\nimport os\nimport subprocess\nfrom pathlib import Path\n\nEVIDENCE = Path('tests/preview_diag_iscam_estelar_r3_evidence.json')\n\ndef run(cmd, timeout=60):\n    try:\n        p = subprocess.run(cmd, cwd='/app', text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout, check=False)\n        return {'returncode': p.returncode, 'output': p.stdout[-12000:]}\n    except Exception as exc:\n        return {'returncode': -999, 'output': f'{type(exc).__name__}:{exc}'}\n\ndef val(cmd):\n    r = run(cmd)\n    return r['output'].strip() if r['returncode'] == 0 else None\n\ndef test_preview_runtime_diagnostic_only_r3():\n    env_name = str(os.getenv('EDARSA_ENV') or os.getenv('APP_ENV') or os.getenv('ENVIRONMENT') or 'PREVIEW').upper()\n    evidence = {\n        'schema': 'edarsahub.preview-diagnostic.v3',\n        'environment': env_name,\n        'production_touched': False,\n        'branch': val(['git','branch','--show-current']),\n        'local_head': val(['git','rev-parse','HEAD']),\n        'remote_head': val(['git','rev-parse','origin/Edarsahub_Desarrollo']),\n        'topology': val(['git','rev-list','--left-right','--count','HEAD...origin/Edarsahub_Desarrollo']),\n        'status_porcelain': val(['git','status','--porcelain=v1','--untracked-files=all']) or '',\n        'mirror_enabled': Path('/app/.git/mirror-sync/ENABLED').exists(),\n        'mirror_stop': Path('/app/.git/mirror-sync/STOP').exists(),\n        'sync_pause': Path('/app/.git/EDARSAHUB_SYNC_PAUSED').exists(),\n        'temp_mirror_stop': Path('/tmp/edarsahub-mirror-sync/STOP').exists(),\n        'worker_stop': Path('/app/.git/universal-worker-queue/STOP').exists(),\n        'temp_worker_stop': Path('/tmp/edarsahub-universal-worker/STOP').exists(),\n        'supervisor_status': run(['supervisorctl','status'])\n    }\n    EVIDENCE.write_text(json.dumps(evidence, ensure_ascii=False, indent=2, sort_keys=True) + '\\n', encoding='utf-8')\n    assert 'PROD' not in env_name\n    assert evidence['production_touched'] is False\n"}
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/tests/test_preview_diag_iscam_estelar_r3.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_preview_diag_iscam_estelar_r3.py"]}
+  ]
+}
