@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PREVIEW-WATCHDOG-ISCAM-ESTELAR-R2-20260904T212000Z",
+  "created_at_utc": "2026-09-04T21:20:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6ac0fc10f83beddf9d23127aed3facf232ce66c8",
+  "production_allowed": false,
+  "objective": "Recuperacion R2 del Preview para ISCAM ESTELAR usando el bootstrap watchdog canonico en modo --once. El runtime local /app esta atras pero es ancestro directo de Desarrollo; no usar reset, clean, stash ni force. El watchdog solo puede hacer fast-forward si /app esta limpio. Tras quedar alineado con el HEAD remoto vigente durante la prueba, verificar que /inteligencia/iscam/ventas-periodos ya use Runtime V2 y reiniciar exclusivamente backend de Preview. Si detecta trabajo local sucio, topologia no FF o entorno de Produccion, fallar sin modificar ese trabajo.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_preview_watchdog_iscam_estelar_r2.py",
+      "content": "import json\nimport os\nimport subprocess\nimport sys\nimport time\nfrom pathlib import Path\n\n\ndef _run(cmd, cwd='/app', timeout=180):\n    return subprocess.run(cmd, cwd=cwd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout, check=False)\n\n\ndef _watchdog_payload(output):\n    for line in output.splitlines():\n        if line.startswith('BOOTSTRAP_WATCHDOG='):\n            return json.loads(line.split('=', 1)[1])\n    raise AssertionError('WATCHDOG_PAYLOAD_MISSING\\n' + output[-3000:])\n\n\ndef test_preview_safe_fast_forward_and_backend_reload():\n    env_name = str(os.getenv('EDARSA_ENV') or os.getenv('APP_ENV') or os.getenv('ENVIRONMENT') or 'PREVIEW').upper()\n    assert 'PROD' not in env_name, f'PRODUCTION_ENV_BLOCKED:{env_name}'\n\n    wd = _run([sys.executable, '/app/tools/bootstrap/edarsahub_bootstrap_watchdog.py', '--once'], timeout=240)\n    assert wd.returncode == 0, 'WATCHDOG_EXECUTION_FAILED\\n' + wd.stdout[-4000:]\n    payload = _watchdog_payload(wd.stdout)\n    state = (payload.get('ff') or {}).get('state')\n    assert state in {'FF_APPLIED', 'ALIGNED'}, f'WATCHDOG_DID_NOT_CONVERGE:{state}:{payload}'\n\n    local = _run(['git', 'rev-parse', 'HEAD'], timeout=30)\n    remote = _run(['git', 'rev-parse', 'origin/Edarsahub_Desarrollo'], timeout=30)\n    assert local.returncode == 0 and remote.returncode == 0\n    assert local.stdout.strip() == remote.stdout.strip(), f'PREVIEW_HEAD_STALE:{local.stdout.strip()}!={remote.stdout.strip()}'\n\n    route = Path('/app/backend/modules/inteligencia_comercial/iscam_routes.py').read_text(encoding='utf-8')\n    block = route.split('@iscam_router.get(\\\"/ventas-periodos\\\")', 1)[1].split('@iscam_router.get(\\\"/ventas-periodos/productos\\\")', 1)[0]\n    assert 'dbo.vw_Comercial_KPIs_Diarios_v2_Runtime' in block\n    assert 'dbo.Sync_Sales' not in block\n\n    restart = _run(['supervisorctl', 'restart', 'backend'], timeout=60)\n    assert restart.returncode == 0, 'BACKEND_RESTART_FAILED\\n' + restart.stdout[-2000:]\n    time.sleep(4)\n    status = _run(['supervisorctl', 'status', 'backend'], timeout=30)\n    assert status.returncode == 0\n    assert ('RUNNING' in status.stdout or 'STARTING' in status.stdout), 'BACKEND_NOT_HEALTHY\\n' + status.stdout[-2000:]\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/tests/test_preview_watchdog_iscam_estelar_r2.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_preview_watchdog_iscam_estelar_r2.py"]}
+  ]
+}
