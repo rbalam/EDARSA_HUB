@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SOFTRESTAURANT-AUGUST-SEQUENTIAL-20260904T014000Z",
+  "created_at_utc": "2026-09-04T01:40:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "14f18902f3d9268a631cbe2a6be96a2f0734eb59",
+  "production_allowed": false,
+  "objective": "Sincronizar ventas cerradas SoftRestaurant de agosto 2026 para ESTELAR, CIENFUEGOS y 130MID de forma estrictamente secuencial por fecha: primero 2026-08-01 para las tres unidades, luego 2026-08-02, y asi sucesivamente hasta 2026-08-30. Excluir 2026-08-31. Para cada unidad/dia ejecutar DRY RUN, luego REAL solo si el DRY RUN fue exitoso, y comprobar despues que EDARSAHUB tenga una sola fila activa y que ventas, propinas, PAX y tickets coincidan con el origen del DRY RUN. Detenerse ante la primera discrepancia. No tocar Produccion.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_softrestaurant_august_2026_sequential_resync.py",
+      "content": "import asyncio\nimport json\nimport time\nfrom datetime import date, timedelta\n\nfrom api.admin_scheduler_resync import (\n    _get_unidad_config,\n    _ejecutar_dry_run,\n    _ejecutar_sync_real,\n    _execute_edarsahub_query,\n)\n\nUNIDADES = (\"ESTELAR\", \"CIENFUEGOS\", \"130MID\")\nSERVERS = {\n    \"ESTELAR\": \"a5ff0e25-f029-43db-b634-d4ac814c904f\",\n    \"CIENFUEGOS\": \"6d053c22-523e-48c0-b72b-96081e2d781b\",\n    \"130MID\": \"a5547321-1139-4d2b-9d53-182ca737b6b6\",\n}\n\ndef _metricas(row):\n    return {\n        \"ventas_total\": round(float(row.get(\"ventas_total\") or 0), 2),\n        \"propinas_total\": round(float(row.get(\"propinas_total\") or 0), 2),\n        \"tickets_total\": int(row.get(\"tickets_total\") or 0),\n        \"pax_total\": int(row.get(\"pax_total\") or 0),\n    }\n\ndef _leer_final(codigo, fecha):\n    rows = _execute_edarsahub_query(f\"\"\"\n        SELECT\n            COUNT(*) AS registros_activos,\n            SUM(ISNULL(ventas_total, 0)) AS ventas_total,\n            SUM(ISNULL(propinas_total, 0)) AS propinas_total,\n            SUM(ISNULL(tickets_total, 0)) AS tickets_total,\n            SUM(ISNULL(pax_total, 0)) AS pax_total\n        FROM dbo.Comercial_KPIs_Diarios_v2\n        WHERE unidad_negocio_id = '{codigo}'\n          AND fecha_operacion = '{fecha.isoformat()}'\n          AND ISNULL(activo, 1) = 1\n    \"\"\")\n    assert rows, (codigo, fecha, \"Sin lectura final EDARSAHUB\")\n    row = rows[0]\n    return {\n        \"registros_activos\": int(row.get(\"registros_activos\") or 0),\n        \"ventas_total\": round(float(row.get(\"ventas_total\") or 0), 2),\n        \"propinas_total\": round(float(row.get(\"propinas_total\") or 0), 2),\n        \"tickets_total\": int(row.get(\"tickets_total\") or 0),\n        \"pax_total\": int(row.get(\"pax_total\") or 0),\n    }\n\ndef test_softrestaurant_agosto_2026_secuencial_dia_por_dia():\n    fecha = date(2026, 8, 1)\n    fin = date(2026, 8, 30)\n    evidencia = []\n\n    while fecha <= fin:\n        dia = []\n        for codigo in UNIDADES:\n            unidad = _get_unidad_config(codigo)\n            assert unidad, (codigo, fecha, \"Unidad no encontrada\")\n            assert unidad.get(\"server_id\") == SERVERS[codigo], (codigo, unidad)\n            assert unidad.get(\"sistema\") == \"SOFTRESTAURANT\", (codigo, unidad)\n\n            dry = asyncio.run(_ejecutar_dry_run(codigo, unidad, fecha, fecha))\n            assert dry.get(\"success\") is True, (codigo, fecha, dry)\n            detalle = dry.get(\"detalle\") or []\n            assert len(detalle) == 1, (codigo, fecha, dry)\n            origen = _metricas(detalle[0])\n\n            run_id = f\"CHATGPT-SOFT-AUG2026-{fecha.strftime('%Y%m%d')}-{codigo}\"\n            real = asyncio.run(_ejecutar_sync_real(codigo, unidad, fecha, fecha, run_id))\n            assert real.get(\"success\") is True, (codigo, fecha, real)\n\n            final = _leer_final(codigo, fecha)\n            assert final[\"registros_activos\"] == 1, (codigo, fecha, final)\n            for campo in (\"ventas_total\", \"propinas_total\", \"tickets_total\", \"pax_total\"):\n                assert final[campo] == origen[campo], (codigo, fecha, campo, origen, final)\n\n            dia.append({\n                \"unidad\": codigo,\n                \"fecha\": fecha.isoformat(),\n                \"origen\": origen,\n                \"destino\": final,\n                \"real\": {\n                    \"processed\": real.get(\"records_processed\"),\n                    \"inserted\": real.get(\"records_inserted\"),\n                    \"updated\": real.get(\"records_updated\"),\n                    \"errored\": real.get(\"records_errored\"),\n                },\n            })\n            time.sleep(0.5)\n\n        evidencia.extend(dia)\n        print(\"SOFTRESTAURANT_DAY_OK=\" + json.dumps({\"fecha\": fecha.isoformat(), \"unidades\": dia}, ensure_ascii=False, default=str))\n        fecha += timedelta(days=1)\n        time.sleep(0.5)\n\n    assert len(evidencia) == 90\n    assert evidencia[-1][\"fecha\"] == \"2026-08-30\"\n    print(\"SOFTRESTAURANT_AUGUST_SEQUENTIAL_COMPLETE=90\")\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/tests/test_softrestaurant_august_2026_sequential_resync.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_softrestaurant_august_2026_sequential_resync.py"]}
+  ]
+}
