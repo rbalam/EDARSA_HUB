@@ -1,0 +1,60 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-FIX-MPRO-DRYRUN-CONTRACT-20260904T052000Z",
+  "created_at_utc":"2026-09-04T05:20:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"34ccd9fc7f31b2423fa2d3a9a1eae73f3d6f0beb",
+  "production_allowed":false,
+  "objective":"Corregir el DRY RUN de MPRO para que use exactamente QUERY_MPRO_VENTAS_CERRADAS y la misma agrupacion operacional que el handler REAL. Debe conservar ventas, propinas, tickets y PAX. No modificar SoftRestaurant ni Produccion.",
+  "human_summary_language":"es",
+  "mode":"MUTATION",
+  "actions":[
+    {
+      "type":"replace_text",
+      "path":"backend/api/admin_scheduler_resync.py",
+      "expected_count":1,
+      "old":"        _agrupar_ventas_cerradas_por_fecha_operacion,\n        build_softrestaurant_ventas_cerradas_query,\n        execute_query_on_server,\n        get_server_connection_config,\n    )",
+      "new":"        QUERY_MPRO_VENTAS_CERRADAS,\n        _agrupar_ventas_cerradas_por_fecha_operacion,\n        build_softrestaurant_ventas_cerradas_query,\n        execute_query_on_server,\n        get_server_connection_config,\n    )"
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/api/admin_scheduler_resync.py",
+      "expected_count":1,
+      "old":"        else:\n            # MPRO conserva el catálogo central de consultas.\n            query_template = get_query_for_server(\n                config,\n                'comercial_ventas_cerradas',\n            )\n            if not query_template:\n                query_template = \"\"\"\n                SELECT\n                    CAST(ve.Vn_Fecha AS DATE) AS fecha_operacion,\n                    SUM(ve.Vn_Precio_Neto_Importe) AS ventas_total,\n                    0 AS propinas_total,\n                    COUNT(DISTINCT ve.Vn_Folio) AS tickets_total,\n                    SUM(ISNULL(c.Co_Personas, 1)) AS pax_total\n                FROM Venta_Encabezado ve\n                LEFT JOIN Comanda c ON ve.Vn_Documento = c.Co_Folio AND ve.Sc_Cve_Sucursal = c.Sc_Cve_Sucursal\n                WHERE CAST(ve.Vn_Fecha AS DATE) BETWEEN @fecha_inicio AND @fecha_fin\n                  AND ve.Sc_Cve_Sucursal = @sucursal_id\n                GROUP BY CAST(ve.Vn_Fecha AS DATE)\n                ORDER BY fecha_operacion\n                \"\"\"\n                query_source = 'MPRO_LEGACY_FALLBACK'\n            else:\n                query_source = 'CATALOGO'\n\n            query = query_template.replace(\n                '@fecha_inicio',\n                f\"'{fecha_inicio}'\",\n            )\n            query = query.replace(\n                '@fecha_fin',\n                f\"'{fecha_fin}'\",\n            )\n            sucursal_id = unidad_config.get(\n                'sucursal_id',\n                'DEFAULT',\n            )\n            query = query.replace(\n                '@sucursal_id',\n                f\"'{sucursal_id}'\",\n            )",
+      "new":"        elif sistema == 'MPRO':\n            # DRY RUN y REAL deben consultar exactamente el mismo contrato MPRO.\n            sucursal_id = unidad_config.get('sucursal_id', 'DEFAULT')\n            query = QUERY_MPRO_VENTAS_CERRADAS.format(\n                fecha_inicio=fecha_inicio.isoformat(),\n                fecha_fin=fecha_fin.isoformat(),\n                sucursal_id=sucursal_id,\n            )\n            query_source = 'MPRO_HANDLER_OFICIAL'\n        else:\n            return {\n                'success': False,\n                'error_message': f'Sistema origen no soportado: {sistema}',\n            }"
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/api/admin_scheduler_resync.py",
+      "expected_count":1,
+      "old":"        if sistema == 'SOFTRESTAURANT':\n            soft_config = UnidadNegocioConfig(\n                unidad_negocio_pk=str(\n                    unidad_config.get('unidad_negocio_pk') or ''\n                ),\n                unidad_negocio_nombre=unidad_config['nombre'],\n                server_id=unidad_config['server_id'],\n                sucursal_id=unidad_config.get(\n                    'sucursal_id',\n                    'DEFAULT',\n                ),\n                sucursal_nombre=unidad_config['nombre'],\n                sistema_origen=SistemaOrigen.SOFTRESTAURANT,\n                activo=True,\n            )\n            datos = _agrupar_ventas_cerradas_por_fecha_operacion(\n                datos,\n                soft_config,\n                fecha_inicio=fecha_inicio,\n                fecha_fin=fecha_fin,\n            )",
+      "new":"        if sistema in {'SOFTRESTAURANT', 'MPRO'}:\n            dry_config = UnidadNegocioConfig(\n                unidad_negocio_pk=str(\n                    unidad_config.get('unidad_negocio_pk') or ''\n                ),\n                unidad_negocio_nombre=unidad_config['nombre'],\n                server_id=unidad_config['server_id'],\n                sucursal_id=unidad_config.get(\n                    'sucursal_id',\n                    'DEFAULT',\n                ),\n                sucursal_nombre=unidad_config['nombre'],\n                sistema_origen=(\n                    SistemaOrigen.SOFTRESTAURANT\n                    if sistema == 'SOFTRESTAURANT'\n                    else SistemaOrigen.MPRO\n                ),\n                activo=True,\n            )\n            datos = _agrupar_ventas_cerradas_por_fecha_operacion(\n                datos,\n                dry_config,\n                fecha_inicio=fecha_inicio,\n                fecha_fin=fecha_fin,\n            )"
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/api/admin_scheduler_resync.py",
+      "expected_count":1,
+      "old":"            ventas_detalle = float(\n                d.get('ventas_total') or 0\n            )\n            propinas_detalle = float(\n                d.get('propinas_total')\n                if d.get('propinas_total') is not None\n                else d.get('propinas') or 0\n            )\n            tickets_detalle = int(\n                d.get('tickets_total')\n                if d.get('tickets_total') is not None\n                else d.get('num_cheques') or 0\n            )\n            pax_detalle = int(\n                d.get('pax_total')\n                if d.get('pax_total') is not None\n                else d.get('num_personas') or 0\n            )",
+      "new":"            ventas_detalle = float(\n                d.get('ventas_total')\n                if d.get('ventas_total') is not None\n                else d.get('Vn_Precio_Neto_Importe') or 0\n            )\n            propinas_detalle = float(\n                d.get('propinas_total')\n                if d.get('propinas_total') is not None\n                else d.get('propinas') or 0\n            )\n            tickets_detalle = int(\n                d.get('tickets_total')\n                if d.get('tickets_total') is not None\n                else d.get('num_cheques')\n                if d.get('num_cheques') is not None\n                else d.get('num_folios') or 0\n            )\n            pax_detalle = int(\n                d.get('pax_total')\n                if d.get('pax_total') is not None\n                else d.get('num_personas')\n                if d.get('num_personas') is not None\n                else d.get('total_personas') or 0\n            )"
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/api/admin_scheduler_resync.py",
+      "expected_count":1,
+      "old":"            'backend_contract_version': 'softrestaurant-turnos-v2',",
+      "new":"            'backend_contract_version': (\n                'softrestaurant-turnos-v2'\n                if sistema == 'SOFTRESTAURANT'\n                else 'mpro-handler-oficial-v1'\n            ),"
+    },
+    {
+      "type":"write_file",
+      "path":"backend/tests/test_mpro_dry_run_contract_alignment.py",
+      "content":"from pathlib import Path\n\n\ndef test_mpro_dry_run_uses_real_handler_contract():\n    text = Path('api/admin_scheduler_resync.py').read_text(encoding='utf-8')\n    assert 'QUERY_MPRO_VENTAS_CERRADAS' in text\n    assert \"query_source = 'MPRO_HANDLER_OFICIAL'\" in text\n    assert \"d.get('Vn_Precio_Neto_Importe')\" in text\n    assert \"d.get('num_folios')\" in text\n    assert \"d.get('total_personas')\" in text\n    assert \"0 AS propinas_total\" not in text\n    assert \"mpro-handler-oficial-v1\" in text\n\n\ndef test_mpro_official_query_exposes_propina_and_personas():\n    text = Path('modules/comercial_v2/sync_comercial_edarsahub.py').read_text(encoding='utf-8')\n    assert 'ISNULL(c.Co_Propina, 0) as propinas' in text\n    assert 'ISNULL(c.Co_Personas, 1) as total_personas' in text\n    assert 've.Vn_Folio as Vn_Folio' in text\n"
+    }
+  ],
+  "checks":[
+    {"type":"py_compile","paths":["backend/api/admin_scheduler_resync.py","backend/tests/test_mpro_dry_run_contract_alignment.py"]},
+    {"type":"pytest","paths":["backend/tests/test_mpro_dry_run_contract_alignment.py"]},
+    {"type":"git_diff_check"}
+  ]
+}
