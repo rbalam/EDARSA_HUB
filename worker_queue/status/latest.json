@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "14f18902f3d9268a631cbe2a6be96a2f0734eb59",
-  "generated_at_utc": "2026-09-04T22:12:40Z",
+  "generated_at_utc": "2026-09-04T22:13:51Z",
   "history": {
     "done_total_local": 68,
     "pending_total_local": 0,
@@ -13,25 +13,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1661,
+      "age_seconds": 1732,
       "job_id": "EDARSAHUB-PREVIEW-DIAG-ISCAM-ESTELAR-20260904T214700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1471,
+      "age_seconds": 1543,
       "job_id": "EDARSAHUB-PREVIEW-DIAG-ISCAM-ESTELAR-R2-20260904T214900Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 28,
+      "age_seconds": 99,
       "job_id": "EDARSAHUB-PREVIEW-DIAG-ISCAM-ESTELAR-R3-20260904T221200Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3357,
+      "age_seconds": 3429,
       "job_id": "EDARSAHUB-PREVIEW-WATCHDOG-ISCAM-ESTELAR-R2-20260904T212000Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -49,8 +49,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-04T22:12:36Z",
-    "last_receive_utc": "2026-09-04T22:12:37Z",
+    "last_cycle_utc": "2026-09-04T22:13:48Z",
+    "last_receive_utc": "2026-09-04T22:13:48Z",
     "last_terminal_utc": "2026-09-04T22:12:12Z",
     "pid": "272"
   },
