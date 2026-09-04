@@ -1,0 +1,29 @@
+{
+  "base_sha": "6fe7afd37f91762f0b7344c5e756f4efcfdc7f2b",
+  "blockers": [
+    "development_push_failed:backend/tests/test_universal_job_result_publisher_git_auth_contract.py:1:1: error: AGENT_GUARD: archivo reservado por worker-EDARSAHUB-PRESERVE-LOCAL-PUBLISHER-FIX-R5-20260904T222000Z tarea=EDARSAHUB-PRESERVE-LOCAL-PUBLISHER-FIX-R5-20260904T222000Z\nerror: failed to push some refs to 'https://github.com/rbalam/EDARSA_HUB.git'\n"
+  ],
+  "candidate_sha": "d6f15c26037f5e4ac73180e3e6159b385d4bca3b",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-04T22:16:49Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_universal_job_result_publisher_git_auth_contract.py",
+    "tools/mirror_sync/universal_job_result_publisher.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-PRESERVE-LOCAL-PUBLISHER-FIX-R5-20260904T222000Z",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-04T22:17:46Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-04T22:16:46Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
