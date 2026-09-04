@@ -1,0 +1,22 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PREVIEW-DIRTY-CAPTURE-ISCAM-ESTELAR-R4-20260904T221500Z",
+  "created_at_utc": "2026-09-04T22:15:00Z",
+  "requester": {"email": "carlosruz@edarsa.com.mx", "source": "chatgpt", "project": "V1", "chat": "EDARSAHUB-CONCILIACIONES"},
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "83e1a9fe64079582b95e8aeddd34c24d2b2f46c5",
+  "production_allowed": false,
+  "objective": "Capturar de forma no destructiva el contenido exacto de los cambios locales que mantienen sucio /app en Preview, para preservarlos antes de cualquier recuperacion. No modificar /app, no reset, clean, stash, restore, checkout, merge, fast-forward ni restart. Produccion no se toca.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {"type": "write_file", "path": "backend/tests/preview_dirty_capture_iscam_estelar_r4_evidence.json", "content": "{\n  \"status\": \"PENDING\",\n  \"production_touched\": false\n}\n"},
+    {"type": "write_file", "path": "backend/tests/test_preview_dirty_capture_iscam_estelar_r4.py", "content": "import json\nimport subprocess\nfrom pathlib import Path\n\nEVIDENCE = Path('tests/preview_dirty_capture_iscam_estelar_r4_evidence.json')\n\ndef run(cmd, timeout=60):\n    try:\n        p = subprocess.run(cmd, cwd='/app', text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout, check=False)\n        return {'returncode': p.returncode, 'output': p.stdout}\n    except Exception as exc:\n        return {'returncode': -999, 'output': f'{type(exc).__name__}:{exc}'}\n\ndef test_capture_preview_dirty_state_r4():\n    diff = run(['git','diff','--','tools/mirror_sync/universal_job_result_publisher.py'])\n    untracked = Path('/app/backend/tests/test_universal_job_result_publisher_git_auth_contract.py')\n    payload = {\n        'schema': 'edarsahub.preview-dirty-capture.v1',\n        'production_touched': False,\n        'git_diff_returncode': diff['returncode'],\n        'git_diff_universal_job_result_publisher': diff['output'],\n        'untracked_test_exists': untracked.exists(),\n        'untracked_test_content': untracked.read_text(encoding='utf-8') if untracked.exists() else '',\n        'status_porcelain': run(['git','status','--porcelain=v1','--untracked-files=all'])['output']\n    }\n    EVIDENCE.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + '\\n', encoding='utf-8')\n    assert payload['production_touched'] is False\n    assert diff['returncode'] == 0\n"}
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/tests/test_preview_dirty_capture_iscam_estelar_r4.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_preview_dirty_capture_iscam_estelar_r4.py"]}
+  ]
+}
