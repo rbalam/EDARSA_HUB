@@ -1,5 +1,5 @@
 name: Worker Runtime Recovery Probe
-# Trigger final LA ESTELAR validation after aggregate code deployment.
+# Recupera el Universal Worker sin depender de que /api/health exista durante cold-start.
 
 on:
   push:
@@ -9,6 +9,11 @@ on:
       - '.github/workflows/worker-runtime-recovery-probe.yml'
       - 'worker_queue/triggers/runtime-recovery/**'
   workflow_dispatch:
+    inputs:
+      preview_url:
+        description: 'Override opcional de URL Preview de Emergent'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -20,7 +25,9 @@ concurrency:
 jobs:
   probe-and-wake:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 8
+    env:
+      PREVIEW_URL_OVERRIDE: ${{ inputs.preview_url || vars.EDARSAHUB_PREVIEW_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,47 +42,84 @@ jobs:
           echo "queue_sha=$QUEUE_SHA" >> "$GITHUB_OUTPUT"
           echo "QUEUE_SHA=$QUEUE_SHA"
 
-      - name: Resolve reachable Preview host
+      - name: Resolve reachable Preview backend
         id: preview
         shell: bash
         run: |
           set -euo pipefail
-          for candidate in \
-            'https://stock-tracker-990.preview.emergentagent.com' \
-            'https://erp-crm-enterprise-1.preview.emergentagent.com' \
+
+          candidates=()
+          if [ -n "${PREVIEW_URL_OVERRIDE:-}" ]; then
+            candidates+=("${PREVIEW_URL_OVERRIDE%/}")
+          fi
+          candidates+=(
+            'https://stock-tracker-990.preview.emergentagent.com'
+            'https://erp-crm-enterprise-1.preview.emergentagent.com'
             'https://edarsa-hub-preview.emergentagent.com'
-          do
-            code="$(curl --silent --show-error --connect-timeout 10 --max-time 20 \
-              -o /tmp/preview-probe-body.txt -w '%{http_code}' \
-              "$candidate/api/health" || true)"
-            echo "PREVIEW_CANDIDATE=$candidate HTTP_CODE=$code"
-            if [ "$code" != "000" ] && [ "$code" != "404" ]; then
-              echo "hub_url=$candidate" >> "$GITHUB_OUTPUT"
-              echo "PREVIEW_HOST_RESOLVED=$candidate"
-              exit 0
+          )
+
+          # Emergent puede tardar en arrancar. Hacemos varias rondas sobre todos los
+          # candidatos. Un 404 en /api/health ya NO clasifica el host como caido:
+          # la prueba autoritativa es la ruta real del backend de EDARSAHUB.
+          for attempt in 1 2 3 4; do
+            echo "PREVIEW_DISCOVERY_ATTEMPT=$attempt"
+            for candidate in "${candidates[@]}"; do
+              candidate="${candidate%/}"
+              [ -n "$candidate" ] || continue
+
+              root_code="$(curl --silent --show-error --connect-timeout 5 --max-time 12 \
+                -o /tmp/preview-root-body.txt -w '%{http_code}' \
+                "$candidate/" || true)"
+              echo "PREVIEW_CANDIDATE=$candidate ROOT_HTTP_CODE=$root_code"
+
+              # HTTP 000 = ni siquiera hubo respuesta de red. Cualquier otro codigo
+              # confirma que el host existe, aunque la app aun este calentando.
+              if [ "$root_code" = "000" ]; then
+                continue
+              fi
+
+              backend_code="$(curl --silent --show-error --connect-timeout 5 --max-time 15 \
+                -o /tmp/backend-probe-body.txt -w '%{http_code}' \
+                "$candidate/api/v2/comercial/dashboard?fecha_inicio=2026-08-31&fecha_fin=2026-08-31" || true)"
+              echo "PREVIEW_CANDIDATE=$candidate BACKEND_HTTP_CODE=$backend_code"
+
+              if [ "$backend_code" != "000" ] && [ "$backend_code" != "404" ]; then
+                echo "hub_url=$candidate" >> "$GITHUB_OUTPUT"
+                echo "PREVIEW_BACKEND_RESOLVED=$candidate"
+                exit 0
+              fi
+            done
+
+            if [ "$attempt" -lt 4 ]; then
+              sleep 10
             fi
           done
-          echo "NO_REACHABLE_PREVIEW_HOST=1"
+
+          echo "NO_REACHABLE_PREVIEW_BACKEND=1"
           exit 13
 
-      - name: Probe confirmed EDARSAHUB backend route
+      - name: Confirm EDARSAHUB backend after cold-start
         shell: bash
         env:
           HUB_URL: ${{ steps.preview.outputs.hub_url }}
         run: |
           set -euo pipefail
-          code="$(curl --silent --show-error \
-            --connect-timeout 10 --max-time 30 \
-            -o /tmp/backend-probe-body.txt -w '%{http_code}' \
-            "$HUB_URL/api/v2/comercial/dashboard?fecha_inicio=2026-08-31&fecha_fin=2026-08-31" || true)"
-          echo "BACKEND_PROBE_HTTP_CODE=$code"
-          head -c 500 /tmp/backend-probe-body.txt || true
-          echo
-          if [ "$code" = "000" ] || [ "$code" = "404" ]; then
-            echo "BACKEND_ROUTE_NOT_REACHABLE=1"
-            exit 14
-          fi
-          echo "BACKEND_ROUTE_REACHABLE=1"
+          for attempt in 1 2 3 4 5 6; do
+            code="$(curl --silent --show-error \
+              --connect-timeout 5 --max-time 20 \
+              -o /tmp/backend-probe-body.txt -w '%{http_code}' \
+              "$HUB_URL/api/v2/comercial/dashboard?fecha_inicio=2026-08-31&fecha_fin=2026-08-31" || true)"
+            echo "BACKEND_PROBE_ATTEMPT=$attempt HTTP_CODE=$code"
+            head -c 300 /tmp/backend-probe-body.txt || true
+            echo
+            if [ "$code" != "000" ] && [ "$code" != "404" ]; then
+              echo "BACKEND_ROUTE_REACHABLE=1"
+              exit 0
+            fi
+            sleep 8
+          done
+          echo "BACKEND_ROUTE_NOT_REACHABLE=1"
+          exit 14
 
       - name: Wake canonical Universal Worker
         shell: bash
@@ -84,18 +128,21 @@ jobs:
           HUB_URL: ${{ steps.preview.outputs.hub_url }}
         run: |
           set -euo pipefail
-          HTTP_CODE="$(curl --silent --show-error \
-            --connect-timeout 10 --max-time 40 \
-            -o /tmp/wake-body.txt -w '%{http_code}' \
-            -X POST \
-            -H "X-Worker-Queue-Sha: ${QUEUE_SHA}" \
-            "$HUB_URL/api/internal/worker/wake" || true)"
-          cat /tmp/wake-body.txt || true
-          echo
-          echo "WAKE_HTTP_CODE=$HTTP_CODE"
-          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "202" ]; then
-            echo "WORKER_WAKE_ACCEPTED=1"
-            exit 0
-          fi
+          for attempt in 1 2 3 4 5 6; do
+            HTTP_CODE="$(curl --silent --show-error \
+              --connect-timeout 5 --max-time 25 \
+              -o /tmp/wake-body.txt -w '%{http_code}' \
+              -X POST \
+              -H "X-Worker-Queue-Sha: ${QUEUE_SHA}" \
+              "$HUB_URL/api/internal/worker/wake" || true)"
+            echo "WAKE_ATTEMPT=$attempt HTTP_CODE=$HTTP_CODE"
+            cat /tmp/wake-body.txt || true
+            echo
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "202" ]; then
+              echo "WORKER_WAKE_ACCEPTED=1"
+              exit 0
+            fi
+            sleep 8
+          done
           echo "WORKER_WAKE_ACCEPTED=0"
           exit 12
