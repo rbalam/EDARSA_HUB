@@ -88,18 +88,18 @@ def _period_sql(col: str, group_by: Optional[str]) -> str:
 async def ventas_periodos(unidad: str = Query(...), desde: Optional[str] = None, hasta: Optional[str] = None,
                           group_by: str = Query("mes"), meses: int = Query(12, ge=1, le=36)):
     gb = group_by if group_by in ("anio", "mes", "dia") else "mes"
-    pexpr = _period_sql("s.FechaHora", gb)
+    pexpr = _period_sql("k.fecha_operacion", gb)
     if desde or hasta:
         d, h = _rango_fechas(desde, hasta)
-        where, params = "AND s.FechaHora >= %s AND s.FechaHora < %s", (unidad, d, h)
+        where, params = "AND k.fecha_operacion >= %s AND k.fecha_operacion < %s", (unidad, d, h)
     else:
-        where, params = "AND s.FechaHora >= DATEADD(MONTH, %s, CAST(GETDATE() AS DATE))", (unidad, -int(meses))
+        where, params = "AND k.fecha_operacion >= DATEADD(MONTH, %s, CAST(GETDATE() AS DATE))", (unidad, -int(meses))
     rows = _q(
         f"""
-        SELECT {pexpr} AS periodo, SUM(s.MontoTotal) AS venta_total,
-               COUNT(*) AS cheques, SUM(s.Pax) AS clientes
-        FROM dbo.Sync_Sales s
-        WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED' {where}
+        SELECT {pexpr} AS periodo, SUM(ISNULL(k.ventas_total,0)) AS venta_total,
+               SUM(ISNULL(k.tickets_total,0)) AS cheques, SUM(ISNULL(k.pax_total,0)) AS clientes
+        FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime k
+        WHERE k.unidad_negocio_id = %s {where}
         GROUP BY {pexpr}
         ORDER BY periodo DESC
         """,
@@ -113,7 +113,7 @@ async def ventas_periodos(unidad: str = Query(...), desde: Optional[str] = None,
             "cheque_promedio": round(venta / cheques, 2) if cheques else 0,
             "consumo_promedio": round(venta / cli, 2) if cli else 0,
         })
-    return {"success": True, "source": "Sync_Sales (canónica)", "unidad": unidad,
+    return {"success": True, "source": "vw_Comercial_KPIs_Diarios_v2_Runtime (canónica V2)", "unidad": unidad,
             "group_by": gb, "periodos": data}
 
 
