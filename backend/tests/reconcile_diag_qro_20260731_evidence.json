@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "records_processed": 1,
+  "detalle": [
+    {
+      "fecha": "2026-07-31",
+      "accion": "INSERT/UPDATE",
+      "ventas_total": 184693.000000013,
+      "propinas_total": 0.0,
+      "total_con_propina": 184693.000000013,
+      "tickets_total": 37,
+      "pax_total": 0,
+      "alimentos": 0.0,
+      "bebidas": 0.0,
+      "otros": 0.0,
+      "cortesias": 0.0,
+      "descuentos": 0.0,
+      "subtotal": 0.0,
+      "iva": 0.0
+    }
+  ],
+  "error_message": null
+}
