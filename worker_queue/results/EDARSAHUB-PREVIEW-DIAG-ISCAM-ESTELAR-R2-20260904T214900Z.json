@@ -1,0 +1,29 @@
+{
+  "base_sha": "fd1ab0225e007e951f27419ea68b9e5f2fa0aa36",
+  "blockers": [
+    "development_moved:e291d7333ee485f0967b44d0ec1410752801694c"
+  ],
+  "candidate_sha": "5b48fde07a4abd3d927f2af960178cc57a16201c",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-04T21:48:08Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/preview_diag_iscam_estelar_r2_evidence.json",
+    "backend/tests/test_preview_diag_iscam_estelar_r2.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-PREVIEW-DIAG-ISCAM-ESTELAR-R2-20260904T214900Z",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-04T21:48:16Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-04T21:48:03Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
