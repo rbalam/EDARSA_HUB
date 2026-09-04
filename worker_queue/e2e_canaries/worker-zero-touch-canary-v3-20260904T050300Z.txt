@@ -1,0 +1,3 @@
+EDARSAHUB_WORKER_ZERO_TOUCH_CANARY_V3
+job_id=worker-zero-touch-canary-v3-20260904T050300Z
+production_touched=false
