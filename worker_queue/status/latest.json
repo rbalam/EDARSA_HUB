@@ -1,81 +1,81 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "14f18902f3d9268a631cbe2a6be96a2f0734eb59",
-  "generated_at_utc": "2026-09-04T05:56:44Z",
+  "generated_at_utc": "2026-09-04T05:57:54Z",
   "history": {
-    "done_total_local": 63,
+    "done_total_local": 64,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 162,
-    "results_total_local": 204
+    "results_total_local": 205
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2567,
+      "age_seconds": 2637,
       "job_id": "EDARSAHUB-FIX-MPRO-DRYRUN-CONTRACT-20260904T052000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3222,
+      "age_seconds": 3292,
       "job_id": "EDARSAHUB-RECON-CF-ORIGEN-QRO-JAN-AUG-20260904T050500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3102,
+      "age_seconds": 3173,
       "job_id": "EDARSAHUB-RECON-DIAG-CF-20260103-20260904T050400Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2862,
+      "age_seconds": 2933,
       "job_id": "EDARSAHUB-RECON-DIAG-CF-20260731-20260904T050900Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2815,
+      "age_seconds": 2886,
       "job_id": "EDARSAHUB-RECON-DIAG-CF-20260731-R2-20260904T051100Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2731,
+      "age_seconds": 2801,
       "job_id": "EDARSAHUB-RECON-DIAG-QRO-20260731-20260904T051200Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3040,
-      "job_id": "worker-zero-touch-canary-v3-20260904T050300Z",
+      "age_seconds": 36,
+      "job_id": "EDARSAHUB-RECON-FINAL-QRO-ORIGEN-CF-20260904T055600Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 19,
-      "job_id": "EDARSAHUB-RECON-FINAL-QRO-ORIGEN-CF-20260904T055600Z",
+      "age_seconds": 3111,
+      "job_id": "worker-zero-touch-canary-v3-20260904T050300Z",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 7,
-  "queue_running": 1,
+  "queue_result_ready_recent": 8,
+  "queue_running": 0,
   "runtime": {
-    "current_job_id": "EDARSAHUB-RECON-FINAL-QRO-ORIGEN-CF-20260904T055600Z",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-04T05:56:40Z",
-    "last_receive_utc": "2026-09-04T05:56:40Z",
-    "last_terminal_utc": "2026-09-04T05:13:56Z",
+    "last_cycle_utc": "2026-09-04T05:57:51Z",
+    "last_receive_utc": "2026-09-04T05:57:51Z",
+    "last_terminal_utc": "2026-09-04T05:57:18Z",
     "pid": "271"
   },
   "schema": "edarsahub.worker-health.v3",
