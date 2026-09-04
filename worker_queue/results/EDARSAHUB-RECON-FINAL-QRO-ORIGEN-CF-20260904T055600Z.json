@@ -1,0 +1,27 @@
+{
+  "base_sha": "d1e7280832a98f391a83f315aa23645bbafe1850",
+  "blockers": [],
+  "candidate_sha": "66d2485784becccc698d3f6b82b46a4453b01599",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-04T05:57:18Z",
+  "development_sha": "66d2485784becccc698d3f6b82b46a4453b01599",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_reconcile_final_qro_origen_cienfuegos_jan_aug_2026.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-RECON-FINAL-QRO-ORIGEN-CF-20260904T055600Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-04T05:58:09Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-04T05:56:25Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
