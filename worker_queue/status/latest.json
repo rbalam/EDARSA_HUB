@@ -1,38 +1,44 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "14f18902f3d9268a631cbe2a6be96a2f0734eb59",
-  "generated_at_utc": "2026-09-04T17:00:06Z",
+  "generated_at_utc": "2026-09-04T17:01:17Z",
   "history": {
     "done_total_local": 65,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 165,
-    "results_total_local": 209
+    "rejected_total_local": 166,
+    "results_total_local": 210
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3277,
+      "age_seconds": 3348,
       "job_id": "EDARSAHUB-CHECK-CF-ORPHANS-20260904T153400Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1749,
+      "age_seconds": 1820,
       "job_id": "EDARSAHUB-CLOSE-CF-ORPHANS-20260904T163200Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1659,
+      "age_seconds": 1730,
       "job_id": "EDARSAHUB-CLOSE-CF-ORPHANS-R2-20260904T163500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2160,
+      "age_seconds": 2232,
       "job_id": "EDARSAHUB-ISCAM-ESTELAR-FORCE-EXEC-20260904T162500Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 20,
+      "job_id": "EDARSAHUB-ISCAM-ESTELAR-R2-SOURCE-20260904T164100Z",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -44,14 +50,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-04T17:00:02Z",
-    "last_receive_utc": "2026-09-04T17:00:03Z",
-    "last_terminal_utc": "2026-09-04T16:32:26Z",
+    "last_cycle_utc": "2026-09-04T17:01:15Z",
+    "last_receive_utc": "2026-09-04T17:01:16Z",
+    "last_terminal_utc": "2026-09-04T17:00:57Z",
     "pid": "291"
   },
   "schema": "edarsahub.worker-health.v3",
