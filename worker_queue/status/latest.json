@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "14f18902f3d9268a631cbe2a6be96a2f0734eb59",
-  "generated_at_utc": "2026-09-04T01:44:23Z",
+  "generated_at_utc": "2026-09-04T01:45:37Z",
   "history": {
     "done_total_local": 57,
     "pending_total_local": 0,
@@ -13,26 +13,26 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 142,
+      "age_seconds": 216,
       "job_id": "EDARSAHUB-SOFTRESTAURANT-AUGUST-SEQUENTIAL-20260904T014000Z",
-      "reason": null,
-      "state": "RUNNING"
+      "reason": "El worker no termino esta orden dentro del tiempo esperado.",
+      "state": "BLOCKED"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
-  "queue_blocked": 0,
+  "queue_blocked": 1,
   "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 0,
-  "queue_running": 1,
+  "queue_running": 0,
   "runtime": {
     "current_job_id": "EDARSAHUB-SOFTRESTAURANT-AUGUST-SEQUENTIAL-20260904T014000Z",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-04T01:44:20Z",
-    "last_receive_utc": "2026-09-04T01:44:21Z",
+    "last_cycle_utc": "2026-09-04T01:45:32Z",
+    "last_receive_utc": "2026-09-04T01:45:33Z",
     "last_terminal_utc": "2026-09-03T23:37:37Z",
     "pid": "286"
   },
