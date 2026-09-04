@@ -1,0 +1,22 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-RECON-DIAG-CF-20260103-20260904T050400Z",
+  "created_at_utc":"2026-09-04T05:04:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"feec7f396d8c397be1d2e6d43a3ece07bd7b37a4",
+  "production_allowed":false,
+  "objective":"Diagnostico read-only del guard que bloqueo la conciliacion. Ejecutar exclusivamente DRY RUN oficial de CIENFUEGOS 2026-01-03 y guardar evidencia sanitizada en archivo del mismo alcance. No ejecutar sync REAL ni modificar SQL.",
+  "human_summary_language":"es",
+  "mode":"MUTATION",
+  "actions":[
+    {"type":"write_file","path":"backend/tests/test_reconcile_diag_cf_20260103.py","content":"import asyncio\nimport json\nfrom datetime import date\nfrom pathlib import Path\nfrom api.admin_scheduler_resync import _get_unidad_config, _ejecutar_dry_run\n\ndef test_diag_cf_20260103():\n    unidad=_get_unidad_config('CIENFUEGOS')\n    assert unidad\n    dry=asyncio.run(_ejecutar_dry_run('CIENFUEGOS', unidad, date(2026,1,3), date(2026,1,3)))\n    evidence={'success':dry.get('success'),'records_processed':dry.get('records_processed'),'detalle':dry.get('detalle'),'error_message':dry.get('error_message')}\n    Path('tests/reconcile_diag_cf_20260103_evidence.json').write_text(json.dumps(evidence,default=str,ensure_ascii=False,indent=2),encoding='utf-8')\n    assert dry.get('success') is True, dry\n"},
+    {"type":"write_file","path":"backend/tests/reconcile_diag_cf_20260103_evidence.json","content":"{}\n"}
+  ],
+  "checks":[
+    {"type":"py_compile","paths":["backend/tests/test_reconcile_diag_cf_20260103.py"]},
+    {"type":"pytest","paths":["backend/tests/test_reconcile_diag_cf_20260103.py"]},
+    {"type":"git_diff_check"}
+  ]
+}
