@@ -1,0 +1,22 @@
+{
+  "blockers": [
+    "dispatcher_exception:RuntimeError:BASE_SHA_MISMATCH:expected=575c23c1e142b3a87b263710a84d9895880f85a2:actual=f8fd25b59450056572876720e03daeabf7cc07f7"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-03T23:12:48Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ESTELAR-OFFICIAL-AGGREGATE-R6-20260903T224100Z",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-04T01:11:01Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-03T23:12:48Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
