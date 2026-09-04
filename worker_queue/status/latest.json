@@ -1,26 +1,26 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "14f18902f3d9268a631cbe2a6be96a2f0734eb59",
-  "generated_at_utc": "2026-09-04T17:32:20Z",
+  "generated_at_utc": "2026-09-04T17:47:11Z",
   "history": {
     "done_total_local": 65,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 166,
-    "results_total_local": 210
+    "rejected_total_local": 167,
+    "results_total_local": 211
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3593,
-      "job_id": "EDARSAHUB-CLOSE-CF-ORPHANS-R2-20260904T163500Z",
+      "age_seconds": 2773,
+      "job_id": "EDARSAHUB-ISCAM-ESTELAR-R2-SOURCE-20260904T164100Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1882,
-      "job_id": "EDARSAHUB-ISCAM-ESTELAR-R2-SOURCE-20260904T164100Z",
+      "age_seconds": 15,
+      "job_id": "EDARSAHUB-ISCAM-ESTELAR-R2B-SOURCE-20260904T174500Z",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -37,10 +37,10 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-04T17:32:19Z",
-    "last_receive_utc": "2026-09-04T17:32:14Z",
-    "last_terminal_utc": "2026-09-04T17:00:57Z",
-    "pid": "291"
+    "last_cycle_utc": "2026-09-04T17:47:10Z",
+    "last_receive_utc": "2026-09-04T17:47:05Z",
+    "last_terminal_utc": "2026-09-04T17:46:55Z",
+    "pid": "280"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
