@@ -1,0 +1,4 @@
+job_id=EDARSAHUB-PREVIEW-CONVERGENCE-ISCAM-ESTELAR-20260904T211000Z
+reason=wake universal worker for safe Preview convergence and backend reload
+queue_sha=9d415ea9579d2859512ba8101b723b653d1f753f
+production_allowed=false
