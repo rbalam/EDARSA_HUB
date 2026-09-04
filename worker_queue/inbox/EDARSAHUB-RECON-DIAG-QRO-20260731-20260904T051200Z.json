@@ -1,0 +1,18 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-RECON-DIAG-QRO-20260731-20260904T051200Z",
+  "created_at_utc":"2026-09-04T05:12:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"644fbc5010298a85810221e99d673f832e32591f",
+  "production_allowed":false,
+  "objective":"Diagnostico read-only del guard de 130QRO 2026-07-31. Ejecutar exclusivamente DRY RUN oficial y guardar evidencia. No ejecutar sync REAL ni modificar SQL.",
+  "human_summary_language":"es",
+  "mode":"MUTATION",
+  "actions":[
+    {"type":"write_file","path":"backend/tests/test_reconcile_diag_qro_20260731.py","content":"import asyncio\nimport json\nfrom datetime import date\nfrom pathlib import Path\nfrom api.admin_scheduler_resync import _get_unidad_config, _ejecutar_dry_run\n\ndef test_diag_qro_20260731():\n    unidad=_get_unidad_config('130QRO')\n    assert unidad\n    dry=asyncio.run(_ejecutar_dry_run('130QRO', unidad, date(2026,7,31), date(2026,7,31)))\n    evidence={'success':dry.get('success'),'records_processed':dry.get('records_processed'),'detalle':dry.get('detalle'),'error_message':dry.get('error_message')}\n    Path('tests/reconcile_diag_qro_20260731_evidence.json').write_text(json.dumps(evidence,default=str,ensure_ascii=False,indent=2),encoding='utf-8')\n    assert dry.get('success') is True, dry\n"},
+    {"type":"write_file","path":"backend/tests/reconcile_diag_qro_20260731_evidence.json","content":"{}\n"}
+  ],
+  "checks":[{"type":"py_compile","paths":["backend/tests/test_reconcile_diag_qro_20260731.py"]},{"type":"pytest","paths":["backend/tests/test_reconcile_diag_qro_20260731.py"]},{"type":"git_diff_check"}]
+}
