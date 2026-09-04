@@ -1,0 +1,24 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-CHECK-CF-ORPHANS-20260904T153400Z",
+  "created_at_utc": "2026-09-04T15:34:00Z",
+  "requester": {"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1"},
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "66d2485784becccc698d3f6b82b46a4453b01599",
+  "production_allowed": false,
+  "objective": "Solo lectura. Confirmar si CIENFUEGOS 2026-03-12 y 2026-03-22 siguen existiendo activas en Comercial_KPIs_Diarios_v2. No modificar datos ni codigo.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_check_cf_orphans_20260312_20260322.py",
+      "content": "import json\nfrom pathlib import Path\nfrom api.admin_scheduler_resync import _execute_edarsahub_query\n\ndef test_check_cf_orphans():\n    rows = _execute_edarsahub_query(\"\"\"SELECT CONVERT(varchar(10),fecha_operacion,23) AS fecha_operacion, ventas_total, propinas_total, tickets_total, pax_total, activo, sync_run_id FROM dbo.Comercial_KPIs_Diarios_v2 WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion IN ('2026-03-12','2026-03-22') AND ISNULL(activo,1)=1 ORDER BY fecha_operacion\"\"\")\n    Path('tests/check_cf_orphans_current.json').write_text(json.dumps(rows,ensure_ascii=False,indent=2,default=str),encoding='utf-8')\n    assert True\n"
+    }
+  ],
+  "checks": [
+    {"type":"py_compile","paths":["backend/tests/test_check_cf_orphans_20260312_20260322.py"]},
+    {"type":"pytest","paths":["backend/tests/test_check_cf_orphans_20260312_20260322.py"]}
+  ]
+}
