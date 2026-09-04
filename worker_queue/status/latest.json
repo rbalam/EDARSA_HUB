@@ -1,20 +1,26 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "14f18902f3d9268a631cbe2a6be96a2f0734eb59",
-  "generated_at_utc": "2026-09-04T05:03:38Z",
+  "generated_at_utc": "2026-09-04T05:05:05Z",
   "history": {
-    "done_total_local": 58,
+    "done_total_local": 59,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 161,
-    "results_total_local": 198
+    "results_total_local": 199
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 36,
+      "age_seconds": 123,
       "job_id": "EDARSAHUB-RECON-CF-ORIGEN-QRO-JAN-AUG-20260904T050500Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 4,
+      "job_id": "EDARSAHUB-RECON-DIAG-CF-20260103-20260904T050400Z",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -26,14 +32,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-04T05:03:32Z",
-    "last_receive_utc": "2026-09-04T05:03:33Z",
-    "last_terminal_utc": "2026-09-04T05:03:02Z",
+    "last_cycle_utc": "2026-09-04T05:04:59Z",
+    "last_receive_utc": "2026-09-04T05:05:01Z",
+    "last_terminal_utc": "2026-09-04T05:05:01Z",
     "pid": "290"
   },
   "schema": "edarsahub.worker-health.v3",
