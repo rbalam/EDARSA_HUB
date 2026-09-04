@@ -1,0 +1,4 @@
+job_id=EDARSAHUB-ISCAM-ESTELAR-MONTHLY-AUDIT-20260904T203500Z
+reason=wake universal worker for Estelar ISCAM monthly canonical audit
+queue_sha=092cc9da8d263cae3dffc5549e0d2bd707e72d74
+production_allowed=false
