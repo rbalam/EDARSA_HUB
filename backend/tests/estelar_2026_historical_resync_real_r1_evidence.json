@@ -1,0 +1,3883 @@
+{
+  "status": "PASS",
+  "job_id": "EDARSAHUB-ESTELAR-2026-HISTORICAL-RESYNC-REAL-R1-CARLOS-20260905T042500Z",
+  "requester_email": "carlosruz@edarsa.com.mx",
+  "usuario_id": "3",
+  "rbac_scheduler_admin": true,
+  "production_touched": false,
+  "blocks": [
+    {
+      "fecha_inicio": "2026-01-01",
+      "fecha_fin": "2026-01-30",
+      "response": {
+        "success": true,
+        "ejecucion_id": "994019b3-13ed-4d2c-8860-0763a3d26060",
+        "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe",
+        "modo": "REAL",
+        "tipo_sync": "comercial_ventas_cerradas",
+        "unidad_negocio_id": "ESTELAR",
+        "fecha_inicio": "2026-01-01",
+        "fecha_fin": "2026-01-30",
+        "validacion_previa": {
+          "conectividad": {
+            "conectado": true,
+            "host": "serverestelar.ddns.net",
+            "host_raw": "serverestelar.ddns.net",
+            "database": "softrestaurant12",
+            "config_origin": "Servidores_Conexiones"
+          },
+          "dias_existentes": {
+            "dias_existentes": [
+              {
+                "fecha": "2026-01-01",
+                "ventas_total": 136091.0,
+                "propinas": 13215.84,
+                "tickets": 86,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-02",
+                "ventas_total": 202230.0,
+                "propinas": 18903.79,
+                "tickets": 92,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-03",
+                "ventas_total": 244395.0,
+                "propinas": 16843.93,
+                "tickets": 130,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-04",
+                "ventas_total": 56415.0,
+                "propinas": 5303.56,
+                "tickets": 42,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-05",
+                "ventas_total": 60483.0,
+                "propinas": 5355.66,
+                "tickets": 45,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-06",
+                "ventas_total": 40260.0,
+                "propinas": 4037.35,
+                "tickets": 29,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-07",
+                "ventas_total": 52255.0,
+                "propinas": 4292.8,
+                "tickets": 41,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-08",
+                "ventas_total": 83395.0,
+                "propinas": 6998.74,
+                "tickets": 53,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-09",
+                "ventas_total": 207325.0,
+                "propinas": 19154.9,
+                "tickets": 115,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-10",
+                "ventas_total": 240785.0,
+                "propinas": 13454.36,
+                "tickets": 112,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-11",
+                "ventas_total": 21265.0,
+                "propinas": 2085.75,
+                "tickets": 19,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-12",
+                "ventas_total": 20990.0,
+                "propinas": 1629.45,
+                "tickets": 14,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-13",
+                "ventas_total": 80800.0,
+                "propinas": 3107.5,
+                "tickets": 68,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-14",
+                "ventas_total": 41723.0,
+                "propinas": 5253.7,
+                "tickets": 32,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-15",
+                "ventas_total": 77043.0,
+                "propinas": 7951.95,
+                "tickets": 56,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-16",
+                "ventas_total": 232689.0,
+                "propinas": 19341.22,
+                "tickets": 137,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-17",
+                "ventas_total": 269060.0,
+                "propinas": 12939.02,
+                "tickets": 129,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-18",
+                "ventas_total": 60323.0,
+                "propinas": 2685.75,
+                "tickets": 25,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-19",
+                "ventas_total": 37480.0,
+                "propinas": 3322.05,
+                "tickets": 30,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-20",
+                "ventas_total": 26758.0,
+                "propinas": 2862.65,
+                "tickets": 22,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-21",
+                "ventas_total": 32815.0,
+                "propinas": 3480.51,
+                "tickets": 28,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-22",
+                "ventas_total": 74318.0,
+                "propinas": 6999.55,
+                "tickets": 62,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-23",
+                "ventas_total": 231410.0,
+                "propinas": 15002.36,
+                "tickets": 119,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-24",
+                "ventas_total": 268995.0,
+                "propinas": 20898.28,
+                "tickets": 132,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-25",
+                "ventas_total": 44870.0,
+                "propinas": 2457.4,
+                "tickets": 25,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-26",
+                "ventas_total": 27225.0,
+                "propinas": 2389.1,
+                "tickets": 26,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-27",
+                "ventas_total": 18415.0,
+                "propinas": 1503.75,
+                "tickets": 19,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-28",
+                "ventas_total": 49155.0,
+                "propinas": 4326.25,
+                "tickets": 27,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-29",
+                "ventas_total": 114800.0,
+                "propinas": 6799.76,
+                "tickets": 59,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-30",
+                "ventas_total": 240214.0,
+                "propinas": 21784.41,
+                "tickets": 125,
+                "sync_run_id": "c8f97699"
+              }
+            ],
+            "cantidad": 30
+          }
+        },
+        "resultado": {
+          "success": true,
+          "records_processed": 30,
+          "records_inserted": 0,
+          "records_updated": 26,
+          "records_skipped": 4,
+          "records_errored": 0,
+          "duration_seconds": 3,
+          "error_message": null
+        },
+        "validacion_posterior": {
+          "dias_existentes": {
+            "dias_existentes": [
+              {
+                "fecha": "2026-01-01",
+                "ventas_total": 136026.0,
+                "propinas": 13215.84,
+                "tickets": 85,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-02",
+                "ventas_total": 201305.0,
+                "propinas": 18718.79,
+                "tickets": 91,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-03",
+                "ventas_total": 245235.0,
+                "propinas": 17028.93,
+                "tickets": 131,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-04",
+                "ventas_total": 56565.0,
+                "propinas": 5303.56,
+                "tickets": 43,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-05",
+                "ventas_total": 60483.0,
+                "propinas": 5355.66,
+                "tickets": 44,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-06",
+                "ventas_total": 40260.0,
+                "propinas": 4037.35,
+                "tickets": 29,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-07",
+                "ventas_total": 52255.0,
+                "propinas": 4292.8,
+                "tickets": 42,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-08",
+                "ventas_total": 83395.0,
+                "propinas": 6998.74,
+                "tickets": 52,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-09",
+                "ventas_total": 207325.0,
+                "propinas": 19154.9,
+                "tickets": 114,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-10",
+                "ventas_total": 267050.0,
+                "propinas": 15540.11,
+                "tickets": 135,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-11",
+                "ventas_total": 0.0,
+                "propinas": 0.0,
+                "tickets": 0,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-12",
+                "ventas_total": 20990.0,
+                "propinas": 1629.45,
+                "tickets": 14,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-13",
+                "ventas_total": 80800.0,
+                "propinas": 3107.5,
+                "tickets": 67,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-14",
+                "ventas_total": 41423.0,
+                "propinas": 5253.7,
+                "tickets": 32,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-15",
+                "ventas_total": 77043.0,
+                "propinas": 7951.95,
+                "tickets": 56,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-16",
+                "ventas_total": 230689.0,
+                "propinas": 19041.22,
+                "tickets": 136,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-17",
+                "ventas_total": 271360.0,
+                "propinas": 13239.02,
+                "tickets": 130,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-18",
+                "ventas_total": 60323.0,
+                "propinas": 2685.75,
+                "tickets": 26,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-19",
+                "ventas_total": 37480.0,
+                "propinas": 3322.05,
+                "tickets": 30,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-01-20",
+                "ventas_total": 26638.0,
+                "propinas": 2862.65,
+                "tickets": 21,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-21",
+                "ventas_total": 32935.0,
+                "propinas": 3480.51,
+                "tickets": 29,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-22",
+                "ventas_total": 74253.0,
+                "propinas": 6999.55,
+                "tickets": 59,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-23",
+                "ventas_total": 225950.0,
+                "propinas": 14863.96,
+                "tickets": 116,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-24",
+                "ventas_total": 274520.0,
+                "propinas": 21036.68,
+                "tickets": 138,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-25",
+                "ventas_total": 43285.0,
+                "propinas": 2357.4,
+                "tickets": 23,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-26",
+                "ventas_total": 26820.0,
+                "propinas": 2389.1,
+                "tickets": 24,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-27",
+                "ventas_total": 18600.0,
+                "propinas": 1603.75,
+                "tickets": 21,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-28",
+                "ventas_total": 49560.0,
+                "propinas": 4326.25,
+                "tickets": 27,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-29",
+                "ventas_total": 116200.0,
+                "propinas": 6799.76,
+                "tickets": 59,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              },
+              {
+                "fecha": "2026-01-30",
+                "ventas_total": 236473.0,
+                "propinas": 21622.16,
+                "tickets": 122,
+                "sync_run_id": "RESYNC-ESTELAR-20260101-20260130-acbe"
+              }
+            ],
+            "cantidad": 30
+          }
+        },
+        "error_message": null
+      }
+    },
+    {
+      "fecha_inicio": "2026-01-31",
+      "fecha_fin": "2026-03-01",
+      "response": {
+        "success": true,
+        "ejecucion_id": "b8071119-6be0-44b2-844b-a719260ceb06",
+        "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408",
+        "modo": "REAL",
+        "tipo_sync": "comercial_ventas_cerradas",
+        "unidad_negocio_id": "ESTELAR",
+        "fecha_inicio": "2026-01-31",
+        "fecha_fin": "2026-03-01",
+        "validacion_previa": {
+          "conectividad": {
+            "conectado": true,
+            "host": "serverestelar.ddns.net",
+            "host_raw": "serverestelar.ddns.net",
+            "database": "softrestaurant12",
+            "config_origin": "Servidores_Conexiones"
+          },
+          "dias_existentes": {
+            "dias_existentes": [
+              {
+                "fecha": "2026-01-31",
+                "ventas_total": 278470.0,
+                "propinas": 21321.55,
+                "tickets": 149,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-01",
+                "ventas_total": 87830.0,
+                "propinas": 8174.58,
+                "tickets": 71,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-02",
+                "ventas_total": 83690.0,
+                "propinas": 7753.0,
+                "tickets": 48,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-03",
+                "ventas_total": 23395.0,
+                "propinas": 1660.25,
+                "tickets": 26,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-04",
+                "ventas_total": 36545.0,
+                "propinas": 2829.15,
+                "tickets": 26,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-05",
+                "ventas_total": 91474.0,
+                "propinas": 7216.38,
+                "tickets": 44,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-06",
+                "ventas_total": 198828.0,
+                "propinas": 17255.47,
+                "tickets": 114,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-07",
+                "ventas_total": 253685.0,
+                "propinas": 17820.28,
+                "tickets": 141,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-08",
+                "ventas_total": 38950.0,
+                "propinas": 4294.7,
+                "tickets": 20,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-09",
+                "ventas_total": 19395.0,
+                "propinas": 2317.25,
+                "tickets": 17,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-10",
+                "ventas_total": 21135.0,
+                "propinas": 2551.1,
+                "tickets": 14,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-11",
+                "ventas_total": 38780.0,
+                "propinas": 2788.25,
+                "tickets": 17,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-12",
+                "ventas_total": 91263.0,
+                "propinas": 6323.79,
+                "tickets": 57,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-13",
+                "ventas_total": 185005.5,
+                "propinas": 13970.46,
+                "tickets": 127,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-14",
+                "ventas_total": 223757.75,
+                "propinas": 19624.28,
+                "tickets": 156,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-15",
+                "ventas_total": 53295.0,
+                "propinas": 6188.02,
+                "tickets": 39,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-16",
+                "ventas_total": 73310.0,
+                "propinas": 8425.25,
+                "tickets": 41,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-17",
+                "ventas_total": 66878.0,
+                "propinas": 3908.9,
+                "tickets": 42,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-18",
+                "ventas_total": 24713.0,
+                "propinas": 3650.85,
+                "tickets": 24,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-19",
+                "ventas_total": 83809.0,
+                "propinas": 8180.29,
+                "tickets": 66,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-20",
+                "ventas_total": 157928.0,
+                "propinas": 13946.31,
+                "tickets": 121,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-21",
+                "ventas_total": 250285.0,
+                "propinas": 15463.01,
+                "tickets": 131,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-22",
+                "ventas_total": 35285.0,
+                "propinas": 3246.75,
+                "tickets": 28,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-23",
+                "ventas_total": 38908.0,
+                "propinas": 3840.91,
+                "tickets": 35,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-24",
+                "ventas_total": 69587.0,
+                "propinas": 5822.03,
+                "tickets": 34,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-25",
+                "ventas_total": 80723.0,
+                "propinas": 8816.92,
+                "tickets": 69,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-26",
+                "ventas_total": 89783.0,
+                "propinas": 8612.35,
+                "tickets": 53,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-27",
+                "ventas_total": 201770.0,
+                "propinas": 18928.79,
+                "tickets": 125,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-28",
+                "ventas_total": 296805.0,
+                "propinas": 21716.85,
+                "tickets": 140,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-01",
+                "ventas_total": 25585.0,
+                "propinas": 2459.0,
+                "tickets": 22,
+                "sync_run_id": "c8f97699"
+              }
+            ],
+            "cantidad": 30
+          }
+        },
+        "resultado": {
+          "success": true,
+          "records_processed": 30,
+          "records_inserted": 0,
+          "records_updated": 25,
+          "records_skipped": 5,
+          "records_errored": 0,
+          "duration_seconds": 3,
+          "error_message": null
+        },
+        "validacion_posterior": {
+          "dias_existentes": {
+            "dias_existentes": [
+              {
+                "fecha": "2026-01-31",
+                "ventas_total": 279685.0,
+                "propinas": 21483.8,
+                "tickets": 149,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-01",
+                "ventas_total": 90356.0,
+                "propinas": 8174.58,
+                "tickets": 75,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-02",
+                "ventas_total": 83690.0,
+                "propinas": 7753.0,
+                "tickets": 49,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-03",
+                "ventas_total": 23395.0,
+                "propinas": 1660.25,
+                "tickets": 24,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-04",
+                "ventas_total": 36545.0,
+                "propinas": 2829.15,
+                "tickets": 28,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-05",
+                "ventas_total": 91474.0,
+                "propinas": 7216.38,
+                "tickets": 42,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-06",
+                "ventas_total": 198218.0,
+                "propinas": 17103.47,
+                "tickets": 113,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-07",
+                "ventas_total": 253685.0,
+                "propinas": 17820.28,
+                "tickets": 140,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-08",
+                "ventas_total": 39560.0,
+                "propinas": 4446.7,
+                "tickets": 22,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-09",
+                "ventas_total": 19395.0,
+                "propinas": 2317.25,
+                "tickets": 17,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-10",
+                "ventas_total": 21135.0,
+                "propinas": 2551.1,
+                "tickets": 14,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-11",
+                "ventas_total": 38690.0,
+                "propinas": 2788.25,
+                "tickets": 16,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-12",
+                "ventas_total": 91263.0,
+                "propinas": 6323.79,
+                "tickets": 58,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-13",
+                "ventas_total": 183773.0,
+                "propinas": 13769.96,
+                "tickets": 125,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-14",
+                "ventas_total": 216940.0,
+                "propinas": 19288.1,
+                "tickets": 154,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-15",
+                "ventas_total": 61435.25,
+                "propinas": 6724.7,
+                "tickets": 44,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-16",
+                "ventas_total": 73230.0,
+                "propinas": 8425.25,
+                "tickets": 39,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-17",
+                "ventas_total": 66958.0,
+                "propinas": 3908.9,
+                "tickets": 44,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-18",
+                "ventas_total": 24713.0,
+                "propinas": 3650.85,
+                "tickets": 24,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-19",
+                "ventas_total": 83809.0,
+                "propinas": 8180.29,
+                "tickets": 66,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-20",
+                "ventas_total": 157928.0,
+                "propinas": 13946.31,
+                "tickets": 120,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-21",
+                "ventas_total": 250195.0,
+                "propinas": 15463.01,
+                "tickets": 128,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-22",
+                "ventas_total": 35375.0,
+                "propinas": 3246.75,
+                "tickets": 30,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-23",
+                "ventas_total": 38908.0,
+                "propinas": 3840.91,
+                "tickets": 35,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-02-24",
+                "ventas_total": 52270.0,
+                "propinas": 5822.03,
+                "tickets": 34,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-25",
+                "ventas_total": 80533.0,
+                "propinas": 8816.92,
+                "tickets": 68,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-26",
+                "ventas_total": 89973.0,
+                "propinas": 8612.35,
+                "tickets": 53,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-27",
+                "ventas_total": 201770.0,
+                "propinas": 18928.79,
+                "tickets": 123,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-02-28",
+                "ventas_total": 314122.0,
+                "propinas": 21716.85,
+                "tickets": 146,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              },
+              {
+                "fecha": "2026-03-01",
+                "ventas_total": 25585.0,
+                "propinas": 2459.0,
+                "tickets": 20,
+                "sync_run_id": "RESYNC-ESTELAR-20260131-20260301-a408"
+              }
+            ],
+            "cantidad": 30
+          }
+        },
+        "error_message": null
+      }
+    },
+    {
+      "fecha_inicio": "2026-03-02",
+      "fecha_fin": "2026-03-31",
+      "response": {
+        "success": true,
+        "ejecucion_id": "778fe170-76b2-496f-b13f-542187130093",
+        "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d",
+        "modo": "REAL",
+        "tipo_sync": "comercial_ventas_cerradas",
+        "unidad_negocio_id": "ESTELAR",
+        "fecha_inicio": "2026-03-02",
+        "fecha_fin": "2026-03-31",
+        "validacion_previa": {
+          "conectividad": {
+            "conectado": true,
+            "host": "serverestelar.ddns.net",
+            "host_raw": "serverestelar.ddns.net",
+            "database": "softrestaurant12",
+            "config_origin": "Servidores_Conexiones"
+          },
+          "dias_existentes": {
+            "dias_existentes": [
+              {
+                "fecha": "2026-03-02",
+                "ventas_total": 24805.0,
+                "propinas": 1728.0,
+                "tickets": 18,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-03",
+                "ventas_total": 23240.0,
+                "propinas": 1987.25,
+                "tickets": 15,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-04",
+                "ventas_total": 51177.0,
+                "propinas": 4646.47,
+                "tickets": 31,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-05",
+                "ventas_total": 117188.0,
+                "propinas": 11074.95,
+                "tickets": 80,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-06",
+                "ventas_total": 183385.0,
+                "propinas": 11395.2,
+                "tickets": 104,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-07",
+                "ventas_total": 240665.0,
+                "propinas": 20124.11,
+                "tickets": 131,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-08",
+                "ventas_total": 33305.0,
+                "propinas": 2652.51,
+                "tickets": 28,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-09",
+                "ventas_total": 30025.0,
+                "propinas": 3421.75,
+                "tickets": 22,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-10",
+                "ventas_total": 21904.0,
+                "propinas": 2519.65,
+                "tickets": 23,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-11",
+                "ventas_total": 70668.0,
+                "propinas": 3630.0,
+                "tickets": 33,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-12",
+                "ventas_total": 107230.0,
+                "propinas": 10688.75,
+                "tickets": 60,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-13",
+                "ventas_total": 195955.0,
+                "propinas": 16288.2,
+                "tickets": 119,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-14",
+                "ventas_total": 157700.0,
+                "propinas": 13225.4,
+                "tickets": 116,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-15",
+                "ventas_total": 67055.0,
+                "propinas": 6759.56,
+                "tickets": 57,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-16",
+                "ventas_total": 41565.0,
+                "propinas": 4345.56,
+                "tickets": 39,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-17",
+                "ventas_total": 32355.0,
+                "propinas": 2397.75,
+                "tickets": 28,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-18",
+                "ventas_total": 48160.0,
+                "propinas": 3934.42,
+                "tickets": 42,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-19",
+                "ventas_total": 60415.0,
+                "propinas": 6789.25,
+                "tickets": 36,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-20",
+                "ventas_total": 190248.83,
+                "propinas": 17278.16,
+                "tickets": 111,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-21",
+                "ventas_total": 226860.0,
+                "propinas": 17369.51,
+                "tickets": 146,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-22",
+                "ventas_total": 42150.0,
+                "propinas": 5323.75,
+                "tickets": 26,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-23",
+                "ventas_total": 19478.0,
+                "propinas": 2182.05,
+                "tickets": 17,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-24",
+                "ventas_total": 13300.0,
+                "propinas": 1489.25,
+                "tickets": 13,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-25",
+                "ventas_total": 35200.0,
+                "propinas": 3106.85,
+                "tickets": 26,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-26",
+                "ventas_total": 109848.0,
+                "propinas": 8176.5,
+                "tickets": 59,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-27",
+                "ventas_total": 215575.0,
+                "propinas": 14982.28,
+                "tickets": 115,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-28",
+                "ventas_total": 260180.0,
+                "propinas": 17982.93,
+                "tickets": 169,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-29",
+                "ventas_total": 47905.0,
+                "propinas": 3402.65,
+                "tickets": 38,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-30",
+                "ventas_total": 26305.0,
+                "propinas": 2259.1,
+                "tickets": 19,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-31",
+                "ventas_total": 14720.0,
+                "propinas": 919.5,
+                "tickets": 15,
+                "sync_run_id": "c8f97699"
+              }
+            ],
+            "cantidad": 30
+          }
+        },
+        "resultado": {
+          "success": true,
+          "records_processed": 30,
+          "records_inserted": 0,
+          "records_updated": 26,
+          "records_skipped": 4,
+          "records_errored": 0,
+          "duration_seconds": 3,
+          "error_message": null
+        },
+        "validacion_posterior": {
+          "dias_existentes": {
+            "dias_existentes": [
+              {
+                "fecha": "2026-03-02",
+                "ventas_total": 24805.0,
+                "propinas": 1728.0,
+                "tickets": 20,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-03",
+                "ventas_total": 23240.0,
+                "propinas": 1987.25,
+                "tickets": 15,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-04",
+                "ventas_total": 51177.0,
+                "propinas": 4646.47,
+                "tickets": 30,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-05",
+                "ventas_total": 117188.0,
+                "propinas": 11074.95,
+                "tickets": 78,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-06",
+                "ventas_total": 183385.0,
+                "propinas": 11395.2,
+                "tickets": 106,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-07",
+                "ventas_total": 240665.0,
+                "propinas": 20124.11,
+                "tickets": 129,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-08",
+                "ventas_total": 33305.0,
+                "propinas": 2652.51,
+                "tickets": 27,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-09",
+                "ventas_total": 30025.0,
+                "propinas": 3421.75,
+                "tickets": 24,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-10",
+                "ventas_total": 21904.0,
+                "propinas": 2519.65,
+                "tickets": 22,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-11",
+                "ventas_total": 70668.0,
+                "propinas": 3630.0,
+                "tickets": 33,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-12",
+                "ventas_total": 107230.0,
+                "propinas": 10688.75,
+                "tickets": 56,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-13",
+                "ventas_total": 193940.0,
+                "propinas": 16288.2,
+                "tickets": 121,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-14",
+                "ventas_total": 159400.0,
+                "propinas": 12998.4,
+                "tickets": 114,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-15",
+                "ventas_total": 67055.0,
+                "propinas": 6759.56,
+                "tickets": 60,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-16",
+                "ventas_total": 41880.0,
+                "propinas": 4572.56,
+                "tickets": 41,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-17",
+                "ventas_total": 31835.0,
+                "propinas": 2397.75,
+                "tickets": 28,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-18",
+                "ventas_total": 48145.0,
+                "propinas": 3934.42,
+                "tickets": 42,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-19",
+                "ventas_total": 60415.0,
+                "propinas": 6789.25,
+                "tickets": 35,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-20",
+                "ventas_total": 186743.0,
+                "propinas": 16838.16,
+                "tickets": 107,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-21",
+                "ventas_total": 229915.83,
+                "propinas": 17809.51,
+                "tickets": 145,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-22",
+                "ventas_total": 43120.0,
+                "propinas": 5323.75,
+                "tickets": 32,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-23",
+                "ventas_total": 19478.0,
+                "propinas": 2182.05,
+                "tickets": 18,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-24",
+                "ventas_total": 13300.0,
+                "propinas": 1489.25,
+                "tickets": 13,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-03-25",
+                "ventas_total": 35200.0,
+                "propinas": 3106.85,
+                "tickets": 25,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-26",
+                "ventas_total": 109848.0,
+                "propinas": 8176.5,
+                "tickets": 57,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-27",
+                "ventas_total": 215575.0,
+                "propinas": 14982.28,
+                "tickets": 116,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-28",
+                "ventas_total": 260180.0,
+                "propinas": 17982.93,
+                "tickets": 171,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-29",
+                "ventas_total": 47920.0,
+                "propinas": 3402.65,
+                "tickets": 38,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-30",
+                "ventas_total": 26305.0,
+                "propinas": 2259.1,
+                "tickets": 20,
+                "sync_run_id": "RESYNC-ESTELAR-20260302-20260331-417d"
+              },
+              {
+                "fecha": "2026-03-31",
+                "ventas_total": 14720.0,
+                "propinas": 919.5,
+                "tickets": 15,
+                "sync_run_id": "c8f97699"
+              }
+            ],
+            "cantidad": 30
+          }
+        },
+        "error_message": null
+      }
+    },
+    {
+      "fecha_inicio": "2026-04-01",
+      "fecha_fin": "2026-04-30",
+      "response": {
+        "success": true,
+        "ejecucion_id": "db4de9f2-956a-46b8-8eea-24e5d2a2c3af",
+        "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be",
+        "modo": "REAL",
+        "tipo_sync": "comercial_ventas_cerradas",
+        "unidad_negocio_id": "ESTELAR",
+        "fecha_inicio": "2026-04-01",
+        "fecha_fin": "2026-04-30",
+        "validacion_previa": {
+          "conectividad": {
+            "conectado": true,
+            "host": "serverestelar.ddns.net",
+            "host_raw": "serverestelar.ddns.net",
+            "database": "softrestaurant12",
+            "config_origin": "Servidores_Conexiones"
+          },
+          "dias_existentes": {
+            "dias_existentes": [
+              {
+                "fecha": "2026-04-01",
+                "ventas_total": 71245.0,
+                "propinas": 8484.25,
+                "tickets": 57,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-02",
+                "ventas_total": 89281.0,
+                "propinas": 8301.15,
+                "tickets": 71,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-03",
+                "ventas_total": 208110.0,
+                "propinas": 18881.19,
+                "tickets": 115,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-04",
+                "ventas_total": 148298.0,
+                "propinas": 10618.05,
+                "tickets": 110,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-05",
+                "ventas_total": 41688.0,
+                "propinas": 4111.7,
+                "tickets": 29,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-06",
+                "ventas_total": 23165.0,
+                "propinas": 2378.65,
+                "tickets": 20,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-07",
+                "ventas_total": 45715.0,
+                "propinas": 3609.85,
+                "tickets": 33,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-08",
+                "ventas_total": 29955.0,
+                "propinas": 2926.55,
+                "tickets": 20,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-09",
+                "ventas_total": 75940.0,
+                "propinas": 4961.34,
+                "tickets": 61,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-10",
+                "ventas_total": 177995.0,
+                "propinas": 19176.27,
+                "tickets": 109,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-11",
+                "ventas_total": 225705.0,
+                "propinas": 18871.2,
+                "tickets": 156,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-12",
+                "ventas_total": 22690.0,
+                "propinas": 1455.5,
+                "tickets": 19,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-13",
+                "ventas_total": 16265.0,
+                "propinas": 1428.75,
+                "tickets": 15,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-14",
+                "ventas_total": 14105.0,
+                "propinas": 1533.5,
+                "tickets": 13,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-15",
+                "ventas_total": 33760.0,
+                "propinas": 3650.4,
+                "tickets": 26,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-16",
+                "ventas_total": 64979.0,
+                "propinas": 4241.82,
+                "tickets": 46,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-17",
+                "ventas_total": 150060.0,
+                "propinas": 10940.75,
+                "tickets": 109,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-18",
+                "ventas_total": 264150.0,
+                "propinas": 17076.62,
+                "tickets": 163,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-19",
+                "ventas_total": 28315.0,
+                "propinas": 1459.1,
+                "tickets": 21,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-20",
+                "ventas_total": 16544.0,
+                "propinas": 1730.16,
+                "tickets": 17,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-21",
+                "ventas_total": 9314.0,
+                "propinas": 1122.85,
+                "tickets": 8,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-22",
+                "ventas_total": 73994.0,
+                "propinas": 7465.05,
+                "tickets": 56,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-23",
+                "ventas_total": 90050.0,
+                "propinas": 8537.1,
+                "tickets": 58,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-24",
+                "ventas_total": 156583.0,
+                "propinas": 10083.2,
+                "tickets": 109,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-25",
+                "ventas_total": 223739.0,
+                "propinas": 15371.16,
+                "tickets": 146,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-26",
+                "ventas_total": 25505.0,
+                "propinas": 2065.75,
+                "tickets": 31,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-27",
+                "ventas_total": 12940.0,
+                "propinas": 1480.5,
+                "tickets": 11,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-28",
+                "ventas_total": 14555.0,
+                "propinas": 1392.95,
+                "tickets": 21,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-29",
+                "ventas_total": 45650.0,
+                "propinas": 3887.21,
+                "tickets": 33,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-30",
+                "ventas_total": 84130.0,
+                "propinas": 7220.25,
+                "tickets": 67,
+                "sync_run_id": "c8f97699"
+              }
+            ],
+            "cantidad": 30
+          }
+        },
+        "resultado": {
+          "success": true,
+          "records_processed": 30,
+          "records_inserted": 0,
+          "records_updated": 25,
+          "records_skipped": 5,
+          "records_errored": 0,
+          "duration_seconds": 3,
+          "error_message": null
+        },
+        "validacion_posterior": {
+          "dias_existentes": {
+            "dias_existentes": [
+              {
+                "fecha": "2026-04-01",
+                "ventas_total": 71245.0,
+                "propinas": 8484.25,
+                "tickets": 57,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-02",
+                "ventas_total": 88571.0,
+                "propinas": 8301.15,
+                "tickets": 70,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-03",
+                "ventas_total": 208820.0,
+                "propinas": 18881.19,
+                "tickets": 116,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-04",
+                "ventas_total": 148298.0,
+                "propinas": 10618.05,
+                "tickets": 107,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-05",
+                "ventas_total": 41688.0,
+                "propinas": 4111.7,
+                "tickets": 32,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-06",
+                "ventas_total": 23165.0,
+                "propinas": 2378.65,
+                "tickets": 20,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-07",
+                "ventas_total": 45715.0,
+                "propinas": 3609.85,
+                "tickets": 32,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-08",
+                "ventas_total": 29955.0,
+                "propinas": 2926.55,
+                "tickets": 20,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-09",
+                "ventas_total": 75940.0,
+                "propinas": 4961.34,
+                "tickets": 61,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-10",
+                "ventas_total": 175170.0,
+                "propinas": 18976.27,
+                "tickets": 103,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-11",
+                "ventas_total": 225785.0,
+                "propinas": 18871.2,
+                "tickets": 154,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-12",
+                "ventas_total": 25375.0,
+                "propinas": 1655.5,
+                "tickets": 27,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-13",
+                "ventas_total": 16325.0,
+                "propinas": 1428.75,
+                "tickets": 15,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-14",
+                "ventas_total": 14105.0,
+                "propinas": 1533.5,
+                "tickets": 13,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-15",
+                "ventas_total": 33760.0,
+                "propinas": 3650.4,
+                "tickets": 26,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-04-16",
+                "ventas_total": 64509.0,
+                "propinas": 4241.82,
+                "tickets": 43,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-17",
+                "ventas_total": 150060.0,
+                "propinas": 10940.75,
+                "tickets": 106,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-18",
+                "ventas_total": 263535.0,
+                "propinas": 17076.62,
+                "tickets": 160,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-19",
+                "ventas_total": 29400.0,
+                "propinas": 1459.1,
+                "tickets": 31,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-20",
+                "ventas_total": 16370.0,
+                "propinas": 1730.16,
+                "tickets": 16,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-21",
+                "ventas_total": 9488.0,
+                "propinas": 1122.85,
+                "tickets": 9,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-22",
+                "ventas_total": 66739.0,
+                "propinas": 7225.05,
+                "tickets": 46,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-23",
+                "ventas_total": 97305.0,
+                "propinas": 8777.1,
+                "tickets": 68,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-24",
+                "ventas_total": 151498.0,
+                "propinas": 9959.9,
+                "tickets": 102,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-25",
+                "ventas_total": 228714.0,
+                "propinas": 15494.46,
+                "tickets": 151,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-26",
+                "ventas_total": 25615.0,
+                "propinas": 2065.75,
+                "tickets": 32,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-27",
+                "ventas_total": 12940.0,
+                "propinas": 1480.5,
+                "tickets": 11,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-28",
+                "ventas_total": 14555.0,
+                "propinas": 1392.95,
+                "tickets": 20,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-29",
+                "ventas_total": 45650.0,
+                "propinas": 3887.21,
+                "tickets": 31,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              },
+              {
+                "fecha": "2026-04-30",
+                "ventas_total": 84130.0,
+                "propinas": 7220.25,
+                "tickets": 70,
+                "sync_run_id": "RESYNC-ESTELAR-20260401-20260430-16be"
+              }
+            ],
+            "cantidad": 30
+          }
+        },
+        "error_message": null
+      }
+    },
+    {
+      "fecha_inicio": "2026-05-01",
+      "fecha_fin": "2026-05-30",
+      "response": {
+        "success": true,
+        "ejecucion_id": "1f9a98ce-c435-44bd-a5dc-dc93a4e4d14f",
+        "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a",
+        "modo": "REAL",
+        "tipo_sync": "comercial_ventas_cerradas",
+        "unidad_negocio_id": "ESTELAR",
+        "fecha_inicio": "2026-05-01",
+        "fecha_fin": "2026-05-30",
+        "validacion_previa": {
+          "conectividad": {
+            "conectado": true,
+            "host": "serverestelar.ddns.net",
+            "host_raw": "serverestelar.ddns.net",
+            "database": "softrestaurant12",
+            "config_origin": "Servidores_Conexiones"
+          },
+          "dias_existentes": {
+            "dias_existentes": [
+              {
+                "fecha": "2026-05-01",
+                "ventas_total": 229216.0,
+                "propinas": 21195.25,
+                "tickets": 142,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-02",
+                "ventas_total": 171845.0,
+                "propinas": 14842.29,
+                "tickets": 121,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-03",
+                "ventas_total": 30555.0,
+                "propinas": 3152.75,
+                "tickets": 27,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-04",
+                "ventas_total": 24725.0,
+                "propinas": 3117.95,
+                "tickets": 20,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-05",
+                "ventas_total": 24750.0,
+                "propinas": 2593.01,
+                "tickets": 22,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-06",
+                "ventas_total": 35650.0,
+                "propinas": 3248.5,
+                "tickets": 32,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-07",
+                "ventas_total": 68628.0,
+                "propinas": 6690.1,
+                "tickets": 45,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-08",
+                "ventas_total": 177935.0,
+                "propinas": 14416.32,
+                "tickets": 114,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-09",
+                "ventas_total": 250080.0,
+                "propinas": 17090.81,
+                "tickets": 145,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-10",
+                "ventas_total": 76295.0,
+                "propinas": 4854.7,
+                "tickets": 43,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-11",
+                "ventas_total": 23975.0,
+                "propinas": 2244.76,
+                "tickets": 20,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-12",
+                "ventas_total": 40780.0,
+                "propinas": 4156.95,
+                "tickets": 25,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-13",
+                "ventas_total": 87485.0,
+                "propinas": 10422.95,
+                "tickets": 32,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-14",
+                "ventas_total": 134825.0,
+                "propinas": 14653.42,
+                "tickets": 63,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-15",
+                "ventas_total": 129985.0,
+                "propinas": 11241.0,
+                "tickets": 117,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-16",
+                "ventas_total": 231089.0,
+                "propinas": 15285.48,
+                "tickets": 130,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-17",
+                "ventas_total": 19435.0,
+                "propinas": 1631.5,
+                "tickets": 23,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-18",
+                "ventas_total": 9405.0,
+                "propinas": 1249.25,
+                "tickets": 11,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-19",
+                "ventas_total": 8175.0,
+                "propinas": 808.0,
+                "tickets": 12,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-20",
+                "ventas_total": 31385.0,
+                "propinas": 3083.25,
+                "tickets": 30,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-21",
+                "ventas_total": 51405.0,
+                "propinas": 4995.05,
+                "tickets": 46,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-22",
+                "ventas_total": 206743.0,
+                "propinas": 13814.15,
+                "tickets": 136,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-23",
+                "ventas_total": 257750.0,
+                "propinas": 24083.25,
+                "tickets": 180,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-24",
+                "ventas_total": 15270.0,
+                "propinas": 856.25,
+                "tickets": 18,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-25",
+                "ventas_total": 15295.0,
+                "propinas": 1358.75,
+                "tickets": 13,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-26",
+                "ventas_total": 25395.0,
+                "propinas": 2247.95,
+                "tickets": 15,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-27",
+                "ventas_total": 40810.0,
+                "propinas": 3595.47,
+                "tickets": 35,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-28",
+                "ventas_total": 47485.0,
+                "propinas": 4556.65,
+                "tickets": 39,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-29",
+                "ventas_total": 109765.0,
+                "propinas": 10176.91,
+                "tickets": 62,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-30",
+                "ventas_total": 300265.0,
+                "propinas": 18354.0,
+                "tickets": 200,
+                "sync_run_id": "c8f97699"
+              }
+            ],
+            "cantidad": 30
+          }
+        },
+        "resultado": {
+          "success": true,
+          "records_processed": 30,
+          "records_inserted": 0,
+          "records_updated": 23,
+          "records_skipped": 7,
+          "records_errored": 0,
+          "duration_seconds": 3,
+          "error_message": null
+        },
+        "validacion_posterior": {
+          "dias_existentes": {
+            "dias_existentes": [
+              {
+                "fecha": "2026-05-01",
+                "ventas_total": 229216.0,
+                "propinas": 21195.25,
+                "tickets": 141,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-02",
+                "ventas_total": 171845.0,
+                "propinas": 14842.29,
+                "tickets": 122,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-03",
+                "ventas_total": 30535.0,
+                "propinas": 3152.75,
+                "tickets": 26,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-04",
+                "ventas_total": 24368.0,
+                "propinas": 3117.95,
+                "tickets": 20,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-05",
+                "ventas_total": 24750.0,
+                "propinas": 2593.01,
+                "tickets": 22,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-06",
+                "ventas_total": 35670.0,
+                "propinas": 3248.5,
+                "tickets": 33,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-07",
+                "ventas_total": 68628.0,
+                "propinas": 6690.1,
+                "tickets": 44,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-08",
+                "ventas_total": 174645.0,
+                "propinas": 14086.44,
+                "tickets": 108,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-09",
+                "ventas_total": 253370.0,
+                "propinas": 17420.69,
+                "tickets": 151,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-10",
+                "ventas_total": 76652.0,
+                "propinas": 4854.7,
+                "tickets": 44,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-11",
+                "ventas_total": 23975.0,
+                "propinas": 2244.76,
+                "tickets": 21,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-12",
+                "ventas_total": 40780.0,
+                "propinas": 4156.95,
+                "tickets": 25,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-13",
+                "ventas_total": 87485.0,
+                "propinas": 10422.95,
+                "tickets": 32,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-14",
+                "ventas_total": 134825.0,
+                "propinas": 14653.42,
+                "tickets": 63,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-15",
+                "ventas_total": 129145.0,
+                "propinas": 10965.0,
+                "tickets": 113,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-16",
+                "ventas_total": 231767.0,
+                "propinas": 15561.48,
+                "tickets": 129,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-17",
+                "ventas_total": 19487.0,
+                "propinas": 1631.5,
+                "tickets": 24,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-18",
+                "ventas_total": 9485.0,
+                "propinas": 1249.25,
+                "tickets": 13,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-19",
+                "ventas_total": 8175.0,
+                "propinas": 808.0,
+                "tickets": 12,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-20",
+                "ventas_total": 31415.0,
+                "propinas": 3083.25,
+                "tickets": 30,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-21",
+                "ventas_total": 51265.0,
+                "propinas": 4995.05,
+                "tickets": 44,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-22",
+                "ventas_total": 206443.0,
+                "propinas": 13770.15,
+                "tickets": 135,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-23",
+                "ventas_total": 255910.0,
+                "propinas": 24127.25,
+                "tickets": 177,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-24",
+                "ventas_total": 17550.0,
+                "propinas": 856.25,
+                "tickets": 25,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-25",
+                "ventas_total": 15295.0,
+                "propinas": 1358.75,
+                "tickets": 13,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-26",
+                "ventas_total": 25395.0,
+                "propinas": 2247.95,
+                "tickets": 15,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-05-27",
+                "ventas_total": 40710.0,
+                "propinas": 3595.47,
+                "tickets": 34,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-28",
+                "ventas_total": 47485.0,
+                "propinas": 4556.65,
+                "tickets": 40,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-29",
+                "ventas_total": 109865.0,
+                "propinas": 10176.91,
+                "tickets": 62,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              },
+              {
+                "fecha": "2026-05-30",
+                "ventas_total": 300265.0,
+                "propinas": 18354.0,
+                "tickets": 198,
+                "sync_run_id": "RESYNC-ESTELAR-20260501-20260530-8a7a"
+              }
+            ],
+            "cantidad": 30
+          }
+        },
+        "error_message": null
+      }
+    },
+    {
+      "fecha_inicio": "2026-05-31",
+      "fecha_fin": "2026-06-29",
+      "response": {
+        "success": true,
+        "ejecucion_id": "ed865901-daaf-43dc-a0a9-45fb0bb966e7",
+        "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539",
+        "modo": "REAL",
+        "tipo_sync": "comercial_ventas_cerradas",
+        "unidad_negocio_id": "ESTELAR",
+        "fecha_inicio": "2026-05-31",
+        "fecha_fin": "2026-06-29",
+        "validacion_previa": {
+          "conectividad": {
+            "conectado": true,
+            "host": "serverestelar.ddns.net",
+            "host_raw": "serverestelar.ddns.net",
+            "database": "softrestaurant12",
+            "config_origin": "Servidores_Conexiones"
+          },
+          "dias_existentes": {
+            "dias_existentes": [
+              {
+                "fecha": "2026-05-31",
+                "ventas_total": 43135.0,
+                "propinas": 5649.95,
+                "tickets": 21,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-01",
+                "ventas_total": 560.0,
+                "propinas": 64.5,
+                "tickets": 4,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-02",
+                "ventas_total": 53170.0,
+                "propinas": 5695.1,
+                "tickets": 38,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-03",
+                "ventas_total": 15289.0,
+                "propinas": 1038.76,
+                "tickets": 20,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-04",
+                "ventas_total": 62549.0,
+                "propinas": 6765.41,
+                "tickets": 58,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-05",
+                "ventas_total": 168795.0,
+                "propinas": 13687.19,
+                "tickets": 121,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-06",
+                "ventas_total": 297219.0,
+                "propinas": 20284.11,
+                "tickets": 171,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-07",
+                "ventas_total": 46690.0,
+                "propinas": 3853.95,
+                "tickets": 51,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-08",
+                "ventas_total": 30050.0,
+                "propinas": 2400.25,
+                "tickets": 27,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-09",
+                "ventas_total": 27785.0,
+                "propinas": 2575.0,
+                "tickets": 29,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-10",
+                "ventas_total": 41665.0,
+                "propinas": 3018.85,
+                "tickets": 28,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-11",
+                "ventas_total": 74465.0,
+                "propinas": 3938.6,
+                "tickets": 43,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-12",
+                "ventas_total": 143582.0,
+                "propinas": 9943.71,
+                "tickets": 96,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-13",
+                "ventas_total": 304805.0,
+                "propinas": 26412.51,
+                "tickets": 192,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-14",
+                "ventas_total": 47175.0,
+                "propinas": 5661.25,
+                "tickets": 38,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-15",
+                "ventas_total": 11440.0,
+                "propinas": 911.75,
+                "tickets": 11,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-16",
+                "ventas_total": 29002.0,
+                "propinas": 2134.75,
+                "tickets": 26,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-17",
+                "ventas_total": 42730.0,
+                "propinas": 4103.05,
+                "tickets": 41,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-18",
+                "ventas_total": 95960.0,
+                "propinas": 7935.14,
+                "tickets": 75,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-19",
+                "ventas_total": 138155.0,
+                "propinas": 12241.71,
+                "tickets": 102,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-20",
+                "ventas_total": 274875.0,
+                "propinas": 18798.56,
+                "tickets": 162,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-21",
+                "ventas_total": 87590.0,
+                "propinas": 8175.5,
+                "tickets": 60,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-22",
+                "ventas_total": 14095.0,
+                "propinas": 1729.15,
+                "tickets": 14,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-23",
+                "ventas_total": 45115.0,
+                "propinas": 4913.9,
+                "tickets": 35,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-24",
+                "ventas_total": 101510.0,
+                "propinas": 8388.6,
+                "tickets": 83,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-25",
+                "ventas_total": 65760.0,
+                "propinas": 4657.0,
+                "tickets": 43,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-26",
+                "ventas_total": 127715.0,
+                "propinas": 10433.9,
+                "tickets": 89,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-27",
+                "ventas_total": 239035.0,
+                "propinas": 19716.44,
+                "tickets": 174,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-28",
+                "ventas_total": 40630.0,
+                "propinas": 3627.75,
+                "tickets": 31,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-29",
+                "ventas_total": 27250.0,
+                "propinas": 2941.0,
+                "tickets": 24,
+                "sync_run_id": "c8f97699"
+              }
+            ],
+            "cantidad": 30
+          }
+        },
+        "resultado": {
+          "success": true,
+          "records_processed": 30,
+          "records_inserted": 0,
+          "records_updated": 22,
+          "records_skipped": 8,
+          "records_errored": 0,
+          "duration_seconds": 3,
+          "error_message": null
+        },
+        "validacion_posterior": {
+          "dias_existentes": {
+            "dias_existentes": [
+              {
+                "fecha": "2026-05-31",
+                "ventas_total": 43135.0,
+                "propinas": 5649.95,
+                "tickets": 24,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-01",
+                "ventas_total": 560.0,
+                "propinas": 64.5,
+                "tickets": 2,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-02",
+                "ventas_total": 53170.0,
+                "propinas": 5695.1,
+                "tickets": 39,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-03",
+                "ventas_total": 15289.0,
+                "propinas": 1038.76,
+                "tickets": 20,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-04",
+                "ventas_total": 62549.0,
+                "propinas": 6765.41,
+                "tickets": 56,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-05",
+                "ventas_total": 164410.0,
+                "propinas": 13627.19,
+                "tickets": 113,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-06",
+                "ventas_total": 301604.0,
+                "propinas": 20344.11,
+                "tickets": 177,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-07",
+                "ventas_total": 46690.0,
+                "propinas": 3853.95,
+                "tickets": 55,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-08",
+                "ventas_total": 30050.0,
+                "propinas": 2400.25,
+                "tickets": 27,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-09",
+                "ventas_total": 27785.0,
+                "propinas": 2575.0,
+                "tickets": 28,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-10",
+                "ventas_total": 41665.0,
+                "propinas": 3018.85,
+                "tickets": 28,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-11",
+                "ventas_total": 74465.0,
+                "propinas": 3938.6,
+                "tickets": 43,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-12",
+                "ventas_total": 143582.0,
+                "propinas": 9943.71,
+                "tickets": 96,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-13",
+                "ventas_total": 304255.0,
+                "propinas": 26412.51,
+                "tickets": 181,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-14",
+                "ventas_total": 47725.0,
+                "propinas": 5661.25,
+                "tickets": 50,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-15",
+                "ventas_total": 11440.0,
+                "propinas": 911.75,
+                "tickets": 11,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-16",
+                "ventas_total": 29002.0,
+                "propinas": 2134.75,
+                "tickets": 26,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-17",
+                "ventas_total": 42730.0,
+                "propinas": 4103.05,
+                "tickets": 41,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-18",
+                "ventas_total": 95960.0,
+                "propinas": 7935.14,
+                "tickets": 73,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-19",
+                "ventas_total": 138155.0,
+                "propinas": 12241.71,
+                "tickets": 102,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-20",
+                "ventas_total": 274735.0,
+                "propinas": 18798.56,
+                "tickets": 159,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-21",
+                "ventas_total": 87205.0,
+                "propinas": 8175.5,
+                "tickets": 59,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-22",
+                "ventas_total": 14620.0,
+                "propinas": 1729.15,
+                "tickets": 19,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-23",
+                "ventas_total": 45115.0,
+                "propinas": 4913.9,
+                "tickets": 36,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-24",
+                "ventas_total": 101510.0,
+                "propinas": 8388.6,
+                "tickets": 83,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-06-25",
+                "ventas_total": 65565.0,
+                "propinas": 4657.0,
+                "tickets": 40,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-26",
+                "ventas_total": 127900.0,
+                "propinas": 10433.9,
+                "tickets": 89,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-27",
+                "ventas_total": 239045.0,
+                "propinas": 19716.44,
+                "tickets": 175,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-28",
+                "ventas_total": 40630.0,
+                "propinas": 3627.75,
+                "tickets": 32,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              },
+              {
+                "fecha": "2026-06-29",
+                "ventas_total": 27250.0,
+                "propinas": 2941.0,
+                "tickets": 25,
+                "sync_run_id": "RESYNC-ESTELAR-20260531-20260629-7539"
+              }
+            ],
+            "cantidad": 30
+          }
+        },
+        "error_message": null
+      }
+    },
+    {
+      "fecha_inicio": "2026-06-30",
+      "fecha_fin": "2026-07-29",
+      "response": {
+        "success": true,
+        "ejecucion_id": "bb1e4a35-ded7-40af-96f5-f863db61d465",
+        "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a",
+        "modo": "REAL",
+        "tipo_sync": "comercial_ventas_cerradas",
+        "unidad_negocio_id": "ESTELAR",
+        "fecha_inicio": "2026-06-30",
+        "fecha_fin": "2026-07-29",
+        "validacion_previa": {
+          "conectividad": {
+            "conectado": true,
+            "host": "serverestelar.ddns.net",
+            "host_raw": "serverestelar.ddns.net",
+            "database": "softrestaurant12",
+            "config_origin": "Servidores_Conexiones"
+          },
+          "dias_existentes": {
+            "dias_existentes": [
+              {
+                "fecha": "2026-06-30",
+                "ventas_total": 121935.0,
+                "propinas": 10492.8,
+                "tickets": 72,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-01",
+                "ventas_total": 29775.0,
+                "propinas": 2167.05,
+                "tickets": 25,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-02",
+                "ventas_total": 78355.0,
+                "propinas": 6712.35,
+                "tickets": 53,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-03",
+                "ventas_total": 137360.0,
+                "propinas": 9181.81,
+                "tickets": 100,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-04",
+                "ventas_total": 183255.0,
+                "propinas": 12481.25,
+                "tickets": 144,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-05",
+                "ventas_total": 104347.0,
+                "propinas": 6926.9,
+                "tickets": 75,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-06",
+                "ventas_total": 30950.0,
+                "propinas": 2465.65,
+                "tickets": 28,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-07",
+                "ventas_total": 38160.0,
+                "propinas": 4258.6,
+                "tickets": 32,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-08",
+                "ventas_total": 27595.0,
+                "propinas": 2981.65,
+                "tickets": 22,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-09",
+                "ventas_total": 58225.0,
+                "propinas": 4142.75,
+                "tickets": 37,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-10",
+                "ventas_total": 180095.0,
+                "propinas": 17104.09,
+                "tickets": 105,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-11",
+                "ventas_total": 193945.0,
+                "propinas": 16846.48,
+                "tickets": 150,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-12",
+                "ventas_total": 27040.0,
+                "propinas": 2801.3,
+                "tickets": 22,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-13",
+                "ventas_total": 38930.0,
+                "propinas": 2871.66,
+                "tickets": 31,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-14",
+                "ventas_total": 44605.0,
+                "propinas": 5013.4,
+                "tickets": 40,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-15",
+                "ventas_total": 51365.0,
+                "propinas": 5359.35,
+                "tickets": 38,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-16",
+                "ventas_total": 60135.0,
+                "propinas": 4641.01,
+                "tickets": 41,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-17",
+                "ventas_total": 118375.0,
+                "propinas": 9262.2,
+                "tickets": 80,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-18",
+                "ventas_total": 161514.0,
+                "propinas": 12854.75,
+                "tickets": 116,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-19",
+                "ventas_total": 52175.0,
+                "propinas": 4936.8,
+                "tickets": 44,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-20",
+                "ventas_total": 26905.0,
+                "propinas": 3205.61,
+                "tickets": 25,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-21",
+                "ventas_total": 36691.0,
+                "propinas": 2774.1,
+                "tickets": 30,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-22",
+                "ventas_total": 77000.0,
+                "propinas": 6177.75,
+                "tickets": 60,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-23",
+                "ventas_total": 48775.0,
+                "propinas": 6262.5,
+                "tickets": 42,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-24",
+                "ventas_total": 119201.0,
+                "propinas": 10174.7,
+                "tickets": 103,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-25",
+                "ventas_total": 179470.0,
+                "propinas": 17352.25,
+                "tickets": 132,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-26",
+                "ventas_total": 27390.0,
+                "propinas": 2316.76,
+                "tickets": 18,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-27",
+                "ventas_total": 47385.0,
+                "propinas": 5556.38,
+                "tickets": 26,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-28",
+                "ventas_total": 48815.0,
+                "propinas": 4346.75,
+                "tickets": 39,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-29",
+                "ventas_total": 64290.0,
+                "propinas": 6389.6,
+                "tickets": 44,
+                "sync_run_id": "c8f97699"
+              }
+            ],
+            "cantidad": 30
+          }
+        },
+        "resultado": {
+          "success": true,
+          "records_processed": 30,
+          "records_inserted": 0,
+          "records_updated": 22,
+          "records_skipped": 8,
+          "records_errored": 0,
+          "duration_seconds": 3,
+          "error_message": null
+        },
+        "validacion_posterior": {
+          "dias_existentes": {
+            "dias_existentes": [
+              {
+                "fecha": "2026-06-30",
+                "ventas_total": 121915.0,
+                "propinas": 10492.8,
+                "tickets": 70,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-01",
+                "ventas_total": 29795.0,
+                "propinas": 2167.05,
+                "tickets": 25,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-02",
+                "ventas_total": 78355.0,
+                "propinas": 6712.35,
+                "tickets": 52,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-03",
+                "ventas_total": 137360.0,
+                "propinas": 9181.81,
+                "tickets": 102,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-04",
+                "ventas_total": 183255.0,
+                "propinas": 12481.25,
+                "tickets": 144,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-05",
+                "ventas_total": 104347.0,
+                "propinas": 6926.9,
+                "tickets": 74,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-06",
+                "ventas_total": 30950.0,
+                "propinas": 2465.65,
+                "tickets": 29,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-07",
+                "ventas_total": 38160.0,
+                "propinas": 4258.6,
+                "tickets": 32,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-08",
+                "ventas_total": 27595.0,
+                "propinas": 2981.65,
+                "tickets": 22,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-09",
+                "ventas_total": 58225.0,
+                "propinas": 4142.75,
+                "tickets": 36,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-10",
+                "ventas_total": 180095.0,
+                "propinas": 17104.09,
+                "tickets": 105,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-11",
+                "ventas_total": 193885.0,
+                "propinas": 16846.48,
+                "tickets": 149,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-12",
+                "ventas_total": 27090.0,
+                "propinas": 2801.3,
+                "tickets": 21,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-13",
+                "ventas_total": 38940.0,
+                "propinas": 2871.66,
+                "tickets": 33,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-14",
+                "ventas_total": 44605.0,
+                "propinas": 5013.4,
+                "tickets": 43,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-15",
+                "ventas_total": 51365.0,
+                "propinas": 5359.35,
+                "tickets": 37,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-16",
+                "ventas_total": 60135.0,
+                "propinas": 4641.01,
+                "tickets": 41,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-17",
+                "ventas_total": 118375.0,
+                "propinas": 9262.2,
+                "tickets": 80,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-18",
+                "ventas_total": 161465.0,
+                "propinas": 12854.75,
+                "tickets": 114,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-19",
+                "ventas_total": 52175.0,
+                "propinas": 4936.8,
+                "tickets": 44,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-20",
+                "ventas_total": 26905.0,
+                "propinas": 3205.61,
+                "tickets": 27,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-21",
+                "ventas_total": 36691.0,
+                "propinas": 2774.1,
+                "tickets": 30,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-22",
+                "ventas_total": 77000.0,
+                "propinas": 6177.75,
+                "tickets": 58,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-23",
+                "ventas_total": 48824.0,
+                "propinas": 6262.5,
+                "tickets": 42,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-24",
+                "ventas_total": 115070.0,
+                "propinas": 10174.7,
+                "tickets": 97,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-25",
+                "ventas_total": 183561.0,
+                "propinas": 17352.25,
+                "tickets": 132,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-26",
+                "ventas_total": 27430.0,
+                "propinas": 2316.76,
+                "tickets": 25,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-27",
+                "ventas_total": 47385.0,
+                "propinas": 5556.38,
+                "tickets": 27,
+                "sync_run_id": "RESYNC-ESTELAR-20260630-20260729-9e4a"
+              },
+              {
+                "fecha": "2026-07-28",
+                "ventas_total": 48815.0,
+                "propinas": 4346.75,
+                "tickets": 39,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-29",
+                "ventas_total": 64290.0,
+                "propinas": 6389.6,
+                "tickets": 44,
+                "sync_run_id": "c8f97699"
+              }
+            ],
+            "cantidad": 30
+          }
+        },
+        "error_message": null
+      }
+    },
+    {
+      "fecha_inicio": "2026-07-30",
+      "fecha_fin": "2026-08-28",
+      "response": {
+        "success": true,
+        "ejecucion_id": "084fd9c4-167d-4dda-ba77-ba8fe1d4d286",
+        "sync_run_id": "RESYNC-ESTELAR-20260730-20260828-ec24",
+        "modo": "REAL",
+        "tipo_sync": "comercial_ventas_cerradas",
+        "unidad_negocio_id": "ESTELAR",
+        "fecha_inicio": "2026-07-30",
+        "fecha_fin": "2026-08-28",
+        "validacion_previa": {
+          "conectividad": {
+            "conectado": true,
+            "host": "serverestelar.ddns.net",
+            "host_raw": "serverestelar.ddns.net",
+            "database": "softrestaurant12",
+            "config_origin": "Servidores_Conexiones"
+          },
+          "dias_existentes": {
+            "dias_existentes": [
+              {
+                "fecha": "2026-07-30",
+                "ventas_total": 77800.0,
+                "propinas": 6680.1,
+                "tickets": 58,
+                "sync_run_id": "c8f97699"
+              },
+              {
+                "fecha": "2026-07-31",
+                "ventas_total": 122145.0,
+                "propinas": 11307.85,
+                "tickets": 77,
+                "sync_run_id": "INCR-20260803-234624-13e9"
+              },
+              {
+                "fecha": "2026-08-01",
+                "ventas_total": 148915.0,
+                "propinas": 13953.83,
+                "tickets": 114,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260801-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-02",
+                "ventas_total": 35300.0,
+                "propinas": 3146.25,
+                "tickets": 31,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260802-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-03",
+                "ventas_total": 41390.0,
+                "propinas": 4171.5,
+                "tickets": 22,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260803-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-04",
+                "ventas_total": 78005.0,
+                "propinas": 7408.8,
+                "tickets": 53,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260804-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-05",
+                "ventas_total": 51720.0,
+                "propinas": 4581.0,
+                "tickets": 37,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260805-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-06",
+                "ventas_total": 76650.0,
+                "propinas": 5796.75,
+                "tickets": 58,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260806-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-07",
+                "ventas_total": 173435.0,
+                "propinas": 13883.55,
+                "tickets": 116,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260807-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-08",
+                "ventas_total": 164128.0,
+                "propinas": 12400.51,
+                "tickets": 121,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260808-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-09",
+                "ventas_total": 23345.0,
+                "propinas": 2207.0,
+                "tickets": 25,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260809-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-10",
+                "ventas_total": 21920.0,
+                "propinas": 2644.5,
+                "tickets": 18,
+                "sync_run_id": "INCR-20260813-235550-09d5"
+              },
+              {
+                "fecha": "2026-08-11",
+                "ventas_total": 119050.0,
+                "propinas": 2199.75,
+                "tickets": 26,
+                "sync_run_id": "INCR-20260814-235724-dd53"
+              },
+              {
+                "fecha": "2026-08-12",
+                "ventas_total": 40670.0,
+                "propinas": 4369.6,
+                "tickets": 30,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260812-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-13",
+                "ventas_total": 69325.0,
+                "propinas": 5595.55,
+                "tickets": 50,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260813-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-14",
+                "ventas_total": 113585.0,
+                "propinas": 10192.25,
+                "tickets": 88,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260814-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-15",
+                "ventas_total": 163351.0,
+                "propinas": 15895.52,
+                "tickets": 117,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260815-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-16",
+                "ventas_total": 37570.0,
+                "propinas": 2657.75,
+                "tickets": 40,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260816-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-17",
+                "ventas_total": 45510.0,
+                "propinas": 4906.99,
+                "tickets": 26,
+                "sync_run_id": "INCR-20260821-005754-56be"
+              },
+              {
+                "fecha": "2026-08-18",
+                "ventas_total": 23550.0,
+                "propinas": 2372.75,
+                "tickets": 23,
+                "sync_run_id": "INCR-20260822-002132-ec17"
+              },
+              {
+                "fecha": "2026-08-19",
+                "ventas_total": 43625.0,
+                "propinas": 2230.75,
+                "tickets": 30,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260819-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-20",
+                "ventas_total": 84830.0,
+                "propinas": 7898.75,
+                "tickets": 60,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260820-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-21",
+                "ventas_total": 158915.0,
+                "propinas": 12690.48,
+                "tickets": 109,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260821-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-22",
+                "ventas_total": 177290.0,
+                "propinas": 15591.86,
+                "tickets": 155,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260822-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-23",
+                "ventas_total": 25259.0,
+                "propinas": 2890.01,
+                "tickets": 23,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260823-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-24",
+                "ventas_total": 20130.0,
+                "propinas": 1588.5,
+                "tickets": 23,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260824-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-25",
+                "ventas_total": 23340.0,
+                "propinas": 2067.6,
+                "tickets": 23,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260825-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-26",
+                "ventas_total": 34308.0,
+                "propinas": 2562.46,
+                "tickets": 27,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260826-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-27",
+                "ventas_total": 56602.0,
+                "propinas": 4664.25,
+                "tickets": 49,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260827-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-28",
+                "ventas_total": 115455.0,
+                "propinas": 11377.6,
+                "tickets": 79,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260828-ESTELAR"
+              }
+            ],
+            "cantidad": 30
+          }
+        },
+        "resultado": {
+          "success": true,
+          "records_processed": 30,
+          "records_inserted": 0,
+          "records_updated": 2,
+          "records_skipped": 28,
+          "records_errored": 0,
+          "duration_seconds": 2,
+          "error_message": null
+        },
+        "validacion_posterior": {
+          "dias_existentes": {
+            "dias_existentes": [
+              {
+                "fecha": "2026-07-30",
+                "ventas_total": 77755.0,
+                "propinas": 6680.1,
+                "tickets": 57,
+                "sync_run_id": "RESYNC-ESTELAR-20260730-20260828-ec24"
+              },
+              {
+                "fecha": "2026-07-31",
+                "ventas_total": 125795.0,
+                "propinas": 11776.5,
+                "tickets": 84,
+                "sync_run_id": "RESYNC-ESTELAR-20260730-20260828-ec24"
+              },
+              {
+                "fecha": "2026-08-01",
+                "ventas_total": 148915.0,
+                "propinas": 13953.83,
+                "tickets": 114,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260801-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-02",
+                "ventas_total": 35300.0,
+                "propinas": 3146.25,
+                "tickets": 31,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260802-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-03",
+                "ventas_total": 41390.0,
+                "propinas": 4171.5,
+                "tickets": 22,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260803-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-04",
+                "ventas_total": 78005.0,
+                "propinas": 7408.8,
+                "tickets": 53,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260804-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-05",
+                "ventas_total": 51720.0,
+                "propinas": 4581.0,
+                "tickets": 37,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260805-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-06",
+                "ventas_total": 76650.0,
+                "propinas": 5796.75,
+                "tickets": 58,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260806-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-07",
+                "ventas_total": 173435.0,
+                "propinas": 13883.55,
+                "tickets": 116,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260807-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-08",
+                "ventas_total": 164128.0,
+                "propinas": 12400.51,
+                "tickets": 121,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260808-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-09",
+                "ventas_total": 23345.0,
+                "propinas": 2207.0,
+                "tickets": 25,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260809-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-10",
+                "ventas_total": 21920.0,
+                "propinas": 2644.5,
+                "tickets": 18,
+                "sync_run_id": "INCR-20260813-235550-09d5"
+              },
+              {
+                "fecha": "2026-08-11",
+                "ventas_total": 119050.0,
+                "propinas": 2199.75,
+                "tickets": 26,
+                "sync_run_id": "INCR-20260814-235724-dd53"
+              },
+              {
+                "fecha": "2026-08-12",
+                "ventas_total": 40670.0,
+                "propinas": 4369.6,
+                "tickets": 30,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260812-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-13",
+                "ventas_total": 69325.0,
+                "propinas": 5595.55,
+                "tickets": 50,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260813-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-14",
+                "ventas_total": 113585.0,
+                "propinas": 10192.25,
+                "tickets": 88,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260814-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-15",
+                "ventas_total": 163351.0,
+                "propinas": 15895.52,
+                "tickets": 117,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260815-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-16",
+                "ventas_total": 37570.0,
+                "propinas": 2657.75,
+                "tickets": 40,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260816-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-17",
+                "ventas_total": 45510.0,
+                "propinas": 4906.99,
+                "tickets": 26,
+                "sync_run_id": "INCR-20260821-005754-56be"
+              },
+              {
+                "fecha": "2026-08-18",
+                "ventas_total": 23550.0,
+                "propinas": 2372.75,
+                "tickets": 23,
+                "sync_run_id": "INCR-20260822-002132-ec17"
+              },
+              {
+                "fecha": "2026-08-19",
+                "ventas_total": 43625.0,
+                "propinas": 2230.75,
+                "tickets": 30,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260819-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-20",
+                "ventas_total": 84830.0,
+                "propinas": 7898.75,
+                "tickets": 60,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260820-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-21",
+                "ventas_total": 158915.0,
+                "propinas": 12690.48,
+                "tickets": 109,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260821-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-22",
+                "ventas_total": 177290.0,
+                "propinas": 15591.86,
+                "tickets": 155,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260822-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-23",
+                "ventas_total": 25259.0,
+                "propinas": 2890.01,
+                "tickets": 23,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260823-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-24",
+                "ventas_total": 20130.0,
+                "propinas": 1588.5,
+                "tickets": 23,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260824-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-25",
+                "ventas_total": 23340.0,
+                "propinas": 2067.6,
+                "tickets": 23,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260825-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-26",
+                "ventas_total": 34308.0,
+                "propinas": 2562.46,
+                "tickets": 27,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260826-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-27",
+                "ventas_total": 56602.0,
+                "propinas": 4664.25,
+                "tickets": 49,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260827-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-28",
+                "ventas_total": 115455.0,
+                "propinas": 11377.6,
+                "tickets": 79,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260828-ESTELAR"
+              }
+            ],
+            "cantidad": 30
+          }
+        },
+        "error_message": null
+      }
+    },
+    {
+      "fecha_inicio": "2026-08-29",
+      "fecha_fin": "2026-09-04",
+      "response": {
+        "success": true,
+        "ejecucion_id": "8ddc40a5-c530-4200-abc8-c6d31f74c056",
+        "sync_run_id": "RESYNC-ESTELAR-20260829-20260904-4234",
+        "modo": "REAL",
+        "tipo_sync": "comercial_ventas_cerradas",
+        "unidad_negocio_id": "ESTELAR",
+        "fecha_inicio": "2026-08-29",
+        "fecha_fin": "2026-09-04",
+        "validacion_previa": {
+          "conectividad": {
+            "conectado": true,
+            "host": "serverestelar.ddns.net",
+            "host_raw": "serverestelar.ddns.net",
+            "database": "softrestaurant12",
+            "config_origin": "Servidores_Conexiones"
+          },
+          "dias_existentes": {
+            "dias_existentes": [
+              {
+                "fecha": "2026-08-29",
+                "ventas_total": 202305.0,
+                "propinas": 14663.32,
+                "tickets": 145,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260829-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-30",
+                "ventas_total": 26245.0,
+                "propinas": 2674.26,
+                "tickets": 24,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260830-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-31",
+                "ventas_total": 22345.0,
+                "propinas": 2232.5,
+                "tickets": 22,
+                "sync_run_id": "INCR-20260904-001050-08c9"
+              },
+              {
+                "fecha": "2026-09-01",
+                "ventas_total": 60110.0,
+                "propinas": 5544.6,
+                "tickets": 29,
+                "sync_run_id": "INCR-20260905-001235-f678"
+              },
+              {
+                "fecha": "2026-09-02",
+                "ventas_total": 24415.0,
+                "propinas": 2799.25,
+                "tickets": 16,
+                "sync_run_id": "INCR-20260905-035834-3782"
+              },
+              {
+                "fecha": "2026-09-03",
+                "ventas_total": 37790.0,
+                "propinas": 4657.6,
+                "tickets": 28,
+                "sync_run_id": "INCR-20260905-035834-3782"
+              },
+              {
+                "fecha": "2026-09-04",
+                "ventas_total": 3320.0,
+                "propinas": 252.0,
+                "tickets": 4,
+                "sync_run_id": "INCR-20260905-035834-3782"
+              }
+            ],
+            "cantidad": 7
+          }
+        },
+        "resultado": {
+          "success": true,
+          "records_processed": 7,
+          "records_inserted": 0,
+          "records_updated": 3,
+          "records_skipped": 4,
+          "records_errored": 0,
+          "duration_seconds": 1,
+          "error_message": null
+        },
+        "validacion_posterior": {
+          "dias_existentes": {
+            "dias_existentes": [
+              {
+                "fecha": "2026-08-29",
+                "ventas_total": 202305.0,
+                "propinas": 14663.32,
+                "tickets": 145,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260829-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-30",
+                "ventas_total": 26245.0,
+                "propinas": 2674.26,
+                "tickets": 24,
+                "sync_run_id": "CHATGPT-SOFT-AUG2026-20260830-ESTELAR"
+              },
+              {
+                "fecha": "2026-08-31",
+                "ventas_total": 22345.0,
+                "propinas": 2232.5,
+                "tickets": 22,
+                "sync_run_id": "INCR-20260904-001050-08c9"
+              },
+              {
+                "fecha": "2026-09-01",
+                "ventas_total": 60110.0,
+                "propinas": 5544.6,
+                "tickets": 29,
+                "sync_run_id": "INCR-20260905-001235-f678"
+              },
+              {
+                "fecha": "2026-09-02",
+                "ventas_total": 23115.0,
+                "propinas": 2799.25,
+                "tickets": 16,
+                "sync_run_id": "RESYNC-ESTELAR-20260829-20260904-4234"
+              },
+              {
+                "fecha": "2026-09-03",
+                "ventas_total": 41110.0,
+                "propinas": 4909.6,
+                "tickets": 32,
+                "sync_run_id": "RESYNC-ESTELAR-20260829-20260904-4234"
+              },
+              {
+                "fecha": "2026-09-04",
+                "ventas_total": 0.0,
+                "propinas": 0.0,
+                "tickets": 0,
+                "sync_run_id": "RESYNC-ESTELAR-20260829-20260904-4234"
+              }
+            ],
+            "cantidad": 7
+          }
+        },
+        "error_message": null
+      }
+    }
+  ],
+  "blocks_completed": 9
+}
