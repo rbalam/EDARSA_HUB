@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ESTELAR-2026-HISTORICAL-RESYNC-REAL-R1-CARLOS-20260905T042500Z",
+  "created_at_utc": "2026-09-05T04:25:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4be080543ee671889f3c7633d0813aa460b7989e",
+  "production_allowed": false,
+  "objective": "Ejecutar el resync REAL histórico de ventas cerradas de LA ESTELAR del 2026-01-01 al 2026-09-04, usando exclusivamente el handler canónico admin_scheduler_resync/comercial_ventas_cerradas, en los mismos bloques de máximo 30 días que ya pasaron DRY_RUN. Antes de la primera escritura, validar en SQL canónico que carlosruz@edarsa.com.mx resuelve a un UsuarioID con permiso efectivo SCHEDULER_ADMIN. Ejecutar fail-closed: si RBAC falla o cualquier bloque devuelve success=false, detener el proceso. No cambiar lógica de negocio, no tocar Edarsahub_Produccion y no hardcodear importes.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/estelar_2026_historical_resync_real_r1_evidence.json",
+      "content": "{\n  \"status\": \"PENDING\",\n  \"job_id\": \"EDARSAHUB-ESTELAR-2026-HISTORICAL-RESYNC-REAL-R1-CARLOS-20260905T042500Z\",\n  \"production_touched\": false,\n  \"blocks\": []\n}\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_estelar_2026_historical_resync_real_r1.py",
+      "content": "import json\nimport subprocess\nfrom datetime import date, timedelta\nfrom pathlib import Path\n\nimport pytest\nfrom fastapi import BackgroundTasks\n\nfrom api.admin_scheduler_resync import ResyncExecuteRequest, ejecutar_resync\nfrom modules.sistema.menu_service import MenuService\n\nBASE_SHA = '4be080543ee671889f3c7633d0813aa460b7989e'\nEVIDENCE = Path('tests/estelar_2026_historical_resync_real_r1_evidence.json')\nEMAIL = 'carlosruz@edarsa.com.mx'\n\n\ndef _head():\n    return subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()\n\n\ndef _chunks(start: date, end: date, max_days: int = 30):\n    cursor = start\n    while cursor <= end:\n        chunk_end = min(end, cursor + timedelta(days=max_days - 1))\n        yield cursor, chunk_end\n        cursor = chunk_end + timedelta(days=1)\n\n\ndef _as_dict(resp):\n    if hasattr(resp, 'model_dump'):\n        return resp.model_dump()\n    if hasattr(resp, 'dict'):\n        return resp.dict()\n    if isinstance(resp, dict):\n        return resp\n    return {'repr': repr(resp)}\n\n\ndef _write(payload):\n    EVIDENCE.write_text(json.dumps(payload, ensure_ascii=False, indent=2, default=str) + '\\n', encoding='utf-8')\n\n\n@pytest.mark.asyncio\nasync def test_estelar_2026_historical_resync_real_once():\n    if _head() != BASE_SHA:\n        pytest.skip('one-shot REAL resync already consumed or branch moved')\n\n    menu = MenuService()\n    current_user = {'email': EMAIL, 'correo': EMAIL, 'username': EMAIL}\n    usuario_id = menu.resolver_usuario_id_canonico(current_user)\n    permisos = menu.obtener_permisos_usuario(usuario_id)\n    autorizado = any(\n        str(p.get('CodigoModulo') or '').strip().upper() == 'SCHEDULER'\n        and str(p.get('CodigoAccion') or '').strip().upper() == 'ADMIN'\n        and bool(p.get('Permitido', True))\n        for p in permisos\n    )\n    assert autorizado, f'RBAC canonical denied SCHEDULER_ADMIN for {EMAIL} usuario_id={usuario_id}'\n\n    current_user['UsuarioID'] = usuario_id\n    evidence = {\n        'status': 'RUNNING',\n        'job_id': 'EDARSAHUB-ESTELAR-2026-HISTORICAL-RESYNC-REAL-R1-CARLOS-20260905T042500Z',\n        'requester_email': EMAIL,\n        'usuario_id': usuario_id,\n        'rbac_scheduler_admin': True,\n        'production_touched': False,\n        'blocks': [],\n    }\n    _write(evidence)\n\n    for start, end in _chunks(date(2026, 1, 1), date(2026, 9, 4)):\n        req = ResyncExecuteRequest(\n            tipo_sync='comercial_ventas_cerradas',\n            unidad_negocio_id='ESTELAR',\n            fecha_inicio=start,\n            fecha_fin=end,\n            motivo='Resync REAL historico 2026 LA ESTELAR para conciliar Reportes ISCAM contra Reporte Ejecutivo usando fecha operativa por apertura',\n            dry_run=False,\n        )\n        resp = await ejecutar_resync(\n            request=req,\n            background_tasks=BackgroundTasks(),\n            current_user=current_user,\n        )\n        data = _as_dict(resp)\n        evidence['blocks'].append({\n            'fecha_inicio': start.isoformat(),\n            'fecha_fin': end.isoformat(),\n            'response': data,\n        })\n        _write(evidence)\n        assert bool(data.get('success')), f'REAL resync fallo para {start}..{end}: {data}'\n        assert str(data.get('modo') or '').upper() == 'REAL', f'Modo inesperado: {data}'\n\n    evidence['status'] = 'PASS'\n    evidence['blocks_completed'] = len(evidence['blocks'])\n    _write(evidence)\n    assert evidence['blocks_completed'] == 9\n"
+    }
+  ],
+  "checks": [
+    {"type": "py_compile", "paths": ["backend/tests/test_estelar_2026_historical_resync_real_r1.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_estelar_2026_historical_resync_real_r1.py"]},
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "estelar_monthly_post_real_resync",
+          "sql": "SELECT CONVERT(char(7), fecha_operacion, 120) AS periodo, SUM(ISNULL(ventas_total,0)) AS ventas_total, SUM(ISNULL(propinas_total,0)) AS propinas_total, SUM(ISNULL(tickets_total,0)) AS tickets_total, SUM(ISNULL(pax_total,0)) AS pax_total FROM dbo.Comercial_KPIs_Diarios_v2 WHERE unidad_negocio_id = 'ESTELAR' AND fecha_operacion >= '2026-01-01' AND fecha_operacion <= '2026-09-04' AND ISNULL(activo,1)=1 GROUP BY CONVERT(char(7), fecha_operacion, 120) ORDER BY periodo"
+        }
+      ]
+    },
+    {"type": "git_diff_check"}
+  ]
+}
