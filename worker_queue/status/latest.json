@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "3d274a19967554e123dbe16e29bf96f6489ba086",
-  "generated_at_utc": "2026-09-05T23:37:47Z",
+  "generated_at_utc": "2026-09-05T23:39:00Z",
   "history": {
     "done_total_local": 76,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3224,
+      "age_seconds": 3296,
       "job_id": "EDARSAHUB-SQL-CONNECTIVITY-CANARY-R4-CARLOS-20260905T224500Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -31,8 +31,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-05T23:37:42Z",
-    "last_receive_utc": "2026-09-05T23:37:42Z",
+    "last_cycle_utc": "2026-09-05T23:38:58Z",
+    "last_receive_utc": "2026-09-05T23:38:59Z",
     "last_terminal_utc": "2026-09-05T22:44:03Z",
     "pid": "794"
   },
