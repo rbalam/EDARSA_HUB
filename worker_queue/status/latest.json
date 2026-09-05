@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "8dc00d1502dc44e796ff774aba0a018b70679ea2",
-  "generated_at_utc": "2026-09-05T17:36:10Z",
+  "generated_at_utc": "2026-09-05T17:37:25Z",
   "history": {
     "done_total_local": 73,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1712,
+      "age_seconds": 1787,
       "job_id": "EDARSAHUB-WORKER-LOCAL-RESULT-DIAGNOSTIC-R2-CARLOS-20260905T170500Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -31,8 +31,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-05T17:36:10Z",
-    "last_receive_utc": "2026-09-05T17:36:05Z",
+    "last_cycle_utc": "2026-09-05T17:37:21Z",
+    "last_receive_utc": "2026-09-05T17:37:23Z",
     "last_terminal_utc": "2026-09-05T17:07:38Z",
     "pid": "278"
   },
