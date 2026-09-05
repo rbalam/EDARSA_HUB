@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-AUDIT-R2-DIAGNOSTIC-R3-CARLOS-20260905T223000Z",
+  "created_at_utc": "2026-09-05T22:30:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2854bfed9877d11a22dd3999e8ac673ba895d941",
+  "production_allowed": false,
+  "objective": "Capturar de forma versionada el resultado local completo del audit SQL R2 de ISCAM para identificar la causa exacta del nuevo bloqueo sin depender del resultado sanitizado. No modificar lógica de negocio ni Producción.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_audit_r2_diagnostic_r3.py",
+      "content": "import json\nfrom pathlib import Path\n\nOUT = Path('tests/iscam_audit_r2_diagnostic_r3_evidence.json')\nSTATE = Path('/app/.git/universal-worker-queue')\nTARGET = 'EDARSAHUB-ISCAM-DETAIL-REPORTS-AUDIT-R2-CARLOS-20260905T215500Z'\n\n\ndef _load(path):\n    try:\n        return json.loads(path.read_text(encoding='utf-8'))\n    except Exception as exc:\n        return {'_error': f'{type(exc).__name__}: {exc}', '_path': str(path)}\n\n\ndef test_capture_iscam_audit_r2_result():\n    matches = []\n    for bucket in ('results', 'rejected', 'done', 'processing', 'pending'):\n        root = STATE / bucket\n        if not root.exists():\n            continue\n        for path in root.glob('*.json'):\n            payload = _load(path)\n            job_id = str(payload.get('job_id') or path.stem)\n            embedded = payload.get('job') if isinstance(payload, dict) else None\n            embedded_id = str((embedded or {}).get('job_id') or '') if isinstance(embedded, dict) else ''\n            if job_id == TARGET or embedded_id == TARGET or path.stem == TARGET:\n                matches.append({'bucket': bucket, 'path': str(path), 'payload': payload})\n\n    evidence = {\n        'schema': 'edarsahub.iscam-audit-r2-diagnostic.v1',\n        'target': TARGET,\n        'production_touched': False,\n        'matches': matches,\n    }\n    OUT.write_text(json.dumps(evidence, ensure_ascii=False, indent=2, default=str) + '\\n', encoding='utf-8')\n    assert matches, 'No se localizó el resultado local del audit R2'\n    assert evidence['production_touched'] is False\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/iscam_audit_r2_diagnostic_r3_evidence.json",
+      "content": "{\n  \"schema\": \"edarsahub.iscam-audit-r2-diagnostic.v1\",\n  \"status\": \"PENDING\",\n  \"production_touched\": false\n}\n"
+    }
+  ],
+  "checks": [
+    {"type": "py_compile", "paths": ["backend/tests/test_iscam_audit_r2_diagnostic_r3.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_iscam_audit_r2_diagnostic_r3.py"]},
+    {"type": "git_diff_check"}
+  ]
+}
