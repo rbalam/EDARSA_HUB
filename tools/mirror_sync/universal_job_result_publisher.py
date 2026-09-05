@@ -170,8 +170,8 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
     # Certification is allowed against a later converged descendant.
     # This is necessary when infrastructure fixes are integrated after
     # a job but the job's own files remain unchanged.
-    git("fetch", REMOTE, DEV_BRANCH)
-    git("fetch", REMOTE, MIRROR_BRANCH)
+    runtime_git("fetch", REMOTE, DEV_BRANCH)
+    runtime_git("fetch", REMOTE, MIRROR_BRANCH)
 
     development_head = git(
         "rev-parse",
@@ -289,7 +289,7 @@ def prepare_queue_worktree() -> tuple[Path, str]:
     A temporary clone keeps publication isolated while preserving the
     canonical Agent Guard contract.
     """
-    git("fetch", REMOTE, RESULT_BRANCH)
+    runtime_git("fetch", REMOTE, RESULT_BRANCH)
     base = git("rev-parse", f"{REMOTE}/{RESULT_BRANCH}").stdout.strip()
 
     WORKTREE_PARENT.mkdir(parents=True, exist_ok=True)
@@ -307,14 +307,13 @@ def prepare_queue_worktree() -> tuple[Path, str]:
     origin_url = git("remote", "get-url", REMOTE).stdout.strip()
 
     clone = run(
-        [
-            "git",
+        runtime_git_command(
             "clone",
             "--quiet",
             "--no-checkout",
             origin_url,
             str(worktree_root),
-        ],
+        ),
         cwd=ROOT,
     )
 
@@ -327,37 +326,85 @@ def prepare_queue_worktree() -> tuple[Path, str]:
 
     git("checkout", "--detach", base, cwd=worktree_root)
 
-    # El clone temporal no hereda la configuracion local de /app.
-    # Copiar explicitamente el helper funcional evita caer en el
-    # helper global de GitHub CLI, que puede no existir en runtime.
-    credential_helper = git(
-        "config",
-        "--local",
-        "--get",
-        "credential.helper",
-        cwd=ROOT,
+    return worktree_root, base
+
+
+
+def resolve_runtime_git_credential_helper() -> str:
+    configured = subprocess.run(
+        [
+            "git",
+            "config",
+            "--local",
+            "--get",
+            "credential.helper",
+        ],
+        cwd=str(ROOT),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
         check=False,
     ).stdout.strip()
 
-    if not credential_helper:
-        raise RuntimeError("QUEUE_CREDENTIAL_HELPER_NOT_FOUND")
+    if configured and not configured.startswith("cache "):
+        return configured
 
-    git(
-        "config",
-        "--local",
-        "credential.helper",
-        credential_helper,
-        cwd=worktree_root,
-    )
-    git(
-        "config",
-        "--local",
-        "credential.useHttpPath",
-        "true",
-        cwd=worktree_root,
-    )
+    credential_file = Path("/root/.git-credentials")
+    if credential_file.is_file():
+        return f"store --file={credential_file}"
 
-    return worktree_root, base
+    return configured
+
+
+def runtime_git_command(*args: str) -> list[str]:
+    helper = resolve_runtime_git_credential_helper()
+
+    cmd = [
+        "git",
+        "-c",
+        "credential.helper=",
+    ]
+
+    if helper:
+        cmd.extend(
+            [
+                "-c",
+                f"credential.helper={helper}",
+                "-c",
+                "credential.useHttpPath=true",
+            ]
+        )
+
+    cmd.extend(args)
+    return cmd
+
+
+def runtime_git(
+    *args: str,
+    cwd: Path | None = None,
+    check: bool = True,
+) -> subprocess.CompletedProcess[str]:
+    proc = subprocess.run(
+        runtime_git_command(*args),
+        cwd=str(cwd or ROOT),
+        env=runtime_git_env(),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        check=False,
+    )
+    if check and proc.returncode != 0:
+        raise RuntimeError(
+            f"RUNTIME_GIT_FAILED:{' '.join(args)}:{proc.stdout[-800:]}"
+        )
+    return proc
+
+
+def runtime_git_env() -> dict[str, str]:
+    env = dict(os.environ)
+    env.setdefault("HOME", "/root")
+    env["GIT_TERMINAL_PROMPT"] = "0"
+    return env
 
 
 def marker_satisfied(marker: Path, public: dict[str, Any]) -> bool:
@@ -369,7 +416,7 @@ def marker_satisfied(marker: Path, public: dict[str, Any]) -> bool:
         errors="replace",
     )
 
-    desired = str(public.get("certification") or "")
+    desired = public.get("certification")
 
     # Todo resultado ya publicado es terminal para el publisher,
     # salvo la unica promocion permitida:
@@ -494,7 +541,7 @@ def publish_one(path: Path) -> bool:
                 cwd=worktree,
             ).stdout.strip()
 
-            git(
+            runtime_git(
                 "fetch",
                 REMOTE,
                 RESULT_BRANCH,
@@ -528,13 +575,15 @@ def publish_one(path: Path) -> bool:
             push_env["EDARSA_ALLOW_PUSH"] = "1"
 
             try:
+                push_env.update(runtime_git_env())
+                push_env["EDARSA_ALLOW_PUSH"] = "1"
+
                 push = subprocess.run(
-                    [
-                        "git",
+                    runtime_git_command(
                         "push",
                         REMOTE,
                         f"{commit}:refs/heads/{RESULT_BRANCH}",
-                    ],
+                    ),
                     cwd=str(worktree),
                     env=push_env,
                     text=True,
