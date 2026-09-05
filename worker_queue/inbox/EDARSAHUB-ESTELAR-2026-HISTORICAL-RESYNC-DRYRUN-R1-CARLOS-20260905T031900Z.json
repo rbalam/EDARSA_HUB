@@ -1,0 +1,31 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ESTELAR-2026-HISTORICAL-RESYNC-DRYRUN-R1-CARLOS-20260905T031900Z",
+  "created_at_utc": "2026-09-05T03:19:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "0af7c4f412556e331788da196dbf6a7057b30fb2",
+  "production_allowed": false,
+  "objective": "Ejecutar exclusivamente una validacion DRY_RUN del resync historico de ventas cerradas para LA ESTELAR desde 2026-01-01 hasta 2026-09-04, usando el endpoint/handler canonico admin_scheduler_resync con tipo comercial_ventas_cerradas, dividido automaticamente en bloques de maximo 30 dias. No ejecutar modo REAL en este job. No cambiar logica de negocio. Confirmar que cada bloque puede resolverse con la configuracion canonica actual antes de autorizar el resync real.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_estelar_2026_historical_resync_dryrun_r1.py",
+      "content": "from datetime import date, timedelta\n\nimport pytest\nfrom fastapi import BackgroundTasks\n\nfrom api.admin_scheduler_resync import ResyncExecuteRequest, ejecutar_resync\n\n\ndef _chunks(start: date, end: date, max_days: int = 30):\n    cursor = start\n    while cursor <= end:\n        chunk_end = min(end, cursor + timedelta(days=max_days - 1))\n        yield cursor, chunk_end\n        cursor = chunk_end + timedelta(days=1)\n\n\ndef _success(resp):\n    if hasattr(resp, 'success'):\n        return bool(resp.success)\n    if isinstance(resp, dict):\n        return bool(resp.get('success'))\n    return False\n\n\n@pytest.mark.asyncio\nasync def test_estelar_2026_historical_resync_dryrun_all_chunks():\n    user = {\n        'email': 'carlosruz@edarsa.com.mx',\n        'correo': 'carlosruz@edarsa.com.mx',\n        'username': 'carlosruz@edarsa.com.mx',\n        'rol': 'Superadministrador',\n        'role': 'Superadministrador',\n    }\n    completed = []\n    for start, end in _chunks(date(2026, 1, 1), date(2026, 9, 4)):\n        request = ResyncExecuteRequest(\n            tipo_sync='comercial_ventas_cerradas',\n            unidad_negocio_id='ESTELAR',\n            fecha_inicio=start,\n            fecha_fin=end,\n            motivo='Conciliar historico 2026 de LA ESTELAR contra Reporte Ejecutivo usando fecha operativa por apertura',\n            dry_run=True,\n        )\n        response = await ejecutar_resync(\n            request=request,\n            background_tasks=BackgroundTasks(),\n            current_user=user,\n        )\n        assert _success(response), f'DRY_RUN fallo para {start}..{end}: {response}'\n        completed.append((start.isoformat(), end.isoformat()))\n\n    assert completed == [\n        ('2026-01-01', '2026-01-30'),\n        ('2026-01-31', '2026-03-01'),\n        ('2026-03-02', '2026-03-31'),\n        ('2026-04-01', '2026-04-30'),\n        ('2026-05-01', '2026-05-30'),\n        ('2026-05-31', '2026-06-29'),\n        ('2026-06-30', '2026-07-29'),\n        ('2026-07-30', '2026-08-28'),\n        ('2026-08-29', '2026-09-04'),\n    ]\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/tests/test_estelar_2026_historical_resync_dryrun_r1.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_estelar_2026_historical_resync_dryrun_r1.py"]}
+  ]
+}
