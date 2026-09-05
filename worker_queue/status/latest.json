@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "3d274a19967554e123dbe16e29bf96f6489ba086",
-  "generated_at_utc": "2026-09-05T22:32:24Z",
+  "generated_at_utc": "2026-09-05T22:33:42Z",
   "history": {
     "done_total_local": 75,
     "pending_total_local": 0,
@@ -13,13 +13,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 86,
+      "age_seconds": 164,
       "job_id": "EDARSAHUB-ISCAM-AUDIT-R2-DIAGNOSTIC-R3-CARLOS-20260905T223000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1862,
+      "age_seconds": 1941,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-REPORTS-AUDIT-R2-CARLOS-20260905T215500Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -37,8 +37,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-05T22:32:23Z",
-    "last_receive_utc": "2026-09-05T22:32:24Z",
+    "last_cycle_utc": "2026-09-05T22:33:37Z",
+    "last_receive_utc": "2026-09-05T22:33:38Z",
     "last_terminal_utc": "2026-09-05T22:30:57Z",
     "pid": "794"
   },
