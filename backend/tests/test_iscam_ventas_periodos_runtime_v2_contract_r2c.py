@@ -6,18 +6,20 @@ def _block():
     return text.split('@iscam_router.get(\"/ventas-periodos\")', 1)[1].split('@iscam_router.get(\"/ventas-periodos/productos\")', 1)[0]
 
 
-def test_iscam_ventas_periodos_uses_runtime_v2_header():
+def test_iscam_ventas_periodos_reuses_exact_executive_contract():
     block = _block()
-    assert 'dbo.vw_Comercial_KPIs_Diarios_v2_Runtime' in block
-    assert 'k.fecha_operacion' in block
-    assert 'k.ventas_total' in block
-    assert 'k.tickets_total' in block
-    assert 'k.pax_total' in block
+    assert 'KPIsCanonicosService.resumen_periodo_desglosado' in block
+    assert 'acumulado_cerrado' in block
+    assert 'CERRADO_SIN_DIA_OPERATIVO_ACTUAL' in block
+    assert 'dbo.vw_Comercial_KPIs_Diarios_v2_Runtime' not in block
     assert 'dbo.Sync_Sales' not in block
-    assert "s.status = 'COMPLETED'" not in block
+    assert 'SUM(' not in block
+    assert 'venta / cheques' not in block
+    assert 'venta / cli' not in block
 
 
 def test_iscam_ventas_periodos_keeps_public_response_contract():
     block = _block()
-    for key in ('periodo', 'venta_total', 'cheques', 'clientes', 'cheque_promedio', 'consumo_promedio'):
+    for key in ('periodo', 'venta_total', 'propinas', 'cheques', 'clientes', 'cheque_promedio', 'consumo_promedio'):
         assert key in block
+    assert 'KPIsCanonicosService.resumen_periodo_desglosado.acumulado_cerrado' in block

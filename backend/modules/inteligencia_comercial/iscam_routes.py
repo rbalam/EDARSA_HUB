@@ -4,7 +4,7 @@ Reportes ISCAM - Portal de Inteligencia Comercial
 4 reportes de explotación de ventas, 100% sobre tablas CANÓNICAS de EDARSAHUB
 (NO-LIVE, sin hardcode, sin duplicar):
 
-  1. Ventas a 12 periodos        -> dbo.Sync_Sales  (drill: mes -> productos -> tickets)
+  1. Ventas a 12 periodos        -> KPIsCanonicosService.acumulado_cerrado (misma base que Ejecutivo)
   2. Resumen de cuentas          -> dbo.Sync_Sales  (drill: cuenta -> productos)
   3. Comandas de venta           -> dbo.Sync_Sales.items (OPENJSON)
   4. Ventas por formas de pago   -> dbo.Finanzas_CortesCaja  (REUTILIZADA del módulo Finanzas)
@@ -12,12 +12,14 @@ Reportes ISCAM - Portal de Inteligencia Comercial
 El scoping por unidad de negocio para usuarios EXTERNOS lo aplica `intel_portal_guard`
 (montado al incluir este router en server.py). `unidad` = CÓDIGO de unidad de negocio.
 """
+import calendar
 import logging
 from typing import Optional
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Query, HTTPException
 
+from core.kpis_canonicos import KPIsCanonicosService
 from core.sql_first.db import get_sql_connection
 from core.unidades_service import UnidadesService
 
@@ -81,40 +83,111 @@ def _period_sql(col: str, group_by: Optional[str]) -> str:
     return f"FORMAT({col},'yyyy-MM')"  # mes (default)
 
 
+def _shift_months(value: datetime, months: int) -> datetime:
+    """Replica DATEADD(MONTH, ...) sin depender de SQL para el rango por defecto."""
+    month_index = value.year * 12 + (value.month - 1) + months
+    year, month_zero = divmod(month_index, 12)
+    month = month_zero + 1
+    day = min(value.day, calendar.monthrange(year, month)[1])
+    return value.replace(year=year, month=month, day=day)
+
+
+def _period_floor(value: datetime, group_by: str) -> datetime:
+    if group_by == "anio":
+        return value.replace(month=1, day=1)
+    if group_by == "dia":
+        return value
+    return value.replace(day=1)
+
+
+def _period_next(value: datetime, group_by: str) -> datetime:
+    if group_by == "anio":
+        return value.replace(year=value.year + 1, month=1, day=1)
+    if group_by == "dia":
+        return value + timedelta(days=1)
+    return _shift_months(value, 1).replace(day=1)
+
+
+def _period_label(value: datetime, group_by: str) -> str:
+    if group_by == "anio":
+        return value.strftime("%Y")
+    if group_by == "dia":
+        return value.strftime("%Y-%m-%d")
+    return value.strftime("%Y-%m")
+
+
+def _period_windows(desde: str, hasta_exclusivo: str, group_by: str):
+    """Divide [desde, hasta) sin salir del rango solicitado."""
+    start = datetime.strptime(desde, "%Y-%m-%d")
+    end = datetime.strptime(hasta_exclusivo, "%Y-%m-%d")
+    cursor = start
+    windows = []
+    while cursor < end:
+        anchor = _period_floor(cursor, group_by)
+        boundary = min(end, _period_next(anchor, group_by))
+        windows.append((_period_label(anchor, group_by), cursor, boundary))
+        cursor = boundary
+    return windows
+
+
 # ============================================================================
 # 1) VENTAS POR PERIODOS (agrupable por Año / Mes)
 # ============================================================================
 @iscam_router.get("/ventas-periodos")
 async def ventas_periodos(unidad: str = Query(...), desde: Optional[str] = None, hasta: Optional[str] = None,
                           group_by: str = Query("mes"), meses: int = Query(12, ge=1, le=36)):
+    """Ventas cerradas con el MISMO contrato canónico del Dashboard Ejecutivo."""
     gb = group_by if group_by in ("anio", "mes", "dia") else "mes"
-    pexpr = _period_sql("k.fecha_operacion", gb)
+    unidad_pk = UnidadesService.resolver_pk(unidad)
+    if not unidad_pk:
+        raise HTTPException(status_code=404, detail=f"Unidad no encontrada: {unidad}")
+
     if desde or hasta:
         d, h = _rango_fechas(desde, hasta)
-        where, params = "AND k.fecha_operacion >= %s AND k.fecha_operacion < %s", (unidad, d, h)
     else:
-        where, params = "AND k.fecha_operacion >= DATEADD(MONTH, %s, CAST(GETDATE() AS DATE))", (unidad, -int(meses))
-    rows = _q(
-        f"""
-        SELECT {pexpr} AS periodo, SUM(ISNULL(k.ventas_total,0)) AS venta_total,
-               SUM(ISNULL(k.tickets_total,0)) AS cheques, SUM(ISNULL(k.pax_total,0)) AS clientes
-        FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime k
-        WHERE k.unidad_negocio_id = %s {where}
-        GROUP BY {pexpr}
-        ORDER BY periodo DESC
-        """,
-        params,
-    )
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        d = _shift_months(today, -int(meses)).strftime("%Y-%m-%d")
+        h = (today + timedelta(days=1)).strftime("%Y-%m-%d")
+
     data = []
-    for r in rows:
-        venta = _f(r["venta_total"]); cheques = int(r["cheques"] or 0); cli = int(r["clientes"] or 0)
+    for periodo, inicio, fin in _period_windows(d, h, gb):
+        desglose = KPIsCanonicosService.resumen_periodo_desglosado(
+            inicio.strftime("%Y-%m-%d"),
+            fin.strftime("%Y-%m-%d"),
+            unidad_pks=[str(unidad_pk)],
+        )
+        acumulado = desglose.get("acumulado_cerrado") or {}
+        metricas = acumulado.get("metricas") or {}
+        venta = _f(metricas.get("ventas"))
+        propinas = _f(metricas.get("propinas"))
+        cheques = int(round(_f(metricas.get("cheques"))))
+        clientes = int(round(_f(metricas.get("pax"))))
+
+        if not any((venta, propinas, cheques, clientes)):
+            continue
+
         data.append({
-            "periodo": r["periodo"], "venta_total": round(venta, 2), "cheques": cheques, "clientes": cli,
-            "cheque_promedio": round(venta / cheques, 2) if cheques else 0,
-            "consumo_promedio": round(venta / cli, 2) if cli else 0,
+            "periodo": periodo,
+            "venta_total": round(venta, 2),
+            "propinas": round(propinas, 2),
+            "cheques": cheques,
+            "clientes": clientes,
+            "cheque_promedio": round(_f(metricas.get("cheque_promedio")), 2),
+            "consumo_promedio": round(
+                _f(metricas.get("consumo_promedio_pax") or metricas.get("pax_promedio")),
+                2,
+            ),
         })
-    return {"success": True, "source": "vw_Comercial_KPIs_Diarios_v2_Runtime (canónica V2)", "unidad": unidad,
-            "group_by": gb, "periodos": data}
+
+    data.reverse()
+    return {
+        "success": True,
+        "source": "KPIsCanonicosService.resumen_periodo_desglosado.acumulado_cerrado",
+        "contrato_acumulado": "CERRADO_SIN_DIA_OPERATIVO_ACTUAL",
+        "unidad": unidad,
+        "group_by": gb,
+        "periodos": data,
+    }
 
 
 @iscam_router.get("/ventas-periodos/productos")
