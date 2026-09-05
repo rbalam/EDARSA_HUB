@@ -1,33 +1,44 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "632f186814036511f9806c92ee4a00fd6f99d0ab",
-  "generated_at_utc": "2026-09-05T00:43:02Z",
+  "generated_at_utc": "2026-09-05T00:59:42Z",
   "history": {
     "done_total_local": 69,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 173,
+    "rejected_total_local": 174,
     "results_total_local": 221
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [],
+  "jobs": [
+    {
+      "age_seconds": 20,
+      "job_id": "EDARSAHUB-ISCAM-EXECUTIVE-SOURCE-OF-TRUTH-R2-CARLOS-20260904T230300Z",
+      "reasons": [
+        "INVALID_SCHEMA",
+        "ACTIONS_REQUIRED"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    }
+  ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
   "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 0,
+  "queue_rejected_recent": 1,
   "queue_result_ready_recent": 0,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-05T00:42:58Z",
-    "last_receive_utc": "2026-09-05T00:42:59Z",
+    "last_cycle_utc": "2026-09-05T00:59:39Z",
+    "last_receive_utc": "2026-09-05T00:59:40Z",
     "last_terminal_utc": "2026-09-04T22:21:56Z",
-    "pid": "274"
+    "pid": "162"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
