@@ -1,0 +1,27 @@
+{
+  "base_sha": "0af7c4f412556e331788da196dbf6a7057b30fb2",
+  "blockers": [],
+  "candidate_sha": "4be080543ee671889f3c7633d0813aa460b7989e",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-05T03:21:06Z",
+  "development_sha": "4be080543ee671889f3c7633d0813aa460b7989e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_estelar_2026_historical_resync_dryrun_r1.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ESTELAR-2026-HISTORICAL-RESYNC-DRYRUN-R1-CARLOS-20260905T031900Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-05T18:23:18Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-05T03:20:30Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
