@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "EDARSAHUB-ISCAM-EXECUTIVE-SOURCE-OF-TRUTH-R2-CARLOS-20260904T230300Z",
+  "created_at_utc": "2026-09-05T00:45:40Z",
+  "requested_by": "chatgpt",
+  "requester_email": "carlosruz@edarsa.com.mx",
+  "request_source": "chatgpt",
+  "project": "V1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "632f186814036511f9806c92ee4a00fd6f99d0ab",
+  "objective": "Make Reportes ISCAM sales reuse the exact same canonical sales-period contract as Dashboard Ejecutivo. First prove the current Dashboard Ejecutivo /api/dashboard-ejecutivo/resumen uses KPIsCanonicosService.resumen_periodo_desglosado and publishes primary sales from acumulado_cerrado with current operational day separated. Confirm SoftRestaurant canonical closed-sales ingestion assigns fecha_operacion by turnos.apertura, uses cierre IS NOT NULL only as closed-turn eligibility, canonical idempresa, configured operational window and cheques.cancelado=0. Only if those contracts are confirmed and reusable unchanged, modify ISCAM so /inteligencia/iscam/ventas-periodos obtains its reported closed sales through the same shared canonical service/contract rather than independent SUM logic or legacy Sync_Sales. Open/current operation must remain separated and must not inflate closed month totals. A prior turn that closes later must remain attributed to its original apertura operational date/month after resync. The Sincronizar vista action may only delegate to the canonical resync handler feeding Dashboard Ejecutivo, with dry-run first, real sync only on success, detail reconciliation, RBAC preservation and fail-closed behavior. Do not change Dashboard Ejecutivo behavior.",
+  "acceptance": [
+    "Precondition proof: Dashboard Ejecutivo uses KPIsCanonicosService.resumen_periodo_desglosado and primary KPIs from acumulado_cerrado with contrato CERRADO_SIN_DIA_OPERATIVO_ACTUAL.",
+    "Precondition proof: SoftRestaurant closed sales use turnos.apertura for operational-period assignment and cierre IS NOT NULL only for eligibility; closure timestamp never assigns the month.",
+    "For identical unidad and date filters, ISCAM Ventas por Periodo and Dashboard Ejecutivo acumulado_cerrado have exactly equal ventas, propinas, cheques/tickets and pax at day/month/year grouping levels; derived averages match within normal decimal rounding.",
+    "Open/current operational sales are not mixed into closed monthly totals and are only surfaced separately if displayed.",
+    "Month-boundary regression: a turn opened in the Aug-31 operational window and closed Sep-01 remains August after closure; while open it does not inflate August or September closed totals.",
+    "ESTELAR 2026-09-01 is reconciled read-only against source and EDARSAHUB and ISCAM matches the same canonical Executive result; user-provided official SoftRestaurant report evidence may be used for validation but no business total is hardcoded.",
+    "Sincronizar vista, if implemented, delegates to the canonical scheduler/resync handler, runs dry-run first, only runs REAL on dry-run success, reconciles canonical detail, refreshes the view and preserves RBAC.",
+    "Regression tests and build/tests pass, and the result reports exact before/after discrepancy, files changed, tests, runtime evidence, resulting Edarsahub_Desarrollo SHA and quality gate."
+  ],
+  "constraints": [
+    "FAIL CLOSED: if exact Dashboard Ejecutivo parity cannot be proven, return BLOCKED_CONTRACT_MISMATCH and make no application-code or data changes.",
+    "Dashboard Ejecutivo is the source-of-truth contract for every sales report; do not copy, approximate or independently reimplement its business logic in ISCAM.",
+    "Do not use cierre timestamp to assign business date/month. SoftRestaurant period attribution is based on turnos.apertura/fecha_operacion.",
+    "Do not create a parallel sales dataset or duplicate business SQL.",
+    "Preserve one source of truth, SQL-first architecture, RBAC, NO-LIVE portal behavior and existing canonical metric definitions.",
+    "Do not touch Edarsahub_Produccion.",
+    "Do not hardcode acceptance totals in production logic.",
+    "Do not force push, reset/clean destructively or discard unrelated work."
+  ],
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
