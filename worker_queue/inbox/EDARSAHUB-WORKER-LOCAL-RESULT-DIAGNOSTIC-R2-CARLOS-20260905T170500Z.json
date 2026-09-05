@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-LOCAL-RESULT-DIAGNOSTIC-R2-CARLOS-20260905T170500Z",
+  "created_at_utc": "2026-09-05T17:05:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "bb6afd8f94d013a0afa1b5bda4cd57f6ebe2279f",
+  "production_allowed": false,
+  "objective": "Capturar en un archivo versionado la evidencia local del Universal Worker para diagnosticar por qué el Job de recuperación del publicador no se integró y recuperar el resultado SQL de la auditoría ISCAM sin depender de worker/results. No modificar lógica de negocio ni Producción.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_local_result_diagnostic_r2.py",
+      "content": "import json\nimport subprocess\nfrom pathlib import Path\n\nOUT = Path('tests/worker_local_result_diagnostic_r2_evidence.json')\nSTATE = Path('/app/.git/universal-worker-queue')\nTARGETS = {\n    'EDARSAHUB-ISCAM-DETAIL-REPORTS-AUDIT-R1-CARLOS-20260905T160000Z',\n    'EDARSAHUB-WORKER-RESULT-PUBLISHER-AUTH-RECOVERY-R1-CARLOS-20260905T163200Z',\n}\n\n\ndef _cmd(args):\n    p = subprocess.run(args, cwd='/app', text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)\n    return {'returncode': p.returncode, 'output': p.stdout[-12000:]}\n\n\ndef _load_json(path):\n    try:\n        return json.loads(path.read_text(encoding='utf-8'))\n    except Exception as exc:\n        return {'_error': f'{type(exc).__name__}: {exc}', '_path': str(path)}\n\n\ndef test_capture_worker_local_result_state_r2():\n    matches = []\n    for sub in ('results', 'rejected', 'done', 'processing', 'pending'):\n        root = STATE / sub\n        if not root.exists():\n            continue\n        for path in root.glob('*.json'):\n            payload = _load_json(path)\n            job_id = str(payload.get('job_id') or path.stem)\n            if job_id in TARGETS:\n                matches.append({'bucket': sub, 'path': str(path), 'payload': payload})\n\n    published = []\n    pubdir = STATE / 'published'\n    if pubdir.exists():\n        for path in pubdir.iterdir():\n            if any(job in path.name for job in TARGETS):\n                published.append({'path': str(path), 'content': path.read_text(encoding='utf-8', errors='replace')})\n\n    runtime_files = {}\n    runtime = STATE / 'runtime'\n    if runtime.exists():\n        for name in ('last_cycle_utc', 'last_receive_utc', 'last_terminal_utc', 'pid', 'generation'):\n            p = runtime / name\n            if p.exists():\n                runtime_files[name] = p.read_text(encoding='utf-8', errors='replace').strip()\n\n    payload = {\n        'schema': 'edarsahub.worker-local-result-diagnostic.v2',\n        'production_touched': False,\n        'targets': sorted(TARGETS),\n        'matches': matches,\n        'published_markers': published,\n        'runtime': runtime_files,\n        'git_status': _cmd(['git', 'status', '--porcelain=v1', '--untracked-files=all']),\n        'publisher_diff': _cmd(['git', 'diff', '--', 'tools/mirror_sync/universal_job_result_publisher.py']),\n        'head': _cmd(['git', 'rev-parse', 'HEAD']),\n        'remote_dev': _cmd(['git', 'rev-parse', 'origin/Edarsahub_Desarrollo']),\n    }\n    OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2, default=str) + '\\n', encoding='utf-8')\n    assert payload['production_touched'] is False\n    assert matches, 'No se localizaron resultados locales para los jobs objetivo'\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/worker_local_result_diagnostic_r2_evidence.json",
+      "content": "{\n  \"schema\": \"edarsahub.worker-local-result-diagnostic.v2\",\n  \"status\": \"PENDING\",\n  \"production_touched\": false\n}\n"
+    }
+  ],
+  "checks": [
+    {"type": "py_compile", "paths": ["backend/tests/test_worker_local_result_diagnostic_r2.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_worker_local_result_diagnostic_r2.py"]},
+    {"type": "git_diff_check"}
+  ]
+}
