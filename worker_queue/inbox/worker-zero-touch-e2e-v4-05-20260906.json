@@ -1,0 +1,19 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-zero-touch-e2e-v4-05-20260906",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Ejecutar el job secuencial 5 de 10 del gate zero-touch E2E con criterio operativo vigente: pickup de hasta 60 segundos aceptable, ejecucion determinista, publicacion/certificacion seguras, sin tocar Produccion ni infraestructura del Worker.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "worker_queue/e2e_canaries/worker-zero-touch-e2e-v4-05-20260906.txt",
+      "content": "EDARSAHUB_WORKER_ZERO_TOUCH_E2E_V4_05\njob_id=worker-zero-touch-e2e-v4-05-20260906\nproduction_touched=false\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
