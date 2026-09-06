@@ -1,0 +1,42 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-finish-save-github-safety-cert-v2-20260906",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "f522aacd329d8038f814838e2d181a3f123971a7",
+  "objective": "Certificar el hardening Save to GitHub ya presente en Desarrollo sin reescribir runtime ni tocar trabajo dirty de Emergent. Validar anti-clobber del dispatcher, single-writer del result publisher y contratos del Worker. Solo crear un canario de certificacion nuevo; no modificar backend/server.py, auth, archivos productivos ajenos, worktrees existentes ni Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "save-to-github-finalization"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "worker_queue/e2e_canaries/worker-finish-save-github-safety-cert-v2-20260906.txt",
+      "content": "EDARSAHUB_SAVE_TO_GITHUB_SAFETY_CERT_V2\njob_id=worker-finish-save-github-safety-cert-v2-20260906\nanti_clobber_expected=true\nsingle_writer_expected=true\nproduction_touched=false\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "tools/mirror_sync/worker_runtime_reconciler.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_save_github_safety_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_universal_job_dispatcher_python_runtime.py"
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
