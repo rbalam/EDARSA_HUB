@@ -1,0 +1,27 @@
+{
+  "base_sha": "88759b897083f402bf0b7a630aa8f0f5e3e3aaee",
+  "blockers": [],
+  "candidate_sha": "b766d73b8f8620f02dde42f7ede1025f81b31e60",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-06T14:15:59Z",
+  "development_sha": "b766d73b8f8620f02dde42f7ede1025f81b31e60",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "worker_queue/e2e_canaries/worker-zero-touch-e2e-v4-03-20260906.txt"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-zero-touch-e2e-v4-03-20260906",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-06T14:16:52Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-06T14:15:52Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
