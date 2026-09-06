@@ -1,0 +1,34 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-BOS-V1-OPERATIONAL-ALERT-TASK-DOMAIN-01",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Definir el contrato puro de disparadores operativos de Cavas para reutilizar la infraestructura existente de tareas/notificaciones de EDARSAHUB. No crear tablas nuevas, no duplicar motor de tareas, no implementar proveedor de email/WhatsApp. El dominio debe expresar ALERTA -> TAREA -> RESPONSABLE -> FECHA LIMITE -> SEGUIMIENTO -> RESULTADO y producir referencias opacas para workflow_id/task_id/notification_id existentes.",
+  "actions": [
+    {
+      "type": "append_text",
+      "path": "backend/modules/cava_socios/domain.py",
+      "content": "\n\nclass CavaOperationalTrigger(str, Enum):\n    RENOVACION_PROXIMA = \"RENOVACION_PROXIMA\"\n    RENOVACION_VENCIDA = \"RENOVACION_VENCIDA\"\n    PAGO_PENDIENTE = \"PAGO_PENDIENTE\"\n    DOCUMENTO_FALTANTE = \"DOCUMENTO_FALTANTE\"\n    INVENTARIO_PENDIENTE_CERTIFICAR = \"INVENTARIO_PENDIENTE_CERTIFICAR\"\n    BOTELLA_PENDIENTE_DISPOSICION = \"BOTELLA_PENDIENTE_DISPOSICION\"\n    CIERRE_ASIGNACION_BLOQUEADO = \"CIERRE_ASIGNACION_BLOQUEADO\"\n    CONFIRMACION_MOVIMIENTO_PENDIENTE = \"CONFIRMACION_MOVIMIENTO_PENDIENTE\"\n    DISPUTA_MOVIMIENTO_ABIERTA = \"DISPUTA_MOVIMIENTO_ABIERTA\"\n\n\nclass OperationalWorkStatus(str, Enum):\n    PENDIENTE = \"PENDIENTE\"\n    EN_SEGUIMIENTO = \"EN_SEGUIMIENTO\"\n    COMPLETADA = \"COMPLETADA\"\n    CANCELADA = \"CANCELADA\"\n\n\n@dataclass(frozen=True)\nclass CavaOperationalWorkIntent:\n    trigger: CavaOperationalTrigger\n    subject_type: str\n    subject_id: str\n    responsible_id: str\n    due_at: str\n    reason: str\n    workflow_id: Optional[str] = None\n    task_id: Optional[str] = None\n    notification_id: Optional[str] = None\n    status: OperationalWorkStatus = OperationalWorkStatus.PENDIENTE\n    result: Optional[str] = None\n\n\ndef validate_operational_work_intent(intent: CavaOperationalWorkIntent) -> None:\n    required = {\n        \"subject_type\": intent.subject_type,\n        \"subject_id\": intent.subject_id,\n        \"responsible_id\": intent.responsible_id,\n        \"due_at\": intent.due_at,\n        \"reason\": intent.reason,\n    }\n    for field_name, value in required.items():\n        if not str(value or \"\").strip():\n            raise ValueError(f\"CavaOperationalWorkIntent requiere {field_name}\")\n    if intent.status == OperationalWorkStatus.COMPLETADA and not str(intent.result or \"\").strip():\n        raise ValueError(\"Una tarea completada requiere resultado\")\n\n\ndef can_close_operational_work(intent: CavaOperationalWorkIntent) -> bool:\n    validate_operational_work_intent(intent)\n    return intent.status in {OperationalWorkStatus.COMPLETADA, OperationalWorkStatus.CANCELADA}\n\n\ndef provider_delivery_failure_blocks_business_event() -> bool:\n    return False\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_cava_socios_operational_work_domain.py",
+      "content": "import pytest\n\nfrom modules.cava_socios.domain import (\n    CavaOperationalTrigger,\n    CavaOperationalWorkIntent,\n    OperationalWorkStatus,\n    can_close_operational_work,\n    provider_delivery_failure_blocks_business_event,\n    validate_operational_work_intent,\n)\n\n\ndef _intent(**overrides):\n    data = dict(\n        trigger=CavaOperationalTrigger.RENOVACION_PROXIMA,\n        subject_type=\"CONTRACT_PERIOD\",\n        subject_id=\"PER-1\",\n        responsible_id=\"USR-1\",\n        due_at=\"2026-10-01T12:00:00Z\",\n        reason=\"Renovacion proxima\",\n    )\n    data.update(overrides)\n    return CavaOperationalWorkIntent(**data)\n\n\ndef test_operational_work_requires_responsible_due_date_and_reason():\n    validate_operational_work_intent(_intent())\n    with pytest.raises(ValueError):\n        validate_operational_work_intent(_intent(responsible_id=\"\"))\n    with pytest.raises(ValueError):\n        validate_operational_work_intent(_intent(due_at=\"\"))\n\n\ndef test_completion_requires_result():\n    with pytest.raises(ValueError):\n        validate_operational_work_intent(_intent(status=OperationalWorkStatus.COMPLETADA))\n    completed = _intent(status=OperationalWorkStatus.COMPLETADA, result=\"Renovacion gestionada\")\n    assert can_close_operational_work(completed) is True\n\n\ndef test_pending_work_cannot_be_considered_closed():\n    assert can_close_operational_work(_intent()) is False\n\n\ndef test_existing_operational_ids_are_references_not_new_task_engine():\n    intent = _intent(workflow_id=\"WF-1\", task_id=\"TASK-1\", notification_id=\"NOTIF-1\")\n    validate_operational_work_intent(intent)\n    assert intent.task_id == \"TASK-1\"\n\n\ndef test_notification_provider_failure_does_not_rollback_canonical_business_event():\n    assert provider_delivery_failure_blocks_business_event() is False\n\n\ndef test_contract_covers_core_cavas_operational_triggers():\n    assert {\n        CavaOperationalTrigger.RENOVACION_PROXIMA,\n        CavaOperationalTrigger.PAGO_PENDIENTE,\n        CavaOperationalTrigger.DOCUMENTO_FALTANTE,\n        CavaOperationalTrigger.INVENTARIO_PENDIENTE_CERTIFICAR,\n        CavaOperationalTrigger.CIERRE_ASIGNACION_BLOQUEADO,\n        CavaOperationalTrigger.DISPUTA_MOVIMIENTO_ABIERTA,\n    }.issubset(set(CavaOperationalTrigger))\n"
+    }
+  ],
+  "constraints": [
+    "NO DDL",
+    "NO Mongo",
+    "NO nuevas tablas CavaSocios_Tareas o CavaSocios_Notificaciones",
+    "Reutilizar capacidades operativas existentes de EDARSAHUB para persistencia/entrega",
+    "No hardcodear responsables, canales, horarios ni SLA",
+    "Fallo de proveedor de notificacion no revierte el evento canonico de negocio"
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/cava_socios/domain.py", "backend/tests/test_cava_socios_operational_work_domain.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_cava_socios_operational_work_domain.py"]}
+  ],
+  "human_summary_language": "es"
+}
