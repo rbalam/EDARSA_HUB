@@ -1,0 +1,28 @@
+{
+  "base_sha": "73e09fa9ca548c9f949feb2e7a8887e7cae15630",
+  "blockers": [],
+  "candidate_sha": "3d94675b390f3edd1778b0b4e1190ef6f681a84b",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-06T21:07:42Z",
+  "development_sha": "3d94675b390f3edd1778b0b4e1190ef6f681a84b",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "docs/BOS/PROGRAMA_ESTRATEGICO_BOS_EDARSAHUB_DIRECCION.md",
+    "docs/BOS/STATUS_PROGRAMA_ESTRATEGICO_BOS_DIRECCION.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-DIRECCION-PROGRAMA-ESTRATEGICO-CANONICO-V1-20260906",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-06T21:07:43Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-06T21:07:38Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
