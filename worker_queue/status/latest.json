@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "3c4592797207ae125cab516ed83ab170e4eb2e89",
-  "generated_at_utc": "2026-09-06T21:43:44Z",
+  "development_sha": "c2f9855f75e001ce7f9a15d016de2c4748f652c3",
+  "generated_at_utc": "2026-09-06T21:44:55Z",
   "history": {
-    "done_total_local": 102,
+    "done_total_local": 103,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 206,
-    "results_total_local": 271
+    "results_total_local": 272
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 478,
+      "age_seconds": 550,
       "job_id": "CAVAS-BOS-V1-BENEFIT-ELIGIBILITY-EVALUATOR-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1917,
+      "age_seconds": 1989,
       "job_id": "CAVAS-BOS-V1-CONTRACT-DOCUMENT-DOSSIER-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -31,7 +31,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 714,
+      "age_seconds": 785,
       "job_id": "CAVAS-BOS-V1-MEMBERSHIP-BENEFITS-CORPORATE-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -40,7 +40,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1298,
+      "age_seconds": 1369,
       "job_id": "CAVAS-BOS-V1-OPERATIONAL-ALERT-TASK-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -49,7 +49,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2584,
+      "age_seconds": 2655,
       "job_id": "CAVAS-BOS-V1-PRICING-EXCEPTIONS-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -58,7 +58,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2975,
+      "age_seconds": 3046,
       "job_id": "CAVAS-BOS-V1-RENEWAL-PRORATION-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -67,67 +67,73 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2161,
+      "age_seconds": 2232,
       "job_id": "BOS-DIRECCION-PROGRAMA-ESTRATEGICO-CANONICO-V1-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1220,
+      "age_seconds": 1291,
       "job_id": "BOS-DIRECCION-STATUS-ENGINE-GATE1-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2739,
+      "age_seconds": 2810,
       "job_id": "CAVAS-BOS-V1-PAYMENT-SOURCE-MODE-DOMAIN-R2-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 260,
+      "age_seconds": 331,
       "job_id": "CAVAS-CORPORATIVAS-GATE1-READONLY-R2-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3024,
+      "age_seconds": 61,
+      "job_id": "CAVAS-CORPORATIVAS-GATE2-SQL-AUDIT-01",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3095,
       "job_id": "WORKER-AGENT-REACH-POLICY-ADAPTER-GATE2C-R2-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2155,
+      "age_seconds": 2226,
       "job_id": "WORKER-AI-GATEWAY-POLICY-GATE2D-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1408,
+      "age_seconds": 1479,
       "job_id": "WORKER-AI-GATEWAY-POLICY-GATE2D-R2-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1291,
+      "age_seconds": 1362,
       "job_id": "finanzas-decision-pago-authoritative-v9-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1992,
+      "age_seconds": 2063,
       "job_id": "save-github-final-closure-audit-r2-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2071,
+      "age_seconds": 2142,
       "job_id": "save-github-final-closure-audit-v1-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 479,
+      "age_seconds": 550,
       "job_id": "save-github-frontend-build-surgical-fix-v1-20260906",
       "reason": null,
       "state": "RESULT_READY"
@@ -140,14 +146,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 6,
-  "queue_result_ready_recent": 11,
+  "queue_result_ready_recent": 12,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-06T21:43:43Z",
-    "last_receive_utc": "2026-09-06T21:43:43Z",
-    "last_terminal_utc": "2026-09-06T21:39:24Z",
+    "last_cycle_utc": "2026-09-06T21:44:54Z",
+    "last_receive_utc": "2026-09-06T21:44:55Z",
+    "last_terminal_utc": "2026-09-06T21:43:54Z",
     "pid": "285"
   },
   "schema": "edarsahub.worker-health.v3",
