@@ -1,0 +1,19 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-cert-latency-v6-20260906T1404Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Ejecutar un canario E2E fresco para medir latencia completa hasta certificacion final despues de activar MIRROR_SYNC_LOOP_SECONDS=10, sin modificar infraestructura del Worker y sin tocar Produccion.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "worker_queue/e2e_canaries/worker-cert-latency-v6-20260906T1404Z.txt",
+      "content": "EDARSAHUB_WORKER_CERT_LATENCY_V6\njob_id=worker-cert-latency-v6-20260906T1404Z\nproduction_touched=false\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
