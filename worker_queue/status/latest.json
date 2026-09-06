@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "2e91078c8d30944a7eacda1ceaf18d6a4f16d8a8",
-  "generated_at_utc": "2026-09-06T16:22:02Z",
+  "development_sha": "f522aacd329d8038f814838e2d181a3f123971a7",
+  "generated_at_utc": "2026-09-06T16:23:15Z",
   "history": {
-    "done_total_local": 84,
+    "done_total_local": 85,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 182,
-    "results_total_local": 242
+    "results_total_local": 243
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 478,
+      "age_seconds": 551,
       "job_id": "WORKER-CAPABILITIES-SKILLS-AGENTREACH-OMNIROUTE-GATE1-20260906",
       "reasons": [
         "ACTIONS_REQUIRED"
@@ -22,20 +22,26 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1078,
+      "age_seconds": 1151,
       "job_id": "CAVAS-BOS-V1-MEMBERSHIP-POLICY-GUARD-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1440,
+      "age_seconds": 1512,
       "job_id": "CAVAS-BOS-V1-ROUTER-NAV-FIX-02",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1858,
+      "age_seconds": 1931,
       "job_id": "worker-zero-touch-e2e-v4-05-20260906",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 45,
+      "job_id": "worker-zero-touch-e2e-v4-06-20260906",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -47,14 +53,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 3,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-06T16:22:00Z",
-    "last_receive_utc": "2026-09-06T16:22:01Z",
-    "last_terminal_utc": "2026-09-06T16:04:03Z",
+    "last_cycle_utc": "2026-09-06T16:23:12Z",
+    "last_receive_utc": "2026-09-06T16:23:13Z",
+    "last_terminal_utc": "2026-09-06T16:22:29Z",
     "pid": "285"
   },
   "schema": "edarsahub.worker-health.v3",
