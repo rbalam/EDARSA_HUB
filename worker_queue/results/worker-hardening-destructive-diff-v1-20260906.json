@@ -1,0 +1,29 @@
+{
+  "base_sha": "575db30bf47e6f08d4730deab73bdb2f174a57c2",
+  "blockers": [],
+  "candidate_sha": "bef17195674e9f19eb1f27e37187808bfd2422d2",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-06T20:05:06Z",
+  "development_sha": "bef17195674e9f19eb1f27e37187808bfd2422d2",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_worker_destructive_diff_guard.py",
+    "scripts/agent_guardrails/validate_repository_artifacts.py",
+    "tools/mirror_sync/universal_job_bridge.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-hardening-destructive-diff-v1-20260906",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-06T20:05:21Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-06T20:05:01Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
