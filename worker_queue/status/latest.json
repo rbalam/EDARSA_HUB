@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "772709073de1add84f129722fdecacd78aabe3c6",
-  "generated_at_utc": "2026-09-06T16:51:05Z",
+  "development_sha": "83620cd52f26b22339fc9376ecf12d1c574cb703",
+  "generated_at_utc": "2026-09-06T16:52:20Z",
   "history": {
-    "done_total_local": 87,
+    "done_total_local": 88,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 183,
-    "results_total_local": 246
+    "results_total_local": 247
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2221,
+      "age_seconds": 2296,
       "job_id": "WORKER-CAPABILITIES-SKILLS-AGENTREACH-OMNIROUTE-GATE1-20260906",
       "reasons": [
         "ACTIONS_REQUIRED"
@@ -22,38 +22,44 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2821,
+      "age_seconds": 2897,
       "job_id": "CAVAS-BOS-V1-MEMBERSHIP-POLICY-GUARD-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3182,
+      "age_seconds": 3258,
       "job_id": "CAVAS-BOS-V1-ROUTER-NAV-FIX-02",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1493,
+      "age_seconds": 1569,
       "job_id": "worker-finish-save-github-safety-cert-v2-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1559,
+      "age_seconds": 1635,
       "job_id": "worker-universal-supervisor-owner-v1-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1715,
+      "age_seconds": 1791,
       "job_id": "worker-zero-touch-e2e-v4-06-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 491,
+      "age_seconds": 567,
       "job_id": "worker-zero-touch-e2e-v4-07-20260906",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 30,
+      "job_id": "worker-zero-touch-e2e-v4-08-20260906",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -65,14 +71,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 7,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-06T16:51:04Z",
-    "last_receive_utc": "2026-09-06T16:51:05Z",
-    "last_terminal_utc": "2026-09-06T16:42:53Z",
+    "last_cycle_utc": "2026-09-06T16:52:16Z",
+    "last_receive_utc": "2026-09-06T16:52:18Z",
+    "last_terminal_utc": "2026-09-06T16:51:50Z",
     "pid": "285"
   },
   "schema": "edarsahub.worker-health.v3",
