@@ -64,7 +64,7 @@ ALERT_WHATSAPP_TO=[CAMBIAR] Número destino (+521234567890)
 ```
 API_MPRO_QRO_URL=http://54.39.104.176:8001/query
 API_MPRO_ORIGEN_URL=http://54.39.104.176:8000/query
-API_MPRO_KEY=EDARSA_2026_SECURE_KEY
+API_MPRO_KEY=[CONFIGURAR_EN_SECRET_STORE]
 ```
 > Estas APIs deben ser accesibles desde el servidor de producción
 

@@ -182,10 +182,10 @@ Una vez corregido en las sucursales, ejecutar:
 ```bash
 # Desde este servidor, probar las APIs
 curl -X GET "http://54.39.104.176:8000/query?sql=SELECT%201%20as%20test" \
-  -H "x-api-key: EDARSA_2026_SECURE_KEY"
+  -H "x-api-key: ${API_MPRO_KEY}"
 
 curl -X GET "http://54.39.104.176:8001/query?sql=SELECT%201%20as%20test" \
-  -H "x-api-key: EDARSA_2026_SECURE_KEY"
+  -H "x-api-key: ${API_MPRO_KEY}"
 ```
 
 Respuesta esperada:

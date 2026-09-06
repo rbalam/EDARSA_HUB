@@ -228,9 +228,9 @@ doc.add_heading('PRUEBA FINAL DESDE EDARSA HUB', level=1)
 doc.add_paragraph('Una vez corregido en las sucursales, ejecutar:')
 code_final = doc.add_paragraph()
 code_final.add_run('curl -X GET "http://54.39.104.176:8000/query?sql=SELECT%201%20as%20test" \\\n').font.name = 'Consolas'
-code_final.add_run('  -H "x-api-key: EDARSA_2026_SECURE_KEY"\n\n').font.name = 'Consolas'
+code_final.add_run('  -H "x-api-key: ${API_MPRO_KEY}"\n\n').font.name = 'Consolas'
 code_final.add_run('curl -X GET "http://54.39.104.176:8001/query?sql=SELECT%201%20as%20test" \\\n').font.name = 'Consolas'
-code_final.add_run('  -H "x-api-key: EDARSA_2026_SECURE_KEY"').font.name = 'Consolas'
+code_final.add_run('  -H "x-api-key: ${API_MPRO_KEY}"').font.name = 'Consolas'
 
 doc.add_paragraph('Respuesta esperada:').runs[0].bold = True
 code_resp = doc.add_paragraph()

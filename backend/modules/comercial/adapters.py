@@ -65,7 +65,7 @@ APIS_MPRO_LOCALES_LEGACY = {
     "origen": {
         "nombre": "ORIGEN LOCAL",
         "url": os.environ.get("API_MPRO_ORIGEN_URL"),
-        "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
+        "api_key": os.environ.get("API_MPRO_KEY"),
         "empresa_id": 1,  # ORIGEN
         "hora_replica": 4,
         "activo": True
@@ -73,7 +73,7 @@ APIS_MPRO_LOCALES_LEGACY = {
     "130_qro": {
         "nombre": "130° QRO LOCAL",
         "url": os.environ.get("API_MPRO_QRO_URL"),
-        "api_key": os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY"),
+        "api_key": os.environ.get("API_MPRO_KEY"),
         "empresa_id": 2,  # 130QRO
         "hora_replica": 4,
         "activo": True
@@ -156,7 +156,7 @@ def _obtener_api_local_por_empresa_id(empresa_id: int) -> Optional[Dict[str, Any
                 # Fallback genérico
                 api_config["url"] = None
             
-            api_config["api_key"] = os.environ.get("API_MPRO_KEY", "EDARSA_2026_SECURE_KEY")
+            api_config["api_key"] = os.environ.get("API_MPRO_KEY")
             
             logging.info(f"EmpresaResolver: API Local para EmpresaID={empresa_id} ({empresa.codigo_empresa}): {connection.nombre_servidor}")
             return api_config
