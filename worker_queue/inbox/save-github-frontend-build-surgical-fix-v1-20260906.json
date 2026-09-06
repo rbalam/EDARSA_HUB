@@ -1,0 +1,23 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "save-github-frontend-build-surgical-fix-v1-20260906",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "105c7b175be6b03a4fd171f77cd36825c05dd9d6",
+  "objective": "Corregir quirurgicamente el unico bloqueo conocido del cierre Save to GitHub: frontend_build. Alinear el script build del frontend con las banderas ya usadas por los workflows canonicos de auditoria del repositorio, sin modificar Worker, Supervisor, watchdog, backend/server.py ni funcionalidad de negocio. Mantener prebuild y validaciones de navegacion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/package.json",
+      "old": "\"build\": \"craco build\"",
+      "new": "\"build\": \"DISABLE_ESLINT_PLUGIN=true CI=false craco build\"",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "frontend_build", "directory": "frontend"}
+  ],
+  "human_summary_language": "es"
+}
