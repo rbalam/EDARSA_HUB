@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "575db30bf47e6f08d4730deab73bdb2f174a57c2",
-  "generated_at_utc": "2026-09-06T20:02:57Z",
+  "generated_at_utc": "2026-09-06T20:04:09Z",
   "history": {
     "done_total_local": 94,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 20,
+      "age_seconds": 92,
       "job_id": "CAVAS-BOS-V1-ASSIGNMENT-CLOSURE-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2369,
+      "age_seconds": 2442,
       "job_id": "CAVAS-BOS-V1-BOTTLE-IDENTITY-DOMAIN-01",
       "reasons": [
         "ACTION_4_INVALID_TYPE"
@@ -31,7 +31,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2043,
+      "age_seconds": 2115,
       "job_id": "CAVAS-BOS-V1-KARDEX-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -40,7 +40,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1015,
+      "age_seconds": 1087,
       "job_id": "CAVAS-BOS-V1-MOVEMENT-CONFIRMATION-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -49,7 +49,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 571,
+      "age_seconds": 643,
       "job_id": "CAVAS-BOS-V1-PHYSICAL-ASSIGNMENT-MEMBERSHIP-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -58,37 +58,31 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3545,
-      "job_id": "CAVAS-BOS-V1-BOTTLE-ORIGIN-DOMAIN-01",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 725,
+      "age_seconds": 797,
       "job_id": "WORKER-CAPABILITIES-SKILLS-AGENTREACH-OMNIROUTE-GATE1-R2-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 85,
+      "age_seconds": 158,
       "job_id": "WORKER-CAPABILITY-POLICY-ENGINE-GATE2A-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 707,
+      "age_seconds": 780,
       "job_id": "agent-reach-runtime-recertify-v6-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 741,
+      "age_seconds": 813,
       "job_id": "finanzas-decision-pago-authoritative-v7-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 985,
+      "age_seconds": 1058,
       "job_id": "save-github-current-tree-secret-remediation-v1-20260906",
       "reason": null,
       "state": "RESULT_READY"
@@ -101,13 +95,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 5,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-06T20:02:53Z",
-    "last_receive_utc": "2026-09-06T20:02:53Z",
+    "last_cycle_utc": "2026-09-06T20:04:04Z",
+    "last_receive_utc": "2026-09-06T20:04:05Z",
     "last_terminal_utc": "2026-09-06T20:01:31Z",
     "pid": "285"
   },
