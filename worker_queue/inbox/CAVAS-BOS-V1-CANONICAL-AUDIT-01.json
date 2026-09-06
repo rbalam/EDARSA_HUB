@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-BOS-V1-CANONICAL-AUDIT-01",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Auditar en SQL canónica real las entidades necesarias para Cavas Personales BOS V1.0 antes de crear o alterar esquema. Confirmar qué ya existe para clientes, unidades, productos/catálogos extendidos, Cavas legacy, configuraciones, horarios/zonas/monedas y relaciones. No crear tablas ni columnas. No tocar Producción. Dejar evidencia versionada del gate y ejecutar solo SELECT mediante sql_readonly_audit.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/EKS/consolidado/EKS_CAVAS_003_CANONICAL_AUDIT.md",
+      "content": "# EKS CAVAS 003 - Gate de auditoría canónica SQL\n\n## Objetivo\nEste gate impide crear o duplicar esquema de Cavas sin inspeccionar primero la SQL canónica real de EDARSAHUB.\n\n## Alcance\n- Cliente canónico / CRM.\n- Unidad de negocio / empresa.\n- Tablas Cava legacy existentes.\n- Producto/catálogo e inventario relacionado.\n- Catálogo extendido si existe.\n- Configuraciones, zonas horarias, monedas y horarios operativos reutilizables.\n\n## Regla\nNo se autoriza DDL de Cavas hasta que el resultado READ_ONLY_SQL determine qué entidades deben reutilizarse y cuáles, en su caso, deben convertirse en canónicas y atómicas.\n\n## Resultado esperado\nEl resultado del Worker asociado a `CAVAS-BOS-V1-CANONICAL-AUDIT-01` es la evidencia vinculante para el siguiente slice de implementación.\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "cavas_tables_and_columns",
+          "sql": "SELECT t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.is_nullable FROM sys.tables t INNER JOIN sys.columns c ON c.object_id=t.object_id INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE 'CavaSocios[_]%' ORDER BY t.name, c.column_id"
+        },
+        {
+          "name": "canonical_client_columns",
+          "sql": "SELECT t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.is_nullable FROM sys.tables t INNER JOIN sys.columns c ON c.object_id=t.object_id INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Cliente_Catalogo','Clientes','CRM_Clientes') ORDER BY t.name, c.column_id"
+        },
+        {
+          "name": "business_unit_company_columns",
+          "sql": "SELECT t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type, c.is_nullable FROM sys.tables t INNER JOIN sys.columns c ON c.object_id=t.object_id INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Unidades_Negocio','Empresas','Sistema_Empresas') ORDER BY t.name, c.column_id"
+        },
+        {
+          "name": "product_catalog_candidates",
+          "sql": "SELECT t.name AS table_name FROM sys.tables t WHERE t.name LIKE '%Producto%' OR t.name LIKE '%Catalogo%' OR t.name LIKE '%Insumo%' OR t.name LIKE '%Presentacion%' ORDER BY t.name"
+        },
+        {
+          "name": "product_candidate_columns",
+          "sql": "SELECT t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.is_nullable FROM sys.tables t INNER JOIN sys.columns c ON c.object_id=t.object_id INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (t.name LIKE '%Producto%' OR t.name LIKE '%Catalogo%' OR t.name LIKE '%Insumo%' OR t.name LIKE '%Presentacion%') AND (c.name LIKE '%Codigo%' OR c.name LIKE '%Nombre%' OR c.name LIKE '%Marca%' OR c.name LIKE '%Familia%' OR c.name LIKE '%Alcohol%' OR c.name LIKE '%PublicUUID%' OR c.name LIKE '%ProductoID%' OR c.name LIKE '%InsumoID%') ORDER BY t.name, c.column_id"
+        },
+        {
+          "name": "extended_catalog_candidates",
+          "sql": "SELECT t.name AS table_name FROM sys.tables t WHERE t.name LIKE '%Extend%' OR t.name LIKE '%Ampliad%' OR t.name LIKE '%Externo%' ORDER BY t.name"
+        },
+        {
+          "name": "canonical_operational_context",
+          "sql": "SELECT t.name AS table_name FROM sys.tables t WHERE t.name LIKE '%TurnosOperativos%' OR t.name LIKE '%Zona%Horaria%' OR t.name LIKE '%Moneda%' OR t.name LIKE '%Idioma%' OR t.name LIKE '%Configuracion%' ORDER BY t.name"
+        },
+        {
+          "name": "cavas_constraints_indexes",
+          "sql": "SELECT t.name AS table_name, i.name AS index_name, i.is_unique, i.has_filter, i.filter_definition FROM sys.tables t LEFT JOIN sys.indexes i ON i.object_id=t.object_id AND i.index_id>0 WHERE t.name LIKE 'CavaSocios[_]%' ORDER BY t.name, i.name"
+        },
+        {
+          "name": "cavas_foreign_keys",
+          "sql": "SELECT OBJECT_NAME(fk.parent_object_id) AS parent_table, fk.name AS fk_name, OBJECT_NAME(fk.referenced_object_id) AS referenced_table FROM sys.foreign_keys fk WHERE OBJECT_NAME(fk.parent_object_id) LIKE 'CavaSocios[_]%' ORDER BY parent_table, fk.name"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
