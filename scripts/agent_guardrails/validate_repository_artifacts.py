@@ -12,6 +12,19 @@ NORMAL_FILE_LIMIT = 5 * 1024 * 1024
 HARD_FILE_LIMIT = 20 * 1024 * 1024
 CHANGE_LIMIT = 25 * 1024 * 1024
 NEW_FILE_LIMIT = 50
+DELETE_FILE_LIMIT = 10
+DELETE_BYTES_LIMIT = 5 * 1024 * 1024
+SHRINK_MIN_BASE_SIZE = 4 * 1024
+SHRINK_RATIO = 0.75
+
+CRITICAL_DELETE_PATHS = {
+    "backend/server.py",
+    "tools/mirror_sync/universal_job_bridge.py",
+    "tools/mirror_sync/universal_job_dispatcher.py",
+    "tools/mirror_sync/shared_app_safety_guard.sh",
+    "tools/mirror_sync/apply_remote_update.sh",
+    "scripts/agent_guardrails/validate_repository_artifacts.py",
+}
 
 ROOT_BLOCKED_EXTENSIONS = {
     ".txt",
@@ -62,7 +75,7 @@ def staged_changes() -> list[tuple[str, str]]:
         "diff",
         "--cached",
         "--name-status",
-        "--diff-filter=ACMR",
+        "--diff-filter=ACMRD",
         "-z",
     )
 
@@ -98,7 +111,7 @@ def range_changes(base: str, head: str) -> list[tuple[str, str]]:
     raw = run_git(
         "diff",
         "--name-status",
-        "--diff-filter=ACMR",
+        "--diff-filter=ACMRD",
         "-z",
         base,
         head,
@@ -135,14 +148,35 @@ def range_changes(base: str, head: str) -> list[tuple[str, str]]:
 def validate(
     changes: list[tuple[str, str]],
     size_resolver,
+    previous_size_resolver=None,
 ) -> int:
     violations: list[str] = []
     added_count = 0
     total_added_bytes = 0
+    deleted_count = 0
+    total_deleted_bytes = 0
 
     for status, path in changes:
         posix = PurePosixPath(path)
         size = size_resolver(path)
+        previous_size = previous_size_resolver(path) if previous_size_resolver else 0
+
+        if status == "D":
+            deleted_count += 1
+            total_deleted_bytes += previous_size
+            if path in CRITICAL_DELETE_PATHS:
+                violations.append(f"archivo critico no puede eliminarse: {path}")
+            continue
+
+        if (
+            status in {"M", "R"}
+            and previous_size >= SHRINK_MIN_BASE_SIZE
+            and size < int(previous_size * SHRINK_RATIO)
+        ):
+            violations.append(
+                f"reduccion destructiva bloqueada: {path} "
+                f"({previous_size} -> {size} bytes)"
+            )
 
         if status == "A":
             added_count += 1
@@ -170,6 +204,16 @@ def validate(
                 f"{path} ({size} bytes)"
             )
 
+    if deleted_count > DELETE_FILE_LIMIT:
+        violations.append(
+            f"demasiados archivos eliminados: {deleted_count} > {DELETE_FILE_LIMIT}"
+        )
+
+    if total_deleted_bytes > DELETE_BYTES_LIMIT:
+        violations.append(
+            f"bytes eliminados superan 5 MiB: {total_deleted_bytes} bytes"
+        )
+
     if added_count > NEW_FILE_LIMIT:
         violations.append(
             f"demasiados archivos nuevos: "
@@ -191,6 +235,8 @@ def validate(
     print(f"FILES_CHECKED={len(changes)}")
     print(f"NEW_FILES={added_count}")
     print(f"NEW_BYTES={total_added_bytes}")
+    print(f"DELETED_FILES={deleted_count}")
+    print(f"DELETED_BYTES={total_deleted_bytes}")
     return 0
 
 
@@ -199,6 +245,7 @@ def validate_staged() -> int:
     return validate(
         changes,
         lambda path: blob_size(f":{path}"),
+        lambda path: blob_size(f"HEAD:{path}"),
     )
 
 
@@ -207,6 +254,7 @@ def validate_range(base: str, head: str) -> int:
     return validate(
         changes,
         lambda path: blob_size(f"{head}:{path}"),
+        lambda path: blob_size(f"{base}:{path}"),
     )
 
 

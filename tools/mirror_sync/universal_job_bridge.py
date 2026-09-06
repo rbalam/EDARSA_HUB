@@ -115,10 +115,12 @@ def validate_action(action: Any, index: int) -> list[str]:
             errors.append(f"{prefix}_CONTENT_TOO_LARGE")
     elif kind == "delete_file":
         expected = action.get("expected_sha256")
-        if expected is not None and not re.fullmatch(r"[0-9a-f]{64}", str(expected)):
+        if expected is None:
+            errors.append(f"{prefix}_EXPECTED_SHA256_REQUIRED")
+        elif not re.fullmatch(r"[0-9a-f]{64}", str(expected)):
             errors.append(f"{prefix}_INVALID_SHA256")
     expected = action.get("expected_sha256")
-    if expected is not None and not re.fullmatch(r"[0-9a-f]{64}", str(expected)):
+    if kind != "delete_file" and expected is not None and not re.fullmatch(r"[0-9a-f]{64}", str(expected)):
         errors.append(f"{prefix}_INVALID_SHA256")
     return errors
 
