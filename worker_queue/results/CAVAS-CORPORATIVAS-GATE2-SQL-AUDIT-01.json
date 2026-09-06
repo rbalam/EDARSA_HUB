@@ -1,0 +1,27 @@
+{
+  "base_sha": "3c4592797207ae125cab516ed83ab170e4eb2e89",
+  "blockers": [],
+  "candidate_sha": "c2f9855f75e001ce7f9a15d016de2c4748f652c3",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-06T21:43:54Z",
+  "development_sha": "c2f9855f75e001ce7f9a15d016de2c4748f652c3",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "docs/CAVAS/CAVAS_CORPORATIVAS_GATE2_SQL_AUDIT_CONTRACT.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CORPORATIVAS-GATE2-SQL-AUDIT-01",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-06T21:43:58Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-06T21:43:49Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
