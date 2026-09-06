@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "WORKER-CAPABILITIES-SKILLS-AGENTREACH-OMNIROUTE-GATE1-R2-20260906",
+  "created_at_utc": "2026-09-06T19:50:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "GATE 1 R2 SQL READ-ONLY. Auditar el esquema SQL canonico existente antes de cualquier implementacion de capability/policy/skills/Agent Reach/AI model gateway. No crear ni modificar tablas, columnas, datos, RBAC, codigo, runtime, Worker, Supervisor, watchdog ni Produccion. Inventariar las estructuras reales relacionadas con Sistema_Capacidades, Sistema_Tipos, Sistema_TiposVariantes, Sistema_ModulosVisibilidad y tablas potenciales de usuarios/roles/permisos/politicas. Confirmar columnas, constraints y datos actuales para evitar duplicados y permitir disenar posteriormente scopes, budgets, risk levels, egress policy y permisos efectivos sobre estructuras canonicas.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "capability_tables_exist",
+          "sql": "SELECT t.name AS tabla FROM sys.tables t WHERE t.name IN ('Sistema_Capacidades','Sistema_Tipos','Sistema_TiposVariantes','Sistema_ModulosVisibilidad') ORDER BY t.name"
+        },
+        {
+          "name": "capability_table_columns",
+          "sql": "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME IN ('Sistema_Capacidades','Sistema_Tipos','Sistema_TiposVariantes','Sistema_ModulosVisibilidad') ORDER BY TABLE_NAME, ORDINAL_POSITION"
+        },
+        {
+          "name": "capability_constraints",
+          "sql": "SELECT OBJECT_NAME(parent_object_id) AS tabla, name AS constraint_name, type_desc FROM sys.objects WHERE parent_object_id IN (OBJECT_ID('dbo.Sistema_Capacidades'),OBJECT_ID('dbo.Sistema_Tipos'),OBJECT_ID('dbo.Sistema_TiposVariantes'),OBJECT_ID('dbo.Sistema_ModulosVisibilidad')) AND type IN ('F','UQ','PK') ORDER BY tabla, constraint_name"
+        },
+        {
+          "name": "capability_catalog_current",
+          "sql": "SELECT TOP (500) st.CodigoSistema, sc.CodigoCapacidad, sc.Descripcion, sc.RequiereApiLocal, sc.RequiereSqlDirecto, sc.Activo FROM dbo.Sistema_Capacidades sc JOIN dbo.Sistema_Tipos st ON st.SistemaTipoID=sc.SistemaTipoID ORDER BY st.CodigoSistema, sc.CodigoCapacidad"
+        },
+        {
+          "name": "rbac_candidate_tables",
+          "sql": "SELECT t.name AS tabla FROM sys.tables t WHERE t.name LIKE '%Usuario%' OR t.name LIKE '%Rol%' OR t.name LIKE '%Permis%' OR t.name LIKE '%RBAC%' OR t.name LIKE '%Politic%' OR t.name LIKE '%Acceso%' ORDER BY t.name"
+        },
+        {
+          "name": "rbac_candidate_columns",
+          "sql": "SELECT TOP (1000) TABLE_NAME, COLUMN_NAME, DATA_TYPE, IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND (TABLE_NAME LIKE '%Usuario%' OR TABLE_NAME LIKE '%Rol%' OR TABLE_NAME LIKE '%Permis%' OR TABLE_NAME LIKE '%RBAC%' OR TABLE_NAME LIKE '%Politic%' OR TABLE_NAME LIKE '%Acceso%') ORDER BY TABLE_NAME, ORDINAL_POSITION"
+        },
+        {
+          "name": "integration_gateway_candidate_tables",
+          "sql": "SELECT t.name AS tabla FROM sys.tables t WHERE t.name LIKE '%Proveedor%' OR t.name LIKE '%Modelo%' OR t.name LIKE '%AI%' OR t.name LIKE '%Agente%' OR t.name LIKE '%Skill%' OR t.name LIKE '%Capabil%' OR t.name LIKE '%Conexion%' OR t.name LIKE '%Secret%' ORDER BY t.name"
+        }
+      ]
+    }
+  ]
+}
