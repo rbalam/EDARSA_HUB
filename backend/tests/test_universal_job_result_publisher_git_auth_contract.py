@@ -52,3 +52,39 @@ def test_result_publisher_does_not_embed_tokens():
         "ghs_",
     )
     assert not any(token in text for token in forbidden)
+
+
+def test_result_publisher_skips_certified_markers_before_sanitize():
+    text = _text()
+
+    marker_guard = '''
+            if marker.exists():
+                marker_text = marker.read_text(
+                    encoding="utf-8",
+                    errors="replace",
+                )
+                if "certification=CERTIFIED" in marker_text:
+                    continue
+'''
+
+    assert marker_guard in text
+
+    loop_pos = text.index('for path in sorted(RESULTS.glob("*.json")):')
+    certified_pos = text.index(
+        'if "certification=CERTIFIED" in marker_text:',
+        loop_pos,
+    )
+    sanitize_pos = text.index(
+        "public = sanitize(load(path))",
+        loop_pos,
+    )
+
+    assert certified_pos < sanitize_pos
+
+
+def test_result_publisher_preserves_noncertified_promotion_path():
+    text = _text()
+
+    assert 'if "certification=CERTIFIED" in marker_text:' in text
+    assert "public = sanitize(load(path))" in text
+    assert "marker_satisfied(marker, public)" in text

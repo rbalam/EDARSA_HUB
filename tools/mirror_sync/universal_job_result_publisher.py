@@ -697,6 +697,18 @@ def main() -> int:
         for path in sorted(RESULTS.glob("*.json")):
             marker = PUBLISHED / path.name
 
+            # Un resultado ya certificado es terminal.
+            # Saltarlo antes de load()/sanitize() evita revalidar
+            # historicos y, sobre todo, evita fetches Git remotos
+            # innecesarios en certification_evidence().
+            if marker.exists():
+                marker_text = marker.read_text(
+                    encoding="utf-8",
+                    errors="replace",
+                )
+                if "certification=CERTIFIED" in marker_text:
+                    continue
+
             try:
                 public = sanitize(load(path))
             except Exception:
