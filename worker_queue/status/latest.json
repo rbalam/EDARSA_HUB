@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "ccdeeb7e222c023e2c1ce05f30c984008d62a116",
-  "generated_at_utc": "2026-09-06T22:17:39Z",
+  "generated_at_utc": "2026-09-06T22:18:55Z",
   "history": {
     "done_total_local": 105,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1109,
+      "age_seconds": 1184,
       "job_id": "CAVAS-BOS-V1-BENEFIT-APPLICATION-IDEMPOTENCY-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2514,
+      "age_seconds": 2589,
       "job_id": "CAVAS-BOS-V1-BENEFIT-ELIGIBILITY-EVALUATOR-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -31,7 +31,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1672,
+      "age_seconds": 1747,
       "job_id": "CAVAS-BOS-V1-BENEFIT-TRANSACTION-APPLICATION-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -40,7 +40,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2749,
+      "age_seconds": 2825,
       "job_id": "CAVAS-BOS-V1-MEMBERSHIP-BENEFITS-CORPORATE-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -49,7 +49,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3333,
+      "age_seconds": 3409,
       "job_id": "CAVAS-BOS-V1-OPERATIONAL-ALERT-TASK-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -58,61 +58,61 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3256,
+      "age_seconds": 3331,
       "job_id": "BOS-DIRECCION-STATUS-ENGINE-GATE1-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1929,
+      "age_seconds": 2005,
       "job_id": "BOS-DIRECCION-STATUS-MANIFEST-GATE2-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2295,
+      "age_seconds": 2371,
       "job_id": "CAVAS-CORPORATIVAS-GATE1-READONLY-R2-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1724,
+      "age_seconds": 1800,
       "job_id": "CAVAS-CORPORATIVAS-GATE2-READONLY-SQL-EVIDENCE-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2025,
+      "age_seconds": 2100,
       "job_id": "CAVAS-CORPORATIVAS-GATE2-SQL-AUDIT-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3444,
+      "age_seconds": 3519,
       "job_id": "WORKER-AI-GATEWAY-POLICY-GATE2D-R2-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1273,
+      "age_seconds": 1349,
       "job_id": "WORKER-CAPABILITY-POLICY-E2E-GATE3-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1100,
+      "age_seconds": 1176,
       "job_id": "finanzas-decision-pago-authoritative-v10-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3326,
+      "age_seconds": 3402,
       "job_id": "finanzas-decision-pago-authoritative-v9-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2515,
+      "age_seconds": 2590,
       "job_id": "save-github-frontend-build-surgical-fix-v1-20260906",
       "reason": null,
       "state": "RESULT_READY"
@@ -130,8 +130,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-06T22:17:37Z",
-    "last_receive_utc": "2026-09-06T22:17:38Z",
+    "last_cycle_utc": "2026-09-06T22:18:54Z",
+    "last_receive_utc": "2026-09-06T22:18:49Z",
     "last_terminal_utc": "2026-09-06T21:59:18Z",
     "pid": "285"
   },
