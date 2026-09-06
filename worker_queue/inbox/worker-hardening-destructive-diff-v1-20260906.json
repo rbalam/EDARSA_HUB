@@ -1,0 +1,96 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-hardening-destructive-diff-v1-20260906",
+  "created_at_utc": "2026-09-06T20:03:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Hardening quirurgico del Universal Worker: exigir expected_sha256 para toda accion delete_file y ampliar el repository artifact guard para detectar eliminaciones destructivas, borrado de archivos criticos y reducciones fuertes de archivos existentes. No tocar server.py, Supervisor, watchdog, Production ni cambiar el modelo de owner del Worker.",
+  "acceptance": [
+    "delete_file sin expected_sha256 es rechazado por el bridge",
+    "delete_file con sha256 invalido es rechazado",
+    "el guard incluye deletions en staged/range diff",
+    "el guard bloquea eliminacion de backend/server.py y archivos criticos del Worker",
+    "el guard bloquea mas de 10 archivos eliminados en un cambio",
+    "el guard bloquea mas de 5 MiB eliminados en un cambio",
+    "el guard bloquea shrink de archivos >=4 KiB cuando el nuevo tamano es menor al 75% del anterior",
+    "cambios ordinarios no destructivos siguen permitidos",
+    "tests de regresion PASS",
+    "production_touched=false"
+  ],
+  "constraints": [
+    "usar el Universal Worker existente",
+    "no crear otro worker",
+    "no modificar backend/server.py",
+    "no modificar Supervisor",
+    "no modificar watchdog",
+    "no tocar Production",
+    "no reset checkout restore stash clean",
+    "no debilitar agent_guard ni shared_app_safety_guard",
+    "no hardcodes de secretos"
+  ],
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    elif kind == \"delete_file\":\n        expected = action.get(\"expected_sha256\")\n        if expected is not None and not re.fullmatch(r\"[0-9a-f]{64}\", str(expected)):\n            errors.append(f\"{prefix}_INVALID_SHA256\")\n    expected = action.get(\"expected_sha256\")\n    if expected is not None and not re.fullmatch(r\"[0-9a-f]{64}\", str(expected)):\n        errors.append(f\"{prefix}_INVALID_SHA256\")",
+      "new": "    elif kind == \"delete_file\":\n        expected = action.get(\"expected_sha256\")\n        if expected is None:\n            errors.append(f\"{prefix}_EXPECTED_SHA256_REQUIRED\")\n        elif not re.fullmatch(r\"[0-9a-f]{64}\", str(expected)):\n            errors.append(f\"{prefix}_INVALID_SHA256\")\n    expected = action.get(\"expected_sha256\")\n    if kind != \"delete_file\" and expected is not None and not re.fullmatch(r\"[0-9a-f]{64}\", str(expected)):\n        errors.append(f\"{prefix}_INVALID_SHA256\")",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "scripts/agent_guardrails/validate_repository_artifacts.py",
+      "old": "CHANGE_LIMIT = 25 * 1024 * 1024\nNEW_FILE_LIMIT = 50\n",
+      "new": "CHANGE_LIMIT = 25 * 1024 * 1024\nNEW_FILE_LIMIT = 50\nDELETE_FILE_LIMIT = 10\nDELETE_BYTES_LIMIT = 5 * 1024 * 1024\nSHRINK_MIN_BASE_SIZE = 4 * 1024\nSHRINK_RATIO = 0.75\n\nCRITICAL_DELETE_PATHS = {\n    \"backend/server.py\",\n    \"tools/mirror_sync/universal_job_bridge.py\",\n    \"tools/mirror_sync/universal_job_dispatcher.py\",\n    \"tools/mirror_sync/shared_app_safety_guard.sh\",\n    \"tools/mirror_sync/apply_remote_update.sh\",\n    \"scripts/agent_guardrails/validate_repository_artifacts.py\",\n}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "scripts/agent_guardrails/validate_repository_artifacts.py",
+      "old": "        \"--diff-filter=ACMR\",",
+      "new": "        \"--diff-filter=ACMRD\",",
+      "expected_count": 2
+    },
+    {
+      "type": "replace_text",
+      "path": "scripts/agent_guardrails/validate_repository_artifacts.py",
+      "old": "def validate(\n    changes: list[tuple[str, str]],\n    size_resolver,\n) -> int:\n    violations: list[str] = []\n    added_count = 0\n    total_added_bytes = 0\n\n    for status, path in changes:\n        posix = PurePosixPath(path)\n        size = size_resolver(path)\n\n        if status == \"A\":\n            added_count += 1\n            total_added_bytes += size\n",
+      "new": "def validate(\n    changes: list[tuple[str, str]],\n    size_resolver,\n    previous_size_resolver=None,\n) -> int:\n    violations: list[str] = []\n    added_count = 0\n    total_added_bytes = 0\n    deleted_count = 0\n    total_deleted_bytes = 0\n\n    for status, path in changes:\n        posix = PurePosixPath(path)\n        size = size_resolver(path)\n        previous_size = previous_size_resolver(path) if previous_size_resolver else 0\n\n        if status == \"D\":\n            deleted_count += 1\n            total_deleted_bytes += previous_size\n            if path in CRITICAL_DELETE_PATHS:\n                violations.append(f\"archivo critico no puede eliminarse: {path}\")\n            continue\n\n        if (\n            status in {\"M\", \"R\"}\n            and previous_size >= SHRINK_MIN_BASE_SIZE\n            and size < int(previous_size * SHRINK_RATIO)\n        ):\n            violations.append(\n                f\"reduccion destructiva bloqueada: {path} \"\n                f\"({previous_size} -> {size} bytes)\"\n            )\n\n        if status == \"A\":\n            added_count += 1\n            total_added_bytes += size\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "scripts/agent_guardrails/validate_repository_artifacts.py",
+      "old": "    if added_count > NEW_FILE_LIMIT:\n",
+      "new": "    if deleted_count > DELETE_FILE_LIMIT:\n        violations.append(\n            f\"demasiados archivos eliminados: {deleted_count} > {DELETE_FILE_LIMIT}\"\n        )\n\n    if total_deleted_bytes > DELETE_BYTES_LIMIT:\n        violations.append(\n            f\"bytes eliminados superan 5 MiB: {total_deleted_bytes} bytes\"\n        )\n\n    if added_count > NEW_FILE_LIMIT:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "scripts/agent_guardrails/validate_repository_artifacts.py",
+      "old": "    print(f\"NEW_FILES={added_count}\")\n    print(f\"NEW_BYTES={total_added_bytes}\")\n    return 0\n",
+      "new": "    print(f\"NEW_FILES={added_count}\")\n    print(f\"NEW_BYTES={total_added_bytes}\")\n    print(f\"DELETED_FILES={deleted_count}\")\n    print(f\"DELETED_BYTES={total_deleted_bytes}\")\n    return 0\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "scripts/agent_guardrails/validate_repository_artifacts.py",
+      "old": "def validate_staged() -> int:\n    changes = staged_changes()\n    return validate(\n        changes,\n        lambda path: blob_size(f\":{path}\"),\n    )\n\n\ndef validate_range(base: str, head: str) -> int:\n    changes = range_changes(base, head)\n    return validate(\n        changes,\n        lambda path: blob_size(f\"{head}:{path}\"),\n    )",
+      "new": "def validate_staged() -> int:\n    changes = staged_changes()\n    return validate(\n        changes,\n        lambda path: blob_size(f\":{path}\"),\n        lambda path: blob_size(f\"HEAD:{path}\"),\n    )\n\n\ndef validate_range(base: str, head: str) -> int:\n    changes = range_changes(base, head)\n    return validate(\n        changes,\n        lambda path: blob_size(f\"{head}:{path}\"),\n        lambda path: blob_size(f\"{base}:{path}\"),\n    )",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_destructive_diff_guard.py",
+      "content": "from __future__ import annotations\n\nimport importlib.util\nfrom pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nBRIDGE = ROOT / \"tools\" / \"mirror_sync\" / \"universal_job_bridge.py\"\nGUARD = ROOT / \"scripts\" / \"agent_guardrails\" / \"validate_repository_artifacts.py\"\n\n\ndef load_module(name: str, path: Path):\n    spec = importlib.util.spec_from_file_location(name, path)\n    assert spec and spec.loader\n    module = importlib.util.module_from_spec(spec)\n    spec.loader.exec_module(module)\n    return module\n\n\ndef test_delete_file_requires_expected_sha256():\n    bridge = load_module(\"worker_bridge_destructive_guard\", BRIDGE)\n    errors = bridge.validate_action({\"type\": \"delete_file\", \"path\": \"tmp/example.txt\"}, 1)\n    assert \"ACTION_1_EXPECTED_SHA256_REQUIRED\" in errors\n\n    errors = bridge.validate_action(\n        {\"type\": \"delete_file\", \"path\": \"tmp/example.txt\", \"expected_sha256\": \"bad\"},\n        1,\n    )\n    assert \"ACTION_1_INVALID_SHA256\" in errors\n\n    errors = bridge.validate_action(\n        {\"type\": \"delete_file\", \"path\": \"tmp/example.txt\", \"expected_sha256\": \"a\" * 64},\n        1,\n    )\n    assert errors == []\n\n\ndef test_guard_blocks_critical_delete():\n    guard = load_module(\"repository_destructive_guard_critical\", GUARD)\n    rc = guard.validate(\n        [(\"D\", \"backend/server.py\")],\n        lambda _path: 0,\n        lambda _path: 682735,\n    )\n    assert rc == 1\n\n\ndef test_guard_blocks_large_shrink():\n    guard = load_module(\"repository_destructive_guard_shrink\", GUARD)\n    rc = guard.validate(\n        [(\"M\", \"backend/example.py\")],\n        lambda _path: 2000,\n        lambda _path: 10000,\n    )\n    assert rc == 1\n\n\ndef test_guard_blocks_mass_delete():\n    guard = load_module(\"repository_destructive_guard_mass_delete\", GUARD)\n    changes = [(\"D\", f\"backend/tmp/file_{i}.py\") for i in range(11)]\n    rc = guard.validate(changes, lambda _path: 0, lambda _path: 100)\n    assert rc == 1\n\n\ndef test_guard_allows_non_destructive_modify():\n    guard = load_module(\"repository_destructive_guard_safe\", GUARD)\n    rc = guard.validate(\n        [(\"M\", \"backend/example.py\")],\n        lambda _path: 9000,\n        lambda _path: 10000,\n    )\n    assert rc == 0\n\n\ndef test_guard_diff_filters_include_deletions():\n    source = GUARD.read_text(encoding=\"utf-8\")\n    assert source.count(\"--diff-filter=ACMRD\") == 2\n    assert \"CRITICAL_DELETE_PATHS\" in source\n    assert \"DELETE_FILE_LIMIT = 10\" in source\n    assert \"DELETE_BYTES_LIMIT = 5 * 1024 * 1024\" in source\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["tools/mirror_sync/universal_job_bridge.py", "scripts/agent_guardrails/validate_repository_artifacts.py", "backend/tests/test_worker_destructive_diff_guard.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_worker_destructive_diff_guard.py", "backend/tests/test_worker_save_github_safety_contract.py"]}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
