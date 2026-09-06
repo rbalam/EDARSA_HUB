@@ -1,0 +1,23 @@
+{
+  "base_sha": "98bc4734db1087c6e93690ef69aabf2f1bd21840",
+  "blockers": [],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-06T19:50:52Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "WORKER-CAPABILITIES-SKILLS-AGENTREACH-OMNIROUTE-GATE1-R2-20260906",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-06T19:51:11Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-06T19:50:50Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
