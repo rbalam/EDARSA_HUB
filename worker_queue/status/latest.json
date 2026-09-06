@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "105c7b175be6b03a4fd171f77cd36825c05dd9d6",
-  "generated_at_utc": "2026-09-06T21:24:22Z",
+  "generated_at_utc": "2026-09-06T21:25:33Z",
   "history": {
     "done_total_local": 101,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 756,
+      "age_seconds": 827,
       "job_id": "CAVAS-BOS-V1-CONTRACT-DOCUMENT-DOSSIER-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 136,
+      "age_seconds": 207,
       "job_id": "CAVAS-BOS-V1-OPERATIONAL-ALERT-TASK-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -31,7 +31,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3299,
+      "age_seconds": 3370,
       "job_id": "CAVAS-BOS-V1-PAYMENT-SOURCE-MODE-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -40,7 +40,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1423,
+      "age_seconds": 1494,
       "job_id": "CAVAS-BOS-V1-PRICING-EXCEPTIONS-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -49,7 +49,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1814,
+      "age_seconds": 1885,
       "job_id": "CAVAS-BOS-V1-RENEWAL-PRORATION-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -58,55 +58,55 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1000,
+      "age_seconds": 1071,
       "job_id": "BOS-DIRECCION-PROGRAMA-ESTRATEGICO-CANONICO-V1-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 59,
+      "age_seconds": 130,
       "job_id": "BOS-DIRECCION-STATUS-ENGINE-GATE1-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1577,
+      "age_seconds": 1648,
       "job_id": "CAVAS-BOS-V1-PAYMENT-SOURCE-MODE-DOMAIN-R2-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1862,
+      "age_seconds": 1934,
       "job_id": "WORKER-AGENT-REACH-POLICY-ADAPTER-GATE2C-R2-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 993,
+      "age_seconds": 1064,
       "job_id": "WORKER-AI-GATEWAY-POLICY-GATE2D-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 247,
+      "age_seconds": 318,
       "job_id": "WORKER-AI-GATEWAY-POLICY-GATE2D-R2-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 129,
+      "age_seconds": 200,
       "job_id": "finanzas-decision-pago-authoritative-v9-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 830,
+      "age_seconds": 901,
       "job_id": "save-github-final-closure-audit-r2-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 910,
+      "age_seconds": 981,
       "job_id": "save-github-final-closure-audit-v1-20260906",
       "reason": null,
       "state": "RESULT_READY"
@@ -124,8 +124,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-06T21:24:18Z",
-    "last_receive_utc": "2026-09-06T21:24:18Z",
+    "last_cycle_utc": "2026-09-06T21:25:29Z",
+    "last_receive_utc": "2026-09-06T21:25:29Z",
     "last_terminal_utc": "2026-09-06T21:23:23Z",
     "pid": "285"
   },
