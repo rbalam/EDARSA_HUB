@@ -1,0 +1,50 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "WORKER-SKILLS-POLICY-LAYER-GATE2B-20260906",
+  "created_at_utc": "2026-09-06T20:08:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "bef17195674e9f19eb1f27e37187808bfd2422d2",
+  "production_allowed": false,
+  "objective": "GATE 2B. Integrar una capa generica de procedimientos/Skills gobernada por el Capability + Policy Engine certificado en Gate 2A. Reutilizar las Skills existentes de EDARSAHUB y no crear un catalogo paralelo. La biblioteca nueva no debe hardcodear nombres de capacidades por Skill ni otorgar autoridad. Debe aceptar un ProcedureSpec provisto por una fuente canonica futura, validar que la solicitud corresponda al procedimiento, que incluya sus capacidades requeridas, que no exceda su riesgo maximo ni use egress si el procedimiento no lo permite, y finalmente delegar autorizacion efectiva a evaluate_policy. No modificar Universal Worker, bridge, dispatcher, Supervisor, watchdog, SQL, RBAC, Skills existentes ni Produccion.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/core/agent_procedure_policy.py",
+      "content": "from __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom typing import FrozenSet\n\nfrom core.agent_capability_policy import (\n    PolicyContext,\n    PolicyDecision,\n    PolicyRequest,\n    RiskLevel,\n    evaluate_policy,\n)\n\n\n@dataclass(frozen=True)\nclass ProcedureSpec:\n    name: str\n    required_capabilities: FrozenSet[str]\n    max_risk: RiskLevel\n    external_egress_allowed: bool = False\n\n\ndef evaluate_procedure(\n    spec: ProcedureSpec,\n    request: PolicyRequest,\n    context: PolicyContext,\n) -> PolicyDecision:\n    reasons: list[str] = []\n\n    if not spec.name.strip():\n        reasons.append('PROCEDURE_NAME_REQUIRED')\n\n    if request.procedure != spec.name:\n        reasons.append('PROCEDURE_MISMATCH')\n\n    if not spec.required_capabilities:\n        reasons.append('PROCEDURE_CAPABILITIES_REQUIRED')\n    elif not spec.required_capabilities.issubset(request.capabilities):\n        reasons.append('PROCEDURE_REQUIRED_CAPABILITY_MISSING')\n\n    if request.risk > spec.max_risk:\n        reasons.append('PROCEDURE_RISK_EXCEEDED')\n\n    if request.external_egress and not spec.external_egress_allowed:\n        reasons.append('PROCEDURE_EGRESS_FORBIDDEN')\n\n    policy = evaluate_policy(request, context)\n    reasons.extend(policy.reasons)\n\n    return PolicyDecision(\n        allowed=not reasons,\n        reasons=tuple(dict.fromkeys(reasons)),\n        effective_capabilities=policy.effective_capabilities,\n        effective_scopes=policy.effective_scopes,\n    )\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_agent_procedure_policy.py",
+      "content": "from core.agent_capability_policy import (\n    BudgetRequest,\n    DataClassification,\n    PolicyContext,\n    PolicyRequest,\n    RiskLevel,\n)\nfrom core.agent_procedure_policy import ProcedureSpec, evaluate_procedure\n\n\ndef context(**overrides):\n    base = dict(\n        user_allowed_capabilities=frozenset({'CODE_READ', 'TEST_EXECUTE'}),\n        agent_allowed_capabilities=frozenset({'CODE_READ', 'TEST_EXECUTE'}),\n        environment_allowed_capabilities=frozenset({'CODE_READ', 'TEST_EXECUTE'}),\n        policy_allowed_capabilities=frozenset({'CODE_READ', 'TEST_EXECUTE'}),\n        user_allowed_scopes=frozenset({'repo:EDARSA_HUB', 'env:development'}),\n        agent_allowed_scopes=frozenset({'repo:EDARSA_HUB', 'env:development'}),\n        environment_allowed_scopes=frozenset({'repo:EDARSA_HUB', 'env:development'}),\n        policy_allowed_scopes=frozenset({'repo:EDARSA_HUB', 'env:development'}),\n        budget_limits={\n            'runtime_seconds': 300,\n            'files_changed': 10,\n            'lines_changed': 1000,\n            'external_calls': 10,\n            'sql_rows': 5000,\n            'inference_cost_usd': 5.0,\n        },\n    )\n    base.update(overrides)\n    return PolicyContext(**base)\n\n\ndef request(**overrides):\n    base = dict(\n        capabilities=frozenset({'CODE_READ', 'TEST_EXECUTE'}),\n        scopes=frozenset({'repo:EDARSA_HUB', 'env:development'}),\n        risk=RiskLevel.R1,\n        data_classification=DataClassification.INTERNAL,\n        budgets=BudgetRequest(runtime_seconds=60),\n        external_egress=False,\n        production_allowed=False,\n        privilege_expansion=False,\n        approval_granted=False,\n        procedure='validator',\n    )\n    base.update(overrides)\n    return PolicyRequest(**base)\n\n\ndef spec(**overrides):\n    base = dict(\n        name='validator',\n        required_capabilities=frozenset({'CODE_READ', 'TEST_EXECUTE'}),\n        max_risk=RiskLevel.R2,\n        external_egress_allowed=False,\n    )\n    base.update(overrides)\n    return ProcedureSpec(**base)\n\n\ndef test_valid_procedure_still_requires_policy_authority():\n    decision = evaluate_procedure(spec(), request(), context())\n    assert decision.allowed is True\n\n\ndef test_procedure_name_never_grants_authority():\n    ctx = context(policy_allowed_capabilities=frozenset({'CODE_READ'}))\n    decision = evaluate_procedure(spec(), request(), ctx)\n    assert decision.allowed is False\n    assert 'CAPABILITY_NOT_EFFECTIVE' in decision.reasons\n\n\ndef test_required_capabilities_must_be_requested_explicitly():\n    decision = evaluate_procedure(\n        spec(),\n        request(capabilities=frozenset({'CODE_READ'})),\n        context(),\n    )\n    assert decision.allowed is False\n    assert 'PROCEDURE_REQUIRED_CAPABILITY_MISSING' in decision.reasons\n\n\ndef test_procedure_mismatch_denies():\n    decision = evaluate_procedure(spec(), request(procedure='coder'), context())\n    assert decision.allowed is False\n    assert 'PROCEDURE_MISMATCH' in decision.reasons\n\n\ndef test_risk_cannot_exceed_procedure_contract():\n    decision = evaluate_procedure(spec(max_risk=RiskLevel.R1), request(risk=RiskLevel.R2), context())\n    assert decision.allowed is False\n    assert 'PROCEDURE_RISK_EXCEEDED' in decision.reasons\n\n\ndef test_egress_requires_both_procedure_and_policy_permission():\n    denied_by_procedure = evaluate_procedure(\n        spec(external_egress_allowed=False),\n        request(external_egress=True, data_classification=DataClassification.PUBLIC),\n        context(),\n    )\n    assert denied_by_procedure.allowed is False\n    assert 'PROCEDURE_EGRESS_FORBIDDEN' in denied_by_procedure.reasons\n\n    allowed = evaluate_procedure(\n        spec(external_egress_allowed=True),\n        request(external_egress=True, data_classification=DataClassification.PUBLIC),\n        context(),\n    )\n    assert allowed.allowed is True\n\n\ndef test_empty_procedure_contract_fails_closed():\n    decision = evaluate_procedure(\n        spec(name='', required_capabilities=frozenset()),\n        request(procedure=''),\n        context(),\n    )\n    assert decision.allowed is False\n    assert 'PROCEDURE_NAME_REQUIRED' in decision.reasons\n    assert 'PROCEDURE_CAPABILITIES_REQUIRED' in decision.reasons\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_edarsa_skills_inventory_contract.py",
+      "content": "from pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[2]\nSKILLS = ROOT / '.agents' / 'skills'\nEXPECTED = {\n    'edarsa-auditor',\n    'edarsa-coder',\n    'edarsa-validator',\n    'edarsa-committer',\n}\n\n\ndef test_existing_edarsa_skills_are_reused_not_replaced():\n    actual = {p.name for p in SKILLS.iterdir() if p.is_dir() and (p / 'SKILL.md').is_file()}\n    assert EXPECTED.issubset(actual)\n\n\ndef test_existing_skills_are_instruction_procedures_not_authority_catalogs():\n    for name in EXPECTED:\n        text = (SKILLS / name / 'SKILL.md').read_text(encoding='utf-8')\n        assert 'name:' in text\n        assert 'description:' in text\n        assert 'production_allowed' not in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/agent_procedure_policy.py",
+        "backend/tests/test_agent_procedure_policy.py",
+        "backend/tests/test_edarsa_skills_inventory_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_agent_procedure_policy.py",
+        "backend/tests/test_edarsa_skills_inventory_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
