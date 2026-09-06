@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "f2519985d713ab1ff353d2b3062095bca51f8fbb",
-  "generated_at_utc": "2026-09-06T19:42:35Z",
+  "generated_at_utc": "2026-09-06T19:43:46Z",
   "history": {
     "done_total_local": 91,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1147,
+      "age_seconds": 1219,
       "job_id": "CAVAS-BOS-V1-BOTTLE-IDENTITY-DOMAIN-01",
       "reasons": [
         "ACTION_4_INVALID_TYPE"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 821,
+      "age_seconds": 892,
       "job_id": "CAVAS-BOS-V1-KARDEX-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -31,7 +31,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2323,
+      "age_seconds": 2394,
       "job_id": "CAVAS-BOS-V1-BOTTLE-ORIGIN-DOMAIN-01",
       "reason": null,
       "state": "RESULT_READY"
@@ -49,8 +49,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-06T19:42:33Z",
-    "last_receive_utc": "2026-09-06T19:42:33Z",
+    "last_cycle_utc": "2026-09-06T19:43:44Z",
+    "last_receive_utc": "2026-09-06T19:43:45Z",
     "last_terminal_utc": "2026-09-06T19:03:52Z",
     "pid": "285"
   },
