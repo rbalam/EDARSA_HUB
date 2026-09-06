@@ -1,0 +1,83 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-BOS-V1-CONSUMPTION-FRACTIONS-01",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Implementar en Cavas Personales un contrato de consumo por fracciones humanas (1/4, 1/2, 3/4, 1 botella) compatible con el esquema legacy actual, sin DDL. Mantener porcentaje como compatibilidad técnica temporal, pero eliminar el default implícito de 100%. No tocar tablas, no tocar Produccion, no crear fuentes paralelas. El backend debe calcular el delta consumido correctamente y el frontend debe presentar fracciones como opción principal. El cargo de descorche no debe activarse por defecto ni asumir $350 desde UI/API. Mantener RBAC y filtros corporativos existentes.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/cava_socios/consumption_contract.py",
+      "content": "from __future__ import annotations\n\nfrom decimal import Decimal\nfrom typing import Optional\n\nFRACTION_TO_PERCENT = {\n    '1/4': Decimal('25'),\n    '1/2': Decimal('50'),\n    '3/4': Decimal('75'),\n    '1': Decimal('100'),\n}\n\n\ndef resolve_consumed_percent(*, fraction: Optional[str], percent: Optional[float]) -> float:\n    normalized = (fraction or '').strip()\n    if normalized:\n        if normalized not in FRACTION_TO_PERCENT:\n            raise ValueError('FRACCION_CONSUMO_NO_PERMITIDA')\n        if percent is not None:\n            raise ValueError('CONSUMO_AMBIGUO_FRACCION_Y_PORCENTAJE')\n        return float(FRACTION_TO_PERCENT[normalized])\n\n    if percent is None:\n        raise ValueError('CONSUMO_REQUIERE_FRACCION')\n\n    value = float(percent)\n    if value <= 0 or value > 100:\n        raise ValueError('PORCENTAJE_CONSUMO_INVALIDO')\n    return value\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/cava_socios/routes.py",
+      "old": "class ConsumoCreate(BaseModel):\n    \"\"\"Schema para registrar consumo en puntaje de botella (PZ).\"\"\"\n    porcentaje_consumido: float = Field(100, ge=0, le=100)  # % de botella (100% = 1.0 PZ, 50% = 0.5 PZ)\n    motivo: Optional[str] = None\n    reservacion_id: Optional[str] = None\n    mesero_id: Optional[str] = None\n    generar_cargo_descorche: bool = True\n    monto_descorche: float = 350\n    foto_evidencia: Optional[str] = None\n    observaciones: Optional[str] = None\n",
+      "new": "class ConsumoCreate(BaseModel):\n    \"\"\"Registra consumo incremental; fraccion_consumida es el contrato primario V1.\"\"\"\n    fraccion_consumida: Optional[str] = Field(None, description=\"1/4, 1/2, 3/4 o 1 botella\")\n    porcentaje_consumido: Optional[float] = Field(None, gt=0, le=100, description=\"Compatibilidad tecnica temporal\")\n    motivo: Optional[str] = None\n    reservacion_id: Optional[str] = None\n    mesero_id: Optional[str] = None\n    generar_cargo_descorche: bool = False\n    monto_descorche: Optional[float] = Field(None, ge=0)\n    foto_evidencia: Optional[str] = None\n    observaciones: Optional[str] = None\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/cava_socios/service.py",
+      "old": "from core.sql_first.connection_factory import get_edarsahub_pymssql_connection\n",
+      "new": "from core.sql_first.connection_factory import get_edarsahub_pymssql_connection\nfrom .consumption_contract import resolve_consumed_percent\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/cava_socios/service.py",
+      "old": "            nivel_anterior = float(botella['NivelActual'] or 100)\n            porcentaje_consumido = float(data.get('porcentaje_consumido', 100))\n\n            if porcentaje_consumido > nivel_anterior:\n",
+      "new": "            nivel_anterior = float(botella['NivelActual'] or 100)\n            porcentaje_consumido = resolve_consumed_percent(\n                fraction=data.get('fraccion_consumida'),\n                percent=data.get('porcentaje_consumido'),\n            )\n\n            if porcentaje_consumido > nivel_anterior:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/cava_socios/service.py",
+      "old": "                    data.get('monto_descorche', 350), botella_id, mov_id, usuario_id\n",
+      "new": "                    data.get('monto_descorche'), botella_id, mov_id, usuario_id\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/cava_socios/service.py",
+      "old": "            cargo_id = None\n            if data.get('generar_cargo_descorche'):\n                cargo_id = self._crear_cargo(\n",
+      "new": "            cargo_id = None\n            if data.get('generar_cargo_descorche'):\n                if data.get('monto_descorche') is None:\n                    raise ValueError('DESCORCHE_REQUIERE_MONTO_O_CONFIGURACION_CANONICA')\n                cargo_id = self._crear_cargo(\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/cava_socios/service.py",
+      "old": "                \"tipo_movimiento\": tipo_movimiento,\n                \"cargo_id\": cargo_id,\n",
+      "new": "                \"tipo_movimiento\": tipo_movimiento,\n                \"fraccion_consumida\": data.get('fraccion_consumida'),\n                \"porcentaje_consumido\": porcentaje_consumido,\n                \"cargo_id\": cargo_id,\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SocioDetail.jsx",
+      "old": "  const [consumoForm, setConsumoForm] = useState({\n    porcentaje_consumido: 100,\n    motivo: '',\n    generar_cargo_descorche: true,\n    monto_descorche: 350,\n    observaciones: ''\n  });\n",
+      "new": "  const [consumoForm, setConsumoForm] = useState({\n    fraccion_consumida: '1/4',\n    motivo: '',\n    generar_cargo_descorche: false,\n    monto_descorche: '',\n    observaciones: ''\n  });\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SocioDetail.jsx",
+      "old": "      setConsumoForm({\n        porcentaje_consumido: 100,\n        motivo: '',\n        generar_cargo_descorche: true,\n        monto_descorche: 350,\n        observaciones: ''\n      });\n",
+      "new": "      setConsumoForm({\n        fraccion_consumida: '1/4',\n        motivo: '',\n        generar_cargo_descorche: false,\n        monto_descorche: '',\n        observaciones: ''\n      });\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_cava_socios_consumption_contract.py",
+      "content": "import pytest\n\nfrom modules.cava_socios.consumption_contract import resolve_consumed_percent\n\n\n@pytest.mark.parametrize(\n    ('fraction', 'expected'),\n    [('1/4', 25.0), ('1/2', 50.0), ('3/4', 75.0), ('1', 100.0)],\n)\ndef test_fraction_contract(fraction, expected):\n    assert resolve_consumed_percent(fraction=fraction, percent=None) == expected\n\n\ndef test_percent_is_legacy_compatible_without_fraction():\n    assert resolve_consumed_percent(fraction=None, percent=25) == 25.0\n\n\ndef test_requires_explicit_consumption():\n    with pytest.raises(ValueError, match='CONSUMO_REQUIERE_FRACCION'):\n        resolve_consumed_percent(fraction=None, percent=None)\n\n\ndef test_fraction_and_percent_cannot_be_mixed():\n    with pytest.raises(ValueError, match='CONSUMO_AMBIGUO'):\n        resolve_consumed_percent(fraction='1/4', percent=25)\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/cava_socios/consumption_contract.py", "backend/modules/cava_socios/routes.py", "backend/modules/cava_socios/service.py", "backend/tests/test_cava_socios_consumption_contract.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_cava_socios_consumption_contract.py", "backend/tests/test_cava_socios.py"]},
+    {"type": "frontend_build", "directory": "frontend"}
+  ],
+  "human_summary_language": "es"
+}
