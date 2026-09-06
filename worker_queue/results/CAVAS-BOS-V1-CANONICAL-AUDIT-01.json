@@ -1,0 +1,27 @@
+{
+  "base_sha": "1307d37b367c7ad5edb1b0a0e42609daa552148a",
+  "blockers": [],
+  "candidate_sha": "91674e86514f9d37645fcaa8ba4b4993d16099a6",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-06T13:42:25Z",
+  "development_sha": "91674e86514f9d37645fcaa8ba4b4993d16099a6",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "docs/EKS/consolidado/EKS_CAVAS_003_CANONICAL_AUDIT.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-BOS-V1-CANONICAL-AUDIT-01",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-06T13:42:29Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-06T13:42:20Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
