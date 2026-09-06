@@ -1,0 +1,31 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-BOS-V1-ROUTER-NAV-FIX-02",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Cerrar dos bloqueadores funcionales confirmados de Cavas Personales sin cambiar arquitectura ni esquema SQL: montar el router existente backend/modules/cava_socios/routes.py en FastAPI y corregir el import faltante de CavaNavHeader en SociosList.jsx. No crear módulos duplicados, no tocar Producción, no cambiar RBAC ni contratos públicos fuera del montaje del router existente.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SociosList.jsx",
+      "old": "import { useAccessContext } from '../../hooks/useAccessContext';\n",
+      "new": "import { useAccessContext } from '../../hooks/useAccessContext';\nimport CavaNavHeader from './CavaNavHeader';\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/server.py",
+      "old": "app = FastAPI(title=\"EDARSA HUB API\")\n",
+      "new": "app = FastAPI(title=\"EDARSA HUB API\")\n\n# Cavas Personales: registrar el router de dominio existente sin duplicar lógica.\nfrom modules.cava_socios.routes import router as cava_socios_router\napp.include_router(cava_socios_router)\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/server.py", "backend/modules/cava_socios/routes.py", "backend/modules/cava_socios/service.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_cava_socios.py"]},
+    {"type": "frontend_build", "directory": "frontend"}
+  ],
+  "human_summary_language": "es"
+}
