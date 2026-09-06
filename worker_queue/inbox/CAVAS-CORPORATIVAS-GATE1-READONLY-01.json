@@ -23,7 +23,8 @@
     "RBAC canonico obligatorio.",
     "No tocar produccion.",
     "Sin secretos ni credenciales.",
-    "Cavas Corporativas debe permanecer separada de Cavas Personales como producto comercial."
+    "Cavas Corporativas debe permanecer separada de Cavas Personales como producto comercial.",
+    "Este es el mismo JOB_ID previamente creado; no crear ni ejecutar un job duplicado."
   ],
   "production_allowed": false,
   "human_summary_language": "es",
