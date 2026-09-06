@@ -1,0 +1,41 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE2-READONLY-SQL-EVIDENCE-01",
+  "created_at_utc": "2026-09-06T21:45:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c2f9855f75e001ce7f9a15d016de2c4748f652c3",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Ejecutar auditoria SQL canonica estrictamente READ-ONLY para GATE 2 de Cavas Corporativas y producir evidencia real del esquema existente antes de cualquier DDL. Auditar objetos y relaciones para empresas/organizaciones/clientes/contactos/CRM, usuarios/RBAC, unidades, productos y jerarquias, precios/listas/descuentos/promociones/convenios/beneficios, reservaciones/mesas/tickets/ventas/consumos, turnos/horarios/calendarios, auditoria/excepciones y CavaSocios. No modificar SQL, datos, codigo ni Production; no exponer secretos.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate2_candidate_objects",
+          "sql": "SELECT TOP 200 s.name AS schema_name, o.name AS object_name, o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.type IN ('U','V') AND (o.name LIKE '%Empresa%' OR o.name LIKE '%Organiz%' OR o.name LIKE '%Corporat%' OR o.name LIKE '%Convenio%' OR o.name LIKE '%Benefic%' OR o.name LIKE '%Cliente%' OR o.name LIKE '%CRM%' OR o.name LIKE '%Contacto%' OR o.name LIKE '%Usuario%' OR o.name LIKE '%Rol%' OR o.name LIKE '%Permiso%' OR o.name LIKE '%Unidad%' OR o.name LIKE '%Producto%' OR o.name LIKE '%Articulo%' OR o.name LIKE '%Categoria%' OR o.name LIKE '%Familia%' OR o.name LIKE '%Grupo%' OR o.name LIKE '%Linea%' OR o.name LIKE '%Precio%' OR o.name LIKE '%Lista%' OR o.name LIKE '%Descuento%' OR o.name LIKE '%Promoc%' OR o.name LIKE '%Reserva%' OR o.name LIKE '%Mesa%' OR o.name LIKE '%Ticket%' OR o.name LIKE '%Venta%' OR o.name LIKE '%Consumo%' OR o.name LIKE '%Turno%' OR o.name LIKE '%Horario%' OR o.name LIKE '%Calend%' OR o.name LIKE '%Auditor%' OR o.name LIKE '%Bitac%' OR o.name LIKE '%Excepcion%' OR o.name LIKE '%Cava%') ORDER BY s.name,o.name"
+        },
+        {
+          "name": "gate2_candidate_columns",
+          "sql": "SELECT TOP 200 s.name AS schema_name, o.name AS object_name, c.column_id, c.name AS column_name, t.name AS data_type, c.max_length, c.is_nullable FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id JOIN sys.columns c ON c.object_id=o.object_id JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE o.type IN ('U','V') AND (c.name LIKE '%Empresa%' OR c.name LIKE '%Corporat%' OR c.name LIKE '%Convenio%' OR c.name LIKE '%Benefic%' OR c.name LIKE '%Cliente%' OR c.name LIKE '%CRM%' OR c.name LIKE '%Contacto%' OR c.name LIKE '%Usuario%' OR c.name LIKE '%Unidad%' OR c.name LIKE '%Producto%' OR c.name LIKE '%Categoria%' OR c.name LIKE '%Familia%' OR c.name LIKE '%Linea%' OR c.name LIKE '%Precio%' OR c.name LIKE '%Descuento%' OR c.name LIKE '%Reserva%' OR c.name LIKE '%Ticket%' OR c.name LIKE '%Venta%' OR c.name LIKE '%Consumo%' OR c.name LIKE '%Turno%' OR c.name LIKE '%Horario%' OR c.name LIKE '%Cava%') ORDER BY s.name,o.name,c.column_id"
+        },
+        {
+          "name": "gate2_primary_unique_indexes",
+          "sql": "SELECT TOP 200 s.name AS schema_name, o.name AS object_name, i.name AS index_name, i.is_primary_key, i.is_unique, c.name AS column_name, ic.key_ordinal FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id JOIN sys.indexes i ON i.object_id=o.object_id JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE o.type='U' AND (i.is_primary_key=1 OR i.is_unique=1) AND (o.name LIKE '%Empresa%' OR o.name LIKE '%Cliente%' OR o.name LIKE '%CRM%' OR o.name LIKE '%Usuario%' OR o.name LIKE '%Unidad%' OR o.name LIKE '%Producto%' OR o.name LIKE '%Precio%' OR o.name LIKE '%Reserva%' OR o.name LIKE '%Ticket%' OR o.name LIKE '%Venta%' OR o.name LIKE '%Turno%' OR o.name LIKE '%Cava%' OR o.name LIKE '%Convenio%' OR o.name LIKE '%Benefic%') ORDER BY s.name,o.name,i.name,ic.key_ordinal"
+        },
+        {
+          "name": "gate2_foreign_keys",
+          "sql": "SELECT TOP 200 schp.name AS parent_schema, tp.name AS parent_table, cp.name AS parent_column, fk.name AS fk_name, schr.name AS referenced_schema, tr.name AS referenced_table, cr.name AS referenced_column FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.tables tp ON tp.object_id=fkc.parent_object_id JOIN sys.schemas schp ON schp.schema_id=tp.schema_id JOIN sys.columns cp ON cp.object_id=tp.object_id AND cp.column_id=fkc.parent_column_id JOIN sys.tables tr ON tr.object_id=fkc.referenced_object_id JOIN sys.schemas schr ON schr.schema_id=tr.schema_id JOIN sys.columns cr ON cr.object_id=tr.object_id AND cr.column_id=fkc.referenced_column_id WHERE tp.name LIKE '%Empresa%' OR tp.name LIKE '%Cliente%' OR tp.name LIKE '%CRM%' OR tp.name LIKE '%Usuario%' OR tp.name LIKE '%Unidad%' OR tp.name LIKE '%Producto%' OR tp.name LIKE '%Precio%' OR tp.name LIKE '%Reserva%' OR tp.name LIKE '%Ticket%' OR tp.name LIKE '%Venta%' OR tp.name LIKE '%Turno%' OR tp.name LIKE '%Cava%' OR tp.name LIKE '%Convenio%' OR tp.name LIKE '%Benefic%' OR tr.name LIKE '%Empresa%' OR tr.name LIKE '%Cliente%' OR tr.name LIKE '%CRM%' OR tr.name LIKE '%Usuario%' OR tr.name LIKE '%Unidad%' OR tr.name LIKE '%Producto%' OR tr.name LIKE '%Cava%' ORDER BY schp.name,tp.name,fk.name"
+        },
+        {
+          "name": "gate2_exact_canonical_objects",
+          "sql": "SELECT TOP 200 s.name AS schema_name, o.name AS object_name, o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.type IN ('U','V') AND o.name IN ('Unidades_Negocio','Sistema_TurnosOperativosUnidad','CavaSocios_Socios','CavaSocios_Botellas','CavaSocios_Movimientos','CavaSocios_Invitados','Comercial_KPIs_Diarios_v2','vw_Comercial_KPIs_Diarios_v2_Runtime','Comercial_Ventas_Dia_Abiertas_v2') ORDER BY o.name"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
