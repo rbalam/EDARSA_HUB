@@ -1,0 +1,35 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-BOS-V1-BENEFIT-APPLICATION-IDEMPOTENCY-01",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Definir el contrato puro de confirmacion, correlacion e idempotencia para aplicaciones transaccionales de beneficios Cavas. Debe impedir doble beneficio por reintentos, correlacionar una aplicacion con la respuesta del POS/ERP/adaptador y conservar estados CALCULATED/SENT_TO_PROVIDER/CONFIRMED/REJECTED/FAILED sin duplicar el efecto economico. No DDL, no escritura directa al POS/ERP, no inventar confirmaciones.",
+  "actions": [
+    {
+      "type": "append_text",
+      "path": "backend/modules/cava_socios/domain.py",
+      "content": "\n\nclass BenefitApplicationOutcome(str, Enum):\n    CONFIRMED = \"CONFIRMED\"\n    REJECTED = \"REJECTED\"\n    FAILED = \"FAILED\"\n\n\n@dataclass(frozen=True)\nclass BenefitApplicationCorrelation:\n    application_id: str\n    source_system: str\n    source_transaction_id: str\n    policy_id: str\n    policy_version: str\n    contract_id: str\n    unit_id: str\n\n\n@dataclass(frozen=True)\nclass BenefitProviderResult:\n    application_id: str\n    outcome: BenefitApplicationOutcome\n    provider_reference: Optional[str]\n    evidence_reference: Optional[str]\n    message: Optional[str] = None\n\n\ndef benefit_application_idempotency_key(correlation: BenefitApplicationCorrelation) -> str:\n    required = [\n        correlation.application_id,\n        correlation.source_system,\n        correlation.source_transaction_id,\n        correlation.policy_id,\n        correlation.policy_version,\n        correlation.contract_id,\n        correlation.unit_id,\n    ]\n    if any(not str(value or \"\").strip() for value in required):\n        raise ValueError(\"La correlacion de beneficio requiere identificadores estables completos\")\n    return \"|\".join(str(value).strip() for value in required)\n\n\ndef validate_benefit_provider_result(result: BenefitProviderResult) -> None:\n    if not str(result.application_id or \"\").strip():\n        raise ValueError(\"BenefitProviderResult requiere application_id\")\n    if result.outcome == BenefitApplicationOutcome.CONFIRMED:\n        if not str(result.provider_reference or \"\").strip():\n            raise ValueError(\"CONFIRMED requiere provider_reference\")\n        if not str(result.evidence_reference or \"\").strip():\n            raise ValueError(\"CONFIRMED requiere evidence_reference\")\n    if result.outcome in {BenefitApplicationOutcome.REJECTED, BenefitApplicationOutcome.FAILED}:\n        if not str(result.message or \"\").strip():\n            raise ValueError(\"REJECTED/FAILED requiere message auditable\")\n\n\ndef should_send_benefit_application(*, current_status: str, same_idempotency_key: bool) -> bool:\n    normalized = str(current_status or \"\").strip().upper()\n    if same_idempotency_key and normalized == \"CONFIRMED\":\n        return False\n    if same_idempotency_key and normalized == \"SENT_TO_PROVIDER\":\n        return False\n    return True\n\n\ndef derive_benefit_application_status(result: BenefitProviderResult) -> str:\n    validate_benefit_provider_result(result)\n    return result.outcome.value\n\n\ndef confirmed_benefit_is_economic_terminal_state() -> bool:\n    return True\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_cava_socios_benefit_idempotency_domain.py",
+      "content": "import pytest\n\nfrom modules.cava_socios.domain import (\n    BenefitApplicationCorrelation,\n    BenefitApplicationOutcome,\n    BenefitProviderResult,\n    benefit_application_idempotency_key,\n    confirmed_benefit_is_economic_terminal_state,\n    derive_benefit_application_status,\n    should_send_benefit_application,\n    validate_benefit_provider_result,\n)\n\n\ndef _correlation(**overrides):\n    data = dict(\n        application_id=\"APP-1\",\n        source_system=\"POS-CANONICAL\",\n        source_transaction_id=\"TX-1\",\n        policy_id=\"POL-1\",\n        policy_version=\"V3\",\n        contract_id=\"CTR-1\",\n        unit_id=\"UNIT-1\",\n    )\n    data.update(overrides)\n    return BenefitApplicationCorrelation(**data)\n\n\ndef test_idempotency_key_is_stable_for_same_application_context():\n    assert benefit_application_idempotency_key(_correlation()) == benefit_application_idempotency_key(_correlation())\n\n\ndef test_idempotency_key_changes_when_source_transaction_changes():\n    assert benefit_application_idempotency_key(_correlation()) != benefit_application_idempotency_key(_correlation(source_transaction_id=\"TX-2\"))\n\n\ndef test_confirmed_same_key_is_not_sent_again():\n    assert should_send_benefit_application(current_status=\"CONFIRMED\", same_idempotency_key=True) is False\n\n\ndef test_inflight_same_key_is_not_sent_again():\n    assert should_send_benefit_application(current_status=\"SENT_TO_PROVIDER\", same_idempotency_key=True) is False\n\n\ndef test_failed_same_key_can_be_retried_under_orchestrator_control():\n    assert should_send_benefit_application(current_status=\"FAILED\", same_idempotency_key=True) is True\n\n\ndef test_confirmed_requires_provider_and_evidence_references():\n    with pytest.raises(ValueError):\n        validate_benefit_provider_result(BenefitProviderResult(\n            application_id=\"APP-1\", outcome=BenefitApplicationOutcome.CONFIRMED,\n            provider_reference=None, evidence_reference=None,\n        ))\n    result = BenefitProviderResult(\n        application_id=\"APP-1\", outcome=BenefitApplicationOutcome.CONFIRMED,\n        provider_reference=\"POS-REF-1\", evidence_reference=\"EVID-1\",\n    )\n    validate_benefit_provider_result(result)\n    assert derive_benefit_application_status(result) == \"CONFIRMED\"\n\n\ndef test_rejected_or_failed_requires_auditable_message():\n    with pytest.raises(ValueError):\n        validate_benefit_provider_result(BenefitProviderResult(\n            application_id=\"APP-1\", outcome=BenefitApplicationOutcome.REJECTED,\n            provider_reference=None, evidence_reference=None, message=None,\n        ))\n\n\ndef test_confirmed_is_terminal_for_economic_effect():\n    assert confirmed_benefit_is_economic_terminal_state() is True\n"
+    }
+  ],
+  "constraints": [
+    "NO DDL",
+    "NO escritura directa a POS/ERP",
+    "NO doble aplicacion economica para la misma clave idempotente",
+    "CONFIRMED requiere referencia del proveedor y evidencia",
+    "REJECTED/FAILED no se presentan como aplicados y requieren mensaje auditable",
+    "FAILED puede reintentarse solo preservando la misma clave y bajo control del orquestador/adaptador",
+    "No inventar confirmacion cuando el proveedor no la haya devuelto"
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/cava_socios/domain.py", "backend/tests/test_cava_socios_benefit_idempotency_domain.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_cava_socios_benefit_idempotency_domain.py"]}
+  ],
+  "human_summary_language": "es"
+}
