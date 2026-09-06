@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "575db30bf47e6f08d4730deab73bdb2f174a57c2",
-  "generated_at_utc": "2026-09-06T20:04:09Z",
+  "development_sha": "bef17195674e9f19eb1f27e37187808bfd2422d2",
+  "generated_at_utc": "2026-09-06T20:05:22Z",
   "history": {
-    "done_total_local": 94,
+    "done_total_local": 95,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 190,
-    "results_total_local": 255
+    "results_total_local": 256
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 92,
+      "age_seconds": 165,
       "job_id": "CAVAS-BOS-V1-ASSIGNMENT-CLOSURE-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2442,
+      "age_seconds": 2515,
       "job_id": "CAVAS-BOS-V1-BOTTLE-IDENTITY-DOMAIN-01",
       "reasons": [
         "ACTION_4_INVALID_TYPE"
@@ -31,7 +31,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2115,
+      "age_seconds": 2188,
       "job_id": "CAVAS-BOS-V1-KARDEX-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -40,7 +40,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1087,
+      "age_seconds": 1160,
       "job_id": "CAVAS-BOS-V1-MOVEMENT-CONFIRMATION-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -49,7 +49,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 643,
+      "age_seconds": 716,
       "job_id": "CAVAS-BOS-V1-PHYSICAL-ASSIGNMENT-MEMBERSHIP-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -58,32 +58,38 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 797,
+      "age_seconds": 870,
       "job_id": "WORKER-CAPABILITIES-SKILLS-AGENTREACH-OMNIROUTE-GATE1-R2-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 158,
+      "age_seconds": 230,
       "job_id": "WORKER-CAPABILITY-POLICY-ENGINE-GATE2A-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 780,
+      "age_seconds": 853,
       "job_id": "agent-reach-runtime-recertify-v6-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 813,
+      "age_seconds": 886,
       "job_id": "finanzas-decision-pago-authoritative-v7-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1058,
+      "age_seconds": 1131,
       "job_id": "save-github-current-tree-secret-remediation-v1-20260906",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 16,
+      "job_id": "worker-hardening-destructive-diff-v1-20260906",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -95,14 +101,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 5,
-  "queue_result_ready_recent": 5,
+  "queue_result_ready_recent": 6,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-06T20:04:04Z",
-    "last_receive_utc": "2026-09-06T20:04:05Z",
-    "last_terminal_utc": "2026-09-06T20:01:31Z",
+    "last_cycle_utc": "2026-09-06T20:05:21Z",
+    "last_receive_utc": "2026-09-06T20:05:22Z",
+    "last_terminal_utc": "2026-09-06T20:05:06Z",
     "pid": "285"
   },
   "schema": "edarsahub.worker-health.v3",
