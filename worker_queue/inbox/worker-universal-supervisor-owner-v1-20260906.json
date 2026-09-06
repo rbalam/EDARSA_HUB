@@ -1,0 +1,46 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-universal-supervisor-owner-v1-20260906",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "2e91078c8d30944a7eacda1ceaf18d6a4f16d8a8",
+  "objective": "Materializar el owner externo y persistente del Universal Job Worker sin violar el contrato single-owner. Agregar configuracion Supervisor dedicada para /app/tools/mirror_sync/universal_job_worker.sh con autostart/autorestart, EDARSA_ALLOW_PUSH=1 y logs separados; agregar activador idempotente que instale esa configuracion en /etc/supervisor/conf.d, haga reread/update y arranque solo el proceso universal; mantener edarsahub-mirror-sync separado y prohibido de spawn del universal worker. Agregar pruebas de contrato. No tocar Produccion ni debilitar Agent Guard.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "catalogo-ampliado-v1"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "tools/mirror_sync/supervisor/edarsahub-universal-worker.conf",
+      "content": "[program:edarsahub-universal-worker]\ncommand=/bin/bash /app/tools/mirror_sync/universal_job_worker.sh\ndirectory=/app\nautostart=true\nautorestart=true\nstartsecs=3\nstartretries=20\nstopsignal=TERM\nstopwaitsecs=20\nredirect_stderr=true\nstdout_logfile=/var/log/supervisor/edarsahub-universal-worker.out.log\nstdout_logfile_maxbytes=20MB\nstdout_logfile_backups=3\nenvironment=EDARSA_ALLOW_PUSH=\"1\",UNIVERSAL_WORKER_INTAKE_SECONDS=\"10\",UNIVERSAL_WORKER_RESULT_SECONDS=\"10\",UNIVERSAL_WORKER_HEALTH_SECONDS=\"30\",UNIVERSAL_WORKER_RECONCILE_SECONDS=\"30\",UNIVERSAL_WORKER_DISPATCH_IDLE_SECONDS=\"2\"\n"
+    },
+    {
+      "type": "write_file",
+      "path": "tools/mirror_sync/supervisor/install_universal_worker_supervisor.sh",
+      "content": "#!/usr/bin/env bash\nset -euo pipefail\n\nSRC=/app/tools/mirror_sync/supervisor/edarsahub-universal-worker.conf\nDST=/etc/supervisor/conf.d/edarsahub-universal-worker.conf\n\ntest -r \"$SRC\" || { echo \"ABORT=UNIVERSAL_SUPERVISOR_CONFIG_MISSING\"; exit 2; }\ninstall -m 0644 \"$SRC\" \"$DST\"\nsupervisorctl reread\nsupervisorctl update\nsupervisorctl start edarsahub-universal-worker 2>/dev/null || supervisorctl restart edarsahub-universal-worker\nsupervisorctl status edarsahub-universal-worker\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_external_supervisor_owner_contract.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nCONF = ROOT / 'tools' / 'mirror_sync' / 'supervisor' / 'edarsahub-universal-worker.conf'\nINSTALL = ROOT / 'tools' / 'mirror_sync' / 'supervisor' / 'install_universal_worker_supervisor.sh'\nMIRROR = ROOT / 'tools' / 'mirror_sync' / 'mirror_sync_worker.sh'\n\n\ndef test_universal_worker_has_dedicated_supervisor_owner():\n    text = CONF.read_text(encoding='utf-8')\n    assert '[program:edarsahub-universal-worker]' in text\n    assert 'command=/bin/bash /app/tools/mirror_sync/universal_job_worker.sh' in text\n    assert 'autostart=true' in text\n    assert 'autorestart=true' in text\n    assert 'EDARSA_ALLOW_PUSH=\\\"1\\\"' in text\n    assert 'edarsahub-universal-worker.out.log' in text\n\n\ndef test_installer_is_idempotent_and_scoped_to_universal_worker():\n    text = INSTALL.read_text(encoding='utf-8')\n    assert 'install -m 0644' in text\n    assert 'supervisorctl reread' in text\n    assert 'supervisorctl update' in text\n    assert 'supervisorctl start edarsahub-universal-worker' in text\n    assert 'supervisorctl restart edarsahub-universal-worker' in text\n    assert 'edarsahub-mirror-sync' not in text\n\n\ndef test_mirror_remains_forbidden_from_spawning_universal_worker():\n    text = MIRROR.read_text(encoding='utf-8')\n    assert 'UNIVERSAL_JOB_WORKER_START_BY_MIRROR=FORBIDDEN' in text\n    assert 'UNIVERSAL_JOB_WORKER_OWNERSHIP=EXTERNAL' in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": ["backend/tests/test_worker_external_supervisor_owner_contract.py"]
+    },
+    {
+      "type": "pytest",
+      "paths": ["backend/tests/test_worker_external_supervisor_owner_contract.py"]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es"
+}
