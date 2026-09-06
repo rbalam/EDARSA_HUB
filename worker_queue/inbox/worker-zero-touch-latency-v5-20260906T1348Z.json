@@ -1,0 +1,19 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-zero-touch-latency-v5-20260906T1348Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Ejecutar un canario E2E fresco para medir latencia real cola a pickup, ejecucion, integracion y publicacion remota despues del early-skip de resultados certificados, sin modificar infraestructura del Worker ni tocar Produccion.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "worker_queue/e2e_canaries/worker-zero-touch-latency-v5-20260906T1348Z.txt",
+      "content": "EDARSAHUB_WORKER_ZERO_TOUCH_LATENCY_V5\njob_id=worker-zero-touch-latency-v5-20260906T1348Z\nproduction_touched=false\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
