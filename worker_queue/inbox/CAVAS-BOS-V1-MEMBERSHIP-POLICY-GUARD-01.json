@@ -1,0 +1,164 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-BOS-V1-MEMBERSHIP-POLICY-GUARD-01",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Eliminar defaults funcionales contradictorios de membresia/capacidad en Cavas Personales sin DDL. Cliente canónico no equivale a Socio Cava: la creación/promoción debe recibir tipo de membresía y capacidad explícitos; la sincronización técnica masiva no puede inventar ESTANDAR/12. El frontend no debe derivar capacidad por mapas locales. Mantener compatibilidad de lectura con socios existentes. No tocar Producción ni esquema SQL.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/cava_socios/routes.py",
+      "old": "    cliente_crm_id: Optional[str] = None\n    tipo_membresia: str = \"ESTANDAR\"\n    fecha_alta: Optional[str] = None\n    fecha_vencimiento: Optional[str] = None\n    maximo_botellas: int = 12\n",
+      "new": "    cliente_crm_id: Optional[str] = None\n    tipo_membresia: str = Field(..., min_length=1, max_length=50)\n    fecha_alta: Optional[str] = None\n    fecha_vencimiento: Optional[str] = None\n    maximo_botellas: int = Field(..., ge=1)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/cava_socios/routes.py",
+      "old": "    telefono: Optional[str] = None\n    tipo_membresia: str = \"ESTANDAR\"\n    maximo_botellas: int = 12\n    fecha_alta: Optional[str] = None\n",
+      "new": "    telefono: Optional[str] = None\n    tipo_membresia: str = Field(..., min_length=1, max_length=50)\n    maximo_botellas: int = Field(..., ge=1)\n    fecha_alta: Optional[str] = None\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/cava_socios/service.py",
+      "old": "                data.get('email'), data.get('telefono'), data.get('cliente_crm_id'),\n                data.get('tipo_membresia', 'ESTANDAR'),\n                data.get('fecha_alta') or date.today(),\n                data.get('fecha_vencimiento'),\n                data.get('maximo_botellas', 12),\n",
+      "new": "                data.get('email'), data.get('telefono'), data.get('cliente_crm_id'),\n                data['tipo_membresia'],\n                data.get('fecha_alta') or date.today(),\n                data.get('fecha_vencimiento'),\n                data['maximo_botellas'],\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/cava_socios/service.py",
+      "old": "            tipo_membresia = data.get('tipo_membresia', 'ESTANDAR')\n            maximo_botellas = data.get('maximo_botellas', 12)\n",
+      "new": "            tipo_membresia = data['tipo_membresia']\n            maximo_botellas = data['maximo_botellas']\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/cava_socios/service.py",
+      "old": "    def sincronizar_clientes_canonicos(self, empresa_id: str, cliente_ids: Optional[List[int]],\n                                       usuario_id: str) -> Dict[str, Any]:\n        \"\"\"Sincroniza masiva o selectivamente clientes activos desde Cliente_Catalogo a CavaSocios_Socios.\"\"\"\n        conn = self._get_connection()\n",
+      "new": "    def sincronizar_clientes_canonicos(self, empresa_id: str, cliente_ids: Optional[List[int]],\n                                       usuario_id: str) -> Dict[str, Any]:\n        \"\"\"No convierte identidades canónicas en membresías sin política explícita.\"\"\"\n        raise ValueError(\n            \"La sincronización técnica de clientes no puede crear Socios Cava ni membresías automáticamente; use promoción explícita con tipo de membresía y capacidad.\"\n        )\n\n        conn = self._get_connection()\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/cava_socios/routes.py",
+      "old": "    try:\n        service = get_cava_socios_service()\n        usuario_id = current_user.get('public_uuid') or current_user.get('id', '')\n        return service.sincronizar_clientes_canonicos(scope[\"empresa_id\"], data.cliente_ids, usuario_id)\n    except Exception as e:\n        logger.error(f\"[CavaSocios] Error sincronizando clientes canónicos: {e}\")\n        raise HTTPException(status_code=500, detail=\"Error interno del servidor\")\n",
+      "new": "    try:\n        service = get_cava_socios_service()\n        usuario_id = current_user.get('public_uuid') or current_user.get('id', '')\n        return service.sincronizar_clientes_canonicos(scope[\"empresa_id\"], data.cliente_ids, usuario_id)\n    except ValueError as e:\n        raise HTTPException(status_code=409, detail=str(e))\n    except Exception as e:\n        logger.error(f\"[CavaSocios] Error sincronizando clientes canónicos: {e}\")\n        raise HTTPException(status_code=500, detail=\"Error interno del servidor\")\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SocioForm.jsx",
+      "old": "const TIPOS_MEMBRESIA = [\n  { value: 'ESTANDAR', label: 'Estándar (12 botellas)' },\n  { value: 'PREMIUM', label: 'Premium (24 botellas)' },\n  { value: 'VIP', label: 'VIP (48 botellas)' },\n  { value: 'CORPORATIVO', label: 'Corporativo (100 botellas)' }\n];\n\nconst MEMBRESIA_BOTELLAS = {\n  'ESTANDAR': 12,\n  'PREMIUM': 24,\n  'VIP': 48,\n  'CORPORATIVO': 100\n};\n",
+      "new": "const TIPOS_MEMBRESIA = [\n  { value: 'ESTANDAR', label: 'Estándar' },\n  { value: 'PREMIUM', label: 'Premium' },\n  { value: 'VIP', label: 'VIP' },\n  { value: 'CORPORATIVO', label: 'Corporativo' }\n];\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SocioForm.jsx",
+      "old": "    tipo_membresia: 'ESTANDAR',\n    maximo_botellas: 12,\n",
+      "new": "    tipo_membresia: '',\n    maximo_botellas: '',\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SocioForm.jsx",
+      "old": "        tipo_membresia: socio.tipo_membresia || 'ESTANDAR',\n        maximo_botellas: socio.maximo_botellas || 12,\n",
+      "new": "        tipo_membresia: socio.tipo_membresia || '',\n        maximo_botellas: socio.maximo_botellas ?? '',\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SocioForm.jsx",
+      "old": "  const handleChange = (field, value) => {\n    setFormData(prev => {\n      const updated = { ...prev, [field]: value };\n      if (field === 'tipo_membresia') {\n        updated.maximo_botellas = MEMBRESIA_BOTELLAS[value] || 12;\n      }\n      return updated;\n    });\n  };\n",
+      "new": "  const handleChange = (field, value) => {\n    setFormData(prev => ({ ...prev, [field]: value }));\n  };\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SocioForm.jsx",
+      "old": "    if (!formData.nombre_completo?.trim()) {\n      toast.error('El nombre completo es obligatorio');\n      return;\n    }\n    \n    setSaving(true);\n    try {\n      if (isEditing) {\n        await api.put(`/cava-socios/socios/${id}?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`, formData);\n        toast.success('Socio actualizado correctamente');\n      } else {\n        await api.post(`/cava-socios/socios?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`, formData);\n        toast.success('Socio creado correctamente');\n      }\n",
+      "new": "    if (!formData.nombre_completo?.trim()) {\n      toast.error('El nombre completo es obligatorio');\n      return;\n    }\n    if (!formData.tipo_membresia) {\n      toast.error('Selecciona el tipo de membresía autorizado.');\n      return;\n    }\n    const capacidad = Number(formData.maximo_botellas);\n    if (!Number.isInteger(capacidad) || capacidad < 1) {\n      toast.error('Captura una capacidad autorizada de botellas.');\n      return;\n    }\n    const payload = { ...formData, maximo_botellas: capacidad };\n    \n    setSaving(true);\n    try {\n      if (isEditing) {\n        await api.put(`/cava-socios/socios/${id}?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`, payload);\n        toast.success('Socio actualizado correctamente');\n      } else {\n        await api.post(`/cava-socios/socios?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`, payload);\n        toast.success('Socio creado correctamente');\n      }\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SocioForm.jsx",
+      "old": "                  value={formData.maximo_botellas}\n                  onChange={(e) => handleChange('maximo_botellas', parseInt(e.target.value) || 12)}\n",
+      "new": "                  value={formData.maximo_botellas}\n                  onChange={(e) => handleChange('maximo_botellas', e.target.value)}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SociosList.jsx",
+      "old": "const TIPOS_MEMBRESIA = [\n  { value: 'ESTANDAR', label: 'Estándar (12 botellas)' },\n  { value: 'PREMIUM', label: 'Premium (24 botellas)' },\n  { value: 'VIP', label: 'VIP (36 botellas)' },\n  { value: 'BLACK', label: 'Black / Ilimitada' }\n];\n",
+      "new": "const TIPOS_MEMBRESIA = [\n  { value: 'ESTANDAR', label: 'Estándar' },\n  { value: 'PREMIUM', label: 'Premium' },\n  { value: 'VIP', label: 'VIP' },\n  { value: 'BLACK', label: 'Black' }\n];\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SociosList.jsx",
+      "old": "    tipo_membresia: 'ESTANDAR',\n    maximo_botellas: 12,\n",
+      "new": "    tipo_membresia: '',\n    maximo_botellas: '',\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SociosList.jsx",
+      "old": "    setPromocionForm({\n      tipo_membresia: 'ESTANDAR',\n      maximo_botellas: 12,\n",
+      "new": "    setPromocionForm({\n      tipo_membresia: '',\n      maximo_botellas: '',\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SociosList.jsx",
+      "old": "  const handleConfirmarPromocion = async () => {\n    if (!selectedCliente) return;\n    setSavingPromocion(true);\n",
+      "new": "  const handleConfirmarPromocion = async () => {\n    if (!selectedCliente) return;\n    if (!promocionForm.tipo_membresia) {\n      alert('Selecciona el tipo de membresía autorizado.');\n      return;\n    }\n    const capacidad = Number(promocionForm.maximo_botellas);\n    if (!Number.isInteger(capacidad) || capacidad < 1) {\n      alert('Captura una capacidad autorizada de botellas.');\n      return;\n    }\n    setSavingPromocion(true);\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SociosList.jsx",
+      "old": "        tipo_membresia: promocionForm.tipo_membresia,\n        maximo_botellas: parseInt(promocionForm.maximo_botellas) || 12,\n",
+      "new": "        tipo_membresia: promocionForm.tipo_membresia,\n        maximo_botellas: capacidad,\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SociosList.jsx",
+      "old": "                          {socio.botellas_en_cava || 0} / {socio.maximo_botellas || 12}\n",
+      "new": "                          {socio.botellas_en_cava || 0} / {socio.maximo_botellas ?? '—'}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SociosList.jsx",
+      "old": "                        onValueChange={(v) => {\n                          const maxMap = { ESTANDAR: 12, PREMIUM: 24, VIP: 36, BLACK: 50 };\n                          setPromocionForm(f => ({\n                            ...f,\n                            tipo_membresia: v,\n                            maximo_botellas: maxMap[v] || 12\n                          }));\n                        }}\n",
+      "new": "                        onValueChange={(v) => {\n                          setPromocionForm(f => ({ ...f, tipo_membresia: v }));\n                        }}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SociosList.jsx",
+      "old": "                        value={promocionForm.maximo_botellas}\n                        onChange={(e) => setPromocionForm(f => ({...f, maximo_botellas: parseInt(e.target.value) || 12}))}\n",
+      "new": "                        value={promocionForm.maximo_botellas}\n                        onChange={(e) => setPromocionForm(f => ({...f, maximo_botellas: e.target.value}))}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_cava_socios.py",
+      "old": "        assert socio.maximo_botellas == 24\n\n    @pytest.mark.unit\n    def test_socio_create_invalid_nombre(self):\n",
+      "new": "        assert socio.maximo_botellas == 24\n\n    @pytest.mark.unit\n    def test_socio_create_requires_membership_policy(self):\n        with pytest.raises(ValidationError):\n            SocioCreate(nombre_completo=\"Juan Pérez\")\n\n    @pytest.mark.unit\n    def test_socio_create_invalid_nombre(self):\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/cava_socios/routes.py", "backend/modules/cava_socios/service.py", "backend/tests/test_cava_socios.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_cava_socios.py"]},
+    {"type": "frontend_build", "directory": "frontend"}
+  ],
+  "human_summary_language": "es"
+}
