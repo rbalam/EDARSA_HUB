@@ -1,0 +1,31 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "CAVAS-CORPORATIVAS-GATE1-READONLY-01",
+  "created_at_utc": "2026-09-06T13:29:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Auditoria GATE 1 estrictamente de solo lectura para Cavas Corporativas. Inspeccionar el codigo y el esquema canonico existente para identificar estructuras reutilizables de empresas, clientes, contactos y usuarios autorizados, unidades, productos y lineas de venta, precios o beneficios, reservaciones y consumos, horarios y restricciones, RBAC, auditoria y CRM. Revisar tambien CavaSocios solo para detectar infraestructura compartible, manteniendo Cavas Corporativas como producto distinto. Entregar evidencia, huecos reales y una propuesta de arquitectura logica minima. Incluir el alcance parametrico de beneficios por empresa, convenio, unidad y linea de venta: alimentos, bebidas, ambos y futuras lineas, con granularidad opcional por categoria, familia o SKU cuando el catalogo canonico lo permita. Lo no incluido expresamente debe quedar fuera del beneficio. No implementar cambios.",
+  "acceptance": [
+    "Identificar objetos y componentes reales con evidencia.",
+    "Separar claramente reutilizar, extender y crear.",
+    "No inventar tablas ni campos.",
+    "Proponer arquitectura logica minima y parametrica.",
+    "No modificar codigo, datos, esquema ni produccion.",
+    "Terminar con recomendacion concreta para GATE 2 sin ejecutarlo."
+  ],
+  "constraints": [
+    "Solo lectura.",
+    "Sin escrituras SQL ni cambios de esquema.",
+    "Sin hardcodes comerciales.",
+    "Sin duplicar catalogos canonicos existentes.",
+    "Sin Mongo.",
+    "RBAC canonico obligatorio.",
+    "No tocar produccion.",
+    "Sin secretos ni credenciales.",
+    "Cavas Corporativas debe permanecer separada de Cavas Personales como producto comercial."
+  ],
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
