@@ -1,0 +1,59 @@
+# Cavas Corporativas - GATE 1
+
+Estado objetivo: auditoria de arquitectura cerrada; no implementa funcionalidad productiva.
+
+## Producto
+Cavas Corporativas es un producto B2B distinto de Cavas Personales. Su nucleo es Empresa -> Convenio -> Unidad -> Alcance comercial -> Beneficio -> Restricciones, con usuarios autorizados, reservaciones/consumos y analitica CRM. No es una modalidad de propiedad o custodia de botellas personales.
+
+## Evidencia canonica reutilizable observada en Edarsahub_Desarrollo
+- Unidades: dbo.Unidades_Negocio; llave operativa unidad_negocio_pk. AGENTS.md declara UnidadesService y CorporateFilterService como servicios canonicos.
+- Cavas Personales: backend/modules/cava_socios existe y usa SQL Server como fuente de verdad; su infraestructura puede compartirse solo donde sea transversal, sin convertir Cavas Corporativas en CavaSocios.
+- Clientes: el modulo CavaSocios ya relaciona socios con identidad CRM mediante ClienteCRMID; Cavas Corporativas debe enlazar identidad canonica y no copiar PII. La identidad exacta a usar en nuevas relaciones debe validarse contra el modelo CRM vigente antes de DDL.
+- Productos/ventas: los catalogos y KPIs comerciales existentes deben reutilizarse; Cavas Corporativas no debe crear catalogos paralelos de productos, categorias, familias, unidades o ventas.
+- RBAC: debe reutilizar RBAC canonico EDARSAHUB y aplicar autorizacion backend; nunca depender de permisos solo de frontend.
+- Dia/horario operativo: las reglas comerciales deben parametrizarse por unidad y politica; no hardcodear 14:00-20:00 ni 22:00.
+
+## Reutilizar
+1. dbo.Unidades_Negocio y unidad_negocio_pk.
+2. Identidad/CRM canonicos para personas y contactos, sin copiar PII.
+3. Catalogos canonicos de productos, categorias/familias/SKU y lineas comerciales cuando existan.
+4. Ventas/tickets/KPIs comerciales canonicos para analitica, sin generar una segunda venta por beneficios.
+5. RBAC, auditoria, filtros corporativos, configuracion y servicios compartidos EDARSAHUB.
+6. Infraestructura transversal de CavaSocios solo cuando no sea propiedad exclusiva del dominio personal.
+
+## Extender
+Se requiere una capa B2B que relacione empresas y convenios con unidades, usuarios autorizados, alcance de beneficio, politicas, reservaciones/consumos y CRM. Las extensiones deben referenciar IDs canonicos y no replicar maestros.
+
+## Crear solo si la auditoria SQL de GATE 2 confirma que no existe equivalente
+- Entidad de convenio corporativo y vigencia.
+- Relacion empresa/convenio/unidad.
+- Usuarios autorizados del convenio enlazados a identidad canonica.
+- Alcance opt-in de beneficios por linea comercial, con granularidad opcional categoria/familia/SKU.
+- Reglas/restricciones configurables del convenio.
+- Registro auditable de aplicacion de beneficio asociado a reservacion/ticket/consumo canonico.
+
+No se fijan nombres fisicos de tablas o columnas en GATE 1: GATE 2 debe auditar SQL real antes de DDL.
+
+## Motor de beneficios - contrato funcional
+- Regla opt-in: lo no incluido expresamente en el convenio no recibe beneficio.
+- Alcance inicial configurable: alimentos, bebidas o ambos; el modelo debe admitir futuras lineas comerciales sin cambio estructural.
+- Granularidad: empresa/convenio -> unidad -> linea -> categoria/familia/SKU cuando el catalogo canonico lo soporte.
+- Beneficios posibles: lista/precio corporativo, porcentaje, monto, menu/precio fijo, cortesia, descorche, espacio/evento u otras condiciones parametrizadas.
+- Restricciones: dias, ventanas horarias, fechas, unidad, vigencia, productos incluidos/excluidos, acumulacion, reserva, anticipacion, cancelacion/no-show, topes y excepciones autorizadas.
+- Sin limite de personas por defecto; cualquier limite futuro es politica configurable, no hardcode.
+- Uso de negocio: el beneficio se activa por usuario corporativo autorizado y queda trazable a empresa/convenio.
+
+## Regla temporal pendiente para GATE 2
+La condicion de consumo estrictamente antes de las 22:00 debe modelarse como politica parametrica. GATE 2 debe definir con negocio cual evento manda: hora de reserva, llegada, apertura de ticket, consumo o cierre. GATE 1 no hardcodea esa decision.
+
+## Separacion con Cavas Personales
+Cavas Personales conserva custodia, botella, inventario privado, movimientos, consumos y responsabilidad del socio. Cavas Corporativas conserva empresa, convenio, autorizados, beneficios, politicas, reservas/consumos B2B y analitica corporativa. Pueden compartir identidad, unidad, producto, venta, RBAC, auditoria y configuracion, pero no sus agregados de dominio.
+
+## Analitica minima
+Empresa, convenio, usuario autorizado, unidad, visitas/consumos, ventas atribuibles, beneficio otorgado, ticket promedio, frecuencia, ultima actividad y segmentacion de empresas activas/inactivas/alto valor. La fuente debe ser SQL canonica sincronizada; no Mongo ni LIVE para tableros.
+
+## GATE 2 recomendado - NO EJECUTADO
+Auditoria SQL READ-ONLY de objetos reales para empresa/cliente/contacto, CRM, productos y jerarquias, ventas/tickets, reservaciones, turnos/horarios, RBAC/auditoria y cualquier estructura de convenios/beneficios ya existente. Con esa evidencia producir DDL minimo solo para huecos reales, pruebas de integridad y contrato backend del evaluador de beneficios. Production permanece prohibida.
+
+## Criterio de cierre GATE 1
+GATE 1 queda completo cuando este dossier queda integrado en Edarsahub_Desarrollo, sin cambios de codigo, datos o esquema, sin Production, con diff limpio y resultado Worker CERTIFIED/INTEGRATED/100.
