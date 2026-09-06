@@ -1,0 +1,42 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-BOS-V1-BOTTLE-IDENTITY-DOMAIN-01",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Extender el contrato puro existente backend/modules/cava_socios/domain.py para modelar identidad individual de botella, referencia única de producto y contexto de custodia/propiedad sin SQL ni sistemas externos. No crear archivo paralelo. No cambiar esquema SQL. No acoplar a SoftRestaurant, MPRO ni proveedor específico. Debe quedar explícito que una botella nueva se relaciona con una Asignación y un contexto de propiedad, no solo con SocioID.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/cava_socios/domain.py",
+      "old": "class IntelligenceConsumptionSource(str, Enum):\n    VENTA_UNIDAD = \"VENTA_UNIDAD\"\n    COMPRA_UNIDAD_PARA_CAVA = \"COMPRA_UNIDAD_PARA_CAVA\"\n    BOTELLA_EXTERNA_CAVA = \"BOTELLA_EXTERNA_CAVA\"\n    TRANSFERENCIA_OTRA_CAVA = \"TRANSFERENCIA_OTRA_CAVA\"\n    REGULARIZACION_HISTORICA = \"REGULARIZACION_HISTORICA\"\n\n\n@dataclass(frozen=True)\nclass BottleOriginEvidence:",
+      "new": "class IntelligenceConsumptionSource(str, Enum):\n    VENTA_UNIDAD = \"VENTA_UNIDAD\"\n    COMPRA_UNIDAD_PARA_CAVA = \"COMPRA_UNIDAD_PARA_CAVA\"\n    BOTELLA_EXTERNA_CAVA = \"BOTELLA_EXTERNA_CAVA\"\n    TRANSFERENCIA_OTRA_CAVA = \"TRANSFERENCIA_OTRA_CAVA\"\n    REGULARIZACION_HISTORICA = \"REGULARIZACION_HISTORICA\"\n\n\nclass BottleOwnershipKind(str, Enum):\n    MEMBERSHIP = \"MEMBERSHIP\"\n    ASSIGNMENT_SHARED = \"ASSIGNMENT_SHARED\"\n\n\n@dataclass(frozen=True)\nclass ProductReference:\n    kind: ProductReferenceKind\n    reference_id: str\n    presentation_reference_id: Optional[str] = None\n\n\n@dataclass(frozen=True)\nclass BottleCustodyContext:\n    assignment_id: str\n    ownership_kind: BottleOwnershipKind\n    owner_membership_id: Optional[str] = None\n    current_physical_cava_id: Optional[str] = None\n\n\n@dataclass(frozen=True)\nclass IndividualBottleIdentity:\n    bottle_id: str\n    product: ProductReference\n    custody: BottleCustodyContext\n\n\ndef validate_product_reference(product: ProductReference) -> None:\n    if not str(product.reference_id or \"\").strip():\n        raise ValueError(\"ProductReference requiere reference_id\")\n\n\ndef validate_custody_context(custody: BottleCustodyContext) -> None:\n    if not str(custody.assignment_id or \"\").strip():\n        raise ValueError(\"BottleCustodyContext requiere assignment_id\")\n    if custody.ownership_kind == BottleOwnershipKind.MEMBERSHIP:\n        if not str(custody.owner_membership_id or \"\").strip():\n            raise ValueError(\"MEMBERSHIP requiere owner_membership_id\")\n        return\n    if custody.ownership_kind == BottleOwnershipKind.ASSIGNMENT_SHARED:\n        if custody.owner_membership_id not in (None, \"\"):\n            raise ValueError(\"ASSIGNMENT_SHARED no debe atribuirse a una membresia individual\")\n        return\n    raise ValueError(\"ownership_kind no soportado\")\n\n\ndef validate_individual_bottle_identity(identity: IndividualBottleIdentity) -> None:\n    if not str(identity.bottle_id or \"\").strip():\n        raise ValueError(\"IndividualBottleIdentity requiere bottle_id\")\n    validate_product_reference(identity.product)\n    validate_custody_context(identity.custody)\n\n\n@dataclass(frozen=True)\nclass BottleOriginEvidence:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_cava_socios_domain.py",
+      "old": "    BottleOrigin,\n    BottleOriginEvidence,\n    IntelligenceConsumptionSource,\n    ProductReferenceKind,\n",
+      "new": "    BottleOrigin,\n    BottleOriginEvidence,\n    BottleOwnershipKind,\n    BottleCustodyContext,\n    IndividualBottleIdentity,\n    IntelligenceConsumptionSource,\n    ProductReference,\n    ProductReferenceKind,\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_cava_socios_domain.py",
+      "old": "    contributes_commercial_sale,\n    intelligence_source_for_origin,\n    validate_origin_evidence,\n)",
+      "new": "    contributes_commercial_sale,\n    intelligence_source_for_origin,\n    validate_custody_context,\n    validate_individual_bottle_identity,\n    validate_origin_evidence,\n    validate_product_reference,\n)",
+      "expected_count": 1
+    },
+    {
+      "type": "append_text",
+      "path": "backend/tests/test_cava_socios_domain.py",
+      "content": "\n\ndef test_product_reference_requires_stable_reference_id():\n    with pytest.raises(ValueError):\n        validate_product_reference(ProductReference(kind=ProductReferenceKind.PRODUCTO_CANONICO, reference_id=\"\"))\n    validate_product_reference(ProductReference(kind=ProductReferenceKind.CATALOGO_EXTENDIDO, reference_id=\"EXT-1\"))\n\n\ndef test_membership_owned_bottle_requires_assignment_and_membership():\n    with pytest.raises(ValueError):\n        validate_custody_context(BottleCustodyContext(assignment_id=\"\", ownership_kind=BottleOwnershipKind.MEMBERSHIP, owner_membership_id=\"MEM-1\"))\n    with pytest.raises(ValueError):\n        validate_custody_context(BottleCustodyContext(assignment_id=\"ASG-1\", ownership_kind=BottleOwnershipKind.MEMBERSHIP))\n    validate_custody_context(BottleCustodyContext(assignment_id=\"ASG-1\", ownership_kind=BottleOwnershipKind.MEMBERSHIP, owner_membership_id=\"MEM-1\"))\n\n\ndef test_shared_assignment_bottle_does_not_fake_individual_owner():\n    validate_custody_context(BottleCustodyContext(assignment_id=\"ASG-1\", ownership_kind=BottleOwnershipKind.ASSIGNMENT_SHARED))\n    with pytest.raises(ValueError):\n        validate_custody_context(BottleCustodyContext(assignment_id=\"ASG-1\", ownership_kind=BottleOwnershipKind.ASSIGNMENT_SHARED, owner_membership_id=\"MEM-1\"))\n\n\ndef test_individual_bottle_identity_is_not_socio_id_based():\n    identity = IndividualBottleIdentity(\n        bottle_id=\"BOT-1\",\n        product=ProductReference(kind=ProductReferenceKind.PRODUCTO_CANONICO, reference_id=\"PROD-1\", presentation_reference_id=\"PRES-750\"),\n        custody=BottleCustodyContext(assignment_id=\"ASG-1\", ownership_kind=BottleOwnershipKind.MEMBERSHIP, owner_membership_id=\"MEM-1\", current_physical_cava_id=\"CAVA-1\"),\n    )\n    validate_individual_bottle_identity(identity)\n    assert not hasattr(identity.custody, \"socio_id\")\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/cava_socios/domain.py", "backend/tests/test_cava_socios_domain.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_cava_socios_domain.py"]}
+  ],
+  "human_summary_language": "es"
+}
