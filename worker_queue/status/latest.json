@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "73e09fa9ca548c9f949feb2e7a8887e7cae15630",
-  "generated_at_utc": "2026-09-06T20:57:25Z",
+  "generated_at_utc": "2026-09-06T20:58:38Z",
   "history": {
     "done_total_local": 98,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 195,
-    "results_total_local": 261
+    "rejected_total_local": 196,
+    "results_total_local": 262
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3288,
+      "age_seconds": 3360,
       "job_id": "CAVAS-BOS-V1-ASSIGNMENT-CLOSURE-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2813,
+      "age_seconds": 2885,
       "job_id": "CAVAS-BOS-V1-CONTRACT-PAYMENT-ACTIVATION-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -31,7 +31,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1682,
+      "age_seconds": 1754,
       "job_id": "CAVAS-BOS-V1-PAYMENT-SOURCE-MODE-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -40,7 +40,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 197,
+      "age_seconds": 269,
       "job_id": "CAVAS-BOS-V1-RENEWAL-PRORATION-DOMAIN-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -49,43 +49,49 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2862,
+      "age_seconds": 33,
+      "job_id": "CAVAS-BOS-V1-PAYMENT-SOURCE-MODE-DOMAIN-R2-20260906",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2935,
       "job_id": "WORKER-AGENT-REACH-POLICY-ADAPTER-GATE2C-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 246,
+      "age_seconds": 318,
       "job_id": "WORKER-AGENT-REACH-POLICY-ADAPTER-GATE2C-R2-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3353,
+      "age_seconds": 3426,
       "job_id": "WORKER-CAPABILITY-POLICY-ENGINE-GATE2A-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3096,
+      "age_seconds": 3168,
       "job_id": "WORKER-SKILLS-POLICY-LAYER-GATE2B-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2900,
+      "age_seconds": 2972,
       "job_id": "agent-reach-runtime-recertify-v7-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2839,
+      "age_seconds": 2912,
       "job_id": "finanzas-decision-pago-authoritative-v8-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3139,
+      "age_seconds": 3211,
       "job_id": "worker-hardening-destructive-diff-v1-20260906",
       "reason": null,
       "state": "RESULT_READY"
@@ -98,14 +104,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 4,
-  "queue_result_ready_recent": 7,
+  "queue_result_ready_recent": 8,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-06T20:57:21Z",
-    "last_receive_utc": "2026-09-06T20:57:21Z",
-    "last_terminal_utc": "2026-09-06T20:53:19Z",
+    "last_cycle_utc": "2026-09-06T20:58:32Z",
+    "last_receive_utc": "2026-09-06T20:58:33Z",
+    "last_terminal_utc": "2026-09-06T20:58:04Z",
     "pid": "285"
   },
   "schema": "edarsahub.worker-health.v3",
