@@ -193,21 +193,22 @@ async def ventas_periodos(unidad: str = Query(...), desde: Optional[str] = None,
 @iscam_router.get("/ventas-periodos/productos")
 async def ventas_periodos_productos(unidad: str = Query(...), periodo: str = Query(...),
                                     group_by: str = Query("mes")):
-    pexpr = _period_sql("s.FechaHora", group_by)
+    pexpr = _period_sql("fecha_operacion", group_by)
     rows = _q(
         f"""
-        SELECT j.prod_id AS codigo, MAX(j.prod_name) AS producto,
-               SUM(j.cantidad) AS cantidad, SUM(j.importe) AS importe,
-               COUNT(DISTINCT s.id) AS tickets
-        FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}
-        WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'
+        SELECT producto_codigo_fuente AS codigo, MAX(producto_nombre) AS producto,
+               SUM(ISNULL(cantidad,0)) AS cantidad, SUM(ISNULL(importe_neto,0)) AS importe,
+               COUNT(DISTINCT id_transaccion) AS tickets
+        FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
+        WHERE unidad_negocio_id = %s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
           AND {pexpr} = %s
-        GROUP BY j.prod_id
+        GROUP BY producto_codigo_fuente
         ORDER BY importe DESC
         """,
         (unidad, periodo),
     )
-    return {"success": True, "unidad": unidad, "periodo": periodo,
+    return {"success": True, "source": "Comercial_Inteligencia_VentasDetalleProducto",
+            "unidad": unidad, "periodo": periodo,
             "productos": [{"codigo": r["codigo"], "producto": r["producto"],
                            "cantidad": _f(r["cantidad"]), "importe": round(_f(r["importe"]), 2),
                            "tickets": int(r["tickets"] or 0)} for r in rows]}
@@ -216,19 +217,38 @@ async def ventas_periodos_productos(unidad: str = Query(...), periodo: str = Que
 @iscam_router.get("/ventas-periodos/tickets")
 async def ventas_periodos_tickets(unidad: str = Query(...), periodo: str = Query(...),
                                   producto: str = Query(...), group_by: str = Query("mes")):
-    pexpr = _period_sql("s.FechaHora", group_by)
+    pexpr = _period_sql("fecha_operacion", group_by)
     rows = _q(
         f"""
-        SELECT s.NumeroTicket AS folio, s.FechaHora AS fecha, s.MontoTotal AS importe_ticket,
-               s.Pax AS personas, j.cantidad AS cantidad, j.importe AS importe_producto
-        FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}
-        WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'
-          AND {pexpr} = %s AND j.prod_id = %s
-        ORDER BY s.FechaHora DESC
+        WITH base AS (
+            SELECT *
+            FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
+            WHERE unidad_negocio_id = %s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
+              AND {pexpr} = %s
+        ),
+        tickets AS (
+            SELECT id_transaccion, numero_ticket, MIN(fecha_hora) AS fecha,
+                   SUM(ISNULL(importe_neto,0)) AS importe_ticket, MAX(ISNULL(pax,0)) AS personas
+            FROM base
+            GROUP BY id_transaccion, numero_ticket
+        ),
+        producto_ticket AS (
+            SELECT id_transaccion, numero_ticket, SUM(ISNULL(cantidad,0)) AS cantidad,
+                   SUM(ISNULL(importe_neto,0)) AS importe_producto
+            FROM base
+            WHERE producto_codigo_fuente = %s
+            GROUP BY id_transaccion, numero_ticket
+        )
+        SELECT t.numero_ticket AS folio, t.fecha, t.importe_ticket, t.personas,
+               p.cantidad, p.importe_producto
+        FROM tickets t
+        INNER JOIN producto_ticket p ON p.id_transaccion=t.id_transaccion AND p.numero_ticket=t.numero_ticket
+        ORDER BY t.fecha DESC
         """,
         (unidad, periodo, producto),
     )
-    return {"success": True, "tickets": [{
+    return {"success": True, "source": "Comercial_Inteligencia_VentasDetalleProducto",
+            "tickets": [{
         "folio": r["folio"], "fecha": r["fecha"].isoformat() if r["fecha"] else None,
         "importe_ticket": round(_f(r["importe_ticket"]), 2), "personas": int(r["personas"] or 0),
         "cantidad": _f(r["cantidad"]), "importe_producto": round(_f(r["importe_producto"]), 2)} for r in rows]}
@@ -243,49 +263,48 @@ async def resumen_cuentas(unidad: str = Query(...), desde: Optional[str] = None,
                           export_all: bool = Query(False)):
     d, h = _rango_fechas(desde, hasta)
     if group_by in ("anio", "mes", "dia"):
-        pexpr = _period_sql("s.FechaHora", group_by)
-        rows = _q(
-            f"""
-            SELECT {pexpr} AS periodo, COUNT(*) AS cuentas, SUM(s.MontoTotal) AS importe,
-                   SUM(s.Pax) AS personas
-            FROM dbo.Sync_Sales s
-            WHERE s.UnidadNegocio = %s AND s.FechaHora >= %s AND s.FechaHora < %s
-            GROUP BY {pexpr}
-            ORDER BY periodo DESC
-            """,
-            (unidad, d, h),
-        )
+        unidad_pk = UnidadesService.resolver_pk(unidad)
+        if not unidad_pk:
+            raise HTTPException(status_code=404, detail=f"Unidad no encontrada: {unidad}")
         agrupado = []
-        for r in rows:
-            imp = _f(r["importe"]); cu = int(r["cuentas"] or 0); pax = int(r["personas"] or 0)
-            agrupado.append({"periodo": r["periodo"], "cuentas": cu, "importe": round(imp, 2),
-                             "personas": pax, "cuenta_promedio": round(imp / cu, 2) if cu else 0,
-                             "consumo_promedio": round(imp / pax, 2) if pax else 0})
-        return {"success": True, "unidad": unidad, "desde": d, "hasta": h, "group_by": group_by,
-                "agrupado": agrupado}
+        for periodo, inicio, fin in _period_windows(d, h, group_by):
+            desglose = KPIsCanonicosService.resumen_periodo_desglosado(
+                inicio.strftime("%Y-%m-%d"), fin.strftime("%Y-%m-%d"), unidad_pks=[str(unidad_pk)]
+            )
+            metricas = ((desglose.get("acumulado_cerrado") or {}).get("metricas") or {})
+            imp = _f(metricas.get("ventas")); cu = int(round(_f(metricas.get("cheques")))); pax = int(round(_f(metricas.get("pax"))))
+            if not any((imp, cu, pax)):
+                continue
+            agrupado.append({"periodo": periodo, "cuentas": cu, "importe": round(imp, 2), "personas": pax,
+                             "cuenta_promedio": round(_f(metricas.get("cheque_promedio")), 2),
+                             "consumo_promedio": round(_f(metricas.get("consumo_promedio_pax") or metricas.get("pax_promedio")), 2)})
+        agrupado.reverse()
+        return {"success": True, "source": "KPIsCanonicosService.resumen_periodo_desglosado.acumulado_cerrado",
+                "contrato_acumulado": "CERRADO_SIN_DIA_OPERATIVO_ACTUAL", "unidad": unidad, "desde": d, "hasta": h,
+                "group_by": group_by, "agrupado": agrupado}
     if export_all:
         rows = _q(
             """
-            SELECT s.NumeroTicket AS folio, s.FechaHora AS fecha, s.MontoTotal AS importe,
-                   s.Pax AS personas, s.status AS estado, s.id AS cuenta_id
-            FROM dbo.Sync_Sales s
-            WHERE s.UnidadNegocio = %s AND s.FechaHora >= %s AND s.FechaHora < %s
-            ORDER BY s.FechaHora DESC
-            """,
-            (unidad, d, h),
-        )
+            WITH tickets AS (SELECT id_transaccion AS cuenta_id, numero_ticket AS folio, MIN(fecha_hora) AS fecha,
+                 SUM(ISNULL(importe_neto,0)) AS importe, MAX(ISNULL(pax,0)) AS personas
+                 FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
+                 WHERE unidad_negocio_id=%s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
+                   AND fecha_operacion >= %s AND fecha_operacion < %s
+                 GROUP BY id_transaccion, numero_ticket)
+            SELECT folio, fecha, importe, personas, 'COMPLETED' AS estado, cuenta_id FROM tickets ORDER BY fecha DESC
+            """, (unidad, d, h))
     else:
         rows = _q(
             """
-            SELECT TOP (%s) s.NumeroTicket AS folio, s.FechaHora AS fecha, s.MontoTotal AS importe,
-                   s.Pax AS personas, s.status AS estado, s.id AS cuenta_id
-            FROM dbo.Sync_Sales s
-            WHERE s.UnidadNegocio = %s AND s.FechaHora >= %s AND s.FechaHora < %s
-            ORDER BY s.FechaHora DESC
-            """,
-            (limit, unidad, d, h),
-        )
-    return {"success": True, "unidad": unidad, "desde": d, "hasta": h, "group_by": "none",
+            WITH tickets AS (SELECT id_transaccion AS cuenta_id, numero_ticket AS folio, MIN(fecha_hora) AS fecha,
+                 SUM(ISNULL(importe_neto,0)) AS importe, MAX(ISNULL(pax,0)) AS personas
+                 FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
+                 WHERE unidad_negocio_id=%s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
+                   AND fecha_operacion >= %s AND fecha_operacion < %s
+                 GROUP BY id_transaccion, numero_ticket)
+            SELECT TOP (%s) folio, fecha, importe, personas, 'COMPLETED' AS estado, cuenta_id FROM tickets ORDER BY fecha DESC
+            """, (unidad, d, h, limit))
+    return {"success": True, "source": "Comercial_Inteligencia_VentasDetalleProducto", "unidad": unidad, "desde": d, "hasta": h, "group_by": "none",
             "export_all": export_all, "limited": not export_all, "limit": None if export_all else limit,
             "cuentas": [{"folio": r["folio"], "fecha": r["fecha"].isoformat() if r["fecha"] else None,
                          "importe": round(_f(r["importe"]), 2), "personas": int(r["personas"] or 0),
@@ -296,11 +315,13 @@ async def resumen_cuentas(unidad: str = Query(...), desde: Optional[str] = None,
 async def cuenta_detalle(unidad: str = Query(...), folio: str = Query(...)):
     rows = _q(
         f"""
-        SELECT j.prod_id AS codigo, j.prod_name AS producto, j.cantidad AS cantidad,
-               j.precio AS precio, j.importe AS importe
-        FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}
-        WHERE s.UnidadNegocio = %s AND s.NumeroTicket = %s
-        ORDER BY j.importe DESC
+        SELECT producto_codigo_fuente AS codigo, MAX(producto_nombre) AS producto, SUM(ISNULL(cantidad,0)) AS cantidad,
+               CASE WHEN SUM(ISNULL(cantidad,0)) <> 0 THEN SUM(ISNULL(importe_neto,0))/SUM(ISNULL(cantidad,0)) ELSE MAX(ISNULL(precio_unitario,0)) END AS precio,
+               SUM(ISNULL(importe_neto,0)) AS importe
+        FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
+        WHERE unidad_negocio_id=%s AND numero_ticket=%s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
+        GROUP BY producto_codigo_fuente
+        ORDER BY importe DESC
         """,
         (unidad, folio),
     )
@@ -318,49 +339,41 @@ async def comandas_venta(unidad: str = Query(...), desde: Optional[str] = None, 
                          export_all: bool = Query(False)):
     d, h = _rango_fechas(desde, hasta)
     if group_by in ("anio", "mes", "dia"):
-        pexpr = _period_sql("s.FechaHora", group_by)
+        pexpr = _period_sql("fecha_operacion", group_by)
         rows = _q(
             f"""
-            SELECT {pexpr} AS periodo, COUNT(*) AS lineas, COUNT(DISTINCT s.id) AS tickets,
-                   SUM(j.cantidad) AS cantidad, SUM(j.importe) AS importe
-            FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}
-            WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'
-              AND s.FechaHora >= %s AND s.FechaHora < %s
+            SELECT {pexpr} AS periodo, COUNT(*) AS lineas, COUNT(DISTINCT id_transaccion) AS tickets,
+                   SUM(ISNULL(cantidad,0)) AS cantidad, SUM(ISNULL(importe_neto,0)) AS importe
+            FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
+            WHERE unidad_negocio_id=%s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
+              AND fecha_operacion >= %s AND fecha_operacion < %s
             GROUP BY {pexpr}
             ORDER BY periodo DESC
-            """,
-            (unidad, d, h),
-        )
+            """, (unidad, d, h))
         return {"success": True, "unidad": unidad, "desde": d, "hasta": h, "group_by": group_by,
                 "agrupado": [{"periodo": r["periodo"], "lineas": int(r["lineas"] or 0),
                               "tickets": int(r["tickets"] or 0), "cantidad": _f(r["cantidad"]),
                               "importe": round(_f(r["importe"]), 2)} for r in rows]}
     if export_all:
         rows = _q(
-            f"""
-            SELECT s.NumeroTicket AS folio_cuenta, s.FechaHora AS fecha,
-                   j.prod_id AS clave, j.prod_name AS descripcion, j.cantidad AS cantidad,
-                   j.precio AS precio, j.importe AS importe
-            FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}
-            WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'
-              AND s.FechaHora >= %s AND s.FechaHora < %s
-            ORDER BY s.FechaHora DESC
-            """,
-            (unidad, d, h),
-        )
+            """
+            SELECT numero_ticket AS folio_cuenta, fecha_hora AS fecha, producto_codigo_fuente AS clave,
+                   producto_nombre AS descripcion, cantidad, precio_unitario AS precio, importe_neto AS importe
+            FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
+            WHERE unidad_negocio_id=%s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
+              AND fecha_operacion >= %s AND fecha_operacion < %s
+            ORDER BY fecha_operacion DESC, fecha_hora DESC, numero_ticket DESC
+            """, (unidad, d, h))
     else:
         rows = _q(
-            f"""
-            SELECT TOP (%s) s.NumeroTicket AS folio_cuenta, s.FechaHora AS fecha,
-                   j.prod_id AS clave, j.prod_name AS descripcion, j.cantidad AS cantidad,
-                   j.precio AS precio, j.importe AS importe
-            FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}
-            WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'
-              AND s.FechaHora >= %s AND s.FechaHora < %s
-            ORDER BY s.FechaHora DESC
-            """,
-            (limit, unidad, d, h),
-        )
+            """
+            SELECT TOP (%s) numero_ticket AS folio_cuenta, fecha_hora AS fecha, producto_codigo_fuente AS clave,
+                   producto_nombre AS descripcion, cantidad, precio_unitario AS precio, importe_neto AS importe
+            FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
+            WHERE unidad_negocio_id=%s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
+              AND fecha_operacion >= %s AND fecha_operacion < %s
+            ORDER BY fecha_operacion DESC, fecha_hora DESC, numero_ticket DESC
+            """, (limit, unidad, d, h))
     return {"success": True, "unidad": unidad, "desde": d, "hasta": h, "group_by": "none",
             "export_all": export_all, "limited": not export_all, "limit": None if export_all else limit,
             "comandas": [{"folio_cuenta": r["folio_cuenta"], "fecha": r["fecha"].isoformat() if r["fecha"] else None,
@@ -380,7 +393,7 @@ async def ventas_formas_pago(unidad: str = Query(...), desde: Optional[str] = No
         raise HTTPException(status_code=404, detail=f"No se pudo resolver la unidad '{unidad}'")
     d, h = _rango_fechas(desde, hasta)
     if group_by in ("anio", "mes", "dia"):
-        pexpr = _period_sql("FechaCierre", group_by)
+        pexpr = _period_sql("FechaApertura", group_by)
         rows = _q(
             f"""
             SELECT {pexpr} AS periodo,
@@ -392,7 +405,7 @@ async def ventas_formas_pago(unidad: str = Query(...), desde: Optional[str] = No
                    COUNT(*) AS cortes
             FROM dbo.Finanzas_CortesCaja
             WHERE UnidadNegocioNombre = %s AND ISNULL(Activo,1)=1
-              AND FechaCierre >= %s AND FechaCierre < %s
+              AND FechaApertura >= %s AND FechaApertura < %s
             GROUP BY {pexpr}
             ORDER BY periodo DESC
             """,
@@ -411,7 +424,7 @@ async def ventas_formas_pago(unidad: str = Query(...), desde: Optional[str] = No
     if export_all:
         rows = _q(
             """
-            SELECT FolioCorte AS folio, FechaCierre AS fecha, TotalVenta AS total,
+            SELECT FolioCorte AS folio, FechaApertura AS fecha, TotalVenta AS total,
                    TotalEfectivo AS efectivo, TotalTarjetaDebito AS tarjeta_debito,
                    TotalTarjetaCredito AS tarjeta_credito, TotalAmex AS amex,
                    TotalInternacional AS internacional, TotalVales AS vales, TotalOtros AS otros,
@@ -420,15 +433,15 @@ async def ventas_formas_pago(unidad: str = Query(...), desde: Optional[str] = No
                    CajaNombre AS caja
             FROM dbo.Finanzas_CortesCaja
             WHERE UnidadNegocioNombre = %s AND ISNULL(Activo,1)=1
-              AND FechaCierre >= %s AND FechaCierre < %s
-            ORDER BY FechaCierre DESC
+              AND FechaApertura >= %s AND FechaApertura < %s
+            ORDER BY FechaApertura DESC
             """,
             (nombre, d, h),
         )
     else:
         rows = _q(
             """
-            SELECT TOP (%s) FolioCorte AS folio, FechaCierre AS fecha, TotalVenta AS total,
+            SELECT TOP (%s) FolioCorte AS folio, FechaApertura AS fecha, TotalVenta AS total,
                    TotalEfectivo AS efectivo, TotalTarjetaDebito AS tarjeta_debito,
                    TotalTarjetaCredito AS tarjeta_credito, TotalAmex AS amex,
                    TotalInternacional AS internacional, TotalVales AS vales, TotalOtros AS otros,
@@ -437,8 +450,8 @@ async def ventas_formas_pago(unidad: str = Query(...), desde: Optional[str] = No
                    CajaNombre AS caja
             FROM dbo.Finanzas_CortesCaja
             WHERE UnidadNegocioNombre = %s AND ISNULL(Activo,1)=1
-              AND FechaCierre >= %s AND FechaCierre < %s
-            ORDER BY FechaCierre DESC
+              AND FechaApertura >= %s AND FechaApertura < %s
+            ORDER BY FechaApertura DESC
             """,
             (limit, nombre, d, h),
         )
