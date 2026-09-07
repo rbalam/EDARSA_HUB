@@ -1,0 +1,210 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-FOUR-REPORTS-CANONICAL-APPLY-R6-CARLOS-20260907T152000Z",
+  "created_at_utc": "2026-09-07T15:20:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "0e8486fe9f543aeddff2df778cd05f9c6a2aa381",
+  "production_allowed": false,
+  "objective": "Aplicar ya la corrección canónica de los cuatro reportes ISCAM pendientes de LA ESTELAR sin depender de otro audit repetitivo. Resumen de Cuentas agrupado debe reutilizar exactamente KPIsCanonicosService/acumulado_cerrado como Ventas por Periodos; Resumen de Cuentas detalle y Comandas deben leer Comercial_Inteligencia_VentasDetalleProducto validado; Formas de Pago debe atribuir por FechaApertura y no FechaCierre; Pagos por Ticket debe conservar FechaHora operacional proveniente de apertura. Corregir los extractores SoftRestaurant de detalle, pagos y Cortes Z para usar idempresa canónico + turnos.apertura + cierre IS NOT NULL solo como elegibilidad. Ejecutar backfill histórico ESTELAR 2026 de detalle, pagos y Cortes Z mediante funciones canónicas existentes, con RBAC SCHEDULER_ADMIN y evidencia versionada. No tocar Producción.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "    if group_by in (\"anio\", \"mes\", \"dia\"):\n        pexpr = _period_sql(\"s.FechaHora\", group_by)\n        rows = _q(\n            f\"\"\"\n            SELECT {pexpr} AS periodo, COUNT(*) AS cuentas, SUM(s.MontoTotal) AS importe,\n                   SUM(s.Pax) AS personas\n            FROM dbo.Sync_Sales s\n            WHERE s.UnidadNegocio = %s AND s.FechaHora >= %s AND s.FechaHora < %s\n            GROUP BY {pexpr}\n            ORDER BY periodo DESC\n            \"\"\",\n            (unidad, d, h),\n        )\n        agrupado = []\n        for r in rows:\n            imp = _f(r[\"importe\"]); cu = int(r[\"cuentas\"] or 0); pax = int(r[\"personas\"] or 0)\n            agrupado.append({\"periodo\": r[\"periodo\"], \"cuentas\": cu, \"importe\": round(imp, 2),\n                             \"personas\": pax, \"cuenta_promedio\": round(imp / cu, 2) if cu else 0,\n                             \"consumo_promedio\": round(imp / pax, 2) if pax else 0})\n        return {\"success\": True, \"unidad\": unidad, \"desde\": d, \"hasta\": h, \"group_by\": group_by,\n                \"agrupado\": agrupado}",
+      "new": "    if group_by in (\"anio\", \"mes\", \"dia\"):\n        unidad_pk = UnidadesService.resolver_pk(unidad)\n        if not unidad_pk:\n            raise HTTPException(status_code=404, detail=f\"Unidad no encontrada: {unidad}\")\n\n        agrupado = []\n        for periodo, inicio, fin in _period_windows(d, h, group_by):\n            desglose = KPIsCanonicosService.resumen_periodo_desglosado(\n                inicio.strftime(\"%Y-%m-%d\"),\n                fin.strftime(\"%Y-%m-%d\"),\n                unidad_pks=[str(unidad_pk)],\n            )\n            metricas = ((desglose.get(\"acumulado_cerrado\") or {}).get(\"metricas\") or {})\n            imp = _f(metricas.get(\"ventas\"))\n            cu = int(round(_f(metricas.get(\"cheques\"))))\n            pax = int(round(_f(metricas.get(\"pax\"))))\n            if not any((imp, cu, pax)):\n                continue\n            agrupado.append({\n                \"periodo\": periodo,\n                \"cuentas\": cu,\n                \"importe\": round(imp, 2),\n                \"personas\": pax,\n                \"cuenta_promedio\": round(_f(metricas.get(\"cheque_promedio\")), 2),\n                \"consumo_promedio\": round(_f(metricas.get(\"consumo_promedio_pax\") or metricas.get(\"pax_promedio\")), 2),\n            })\n        agrupado.reverse()\n        return {\n            \"success\": True,\n            \"source\": \"KPIsCanonicosService.resumen_periodo_desglosado.acumulado_cerrado\",\n            \"contrato_acumulado\": \"CERRADO_SIN_DIA_OPERATIVO_ACTUAL\",\n            \"unidad\": unidad, \"desde\": d, \"hasta\": h, \"group_by\": group_by,\n            \"agrupado\": agrupado,\n        }",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "            SELECT s.NumeroTicket AS folio, s.FechaHora AS fecha, s.MontoTotal AS importe,\n                   s.Pax AS personas, s.status AS estado, s.id AS cuenta_id\n            FROM dbo.Sync_Sales s\n            WHERE s.UnidadNegocio = %s AND s.FechaHora >= %s AND s.FechaHora < %s\n            ORDER BY s.FechaHora DESC",
+      "new": "            WITH tickets AS (\n                SELECT id_transaccion AS cuenta_id, numero_ticket AS folio,\n                       MIN(fecha_hora) AS fecha, SUM(ISNULL(importe_neto,0)) AS importe,\n                       MAX(ISNULL(pax,0)) AS personas\n                FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n                WHERE unidad_negocio_id = %s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n                  AND fecha_operacion >= %s AND fecha_operacion < %s\n                GROUP BY id_transaccion, numero_ticket\n            )\n            SELECT folio, fecha, importe, personas, 'COMPLETED' AS estado, cuenta_id\n            FROM tickets\n            ORDER BY fecha DESC",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "            SELECT TOP (%s) s.NumeroTicket AS folio, s.FechaHora AS fecha, s.MontoTotal AS importe,\n                   s.Pax AS personas, s.status AS estado, s.id AS cuenta_id\n            FROM dbo.Sync_Sales s\n            WHERE s.UnidadNegocio = %s AND s.FechaHora >= %s AND s.FechaHora < %s\n            ORDER BY s.FechaHora DESC",
+      "new": "            WITH tickets AS (\n                SELECT id_transaccion AS cuenta_id, numero_ticket AS folio,\n                       MIN(fecha_hora) AS fecha, SUM(ISNULL(importe_neto,0)) AS importe,\n                       MAX(ISNULL(pax,0)) AS personas\n                FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n                WHERE unidad_negocio_id = %s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n                  AND fecha_operacion >= %s AND fecha_operacion < %s\n                GROUP BY id_transaccion, numero_ticket\n            )\n            SELECT TOP (%s) folio, fecha, importe, personas, 'COMPLETED' AS estado, cuenta_id\n            FROM tickets\n            ORDER BY fecha DESC",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "            (limit, unidad, d, h),\n        )\n    return {\"success\": True, \"unidad\": unidad, \"desde\": d, \"hasta\": h, \"group_by\": \"none\",",
+      "new": "            (unidad, d, h, limit),\n        )\n    return {\"success\": True, \"source\": \"Comercial_Inteligencia_VentasDetalleProducto\", \"unidad\": unidad, \"desde\": d, \"hasta\": h, \"group_by\": \"none\",",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "        SELECT j.prod_id AS codigo, j.prod_name AS producto, j.cantidad AS cantidad,\n               j.precio AS precio, j.importe AS importe\n        FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}\n        WHERE s.UnidadNegocio = %s AND s.NumeroTicket = %s\n        ORDER BY j.importe DESC",
+      "new": "        SELECT producto_codigo_fuente AS codigo, MAX(producto_nombre) AS producto,\n               SUM(ISNULL(cantidad,0)) AS cantidad,\n               CASE WHEN SUM(ISNULL(cantidad,0)) <> 0\n                    THEN SUM(ISNULL(importe_neto,0)) / SUM(ISNULL(cantidad,0))\n                    ELSE MAX(ISNULL(precio_unitario,0)) END AS precio,\n               SUM(ISNULL(importe_neto,0)) AS importe\n        FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n        WHERE unidad_negocio_id = %s AND numero_ticket = %s\n          AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n        GROUP BY producto_codigo_fuente\n        ORDER BY importe DESC",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "        pexpr = _period_sql(\"s.FechaHora\", group_by)\n        rows = _q(\n            f\"\"\"\n            SELECT {pexpr} AS periodo, COUNT(*) AS lineas, COUNT(DISTINCT s.id) AS tickets,\n                   SUM(j.cantidad) AS cantidad, SUM(j.importe) AS importe\n            FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}\n            WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'\n              AND s.FechaHora >= %s AND s.FechaHora < %s\n            GROUP BY {pexpr}\n            ORDER BY periodo DESC\n            \"\"\",\n            (unidad, d, h),\n        )",
+      "new": "        pexpr = _period_sql(\"fecha_operacion\", group_by)\n        rows = _q(\n            f\"\"\"\n            SELECT {pexpr} AS periodo, COUNT(*) AS lineas, COUNT(DISTINCT id_transaccion) AS tickets,\n                   SUM(ISNULL(cantidad,0)) AS cantidad, SUM(ISNULL(importe_neto,0)) AS importe\n            FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n            WHERE unidad_negocio_id = %s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n              AND fecha_operacion >= %s AND fecha_operacion < %s\n            GROUP BY {pexpr}\n            ORDER BY periodo DESC\n            \"\"\",\n            (unidad, d, h),\n        )",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "            SELECT s.NumeroTicket AS folio_cuenta, s.FechaHora AS fecha,\n                   j.prod_id AS clave, j.prod_name AS descripcion, j.cantidad AS cantidad,\n                   j.precio AS precio, j.importe AS importe\n            FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}\n            WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'\n              AND s.FechaHora >= %s AND s.FechaHora < %s\n            ORDER BY s.FechaHora DESC",
+      "new": "            SELECT numero_ticket AS folio_cuenta, fecha_hora AS fecha,\n                   producto_codigo_fuente AS clave, producto_nombre AS descripcion,\n                   cantidad, precio_unitario AS precio, importe_neto AS importe\n            FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n            WHERE unidad_negocio_id = %s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n              AND fecha_operacion >= %s AND fecha_operacion < %s\n            ORDER BY fecha_operacion DESC, fecha_hora DESC, numero_ticket DESC",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "            SELECT TOP (%s) s.NumeroTicket AS folio_cuenta, s.FechaHora AS fecha,\n                   j.prod_id AS clave, j.prod_name AS descripcion, j.cantidad AS cantidad,\n                   j.precio AS precio, j.importe AS importe\n            FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}\n            WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'\n              AND s.FechaHora >= %s AND s.FechaHora < %s\n            ORDER BY s.FechaHora DESC",
+      "new": "            SELECT TOP (%s) numero_ticket AS folio_cuenta, fecha_hora AS fecha,\n                   producto_codigo_fuente AS clave, producto_nombre AS descripcion,\n                   cantidad, precio_unitario AS precio, importe_neto AS importe\n            FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n            WHERE unidad_negocio_id = %s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n              AND fecha_operacion >= %s AND fecha_operacion < %s\n            ORDER BY fecha_operacion DESC, fecha_hora DESC, numero_ticket DESC",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "        pexpr = _period_sql(\"FechaCierre\", group_by)",
+      "new": "        pexpr = _period_sql(\"FechaApertura\", group_by)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "              AND FechaCierre >= %s AND FechaCierre < %s",
+      "new": "              AND FechaApertura >= %s AND FechaApertura < %s",
+      "expected_count": 3
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "SELECT FolioCorte AS folio, FechaCierre AS fecha, TotalVenta AS total,",
+      "new": "SELECT FolioCorte AS folio, FechaApertura AS fecha, TotalVenta AS total,",
+      "expected_count": 2
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "            ORDER BY FechaCierre DESC",
+      "new": "            ORDER BY FechaApertura DESC",
+      "expected_count": 2
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py",
+      "old": "    cfg = get_server_connection_config(server_id)\n",
+      "new": "    cfg = get_server_connection_config(server_id, unidad_row.get(\"unidad_pk\"))\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py",
+      "old": "        \"sucursal_origen_id\": unidad_row.get(\"sucursal_origen_id\"),\n        \"server_id\": server_id,",
+      "new": "        \"sucursal_origen_id\": unidad_row.get(\"sucursal_origen_id\"),\n        \"empresa_id\": cfg.get(\"empresa_id\"),\n        \"server_id\": server_id,",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+      "old": "def _extract_softrestaurant(cfg, fi, ff):\n    conn = _connect_pos(cfg)",
+      "new": "def _extract_softrestaurant(cfg, fi, ff):\n    empresa_id = str(cfg.get(\"empresa_id\") or \"\").strip()\n    if not empresa_id:\n        raise ValueError(\"SoftRestaurant requiere empresa_id canónico\")\n    empresa_sql = empresa_id.replace(\"'\", \"''\")\n    conn = _connect_pos(cfg)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+      "old": "            INNER JOIN turnos t ON t.idturno = ch.idturno\n            LEFT JOIN tiposervicio ts ON ts.Idtiposervicio = ch.tipodeservicio\n            WHERE t.apertura >= '{fi}' AND t.apertura < '{ff}'\n              AND ch.cancelado = 0 AND ch.total > 0",
+      "new": "            INNER JOIN turnos t ON t.idturno = ch.idturno AND t.idempresa = ch.idempresa\n            LEFT JOIN tiposervicio ts ON ts.Idtiposervicio = ch.tipodeservicio\n            WHERE t.idempresa = '{empresa_sql}' AND ch.idempresa = '{empresa_sql}'\n              AND t.apertura >= '{fi}' AND t.apertura < '{ff}'\n              AND t.cierre IS NOT NULL\n              AND ch.cancelado = 0 AND ch.total > 0",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+      "old": "            INNER JOIN cheques ch ON ch.folio = cp.folio\n            INNER JOIN turnos t ON t.idturno = ch.idturno\n            LEFT JOIN formasdepago fp ON fp.idformadepago = cp.idformadepago\n            WHERE t.apertura >= '{fi}' AND t.apertura < '{ff}'\n              AND ch.cancelado = 0 AND ch.total > 0",
+      "new": "            INNER JOIN cheques ch ON ch.folio = cp.folio\n            INNER JOIN turnos t ON t.idturno = ch.idturno AND t.idempresa = ch.idempresa\n            LEFT JOIN formasdepago fp ON fp.idformadepago = cp.idformadepago\n            WHERE t.idempresa = '{empresa_sql}' AND ch.idempresa = '{empresa_sql}'\n              AND t.apertura >= '{fi}' AND t.apertura < '{ff}'\n              AND t.cierre IS NOT NULL\n              AND ch.cancelado = 0 AND ch.total > 0",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/finanzas/cortes_z_runtime_sync.py",
+      "old": "    connection = get_external_sql_connection(\n        context.external_connection_config(as_dict=True)\n    )",
+      "new": "    if not context.empresa_id:\n        raise ValueError(f\"Unidad {context.unidad_codigo} sin empresa_id canónico\")\n    connection = get_external_sql_connection(\n        context.external_connection_config(as_dict=True)\n    )",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/finanzas/cortes_z_runtime_sync.py",
+      "old": "            FROM turnos\n            WHERE cierre IS NOT NULL\n              AND cierre >= %s\n              AND cierre < %s\n            ORDER BY cierre ASC\n            \"\"\",\n            (fecha_desde, fecha_hasta),",
+      "new": "            FROM turnos\n            WHERE cierre IS NOT NULL\n              AND idempresa = %s\n              AND apertura >= %s\n              AND apertura < %s\n            ORDER BY apertura ASC\n            \"\"\",\n            (context.empresa_id, fecha_desde, fecha_hasta),",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "            CONVERT(varchar(100), u.sucursal_origen_id)\n                AS sucursal_origen_id,\n\n            CONVERT(varchar(200), s.nombre)",
+      "new": "            CONVERT(varchar(100), u.sucursal_origen_id)\n                AS sucursal_origen_id,\n            CONVERT(varchar(100), s.empresa_id)\n                AS empresa_id,\n\n            CONVERT(varchar(200), s.nombre)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "        \"sucursal_origen_id\": branch_id,\n\n        \"system_type\": unit_system,",
+      "new": "        \"sucursal_origen_id\": branch_id,\n        \"empresa_id\": _s(unidad_row.get(\"empresa_id\")),\n\n        \"system_type\": unit_system,",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "    if (\n        unit_system == SystemType.MANAGEMENTPRO.value\n        and not branch_id\n    ):\n        raise RuntimeError(\n            \"ManagementPro requiere \"\n            \"Unidades_Negocio.sucursal_origen_id: \"\n            f\"unidad={unit_code!r}\"\n        )\n\n    password = _secret_value(",
+      "new": "    if (\n        unit_system == SystemType.MANAGEMENTPRO.value\n        and not branch_id\n    ):\n        raise RuntimeError(\n            \"ManagementPro requiere \"\n            \"Unidades_Negocio.sucursal_origen_id: \"\n            f\"unidad={unit_code!r}\"\n        )\n\n    empresa_id = _s(unidad_row.get(\"empresa_id\"))\n    if unit_system == SystemType.SOFTRESTAURANT.value and not empresa_id:\n        raise RuntimeError(\n            \"SoftRestaurant requiere Servidores_Conexiones.empresa_id canónico: \"\n            f\"unidad={unit_code!r}\"\n        )\n\n    password = _secret_value(",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "            FROM cheques ch WITH (NOLOCK)\n            WHERE ch.fecha >= %s\n              AND ch.fecha < %s",
+      "new": "            FROM cheques ch WITH (NOLOCK)\n            INNER JOIN turnos t WITH (NOLOCK)\n                ON t.idturno = ch.idturno\n               AND t.idempresa = ch.idempresa\n            WHERE ch.idempresa = %s\n              AND t.idempresa = %s\n              AND t.apertura >= %s\n              AND t.apertura < %s\n              AND t.cierre IS NOT NULL",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "        cur.execute(sql, (fi, ff))",
+      "new": "        cur.execute(sql, (cfg.get(\"empresa_id\"), cfg.get(\"empresa_id\"), fi, ff))",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_four_reports_canonical_contract_r6.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[1]\nISCAM = ROOT / 'modules' / 'inteligencia_comercial' / 'iscam_routes.py'\nENRICH = ROOT / 'core' / 'scheduler' / 'jobs' / 'inteligencia_comercial_enrich.py'\nCORTES = ROOT / 'modules' / 'finanzas' / 'cortes_z_runtime_sync.py'\nDETAIL = ROOT / 'scripts' / 'poblar_ventas_detalle_producto_canonico.py'\nSYNC_LEGACY = ROOT / 'core' / 'scheduler' / 'jobs' / 'inteligencia_comercial_sync_job.py'\n\n\ndef _section(text, start, end):\n    return text.split(start, 1)[1].split(end, 1)[0]\n\n\ndef test_resumen_cuentas_grouped_reuses_executive_canonical_service():\n    text = ISCAM.read_text(encoding='utf-8')\n    block = _section(text, '# 2) RESUMEN DE CUENTAS', '# 3) COMANDAS DE VENTA')\n    assert 'KPIsCanonicosService.resumen_periodo_desglosado' in block\n    assert 'acumulado_cerrado' in block\n    assert 'Comercial_Inteligencia_VentasDetalleProducto' in block\n\n\ndef test_comandas_use_canonical_product_detail_not_sync_sales_json():\n    text = ISCAM.read_text(encoding='utf-8')\n    block = _section(text, '# 3) COMANDAS DE VENTA', '# 4) VENTAS POR FORMAS DE PAGO')\n    assert 'Comercial_Inteligencia_VentasDetalleProducto' in block\n    assert 'dbo.Sync_Sales' not in block\n    assert 'es_kpi_valido' in block\n\n\ndef test_formas_pago_are_attributed_by_apertura():\n    text = ISCAM.read_text(encoding='utf-8')\n    block = _section(text, '# 4) VENTAS POR FORMAS DE PAGO', '# 4b) FORMAS DE PAGO POR TICKET')\n    assert '_period_sql(\"FechaApertura\"' in block\n    assert 'FechaApertura >= %s AND FechaApertura < %s' in block\n    assert 'FechaCierre >= %s' not in block\n\n\ndef test_soft_payment_enrichment_uses_canonical_company_and_opening():\n    text = ENRICH.read_text(encoding='utf-8')\n    block = _section(text, 'def _extract_softrestaurant', '# ============================================================================\\n# EXTRACCIÓN MPRO')\n    assert 't.idempresa = ch.idempresa' in block\n    assert "t.idempresa = '{empresa_sql}'" in block\n    assert "ch.idempresa = '{empresa_sql}'" in block\n    assert 't.apertura >=' in block\n    assert 't.cierre IS NOT NULL' in block\n\n\ndef test_cortes_soft_use_apertura_and_empresa():\n    text = CORTES.read_text(encoding='utf-8')\n    block = _section(text, 'def _extract_softrestaurant', 'def _extract_mpro')\n    assert 'idempresa = %s' in block\n    assert 'apertura >= %s' in block\n    assert 'apertura < %s' in block\n    assert 'cierre IS NOT NULL' in block\n    assert 'cierre >= %s' not in block\n\n\ndef test_canonical_product_detail_soft_uses_turn_opening_and_company():\n    text = DETAIL.read_text(encoding='utf-8')\n    block = _section(text, 'def _extract_soft', 'def _mpro_operational_datetime_range')\n    assert 'INNER JOIN turnos t' in block\n    assert 't.idempresa = ch.idempresa' in block\n    assert 'ch.idempresa = %s' in block\n    assert 't.idempresa = %s' in block\n    assert 't.apertura >= %s' in block\n    assert 't.cierre IS NOT NULL' in block\n\n\ndef test_enrichment_config_carries_empresa_id_and_unit_scope():\n    text = SYNC_LEGACY.read_text(encoding='utf-8')\n    block = _section(text, 'def get_pos_config_for_unidad', 'def audit_syncpos_canonical_configs')\n    assert 'get_server_connection_config(server_id, unidad_row.get(\"unidad_pk\"))' in block\n    assert '\"empresa_id\": cfg.get(\"empresa_id\")' in block\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/iscam_estelar_historical_apply_r6_evidence.json",
+      "content": "{\n  \"status\": \"PENDING\",\n  \"job_id\": \"EDARSAHUB-ISCAM-FOUR-REPORTS-CANONICAL-APPLY-R6-CARLOS-20260907T152000Z\",\n  \"production_touched\": false\n}\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_estelar_historical_apply_r6.py",
+      "content": "import json\nimport subprocess\nfrom datetime import date, datetime, time, timedelta\nfrom pathlib import Path\n\nimport pytest\n\nfrom core.connections.pos_runtime_resolver import resolve_pos_runtime_context\nfrom core.scheduler.jobs.inteligencia_comercial_enrich import enrich_unidad\nfrom core.sql_first.db import get_sql_connection\nfrom modules.finanzas.cortes_z_runtime_sync import sync_cortes_z_context\nfrom modules.sistema.menu_service import MenuService\nfrom scripts.backfill_detalle_producto_pendientes import ejecutar_backfill\n\nBASE_SHA = '0e8486fe9f543aeddff2df778cd05f9c6a2aa381'\nEMAIL = 'carlosruz@edarsa.com.mx'\nEVIDENCE = Path('tests/iscam_estelar_historical_apply_r6_evidence.json')\nSTART = date(2026, 1, 1)\nEND = date(2026, 9, 7)  # exclusivo; no toma el día operativo actual\n\n\ndef _head():\n    return subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()\n\n\ndef _write(payload):\n    EVIDENCE.write_text(json.dumps(payload, ensure_ascii=False, indent=2, default=str) + '\\n', encoding='utf-8')\n\n\ndef _month_chunks(start, end):\n    cursor = start\n    while cursor < end:\n        if cursor.month == 12:\n            nxt = date(cursor.year + 1, 1, 1)\n        else:\n            nxt = date(cursor.year, cursor.month + 1, 1)\n        chunk_end = min(end, nxt)\n        yield cursor, chunk_end\n        cursor = chunk_end\n\n\ndef _query(sql, params=()):\n    conn = get_sql_connection()\n    try:\n        cur = conn.cursor(as_dict=True)\n        cur.execute(sql, params)\n        return cur.fetchall() or []\n    finally:\n        conn.close()\n\n\ndef test_apply_estelar_2026_detail_payments_and_cortes_once():\n    if _head() != BASE_SHA:\n        pytest.skip('one-shot historical apply already consumed or branch moved')\n\n    menu = MenuService()\n    current_user = {'email': EMAIL, 'correo': EMAIL, 'username': EMAIL}\n    usuario_id = menu.resolver_usuario_id_canonico(current_user)\n    permisos = menu.obtener_permisos_usuario(usuario_id)\n    autorizado = any(\n        str(p.get('CodigoModulo') or '').strip().upper() == 'SCHEDULER'\n        and str(p.get('CodigoAccion') or '').strip().upper() == 'ADMIN'\n        and bool(p.get('Permitido', True))\n        for p in permisos\n    )\n    assert autorizado, f'RBAC canonical denied SCHEDULER_ADMIN for {EMAIL} usuario_id={usuario_id}'\n\n    context = resolve_pos_runtime_context('ESTELAR', expected_system_types=['SOFTRESTAURANT'])\n    assert context.empresa_id, 'ESTELAR no tiene empresa_id canónico'\n\n    evidence = {\n        'status': 'RUNNING',\n        'job_id': 'EDARSAHUB-ISCAM-FOUR-REPORTS-CANONICAL-APPLY-R6-CARLOS-20260907T152000Z',\n        'requester_email': EMAIL,\n        'usuario_id': usuario_id,\n        'rbac_scheduler_admin': True,\n        'production_touched': False,\n        'empresa_id_present': True,\n        'periodo': {'desde': START.isoformat(), 'hasta_exclusivo': END.isoformat()},\n        'payments_blocks': [],\n        'cortes_blocks': [],\n    }\n    _write(evidence)\n\n    rc, detail = ejecutar_backfill(START, END, unidades=['ESTELAR'], commit=True)\n    evidence['detalle_producto'] = detail\n    evidence['detalle_producto_returncode'] = rc\n    _write(evidence)\n    assert int(detail.get('dias_bloqueados') or 0) == 0, detail\n    assert int(detail.get('dias_sin_runtime') or 0) == 0, detail\n\n    for start, end in _month_chunks(START, END):\n        enr = enrich_unidad('ESTELAR', start.isoformat(), end.isoformat(), dry_run=False)\n        evidence['payments_blocks'].append({'desde': start.isoformat(), 'hasta_exclusivo': end.isoformat(), 'result': enr})\n        _write(evidence)\n        assert not enr.get('error'), enr\n\n        cortes = sync_cortes_z_context(\n            context,\n            fecha_desde=datetime.combine(start, time.min),\n            fecha_hasta=datetime.combine(end, time.min),\n            tipo_ejecucion='CHATGPT_ISCAM_R6',\n        )\n        evidence['cortes_blocks'].append({'desde': start.isoformat(), 'hasta_exclusivo': end.isoformat(), 'result': cortes})\n        _write(evidence)\n        assert not cortes.get('error'), cortes\n        assert cortes.get('estatus') in {'COMPLETADO', 'PARCIAL'}, cortes\n\n    detalle_mensual = _query(\n        \"\"\"\n        WITH tickets AS (\n            SELECT fecha_operacion, id_transaccion, numero_ticket,\n                   SUM(ISNULL(importe_neto,0)) AS importe_ticket,\n                   MAX(ISNULL(pax,0)) AS pax_ticket\n            FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n            WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion >= %s AND fecha_operacion < %s\n              AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n            GROUP BY fecha_operacion, id_transaccion, numero_ticket\n        )\n        SELECT CONVERT(char(7), fecha_operacion, 120) AS periodo,\n               SUM(importe_ticket) AS ventas, COUNT(*) AS tickets, SUM(pax_ticket) AS pax\n        FROM tickets\n        GROUP BY CONVERT(char(7), fecha_operacion, 120)\n        ORDER BY periodo\n        \"\"\",\n        (START.isoformat(), END.isoformat()),\n    )\n    kpi_mensual = _query(\n        \"\"\"\n        SELECT CONVERT(char(7), fecha_operacion, 120) AS periodo,\n               SUM(ISNULL(ventas_total,0)) AS ventas, SUM(ISNULL(tickets_total,0)) AS tickets,\n               SUM(ISNULL(pax_total,0)) AS pax\n        FROM dbo.Comercial_KPIs_Diarios_v2\n        WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion >= %s AND fecha_operacion < %s AND ISNULL(activo,1)=1\n        GROUP BY CONVERT(char(7), fecha_operacion, 120)\n        ORDER BY periodo\n        \"\"\",\n        (START.isoformat(), END.isoformat()),\n    )\n    pagos_cobertura = _query(\n        \"SELECT MIN(FechaHora) AS fecha_min, MAX(FechaHora) AS fecha_max, COUNT(*) AS pagos, COUNT(DISTINCT NumeroTicket) AS tickets FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE UnidadNegocio='ESTELAR' AND FechaHora >= %s AND FechaHora < %s AND ISNULL(Activo,1)=1\",\n        (START.isoformat(), END.isoformat()),\n    )\n    cortes_cobertura = _query(\n        \"SELECT MIN(FechaApertura) AS fecha_min, MAX(FechaApertura) AS fecha_max, COUNT(*) AS cortes FROM dbo.Finanzas_CortesCaja WHERE UnidadNegocioNombre=%s AND FechaApertura >= %s AND FechaApertura < %s AND ISNULL(Activo,1)=1\",\n        (context.unidad_nombre, START.isoformat(), END.isoformat()),\n    )\n\n    evidence['detalle_mensual'] = detalle_mensual\n    evidence['kpi_mensual'] = kpi_mensual\n    evidence['pagos_cobertura'] = pagos_cobertura\n    evidence['cortes_cobertura'] = cortes_cobertura\n    evidence['status'] = 'PASS'\n    _write(evidence)\n\n    by_det = {r['periodo']: r for r in detalle_mensual}\n    by_kpi = {r['periodo']: r for r in kpi_mensual}\n    assert set(by_kpi).issubset(set(by_det)), {'detalle': by_det, 'kpi': by_kpi}\n    for periodo, kpi in by_kpi.items():\n        det = by_det[periodo]\n        assert abs(float(det['ventas'] or 0) - float(kpi['ventas'] or 0)) <= 0.10, (periodo, det, kpi)\n        assert int(det['tickets'] or 0) == int(kpi['tickets'] or 0), (periodo, det, kpi)\n        assert int(det['pax'] or 0) == int(kpi['pax'] or 0), (periodo, det, kpi)\n    assert pagos_cobertura and int(pagos_cobertura[0].get('pagos') or 0) > 0\n    assert cortes_cobertura and int(cortes_cobertura[0].get('cortes') or 0) > 0\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/inteligencia_comercial/iscam_routes.py", "backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py", "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py", "backend/modules/finanzas/cortes_z_runtime_sync.py", "backend/scripts/poblar_ventas_detalle_producto_canonico.py", "backend/tests/test_iscam_four_reports_canonical_contract_r6.py", "backend/tests/test_iscam_estelar_historical_apply_r6.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_iscam_four_reports_canonical_contract_r6.py", "backend/tests/test_iscam_ventas_periodos_executive_parity_r3.py", "backend/tests/test_softrestaurant_closed_sales_report_contract.py", "backend/tests/test_enrich_tiposervicio_pagos.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_iscam_estelar_historical_apply_r6.py"]}
+  ]
+}
