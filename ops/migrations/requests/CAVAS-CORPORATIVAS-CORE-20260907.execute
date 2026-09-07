@@ -7,3 +7,5 @@ executor=github-actions-external-to-universal-worker
 preflight=required
 postcheck=required
 evidence_artifact=required
+retry=2
+writer=HRLectura-verified-by-HAS_PERMS_BY_NAME

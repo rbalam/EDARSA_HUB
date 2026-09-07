@@ -112,21 +112,36 @@ jobs:
               raise SystemExit('PREFLIGHT_COLLISION_OR_ALREADY_INSTALLED')
           PY
 
-      - name: Step 2 - Writer credential gate
+      - name: Step 2 - Verify HRLectura effective DDL permissions
         env:
-          EDARSAHUB_SQL_USER: ${{ secrets.EDARSAHUB_SQL_MIGRATION_USER }}
-          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_MIGRATION_PASSWORD }}
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
-          test -n "${EDARSAHUB_SQL_USER:-}" || { echo 'MISSING_EDARSAHUB_SQL_MIGRATION_USER'; exit 1; }
-          test -n "${EDARSAHUB_SQL_PASSWORD:-}" || { echo 'MISSING_EDARSAHUB_SQL_MIGRATION_PASSWORD'; exit 1; }
-          test "${EDARSAHUB_SQL_USER}" != 'HRLectura' || { echo 'READONLY_USER_FORBIDDEN_FOR_MIGRATION'; exit 1; }
+          test -n "${EDARSAHUB_SQL_PASSWORD:-}"
+          python - <<'PY' | tee "$RUNNER_TEMP/cavas_writer_permissions.json"
+          import json, os, pymssql
+          conn = pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'], port=int(os.environ['EDARSAHUB_SQL_PORT']), database=os.environ['EDARSAHUB_SQL_DATABASE'], user=os.environ['EDARSAHUB_SQL_USER'], password=os.environ['EDARSAHUB_SQL_PASSWORD'], timeout=60, login_timeout=15)
+          cur = conn.cursor(as_dict=True)
+          cur.execute("""
+          SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS db_user,
+                 COALESCE(HAS_PERMS_BY_NAME(DB_NAME(), 'DATABASE', 'CREATE TABLE'),0) AS can_create_table,
+                 COALESCE(HAS_PERMS_BY_NAME('dbo', 'SCHEMA', 'ALTER'),0) AS can_alter_dbo
+          """)
+          row = cur.fetchone()
+          print(json.dumps(row, default=str, sort_keys=True))
+          cur.close(); conn.close()
+          if row['database_name'] != os.environ['EDARSAHUB_SQL_DATABASE'] or row['login_name'] != 'HRLectura':
+              raise SystemExit('WRITER_IDENTITY_MISMATCH')
+          if int(row['can_create_table']) != 1 or int(row['can_alter_dbo']) != 1:
+              raise SystemExit('HRLECTURA_DDL_PERMISSIONS_NOT_CONFIRMED')
+          PY
 
       - name: Step 3 - Execute canonical migration transaction
         env:
-          EDARSAHUB_SQL_USER: ${{ secrets.EDARSAHUB_SQL_MIGRATION_USER }}
-          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_MIGRATION_PASSWORD }}
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
           EDARSAHUB_ALLOW_MIGRATIONS: 'true'
         shell: bash
         run: |
@@ -187,6 +202,7 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/cavas-evidence"
           cp "$RUNNER_TEMP/cavas_preflight.json" "$RUNNER_TEMP/cavas-evidence/preflight.json" 2>/dev/null || true
+          cp "$RUNNER_TEMP/cavas_writer_permissions.json" "$RUNNER_TEMP/cavas-evidence/writer_permissions.json" 2>/dev/null || true
           cp "$RUNNER_TEMP/cavas_migrate_stdout.txt" "$RUNNER_TEMP/cavas-evidence/migrate_stdout.txt" 2>/dev/null || true
           cp "$RUNNER_TEMP/cavas_migration_runner_report.md" "$RUNNER_TEMP/cavas-evidence/runner_report.md" 2>/dev/null || true
           cp "$RUNNER_TEMP/cavas_postcheck.json" "$RUNNER_TEMP/cavas-evidence/postcheck.json" 2>/dev/null || true
