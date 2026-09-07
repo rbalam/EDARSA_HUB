@@ -1,0 +1,23 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-EXECUTION-DOSSIER-CERT-R4-20260907",
+  "created_at_utc": "2026-09-07T22:30:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d03d7ceffa87e1b5c6de2d23ce3a9034343f792d",
+  "production_allowed": false,
+  "objective": "Publicar evidencia persistente y certificable de la migracion SQL real de Cavas Corporativas ya ejecutada exitosamente en GitHub Actions run 34165247416. No ejecutar SQL ni migraciones. Documentar run success, preflight 0 tablas previas, permisos HRLectura CREATE TABLE=1 y ALTER dbo=1, ejecucion correcta del runner canonico, postcheck con 8 tablas, 8 PK, indices requeridos presentes, 0 external FKs, 0 seed rows, artifact ID 10033932063 y digest sha256:e23dd64b9bf3e010947917052a1ac05cd6c6cbe6940a05f3a851856e48101ffe. Produccion no fue tocada.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/CAVAS/CAVAS_CORPORATIVAS_SQL_MIGRATION_EXECUTION_CERT_20260907.md",
+      "content": "# Cavas Corporativas - Certificacion de ejecucion SQL\n\nFecha UTC: 2026-09-07\n\n- Workflow: Cavas Corporativas Development Migration\n- Run ID: 34165247416\n- Trigger commit: 8c077cd1fc85cff58a6e18f04daffe6ca6e99dcf\n- Resultado: success\n- Migration blob: 072153e91c8721cbfa09cf6a0bb770ffab814494\n- Preflight: 0 tablas, 0 constraints y 0 indices objetivo preexistentes\n- Writer: HRLectura sobre EDARSAHUB\n- CREATE TABLE permission: 1\n- ALTER dbo permission: 1\n- Runner canonico: ejecucion completada correctamente\n- Postcheck: 8 tablas, 8 primary keys\n- Indices: UX_CC_Alcance, IX_CC_Convenios_OrganizacionEstado, IX_CC_Autorizados_Identidad, IX_CC_Aplicaciones_Operacion\n- External foreign keys: 0\n- Seed rows: 0 en las 8 tablas\n- Artifact ID: 10033932063\n- Artifact digest: sha256:e23dd64b9bf3e010947917052a1ac05cd6c6cbe6940a05f3a851856e48101ffe\n- Production touched: false\n\nConclusion: la migracion core de Cavas Corporativas fue ejecutada realmente en la base canonica EDARSAHUB y paso la certificacion read-only posterior.\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
