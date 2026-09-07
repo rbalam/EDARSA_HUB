@@ -193,6 +193,9 @@ async def ventas_periodos(unidad: str = Query(...), desde: Optional[str] = None,
 @iscam_router.get("/ventas-periodos/productos")
 async def ventas_periodos_productos(unidad: str = Query(...), periodo: str = Query(...),
                                     group_by: str = Query("mes")):
+    unidad_pk = UnidadesService.resolver_pk(unidad)
+    if not unidad_pk:
+        raise HTTPException(status_code=404, detail=f"Unidad no encontrada: {unidad}")
     pexpr = _period_sql("fecha_operacion", group_by)
     rows = _q(
         f"""
@@ -205,7 +208,7 @@ async def ventas_periodos_productos(unidad: str = Query(...), periodo: str = Que
         GROUP BY producto_codigo_fuente
         ORDER BY importe DESC
         """,
-        (unidad, periodo),
+        (str(unidad_pk), periodo),
     )
     return {"success": True, "source": "Comercial_Inteligencia_VentasDetalleProducto",
             "unidad": unidad, "periodo": periodo,
@@ -217,6 +220,9 @@ async def ventas_periodos_productos(unidad: str = Query(...), periodo: str = Que
 @iscam_router.get("/ventas-periodos/tickets")
 async def ventas_periodos_tickets(unidad: str = Query(...), periodo: str = Query(...),
                                   producto: str = Query(...), group_by: str = Query("mes")):
+    unidad_pk = UnidadesService.resolver_pk(unidad)
+    if not unidad_pk:
+        raise HTTPException(status_code=404, detail=f"Unidad no encontrada: {unidad}")
     pexpr = _period_sql("fecha_operacion", group_by)
     rows = _q(
         f"""
@@ -245,7 +251,7 @@ async def ventas_periodos_tickets(unidad: str = Query(...), periodo: str = Query
         INNER JOIN producto_ticket p ON p.id_transaccion=t.id_transaccion AND p.numero_ticket=t.numero_ticket
         ORDER BY t.fecha DESC
         """,
-        (unidad, periodo, producto),
+        (str(unidad_pk), periodo, producto),
     )
     return {"success": True, "source": "Comercial_Inteligencia_VentasDetalleProducto",
             "tickets": [{
@@ -282,6 +288,9 @@ async def resumen_cuentas(unidad: str = Query(...), desde: Optional[str] = None,
         return {"success": True, "source": "KPIsCanonicosService.resumen_periodo_desglosado.acumulado_cerrado",
                 "contrato_acumulado": "CERRADO_SIN_DIA_OPERATIVO_ACTUAL", "unidad": unidad, "desde": d, "hasta": h,
                 "group_by": group_by, "agrupado": agrupado}
+    unidad_pk = UnidadesService.resolver_pk(unidad)
+    if not unidad_pk:
+        raise HTTPException(status_code=404, detail=f"Unidad no encontrada: {unidad}")
     if export_all:
         rows = _q(
             """
@@ -292,7 +301,7 @@ async def resumen_cuentas(unidad: str = Query(...), desde: Optional[str] = None,
                    AND fecha_operacion >= %s AND fecha_operacion < %s
                  GROUP BY id_transaccion, numero_ticket)
             SELECT folio, fecha, importe, personas, 'COMPLETED' AS estado, cuenta_id FROM tickets ORDER BY fecha DESC
-            """, (unidad, d, h))
+            """, (str(unidad_pk), d, h))
     else:
         rows = _q(
             """
@@ -303,7 +312,7 @@ async def resumen_cuentas(unidad: str = Query(...), desde: Optional[str] = None,
                    AND fecha_operacion >= %s AND fecha_operacion < %s
                  GROUP BY id_transaccion, numero_ticket)
             SELECT TOP (%s) folio, fecha, importe, personas, 'COMPLETED' AS estado, cuenta_id FROM tickets ORDER BY fecha DESC
-            """, (unidad, d, h, limit))
+            """, (str(unidad_pk), d, h, limit))
     return {"success": True, "source": "Comercial_Inteligencia_VentasDetalleProducto", "unidad": unidad, "desde": d, "hasta": h, "group_by": "none",
             "export_all": export_all, "limited": not export_all, "limit": None if export_all else limit,
             "cuentas": [{"folio": r["folio"], "fecha": r["fecha"].isoformat() if r["fecha"] else None,
@@ -313,6 +322,9 @@ async def resumen_cuentas(unidad: str = Query(...), desde: Optional[str] = None,
 
 @iscam_router.get("/cuentas/detalle")
 async def cuenta_detalle(unidad: str = Query(...), folio: str = Query(...)):
+    unidad_pk = UnidadesService.resolver_pk(unidad)
+    if not unidad_pk:
+        raise HTTPException(status_code=404, detail=f"Unidad no encontrada: {unidad}")
     rows = _q(
         f"""
         SELECT producto_codigo_fuente AS codigo, MAX(producto_nombre) AS producto, SUM(ISNULL(cantidad,0)) AS cantidad,
@@ -323,7 +335,7 @@ async def cuenta_detalle(unidad: str = Query(...), folio: str = Query(...)):
         GROUP BY producto_codigo_fuente
         ORDER BY importe DESC
         """,
-        (unidad, folio),
+        (str(unidad_pk), folio),
     )
     return {"success": True, "folio": folio,
             "productos": [{"codigo": r["codigo"], "producto": r["producto"], "cantidad": _f(r["cantidad"]),
@@ -338,6 +350,9 @@ async def comandas_venta(unidad: str = Query(...), desde: Optional[str] = None, 
                          group_by: str = Query("none"), limit: int = Query(1000, ge=1, le=5000),
                          export_all: bool = Query(False)):
     d, h = _rango_fechas(desde, hasta)
+    unidad_pk = UnidadesService.resolver_pk(unidad)
+    if not unidad_pk:
+        raise HTTPException(status_code=404, detail=f"Unidad no encontrada: {unidad}")
     if group_by in ("anio", "mes", "dia"):
         pexpr = _period_sql("fecha_operacion", group_by)
         rows = _q(
@@ -349,7 +364,7 @@ async def comandas_venta(unidad: str = Query(...), desde: Optional[str] = None, 
               AND fecha_operacion >= %s AND fecha_operacion < %s
             GROUP BY {pexpr}
             ORDER BY periodo DESC
-            """, (unidad, d, h))
+            """, (str(unidad_pk), d, h))
         return {"success": True, "unidad": unidad, "desde": d, "hasta": h, "group_by": group_by,
                 "agrupado": [{"periodo": r["periodo"], "lineas": int(r["lineas"] or 0),
                               "tickets": int(r["tickets"] or 0), "cantidad": _f(r["cantidad"]),
@@ -363,7 +378,7 @@ async def comandas_venta(unidad: str = Query(...), desde: Optional[str] = None, 
             WHERE unidad_negocio_id=%s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
               AND fecha_operacion >= %s AND fecha_operacion < %s
             ORDER BY fecha_operacion DESC, fecha_hora DESC, numero_ticket DESC
-            """, (unidad, d, h))
+            """, (str(unidad_pk), d, h))
     else:
         rows = _q(
             """
@@ -373,7 +388,7 @@ async def comandas_venta(unidad: str = Query(...), desde: Optional[str] = None, 
             WHERE unidad_negocio_id=%s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
               AND fecha_operacion >= %s AND fecha_operacion < %s
             ORDER BY fecha_operacion DESC, fecha_hora DESC, numero_ticket DESC
-            """, (limit, unidad, d, h))
+            """, (limit, str(unidad_pk), d, h))
     return {"success": True, "unidad": unidad, "desde": d, "hasta": h, "group_by": "none",
             "export_all": export_all, "limited": not export_all, "limit": None if export_all else limit,
             "comandas": [{"folio_cuenta": r["folio_cuenta"], "fecha": _iso(r["fecha"]),
