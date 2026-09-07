@@ -1,0 +1,54 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "ISCAM-COMANDAS-NONE-DIAG-CARLOS-20260907T1824Z",
+  "created_at_utc": "2026-09-07T18:24:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Diagnosticar de forma read-only el ERROR del portal Inteligencia Comercial IA > Reportes ISCAM > Comandas de Venta > Sin agrupar para abril 2026. Ejecutar la misma consulta SQL que usa el endpoint actual contra la fuente canonica Comercial_Inteligencia_VentasDetalleProducto, medir si responde y comprobar columnas/indices. Revisar unidades principales sin escribir datos. La correccion posterior debe conservar la misma fuente canonica y atribucion por fecha_operacion que alimentan el reporte Ejecutivo; no usar Sync_Sales/OPENJSON ni consultas LIVE.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "schema_comandas_columns",
+          "sql": "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Comercial_Inteligencia_VentasDetalleProducto' AND COLUMN_NAME IN ('unidad_negocio_id','fecha_operacion','fecha_hora','numero_ticket','id_transaccion','producto_codigo_fuente','producto_nombre','cantidad','precio_unitario','importe_neto','activo','es_kpi_valido') ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "indices_comandas",
+          "sql": "SELECT i.name AS indice, c.name AS columna, ic.key_ordinal, ic.is_included_column FROM sys.indexes i INNER JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id INNER JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto') ORDER BY i.name, ic.key_ordinal, ic.index_column_id"
+        },
+        {
+          "name": "volumen_abril_por_unidad",
+          "sql": "SELECT unidad_negocio_id, COUNT_BIG(*) AS lineas, COUNT(DISTINCT id_transaccion) AS tickets, MIN(fecha_operacion) AS fecha_min, MAX(fecha_operacion) AS fecha_max FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND fecha_operacion >= '2026-04-01' AND fecha_operacion < '2026-05-01' GROUP BY unidad_negocio_id ORDER BY lineas DESC"
+        },
+        {
+          "name": "exact_comandas_none_130mid_abril",
+          "sql": "SELECT TOP (1000) numero_ticket AS folio_cuenta, fecha_hora AS fecha, producto_codigo_fuente AS clave, producto_nombre AS descripcion, cantidad, precio_unitario AS precio, importe_neto AS importe FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='130MID' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND fecha_operacion >= '2026-04-01' AND fecha_operacion < '2026-05-01' ORDER BY fecha_operacion DESC, fecha_hora DESC, numero_ticket DESC"
+        },
+        {
+          "name": "exact_comandas_none_estelar_abril",
+          "sql": "SELECT TOP (1000) numero_ticket AS folio_cuenta, fecha_hora AS fecha, producto_codigo_fuente AS clave, producto_nombre AS descripcion, cantidad, precio_unitario AS precio, importe_neto AS importe FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ESTELAR' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND fecha_operacion >= '2026-04-01' AND fecha_operacion < '2026-05-01' ORDER BY fecha_operacion DESC, fecha_hora DESC, numero_ticket DESC"
+        },
+        {
+          "name": "exact_comandas_none_cienfuegos_abril",
+          "sql": "SELECT TOP (1000) numero_ticket AS folio_cuenta, fecha_hora AS fecha, producto_codigo_fuente AS clave, producto_nombre AS descripcion, cantidad, precio_unitario AS precio, importe_neto AS importe FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND fecha_operacion >= '2026-04-01' AND fecha_operacion < '2026-05-01' ORDER BY fecha_operacion DESC, fecha_hora DESC, numero_ticket DESC"
+        },
+        {
+          "name": "exact_comandas_none_origen_abril",
+          "sql": "SELECT TOP (1000) numero_ticket AS folio_cuenta, fecha_hora AS fecha, producto_codigo_fuente AS clave, producto_nombre AS descripcion, cantidad, precio_unitario AS precio, importe_neto AS importe FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ORIGEN' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND fecha_operacion >= '2026-04-01' AND fecha_operacion < '2026-05-01' ORDER BY fecha_operacion DESC, fecha_hora DESC, numero_ticket DESC"
+        }
+      ]
+    }
+  ]
+}
