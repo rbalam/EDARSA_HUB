@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "save-github-frontend-reproducible-build-fix-r2-20260907",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "9a088097080649c69dbfd0c3685e4e8c6f884e95",
+  "objective": "Reemitir sobre el HEAD actual la correccion quirurgica del unico bloqueo frontend_build. No tocar codigo funcional de React, backend/server.py, Worker runtime, Supervisor, watchdog ni Produccion. El build debe instalar en el worktree las dependencias exactas del yarn.lock antes de compilar y mantener las banderas de build ya usadas por el workflow canonico de auditoria.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/package.json",
+      "old": "\"build\": \"craco build\"",
+      "new": "\"build\": \"DISABLE_ESLINT_PLUGIN=true CI=false craco build\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/package.json",
+      "old": "\"prebuild\": \"yarn validate:navigation\"",
+      "new": "\"prebuild\": \"yarn validate:navigation && yarn install --frozen-lockfile --non-interactive --ignore-scripts --prefer-offline\"",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "frontend_build", "directory": "frontend"}
+  ],
+  "human_summary_language": "es"
+}
