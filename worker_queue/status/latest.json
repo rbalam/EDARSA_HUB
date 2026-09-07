@@ -1,38 +1,50 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "a36abe729c49d46643b1dd63b3d1833a44738a87",
-  "generated_at_utc": "2026-09-07T21:35:14Z",
+  "generated_at_utc": "2026-09-07T21:36:25Z",
   "history": {
-    "done_total_local": 133,
+    "done_total_local": 134,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 241,
-    "results_total_local": 329
+    "rejected_total_local": 242,
+    "results_total_local": 331
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 40,
+      "age_seconds": 111,
       "job_id": "CATALOGO-AMPLIADO-GATE1-READONLY-SCHEMA-V2-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 239,
+      "age_seconds": 17,
+      "job_id": "CAVAS-BOS-V1-CANONICAL-AUDIT-02",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 310,
       "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-RUNNER-DEPENDENCY-FIX-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 42,
+      "age_seconds": 114,
       "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-RUNNER-DEPENDENCY-FIX-R2-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 235,
+      "age_seconds": 307,
       "job_id": "finanzas-decision-pago-authoritative-v14-20260906",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 15,
+      "job_id": "worker-readonly-certification-evidence-hardening-r3-20260907",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -44,14 +56,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 6,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-07T21:35:08Z",
-    "last_receive_utc": "2026-09-07T21:35:09Z",
-    "last_terminal_utc": "2026-09-07T21:34:33Z",
+    "last_cycle_utc": "2026-09-07T21:36:21Z",
+    "last_receive_utc": "2026-09-07T21:36:22Z",
+    "last_terminal_utc": "2026-09-07T21:36:10Z",
     "pid": "284"
   },
   "schema": "edarsahub.worker-health.v3",
