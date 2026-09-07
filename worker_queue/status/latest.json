@@ -1,38 +1,44 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "499189c7fe3f241662a3c370343681c6f9fca85b",
-  "generated_at_utc": "2026-09-07T17:42:12Z",
+  "generated_at_utc": "2026-09-07T17:43:25Z",
   "history": {
     "done_total_local": 124,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 236,
-    "results_total_local": 315
+    "rejected_total_local": 237,
+    "results_total_local": 316
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 775,
+      "age_seconds": 848,
       "job_id": "EDARSAHUB-ISCAM-ESTELAR-DETAIL-VERIFY-R10C-CARLOS-20260907T172600Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 198,
+      "age_seconds": 271,
       "job_id": "ISCAM-130MID-PAYMENTS-COMANDAS-AUDIT-CERTIFY-G1B-20260907T1738Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 40,
+      "age_seconds": 113,
       "job_id": "ISCAM-130MID-PAYMENTS-COMANDAS-GATE2-ROW-EVIDENCE-20260907T1740Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 382,
+      "age_seconds": 455,
       "job_id": "ISCAM-130MID-PAYMENTS-COMANDAS-READONLY-AUDIT-G1-20260907T1733Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 60,
+      "job_id": "ISCAM-SOFTRESTAURANT-GATE2B-MULTIUNIT-EVIDENCE-20260907T1742Z",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -44,14 +50,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-07T17:42:10Z",
-    "last_receive_utc": "2026-09-07T17:42:11Z",
-    "last_terminal_utc": "2026-09-07T17:41:31Z",
+    "last_cycle_utc": "2026-09-07T17:43:23Z",
+    "last_receive_utc": "2026-09-07T17:43:24Z",
+    "last_terminal_utc": "2026-09-07T17:42:24Z",
     "pid": "285"
   },
   "schema": "edarsahub.worker-health.v3",
