@@ -1,105 +1,105 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "a36abe729c49d46643b1dd63b3d1833a44738a87",
-  "generated_at_utc": "2026-09-07T18:21:48Z",
+  "generated_at_utc": "2026-09-07T18:23:00Z",
   "history": {
-    "done_total_local": 129,
+    "done_total_local": 130,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 238,
-    "results_total_local": 322
+    "results_total_local": 323
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3152,
+      "age_seconds": 3224,
       "job_id": "EDARSAHUB-ISCAM-ESTELAR-DETAIL-VERIFY-R10C-CARLOS-20260907T172600Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2574,
+      "age_seconds": 2646,
       "job_id": "ISCAM-130MID-PAYMENTS-COMANDAS-AUDIT-CERTIFY-G1B-20260907T1738Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2417,
+      "age_seconds": 2489,
       "job_id": "ISCAM-130MID-PAYMENTS-COMANDAS-GATE2-ROW-EVIDENCE-20260907T1740Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2759,
+      "age_seconds": 2831,
       "job_id": "ISCAM-130MID-PAYMENTS-COMANDAS-READONLY-AUDIT-G1-20260907T1733Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2364,
+      "age_seconds": 2436,
       "job_id": "ISCAM-SOFTRESTAURANT-GATE2B-MULTIUNIT-EVIDENCE-20260907T1742Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2262,
+      "age_seconds": 2334,
       "job_id": "ISCAM-SOFTRESTAURANT-GATE2B-R2-METADATA-20260907T1745Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1898,
+      "age_seconds": 1970,
       "job_id": "ISCAM-SOFTRESTAURANT-GATE2C-R2-ROOTCAUSE-MULTIUNIT-20260907T1752Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2089,
+      "age_seconds": 2161,
       "job_id": "ISCAM-SOFTRESTAURANT-GATE2C-ROOTCAUSE-MULTIUNIT-20260907T1748Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1420,
+      "age_seconds": 1492,
       "job_id": "ISCAM-SOFTRESTAURANT-GATE2D-POSTSYNC-VALIDATION-20260907T1800Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1094,
+      "age_seconds": 1166,
       "job_id": "ISCAM-SOFTRESTAURANT-GATE2E-FULL-HISTORY-DISCOVERY-20260907T1805Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 876,
+      "age_seconds": 948,
       "job_id": "ISCAM-SOFTRESTAURANT-GATE2F-FULL-HISTORY-RESYNC-TOOL-20260907T1810Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 10,
+      "age_seconds": 71,
       "job_id": "worker-capability-softrestaurant-full-history-resync-v1-20260907",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 11,
-  "queue_running": 1,
+  "queue_result_ready_recent": 12,
+  "queue_running": 0,
   "runtime": {
-    "current_job_id": "worker-capability-softrestaurant-full-history-resync-v1-20260907",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-07T18:21:48Z",
-    "last_receive_utc": "2026-09-07T18:21:43Z",
-    "last_terminal_utc": "2026-09-07T18:07:12Z",
+    "last_cycle_utc": "2026-09-07T18:22:55Z",
+    "last_receive_utc": "2026-09-07T18:22:56Z",
+    "last_terminal_utc": "2026-09-07T18:21:49Z",
     "pid": "286"
   },
   "schema": "edarsahub.worker-health.v3",
