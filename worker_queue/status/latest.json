@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "499189c7fe3f241662a3c370343681c6f9fca85b",
-  "generated_at_utc": "2026-09-07T18:04:17Z",
+  "generated_at_utc": "2026-09-07T18:05:31Z",
   "history": {
     "done_total_local": 128,
     "pending_total_local": 0,
@@ -13,61 +13,61 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2101,
+      "age_seconds": 2174,
       "job_id": "EDARSAHUB-ISCAM-ESTELAR-DETAIL-VERIFY-R10C-CARLOS-20260907T172600Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1523,
+      "age_seconds": 1597,
       "job_id": "ISCAM-130MID-PAYMENTS-COMANDAS-AUDIT-CERTIFY-G1B-20260907T1738Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1366,
+      "age_seconds": 1440,
       "job_id": "ISCAM-130MID-PAYMENTS-COMANDAS-GATE2-ROW-EVIDENCE-20260907T1740Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1708,
+      "age_seconds": 1781,
       "job_id": "ISCAM-130MID-PAYMENTS-COMANDAS-READONLY-AUDIT-G1-20260907T1733Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1313,
+      "age_seconds": 1386,
       "job_id": "ISCAM-SOFTRESTAURANT-GATE2B-MULTIUNIT-EVIDENCE-20260907T1742Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1211,
+      "age_seconds": 1285,
       "job_id": "ISCAM-SOFTRESTAURANT-GATE2B-R2-METADATA-20260907T1745Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 847,
+      "age_seconds": 920,
       "job_id": "ISCAM-SOFTRESTAURANT-GATE2C-R2-ROOTCAUSE-MULTIUNIT-20260907T1752Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1039,
+      "age_seconds": 1112,
       "job_id": "ISCAM-SOFTRESTAURANT-GATE2C-ROOTCAUSE-MULTIUNIT-20260907T1748Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 369,
+      "age_seconds": 443,
       "job_id": "ISCAM-SOFTRESTAURANT-GATE2D-POSTSYNC-VALIDATION-20260907T1800Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 43,
+      "age_seconds": 117,
       "job_id": "ISCAM-SOFTRESTAURANT-GATE2E-FULL-HISTORY-DISCOVERY-20260907T1805Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -85,8 +85,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-07T18:04:17Z",
-    "last_receive_utc": "2026-09-07T18:04:12Z",
+    "last_cycle_utc": "2026-09-07T18:05:29Z",
+    "last_receive_utc": "2026-09-07T18:05:30Z",
     "last_terminal_utc": "2026-09-07T18:03:34Z",
     "pid": "285"
   },
