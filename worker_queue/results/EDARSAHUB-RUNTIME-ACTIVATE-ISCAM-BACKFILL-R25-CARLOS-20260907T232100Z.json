@@ -2,8 +2,11 @@
   "base_sha": "26e32b1452c7d35cce5881e76ed8dbd32b0c2a8e",
   "blockers": [],
   "candidate_sha": "a0fc8de1a2fc2e4bd9118874aac3b68c93d32ce2",
-  "certification": "PENDING_AUDIT_EVIDENCE",
+  "certification": "CERTIFIED",
+  "certification_basis": "SHA_BOUND_ATTESTATION_PLUS_DESCENDANT_CONVERGENCE",
+  "certified_source_sha": "a0fc8de1a2fc2e4bd9118874aac3b68c93d32ce2",
   "completed_at_utc": "2026-09-07T22:59:01Z",
+  "converged_head": "a0fc8de1a2fc2e4bd9118874aac3b68c93d32ce2",
   "development_sha": "a0fc8de1a2fc2e4bd9118874aac3b68c93d32ce2",
   "executor": "chatgpt-deterministic",
   "files_changed": [
@@ -12,9 +15,9 @@
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "EDARSAHUB-RUNTIME-ACTIVATE-ISCAM-BACKFILL-R25-CARLOS-20260907T232100Z",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-09-07T22:59:17Z",
+  "published_at_utc": "2026-09-07T23:00:15Z",
   "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
@@ -23,5 +26,5 @@
   "status": "INTEGRATED",
   "summary_es": "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
   "tests": "PASS",
-  "work_completion": "PENDING_CERTIFICATION"
+  "work_completion": "COMPLETE"
 }
