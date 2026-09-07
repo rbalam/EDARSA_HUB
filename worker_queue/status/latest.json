@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "0e8486fe9f543aeddff2df778cd05f9c6a2aa381",
-  "generated_at_utc": "2026-09-07T04:04:00Z",
+  "generated_at_utc": "2026-09-07T04:05:13Z",
   "history": {
     "done_total_local": 119,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1641,
+      "age_seconds": 1714,
       "job_id": "CAVAS-BOS-V1-BENEFIT-LIMITS-ACCUMULATION-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1641,
+      "age_seconds": 1714,
       "job_id": "CAVAS-BOS-V1-BENEFIT-RESERVATION-CONCURRENCY-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -31,73 +31,73 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1638,
+      "age_seconds": 1711,
       "job_id": "BOS-DIRECCION-SNAPSHOT-PUBLISHER-GATE4-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1208,
+      "age_seconds": 1281,
       "job_id": "BOS-DIRECCION-SNAPSHOT-PUBLISHER-GATE4-R2-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 330,
+      "age_seconds": 403,
       "job_id": "BOS-DIRECCION-SNAPSHOT-PUBLISHER-GATE4-R3-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1125,
+      "age_seconds": 1198,
       "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-CHANNEL-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 894,
+      "age_seconds": 967,
       "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-CHANNEL-R2-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1636,
+      "age_seconds": 1708,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5B-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 440,
+      "age_seconds": 512,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5B-R2-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1633,
+      "age_seconds": 1705,
       "job_id": "finanzas-decision-pago-authoritative-v12-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 376,
+      "age_seconds": 449,
       "job_id": "finanzas-decision-pago-authoritative-v13-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1630,
+      "age_seconds": 1702,
       "job_id": "save-github-frontend-reproducible-build-fix-r2-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 468,
+      "age_seconds": 541,
       "job_id": "worker-readonly-certification-evidence-hardening-r2-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1627,
+      "age_seconds": 1699,
       "job_id": "worker-readonly-certification-evidence-hardening-v1-20260906",
       "reason": null,
       "state": "RESULT_READY"
@@ -115,8 +115,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-07T04:03:58Z",
-    "last_receive_utc": "2026-09-07T04:03:58Z",
+    "last_cycle_utc": "2026-09-07T04:05:11Z",
+    "last_receive_utc": "2026-09-07T04:05:11Z",
     "last_terminal_utc": "2026-09-07T03:58:30Z",
     "pid": "276"
   },
