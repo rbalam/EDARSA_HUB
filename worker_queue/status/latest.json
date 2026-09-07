@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "531ff3d9f19e23b9fb16bd7c4eb25578dbb944cc",
-  "generated_at_utc": "2026-09-07T03:48:40Z",
+  "development_sha": "545d95f88cf7c0746d9104c65f79605e6124cb03",
+  "generated_at_utc": "2026-09-07T03:50:11Z",
   "history": {
-    "done_total_local": 117,
+    "done_total_local": 118,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 225,
-    "results_total_local": 299
+    "results_total_local": 300
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 721,
+      "age_seconds": 811,
       "job_id": "CAVAS-BOS-V1-BENEFIT-LIMITS-ACCUMULATION-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 721,
+      "age_seconds": 811,
       "job_id": "CAVAS-BOS-V1-BENEFIT-RESERVATION-CONCURRENCY-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -31,43 +31,49 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 718,
+      "age_seconds": 809,
       "job_id": "BOS-DIRECCION-SNAPSHOT-PUBLISHER-GATE4-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 287,
+      "age_seconds": 378,
       "job_id": "BOS-DIRECCION-SNAPSHOT-PUBLISHER-GATE4-R2-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 204,
+      "age_seconds": 295,
       "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-CHANNEL-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 715,
+      "age_seconds": 64,
+      "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-CHANNEL-R2-20260907",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 806,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5B-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 712,
+      "age_seconds": 803,
       "job_id": "finanzas-decision-pago-authoritative-v12-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 709,
+      "age_seconds": 800,
       "job_id": "save-github-frontend-reproducible-build-fix-r2-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 706,
+      "age_seconds": 797,
       "job_id": "worker-readonly-certification-evidence-hardening-v1-20260906",
       "reason": null,
       "state": "RESULT_READY"
@@ -80,14 +86,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 2,
-  "queue_result_ready_recent": 7,
+  "queue_result_ready_recent": 8,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-07T03:48:38Z",
-    "last_receive_utc": "2026-09-07T03:48:39Z",
-    "last_terminal_utc": "2026-09-07T03:45:15Z",
+    "last_cycle_utc": "2026-09-07T03:49:50Z",
+    "last_receive_utc": "2026-09-07T03:49:45Z",
+    "last_terminal_utc": "2026-09-07T03:49:06Z",
     "pid": "276"
   },
   "schema": "edarsahub.worker-health.v3",
