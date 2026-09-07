@@ -1,0 +1,50 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "ISCAM-SOFTRESTAURANT-GATE2B-R2-METADATA-20260907T1745Z",
+  "created_at_utc": "2026-09-07T17:45:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "499189c7fe3f241662a3c370343681c6f9fca85b",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Reemision fail-closed de Gate 2B. Antes de asumir tablas o columnas de configuracion, descubrir mediante metadata SQL canonica los objetos y columnas reales relacionados con unidades, conexiones, sistemas, versiones y SoftRestaurant. El objetivo final sigue siendo que la correccion ISCAM aplique a todas las unidades configuradas con SoftRestaurant sin hardcodes. Esta R2 SOLO descubre contrato/esquema y evidencia; no modifica codigo, SQL, datos, Worker ni Production.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate2b_r2_candidate_tables",
+          "sql": "SELECT TOP 200 s.name AS schema_name, t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE UPPER(t.name) LIKE '%UNIDAD%' OR UPPER(t.name) LIKE '%CONEX%' OR UPPER(t.name) LIKE '%SISTEMA%' OR UPPER(t.name) LIKE '%SERVIDOR%' OR UPPER(t.name) LIKE '%VERSION%' ORDER BY s.name,t.name"
+        },
+        {
+          "name": "gate2b_r2_candidate_columns",
+          "sql": "SELECT TOP 500 s.name AS schema_name, t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE UPPER(t.name) LIKE '%UNIDAD%' OR UPPER(t.name) LIKE '%CONEX%' OR UPPER(t.name) LIKE '%SISTEMA%' OR UPPER(t.name) LIKE '%SERVIDOR%' OR UPPER(t.name) LIKE '%VERSION%' ORDER BY s.name,t.name,c.column_id"
+        },
+        {
+          "name": "gate2b_r2_soft_named_objects",
+          "sql": "SELECT TOP 200 o.type_desc, s.name AS schema_name, o.name AS object_name FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND UPPER(o.name) LIKE '%SOFT%' ORDER BY o.type_desc,s.name,o.name"
+        },
+        {
+          "name": "gate2b_r2_known_contract_tables_exist",
+          "sql": "SELECT v.object_name, OBJECT_ID(v.object_name) AS object_id FROM (VALUES ('dbo.Sistema_Capacidades'),('dbo.Sistema_TiposVariantes'),('dbo.Sistema_Sync_Catalogo'),('dbo.Sistema_VersionesSistemas'),('dbo.Sistema_MapeoTablasVersion'),('dbo.Sistema_MapeoColumnasVersion'),('dbo.Servidores_Conexiones'),('dbo.Sistema_TurnosOperativosUnidad'),('dbo.Comercial_Inteligencia_VentasDetalleProducto'),('dbo.Finanzas_CortesCaja'),('dbo.Finanzas_CortesCaja_DetallePagos')) v(object_name)"
+        },
+        {
+          "name": "gate2b_r2_known_contract_columns",
+          "sql": "SELECT TOP 500 s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Sistema_Capacidades','Sistema_TiposVariantes','Sistema_Sync_Catalogo','Sistema_VersionesSistemas','Sistema_MapeoTablasVersion','Sistema_MapeoColumnasVersion','Servidores_Conexiones','Sistema_TurnosOperativosUnidad','Comercial_Inteligencia_VentasDetalleProducto','Finanzas_CortesCaja','Finanzas_CortesCaja_DetallePagos') ORDER BY t.name,c.column_id"
+        },
+        {
+          "name": "gate2b_r2_payment_system_origins",
+          "sql": "SELECT TOP 50 SistemaOrigen, COUNT(*) AS filas, COUNT(DISTINCT UnidadNegocio) AS unidades, MIN(FechaHora) AS fecha_min, MAX(FechaHora) AS fecha_max FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE ISNULL(Activo,1)=1 GROUP BY SistemaOrigen ORDER BY filas DESC"
+        },
+        {
+          "name": "gate2b_r2_sales_units_sep2026",
+          "sql": "SELECT TOP 100 unidad_negocio_id, COUNT(*) AS lineas, COUNT(DISTINCT numero_ticket) AS tickets, MIN(fecha_operacion) AS fecha_min, MAX(fecha_operacion) AS fecha_max FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND fecha_operacion >= '2026-09-01' AND fecha_operacion < '2026-10-01' GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
