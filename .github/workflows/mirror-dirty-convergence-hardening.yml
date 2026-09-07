@@ -24,17 +24,30 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install test dependency
-        run: python -m pip install --disable-pip-version-check pytest
       - name: Shell syntax
         run: |
           bash -n tools/mirror_sync/shared_app_safety_guard.sh
           bash -n tools/mirror_sync/apply_remote_update.sh
-      - name: Contract tests
+      - name: Contract tests without backend conftest
         run: |
-          python -m pytest -q \
-            backend/tests/test_shared_app_sync_safety_contract.py \
-            backend/tests/test_mirror_sync_staged_preservation_contract.py
+          python - <<'PY'
+          import importlib.util
+          from pathlib import Path
+
+          paths = [
+              Path('backend/tests/test_shared_app_sync_safety_contract.py'),
+              Path('backend/tests/test_mirror_sync_staged_preservation_contract.py'),
+          ]
+          for path in paths:
+              spec = importlib.util.spec_from_file_location(path.stem, path)
+              module = importlib.util.module_from_spec(spec)
+              assert spec and spec.loader
+              spec.loader.exec_module(module)
+              tests = [getattr(module, name) for name in dir(module) if name.startswith('test_')]
+              for test in tests:
+                  test()
+              print(f'{path}: {len(tests)} PASS')
+          PY
       - name: Destructive-operation guard
         run: |
           ! grep -E 'git (reset|stash|clean|checkout \.|restore )' tools/mirror_sync/apply_remote_update.sh
