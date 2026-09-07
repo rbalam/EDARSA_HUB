@@ -29,6 +29,8 @@ QUEUE_REF = "refs/heads/worker/requests"
 WORKER_SERVICE = "edarsahub-universal-worker"
 LOCK_PATH = Path("/tmp/edarsahub-universal-worker-wake.lock")
 COOLDOWN_PATH = Path("/tmp/edarsahub-universal-worker-wake.last")
+WORKER_TREE_STATE = RUNTIME_DIR / "active_worker_code_tree_sha"
+WORKER_CODE_TREE_SPEC = "HEAD:tools/mirror_sync"
 _SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 
 
@@ -61,6 +63,33 @@ def _remote_queue_sha() -> str:
             detail="worker queue head invalid",
         )
     return fields[0].lower()
+
+
+def _current_worker_code_tree() -> str:
+    try:
+        completed = subprocess.run(
+            ["git", "rev-parse", WORKER_CODE_TREE_SPEC],
+            cwd=str(REPO_ROOT),
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            env={"GIT_TERMINAL_PROMPT": "0"},
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker code tree unavailable") from exc
+    value = completed.stdout.strip().lower()
+    if completed.returncode != 0 or not _SHA_RE.fullmatch(value):
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker code tree invalid")
+    return value
+
+
+def _active_worker_code_tree() -> str | None:
+    try:
+        value = WORKER_TREE_STATE.read_text(encoding="utf-8").strip().lower()
+    except OSError:
+        return None
+    return value if _SHA_RE.fullmatch(value) else None
 
 
 def _heartbeat_age_seconds() -> float | None:
@@ -116,12 +145,16 @@ def wake_worker(
         )
 
     heartbeat_age = _heartbeat_age_seconds()
-    if heartbeat_age is not None and heartbeat_age <= 90:
+    current_worker_tree = _current_worker_code_tree()
+    active_worker_tree = _active_worker_code_tree()
+    worker_code_current = active_worker_tree == current_worker_tree
+    if heartbeat_age is not None and heartbeat_age <= 90 and worker_code_current:
         return {
             "accepted": True,
             "action": "already_healthy",
             "queue_sha": current,
             "heartbeat_age_seconds": round(heartbeat_age, 3),
+            "worker_code_tree": current_worker_tree,
             "production_touched": False,
         }
 
@@ -147,6 +180,8 @@ def wake_worker(
             )
 
         _restart_worker()
+        RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+        WORKER_TREE_STATE.write_text(current_worker_tree + "\n", encoding="utf-8")
         COOLDOWN_PATH.write_text(str(now), encoding="utf-8")
 
     requested_at = datetime.now(timezone.utc).isoformat()
@@ -158,6 +193,8 @@ def wake_worker(
             "service": WORKER_SERVICE,
             "queue_sha": current,
             "heartbeat_age_seconds": round(heartbeat_age, 3) if heartbeat_age is not None else None,
+            "worker_code_tree": current_worker_tree,
+            "worker_code_changed": not worker_code_current,
             "requested_at_utc": requested_at,
             "production_touched": False,
         },
