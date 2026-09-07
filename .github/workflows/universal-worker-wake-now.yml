@@ -20,9 +20,12 @@ jobs:
       - name: Resolve current queue SHA
         id: queue
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          SHA="$(git ls-remote https://github.com/rbalam/EDARSA_HUB.git refs/heads/worker/requests | awk '{print $1}')"
+          AUTH_URL="https://x-access-token:${GH_TOKEN}@github.com/rbalam/EDARSA_HUB.git"
+          SHA="$(git ls-remote "$AUTH_URL" refs/heads/worker/requests | awk '{print $1}')"
           test "${#SHA}" -eq 40
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
           echo "QUEUE_SHA=$SHA"
