@@ -1,0 +1,25 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-RUNNER-DEPENDENCY-FIX-01",
+  "created_at_utc": "2026-09-07T21:28:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a36abe729c49d46643b1dd63b3d1833a44738a87",
+  "production_allowed": false,
+  "objective": "Corregir exclusivamente la dependencia faltante del runner de Cavas Corporativas detectada en GitHub Actions run 34080927390. El preflight y el gate de permisos HRLectura ya pasaron; Step 3 fallo antes de ejecutar SQL por ImportError: email-validator is not installed. Modificar solo .github/workflows/cavas-corporativas-development-migration.yml para instalar email-validator junto con el runtime SQL. No modificar el archivo ops/migrations/requests/CAVAS-CORPORATIVAS-CORE-20260907.execute, no disparar ni ejecutar la migracion desde este job, no tocar SQL, Worker/Supervisor/watchdog ni Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/cavas-corporativas-development-migration.yml",
+      "old": "          python -m pip install pymssql pydantic python-dotenv",
+      "new": "          python -m pip install pymssql pydantic python-dotenv email-validator",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
