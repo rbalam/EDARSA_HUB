@@ -1,0 +1,131 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-DETAIL-CODE-SCOPE-SERIALIZATION-R17-CARLOS-20260907T225600Z",
+  "created_at_utc": "2026-09-07T22:56:00Z",
+  "requester": {"email": "carlosruz@edarsa.com.mx", "source": "chatgpt", "project": "V1", "chat": "EDARSAHUB-CONCILIACIONES"},
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "98d0655af509738e26c300ef7423efe7ddd807ed",
+  "production_allowed": false,
+  "objective": "Corregir el ERROR real de Reportes ISCAM detalle observado en 130MID abril 2026. La tabla dbo.Comercial_Inteligencia_VentasDetalleProducto guarda unidad_negocio_id como CODIGO de unidad (p.ej. 130MID), no UUID; revertir el scoping UUID introducido por R12 solamente en endpoints que consultan esa tabla. Adicionalmente aplicar serializacion segura _iso(r['fecha']) en Resumen de Cuentas sin agrupar y drill de tickets, porque el intento previo de serializacion R2/R3 no se integro. Mantener KPIsCanonicosService con unidad_pk en reportes agregados. No tocar Produccion.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "async def ventas_periodos_productos(unidad: str = Query(...), periodo: str = Query(...),\n                                    group_by: str = Query(\"mes\")):\n    unidad_pk = UnidadesService.resolver_pk(unidad)\n    if not unidad_pk:\n        raise HTTPException(status_code=404, detail=f\"Unidad no encontrada: {unidad}\")\n    pexpr = _period_sql(\"fecha_operacion\", group_by)",
+      "new": "async def ventas_periodos_productos(unidad: str = Query(...), periodo: str = Query(...),\n                                    group_by: str = Query(\"mes\")):\n    pexpr = _period_sql(\"fecha_operacion\", group_by)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "        (str(unidad_pk), periodo),\n    )\n    return {\"success\": True, \"source\": \"Comercial_Inteligencia_VentasDetalleProducto\",",
+      "new": "        (unidad, periodo),\n    )\n    return {\"success\": True, \"source\": \"Comercial_Inteligencia_VentasDetalleProducto\",",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "async def ventas_periodos_tickets(unidad: str = Query(...), periodo: str = Query(...),\n                                  producto: str = Query(...), group_by: str = Query(\"mes\")):\n    unidad_pk = UnidadesService.resolver_pk(unidad)\n    if not unidad_pk:\n        raise HTTPException(status_code=404, detail=f\"Unidad no encontrada: {unidad}\")\n    pexpr = _period_sql(\"fecha_operacion\", group_by)",
+      "new": "async def ventas_periodos_tickets(unidad: str = Query(...), periodo: str = Query(...),\n                                  producto: str = Query(...), group_by: str = Query(\"mes\")):\n    pexpr = _period_sql(\"fecha_operacion\", group_by)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "        (str(unidad_pk), periodo, producto),\n    )",
+      "new": "        (unidad, periodo, producto),\n    )",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "\"folio\": r[\"folio\"], \"fecha\": r[\"fecha\"].isoformat() if r[\"fecha\"] else None,",
+      "new": "\"folio\": r[\"folio\"], \"fecha\": _iso(r[\"fecha\"]),",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "                \"group_by\": group_by, \"agrupado\": agrupado}\n    unidad_pk = UnidadesService.resolver_pk(unidad)\n    if not unidad_pk:\n        raise HTTPException(status_code=404, detail=f\"Unidad no encontrada: {unidad}\")\n    if export_all:",
+      "new": "                \"group_by\": group_by, \"agrupado\": agrupado}\n    if export_all:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "            \"\"\", (str(unidad_pk), d, h))\n    else:\n        rows = _q(\n            \"\"\"\n            WITH tickets AS",
+      "new": "            \"\"\", (unidad, d, h))\n    else:\n        rows = _q(\n            \"\"\"\n            WITH tickets AS",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "            \"\"\", (str(unidad_pk), d, h, limit))\n    return {\"success\": True, \"source\": \"Comercial_Inteligencia_VentasDetalleProducto\",",
+      "new": "            \"\"\", (unidad, d, h, limit))\n    return {\"success\": True, \"source\": \"Comercial_Inteligencia_VentasDetalleProducto\",",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "\"cuentas\": [{\"folio\": r[\"folio\"], \"fecha\": r[\"fecha\"].isoformat() if r[\"fecha\"] else None,",
+      "new": "\"cuentas\": [{\"folio\": r[\"folio\"], \"fecha\": _iso(r[\"fecha\"]),",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "async def cuenta_detalle(unidad: str = Query(...), folio: str = Query(...)):\n    unidad_pk = UnidadesService.resolver_pk(unidad)\n    if not unidad_pk:\n        raise HTTPException(status_code=404, detail=f\"Unidad no encontrada: {unidad}\")\n    rows = _q(",
+      "new": "async def cuenta_detalle(unidad: str = Query(...), folio: str = Query(...)):\n    rows = _q(",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "        (str(unidad_pk), folio),\n    )",
+      "new": "        (unidad, folio),\n    )",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "                         export_all: bool = Query(False)):\n    d, h = _rango_fechas(desde, hasta)\n    unidad_pk = UnidadesService.resolver_pk(unidad)\n    if not unidad_pk:\n        raise HTTPException(status_code=404, detail=f\"Unidad no encontrada: {unidad}\")\n    if group_by in (\"anio\", \"mes\", \"dia\"):",
+      "new": "                         export_all: bool = Query(False)):\n    d, h = _rango_fechas(desde, hasta)\n    if group_by in (\"anio\", \"mes\", \"dia\"):",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "            ORDER BY periodo DESC\n            \"\"\", (str(unidad_pk), d, h))\n        return {\"success\": True, \"unidad\": unidad,",
+      "new": "            ORDER BY periodo DESC\n            \"\"\", (unidad, d, h))\n        return {\"success\": True, \"unidad\": unidad,",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "            ORDER BY fecha_operacion DESC, fecha_hora DESC, numero_ticket DESC\n            \"\"\", (str(unidad_pk), d, h))",
+      "new": "            ORDER BY fecha_operacion DESC, fecha_hora DESC, numero_ticket DESC\n            \"\"\", (unidad, d, h))",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "            ORDER BY fecha_operacion DESC, fecha_hora DESC, numero_ticket DESC\n            \"\"\", (limit, str(unidad_pk), d, h))",
+      "new": "            ORDER BY fecha_operacion DESC, fecha_hora DESC, numero_ticket DESC\n            \"\"\", (limit, unidad, d, h))",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_detail_code_scope_serialization_r17.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nISCAM = ROOT / 'backend/modules/inteligencia_comercial/iscam_routes.py'\nDETAIL = ROOT / 'backend/scripts/poblar_ventas_detalle_producto_canonico.py'\n\ndef _text(path): return path.read_text(encoding='utf-8')\ndef _sec(text,a,b): return text.split(a,1)[1].split(b,1)[0]\n\ndef test_detail_writer_uses_business_code_as_unidad_negocio_id():\n    text=_text(DETAIL)\n    assert '\"unidad_negocio_id\": _s(cfg.get(\"unidad_codigo\") or cfg.get(\"unidad\") or cfg.get(\"unidad_pk\"))' in text\n\ndef test_ventas_drill_filters_detail_by_code_and_serializes_date_safely():\n    text=_text(ISCAM)\n    block=_sec(text,'@iscam_router.get(\"/ventas-periodos/productos\")','# ============================================================================\\n# 2) RESUMEN DE CUENTAS')\n    assert '(unidad, periodo)' in block\n    assert '(unidad, periodo, producto)' in block\n    assert '(str(unidad_pk), periodo)' not in block\n    assert '\"fecha\": _iso(r[\"fecha\"])' in block\n\ndef test_cuentas_detail_uses_code_and_safe_date_serialization():\n    text=_text(ISCAM)\n    block=_sec(text,'# 2) RESUMEN DE CUENTAS','# 3) COMANDAS DE VENTA')\n    assert '(unidad, d, h)' in block\n    assert '(unidad, d, h, limit)' in block\n    assert '(unidad, folio)' in block\n    assert '\"fecha\": _iso(r[\"fecha\"])' in block\n\ndef test_comandas_uses_code_for_detail_table():\n    text=_text(ISCAM)\n    block=_sec(text,'# 3) COMANDAS DE VENTA','# 4) VENTAS POR FORMAS DE PAGO')\n    assert '(unidad, d, h)' in block\n    assert '(limit, unidad, d, h)' in block\n    assert 'str(unidad_pk)' not in block\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/inteligencia_comercial/iscam_routes.py", "backend/tests/test_iscam_detail_code_scope_serialization_r17.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_iscam_detail_code_scope_serialization_r17.py"]}
+  ]
+}
