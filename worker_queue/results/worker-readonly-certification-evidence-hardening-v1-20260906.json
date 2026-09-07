@@ -1,0 +1,22 @@
+{
+  "blockers": [
+    "dispatcher_exception:RuntimeError:BASE_SHA_MISMATCH:expected=e951eb7cb61df3e15b36dbf1068b315dd73c09d5:actual=2235da9a1dd6dc24b29b7240e244bc8435cc2d50"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-07T03:36:53Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-readonly-certification-evidence-hardening-v1-20260906",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-07T03:38:54Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-07T03:36:53Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
