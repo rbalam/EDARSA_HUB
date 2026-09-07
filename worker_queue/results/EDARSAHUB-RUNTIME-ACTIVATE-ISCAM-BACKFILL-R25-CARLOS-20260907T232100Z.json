@@ -1,0 +1,27 @@
+{
+  "base_sha": "26e32b1452c7d35cce5881e76ed8dbd32b0c2a8e",
+  "blockers": [],
+  "candidate_sha": "a0fc8de1a2fc2e4bd9118874aac3b68c93d32ce2",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-07T22:59:01Z",
+  "development_sha": "a0fc8de1a2fc2e4bd9118874aac3b68c93d32ce2",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "worker_queue/triggers/runtime-recovery/activate-iscam-detail-backfill-20260907T2321.json"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-RUNTIME-ACTIVATE-ISCAM-BACKFILL-R25-CARLOS-20260907T232100Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-07T22:59:17Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-07T22:58:53Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
