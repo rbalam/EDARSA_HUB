@@ -39,6 +39,8 @@ SCHEMA = "edarsahub.worker-job.v2"
 JOB_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
 ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit"}
+SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
+UNIT_CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$")
 MAX_ACTIONS = int(os.environ.get("EDARSAHUB_JOB_MAX_ACTIONS", "100"))
 MAX_TEXT_BYTES = int(os.environ.get("EDARSAHUB_JOB_MAX_TEXT_BYTES", "2000000"))
 REQUIRE_REQUESTER = os.environ.get("EDARSAHUB_WORKER_REQUIRE_REQUESTER", "0") == "1"
@@ -196,6 +198,17 @@ def validate(job: Any) -> list[str]:
     if mode == "READ_ONLY_SQL":
         if actions not in (None, []):
             errors.append("READ_ONLY_SQL_ACTIONS_FORBIDDEN")
+    elif mode == SOFTRESTAURANT_FULL_HISTORY_MODE:
+        if actions not in (None, []):
+            errors.append("SOFTRESTAURANT_RESYNC_ACTIONS_FORBIDDEN")
+        units = job.get("units", [])
+        if not isinstance(units, list) or len(units) > 32 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):
+            errors.append("SOFTRESTAURANT_RESYNC_UNITS_INVALID")
+        dry_run = job.get("dry_run", True)
+        if not isinstance(dry_run, bool):
+            errors.append("SOFTRESTAURANT_RESYNC_DRY_RUN_INVALID")
+        if dry_run is False and job.get("confirm_full_history_resync") is not True:
+            errors.append("SOFTRESTAURANT_RESYNC_CONFIRMATION_REQUIRED")
     else:
         if not isinstance(actions, list) or not actions:
             errors.append("ACTIONS_REQUIRED")
@@ -210,6 +223,11 @@ def validate(job: Any) -> list[str]:
             errors.append("READ_ONLY_SQL_CHECK_REQUIRED")
         elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
             errors.append("READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED")
+    elif mode == SOFTRESTAURANT_FULL_HISTORY_MODE:
+        if not isinstance(checks, list) or not checks:
+            errors.append("SOFTRESTAURANT_RESYNC_AUDIT_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+            errors.append("SOFTRESTAURANT_RESYNC_ONLY_SQL_AUDIT_ALLOWED")
     if not isinstance(checks, list):
         errors.append("CHECKS_MUST_BE_LIST")
     else:

@@ -41,6 +41,9 @@ MAX_SECONDS = int(os.environ.get("EDARSAHUB_JOB_MAX_SECONDS", "1800"))
 JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
 ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit"}
+SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
+UNIT_CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$")
+SOFTRESTAURANT_RESYNC_MAX_SECONDS = int(os.environ.get("EDARSAHUB_SOFTRESTAURANT_RESYNC_MAX_SECONDS", "21600"))
 
 RUNTIME_PYTHON = Path("/root/.venv/bin/python")
 
@@ -557,6 +560,64 @@ def process_one(path: Path) -> int:
                 result["percent_complete"] = 100
                 result["certification"] = "CERTIFIED_READ_ONLY"
                 result["summary_es"] = "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion."
+            else:
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+            return 0
+
+        if str(job.get("mode") or "") == SOFTRESTAURANT_FULL_HISTORY_MODE:
+            if job.get("actions") not in (None, []):
+                raise RuntimeError("SOFTRESTAURANT_RESYNC_ACTIONS_FORBIDDEN")
+            units = job.get("units", [])
+            if not isinstance(units, list) or len(units) > 32 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):
+                raise RuntimeError("SOFTRESTAURANT_RESYNC_UNITS_INVALID")
+            dry_run = job.get("dry_run", True)
+            if not isinstance(dry_run, bool):
+                raise RuntimeError("SOFTRESTAURANT_RESYNC_DRY_RUN_INVALID")
+            if dry_run is False and job.get("confirm_full_history_resync") is not True:
+                raise RuntimeError("SOFTRESTAURANT_RESYNC_CONFIRMATION_REQUIRED")
+            checks = job.get("checks") or []
+            if not checks or any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+                raise RuntimeError("SOFTRESTAURANT_RESYNC_SQL_AUDIT_REQUIRED")
+            script = ROOT / "backend" / "scripts" / "resync_softrestaurant_full_history.py"
+            if not script.is_file():
+                raise RuntimeError("SOFTRESTAURANT_RESYNC_SCRIPT_NOT_FOUND")
+            cmd = [PYTHON_BIN, str(script)]
+            if dry_run is False:
+                cmd.append("--execute")
+            for unit in units:
+                cmd.extend(["--unit", unit.strip().upper()])
+            backend = ROOT / "backend"
+            execution = run(
+                cmd,
+                cwd=ROOT,
+                timeout=SOFTRESTAURANT_RESYNC_MAX_SECONDS,
+                env_extra={**load_backend_runtime_env(), "PYTHONPATH": str(backend)},
+            )
+            result["operation"] = SOFTRESTAURANT_FULL_HISTORY_MODE
+            result["dry_run"] = dry_run
+            result["units"] = [u.strip().upper() for u in units]
+            result["canonical_sql_mutation"] = not dry_run
+            result["operation_output"] = execution.stdout[-20000:]
+            result["files_changed"] = []
+            if execution.returncode != 0:
+                result["blockers"].append(f"softrestaurant_resync_failed:rc={execution.returncode}")
+            check_results = []
+            if not result["blockers"]:
+                for check in checks:
+                    check_result = run_check(ROOT, check)
+                    check_results.append(check_result)
+                    if check_result["status"] != "PASS":
+                        result["blockers"].append("check_failed:sql_readonly_audit")
+                        break
+            result["checks"] = check_results
+            result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
+            result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
+            if not result["blockers"]:
+                result["status"] = "OPERATIONAL_COMPLETE"
+                result["percent_complete"] = 100
+                result["certification"] = "CERTIFIED_OPERATIONAL"
+                result["summary_es"] = "El Worker universal ejecuto la capacidad cerrada de resync historico SoftRestaurant y despues certifico el resultado mediante auditoria SQL de solo lectura. No ejecuto shell arbitrario ni acepto rutas o comandos externos."
             else:
                 result["percent_complete"] = 0
                 result["certification"] = "NOT_CERTIFIED"
