@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "save-github-final-predeploy-closure-audit-r3-20260907",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "83501a9754c16623c6146e1b1578340b2ddd9c66",
+  "objective": "Ejecutar el Gate Final de Predeploy sobre el HEAD actual de Edarsahub_Desarrollo. No desplegar ni tocar Edarsahub_Produccion. Solo agregar un canario de auditoria y ejecutar los contratos finales de seguridad, anti-clobber, destructive-diff, preservacion de /app, remediacion MPRO, smoke backend y build frontend. Si el HEAD cambia antes de ejecutar, bloquear por BASE_SHA_MISMATCH y no aplicar nada. Produccion prohibida.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "worker_queue/e2e_canaries/save-github-final-predeploy-closure-audit-r3-20260907.txt",
+      "content": "EDARSAHUB_SAVE_TO_GITHUB_FINAL_PREDEPLOY_CLOSURE_AUDIT_R3\njob_id=save-github-final-predeploy-closure-audit-r3-20260907\nbase_sha=83501a9754c16623c6146e1b1578340b2ddd9c66\nproduction_touched=false\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "tools/mirror_sync/worker_runtime_reconciler.py",
+        "scripts/agent_guardrails/validate_repository_artifacts.py",
+        "backend/modules/comercial/adapters.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_save_github_safety_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_universal_job_dispatcher_python_runtime.py",
+        "backend/tests/test_worker_destructive_diff_guard.py",
+        "backend/tests/test_destructive_diff_guard_contract.py",
+        "backend/tests/test_backend_route_smoke_contract.py",
+        "backend/tests/test_shared_app_sync_safety_contract.py",
+        "backend/tests/test_mpro_secret_config_contract.py"
+      ]
+    },
+    {"type": "frontend_build", "directory": "frontend"}
+  ],
+  "human_summary_language": "es"
+}
