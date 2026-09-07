@@ -1,133 +1,145 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "a36abe729c49d46643b1dd63b3d1833a44738a87",
-  "generated_at_utc": "2026-09-07T22:41:26Z",
+  "generated_at_utc": "2026-09-07T22:42:44Z",
   "history": {
     "done_total_local": 136,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 262,
-    "results_total_local": 352
+    "rejected_total_local": 264,
+    "results_total_local": 354
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1940,
+      "age_seconds": 2018,
       "job_id": "BOS-DIRECCION-RECURRENT-STATUS-GATE5-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1194,
+      "age_seconds": 1272,
       "job_id": "BOS-DIRECCION-RECURRENT-STATUS-GATE5-R2-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 184,
+      "age_seconds": 262,
       "job_id": "BOS-DIRECCION-RECURRENT-STATUS-GATE5-R3-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2129,
+      "age_seconds": 2207,
       "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-EXECUTION-DOSSIER-CERT-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1492,
+      "age_seconds": 1570,
       "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-EXECUTION-DOSSIER-CERT-R2-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1260,
+      "age_seconds": 1338,
       "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-EXECUTION-DOSSIER-CERT-R3-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 457,
+      "age_seconds": 535,
       "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-EXECUTION-DOSSIER-CERT-R4-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 689,
+      "age_seconds": 767,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE1-R2-READONLY-20260907T2220Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 123,
+      "age_seconds": 201,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE1-R3-READONLY-20260907T2239Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3369,
+      "age_seconds": 3447,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE1-READONLY-20260907T2145Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2080,
+      "age_seconds": 2159,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-UNIT-SCOPE-R11-CARLOS-20260907T192000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1317,
+      "age_seconds": 1395,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-UNIT-SCOPE-R12-CARLOS-20260907T221600Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 127,
+      "age_seconds": 205,
       "job_id": "EDARSAHUB-ISCAM-SOFT-APERTURA-CONTRACT-R13-CARLOS-20260907T223700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1312,
+      "age_seconds": 63,
+      "job_id": "EDARSAHUB-ISCAM-SOFT-APERTURA-CONTRACT-R14-CARLOS-20260907T224500Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 4,
+      "job_id": "EDARSAHUB-ISCAM-SOFT-APERTURA-PATCH-R15-CARLOS-20260907T224800Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1390,
       "job_id": "ISCAM-CUENTAS-NONE-AND-TICKETS-SERIALIZATION-FIX-R2-CARLOS-20260907T2207Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 118,
+      "age_seconds": 196,
       "job_id": "ISCAM-CUENTAS-NONE-SERIALIZATION-FIX-R3-CARLOS-20260907T2222Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2125,
+      "age_seconds": 2203,
       "job_id": "save-github-final-predeploy-closure-audit-r3-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1186,
+      "age_seconds": 1264,
       "job_id": "save-github-final-predeploy-closure-audit-r4-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2131,
+      "age_seconds": 2209,
       "job_id": "worker-readonly-certification-evidence-hardening-r4-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 811,
+      "age_seconds": 890,
       "job_id": "worker-readonly-certification-evidence-hardening-r5-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 432,
+      "age_seconds": 510,
       "job_id": "worker-scope-concurrency-safe-rebase-canary-v1-20260907",
       "reason": null,
       "state": "RESULT_READY"
@@ -140,14 +152,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 20,
+  "queue_result_ready_recent": 22,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-07T22:41:20Z",
-    "last_receive_utc": "2026-09-07T22:41:22Z",
-    "last_terminal_utc": "2026-09-07T22:39:27Z",
+    "last_cycle_utc": "2026-09-07T22:42:42Z",
+    "last_receive_utc": "2026-09-07T22:42:43Z",
+    "last_terminal_utc": "2026-09-07T22:42:39Z",
     "pid": "290"
   },
   "schema": "edarsahub.worker-health.v3",
