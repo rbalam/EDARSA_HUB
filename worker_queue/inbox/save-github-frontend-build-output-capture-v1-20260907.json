@@ -1,0 +1,26 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "save-github-frontend-build-output-capture-v1-20260907",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "c3f6584b84177d9d26893b60f8761def6188990e",
+  "objective": "Capturar de forma controlada y de solo diagnostico el objeto checks.frontend_build del resultado local del job save-github-frontend-build-surgical-fix-v1-20260906, porque el publisher publico elimina deliberadamente el output bruto. No modificar Worker, Supervisor, watchdog, backend/server.py ni Produccion. Persistir solo la evidencia minima necesaria para identificar la causa exacta.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_save_github_frontend_build_output_capture.py",
+      "content": "import json\nfrom pathlib import Path\n\nTARGET = 'save-github-frontend-build-surgical-fix-v1-20260906'\nSTATE = Path('/app/.git/universal-worker-queue')\nOUT = Path('tests/save_github_frontend_build_output_evidence.json')\n\n\ndef test_capture_exact_frontend_build_output():\n    matches = []\n    for bucket in ('results', 'done', 'rejected', 'processing', 'pending'):\n        path = STATE / bucket / f'{TARGET}.json'\n        if not path.is_file():\n            continue\n        payload = json.loads(path.read_text(encoding='utf-8'))\n        frontend_checks = [\n            check for check in (payload.get('checks') or [])\n            if isinstance(check, dict) and check.get('type') == 'frontend_build'\n        ]\n        matches.append({\n            'bucket': bucket,\n            'job_id': payload.get('job_id'),\n            'status': payload.get('status'),\n            'blockers': payload.get('blockers') or [],\n            'frontend_build': frontend_checks,\n        })\n\n    evidence = {\n        'schema': 'edarsahub.frontend-build-output-evidence.v1',\n        'target_job_id': TARGET,\n        'production_touched': False,\n        'matches': matches,\n    }\n    OUT.write_text(json.dumps(evidence, ensure_ascii=False, indent=2) + '\\n', encoding='utf-8')\n    assert matches, 'TARGET_LOCAL_RESULT_NOT_FOUND'\n    assert any(item['frontend_build'] for item in matches), 'FRONTEND_BUILD_CHECK_NOT_FOUND'\n    assert evidence['production_touched'] is False\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/save_github_frontend_build_output_evidence.json",
+      "content": "{}\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "pytest", "paths": ["backend/tests/test_save_github_frontend_build_output_capture.py"]}
+  ],
+  "human_summary_language": "es"
+}
