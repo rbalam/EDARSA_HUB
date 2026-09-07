@@ -1,0 +1,9 @@
+job=CAVAS-CORPORATIVAS-CORE-20260907
+target_branch=Edarsahub_Desarrollo
+production_allowed=false
+migration=backend/database/migrations/20260907_cavas_corporativas_core.sql
+expected_blob_sha=072153e91c8721cbfa09cf6a0bb770ffab814494
+executor=github-actions-external-to-universal-worker
+preflight=required
+postcheck=required
+evidence_artifact=required
