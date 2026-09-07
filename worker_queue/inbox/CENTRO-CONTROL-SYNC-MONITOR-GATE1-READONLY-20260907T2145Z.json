@@ -1,0 +1,52 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE1-READONLY-20260907T2145Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a36abe729c49d46643b1dd63b3d1833a44738a87",
+  "production_allowed": false,
+  "objective": "GATE 1 READ-ONLY para Centro de Control EDARSA y Monitor de Sincronizacion. Obtener evidencia canonica del SQL real antes de corregir ambos modulos. Confirmar: persistencia disponible para alertas, historial, bitacora y metricas; universo real de tablas/logs de sincronizacion; contratos de Servidores_Conexiones; tablas y capacidades RBAC aplicables; scheduler/jobs existentes; cobertura de Compras_Sync_Log, Comercial_SyncLog_v2 y Sync_Logs; tipos de sync y actividad reciente. No aplicar DDL ni modificar datos. No tocar Produccion, Mongo ni fuentes LIVE. El resultado debe permitir construir el siguiente job determinista de implementacion que elimine mocks/estado efimero, cierre RBAC backend, corrija KPI 24h y cobertura del monitor, externalice umbrales operativos y homologue UI al estilo EDARSAHUB.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/auditorias/CENTRO_CONTROL_SYNC_MONITOR_GATE1_20260907.md",
+      "content": "# Centro de Control + Sync Monitor — Gate 1 READ-ONLY\n\nAuditoria canonica previa a implementacion. No DDL, no DML, no Production, no Mongo y no LIVE.\n\nEvidencia vinculante: `worker_queue/results/CENTRO-CONTROL-SYNC-MONITOR-GATE1-READONLY-20260907T2145Z.json`.\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {"name":"database_identity","sql":"SELECT DB_NAME() AS database_name, @@SERVERNAME AS server_name, GETDATE() AS sql_now"},
+        {"name":"control_monitor_table_candidates","sql":"SELECT s.name AS schema_name, t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name LIKE '%Centro%Control%' OR t.name LIKE '%Alerta%' OR t.name LIKE '%Bitacora%' OR t.name LIKE '%Historial%' OR t.name LIKE '%Metrica%' OR t.name LIKE '%Health%' OR t.name LIKE '%Monitor%' ORDER BY s.name,t.name"},
+        {"name":"control_monitor_candidate_columns","sql":"SELECT t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE '%Centro%Control%' OR t.name LIKE '%Alerta%' OR t.name LIKE '%Bitacora%' OR t.name LIKE '%Historial%' OR t.name LIKE '%Metrica%' OR t.name LIKE '%Health%' OR t.name LIKE '%Monitor%' ORDER BY t.name,c.column_id"},
+        {"name":"sync_source_tables","sql":"SELECT t.name AS table_name FROM sys.tables t WHERE t.name IN ('Compras_Sync_Log','Comercial_SyncLog_v2','Sync_Logs','Servidores_Conexiones') OR t.name LIKE '%Sync%Log%' OR t.name LIKE '%Sincron%' ORDER BY t.name"},
+        {"name":"sync_source_columns","sql":"SELECT t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Compras_Sync_Log','Comercial_SyncLog_v2','Sync_Logs','Servidores_Conexiones') ORDER BY t.name,c.column_id"},
+        {"name":"compras_sync_types_24h","sql":"SELECT sync_type, COUNT(*) AS runs_24h, SUM(ISNULL(records_synced,0)) AS records_24h, SUM(CASE WHEN status='OK' THEN 0 ELSE 1 END) AS errors_24h, MAX(sync_end) AS last_sync FROM Compras_Sync_Log WHERE sync_start>=DATEADD(HOUR,-24,GETDATE()) GROUP BY sync_type ORDER BY sync_type"},
+        {"name":"comercial_sync_types_24h","sql":"SELECT run_type AS sync_type, COUNT(*) AS runs_24h, SUM(ISNULL(records_processed,0)) AS records_24h, SUM(CASE WHEN status='SUCCESS' THEN 0 ELSE 1 END) AS errors_24h, MAX(run_timestamp) AS last_sync FROM Comercial_SyncLog_v2 WHERE run_timestamp>=DATEADD(HOUR,-24,GETDATE()) GROUP BY run_type ORDER BY run_type"},
+        {"name":"sync_logs_sample_schema_safe","sql":"SELECT TOP 20 * FROM Sync_Logs ORDER BY 1 DESC"},
+        {"name":"server_connections_inventory","sql":"SELECT * FROM Servidores_Conexiones ORDER BY nombre"},
+        {"name":"rbac_table_candidates","sql":"SELECT t.name AS table_name FROM sys.tables t WHERE t.name LIKE '%RBAC%' OR t.name LIKE '%Permis%' OR t.name LIKE '%Rol%' OR t.name LIKE '%Capacidad%' OR t.name LIKE '%Accion%' ORDER BY t.name"},
+        {"name":"rbac_candidate_columns","sql":"SELECT t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE '%RBAC%' OR t.name LIKE '%Permis%' OR t.name LIKE '%Rol%' OR t.name LIKE '%Capacidad%' OR t.name LIKE '%Accion%' ORDER BY t.name,c.column_id"},
+        {"name":"scheduler_table_candidates","sql":"SELECT t.name AS table_name FROM sys.tables t WHERE t.name LIKE '%Scheduler%' OR t.name LIKE '%Job%' OR t.name LIKE '%Automat%' ORDER BY t.name"},
+        {"name":"scheduler_candidate_columns","sql":"SELECT t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE '%Scheduler%' OR t.name LIKE '%Job%' OR t.name LIKE '%Automat%' ORDER BY t.name,c.column_id"},
+        {"name":"operational_turns_schema","sql":"SELECT c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.columns c JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Sistema_TurnosOperativosUnidad') ORDER BY c.column_id"}
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL for database evidence",
+    "NO DDL",
+    "NO INSERT/UPDATE/DELETE/MERGE",
+    "NO Production",
+    "NO Mongo",
+    "NO LIVE source connections",
+    "NO secrets in result",
+    "NO invented schema evidence",
+    "Do not modify Universal Worker structure",
+    "Preserve exact SQL evidence in worker result"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "technical"
+}
