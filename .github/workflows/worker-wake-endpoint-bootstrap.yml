@@ -1,5 +1,5 @@
 name: Worker Wake Endpoint Bootstrap
-# Manual retrigger 2026-09-06: restore missing /api/internal/worker/wake mount.
+# Manual retrigger 2026-09-07: restore missing /api/internal/worker/wake mount.
 
 on:
   push:
