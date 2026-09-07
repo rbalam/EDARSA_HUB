@@ -1,0 +1,25 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-WORKER-CODE-AWARE-WAKE-R28-CARLOS-20260907T233100Z",
+  "created_at_utc":"2026-09-07T23:31:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"a0fc8de1a2fc2e4bd9118874aac3b68c93d32ce2",
+  "production_allowed":false,
+  "mode":"MUTATION",
+  "objective":"Integrar el arreglo minimo del wake interno para reiniciar el Universal Worker cuando cambie su arbol de codigo aunque el heartbeat este sano. R27 fue bloqueado porque el check pytest referencio un test historico inexistente; no hubo fallo de compilacion ni cambio parcial. Mantener exact queue SHA proof, servicio fijo edarsahub-universal-worker, lock/cooldown y production_touched=false. No tocar Produccion.",
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer",
+  "actions":[
+    {"type":"replace_text","path":"backend/modules/worker_runtime_wake/routes.py","old":"COOLDOWN_PATH = Path(\"/tmp/edarsahub-universal-worker-wake.last\")\n_SHA_RE = re.compile(r\"^[0-9a-fA-F]{40}$\")","new":"COOLDOWN_PATH = Path(\"/tmp/edarsahub-universal-worker-wake.last\")\nWORKER_TREE_STATE = RUNTIME_DIR / \"active_worker_code_tree_sha\"\nWORKER_CODE_TREE_SPEC = \"HEAD:tools/mirror_sync\"\n_SHA_RE = re.compile(r\"^[0-9a-fA-F]{40}$\")","expected_count":1},
+    {"type":"replace_text","path":"backend/modules/worker_runtime_wake/routes.py","old":"def _heartbeat_age_seconds() -> float | None:\n    try:\n        raw = LAST_RECEIVE.read_text(encoding=\"utf-8\").strip().replace(\"Z\", \"+00:00\")","new":"def _current_worker_code_tree() -> str:\n    try:\n        completed = subprocess.run(\n            [\"git\", \"rev-parse\", WORKER_CODE_TREE_SPEC],\n            cwd=str(REPO_ROOT),\n            check=False,\n            capture_output=True,\n            text=True,\n            timeout=10,\n            env={\"GIT_TERMINAL_PROMPT\": \"0\"},\n        )\n    except (OSError, subprocess.SubprocessError) as exc:\n        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=\"worker code tree unavailable\") from exc\n    value = completed.stdout.strip().lower()\n    if completed.returncode != 0 or not _SHA_RE.fullmatch(value):\n        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=\"worker code tree invalid\")\n    return value\n\n\ndef _active_worker_code_tree() -> str | None:\n    try:\n        value = WORKER_TREE_STATE.read_text(encoding=\"utf-8\").strip().lower()\n    except OSError:\n        return None\n    return value if _SHA_RE.fullmatch(value) else None\n\n\ndef _heartbeat_age_seconds() -> float | None:\n    try:\n        raw = LAST_RECEIVE.read_text(encoding=\"utf-8\").strip().replace(\"Z\", \"+00:00\")","expected_count":1},
+    {"type":"replace_text","path":"backend/modules/worker_runtime_wake/routes.py","old":"    heartbeat_age = _heartbeat_age_seconds()\n    if heartbeat_age is not None and heartbeat_age <= 90:\n        return {\n            \"accepted\": True,\n            \"action\": \"already_healthy\",\n            \"queue_sha\": current,\n            \"heartbeat_age_seconds\": round(heartbeat_age, 3),\n            \"production_touched\": False,\n        }","new":"    heartbeat_age = _heartbeat_age_seconds()\n    current_worker_tree = _current_worker_code_tree()\n    active_worker_tree = _active_worker_code_tree()\n    worker_code_current = active_worker_tree == current_worker_tree\n    if heartbeat_age is not None and heartbeat_age <= 90 and worker_code_current:\n        return {\n            \"accepted\": True,\n            \"action\": \"already_healthy\",\n            \"queue_sha\": current,\n            \"heartbeat_age_seconds\": round(heartbeat_age, 3),\n            \"worker_code_tree\": current_worker_tree,\n            \"production_touched\": False,\n        }","expected_count":1},
+    {"type":"replace_text","path":"backend/modules/worker_runtime_wake/routes.py","old":"        _restart_worker()\n        COOLDOWN_PATH.write_text(str(now), encoding=\"utf-8\")","new":"        _restart_worker()\n        RUNTIME_DIR.mkdir(parents=True, exist_ok=True)\n        WORKER_TREE_STATE.write_text(current_worker_tree + \"\\n\", encoding=\"utf-8\")\n        COOLDOWN_PATH.write_text(str(now), encoding=\"utf-8\")","expected_count":1},
+    {"type":"replace_text","path":"backend/modules/worker_runtime_wake/routes.py","old":"            \"heartbeat_age_seconds\": round(heartbeat_age, 3) if heartbeat_age is not None else None,\n            \"requested_at_utc\": requested_at,","new":"            \"heartbeat_age_seconds\": round(heartbeat_age, 3) if heartbeat_age is not None else None,\n            \"worker_code_tree\": current_worker_tree,\n            \"worker_code_changed\": not worker_code_current,\n            \"requested_at_utc\": requested_at,","expected_count":1}
+  ],
+  "checks":[
+    {"type":"git_diff_check"},
+    {"type":"py_compile","paths":["backend/modules/worker_runtime_wake/routes.py"]}
+  ]
+}
