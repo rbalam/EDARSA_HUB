@@ -1,0 +1,16 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-ISCAM-SCHEMA-GATE-R18-READONLY-20260907T225800Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Descubrir exclusivamente las columnas reales necesarias para la conciliacion ISCAM post parche. Sin DML/DDL, sin Produccion.",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"iscam_target_columns","sql":"SELECT t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Comercial_KPIs_Diarios_v2','Comercial_Inteligencia_VentasDetalleProducto','Finanzas_CortesCaja_DetallePagos','Finanzas_CortesCaja') ORDER BY t.name,c.column_id"},
+    {"name":"unidades_columns","sql":"SELECT c.column_id,c.name AS column_name,ty.name AS data_type FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name='Unidades_Negocio' ORDER BY c.column_id"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"technical"
+}
