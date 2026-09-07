@@ -255,7 +255,7 @@ async def ventas_periodos_tickets(unidad: str = Query(...), periodo: str = Query
     )
     return {"success": True, "source": "Comercial_Inteligencia_VentasDetalleProducto",
             "tickets": [{
-        "folio": r["folio"], "fecha": r["fecha"].isoformat() if r["fecha"] else None,
+        "folio": r["folio"], "fecha": _iso(r["fecha"]),
         "importe_ticket": round(_f(r["importe_ticket"]), 2), "personas": int(r["personas"] or 0),
         "cantidad": _f(r["cantidad"]), "importe_producto": round(_f(r["importe_producto"]), 2)} for r in rows]}
 
@@ -315,7 +315,7 @@ async def resumen_cuentas(unidad: str = Query(...), desde: Optional[str] = None,
             """, (str(unidad_pk), d, h, limit))
     return {"success": True, "source": "Comercial_Inteligencia_VentasDetalleProducto", "unidad": unidad, "desde": d, "hasta": h, "group_by": "none",
             "export_all": export_all, "limited": not export_all, "limit": None if export_all else limit,
-            "cuentas": [{"folio": r["folio"], "fecha": r["fecha"].isoformat() if r["fecha"] else None,
+            "cuentas": [{"folio": r["folio"], "fecha": _iso(r["fecha"]),
                          "importe": round(_f(r["importe"]), 2), "personas": int(r["personas"] or 0),
                          "estado": r["estado"], "cuenta_id": r["cuenta_id"]} for r in rows]}
 
