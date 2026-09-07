@@ -1,0 +1,20 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-RUNTIME-ACTIVATE-ISCAM-BACKFILL-R25-CARLOS-20260907T232100Z",
+  "created_at_utc":"2026-09-07T23:21:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"26e32b1452c7d35cce5881e76ed8dbd32b0c2a8e",
+  "production_allowed":false,
+  "mode":"MUTATION",
+  "objective":"Solicitar al runtime de Preview que se sincronice con el HEAD actual de Edarsahub_Desarrollo para activar ISCAM_DETAIL_BACKFILL. No tocar Produccion ni datos.",
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer",
+  "actions":[{
+    "type":"write_file",
+    "path":"worker_queue/triggers/runtime-recovery/activate-iscam-detail-backfill-20260907T2321.json",
+    "content":"{\n  \"schema\": \"edarsahub.runtime-recovery-trigger.v1\",\n  \"reason\": \"Synchronize canonical Preview runtime to current Edarsahub_Desarrollo so ISCAM_DETAIL_BACKFILL is active before dry-run; do not touch Production.\",\n  \"production_touched\": false\n}\n"
+  }],
+  "checks":[{"type":"git_diff_check"}]
+}
