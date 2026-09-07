@@ -1,26 +1,32 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "826e62b068b46d18a46e54b1dc022878e97bb18f",
-  "generated_at_utc": "2026-09-07T02:07:05Z",
+  "development_sha": "c3f6584b84177d9d26893b60f8761def6188990e",
+  "generated_at_utc": "2026-09-07T02:08:55Z",
   "history": {
-    "done_total_local": 106,
-    "pending_total_local": 1,
+    "done_total_local": 107,
+    "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 210,
-    "results_total_local": 277
+    "rejected_total_local": 211,
+    "results_total_local": 279
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 0,
-      "job_id": "CAVAS-CORPORATIVAS-GATE2-DOSSIER-CERT-R2-20260907",
+      "age_seconds": 160,
+      "job_id": "CAVAS-CORPORATIVAS-GATE2-DOSSIER-CERT-01",
       "reason": null,
-      "state": "PENDING"
+      "state": "RESULT_READY"
     },
     {
-      "age_seconds": 50,
-      "job_id": "CAVAS-CORPORATIVAS-GATE2-DOSSIER-CERT-01",
+      "age_seconds": 108,
+      "job_id": "CAVAS-CORPORATIVAS-GATE2-DOSSIER-CERT-R2-20260907",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 8,
+      "job_id": "CAVAS-CORPORATIVAS-GATE2-MINIMAL-DDL-PROPOSAL-01",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -28,18 +34,18 @@
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
-  "queue_pending": 1,
+  "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-07T02:07:04Z",
-    "last_receive_utc": "2026-09-07T02:07:05Z",
-    "last_terminal_utc": "2026-09-07T02:06:15Z",
+    "last_cycle_utc": "2026-09-07T02:08:52Z",
+    "last_receive_utc": "2026-09-07T02:08:52Z",
+    "last_terminal_utc": "2026-09-07T02:08:47Z",
     "pid": "286"
   },
   "schema": "edarsahub.worker-health.v3",
