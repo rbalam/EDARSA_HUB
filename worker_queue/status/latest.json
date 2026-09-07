@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "db38d9af4908531915cc0761656cacce33a0bfc8",
-  "generated_at_utc": "2026-09-07T16:01:07Z",
+  "development_sha": "b710d4509e40c16091487dc7efd8942956ac61ce",
+  "generated_at_utc": "2026-09-07T16:02:25Z",
   "history": {
-    "done_total_local": 120,
+    "done_total_local": 121,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 234,
-    "results_total_local": 309
+    "results_total_local": 310
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1068,
+      "age_seconds": 1146,
       "job_id": "EDARSAHUB-ISCAM-FOUR-REPORTS-CANONICAL-APPLY-R6-CARLOS-20260907T152000Z",
       "reasons": [
         "INVALID_JSON"
@@ -22,31 +22,37 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2668,
+      "age_seconds": 13,
+      "job_id": "EDARSAHUB-ISCAM-CANONICAL-DRILLDOWN-R9-CARLOS-20260907T160200Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2746,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-REPORTS-AUDIT-R5-CARLOS-20260907T211500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 591,
+      "age_seconds": 669,
       "job_id": "EDARSAHUB-ISCAM-FOUR-REPORTS-CANONICAL-CODE-R7-CARLOS-20260907T154800Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 165,
+      "age_seconds": 243,
       "job_id": "EDARSAHUB-ISCAM-FOUR-REPORTS-CANONICAL-CODE-R8-CARLOS-20260907T155700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2661,
+      "age_seconds": 2739,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5B-R3-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2460,
+      "age_seconds": 2538,
       "job_id": "save-github-frontend-reproducible-build-fix-r3-20260907",
       "reason": null,
       "state": "RESULT_READY"
@@ -59,14 +65,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 5,
+  "queue_result_ready_recent": 6,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-07T16:01:06Z",
-    "last_receive_utc": "2026-09-07T16:01:07Z",
-    "last_terminal_utc": "2026-09-07T15:58:21Z",
+    "last_cycle_utc": "2026-09-07T16:02:19Z",
+    "last_receive_utc": "2026-09-07T16:02:20Z",
+    "last_terminal_utc": "2026-09-07T16:02:11Z",
     "pid": "285"
   },
   "schema": "edarsahub.worker-health.v3",
