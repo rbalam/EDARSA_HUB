@@ -1,0 +1,29 @@
+{
+  "base_sha": "3c10d52f1a1bfa50f50f05c11b0e42342cf1388f",
+  "blockers": [
+    "development_moved:efe4c589325a4e82a2818df7bc8afc9c0fbacea7"
+  ],
+  "candidate_sha": "e8cdb2bd33fb13ba4d0f316efb8b1677f5799eeb",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-07T22:42:39Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+    "backend/scripts/poblar_ventas_detalle_producto_canonico.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-SOFT-APERTURA-PATCH-R15-CARLOS-20260907T224800Z",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-07T22:42:49Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-07T22:42:33Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
