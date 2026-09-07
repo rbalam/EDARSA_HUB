@@ -1,0 +1,5 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "converge Universal Worker runtime to Development HEAD containing scope-aware concurrency hardening and prepare real SAFE_REBASE canary",
+  "production_touched": false
+}
