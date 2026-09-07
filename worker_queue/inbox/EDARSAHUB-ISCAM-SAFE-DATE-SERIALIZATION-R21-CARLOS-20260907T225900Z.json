@@ -1,0 +1,33 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-SAFE-DATE-SERIALIZATION-R21-CARLOS-20260907T225900Z",
+  "created_at_utc": "2026-09-07T22:59:00Z",
+  "requester": {"email": "carlosruz@edarsa.com.mx", "source": "chatgpt", "project": "V1", "chat": "EDARSAHUB-CONCILIACIONES"},
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "7c47e5d61763bb3691e58433fb8b411243dc49b4",
+  "production_allowed": false,
+  "objective": "Corregir el ERROR de Reportes ISCAM en Resumen de Cuentas Sin agrupar y en el drill de tickets usando el helper _iso para serializar fecha de forma segura. No cambiar SQL, fuentes, filtros, contratos de negocio ni Produccion.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "\"fecha\": r[\"fecha\"].isoformat() if r[\"fecha\"] else None,",
+      "new": "\"fecha\": _iso(r[\"fecha\"]),",
+      "expected_count": 2
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_safe_date_serialization_r21.py",
+      "content": "from pathlib import Path\n\nP = Path(__file__).resolve().parents[1] / 'modules' / 'inteligencia_comercial' / 'iscam_routes.py'\n\ndef test_no_direct_isoformat_for_row_fecha():\n    text = P.read_text(encoding='utf-8')\n    assert 'r[\\\"fecha\\\"].isoformat() if r[\\\"fecha\\\"] else None' not in text\n    assert text.count('_iso(r[\\\"fecha\\\"])') >= 2\n\ndef test_cuentas_none_safe_date():\n    text = P.read_text(encoding='utf-8')\n    start = text.index('@iscam_router.get(\\\"/cuentas\\\")')\n    end = text.index('@iscam_router.get(\\\"/cuentas/detalle\\\")', start)\n    assert '_iso(r[\\\"fecha\\\"])' in text[start:end]\n\ndef test_ticket_drill_safe_date():\n    text = P.read_text(encoding='utf-8')\n    start = text.index('@iscam_router.get(\\\"/ventas-periodos/tickets\\\")')\n    end = text.index('# ============================================================================\\n# 2) RESUMEN DE CUENTAS', start)\n    assert '_iso(r[\\\"fecha\\\"])' in text[start:end]\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/inteligencia_comercial/iscam_routes.py", "backend/tests/test_iscam_safe_date_serialization_r21.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_iscam_safe_date_serialization_r21.py"]}
+  ]
+}
