@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "a36abe729c49d46643b1dd63b3d1833a44738a87",
-  "generated_at_utc": "2026-09-07T18:53:20Z",
+  "generated_at_utc": "2026-09-07T18:54:31Z",
   "history": {
     "done_total_local": 132,
     "pending_total_local": 0,
@@ -13,37 +13,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1157,
+      "age_seconds": 1228,
       "job_id": "ISCAM-COMANDAS-NONE-DIAG-CARLOS-20260907T1824Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1074,
+      "age_seconds": 1145,
       "job_id": "ISCAM-COMANDAS-NONE-FIX-CARLOS-20260907T1836Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3312,
+      "age_seconds": 3383,
       "job_id": "ISCAM-SOFTRESTAURANT-GATE2D-POSTSYNC-VALIDATION-20260907T1800Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2985,
+      "age_seconds": 3056,
       "job_id": "ISCAM-SOFTRESTAURANT-GATE2E-FULL-HISTORY-DISCOVERY-20260907T1805Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2767,
+      "age_seconds": 2838,
       "job_id": "ISCAM-SOFTRESTAURANT-GATE2F-FULL-HISTORY-RESYNC-TOOL-20260907T1810Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1890,
+      "age_seconds": 1961,
       "job_id": "worker-capability-softrestaurant-full-history-resync-v1-20260907",
       "reason": null,
       "state": "RESULT_READY"
@@ -61,8 +61,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-07T18:53:17Z",
-    "last_receive_utc": "2026-09-07T18:53:18Z",
+    "last_cycle_utc": "2026-09-07T18:54:29Z",
+    "last_receive_utc": "2026-09-07T18:54:30Z",
     "last_terminal_utc": "2026-09-07T18:35:25Z",
     "pid": "286"
   },
