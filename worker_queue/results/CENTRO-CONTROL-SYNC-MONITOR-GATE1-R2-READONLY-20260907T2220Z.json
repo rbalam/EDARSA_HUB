@@ -1,0 +1,17 @@
+{
+  "agent_guard_release": "NOT_REQUIRED",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:BASE_SHA_MISMATCH:expected=d03d7ceffa87e1b5c6de2d23ce3a9034343f792d:actual=a4db2d3697ee4d15f0fa4ffdcc4bebf3cb21c51c"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-07T22:29:56Z",
+  "executor": "chatgpt-deterministic",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE1-R2-READONLY-20260907T2220Z",
+  "percent_complete": 0,
+  "production_touched": false,
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "started_at_utc": "2026-09-07T22:29:56Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada."
+}
