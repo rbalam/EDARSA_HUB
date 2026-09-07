@@ -720,6 +720,35 @@ def _soft_operational_datetime_range(cfg: Dict[str, Any], dia: date) -> Tuple[st
     return inicio.strftime("%Y-%m-%d %H:%M:%S"), fin.strftime("%Y-%m-%d %H:%M:%S")
 
 
+def _softrestaurant_empresa_id_for_window(conn, fi: str, ff: str) -> str:
+    """Resuelve turnos.idempresa del POS para un rango operativo."""
+    cur = conn.cursor(as_dict=True)
+    cur.execute(
+        """
+        SELECT DISTINCT
+            LTRIM(RTRIM(CONVERT(NVARCHAR(100), t.idempresa))) AS empresa_id
+        FROM turnos t WITH (NOLOCK)
+        WHERE t.apertura >= %s
+          AND t.apertura < %s
+          AND t.cierre IS NOT NULL
+          AND NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(100), t.idempresa))), '') IS NOT NULL
+        ORDER BY empresa_id
+        """,
+        (fi, ff),
+    )
+    candidates = sorted({
+        _s(row.get("empresa_id"))
+        for row in (cur.fetchall() or [])
+        if _s(row.get("empresa_id"))
+    })
+    cur.close()
+    if len(candidates) == 1:
+        return candidates[0]
+    if not candidates:
+        raise RuntimeError("SoftRestaurant sin idempresa en turnos cerrados del rango operativo")
+    raise RuntimeError("SoftRestaurant con multiples idempresa en el rango operativo")
+
+
 def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
     conn = get_pos_connection(cfg)
     if not conn:
@@ -737,6 +766,7 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         desc_expr = f"ISNULL(ch.{desc_col}, 0)" if desc_col else "CAST(0 AS decimal(18,4))"
 
         fi, ff = _soft_operational_datetime_range(cfg, dia)
+        empresa_id = _softrestaurant_empresa_id_for_window(conn, fi, ff)
 
         sql = f"""
         WITH h AS (
@@ -749,8 +779,14 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 {prop_expr} AS propina_ticket,
                 {desc_expr} AS descuento_ticket
             FROM cheques ch WITH (NOLOCK)
-            WHERE ch.fecha >= %s
-              AND ch.fecha < %s
+            INNER JOIN turnos tr WITH (NOLOCK)
+                ON tr.idturno = ch.idturno
+               AND tr.idempresa = ch.idempresa
+            WHERE ch.idempresa = %s
+              AND tr.idempresa = %s
+              AND tr.apertura >= %s
+              AND tr.apertura < %s
+              AND tr.cierre IS NOT NULL
         ),
         l AS (
             SELECT
@@ -828,7 +864,7 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         ORDER BY l.folio, l.producto_codigo_fuente
         """
         cur = conn.cursor(as_dict=True)
-        cur.execute(sql, (fi, ff))
+        cur.execute(sql, (empresa_id, empresa_id, fi, ff))
         rows = cur.fetchall() or []
         for r in rows:
             r["sistema_origen"] = "SOFTRESTAURANT"

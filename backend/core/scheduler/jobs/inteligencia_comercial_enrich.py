@@ -88,6 +88,7 @@ def _extract_softrestaurant(cfg, fi, ff):
             INNER JOIN turnos t ON t.idturno = ch.idturno
             LEFT JOIN tiposervicio ts ON ts.Idtiposervicio = ch.tipodeservicio
             WHERE t.apertura >= '{fi}' AND t.apertura < '{ff}'
+              AND t.cierre IS NOT NULL
               AND ch.cancelado = 0 AND ch.total > 0
         """)
         tipos = cur.fetchall() or []
@@ -102,6 +103,7 @@ def _extract_softrestaurant(cfg, fi, ff):
             INNER JOIN turnos t ON t.idturno = ch.idturno
             LEFT JOIN formasdepago fp ON fp.idformadepago = cp.idformadepago
             WHERE t.apertura >= '{fi}' AND t.apertura < '{ff}'
+              AND t.cierre IS NOT NULL
               AND ch.cancelado = 0 AND ch.total > 0
         """)
         pagos = cur.fetchall() or []
