@@ -1,0 +1,53 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-runtime-convergence-wake-hardening-v1-20260907T2248Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Corregir la causa estructural de runtime stale: el endpoint canonico de wake no debe declarar already_healthy solo por heartbeat si /app esta atras de Edarsahub_Desarrollo. Debe intentar exclusivamente fast-forward seguro del checkout canonico, fail-closed si hay worktree dirty/no-FF/wrong-branch, y reiniciar el unico servicio Universal Worker despues de una convergencia aplicada. Sin reset, stash, clean, rebase, force ni Production.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "expected_count": 1,
+      "old": "QUEUE_REF = \"refs/heads/worker/requests\"\nWORKER_SERVICE = \"edarsahub-universal-worker\"",
+      "new": "QUEUE_REF = \"refs/heads/worker/requests\"\nDEV_BRANCH = \"Edarsahub_Desarrollo\"\nWORKER_SERVICE = \"edarsahub-universal-worker\""
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "expected_count": 1,
+      "old": "def _heartbeat_age_seconds() -> float | None:\n    try:\n        raw = LAST_RECEIVE.read_text(encoding=\"utf-8\").strip().replace(\"Z\", \"+00:00\")\n        value = datetime.fromisoformat(raw)\n        if value.tzinfo is None:\n            value = value.replace(tzinfo=timezone.utc)\n        return max(0.0, time.time() - value.timestamp())\n    except (OSError, ValueError):\n        return None\n\n\ndef _restart_worker() -> None:",
+      "new": "def _heartbeat_age_seconds() -> float | None:\n    try:\n        raw = LAST_RECEIVE.read_text(encoding=\"utf-8\").strip().replace(\"Z\", \"+00:00\")\n        value = datetime.fromisoformat(raw)\n        if value.tzinfo is None:\n            value = value.replace(tzinfo=timezone.utc)\n        return max(0.0, time.time() - value.timestamp())\n    except (OSError, ValueError):\n        return None\n\n\ndef _git(*args: str, timeout: int = 30) -> subprocess.CompletedProcess[str]:\n    try:\n        return subprocess.run(\n            [\"git\", *args],\n            cwd=str(REPO_ROOT),\n            check=False,\n            capture_output=True,\n            text=True,\n            timeout=timeout,\n            env={\"GIT_TERMINAL_PROMPT\": \"0\"},\n        )\n    except (OSError, subprocess.SubprocessError) as exc:\n        raise HTTPException(\n            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,\n            detail=\"worker runtime git unavailable\",\n        ) from exc\n\n\ndef _converge_development_if_safe() -> dict[str, str]:\n    fetch = _git(\"fetch\", \"--quiet\", \"origin\", DEV_BRANCH, timeout=90)\n    if fetch.returncode != 0:\n        raise HTTPException(\n            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,\n            detail=\"worker runtime development fetch failed\",\n        )\n\n    branch = _git(\"branch\", \"--show-current\").stdout.strip()\n    local = _git(\"rev-parse\", \"HEAD\").stdout.strip()\n    remote = _git(\"rev-parse\", f\"origin/{DEV_BRANCH}\").stdout.strip()\n    if not _SHA_RE.fullmatch(local) or not _SHA_RE.fullmatch(remote):\n        raise HTTPException(\n            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,\n            detail=\"worker runtime development sha invalid\",\n        )\n    if local == remote:\n        return {\"state\": \"ALIGNED\", \"local_sha\": local, \"remote_sha\": remote}\n    if branch != DEV_BRANCH:\n        raise HTTPException(\n            status_code=status.HTTP_409_CONFLICT,\n            detail=f\"worker runtime convergence blocked: wrong branch {branch}\",\n        )\n    ancestor = _git(\"merge-base\", \"--is-ancestor\", local, remote)\n    if ancestor.returncode != 0:\n        raise HTTPException(\n            status_code=status.HTTP_409_CONFLICT,\n            detail=\"worker runtime convergence blocked: non-fast-forward\",\n        )\n    dirty = _git(\"status\", \"--porcelain=v1\", \"--untracked-files=all\")\n    if dirty.returncode != 0:\n        raise HTTPException(\n            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,\n            detail=\"worker runtime worktree status unavailable\",\n        )\n    if dirty.stdout.strip():\n        raise HTTPException(\n            status_code=status.HTTP_409_CONFLICT,\n            detail=\"worker runtime convergence blocked: local worktree dirty\",\n        )\n    ff = _git(\"merge\", \"--ff-only\", f\"origin/{DEV_BRANCH}\", timeout=120)\n    if ff.returncode != 0:\n        raise HTTPException(\n            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,\n            detail=\"worker runtime fast-forward failed\",\n        )\n    new_head = _git(\"rev-parse\", \"HEAD\").stdout.strip()\n    if new_head != remote:\n        raise HTTPException(\n            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,\n            detail=\"worker runtime fast-forward verification failed\",\n        )\n    return {\"state\": \"FF_APPLIED\", \"local_sha\": local, \"remote_sha\": remote, \"new_sha\": new_head}\n\n\ndef _restart_worker() -> None:"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "expected_count": 1,
+      "old": "    heartbeat_age = _heartbeat_age_seconds()\n    if heartbeat_age is not None and heartbeat_age <= 90:\n        return {\n            \"accepted\": True,\n            \"action\": \"already_healthy\",\n            \"queue_sha\": current,\n            \"heartbeat_age_seconds\": round(heartbeat_age, 3),\n            \"production_touched\": False,\n        }\n\n    LOCK_PATH.touch(exist_ok=True)",
+      "new": "    convergence = _converge_development_if_safe()\n    heartbeat_age = _heartbeat_age_seconds()\n    if convergence[\"state\"] == \"ALIGNED\" and heartbeat_age is not None and heartbeat_age <= 90:\n        return {\n            \"accepted\": True,\n            \"action\": \"already_healthy\",\n            \"queue_sha\": current,\n            \"development_sha\": convergence[\"remote_sha\"],\n            \"heartbeat_age_seconds\": round(heartbeat_age, 3),\n            \"production_touched\": False,\n        }\n\n    LOCK_PATH.touch(exist_ok=True)"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "expected_count": 1,
+      "old": "            \"action\": \"worker_restart_accepted\",\n            \"service\": WORKER_SERVICE,\n            \"queue_sha\": current,",
+      "new": "            \"action\": (\"runtime_converged_and_worker_restart\" if convergence[\"state\"] == \"FF_APPLIED\" else \"worker_restart_accepted\"),\n            \"service\": WORKER_SERVICE,\n            \"queue_sha\": current,\n            \"runtime_convergence\": convergence,"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": ["backend/modules/worker_runtime_wake/routes.py"]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0"
+  },
+  "human_summary_language": "es"
+}
