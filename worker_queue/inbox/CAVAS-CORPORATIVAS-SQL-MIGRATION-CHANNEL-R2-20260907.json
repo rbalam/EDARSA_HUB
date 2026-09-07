@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-CHANNEL-R2-20260907",
+  "created_at_utc": "2026-09-07T03:48:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "531ff3d9f19e23b9fb16bd7c4eb25578dbb944cc",
+  "production_allowed": false,
+  "objective": "Ajustar el canal externo ya certificado para usar HRLectura como credencial de migracion porque el propietario confirma que tiene full access. Antes de cualquier DDL, probar permisos efectivos CREATE TABLE y ALTER sobre dbo mediante HAS_PERMS_BY_NAME; fallar cerrado si no existen. Luego ejecutar el runner canonico con la misma credencial y re-disparar exactamente una vez. No tocar Production ni Worker/Supervisor/watchdog.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/cavas-corporativas-development-migration.yml",
+      "old": "      - name: Step 2 - Writer credential gate\n        env:\n          EDARSAHUB_SQL_USER: ${{ secrets.EDARSAHUB_SQL_MIGRATION_USER }}\n          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_MIGRATION_PASSWORD }}\n        shell: bash\n        run: |\n          set -euo pipefail\n          test -n \"${EDARSAHUB_SQL_USER:-}\" || { echo 'MISSING_EDARSAHUB_SQL_MIGRATION_USER'; exit 1; }\n          test -n \"${EDARSAHUB_SQL_PASSWORD:-}\" || { echo 'MISSING_EDARSAHUB_SQL_MIGRATION_PASSWORD'; exit 1; }\n          test \"${EDARSAHUB_SQL_USER}\" != 'HRLectura' || { echo 'READONLY_USER_FORBIDDEN_FOR_MIGRATION'; exit 1; }\n\n      - name: Step 3 - Execute canonical migration transaction\n        env:\n          EDARSAHUB_SQL_USER: ${{ secrets.EDARSAHUB_SQL_MIGRATION_USER }}\n          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_MIGRATION_PASSWORD }}\n          EDARSAHUB_ALLOW_MIGRATIONS: 'true'",
+      "new": "      - name: Step 2 - Verify HRLectura effective DDL permissions\n        env:\n          EDARSAHUB_SQL_USER: HRLectura\n          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}\n        shell: bash\n        run: |\n          set -euo pipefail\n          test -n \"${EDARSAHUB_SQL_PASSWORD:-}\"\n          python - <<'PY' | tee \"$RUNNER_TEMP/cavas_writer_permissions.json\"\n          import json, os, pymssql\n          conn = pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'], port=int(os.environ['EDARSAHUB_SQL_PORT']), database=os.environ['EDARSAHUB_SQL_DATABASE'], user=os.environ['EDARSAHUB_SQL_USER'], password=os.environ['EDARSAHUB_SQL_PASSWORD'], timeout=60, login_timeout=15)\n          cur = conn.cursor(as_dict=True)\n          cur.execute(\"\"\"\n          SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS db_user,\n                 COALESCE(HAS_PERMS_BY_NAME(DB_NAME(), 'DATABASE', 'CREATE TABLE'),0) AS can_create_table,\n                 COALESCE(HAS_PERMS_BY_NAME('dbo', 'SCHEMA', 'ALTER'),0) AS can_alter_dbo\n          \"\"\")\n          row = cur.fetchone()\n          print(json.dumps(row, default=str, sort_keys=True))\n          cur.close(); conn.close()\n          if row['database_name'] != os.environ['EDARSAHUB_SQL_DATABASE'] or row['login_name'] != 'HRLectura':\n              raise SystemExit('WRITER_IDENTITY_MISMATCH')\n          if int(row['can_create_table']) != 1 or int(row['can_alter_dbo']) != 1:\n              raise SystemExit('HRLECTURA_DDL_PERMISSIONS_NOT_CONFIRMED')\n          PY\n\n      - name: Step 3 - Execute canonical migration transaction\n        env:\n          EDARSAHUB_SQL_USER: HRLectura\n          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}\n          EDARSAHUB_ALLOW_MIGRATIONS: 'true'",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/cavas-corporativas-development-migration.yml",
+      "old": "          cp \"$RUNNER_TEMP/cavas_preflight.json\" \"$RUNNER_TEMP/cavas-evidence/preflight.json\" 2>/dev/null || true\n          cp \"$RUNNER_TEMP/cavas_migrate_stdout.txt\"",
+      "new": "          cp \"$RUNNER_TEMP/cavas_preflight.json\" \"$RUNNER_TEMP/cavas-evidence/preflight.json\" 2>/dev/null || true\n          cp \"$RUNNER_TEMP/cavas_writer_permissions.json\" \"$RUNNER_TEMP/cavas-evidence/writer_permissions.json\" 2>/dev/null || true\n          cp \"$RUNNER_TEMP/cavas_migrate_stdout.txt\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "ops/migrations/requests/CAVAS-CORPORATIVAS-CORE-20260907.execute",
+      "old": "evidence_artifact=required\n",
+      "new": "evidence_artifact=required\nretry=2\nwriter=HRLectura-verified-by-HAS_PERMS_BY_NAME\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
