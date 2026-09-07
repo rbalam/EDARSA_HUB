@@ -1,0 +1,54 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "ISCAM-130MID-PAYMENTS-COMANDAS-READONLY-AUDIT-G1-20260907T1733Z",
+  "created_at_utc": "2026-09-07T17:33:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "7d6ab63429a968631d48fdb866ec1aba2d6e7cbf",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar estrictamente en solo lectura el incidente de Reportes ISCAM para 130MID en septiembre 2026: Comandas de Venta agrupadas muestran datos pero falta determinar el contrato correcto para drill-down, mientras Formas de Pago (Corte) y Pagos por Ticket aparecen vacios. Producir evidencia SQL real para determinar presencia, identificadores de unidad, rangos temporales y correspondencia de tickets entre Comercial_Inteligencia_VentasDetalleProducto, Finanzas_CortesCaja y Finanzas_CortesCaja_DetallePagos. No modificar SQL, codigo, datos, Worker ni Production. No inventar pagos desde ventas y no exponer secretos.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "iscam_130mid_comandas_sep2026_summary",
+          "sql": "SELECT COUNT(*) AS lineas, COUNT(DISTINCT id_transaccion) AS tickets_transaccion, COUNT(DISTINCT numero_ticket) AS tickets_folio, SUM(ISNULL(cantidad,0)) AS cantidad, SUM(ISNULL(importe_neto,0)) AS importe, MIN(fecha_operacion) AS fecha_operacion_min, MAX(fecha_operacion) AS fecha_operacion_max, MIN(fecha_hora) AS fecha_hora_min, MAX(fecha_hora) AS fecha_hora_max FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='130MID' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND fecha_operacion >= '2026-09-01' AND fecha_operacion < '2026-10-01'"
+        },
+        {
+          "name": "iscam_cortes_unit_identifiers_sep2026",
+          "sql": "SELECT TOP 100 UnidadNegocioNombre, COUNT(*) AS cortes, MIN(FechaApertura) AS fecha_min, MAX(FechaApertura) AS fecha_max, SUM(ISNULL(TotalVenta,0)) AS total_venta FROM dbo.Finanzas_CortesCaja WHERE ISNULL(Activo,1)=1 AND FechaApertura >= '2026-09-01' AND FechaApertura < '2026-10-01' GROUP BY UnidadNegocioNombre ORDER BY cortes DESC"
+        },
+        {
+          "name": "iscam_cortes_130mid_name_candidates_alltime",
+          "sql": "SELECT TOP 100 UnidadNegocioNombre, COUNT(*) AS cortes, MIN(FechaApertura) AS fecha_min, MAX(FechaApertura) AS fecha_max FROM dbo.Finanzas_CortesCaja WHERE ISNULL(Activo,1)=1 AND (UnidadNegocioNombre LIKE '%130%' OR UnidadNegocioNombre LIKE '%MERIDA%' OR UnidadNegocioNombre LIKE '%MÉRIDA%') GROUP BY UnidadNegocioNombre ORDER BY fecha_max DESC"
+        },
+        {
+          "name": "iscam_detalle_pagos_unit_identifiers_sep2026",
+          "sql": "SELECT TOP 100 UnidadNegocio, SistemaOrigen, COUNT(*) AS pagos, COUNT(DISTINCT NumeroTicket) AS tickets, SUM(ISNULL(Importe,0)) AS importe, SUM(ISNULL(Propina,0)) AS propina, MIN(FechaHora) AS fecha_min, MAX(FechaHora) AS fecha_max FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE ISNULL(Activo,1)=1 AND FechaHora >= '2026-09-01' AND FechaHora < '2026-10-01' GROUP BY UnidadNegocio, SistemaOrigen ORDER BY pagos DESC"
+        },
+        {
+          "name": "iscam_detalle_pagos_130mid_candidates_alltime",
+          "sql": "SELECT TOP 100 UnidadNegocio, SistemaOrigen, COUNT(*) AS pagos, COUNT(DISTINCT NumeroTicket) AS tickets, MIN(FechaHora) AS fecha_min, MAX(FechaHora) AS fecha_max FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE ISNULL(Activo,1)=1 AND (UnidadNegocio LIKE '%130%' OR UnidadNegocio LIKE '%MERIDA%' OR UnidadNegocio LIKE '%MÉRIDA%') GROUP BY UnidadNegocio, SistemaOrigen ORDER BY fecha_max DESC"
+        },
+        {
+          "name": "iscam_comandas_ticket_sample_sep2026",
+          "sql": "SELECT TOP 100 numero_ticket, id_transaccion, MIN(fecha_hora) AS fecha, SUM(ISNULL(importe_neto,0)) AS importe, SUM(ISNULL(cantidad,0)) AS cantidad, COUNT(*) AS lineas FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='130MID' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND fecha_operacion >= '2026-09-01' AND fecha_operacion < '2026-10-01' GROUP BY numero_ticket,id_transaccion ORDER BY fecha DESC"
+        },
+        {
+          "name": "iscam_ticket_payment_match_130mid_sep2026",
+          "sql": "SELECT COUNT(DISTINCT c.numero_ticket) AS comandas_folios, COUNT(DISTINCT p.NumeroTicket) AS matched_payment_folios, COUNT(DISTINCT CASE WHEN p.NumeroTicket IS NULL THEN c.numero_ticket END) AS unmatched_comandas_folios FROM (SELECT DISTINCT numero_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='130MID' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND fecha_operacion >= '2026-09-01' AND fecha_operacion < '2026-10-01') c LEFT JOIN dbo.Finanzas_CortesCaja_DetallePagos p ON p.NumeroTicket=c.numero_ticket AND ISNULL(p.Activo,1)=1 AND p.FechaHora >= '2026-09-01' AND p.FechaHora < '2026-10-01'"
+        },
+        {
+          "name": "iscam_payment_date_coverage_recent",
+          "sql": "SELECT 'CORTES' AS fuente, MIN(FechaApertura) AS fecha_min, MAX(FechaApertura) AS fecha_max, COUNT(*) AS filas FROM dbo.Finanzas_CortesCaja WHERE ISNULL(Activo,1)=1 UNION ALL SELECT 'DETALLE_PAGOS' AS fuente, MIN(FechaHora) AS fecha_min, MAX(FechaHora) AS fecha_max, COUNT(*) AS filas FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE ISNULL(Activo,1)=1"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
