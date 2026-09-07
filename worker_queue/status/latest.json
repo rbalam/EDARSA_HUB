@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "2235da9a1dd6dc24b29b7240e244bc8435cc2d50",
-  "generated_at_utc": "2026-09-07T03:43:38Z",
+  "generated_at_utc": "2026-09-07T03:44:52Z",
   "history": {
     "done_total_local": 116,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 224,
-    "results_total_local": 297
+    "rejected_total_local": 225,
+    "results_total_local": 298
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 418,
+      "age_seconds": 493,
       "job_id": "CAVAS-BOS-V1-BENEFIT-LIMITS-ACCUMULATION-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 418,
+      "age_seconds": 493,
       "job_id": "CAVAS-BOS-V1-BENEFIT-RESERVATION-CONCURRENCY-01",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -31,31 +31,37 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 415,
+      "age_seconds": 490,
       "job_id": "BOS-DIRECCION-SNAPSHOT-PUBLISHER-GATE4-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 413,
+      "age_seconds": 60,
+      "job_id": "BOS-DIRECCION-SNAPSHOT-PUBLISHER-GATE4-R2-20260907",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 487,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5B-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 410,
+      "age_seconds": 484,
       "job_id": "finanzas-decision-pago-authoritative-v12-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 407,
+      "age_seconds": 481,
       "job_id": "save-github-frontend-reproducible-build-fix-r2-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 404,
+      "age_seconds": 478,
       "job_id": "worker-readonly-certification-evidence-hardening-v1-20260906",
       "reason": null,
       "state": "RESULT_READY"
@@ -68,14 +74,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 2,
-  "queue_result_ready_recent": 5,
+  "queue_result_ready_recent": 6,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-07T03:43:35Z",
-    "last_receive_utc": "2026-09-07T03:43:35Z",
-    "last_terminal_utc": "2026-09-07T03:36:53Z",
+    "last_cycle_utc": "2026-09-07T03:44:47Z",
+    "last_receive_utc": "2026-09-07T03:44:48Z",
+    "last_terminal_utc": "2026-09-07T03:43:52Z",
     "pid": "276"
   },
   "schema": "edarsahub.worker-health.v3",
