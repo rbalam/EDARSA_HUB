@@ -1,0 +1,29 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-ESTELAR-DETAIL-BACKFILL-R10B-CARLOS-20260907T161200Z",
+  "created_at_utc": "2026-09-07T16:12:00Z",
+  "requester": {"email": "carlosruz@edarsa.com.mx", "source": "chatgpt", "project": "V1", "chat": "EDARSAHUB-CONCILIACIONES"},
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b710d4509e40c16091487dc7efd8942956ac61ce",
+  "production_allowed": false,
+  "objective": "Ejecutar ahora el backfill histórico 2026 del detalle canónico de ESTELAR. Primero ajustar el extractor SoftRestaurant para usar idempresa canónico y atribución por turnos.apertura con cierre solo como elegibilidad. Luego ejecutar el backfill idempotente de 2026-01-01 a 2026-09-07 exclusivo y validar que agosto tenga productos y tickets para el drill ISCAM. No tocar Producción.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "MUTATION",
+  "actions": [
+    {"type": "replace_text", "path": "backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py", "old": "    cfg = get_server_connection_config(server_id)\n", "new": "    cfg = get_server_connection_config(server_id, unidad_row.get(\"unidad_pk\"))\n", "expected_count": 1},
+    {"type": "replace_text", "path": "backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py", "old": "        \"sucursal_origen_id\": unidad_row.get(\"sucursal_origen_id\"),\n        \"server_id\": server_id,", "new": "        \"sucursal_origen_id\": unidad_row.get(\"sucursal_origen_id\"),\n        \"empresa_id\": cfg.get(\"empresa_id\"),\n        \"server_id\": server_id,", "expected_count": 1},
+    {"type": "replace_text", "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py", "old": "        fi, ff = _soft_operational_datetime_range(cfg, dia)\n\n        sql = f\"\"\"", "new": "        fi, ff = _soft_operational_datetime_range(cfg, dia)\n        empresa_id = str(cfg.get(\"empresa_id\") or \"\").strip()\n        if not empresa_id:\n            raise RuntimeError(\"SoftRestaurant requiere empresa_id canónico\")\n\n        sql = f\"\"\"", "expected_count": 1},
+    {"type": "replace_text", "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py", "old": "            FROM cheques ch WITH (NOLOCK)\n            WHERE ch.fecha >= %s\n              AND ch.fecha < %s", "new": "            FROM cheques ch WITH (NOLOCK)\n            INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno = ch.idturno AND tr.idempresa = ch.idempresa\n            WHERE tr.idempresa = %s AND ch.idempresa = %s\n              AND tr.apertura >= %s AND tr.apertura < %s\n              AND tr.cierre IS NOT NULL", "expected_count": 1},
+    {"type": "replace_text", "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py", "old": "        cur.execute(sql, (fi, ff))", "new": "        cur.execute(sql, (empresa_id, empresa_id, fi, ff))", "expected_count": 1},
+    {"type": "write_file", "path": "backend/tests/iscam_estelar_detail_backfill_r10b_evidence.json", "content": "{\n  \"status\": \"PENDING\",\n  \"job_id\": \"EDARSAHUB-ISCAM-ESTELAR-DETAIL-BACKFILL-R10B-CARLOS-20260907T161200Z\",\n  \"production_touched\": false\n}\n"},
+    {"type": "write_file", "path": "backend/tests/test_iscam_estelar_detail_backfill_r10b.py", "content": "import asyncio\nimport json\nfrom datetime import date\nfrom pathlib import Path\n\nfrom modules.inteligencia_comercial.iscam_routes import ventas_periodos_productos, ventas_periodos_tickets\nfrom scripts.backfill_detalle_producto_pendientes import ejecutar_backfill\n\nEVIDENCE = Path(__file__).with_name('iscam_estelar_detail_backfill_r10b_evidence.json')\n\ndef test_estelar_detail_backfill_2026_and_drilldown():\n    code, summary = ejecutar_backfill(date(2026,1,1), date(2026,9,7), unidades=['ESTELAR'], commit=True)\n    productos = asyncio.run(ventas_periodos_productos('ESTELAR', '2026-08', 'mes'))\n    items = productos.get('productos') or []\n    producto = next((x.get('codigo') for x in items if x.get('codigo')), None)\n    tickets = asyncio.run(ventas_periodos_tickets('ESTELAR', '2026-08', str(producto), 'mes')) if producto else {'tickets': []}\n    evidence = {\n        'status': 'PASS' if items and tickets.get('tickets') else 'FAIL',\n        'job_id': 'EDARSAHUB-ISCAM-ESTELAR-DETAIL-BACKFILL-R10B-CARLOS-20260907T161200Z',\n        'backfill_returncode': code,\n        'backfill': summary,\n        'agosto_productos_count': len(items),\n        'agosto_productos_top5': items[:5],\n        'producto_validado': producto,\n        'agosto_tickets_count': len(tickets.get('tickets') or []),\n        'agosto_tickets_top5': (tickets.get('tickets') or [])[:5],\n        'production_touched': False,\n    }\n    EVIDENCE.write_text(json.dumps(evidence, ensure_ascii=False, indent=2, default=str) + '\\n', encoding='utf-8')\n    assert items, 'El drill de productos de agosto sigue vacío después del backfill'\n    assert tickets.get('tickets'), 'El drill Producto->Tickets sigue vacío después del backfill'\n"}
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py", "backend/scripts/poblar_ventas_detalle_producto_canonico.py", "backend/tests/test_iscam_estelar_detail_backfill_r10b.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_iscam_canonical_drilldown_r9.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_iscam_estelar_detail_backfill_r10b.py"]}
+  ]
+}
