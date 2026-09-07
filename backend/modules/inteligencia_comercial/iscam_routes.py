@@ -376,7 +376,7 @@ async def comandas_venta(unidad: str = Query(...), desde: Optional[str] = None, 
             """, (limit, unidad, d, h))
     return {"success": True, "unidad": unidad, "desde": d, "hasta": h, "group_by": "none",
             "export_all": export_all, "limited": not export_all, "limit": None if export_all else limit,
-            "comandas": [{"folio_cuenta": r["folio_cuenta"], "fecha": r["fecha"].isoformat() if r["fecha"] else None,
+            "comandas": [{"folio_cuenta": r["folio_cuenta"], "fecha": _iso(r["fecha"]),
                           "clave": r["clave"], "descripcion": r["descripcion"], "cantidad": _f(r["cantidad"]),
                           "precio": round(_f(r["precio"]), 2), "importe": round(_f(r["importe"]), 2)} for r in rows]}
 
