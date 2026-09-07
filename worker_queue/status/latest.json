@@ -1,124 +1,52 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "0e8486fe9f543aeddff2df778cd05f9c6a2aa381",
-  "generated_at_utc": "2026-09-07T04:08:00Z",
+  "generated_at_utc": "2026-09-07T15:16:29Z",
   "history": {
     "done_total_local": 119,
-    "pending_total_local": 0,
-    "processing_total_local": 0,
-    "rejected_total_local": 228,
+    "pending_total_local": 2,
+    "processing_total_local": 1,
+    "rejected_total_local": 229,
     "results_total_local": 304
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1881,
-      "job_id": "CAVAS-BOS-V1-BENEFIT-LIMITS-ACCUMULATION-01",
-      "reasons": [
-        "ACTION_1_INVALID_TYPE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 1881,
-      "job_id": "CAVAS-BOS-V1-BENEFIT-RESERVATION-CONCURRENCY-01",
-      "reasons": [
-        "ACTION_1_INVALID_TYPE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 1878,
-      "job_id": "BOS-DIRECCION-SNAPSHOT-PUBLISHER-GATE4-20260907",
+      "age_seconds": 24,
+      "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5B-R3-20260907",
       "reason": null,
-      "state": "RESULT_READY"
+      "state": "PENDING"
     },
     {
-      "age_seconds": 1448,
-      "job_id": "BOS-DIRECCION-SNAPSHOT-PUBLISHER-GATE4-R2-20260907",
+      "age_seconds": 24,
+      "job_id": "save-github-frontend-reproducible-build-fix-r3-20260907",
       "reason": null,
-      "state": "RESULT_READY"
+      "state": "PENDING"
     },
     {
-      "age_seconds": 570,
-      "job_id": "BOS-DIRECCION-SNAPSHOT-PUBLISHER-GATE4-R3-20260907",
+      "age_seconds": 24,
+      "job_id": "EDARSAHUB-ISCAM-DETAIL-REPORTS-AUDIT-R5-CARLOS-20260907T211500Z",
       "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1365,
-      "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-CHANNEL-01",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1134,
-      "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-CHANNEL-R2-20260907",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1875,
-      "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5B-20260907",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 680,
-      "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5B-R2-20260907",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1872,
-      "job_id": "finanzas-decision-pago-authoritative-v12-20260906",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 616,
-      "job_id": "finanzas-decision-pago-authoritative-v13-20260906",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1869,
-      "job_id": "save-github-frontend-reproducible-build-fix-r2-20260907",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 708,
-      "job_id": "worker-readonly-certification-evidence-hardening-r2-20260906",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1866,
-      "job_id": "worker-readonly-certification-evidence-hardening-v1-20260906",
-      "reason": null,
-      "state": "RESULT_READY"
+      "state": "RUNNING"
     }
   ],
-  "oldest_pending_age_seconds": 0,
+  "oldest_pending_age_seconds": 24,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 3,
   "queue_done_local_recent": 0,
-  "queue_pending": 0,
-  "queue_rejected_recent": 2,
-  "queue_result_ready_recent": 12,
-  "queue_running": 0,
+  "queue_pending": 2,
+  "queue_rejected_recent": 0,
+  "queue_result_ready_recent": 0,
+  "queue_running": 1,
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "EDARSAHUB-ISCAM-DETAIL-REPORTS-AUDIT-R5-CARLOS-20260907T211500Z",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-07T04:07:54Z",
-    "last_receive_utc": "2026-09-07T04:07:57Z",
+    "last_cycle_utc": "2026-09-07T15:16:28Z",
+    "last_receive_utc": "2026-09-07T15:16:23Z",
     "last_terminal_utc": "2026-09-07T03:58:30Z",
-    "pid": "276"
+    "pid": "285"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
