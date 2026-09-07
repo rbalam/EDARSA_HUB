@@ -1,0 +1,29 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-ESTELAR-DETAIL-VERIFY-R10C-CARLOS-20260907T172600Z",
+  "created_at_utc": "2026-09-07T17:26:00Z",
+  "requester": {"email": "carlosruz@edarsa.com.mx", "source": "chatgpt", "project": "V1", "chat": "EDARSAHUB-CONCILIACIONES"},
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "7d6ab63429a968631d48fdb866ec1aba2d6e7cbf",
+  "production_allowed": false,
+  "objective": "Verificar únicamente si el backfill R10B dejó datos canónicos utilizables para ESTELAR 2026 pese a que su pytest final falló. No modificar código ni datos. Confirmar especialmente agosto para el drill ISCAM productos/tickets.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "READ_ONLY_SQL",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "estelar_detalle_mensual_2026",
+          "sql": "SELECT CONVERT(char(7), fecha_operacion, 120) AS periodo, COUNT(*) AS lineas, COUNT(DISTINCT id_transaccion) AS tickets, COUNT(DISTINCT producto_codigo_fuente) AS productos, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN ISNULL(importe_neto,0) ELSE 0 END) AS importe FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion >= '2026-01-01' AND fecha_operacion < '2026-09-07' AND ISNULL(activo,1)=1 GROUP BY CONVERT(char(7), fecha_operacion, 120) ORDER BY periodo"
+        },
+        {
+          "name": "estelar_agosto_drill_sample",
+          "sql": "SELECT TOP (10) producto_codigo_fuente AS codigo, MAX(producto_nombre) AS producto, SUM(ISNULL(cantidad,0)) AS cantidad, SUM(ISNULL(importe_neto,0)) AS importe, COUNT(DISTINCT id_transaccion) AS tickets FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion >= '2026-08-01' AND fecha_operacion < '2026-09-01' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY producto_codigo_fuente ORDER BY importe DESC"
+        }
+      ]
+    }
+  ]
+}
