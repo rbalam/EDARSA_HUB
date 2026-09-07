@@ -1,0 +1,24 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "WORKER-CAPABILITY-POLICY-PHASE-CLOSURE-GATE4-R2-20260907",
+  "created_at_utc": "2026-09-07T02:17:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "bb1f313480e545627f04c76a8c71eda36dc40e45",
+  "production_allowed": false,
+  "objective": "Gate 4 R2. Cerrar formalmente la fase Capability/Policy con un dossier canonico persistente SHA-bound que consolide Gate 2A, 2B, 2C-R2, 2D-R2 y Gate 3 E2E. Reejecutar la suite contractual completa. No activar runtime, no instalar OmniRoute, no ejecutar red, no modificar RBAC SQL, Worker, bridge, dispatcher, Supervisor, watchdog ni Produccion.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/ARCHITECTURE/AGENT_CAPABILITY_POLICY_PHASE_CERTIFIED_20260906.md",
+      "content": "# EDARSAHUB — Capability / Policy Layer — Phase Certification\n\nFecha de cierre: 2026-09-06\nEntorno: Edarsahub_Desarrollo\nProduccion: NO tocada\n\n## Contrato de autoridad\nrequested ∩ user_allowed ∩ agent_allowed ∩ environment_allowed ∩ policy_allowed\n\nSkill es procedimiento, no autoridad. Agent Reach y AI Gateway son ejecutores sometidos a Policy.\n\n## Cadena certificada\nRBAC resuelto -> Capability/Policy -> Procedure/Skill -> Agent Reach o AI Gateway -> Execution Gate\n\n## Evidencia terminal\n- Gate 2A: WORKER-CAPABILITY-POLICY-ENGINE-GATE2A-20260906 — CERTIFIED SHA 575db30bf47e6f08d4730deab73bdb2f174a57c2\n- Gate 2B: WORKER-SKILLS-POLICY-LAYER-GATE2B-20260906 — CERTIFIED SHA ba6bcaa2bf3156ee177fe8ba3db4b6cd0a512694\n- Gate 2C R2: WORKER-AGENT-REACH-POLICY-ADAPTER-GATE2C-R2-20260906 — CERTIFIED SHA 73e09fa9ca548c9f949feb2e7a8887e7cae15630\n- Gate 2D R2: WORKER-AI-GATEWAY-POLICY-GATE2D-R2-20260906 — CERTIFIED SHA 23b798ecf215dc04ab62f3a14bcace971a1022c5\n- Gate 3: WORKER-CAPABILITY-POLICY-E2E-GATE3-20260906 — CERTIFIED SHA ccdeeb7e222c023e2c1ce05f30c984008d62a116\n\n## Invariantes certificados\n- Produccion prohibida por defecto.\n- Sin autoescalacion de roles/capabilities/scopes.\n- Skills no conceden autoridad.\n- Agent Reach requiere EXTERNAL_RESEARCH y riesgo maximo R1.\n- Egress sujeto a clasificacion y budgets.\n- AI Gateway requiere AI_INFERENCE y scopes provider/model.\n- Seleccion de modelo solo entre candidatos autorizados dentro de budget.\n- Execution Gate falla cerrado si RBAC previo niega.\n- Sin SQL, red, subprocess ni SDKs desde esta capa.\n\n## Fuera de alcance\n- Activacion real de runtime.\n- Instalacion/conexion de OmniRoute.\n- Proveedores AI reales.\n- Produccion.\n- Worker/bridge/dispatcher/Supervisor/watchdog.\n- RBAC SQL canonico.\n\n## Estado\nLa fase Capability/Policy queda certificada en desarrollo con evidencia SHA-bound. Cualquier activacion runtime u OmniRoute requiere fase nueva y debe mantener fail-closed.\n"
+    }
+  ],
+  "checks": [
+    {"type": "pytest", "paths": ["backend/tests/test_worker_requester_rbac_contract.py", "backend/tests/test_agent_capability_policy.py", "backend/tests/test_agent_procedure_policy.py", "backend/tests/test_agent_reach_policy_adapter.py", "backend/tests/test_ai_gateway_policy_adapter.py", "backend/tests/test_agent_execution_gate_e2e.py", "backend/tests/test_edarsa_skills_inventory_contract.py"]},
+    {"type": "git_diff_check"}
+  ]
+}
