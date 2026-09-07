@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.worker-runtime-recovery-trigger.v1",
+  "reason": "Universal Worker heartbeat and intake stale after 2026-09-07T02:38:16Z",
+  "queue_head_observed": "77386a62bddcdc5762a06069faf971fc232e7aae",
+  "production_touched": false
+}
