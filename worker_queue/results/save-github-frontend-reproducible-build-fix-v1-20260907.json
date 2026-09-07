@@ -1,0 +1,22 @@
+{
+  "blockers": [
+    "dispatcher_exception:RuntimeError:BASE_SHA_MISMATCH:expected=c211c669dfdb66f8dc2d90ba20d171e2cd51a4b5:actual=021b7581c878955ab9340266b830332b0c32caf6"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-07T02:28:30Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "save-github-frontend-reproducible-build-fix-v1-20260907",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-07T02:28:31Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-07T02:28:29Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
