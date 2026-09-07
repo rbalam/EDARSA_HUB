@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-BOS-V1-BENEFIT-PERSISTENCE-ATOMICITY-GATE-01",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Diseñar el contrato de persistencia canónica y atomicidad para aplicaciones, reservas, compensaciones, límites e idempotencia de beneficios Cavas, pero SIN ejecutar DDL. Este gate depende de la evidencia READ_ONLY_SQL del job CAVAS-BOS-V1-CANONICAL-AUDIT-01. Si dicha evidencia no está disponible o no permite determinar reutilización vs nuevas entidades, el job debe terminar BLOCKED/NOT_CERTIFIED sin crear migraciones. Si está disponible, producir una matriz de reutilización y un blueprint SQL propuesto con claves, unicidad, transiciones atómicas, FKs e índices, sin aplicar cambios a ninguna BD.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/EKS/consolidado/EKS_CAVAS_004_BENEFIT_PERSISTENCE_ATOMICITY_GATE.md",
+      "content": "# EKS CAVAS 004 - Persistencia y atomicidad de beneficios\n\n## Regla de entrada\nEste slice depende de la evidencia READ_ONLY_SQL de `CAVAS-BOS-V1-CANONICAL-AUDIT-01`.\n\nNo se autoriza DDL ni migración mientras no exista evidencia suficiente para decidir reutilización vs nuevas entidades.\n\n## Contratos a persistir\n- Aplicación transaccional de beneficio.\n- Idempotencia/correlación.\n- Conciliación/auditoría.\n- Eventos compensatorios.\n- Límites/acumulación.\n- Reservas/concurrencia.\n\n## Invariantes\n- Aplicaciones confirmadas son inmutables.\n- Reversos son eventos compensatorios nuevos.\n- Reservas activas reducen disponibilidad pero no tienen efecto económico.\n- Solo confirmación real convierte reserva en consumo.\n- La clave idempotente debe estar protegida por unicidad atómica en persistencia.\n- Ningún contrato Cavas puede modificar ventas o inventario POS directamente.\n\n## Salida esperada\n1. Matriz `REUSE / EXTEND / NEW / BLOCKED` por entidad.\n2. Claves PK/FK y relaciones propuestas.\n3. Índices y restricciones de unicidad requeridas.\n4. Estrategia de transición atómica para ACTIVE -> CONSUMED/RELEASED/EXPIRED.\n5. Estrategia para evitar doble aplicación económica bajo concurrencia.\n6. Evidencia de qué tablas canónicas se reutilizan.\n7. Cero DDL ejecutado.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "repo_evidence_gate",
+      "required_job_id": "CAVAS-BOS-V1-CANONICAL-AUDIT-01",
+      "required_result_path": "worker_queue/results/CAVAS-BOS-V1-CANONICAL-AUDIT-01.json",
+      "on_missing": "BLOCKED_NOT_CERTIFIED"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "NO DDL",
+    "NO SQL writes",
+    "NO Production",
+    "NO duplicar tablas o catálogos existentes",
+    "NO crear migraciones hasta cerrar el audit canónico",
+    "NO inventar FKs a entidades cuya existencia no esté confirmada",
+    "El blueprint debe priorizar reutilización de Cliente_Catalogo, unidades/empresa y catálogos canónicos si el audit los confirma",
+    "La unicidad de idempotency_key y las transiciones de reservas deben quedar diseñadas para enforcement atómico futuro"
+  ],
+  "human_summary_language": "es"
+}
