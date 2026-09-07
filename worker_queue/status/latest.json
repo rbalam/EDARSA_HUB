@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "a36abe729c49d46643b1dd63b3d1833a44738a87",
-  "generated_at_utc": "2026-09-07T21:55:03Z",
+  "generated_at_utc": "2026-09-07T21:56:15Z",
   "history": {
     "done_total_local": 134,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1002,
+      "age_seconds": 1075,
       "job_id": "worker-softrestaurant-full-history-dryrun-v1-20260907T2138Z",
       "reasons": [
         "ACTIONS_REQUIRED"
@@ -22,49 +22,49 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1229,
+      "age_seconds": 1301,
       "job_id": "CATALOGO-AMPLIADO-GATE1-READONLY-SCHEMA-V2-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1135,
+      "age_seconds": 1207,
       "job_id": "CAVAS-BOS-V1-CANONICAL-AUDIT-02",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1428,
+      "age_seconds": 1500,
       "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-RUNNER-DEPENDENCY-FIX-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1231,
+      "age_seconds": 1304,
       "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-RUNNER-DEPENDENCY-FIX-R2-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 586,
+      "age_seconds": 658,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE1-READONLY-20260907T2145Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1079,
+      "age_seconds": 1152,
       "job_id": "ISCAM-CUENTAS-NONE-AND-TICKETS-SERIALIZATION-FIX-CARLOS-20260907T1910Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1424,
+      "age_seconds": 1497,
       "job_id": "finanzas-decision-pago-authoritative-v14-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1132,
+      "age_seconds": 1205,
       "job_id": "worker-readonly-certification-evidence-hardening-r3-20260907",
       "reason": null,
       "state": "RESULT_READY"
@@ -82,8 +82,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-07T21:54:57Z",
-    "last_receive_utc": "2026-09-07T21:54:58Z",
+    "last_cycle_utc": "2026-09-07T21:56:10Z",
+    "last_receive_utc": "2026-09-07T21:56:11Z",
     "last_terminal_utc": "2026-09-07T21:45:16Z",
     "pid": "284"
   },
