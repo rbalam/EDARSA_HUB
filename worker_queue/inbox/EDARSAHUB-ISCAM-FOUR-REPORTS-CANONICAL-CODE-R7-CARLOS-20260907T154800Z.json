@@ -1,0 +1,81 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-FOUR-REPORTS-CANONICAL-CODE-R7-CARLOS-20260907T154800Z",
+  "created_at_utc": "2026-09-07T15:48:00Z",
+  "requester": {"email": "carlosruz@edarsa.com.mx", "source": "chatgpt", "project": "V1", "chat": "EDARSAHUB-CONCILIACIONES"},
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "db38d9af4908531915cc0761656cacce33a0bfc8",
+  "production_allowed": false,
+  "objective": "Aplicar ya el cambio de código de los cuatro reportes ISCAM pendientes: Resumen de Cuentas agrupado al mismo KPI canónico del Ejecutivo; detalle de Cuentas y Comandas sobre Comercial_Inteligencia_VentasDetalleProducto; Formas de Pago por FechaApertura. Pagos por Ticket conserva su tabla canónica y fecha operacional. No tocar Producción.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "    if group_by in (\"anio\", \"mes\", \"dia\"):\n        pexpr = _period_sql(\"s.FechaHora\", group_by)\n        rows = _q(\n            f\"\"\"\n            SELECT {pexpr} AS periodo, COUNT(*) AS cuentas, SUM(s.MontoTotal) AS importe,\n                   SUM(s.Pax) AS personas\n            FROM dbo.Sync_Sales s\n            WHERE s.UnidadNegocio = %s AND s.FechaHora >= %s AND s.FechaHora < %s\n            GROUP BY {pexpr}\n            ORDER BY periodo DESC\n            \"\"\",\n            (unidad, d, h),\n        )\n        agrupado = []\n        for r in rows:\n            imp = _f(r[\"importe\"]); cu = int(r[\"cuentas\"] or 0); pax = int(r[\"personas\"] or 0)\n            agrupado.append({\"periodo\": r[\"periodo\"], \"cuentas\": cu, \"importe\": round(imp, 2),\n                             \"personas\": pax, \"cuenta_promedio\": round(imp / cu, 2) if cu else 0,\n                             \"consumo_promedio\": round(imp / pax, 2) if pax else 0})\n        return {\"success\": True, \"unidad\": unidad, \"desde\": d, \"hasta\": h, \"group_by\": group_by,\n                \"agrupado\": agrupado}",
+      "new": "    if group_by in (\"anio\", \"mes\", \"dia\"):\n        unidad_pk = UnidadesService.resolver_pk(unidad)\n        if not unidad_pk:\n            raise HTTPException(status_code=404, detail=f\"Unidad no encontrada: {unidad}\")\n        agrupado = []\n        for periodo, inicio, fin in _period_windows(d, h, group_by):\n            desglose = KPIsCanonicosService.resumen_periodo_desglosado(inicio.strftime(\"%Y-%m-%d\"), fin.strftime(\"%Y-%m-%d\"), unidad_pks=[str(unidad_pk)])\n            metricas = ((desglose.get(\"acumulado_cerrado\") or {}).get(\"metricas\") or {})\n            imp = _f(metricas.get(\"ventas\")); cu = int(round(_f(metricas.get(\"cheques\")))); pax = int(round(_f(metricas.get(\"pax\"))))\n            if not any((imp, cu, pax)):\n                continue\n            agrupado.append({\"periodo\": periodo, \"cuentas\": cu, \"importe\": round(imp, 2), \"personas\": pax, \"cuenta_promedio\": round(_f(metricas.get(\"cheque_promedio\")), 2), \"consumo_promedio\": round(_f(metricas.get(\"consumo_promedio_pax\") or metricas.get(\"pax_promedio\")), 2)})\n        agrupado.reverse()\n        return {\"success\": True, \"source\": \"KPIsCanonicosService.resumen_periodo_desglosado.acumulado_cerrado\", \"contrato_acumulado\": \"CERRADO_SIN_DIA_OPERATIVO_ACTUAL\", \"unidad\": unidad, \"desde\": d, \"hasta\": h, \"group_by\": group_by, \"agrupado\": agrupado}",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "            SELECT s.NumeroTicket AS folio, s.FechaHora AS fecha, s.MontoTotal AS importe,\n                   s.Pax AS personas, s.status AS estado, s.id AS cuenta_id\n            FROM dbo.Sync_Sales s\n            WHERE s.UnidadNegocio = %s AND s.FechaHora >= %s AND s.FechaHora < %s\n            ORDER BY s.FechaHora DESC",
+      "new": "            WITH tickets AS (SELECT id_transaccion AS cuenta_id, numero_ticket AS folio, MIN(fecha_hora) AS fecha, SUM(ISNULL(importe_neto,0)) AS importe, MAX(ISNULL(pax,0)) AS personas FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id = %s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND fecha_operacion >= %s AND fecha_operacion < %s GROUP BY id_transaccion, numero_ticket)\n            SELECT folio, fecha, importe, personas, 'COMPLETED' AS estado, cuenta_id FROM tickets ORDER BY fecha DESC",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "            SELECT TOP (%s) s.NumeroTicket AS folio, s.FechaHora AS fecha, s.MontoTotal AS importe,\n                   s.Pax AS personas, s.status AS estado, s.id AS cuenta_id\n            FROM dbo.Sync_Sales s\n            WHERE s.UnidadNegocio = %s AND s.FechaHora >= %s AND s.FechaHora < %s\n            ORDER BY s.FechaHora DESC",
+      "new": "            WITH tickets AS (SELECT id_transaccion AS cuenta_id, numero_ticket AS folio, MIN(fecha_hora) AS fecha, SUM(ISNULL(importe_neto,0)) AS importe, MAX(ISNULL(pax,0)) AS personas FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id = %s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND fecha_operacion >= %s AND fecha_operacion < %s GROUP BY id_transaccion, numero_ticket)\n            SELECT TOP (%s) folio, fecha, importe, personas, 'COMPLETED' AS estado, cuenta_id FROM tickets ORDER BY fecha DESC",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "            (limit, unidad, d, h),\n        )\n    return {\"success\": True, \"unidad\": unidad, \"desde\": d, \"hasta\": h, \"group_by\": \"none\",",
+      "new": "            (unidad, d, h, limit),\n        )\n    return {\"success\": True, \"source\": \"Comercial_Inteligencia_VentasDetalleProducto\", \"unidad\": unidad, \"desde\": d, \"hasta\": h, \"group_by\": \"none\",",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "        SELECT j.prod_id AS codigo, j.prod_name AS producto, j.cantidad AS cantidad,\n               j.precio AS precio, j.importe AS importe\n        FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}\n        WHERE s.UnidadNegocio = %s AND s.NumeroTicket = %s\n        ORDER BY j.importe DESC",
+      "new": "        SELECT producto_codigo_fuente AS codigo, MAX(producto_nombre) AS producto, SUM(ISNULL(cantidad,0)) AS cantidad, CASE WHEN SUM(ISNULL(cantidad,0)) <> 0 THEN SUM(ISNULL(importe_neto,0)) / SUM(ISNULL(cantidad,0)) ELSE MAX(ISNULL(precio_unitario,0)) END AS precio, SUM(ISNULL(importe_neto,0)) AS importe\n        FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n        WHERE unidad_negocio_id = %s AND numero_ticket = %s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n        GROUP BY producto_codigo_fuente\n        ORDER BY importe DESC",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "        pexpr = _period_sql(\"s.FechaHora\", group_by)\n        rows = _q(\n            f\"\"\"\n            SELECT {pexpr} AS periodo, COUNT(*) AS lineas, COUNT(DISTINCT s.id) AS tickets,\n                   SUM(j.cantidad) AS cantidad, SUM(j.importe) AS importe\n            FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}\n            WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'\n              AND s.FechaHora >= %s AND s.FechaHora < %s\n            GROUP BY {pexpr}\n            ORDER BY periodo DESC\n            \"\"\",\n            (unidad, d, h),\n        )",
+      "new": "        pexpr = _period_sql(\"fecha_operacion\", group_by)\n        rows = _q(\n            f\"\"\"\n            SELECT {pexpr} AS periodo, COUNT(*) AS lineas, COUNT(DISTINCT id_transaccion) AS tickets, SUM(ISNULL(cantidad,0)) AS cantidad, SUM(ISNULL(importe_neto,0)) AS importe\n            FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n            WHERE unidad_negocio_id = %s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND fecha_operacion >= %s AND fecha_operacion < %s\n            GROUP BY {pexpr}\n            ORDER BY periodo DESC\n            \"\"\",\n            (unidad, d, h),\n        )",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "            SELECT s.NumeroTicket AS folio_cuenta, s.FechaHora AS fecha,\n                   j.prod_id AS clave, j.prod_name AS descripcion, j.cantidad AS cantidad,\n                   j.precio AS precio, j.importe AS importe\n            FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}\n            WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'\n              AND s.FechaHora >= %s AND s.FechaHora < %s\n            ORDER BY s.FechaHora DESC",
+      "new": "            SELECT numero_ticket AS folio_cuenta, fecha_hora AS fecha, producto_codigo_fuente AS clave, producto_nombre AS descripcion, cantidad, precio_unitario AS precio, importe_neto AS importe\n            FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n            WHERE unidad_negocio_id = %s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND fecha_operacion >= %s AND fecha_operacion < %s\n            ORDER BY fecha_operacion DESC, fecha_hora DESC, numero_ticket DESC",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "            SELECT TOP (%s) s.NumeroTicket AS folio_cuenta, s.FechaHora AS fecha,\n                   j.prod_id AS clave, j.prod_name AS descripcion, j.cantidad AS cantidad,\n                   j.precio AS precio, j.importe AS importe\n            FROM dbo.Sync_Sales s {_OPENJSON_ITEMS}\n            WHERE s.UnidadNegocio = %s AND s.status = 'COMPLETED'\n              AND s.FechaHora >= %s AND s.FechaHora < %s\n            ORDER BY s.FechaHora DESC",
+      "new": "            SELECT TOP (%s) numero_ticket AS folio_cuenta, fecha_hora AS fecha, producto_codigo_fuente AS clave, producto_nombre AS descripcion, cantidad, precio_unitario AS precio, importe_neto AS importe\n            FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n            WHERE unidad_negocio_id = %s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND fecha_operacion >= %s AND fecha_operacion < %s\n            ORDER BY fecha_operacion DESC, fecha_hora DESC, numero_ticket DESC",
+      "expected_count": 1
+    },
+    {"type": "replace_text", "path": "backend/modules/inteligencia_comercial/iscam_routes.py", "old": "        pexpr = _period_sql(\"FechaCierre\", group_by)", "new": "        pexpr = _period_sql(\"FechaApertura\", group_by)", "expected_count": 1},
+    {"type": "replace_text", "path": "backend/modules/inteligencia_comercial/iscam_routes.py", "old": "              AND FechaCierre >= %s AND FechaCierre < %s", "new": "              AND FechaApertura >= %s AND FechaApertura < %s", "expected_count": 3},
+    {"type": "replace_text", "path": "backend/modules/inteligencia_comercial/iscam_routes.py", "old": "SELECT FolioCorte AS folio, FechaCierre AS fecha, TotalVenta AS total,", "new": "SELECT FolioCorte AS folio, FechaApertura AS fecha, TotalVenta AS total,", "expected_count": 2},
+    {"type": "replace_text", "path": "backend/modules/inteligencia_comercial/iscam_routes.py", "old": "            ORDER BY FechaCierre DESC", "new": "            ORDER BY FechaApertura DESC", "expected_count": 2}
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/inteligencia_comercial/iscam_routes.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_iscam_ventas_periodos_executive_parity_r3.py"]}
+  ]
+}
