@@ -1,0 +1,5 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker to consume worker-runtime-convergence-wake-hardening-r2-20260907T2347Z from worker/requests. Preserve dirty worktree, no Production.",
+  "production_touched": false
+}
