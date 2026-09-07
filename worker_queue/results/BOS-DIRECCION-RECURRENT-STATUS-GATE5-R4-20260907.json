@@ -1,0 +1,30 @@
+{
+  "base_sha": "c081923bb8ef3cb959e14882867d0f804c70fa3b",
+  "blockers": [],
+  "candidate_sha": "147dec81957aef9245a3d82c96c09b9db6e96d38",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-07T23:34:51Z",
+  "development_sha": "147dec81957aef9245a3d82c96c09b9db6e96d38",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/core/bos_direction_status_cycle.py",
+    "backend/tests/test_bos_direction_status_cycle.py",
+    "backend/tools/run_bos_direction_status_cycle.py",
+    "docs/BOS/BOS_DIRECTION_RECURRENT_STATUS_GATE5.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-DIRECCION-RECURRENT-STATUS-GATE5-R4-20260907",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-07T23:35:14Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-07T23:34:05Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
