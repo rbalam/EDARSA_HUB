@@ -1,0 +1,5 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Synchronize canonical Preview runtime to current Edarsahub_Desarrollo so ISCAM_DETAIL_BACKFILL is active before dry-run; do not touch Production.",
+  "production_touched": false
+}
