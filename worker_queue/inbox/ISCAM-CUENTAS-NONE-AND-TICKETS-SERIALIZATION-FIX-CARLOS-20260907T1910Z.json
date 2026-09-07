@@ -1,0 +1,58 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "ISCAM-CUENTAS-NONE-AND-TICKETS-SERIALIZATION-FIX-CARLOS-20260907T1910Z",
+  "created_at_utc": "2026-09-07T19:10:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "57ea93febc461f64d079dd0ac1371c6f9e145b2c",
+  "production_allowed": false,
+  "objective": "Corregir el ERROR de Reportes ISCAM > Resumen de Cuentas > Sin agrupar observado para 130MID abril 2026. El endpoint /inteligencia/iscam/cuentas usa la fuente canonica Comercial_Inteligencia_VentasDetalleProducto pero serializa fecha con r['fecha'].isoformat(), lo que falla cuando el driver SQL devuelve texto. Reutilizar el helper seguro _iso ya existente, exactamente como Comandas. Aprovechar el mismo cambio para el drill /ventas-periodos/tickets, que conserva la misma serializacion fragil. No cambiar fuentes, filtros, reglas de negocio, consultas SQL, Reporte Ejecutivo, Production ni datos. Mantener fecha_operacion, activo=1 y es_kpi_valido=1 y la misma fuente canonica del Ejecutivo.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "\"folio\": r[\"folio\"], \"fecha\": r[\"fecha\"].isoformat() if r[\"fecha\"] else None,",
+      "new": "\"folio\": r[\"folio\"], \"fecha\": _iso(r[\"fecha\"]),",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "\"cuentas\": [{\"folio\": r[\"folio\"], \"fecha\": r[\"fecha\"].isoformat() if r[\"fecha\"] else None,",
+      "new": "\"cuentas\": [{\"folio\": r[\"folio\"], \"fecha\": _iso(r[\"fecha\"]),",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_safe_date_serialization_r2.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nISCAM = ROOT / 'backend/modules/inteligencia_comercial/iscam_routes.py'\n\n\ndef _text():\n    return ISCAM.read_text(encoding='utf-8')\n\n\ndef test_resumen_cuentas_none_uses_safe_iso_serialization():\n    text = _text()\n    marker = '@iscam_router.get(\\\"/cuentas\\\")'\n    start = text.index(marker)\n    end = text.index('@iscam_router.get(\\\"/cuentas/detalle\\\")', start)\n    block = text[start:end]\n    assert '\\\"fecha\\\": _iso(r[\\\"fecha\\\"])' in block\n    assert 'r[\\\"fecha\\\"].isoformat() if r[\\\"fecha\\\"] else None' not in block\n    assert 'Comercial_Inteligencia_VentasDetalleProducto' in block\n    assert 'fecha_operacion >= %s AND fecha_operacion < %s' in block\n    assert 'ISNULL(es_kpi_valido,1)=1' in block\n\n\ndef test_product_ticket_drill_uses_safe_iso_serialization():\n    text = _text()\n    marker = '@iscam_router.get(\\\"/ventas-periodos/tickets\\\")'\n    start = text.index(marker)\n    end = text.index('# ============================================================================\\n# 2) RESUMEN DE CUENTAS', start)\n    block = text[start:end]\n    assert '\\\"fecha\\\": _iso(r[\\\"fecha\\\"])' in block\n    assert 'r[\\\"fecha\\\"].isoformat() if r[\\\"fecha\\\"] else None' not in block\n    assert 'Comercial_Inteligencia_VentasDetalleProducto' in block\n    assert 'ISNULL(es_kpi_valido,1)=1' in block\n\n\ndef test_iscam_has_no_remaining_row_fecha_direct_isoformat():\n    text = _text()\n    assert 'r[\\\"fecha\\\"].isoformat() if r[\\\"fecha\\\"] else None' not in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/inteligencia_comercial/iscam_routes.py",
+        "backend/tests/test_iscam_safe_date_serialization_r2.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_safe_date_serialization_r2.py",
+        "backend/tests/test_iscam_comandas_none_serialization.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
