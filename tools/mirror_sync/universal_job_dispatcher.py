@@ -45,7 +45,9 @@ JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
 ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit"}
 SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
+ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
 UNIT_CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$")
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 SOFTRESTAURANT_RESYNC_MAX_SECONDS = int(os.environ.get("EDARSAHUB_SOFTRESTAURANT_RESYNC_MAX_SECONDS", "21600"))
 
 RUNTIME_PYTHON = Path("/root/.venv/bin/python")
@@ -487,6 +489,70 @@ def process_one(path: Path) -> int:
                 result["certification"] = "NOT_CERTIFIED"
             return 0
 
+        if mode == ISCAM_DETAIL_BACKFILL_MODE:
+            if expected_base and expected_base != current_head:
+                raise RuntimeError(f"BASE_SHA_MISMATCH_OPERATIONAL_MODE:expected={expected_base}:actual={current_head}")
+            if job.get("actions") not in (None, []):
+                raise RuntimeError("ISCAM_DETAIL_BACKFILL_ACTIONS_FORBIDDEN")
+            units = job.get("units", [])
+            if not isinstance(units, list) or not units or len(units) > 32 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):
+                raise RuntimeError("ISCAM_DETAIL_BACKFILL_UNITS_INVALID")
+            fecha_inicio = str(job.get("fecha_inicio") or "")
+            fecha_fin = str(job.get("fecha_fin") or "")
+            if not DATE_RE.fullmatch(fecha_inicio) or not DATE_RE.fullmatch(fecha_fin):
+                raise RuntimeError("ISCAM_DETAIL_BACKFILL_DATES_INVALID")
+            inicio_dt = datetime.strptime(fecha_inicio, "%Y-%m-%d")
+            fin_dt = datetime.strptime(fecha_fin, "%Y-%m-%d")
+            if fin_dt <= inicio_dt:
+                raise RuntimeError("ISCAM_DETAIL_BACKFILL_DATE_RANGE_INVALID")
+            dry_run = job.get("dry_run", True)
+            if not isinstance(dry_run, bool):
+                raise RuntimeError("ISCAM_DETAIL_BACKFILL_DRY_RUN_INVALID")
+            if dry_run is False and job.get("confirm_detail_backfill") is not True:
+                raise RuntimeError("ISCAM_DETAIL_BACKFILL_CONFIRMATION_REQUIRED")
+            checks = job.get("checks") or []
+            if not checks or any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+                raise RuntimeError("ISCAM_DETAIL_BACKFILL_SQL_AUDIT_REQUIRED")
+            script = ROOT / "backend" / "scripts" / "backfill_detalle_producto_pendientes.py"
+            if not script.is_file():
+                raise RuntimeError("ISCAM_DETAIL_BACKFILL_SCRIPT_NOT_FOUND")
+            cmd = [PYTHON_BIN, str(script), "--fecha-inicio", fecha_inicio, "--fecha-fin", fecha_fin]
+            for unit in units:
+                cmd.extend(["--unidad", unit.strip().upper()])
+            if dry_run is False:
+                cmd.append("--commit")
+            backend = ROOT / "backend"
+            execution = run(cmd, cwd=ROOT, timeout=SOFTRESTAURANT_RESYNC_MAX_SECONDS, env_extra={**load_backend_runtime_env(), "PYTHONPATH": str(backend)})
+            result["operation"] = ISCAM_DETAIL_BACKFILL_MODE
+            result["dry_run"] = dry_run
+            result["units"] = [u.strip().upper() for u in units]
+            result["fecha_inicio"] = fecha_inicio
+            result["fecha_fin"] = fecha_fin
+            result["operation_output"] = execution.stdout[-20000:]
+            result["files_changed"] = []
+            if execution.returncode != 0:
+                result["blockers"].append(f"iscam_detail_backfill_failed:rc={execution.returncode}")
+            check_results = []
+            if not result["blockers"]:
+                for check in checks:
+                    check_result = run_check(ROOT, check)
+                    check_results.append(check_result)
+                    if check_result["status"] != "PASS":
+                        result["blockers"].append("check_failed:sql_readonly_audit")
+                        break
+            result["checks"] = check_results
+            result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
+            result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
+            if not result["blockers"]:
+                result["status"] = "OPERATIONAL_COMPLETE"
+                result["percent_complete"] = 100
+                result["certification"] = "CERTIFIED_OPERATIONAL"
+                result["summary_es"] = "El Worker ejecuto el backfill cerrado de detalle ISCAM para las unidades y fechas autorizadas y certifico el resultado con SQL de solo lectura. No acepto shell, rutas ni comandos externos y no toco Produccion."
+            else:
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+            return 0
+
         if mode == SOFTRESTAURANT_FULL_HISTORY_MODE:
             if expected_base and expected_base != current_head:
                 raise RuntimeError(f"BASE_SHA_MISMATCH_OPERATIONAL_MODE:expected={expected_base}:actual={current_head}")
@@ -612,7 +678,7 @@ def process_one(path: Path) -> int:
             git("branch", "-D", branch, check=False)
         result["completed_at_utc"] = now()
         write_json(RESULTS / path.name, result)
-        target = DONE / path.name if result["status"] in {"INTEGRATED", "READ_ONLY_COMPLETE"} else REJECTED / path.name
+        target = DONE / path.name if result["status"] in {"INTEGRATED", "READ_ONLY_COMPLETE", "OPERATIONAL_COMPLETE"} else REJECTED / path.name
         os.replace(processing, target)
         (RUNTIME / "last_terminal_utc").write_text(result["completed_at_utc"] + "\n", encoding="utf-8")
         current_job = RUNTIME / "current_job_id"
