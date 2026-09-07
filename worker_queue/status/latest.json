@@ -1,51 +1,51 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "0e8486fe9f543aeddff2df778cd05f9c6a2aa381",
-  "generated_at_utc": "2026-09-07T15:19:17Z",
+  "development_sha": "db38d9af4908531915cc0761656cacce33a0bfc8",
+  "generated_at_utc": "2026-09-07T15:20:40Z",
   "history": {
-    "done_total_local": 119,
+    "done_total_local": 120,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 231,
-    "results_total_local": 306
+    "results_total_local": 307
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 193,
-      "job_id": "save-github-frontend-reproducible-build-fix-r3-20260907",
-      "reason": "El worker no termino esta orden dentro del tiempo esperado.",
-      "state": "BLOCKED"
-    },
-    {
-      "age_seconds": 158,
+      "age_seconds": 241,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-REPORTS-AUDIT-R5-CARLOS-20260907T211500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 151,
+      "age_seconds": 235,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5B-R3-20260907",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 34,
+      "job_id": "save-github-frontend-reproducible-build-fix-r3-20260907",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
-  "queue_blocked": 1,
-  "queue_depth": 1,
+  "queue_blocked": 0,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "runtime": {
-    "current_job_id": "save-github-frontend-reproducible-build-fix-r3-20260907",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-07T15:19:15Z",
-    "last_receive_utc": "2026-09-07T15:19:17Z",
-    "last_terminal_utc": "2026-09-07T15:16:45Z",
+    "last_cycle_utc": "2026-09-07T15:20:39Z",
+    "last_receive_utc": "2026-09-07T15:20:40Z",
+    "last_terminal_utc": "2026-09-07T15:20:06Z",
     "pid": "285"
   },
   "schema": "edarsahub.worker-health.v3",
