@@ -1,0 +1,52 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "ISCAM-COMANDAS-NONE-FIX-CARLOS-20260907T1836Z",
+  "created_at_utc": "2026-09-07T18:36:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "35542434653f8883b6e4b35383f5bc69b1d529b3",
+  "production_allowed": false,
+  "objective": "Corregir el ERROR de Reportes ISCAM > Comandas de Venta > Sin agrupar. La auditoria SQL read-only ISCAM-COMANDAS-NONE-DIAG-CARLOS-20260907T1824Z comprobo que la consulta exacta sobre dbo.Comercial_Inteligencia_VentasDetalleProducto y sus campos canónicos responde correctamente, por lo que no se cambia la fuente ni la logica de ventas. El fallo queda en la serializacion de fecha del detalle: el modulo ya dispone de _iso(), helper seguro que acepta datetime o string, pero Comandas Sin agrupar llama .isoformat() directamente. Sustituir exclusivamente esa serializacion por _iso(r['fecha']). Mantener Comercial_Inteligencia_VentasDetalleProducto, fecha_operacion, activo y es_kpi_valido, para conservar el mismo linaje canonico del Reporte Ejecutivo. No usar Sync_Sales, OPENJSON, LIVE ni tocar Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "            \"comandas\": [{\"folio_cuenta\": r[\"folio_cuenta\"], \"fecha\": r[\"fecha\"].isoformat() if r[\"fecha\"] else None,\n                          \"clave\": r[\"clave\"], \"descripcion\": r[\"descripcion\"], \"cantidad\": _f(r[\"cantidad\"]),",
+      "new": "            \"comandas\": [{\"folio_cuenta\": r[\"folio_cuenta\"], \"fecha\": _iso(r[\"fecha\"]),\n                          \"clave\": r[\"clave\"], \"descripcion\": r[\"descripcion\"], \"cantidad\": _f(r[\"cantidad\"]),",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_comandas_none_serialization.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nISCAM = ROOT / 'backend/modules/inteligencia_comercial/iscam_routes.py'\n\n\ndef _comandas_block():\n    text = ISCAM.read_text(encoding='utf-8')\n    start = text.index('@iscam_router.get(\"/comandas\")')\n    end = text.index('# ============================================================================\\n# 4)', start)\n    return text[start:end]\n\n\ndef test_comandas_none_uses_safe_iso_serialization():\n    block = _comandas_block()\n    assert '\"fecha\": _iso(r[\"fecha\"])' in block\n    assert 'r[\"fecha\"].isoformat() if r[\"fecha\"] else None' not in block\n\n\ndef test_comandas_keeps_canonical_executive_detail_source():\n    block = _comandas_block()\n    assert 'dbo.Comercial_Inteligencia_VentasDetalleProducto' in block\n    assert 'fecha_operacion >= %s AND fecha_operacion < %s' in block\n    assert 'ISNULL(activo,1)=1' in block\n    assert 'ISNULL(es_kpi_valido,1)=1' in block\n    assert 'Sync_Sales' not in block\n    assert 'OPENJSON' not in block\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/inteligencia_comercial/iscam_routes.py",
+        "backend/tests/test_iscam_comandas_none_serialization.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_comandas_none_serialization.py",
+        "backend/tests/test_iscam_comandas_invalid_json_contract.py",
+        "backend/tests/test_iscam_ventas_periodos_executive_parity_r3.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
