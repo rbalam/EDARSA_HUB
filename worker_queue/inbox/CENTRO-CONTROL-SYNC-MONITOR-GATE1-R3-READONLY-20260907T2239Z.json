@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE1-R3-READONLY-20260907T2239Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "GATE 1 R3 READ_ONLY_SQL para Centro de Control EDARSA y Monitor de Sincronizacion. Ejecutar auditoria canonica contra el HEAD vigente de Edarsahub_Desarrollo sin fijar base_sha para evitar carreras de concurrencia. Obtener evidencia exacta del esquema SQL real para persistencia de alertas/historial/bitacora/metricas, universo de logs de sincronizacion, Servidores_Conexiones, RBAC, scheduler/jobs y Sistema_TurnosOperativosUnidad. Esta ronda debe ser schema-safe: primero descubrir tablas y columnas reales y no asumir nombres de columnas operativas no verificados. No modificar codigo ni datos. No DDL/DML. No Production. No Mongo. No LIVE.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {"name":"database_identity","sql":"SELECT DB_NAME() AS database_name, @@SERVERNAME AS server_name, GETDATE() AS sql_now"},
+        {"name":"control_monitor_table_candidates","sql":"SELECT s.name AS schema_name, t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name LIKE '%Centro%Control%' OR t.name LIKE '%Alerta%' OR t.name LIKE '%Bitacora%' OR t.name LIKE '%Historial%' OR t.name LIKE '%Metrica%' OR t.name LIKE '%Health%' OR t.name LIKE '%Monitor%' ORDER BY s.name,t.name"},
+        {"name":"control_monitor_candidate_columns","sql":"SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE '%Centro%Control%' OR t.name LIKE '%Alerta%' OR t.name LIKE '%Bitacora%' OR t.name LIKE '%Historial%' OR t.name LIKE '%Metrica%' OR t.name LIKE '%Health%' OR t.name LIKE '%Monitor%' ORDER BY s.name,t.name,c.column_id"},
+        {"name":"sync_source_tables","sql":"SELECT s.name AS schema_name,t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name IN ('Compras_Sync_Log','Comercial_SyncLog_v2','Sync_Logs','Servidores_Conexiones') OR t.name LIKE '%Sync%Log%' OR t.name LIKE '%Sincron%' ORDER BY s.name,t.name"},
+        {"name":"sync_source_columns","sql":"SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Compras_Sync_Log','Comercial_SyncLog_v2','Sync_Logs','Servidores_Conexiones') OR t.name LIKE '%Sync%Log%' OR t.name LIKE '%Sincron%' ORDER BY s.name,t.name,c.column_id"},
+        {"name":"sync_table_row_counts","sql":"SELECT s.name AS schema_name,t.name AS table_name,p.rows AS approximate_rows FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE t.name IN ('Compras_Sync_Log','Comercial_SyncLog_v2','Sync_Logs','Servidores_Conexiones') OR t.name LIKE '%Sync%Log%' OR t.name LIKE '%Sincron%' ORDER BY s.name,t.name"},
+        {"name":"rbac_table_candidates","sql":"SELECT s.name AS schema_name,t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name LIKE '%RBAC%' OR t.name LIKE '%Permis%' OR t.name LIKE '%Rol%' OR t.name LIKE '%Capacidad%' OR t.name LIKE '%Accion%' ORDER BY s.name,t.name"},
+        {"name":"rbac_candidate_columns","sql":"SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE '%RBAC%' OR t.name LIKE '%Permis%' OR t.name LIKE '%Rol%' OR t.name LIKE '%Capacidad%' OR t.name LIKE '%Accion%' ORDER BY s.name,t.name,c.column_id"},
+        {"name":"scheduler_table_candidates","sql":"SELECT s.name AS schema_name,t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name LIKE '%Scheduler%' OR t.name LIKE '%Job%' OR t.name LIKE '%Automat%' ORDER BY s.name,t.name"},
+        {"name":"scheduler_candidate_columns","sql":"SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE '%Scheduler%' OR t.name LIKE '%Job%' OR t.name LIKE '%Automat%' ORDER BY s.name,t.name,c.column_id"},
+        {"name":"operational_turns_table","sql":"SELECT s.name AS schema_name,t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name='Sistema_TurnosOperativosUnidad'"},
+        {"name":"operational_turns_schema","sql":"SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name='Sistema_TurnosOperativosUnidad' ORDER BY s.name,t.name,c.column_id"}
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL ONLY",
+    "NO base_sha pinning",
+    "NO actions",
+    "NO DDL",
+    "NO INSERT/UPDATE/DELETE/MERGE",
+    "NO Production",
+    "NO Mongo",
+    "NO LIVE source connections",
+    "NO secrets in result",
+    "NO invented schema evidence",
+    "Do not modify Universal Worker structure",
+    "Preserve exact SQL outputs in terminal result"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "technical"
+}
