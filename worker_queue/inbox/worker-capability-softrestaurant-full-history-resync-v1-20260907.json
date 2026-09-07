@@ -1,0 +1,68 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-capability-softrestaurant-full-history-resync-v1-20260907",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a36abe729c49d46643b1dd63b3d1833a44738a87",
+  "production_allowed": false,
+  "objective": "Añadir al Universal Worker una capacidad operacional cerrada SOFTRESTAURANT_FULL_HISTORY_RESYNC que invoque exclusivamente backend/scripts/resync_softrestaurant_full_history.py, sin shell arbitrario ni rutas/comandos suministrados por el job, con unidades validadas, dry-run certificable, confirmación explícita para escritura, timeout fijo del runtime y auditoría SQL read-only obligatoria posterior.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\", \"sql_readonly_audit\"}\nMAX_ACTIONS = int(os.environ.get(\"EDARSAHUB_JOB_MAX_ACTIONS\", \"100\"))",
+      "new": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\", \"sql_readonly_audit\"}\nSOFTRESTAURANT_FULL_HISTORY_MODE = \"SOFTRESTAURANT_FULL_HISTORY_RESYNC\"\nUNIT_CODE_RE = re.compile(r\"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$\")\nMAX_ACTIONS = int(os.environ.get(\"EDARSAHUB_JOB_MAX_ACTIONS\", \"100\"))",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    mode = str(job.get(\"mode\") or \"MUTATION\")\n    actions = job.get(\"actions\")\n    if mode == \"READ_ONLY_SQL\":\n        if actions not in (None, []):\n            errors.append(\"READ_ONLY_SQL_ACTIONS_FORBIDDEN\")\n    else:\n        if not isinstance(actions, list) or not actions:\n            errors.append(\"ACTIONS_REQUIRED\")\n        elif len(actions) > MAX_ACTIONS:\n            errors.append(\"TOO_MANY_ACTIONS\")\n        else:\n            for index, action in enumerate(actions, 1):\n                errors.extend(validate_action(action, index))\n    checks = job.get(\"checks\", [{\"type\": \"git_diff_check\"}])\n    if mode == \"READ_ONLY_SQL\":\n        if not isinstance(checks, list) or not checks:\n            errors.append(\"READ_ONLY_SQL_CHECK_REQUIRED\")\n        elif any(not isinstance(c, dict) or c.get(\"type\") != \"sql_readonly_audit\" for c in checks):\n            errors.append(\"READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED\")",
+      "new": "    mode = str(job.get(\"mode\") or \"MUTATION\")\n    actions = job.get(\"actions\")\n    if mode == \"READ_ONLY_SQL\":\n        if actions not in (None, []):\n            errors.append(\"READ_ONLY_SQL_ACTIONS_FORBIDDEN\")\n    elif mode == SOFTRESTAURANT_FULL_HISTORY_MODE:\n        if actions not in (None, []):\n            errors.append(\"SOFTRESTAURANT_RESYNC_ACTIONS_FORBIDDEN\")\n        units = job.get(\"units\", [])\n        if not isinstance(units, list) or len(units) > 32 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):\n            errors.append(\"SOFTRESTAURANT_RESYNC_UNITS_INVALID\")\n        dry_run = job.get(\"dry_run\", True)\n        if not isinstance(dry_run, bool):\n            errors.append(\"SOFTRESTAURANT_RESYNC_DRY_RUN_INVALID\")\n        if dry_run is False and job.get(\"confirm_full_history_resync\") is not True:\n            errors.append(\"SOFTRESTAURANT_RESYNC_CONFIRMATION_REQUIRED\")\n    else:\n        if not isinstance(actions, list) or not actions:\n            errors.append(\"ACTIONS_REQUIRED\")\n        elif len(actions) > MAX_ACTIONS:\n            errors.append(\"TOO_MANY_ACTIONS\")\n        else:\n            for index, action in enumerate(actions, 1):\n                errors.extend(validate_action(action, index))\n    checks = job.get(\"checks\", [{\"type\": \"git_diff_check\"}])\n    if mode == \"READ_ONLY_SQL\":\n        if not isinstance(checks, list) or not checks:\n            errors.append(\"READ_ONLY_SQL_CHECK_REQUIRED\")\n        elif any(not isinstance(c, dict) or c.get(\"type\") != \"sql_readonly_audit\" for c in checks):\n            errors.append(\"READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED\")\n    elif mode == SOFTRESTAURANT_FULL_HISTORY_MODE:\n        if not isinstance(checks, list) or not checks:\n            errors.append(\"SOFTRESTAURANT_RESYNC_AUDIT_REQUIRED\")\n        elif any(not isinstance(c, dict) or c.get(\"type\") != \"sql_readonly_audit\" for c in checks):\n            errors.append(\"SOFTRESTAURANT_RESYNC_ONLY_SQL_AUDIT_ALLOWED\")",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "ALLOWED_ACTIONS = {\"replace_text\", \"write_file\", \"delete_file\"}\nALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\", \"sql_readonly_audit\"}\n\nRUNTIME_PYTHON",
+      "new": "ALLOWED_ACTIONS = {\"replace_text\", \"write_file\", \"delete_file\"}\nALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\", \"sql_readonly_audit\"}\nSOFTRESTAURANT_FULL_HISTORY_MODE = \"SOFTRESTAURANT_FULL_HISTORY_RESYNC\"\nUNIT_CODE_RE = re.compile(r\"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$\")\nSOFTRESTAURANT_RESYNC_MAX_SECONDS = int(os.environ.get(\"EDARSAHUB_SOFTRESTAURANT_RESYNC_MAX_SECONDS\", \"21600\"))\n\nRUNTIME_PYTHON",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "            else:\n                result[\"percent_complete\"] = 0\n                result[\"certification\"] = \"NOT_CERTIFIED\"\n            return 0\n\n        requested_paths = sorted(",
+      "new": "            else:\n                result[\"percent_complete\"] = 0\n                result[\"certification\"] = \"NOT_CERTIFIED\"\n            return 0\n\n        if str(job.get(\"mode\") or \"\") == SOFTRESTAURANT_FULL_HISTORY_MODE:\n            if job.get(\"actions\") not in (None, []):\n                raise RuntimeError(\"SOFTRESTAURANT_RESYNC_ACTIONS_FORBIDDEN\")\n            units = job.get(\"units\", [])\n            if not isinstance(units, list) or len(units) > 32 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):\n                raise RuntimeError(\"SOFTRESTAURANT_RESYNC_UNITS_INVALID\")\n            dry_run = job.get(\"dry_run\", True)\n            if not isinstance(dry_run, bool):\n                raise RuntimeError(\"SOFTRESTAURANT_RESYNC_DRY_RUN_INVALID\")\n            if dry_run is False and job.get(\"confirm_full_history_resync\") is not True:\n                raise RuntimeError(\"SOFTRESTAURANT_RESYNC_CONFIRMATION_REQUIRED\")\n            checks = job.get(\"checks\") or []\n            if not checks or any(not isinstance(c, dict) or c.get(\"type\") != \"sql_readonly_audit\" for c in checks):\n                raise RuntimeError(\"SOFTRESTAURANT_RESYNC_SQL_AUDIT_REQUIRED\")\n            script = ROOT / \"backend\" / \"scripts\" / \"resync_softrestaurant_full_history.py\"\n            if not script.is_file():\n                raise RuntimeError(\"SOFTRESTAURANT_RESYNC_SCRIPT_NOT_FOUND\")\n            cmd = [PYTHON_BIN, str(script)]\n            if dry_run is False:\n                cmd.append(\"--execute\")\n            for unit in units:\n                cmd.extend([\"--unit\", unit.strip().upper()])\n            backend = ROOT / \"backend\"\n            execution = run(\n                cmd,\n                cwd=ROOT,\n                timeout=SOFTRESTAURANT_RESYNC_MAX_SECONDS,\n                env_extra={**load_backend_runtime_env(), \"PYTHONPATH\": str(backend)},\n            )\n            result[\"operation\"] = SOFTRESTAURANT_FULL_HISTORY_MODE\n            result[\"dry_run\"] = dry_run\n            result[\"units\"] = [u.strip().upper() for u in units]\n            result[\"canonical_sql_mutation\"] = not dry_run\n            result[\"operation_output\"] = execution.stdout[-20000:]\n            result[\"files_changed\"] = []\n            if execution.returncode != 0:\n                result[\"blockers\"].append(f\"softrestaurant_resync_failed:rc={execution.returncode}\")\n            check_results = []\n            if not result[\"blockers\"]:\n                for check in checks:\n                    check_result = run_check(ROOT, check)\n                    check_results.append(check_result)\n                    if check_result[\"status\"] != \"PASS\":\n                        result[\"blockers\"].append(\"check_failed:sql_readonly_audit\")\n                        break\n            result[\"checks\"] = check_results\n            result[\"tests\"] = \"PASS\" if check_results and all(x[\"status\"] == \"PASS\" for x in check_results) else \"FAIL\"\n            result[\"quality_gate\"] = \"PASS\" if not result[\"blockers\"] else \"FAIL\"\n            if not result[\"blockers\"]:\n                result[\"status\"] = \"OPERATIONAL_COMPLETE\"\n                result[\"percent_complete\"] = 100\n                result[\"certification\"] = \"CERTIFIED_OPERATIONAL\"\n                result[\"summary_es\"] = \"El Worker universal ejecuto la capacidad cerrada de resync historico SoftRestaurant y despues certifico el resultado mediante auditoria SQL de solo lectura. No ejecuto shell arbitrario ni acepto rutas o comandos externos.\"\n            else:\n                result[\"percent_complete\"] = 0\n                result[\"certification\"] = \"NOT_CERTIFIED\"\n            return 0\n\n        requested_paths = sorted(",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_softrestaurant_full_history_capability_contract.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nBRIDGE = ROOT / 'tools' / 'mirror_sync' / 'universal_job_bridge.py'\nDISPATCHER = ROOT / 'tools' / 'mirror_sync' / 'universal_job_dispatcher.py'\n\n\ndef test_bridge_has_closed_softrestaurant_resync_mode():\n    text = BRIDGE.read_text(encoding='utf-8')\n    assert 'SOFTRESTAURANT_FULL_HISTORY_RESYNC' in text\n    assert 'SOFTRESTAURANT_RESYNC_ACTIONS_FORBIDDEN' in text\n    assert 'SOFTRESTAURANT_RESYNC_CONFIRMATION_REQUIRED' in text\n    assert 'SOFTRESTAURANT_RESYNC_ONLY_SQL_AUDIT_ALLOWED' in text\n\n\ndef test_dispatcher_uses_only_fixed_resync_script():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'backend' in text and 'resync_softrestaurant_full_history.py' in text\n    assert 'SOFTRESTAURANT_RESYNC_SCRIPT_NOT_FOUND' in text\n    assert 'cmd = [PYTHON_BIN, str(script)]' in text\n    assert 'cmd.append(\"--execute\")' in text\n    assert 'cmd.extend([\"--unit\", unit.strip().upper()])' in text\n\n\ndef test_resync_mode_has_no_arbitrary_shell_or_path_contract():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    capability = text.split('if str(job.get(\"mode\") or \"\") == SOFTRESTAURANT_FULL_HISTORY_MODE:', 1)[1].split('requested_paths = sorted(', 1)[0]\n    assert 'job.get(\"command\")' not in capability\n    assert 'job.get(\"path\")' not in capability\n    assert 'shell=True' not in capability\n    assert 'SOFTRESTAURANT_RESYNC_MAX_SECONDS' in capability\n\n\ndef test_resync_requires_readonly_audit_and_records_mutation_semantics():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'SOFTRESTAURANT_RESYNC_SQL_AUDIT_REQUIRED' in text\n    assert 'canonical_sql_mutation' in text\n    assert 'CERTIFIED_OPERATIONAL' in text\n    assert 'OPERATIONAL_COMPLETE' in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "backend/tests/test_worker_softrestaurant_full_history_capability_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_softrestaurant_full_history_capability_contract.py",
+        "backend/tests/test_universal_worker_external_owner_contract.py",
+        "backend/tests/test_worker_mirror_single_owner_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_bootstrap_watchdog_safety_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es"
+}
