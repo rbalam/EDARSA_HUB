@@ -1,0 +1,5 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Synchronize canonical runtime to current Edarsahub_Desarrollo so scope-aware concurrency hardening and closed SoftRestaurant operational sync capability are active before rerunning dry-run; do not touch Production.",
+  "production_touched": false
+}
