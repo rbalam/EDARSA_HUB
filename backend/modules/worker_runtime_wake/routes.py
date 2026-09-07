@@ -26,6 +26,7 @@ REPO_ROOT = Path("/app")
 RUNTIME_DIR = REPO_ROOT / ".git" / "universal-worker-queue" / "runtime"
 LAST_RECEIVE = RUNTIME_DIR / "last_receive_utc"
 QUEUE_REF = "refs/heads/worker/requests"
+DEV_BRANCH = "Edarsahub_Desarrollo"
 WORKER_SERVICE = "edarsahub-universal-worker"
 LOCK_PATH = Path("/tmp/edarsahub-universal-worker-wake.lock")
 COOLDOWN_PATH = Path("/tmp/edarsahub-universal-worker-wake.last")
@@ -63,6 +64,50 @@ def _remote_queue_sha() -> str:
             detail="worker queue head invalid",
         )
     return fields[0].lower()
+
+
+def _runtime_git(*args: str, timeout: int = 30) -> subprocess.CompletedProcess[str]:
+    try:
+        return subprocess.run(
+            ["git", *args],
+            cwd=str(REPO_ROOT),
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env={"GIT_TERMINAL_PROMPT": "0"},
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker runtime git unavailable") from exc
+
+
+def _converge_development_if_safe() -> dict[str, str]:
+    fetch = _runtime_git("fetch", "--quiet", "origin", DEV_BRANCH, timeout=90)
+    if fetch.returncode != 0:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker runtime development fetch failed")
+    branch = _runtime_git("branch", "--show-current").stdout.strip()
+    local = _runtime_git("rev-parse", "HEAD").stdout.strip().lower()
+    remote = _runtime_git("rev-parse", f"origin/{DEV_BRANCH}").stdout.strip().lower()
+    if not _SHA_RE.fullmatch(local) or not _SHA_RE.fullmatch(remote):
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker runtime development sha invalid")
+    if local == remote:
+        return {"state": "ALIGNED", "local_sha": local, "remote_sha": remote}
+    if branch != DEV_BRANCH:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"worker runtime convergence blocked: wrong branch {branch}")
+    if _runtime_git("merge-base", "--is-ancestor", local, remote).returncode != 0:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="worker runtime convergence blocked: non-fast-forward")
+    dirty = _runtime_git("status", "--porcelain=v1", "--untracked-files=all")
+    if dirty.returncode != 0:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker runtime worktree status unavailable")
+    if dirty.stdout.strip():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="worker runtime convergence blocked: local worktree dirty")
+    ff = _runtime_git("merge", "--ff-only", f"origin/{DEV_BRANCH}", timeout=120)
+    if ff.returncode != 0:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker runtime fast-forward failed")
+    new_head = _runtime_git("rev-parse", "HEAD").stdout.strip().lower()
+    if new_head != remote:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker runtime fast-forward verification failed")
+    return {"state": "FF_APPLIED", "local_sha": local, "remote_sha": remote, "new_sha": new_head}
 
 
 def _current_worker_code_tree() -> str:
@@ -144,6 +189,7 @@ def wake_worker(
             detail="stale worker queue proof",
         )
 
+    convergence = _converge_development_if_safe()
     heartbeat_age = _heartbeat_age_seconds()
     current_worker_tree = _current_worker_code_tree()
     active_worker_tree = _active_worker_code_tree()
@@ -155,6 +201,7 @@ def wake_worker(
             "queue_sha": current,
             "heartbeat_age_seconds": round(heartbeat_age, 3),
             "worker_code_tree": current_worker_tree,
+            "runtime_convergence": convergence,
             "production_touched": False,
         }
 
@@ -195,6 +242,7 @@ def wake_worker(
             "heartbeat_age_seconds": round(heartbeat_age, 3) if heartbeat_age is not None else None,
             "worker_code_tree": current_worker_tree,
             "worker_code_changed": not worker_code_current,
+            "runtime_convergence": convergence,
             "requested_at_utc": requested_at,
             "production_touched": False,
         },
