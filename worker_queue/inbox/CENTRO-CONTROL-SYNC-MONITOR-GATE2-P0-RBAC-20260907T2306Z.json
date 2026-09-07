@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P0-RBAC-20260907T2306Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "GATE 2 P0: cerrar exposición no autenticada del Monitor de Sincronización usando RBAC SQL explícito canónico. Proteger los tres endpoints /api/admin/sync-monitor* con el permiso efectivo del módulo sync_monitor + acción VER, sin bypass legacy. No alterar lógica SQL, no Mongo, no LIVE, no Production. Añadir contrato de regresión que impida retirar esta protección.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_monitor/routes.py",
+      "old": "from .service import get_sync_monitor_data\n",
+      "new": "from .service import get_sync_monitor_data\nfrom core.rbac.middleware import require_explicit_permission\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_monitor/routes.py",
+      "old": "async def get_sync_monitor() -> Dict[str, Any]:",
+      "new": "async def get_sync_monitor(\n    current_user: dict = Depends(require_explicit_permission(\"sync_monitor_VER\")),\n) -> Dict[str, Any]:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_monitor/routes.py",
+      "old": "async def get_sync_monitor_kpis() -> Dict[str, Any]:",
+      "new": "async def get_sync_monitor_kpis(\n    current_user: dict = Depends(require_explicit_permission(\"sync_monitor_VER\")),\n) -> Dict[str, Any]:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_monitor/routes.py",
+      "old": "async def get_sync_monitor_servidor(server_id: str) -> Dict[str, Any]:",
+      "new": "async def get_sync_monitor_servidor(\n    server_id: str,\n    current_user: dict = Depends(require_explicit_permission(\"sync_monitor_VER\")),\n) -> Dict[str, Any]:",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_sync_monitor_rbac_contract.py",
+      "content": "from pathlib import Path\n\n\ndef test_sync_monitor_routes_require_explicit_sql_rbac():\n    routes = (\n        Path(__file__).resolve().parents[1]\n        / \"modules\"\n        / \"sync_monitor\"\n        / \"routes.py\"\n    ).read_text(encoding=\"utf-8\")\n\n    assert \"from core.rbac.middleware import require_explicit_permission\" in routes\n    assert routes.count(\"Depends(require_explicit_permission(\\\"sync_monitor_VER\\\"))\") == 3\n\n\ndef test_sync_monitor_rbac_contract_covers_all_public_routes():\n    routes = (\n        Path(__file__).resolve().parents[1]\n        / \"modules\"\n        / \"sync_monitor\"\n        / \"routes.py\"\n    ).read_text(encoding=\"utf-8\")\n\n    assert '@router.get(\"/sync-monitor\")' in routes\n    assert '@router.get(\"/sync-monitor/kpis\")' in routes\n    assert '@router.get(\"/sync-monitor/servidor/{server_id}\")' in routes\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/sync_monitor/routes.py", "backend/tests/test_sync_monitor_rbac_contract.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_sync_monitor_rbac_contract.py"]}
+  ],
+  "constraints": [
+    "NO Production",
+    "NO Mongo",
+    "NO LIVE source connections",
+    "NO changes to sync SQL service logic in this P0 job",
+    "NO Universal Worker structure changes",
+    "Use canonical SQL-explicit RBAC only",
+    "Permission contract is sync_monitor_VER = module sync_monitor + action VER",
+    "Do not claim full Gate 2 completion from this P0 segment alone"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "technical"
+}
