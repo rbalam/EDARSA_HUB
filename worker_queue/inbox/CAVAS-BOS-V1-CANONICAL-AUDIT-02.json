@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-BOS-V1-CANONICAL-AUDIT-02",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Reemitir y ejecutar auditoria READ_ONLY_SQL canónica para Cavas BOS V1.0. Obtener evidencia real de SQL Server sobre tablas/columnas Cavas legacy, Cliente_Catalogo, unidades/empresa, productos/catalogos/presentaciones, catalogo extendido, contexto operativo, indices y FKs. No crear ni alterar esquema. No tocar Produccion. El resultado debe permitir decidir REUSE/EXTEND/NEW/BLOCKED para persistencia y atomicidad de beneficios.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/EKS/consolidado/EKS_CAVAS_003_CANONICAL_AUDIT_R2.md",
+      "content": "# EKS CAVAS 003 R2 - Auditoria canonica SQL\n\nAudit READ_ONLY_SQL reemitido para obtener evidencia ejecutada del esquema canonico real de EDARSAHUB antes de cualquier DDL de Cavas.\n\nResultado vinculante: worker_queue/results/CAVAS-BOS-V1-CANONICAL-AUDIT-02.json\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {"name":"database_identity","sql":"SELECT DB_NAME() AS database_name, @@SERVERNAME AS server_name"},
+        {"name":"cavas_tables_and_columns","sql":"SELECT t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.precision, c.scale, c.is_nullable FROM sys.tables t INNER JOIN sys.columns c ON c.object_id=t.object_id INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE 'CavaSocios[_]%' ORDER BY t.name, c.column_id"},
+        {"name":"canonical_client_columns","sql":"SELECT t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.is_nullable FROM sys.tables t INNER JOIN sys.columns c ON c.object_id=t.object_id INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Cliente_Catalogo','Clientes','CRM_Clientes') ORDER BY t.name, c.column_id"},
+        {"name":"business_unit_company_columns","sql":"SELECT t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.is_nullable FROM sys.tables t INNER JOIN sys.columns c ON c.object_id=t.object_id INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Unidades_Negocio','Empresas','Sistema_Empresas') ORDER BY t.name, c.column_id"},
+        {"name":"product_catalog_candidates","sql":"SELECT t.name AS table_name FROM sys.tables t WHERE t.name LIKE '%Producto%' OR t.name LIKE '%Catalogo%' OR t.name LIKE '%Insumo%' OR t.name LIKE '%Presentacion%' ORDER BY t.name"},
+        {"name":"product_candidate_columns","sql":"SELECT t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.is_nullable FROM sys.tables t INNER JOIN sys.columns c ON c.object_id=t.object_id INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (t.name LIKE '%Producto%' OR t.name LIKE '%Catalogo%' OR t.name LIKE '%Insumo%' OR t.name LIKE '%Presentacion%') AND (c.name LIKE '%Codigo%' OR c.name LIKE '%Nombre%' OR c.name LIKE '%Marca%' OR c.name LIKE '%Familia%' OR c.name LIKE '%Alcohol%' OR c.name LIKE '%PublicUUID%' OR c.name LIKE '%ProductoID%' OR c.name LIKE '%InsumoID%' OR c.name LIKE '%Presentacion%') ORDER BY t.name, c.column_id"},
+        {"name":"extended_catalog_candidates","sql":"SELECT t.name AS table_name FROM sys.tables t WHERE t.name LIKE '%Extend%' OR t.name LIKE '%Ampliad%' OR t.name LIKE '%Externo%' ORDER BY t.name"},
+        {"name":"canonical_operational_context","sql":"SELECT t.name AS table_name FROM sys.tables t WHERE t.name LIKE '%TurnosOperativos%' OR t.name LIKE '%Zona%Horaria%' OR t.name LIKE '%Moneda%' OR t.name LIKE '%Idioma%' OR t.name LIKE '%Configuracion%' ORDER BY t.name"},
+        {"name":"cavas_constraints_indexes","sql":"SELECT t.name AS table_name, i.name AS index_name, i.is_unique, i.is_primary_key, i.has_filter, i.filter_definition FROM sys.tables t LEFT JOIN sys.indexes i ON i.object_id=t.object_id AND i.index_id>0 WHERE t.name LIKE 'CavaSocios[_]%' ORDER BY t.name, i.name"},
+        {"name":"cavas_foreign_keys","sql":"SELECT OBJECT_NAME(fk.parent_object_id) AS parent_table, fk.name AS fk_name, OBJECT_NAME(fk.referenced_object_id) AS referenced_table FROM sys.foreign_keys fk WHERE OBJECT_NAME(fk.parent_object_id) LIKE 'CavaSocios[_]%' ORDER BY parent_table, fk.name"},
+        {"name":"cavas_row_counts","sql":"SELECT t.name AS table_name, SUM(p.rows) AS row_count FROM sys.tables t JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE t.name LIKE 'CavaSocios[_]%' GROUP BY t.name ORDER BY t.name"}
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL ONLY",
+    "NO DDL",
+    "NO INSERT/UPDATE/DELETE/MERGE",
+    "NO Production",
+    "NO secrets in result",
+    "NO invented schema evidence",
+    "Preserve exact query outputs in worker result evidence"
+  ],
+  "human_summary_language": "es"
+}
