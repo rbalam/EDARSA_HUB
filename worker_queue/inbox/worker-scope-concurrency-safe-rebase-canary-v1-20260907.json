@@ -1,0 +1,21 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-scope-concurrency-safe-rebase-canary-v1-20260907",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "d854837104bf80ffda334097bf1c5655b61112e3",
+  "objective": "Canario real del hardening de concurrencia optimista por alcance. La base se deja deliberadamente atras de Development; el unico write_scope es un archivo de evidencia nuevo y aislado. Debe continuar como SAFE_REBASE si los cambios intermedios no tocan ese archivo, ejecutar git_diff_check y volver a validar concurrencia antes de integrar. No tocar Produccion.",
+  "requester": {"email":"ricardo@edarsa.com.mx","source":"chatgpt","project":"V1.0","chat":"worker-scope-concurrency-canary"},
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/worker/canaries/SCOPE_CONCURRENCY_SAFE_REBASE_CANARY_V1_20260907.md",
+      "content": "# Scope Concurrency SAFE_REBASE Canary V1\n\nPurpose: certify that the Universal Worker can accept an intentionally stale base when Development advanced only outside the job write scope.\n\nProduction touched: NO.\n"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"}
+  ],
+  "human_summary_language":"es"
+}
