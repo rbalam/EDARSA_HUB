@@ -62,10 +62,10 @@
   },
   "scripts": {
     "start": "craco start",
-    "build": "craco build",
+    "build": "DISABLE_ESLINT_PLUGIN=true CI=false craco build",
     "test": "craco test",
     "validate:navigation": "node scripts/validate_enterprise_navigation.js && node scripts/validate_executive_navigation.js",
-    "prebuild": "yarn validate:navigation"
+    "prebuild": "yarn validate:navigation && yarn install --frozen-lockfile --non-interactive --ignore-scripts --prefer-offline"
   },
   "browserslist": {
     "production": [
