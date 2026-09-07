@@ -1,0 +1,23 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-EXECUTION-DOSSIER-CERT-R3-20260907",
+  "created_at_utc": "2026-09-07T22:17:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d854837104bf80ffda334097bf1c5655b61112e3",
+  "production_allowed": false,
+  "objective": "Publicar evidencia persistente y certificable de la migracion SQL real de Cavas Corporativas ya ejecutada exitosamente en GitHub Actions run 34165247416. No ejecutar SQL ni migraciones. Documentar que el run #3 termino success; Step 1 preflight PASS con 0 tablas previas y blob SHA 072153e91c8721cbfa09cf6a0bb770ffab814494; Step 2 confirmo HRLectura con CREATE TABLE=1 y ALTER dbo=1; Step 3 reporto ejecucion completada correctamente; Steps 4/5 confirmaron 8 tablas, 8 PK, indices requeridos presentes, 0 external FKs y 0 seed rows; artifact ID 10033932063 con digest sha256:e23dd64b9bf3e010947917052a1ac05cd6c6cbe6940a05f3a851856e48101ffe; Produccion no fue tocada.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/CAVAS/CAVAS_CORPORATIVAS_SQL_MIGRATION_EXECUTION_CERT_20260907.md",
+      "content": "# Cavas Corporativas - Certificacion de ejecucion SQL\n\nFecha UTC: 2026-09-07\n\n## Ejecucion certificada\n\n- Workflow: `Cavas Corporativas Development Migration`\n- Run: `#3`\n- Run ID: `34165247416`\n- Trigger commit: `8c077cd1fc85cff58a6e18f04daffe6ca6e99dcf`\n- Rama: `Edarsahub_Desarrollo`\n- Resultado del job: `success`\n- Production touched: `false`\n\n## Migracion inmutable\n\n- Script: `backend/database/migrations/20260907_cavas_corporativas_core.sql`\n- Blob SHA esperado/ejecutado: `072153e91c8721cbfa09cf6a0bb770ffab814494`\n- Step 1 preflight: PASS\n- Tablas objetivo existentes antes del apply: 0\n- Constraints objetivo existentes antes del apply: 0\n- Indices objetivo existentes antes del apply: 0\n\n## Writer efectivo\n\nIdentidad: `HRLectura` sobre base `EDARSAHUB`.\n\n- `HAS_PERMS_BY_NAME(DB_NAME(), 'DATABASE', 'CREATE TABLE') = 1`\n- `HAS_PERMS_BY_NAME('dbo', 'SCHEMA', 'ALTER') = 1`\n\nStep 2: PASS.\n\n## Ejecucion\n\nStep 3 uso el runner canonico `backend/tools/edarsahub_sql_runner.py --mode migrate`.\n\nResultado textual del runner: `Ejecucion completada correctamente.`\n\n## Post-DDL read-only certification\n\nSteps 4/5: PASS.\n\nTablas confirmadas:\n\n1. `dbo.CavasCorporativas_OrganizacionesRef`\n2. `dbo.CavasCorporativas_Convenios`\n3. `dbo.CavasCorporativas_ConvenioUnidades`\n4. `dbo.CavasCorporativas_Autorizados`\n5. `dbo.CavasCorporativas_Beneficios`\n6. `dbo.CavasCorporativas_BeneficioAlcances`\n7. `dbo.CavasCorporativas_Politicas`\n8. `dbo.CavasCorporativas_AplicacionesBeneficio`\n\nValidaciones:\n\n- Primary keys: 8/8\n- Indices requeridos presentes: `UX_CC_Alcance`, `IX_CC_Convenios_OrganizacionEstado`, `IX_CC_Autorizados_Identidad`, `IX_CC_Aplicaciones_Operacion`\n- External foreign keys: 0\n- Foreign keys detectadas: solo internas al dominio Cavas Corporativas\n- Seed rows: 0 en las 8 tablas\n- Production branch touched: false\n\n## Evidencia GitHub Actions\n\n- Artifact: `cavas-corporativas-development-migration-34165247416`\n- Artifact ID: `10033932063`\n- Size: 4273 bytes\n- Digest: `sha256:e23dd64b9bf3e010947917052a1ac05cd6c6cbe6940a05f3a851856e48101ffe`\n- Evidencias incluidas: preflight, writer permissions, migrate stdout, runner report, postcheck y manifest.\n\n## Conclusion\n\nLa migracion core de Cavas Corporativas fue ejecutada realmente en la base canonica EDARSAHUB y paso la certificacion posterior read-only. No se insertaron datos semilla, no se crearon FKs externas y Produccion no fue tocada.\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
