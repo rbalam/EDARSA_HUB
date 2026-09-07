@@ -193,7 +193,7 @@ async def ventas_periodos(unidad: str = Query(...), desde: Optional[str] = None,
 @iscam_router.get("/ventas-periodos/productos")
 async def ventas_periodos_productos(unidad: str = Query(...), periodo: str = Query(...),
                                     group_by: str = Query("mes")):
-    unidad_pk = UnidadesService.resolver_pk(unidad)
+    unidad_pk = UnidadesService.resolver_codigo(unidad)
     if not unidad_pk:
         raise HTTPException(status_code=404, detail=f"Unidad no encontrada: {unidad}")
     pexpr = _period_sql("fecha_operacion", group_by)
@@ -220,7 +220,7 @@ async def ventas_periodos_productos(unidad: str = Query(...), periodo: str = Que
 @iscam_router.get("/ventas-periodos/tickets")
 async def ventas_periodos_tickets(unidad: str = Query(...), periodo: str = Query(...),
                                   producto: str = Query(...), group_by: str = Query("mes")):
-    unidad_pk = UnidadesService.resolver_pk(unidad)
+    unidad_pk = UnidadesService.resolver_codigo(unidad)
     if not unidad_pk:
         raise HTTPException(status_code=404, detail=f"Unidad no encontrada: {unidad}")
     pexpr = _period_sql("fecha_operacion", group_by)
@@ -288,7 +288,7 @@ async def resumen_cuentas(unidad: str = Query(...), desde: Optional[str] = None,
         return {"success": True, "source": "KPIsCanonicosService.resumen_periodo_desglosado.acumulado_cerrado",
                 "contrato_acumulado": "CERRADO_SIN_DIA_OPERATIVO_ACTUAL", "unidad": unidad, "desde": d, "hasta": h,
                 "group_by": group_by, "agrupado": agrupado}
-    unidad_pk = UnidadesService.resolver_pk(unidad)
+    unidad_pk = UnidadesService.resolver_codigo(unidad)
     if not unidad_pk:
         raise HTTPException(status_code=404, detail=f"Unidad no encontrada: {unidad}")
     if export_all:
@@ -322,7 +322,7 @@ async def resumen_cuentas(unidad: str = Query(...), desde: Optional[str] = None,
 
 @iscam_router.get("/cuentas/detalle")
 async def cuenta_detalle(unidad: str = Query(...), folio: str = Query(...)):
-    unidad_pk = UnidadesService.resolver_pk(unidad)
+    unidad_pk = UnidadesService.resolver_codigo(unidad)
     if not unidad_pk:
         raise HTTPException(status_code=404, detail=f"Unidad no encontrada: {unidad}")
     rows = _q(
@@ -350,7 +350,7 @@ async def comandas_venta(unidad: str = Query(...), desde: Optional[str] = None, 
                          group_by: str = Query("none"), limit: int = Query(1000, ge=1, le=5000),
                          export_all: bool = Query(False)):
     d, h = _rango_fechas(desde, hasta)
-    unidad_pk = UnidadesService.resolver_pk(unidad)
+    unidad_pk = UnidadesService.resolver_codigo(unidad)
     if not unidad_pk:
         raise HTTPException(status_code=404, detail=f"Unidad no encontrada: {unidad}")
     if group_by in ("anio", "mes", "dia"):
