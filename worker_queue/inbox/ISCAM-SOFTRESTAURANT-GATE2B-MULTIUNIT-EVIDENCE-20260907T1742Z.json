@@ -1,0 +1,50 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "ISCAM-SOFTRESTAURANT-GATE2B-MULTIUNIT-EVIDENCE-20260907T1742Z",
+  "created_at_utc": "2026-09-07T17:42:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "499189c7fe3f241662a3c370343681c6f9fca85b",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Extender Gate 2 del incidente ISCAM a TODAS las unidades de negocio configuradas con SoftRestaurant, sin hardcodear 130MID ni una lista manual de unidades. Descubrir las unidades SoftRestaurant desde catalogos/configuracion SQL canonicos, contrastar disponibilidad y llaves de Comandas, Cortes de Caja y Detalle de Pagos por unidad, y determinar si el fallo es sistemico o por mapeo/configuracion. No modificar SQL, datos, codigo, Worker ni Production. No inventar pagos ni usar Mongo/LIVE.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "softrestaurant_configured_units",
+          "sql": "SELECT TOP 100 u.unidad_negocio_pk, u.codigo AS unidad_codigo, u.nombre AS unidad_nombre, sc.NombreSistema AS sistema_nombre, sc.CodigoSistema AS sistema_codigo FROM dbo.Unidades_Negocio u LEFT JOIN dbo.Sistema_Configuracion sc ON sc.UnidadNegocioID = u.unidad_negocio_pk WHERE UPPER(ISNULL(sc.NombreSistema,'')) LIKE '%SOFT%' OR UPPER(ISNULL(sc.CodigoSistema,'')) LIKE '%SOFT%' ORDER BY u.codigo"
+        },
+        {
+          "name": "softrestaurant_sales_coverage_by_unit_sep2026",
+          "sql": "SELECT unidad_negocio_id, COUNT(*) AS lineas, COUNT(DISTINCT numero_ticket) AS tickets, SUM(ISNULL(importe_neto,0)) AS importe, MIN(fecha_operacion) AS fecha_min, MAX(fecha_operacion) AS fecha_max FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND fecha_operacion >= '2026-09-01' AND fecha_operacion < '2026-10-01' GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        },
+        {
+          "name": "softrestaurant_cortes_coverage_by_name_sep2026",
+          "sql": "SELECT TOP 100 UnidadNegocioNombre, COUNT(*) AS cortes, SUM(ISNULL(TotalVenta,0)) AS total_venta, MIN(FechaApertura) AS fecha_min, MAX(FechaApertura) AS fecha_max FROM dbo.Finanzas_CortesCaja WHERE ISNULL(Activo,1)=1 AND FechaApertura >= '2026-09-01' AND FechaApertura < '2026-10-01' GROUP BY UnidadNegocioNombre ORDER BY UnidadNegocioNombre"
+        },
+        {
+          "name": "softrestaurant_payment_coverage_by_unit_sep2026",
+          "sql": "SELECT TOP 100 UnidadNegocio, SistemaOrigen, COUNT(*) AS pagos, COUNT(DISTINCT NumeroTicket) AS tickets, SUM(ISNULL(Importe,0)) AS importe, SUM(ISNULL(Propina,0)) AS propina, MIN(FechaHora) AS fecha_min, MAX(FechaHora) AS fecha_max FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE ISNULL(Activo,1)=1 AND FechaHora >= '2026-09-01' AND FechaHora < '2026-10-01' GROUP BY UnidadNegocio, SistemaOrigen ORDER BY UnidadNegocio, SistemaOrigen"
+        },
+        {
+          "name": "softrestaurant_ticket_match_by_sales_unit_sep2026",
+          "sql": "SELECT c.unidad_negocio_id, COUNT(DISTINCT c.numero_ticket) AS comandas_folios, COUNT(DISTINCT CASE WHEN p.NumeroTicket IS NOT NULL THEN c.numero_ticket END) AS matched_payment_folios, COUNT(DISTINCT CASE WHEN p.NumeroTicket IS NULL THEN c.numero_ticket END) AS unmatched_comandas_folios FROM dbo.Comercial_Inteligencia_VentasDetalleProducto c LEFT JOIN dbo.Finanzas_CortesCaja_DetallePagos p ON p.NumeroTicket=c.numero_ticket AND ISNULL(p.Activo,1)=1 AND p.FechaHora >= '2026-09-01' AND p.FechaHora < '2026-10-01' WHERE ISNULL(c.activo,1)=1 AND ISNULL(c.es_kpi_valido,1)=1 AND c.fecha_operacion >= '2026-09-01' AND c.fecha_operacion < '2026-10-01' GROUP BY c.unidad_negocio_id ORDER BY c.unidad_negocio_id"
+        },
+        {
+          "name": "softrestaurant_payment_system_origins",
+          "sql": "SELECT TOP 50 SistemaOrigen, COUNT(*) AS filas, COUNT(DISTINCT UnidadNegocio) AS unidades, MIN(FechaHora) AS fecha_min, MAX(FechaHora) AS fecha_max FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE ISNULL(Activo,1)=1 GROUP BY SistemaOrigen ORDER BY filas DESC"
+        },
+        {
+          "name": "unit_catalog_columns_for_mapping",
+          "sql": "SELECT TOP 100 c.name AS column_name, t.name AS data_type FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Unidades_Negocio') ORDER BY c.column_id"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
