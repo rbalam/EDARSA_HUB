@@ -1,55 +1,61 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "bb1f313480e545627f04c76a8c71eda36dc40e45",
-  "generated_at_utc": "2026-09-07T02:16:48Z",
+  "development_sha": "c211c669dfdb66f8dc2d90ba20d171e2cd51a4b5",
+  "generated_at_utc": "2026-09-07T02:18:01Z",
   "history": {
-    "done_total_local": 109,
+    "done_total_local": 110,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 213,
-    "results_total_local": 283
+    "results_total_local": 284
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 154,
+      "age_seconds": 227,
       "job_id": "CAVAS-CORPORATIVAS-DDL-KEYS-READONLY-AUDIT-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 633,
+      "age_seconds": 706,
       "job_id": "CAVAS-CORPORATIVAS-GATE2-DOSSIER-CERT-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 581,
+      "age_seconds": 654,
       "job_id": "CAVAS-CORPORATIVAS-GATE2-DOSSIER-CERT-R2-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 481,
+      "age_seconds": 554,
       "job_id": "CAVAS-CORPORATIVAS-GATE2-MINIMAL-DDL-PROPOSAL-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 56,
+      "age_seconds": 129,
       "job_id": "WORKER-CAPABILITY-POLICY-PHASE-CLOSURE-GATE4-20260906",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 415,
+      "age_seconds": 62,
+      "job_id": "WORKER-CAPABILITY-POLICY-PHASE-CLOSURE-GATE4-R2-20260907",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 488,
       "job_id": "save-github-frontend-build-output-capture-v1-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 152,
+      "age_seconds": 225,
       "job_id": "servers-integrations-gate1-readonly-sql-v1-20260906",
       "reason": null,
       "state": "RESULT_READY"
@@ -62,14 +68,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 7,
+  "queue_result_ready_recent": 8,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-07T02:16:44Z",
-    "last_receive_utc": "2026-09-07T02:16:45Z",
-    "last_terminal_utc": "2026-09-07T02:15:52Z",
+    "last_cycle_utc": "2026-09-07T02:17:56Z",
+    "last_receive_utc": "2026-09-07T02:17:57Z",
+    "last_terminal_utc": "2026-09-07T02:16:58Z",
     "pid": "286"
   },
   "schema": "edarsahub.worker-health.v3",
