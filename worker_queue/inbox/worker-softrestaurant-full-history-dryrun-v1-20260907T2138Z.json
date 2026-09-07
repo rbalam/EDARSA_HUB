@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-softrestaurant-full-history-dryrun-v1-20260907T2138Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Ejecutar por el Universal Worker un dry-run cerrado del historial completo SoftRestaurant sobre todas las unidades SoftRestaurant resueltas por la configuracion canonica, descubrir bounds reales por unidad sin escribir, y ejecutar despues auditoria SQL de solo lectura sobre las tablas canonicas objetivo.",
+  "mode": "SOFTRESTAURANT_FULL_HISTORY_RESYNC",
+  "actions": [],
+  "units": [],
+  "dry_run": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "softrestaurant_backfill_target_tables_exist",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name FROM sys.tables t INNER JOIN sys.schemas s ON s.schema_id = t.schema_id WHERE s.name = 'dbo' AND t.name IN ('Finanzas_CortesCaja','Finanzas_CortesCaja_DetallePagos') ORDER BY t.name;"
+        },
+        {
+          "name": "softrestaurant_cortes_count_before_execute",
+          "sql": "SELECT COUNT_BIG(*) AS total_rows FROM dbo.Finanzas_CortesCaja;"
+        },
+        {
+          "name": "softrestaurant_detalle_pagos_count_before_execute",
+          "sql": "SELECT COUNT_BIG(*) AS total_rows FROM dbo.Finanzas_CortesCaja_DetallePagos;"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Worker SoftRestaurant full history"
+  },
+  "human_summary_language": "es"
+}
