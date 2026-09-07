@@ -8,6 +8,7 @@ from typing import Dict, Any
 import logging
 
 from .service import get_sync_monitor_data
+from core.rbac.middleware import require_explicit_permission
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,9 @@ router = APIRouter(prefix="/admin", tags=["Admin - Sync Monitor"])
 
 
 @router.get("/sync-monitor")
-async def get_sync_monitor() -> Dict[str, Any]:
+async def get_sync_monitor(
+    current_user: dict = Depends(require_explicit_permission("sync_monitor_VER")),
+) -> Dict[str, Any]:
     """
     Monitor de Sincronización SQL-First.
     
@@ -43,7 +46,9 @@ async def get_sync_monitor() -> Dict[str, Any]:
 
 
 @router.get("/sync-monitor/kpis")
-async def get_sync_monitor_kpis() -> Dict[str, Any]:
+async def get_sync_monitor_kpis(
+    current_user: dict = Depends(require_explicit_permission("sync_monitor_VER")),
+) -> Dict[str, Any]:
     """
     Solo KPIs del monitor de sincronización.
     Versión ligera para dashboards.
@@ -62,7 +67,10 @@ async def get_sync_monitor_kpis() -> Dict[str, Any]:
 
 
 @router.get("/sync-monitor/servidor/{server_id}")
-async def get_sync_monitor_servidor(server_id: str) -> Dict[str, Any]:
+async def get_sync_monitor_servidor(
+    server_id: str,
+    current_user: dict = Depends(require_explicit_permission("sync_monitor_VER")),
+) -> Dict[str, Any]:
     """
     Detalle de sincronización para un servidor específico.
     """
