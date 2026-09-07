@@ -1,0 +1,37 @@
+name: Mirror Dirty Convergence Hardening
+
+on:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - '.github/workflows/mirror-dirty-convergence-hardening.yml'
+      - 'tools/mirror_sync/shared_app_safety_guard.sh'
+      - 'tools/mirror_sync/apply_remote_update.sh'
+      - 'backend/tests/test_shared_app_sync_safety_contract.py'
+      - 'backend/tests/test_mirror_sync_staged_preservation_contract.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shell syntax
+        run: |
+          bash -n tools/mirror_sync/shared_app_safety_guard.sh
+          bash -n tools/mirror_sync/apply_remote_update.sh
+      - name: Contract tests
+        run: |
+          python -m pytest -q \
+            backend/tests/test_shared_app_sync_safety_contract.py \
+            backend/tests/test_mirror_sync_staged_preservation_contract.py
+      - name: Destructive-operation guard
+        run: |
+          ! grep -E 'git (reset|stash|clean|checkout \.|restore )' tools/mirror_sync/apply_remote_update.sh
+          grep -F 'git merge --ff-only "$TARGET"' tools/mirror_sync/apply_remote_update.sh
+          grep -F 'PRODUCTION_TOUCHED=NO' tools/mirror_sync/apply_remote_update.sh
