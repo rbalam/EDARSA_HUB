@@ -1,0 +1,50 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "ISCAM-SOFTRESTAURANT-GATE2E-FULL-HISTORY-DISCOVERY-20260907T1805Z",
+  "created_at_utc": "2026-09-07T18:05:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "499189c7fe3f241662a3c370343681c6f9fca85b",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate 2E: preparar resincronizacion historica completa desde el primer dia real de informacion disponible para todas las unidades de negocio activas cuyo POS canonico sea SoftRestaurant. Descubrir fecha minima y maxima real por unidad en fuentes y destinos canonicos, identificar huecos mensuales, y producir evidencia suficiente para ejecutar un backfill idempotente completo de Finanzas_CortesCaja_DetallePagos y Finanzas_CortesCaja sin hardcodes de fecha inicial ni de unidades. No modificar codigo, SQL, datos, Worker ni Production en este gate.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate2e_soft_units_from_sales",
+          "sql": "SELECT unidad_negocio_id, MIN(fecha_operacion) AS primera_fecha_ventas, MAX(fecha_operacion) AS ultima_fecha_ventas, COUNT(*) AS lineas, COUNT(DISTINCT numero_ticket) AS tickets FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND UPPER(ISNULL(fuente_original,'')) LIKE '%SOFT%' GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        },
+        {
+          "name": "gate2e_detalle_pagos_bounds",
+          "sql": "SELECT UnidadNegocio, MIN(FechaHora) AS primera_fecha_pago, MAX(FechaHora) AS ultima_fecha_pago, COUNT(*) AS pagos, COUNT(DISTINCT NumeroTicket) AS tickets FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE ISNULL(Activo,1)=1 AND SistemaOrigen='SoftRestaurant' GROUP BY UnidadNegocio ORDER BY UnidadNegocio"
+        },
+        {
+          "name": "gate2e_cortes_bounds",
+          "sql": "SELECT UnidadNegocioNombre, MIN(FechaApertura) AS primera_fecha_corte, MAX(FechaApertura) AS ultima_fecha_corte, COUNT(*) AS cortes FROM dbo.Finanzas_CortesCaja WHERE ISNULL(Activo,1)=1 AND UPPER(ISNULL(SistemaOrigen,'')) LIKE '%SOFT%' GROUP BY UnidadNegocioNombre ORDER BY UnidadNegocioNombre"
+        },
+        {
+          "name": "gate2e_sales_monthly_coverage",
+          "sql": "SELECT unidad_negocio_id, CONVERT(char(7),fecha_operacion,120) AS periodo, COUNT(DISTINCT numero_ticket) AS tickets FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND UPPER(ISNULL(fuente_original,'')) LIKE '%SOFT%' GROUP BY unidad_negocio_id, CONVERT(char(7),fecha_operacion,120) ORDER BY unidad_negocio_id, periodo"
+        },
+        {
+          "name": "gate2e_payments_monthly_coverage",
+          "sql": "SELECT UnidadNegocio, CONVERT(char(7),FechaHora,120) AS periodo, COUNT(*) AS pagos, COUNT(DISTINCT NumeroTicket) AS tickets FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE ISNULL(Activo,1)=1 AND SistemaOrigen='SoftRestaurant' GROUP BY UnidadNegocio, CONVERT(char(7),FechaHora,120) ORDER BY UnidadNegocio, periodo"
+        },
+        {
+          "name": "gate2e_cortes_monthly_coverage",
+          "sql": "SELECT UnidadNegocioNombre, CONVERT(char(7),FechaApertura,120) AS periodo, COUNT(*) AS cortes FROM dbo.Finanzas_CortesCaja WHERE ISNULL(Activo,1)=1 AND UPPER(ISNULL(SistemaOrigen,'')) LIKE '%SOFT%' GROUP BY UnidadNegocioNombre, CONVERT(char(7),FechaApertura,120) ORDER BY UnidadNegocioNombre, periodo"
+        },
+        {
+          "name": "gate2e_sync_config_soft",
+          "sql": "SELECT TOP 100 CONVERT(varchar(36),id) AS connection_id,nombre,system_type,activo,visible_en_operaciones,fecha_ultima_sincronizacion,source_status,ultimo_error_sync FROM dbo.Servidores_Conexiones WHERE UPPER(ISNULL(system_type,'')) LIKE '%SOFT%' ORDER BY nombre"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
