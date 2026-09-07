@@ -2,8 +2,11 @@
   "base_sha": "35542434653f8883b6e4b35383f5bc69b1d529b3",
   "blockers": [],
   "candidate_sha": "9bf38c9f6568dacf02fb4b333b47e5f4ad3b2eaf",
-  "certification": "PENDING_AUDIT_EVIDENCE",
+  "certification": "CERTIFIED",
+  "certification_basis": "SHA_BOUND_ATTESTATION_PLUS_DESCENDANT_CONVERGENCE",
+  "certified_source_sha": "9bf38c9f6568dacf02fb4b333b47e5f4ad3b2eaf",
   "completed_at_utc": "2026-09-07T18:35:25Z",
+  "converged_head": "9bf38c9f6568dacf02fb4b333b47e5f4ad3b2eaf",
   "development_sha": "9bf38c9f6568dacf02fb4b333b47e5f4ad3b2eaf",
   "executor": "chatgpt-deterministic",
   "files_changed": [
@@ -13,9 +16,9 @@
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "ISCAM-COMANDAS-NONE-FIX-CARLOS-20260907T1836Z",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-09-07T18:35:26Z",
+  "published_at_utc": "2026-09-07T18:35:56Z",
   "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
@@ -24,5 +27,5 @@
   "status": "INTEGRATED",
   "summary_es": "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
   "tests": "PASS",
-  "work_completion": "PENDING_CERTIFICATION"
+  "work_completion": "COMPLETE"
 }
