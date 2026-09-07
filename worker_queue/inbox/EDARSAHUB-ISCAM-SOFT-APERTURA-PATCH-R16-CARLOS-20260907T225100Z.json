@@ -1,0 +1,25 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-SOFT-APERTURA-PATCH-R16-CARLOS-20260907T225100Z",
+  "created_at_utc": "2026-09-07T22:51:00Z",
+  "requester": {"email": "carlosruz@edarsa.com.mx", "source": "chatgpt", "project": "V1", "chat": "EDARSAHUB-CONCILIACIONES"},
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "efe4c589325a4e82a2818df7bc8afc9c0fbacea7",
+  "production_allowed": false,
+  "objective": "Aplicar sobre el HEAD actual el parche minimo ya validado en R15: detalle ISCAM SoftRestaurant por turnos.apertura y solo turnos cerrados, nunca por cheques.fecha/cierre; Pagos por Ticket exige turno cerrado; idempresa se descubre exclusivamente desde turnos.idempresa del POS y falla cerrado si no es unico. No modificar agregado Ejecutivo ni Produccion.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "MUTATION",
+  "actions": [
+    {"type":"replace_text","path":"backend/scripts/poblar_ventas_detalle_producto_canonico.py","old":"    return inicio.strftime(\"%Y-%m-%d %H:%M:%S\"), fin.strftime(\"%Y-%m-%d %H:%M:%S\")\n\n\ndef _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:","new":"    return inicio.strftime(\"%Y-%m-%d %H:%M:%S\"), fin.strftime(\"%Y-%m-%d %H:%M:%S\")\n\n\ndef _softrestaurant_empresa_id_for_window(conn, fi: str, ff: str) -> str:\n    \"\"\"Resuelve turnos.idempresa del POS para un rango operativo.\"\"\"\n    cur = conn.cursor(as_dict=True)\n    cur.execute(\n        \"\"\"\n        SELECT DISTINCT\n            LTRIM(RTRIM(CONVERT(NVARCHAR(100), t.idempresa))) AS empresa_id\n        FROM turnos t WITH (NOLOCK)\n        WHERE t.apertura >= %s\n          AND t.apertura < %s\n          AND t.cierre IS NOT NULL\n          AND NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(100), t.idempresa))), '') IS NOT NULL\n        ORDER BY empresa_id\n        \"\"\",\n        (fi, ff),\n    )\n    candidates = sorted({\n        _s(row.get(\"empresa_id\"))\n        for row in (cur.fetchall() or [])\n        if _s(row.get(\"empresa_id\"))\n    })\n    cur.close()\n    if len(candidates) == 1:\n        return candidates[0]\n    if not candidates:\n        raise RuntimeError(\"SoftRestaurant sin idempresa en turnos cerrados del rango operativo\")\n    raise RuntimeError(\"SoftRestaurant con multiples idempresa en el rango operativo\")\n\n\ndef _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:","expected_count":1},
+    {"type":"replace_text","path":"backend/scripts/poblar_ventas_detalle_producto_canonico.py","old":"        fi, ff = _soft_operational_datetime_range(cfg, dia)\n\n        sql = f\"\"\"","new":"        fi, ff = _soft_operational_datetime_range(cfg, dia)\n        empresa_id = _softrestaurant_empresa_id_for_window(conn, fi, ff)\n\n        sql = f\"\"\"","expected_count":1},
+    {"type":"replace_text","path":"backend/scripts/poblar_ventas_detalle_producto_canonico.py","old":"            FROM cheques ch WITH (NOLOCK)\n            WHERE ch.fecha >= %s\n              AND ch.fecha < %s","new":"            FROM cheques ch WITH (NOLOCK)\n            INNER JOIN turnos tr WITH (NOLOCK)\n                ON tr.idturno = ch.idturno\n               AND tr.idempresa = ch.idempresa\n            WHERE ch.idempresa = %s\n              AND tr.idempresa = %s\n              AND tr.apertura >= %s\n              AND tr.apertura < %s\n              AND tr.cierre IS NOT NULL","expected_count":1},
+    {"type":"replace_text","path":"backend/scripts/poblar_ventas_detalle_producto_canonico.py","old":"        cur.execute(sql, (fi, ff))","new":"        cur.execute(sql, (empresa_id, empresa_id, fi, ff))","expected_count":1},
+    {"type":"replace_text","path":"backend/core/scheduler/jobs/inteligencia_comercial_enrich.py","old":"            WHERE t.apertura >= '{fi}' AND t.apertura < '{ff}'\n              AND ch.cancelado = 0 AND ch.total > 0","new":"            WHERE t.apertura >= '{fi}' AND t.apertura < '{ff}'\n              AND t.cierre IS NOT NULL\n              AND ch.cancelado = 0 AND ch.total > 0","expected_count":2}
+  ],
+  "checks": [
+    {"type":"git_diff_check"},
+    {"type":"py_compile","paths":["backend/scripts/poblar_ventas_detalle_producto_canonico.py","backend/core/scheduler/jobs/inteligencia_comercial_enrich.py"]}
+  ]
+}
