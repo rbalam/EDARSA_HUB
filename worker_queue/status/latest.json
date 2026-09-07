@@ -1,32 +1,38 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "c3f6584b84177d9d26893b60f8761def6188990e",
-  "generated_at_utc": "2026-09-07T02:08:55Z",
+  "development_sha": "bb1f313480e545627f04c76a8c71eda36dc40e45",
+  "generated_at_utc": "2026-09-07T02:10:07Z",
   "history": {
-    "done_total_local": 107,
+    "done_total_local": 108,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 211,
-    "results_total_local": 279
+    "results_total_local": 280
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 160,
+      "age_seconds": 232,
       "job_id": "CAVAS-CORPORATIVAS-GATE2-DOSSIER-CERT-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 108,
+      "age_seconds": 181,
       "job_id": "CAVAS-CORPORATIVAS-GATE2-DOSSIER-CERT-R2-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 8,
+      "age_seconds": 80,
       "job_id": "CAVAS-CORPORATIVAS-GATE2-MINIMAL-DDL-PROPOSAL-01",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 15,
+      "job_id": "save-github-frontend-build-output-capture-v1-20260907",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -38,14 +44,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-07T02:08:52Z",
-    "last_receive_utc": "2026-09-07T02:08:52Z",
-    "last_terminal_utc": "2026-09-07T02:08:47Z",
+    "last_cycle_utc": "2026-09-07T02:10:07Z",
+    "last_receive_utc": "2026-09-07T02:10:02Z",
+    "last_terminal_utc": "2026-09-07T02:09:52Z",
     "pid": "286"
   },
   "schema": "edarsahub.worker-health.v3",
