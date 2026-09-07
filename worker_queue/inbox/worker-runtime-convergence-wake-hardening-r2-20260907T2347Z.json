@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-runtime-convergence-wake-hardening-r2-20260907T2347Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Cerrar la causa estructural de runtime stale sin depender del heartbeat: antes de declarar already_healthy, el wake endpoint debe verificar y, si es seguro, hacer fast-forward estricto de /app a origin/Edarsahub_Desarrollo. Si /app esta dirty, en rama incorrecta o no es fast-forward, detenerse preservando todo. Despues de FF, reiniciar solo edarsahub-universal-worker. Sin reset, stash, clean, rebase, force ni Production.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "expected_count": 1,
+      "old": "QUEUE_REF = \"refs/heads/worker/requests\"\nWORKER_SERVICE = \"edarsahub-universal-worker\"",
+      "new": "QUEUE_REF = \"refs/heads/worker/requests\"\nDEV_BRANCH = \"Edarsahub_Desarrollo\"\nWORKER_SERVICE = \"edarsahub-universal-worker\""
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "expected_count": 1,
+      "old": "def _current_worker_code_tree() -> str:\n",
+      "new": "def _runtime_git(*args: str, timeout: int = 30) -> subprocess.CompletedProcess[str]:\n    try:\n        return subprocess.run(\n            [\"git\", *args],\n            cwd=str(REPO_ROOT),\n            check=False,\n            capture_output=True,\n            text=True,\n            timeout=timeout,\n            env={\"GIT_TERMINAL_PROMPT\": \"0\"},\n        )\n    except (OSError, subprocess.SubprocessError) as exc:\n        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=\"worker runtime git unavailable\") from exc\n\n\ndef _converge_development_if_safe() -> dict[str, str]:\n    fetch = _runtime_git(\"fetch\", \"--quiet\", \"origin\", DEV_BRANCH, timeout=90)\n    if fetch.returncode != 0:\n        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=\"worker runtime development fetch failed\")\n    branch = _runtime_git(\"branch\", \"--show-current\").stdout.strip()\n    local = _runtime_git(\"rev-parse\", \"HEAD\").stdout.strip().lower()\n    remote = _runtime_git(\"rev-parse\", f\"origin/{DEV_BRANCH}\").stdout.strip().lower()\n    if not _SHA_RE.fullmatch(local) or not _SHA_RE.fullmatch(remote):\n        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=\"worker runtime development sha invalid\")\n    if local == remote:\n        return {\"state\": \"ALIGNED\", \"local_sha\": local, \"remote_sha\": remote}\n    if branch != DEV_BRANCH:\n        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f\"worker runtime convergence blocked: wrong branch {branch}\")\n    if _runtime_git(\"merge-base\", \"--is-ancestor\", local, remote).returncode != 0:\n        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=\"worker runtime convergence blocked: non-fast-forward\")\n    dirty = _runtime_git(\"status\", \"--porcelain=v1\", \"--untracked-files=all\")\n    if dirty.returncode != 0:\n        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=\"worker runtime worktree status unavailable\")\n    if dirty.stdout.strip():\n        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=\"worker runtime convergence blocked: local worktree dirty\")\n    ff = _runtime_git(\"merge\", \"--ff-only\", f\"origin/{DEV_BRANCH}\", timeout=120)\n    if ff.returncode != 0:\n        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=\"worker runtime fast-forward failed\")\n    new_head = _runtime_git(\"rev-parse\", \"HEAD\").stdout.strip().lower()\n    if new_head != remote:\n        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=\"worker runtime fast-forward verification failed\")\n    return {\"state\": \"FF_APPLIED\", \"local_sha\": local, \"remote_sha\": remote, \"new_sha\": new_head}\n\n\ndef _current_worker_code_tree() -> str:\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "expected_count": 1,
+      "old": "    heartbeat_age = _heartbeat_age_seconds()\n    current_worker_tree = _current_worker_code_tree()",
+      "new": "    convergence = _converge_development_if_safe()\n    heartbeat_age = _heartbeat_age_seconds()\n    current_worker_tree = _current_worker_code_tree()"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "expected_count": 1,
+      "old": "            \"worker_code_tree\": current_worker_tree,\n            \"production_touched\": False,",
+      "new": "            \"worker_code_tree\": current_worker_tree,\n            \"runtime_convergence\": convergence,\n            \"production_touched\": False,"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "expected_count": 1,
+      "old": "            \"worker_code_changed\": not worker_code_current,\n            \"requested_at_utc\": requested_at,",
+      "new": "            \"worker_code_changed\": not worker_code_current,\n            \"runtime_convergence\": convergence,\n            \"requested_at_utc\": requested_at,"
+    }
+  ],
+  "checks": [
+    {"type": "py_compile", "paths": ["backend/modules/worker_runtime_wake/routes.py"]},
+    {"type": "git_diff_check"}
+  ],
+  "requester": {"email": "ricardo@edarsa.com.mx", "source": "chatgpt-classic", "project": "EDARSAHUB BOS V1.0"},
+  "human_summary_language": "es"
+}
