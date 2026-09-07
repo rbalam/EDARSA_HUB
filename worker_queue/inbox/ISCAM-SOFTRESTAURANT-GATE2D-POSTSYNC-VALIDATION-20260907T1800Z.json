@@ -1,0 +1,40 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "ISCAM-SOFTRESTAURANT-GATE2D-POSTSYNC-VALIDATION-20260907T1800Z",
+  "created_at_utc": "2026-09-07T18:00:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "499189c7fe3f241662a3c370343681c6f9fca85b",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate 2D post-sync: certificar inmediatamente el resultado del resync SoftRestaurant ejecutado para 2026-09-01..2026-09-08. Confirmar que DetallePagos ya contiene septiembre para todas las unidades SoftRestaurant con ventas, medir cobertura ticket-pago con join por unidad+ticket para evitar colisiones entre unidades, y confirmar que Finanzas_CortesCaja sigue o no pendiente. No modificar codigo, datos, SQL ni Production. Evidencia operativa previa del sync: 130MID 195 pagos insertados, CIENFUEGOS 284, ESTELAR 395, RESULT=PASS.",
+  "actions": [],
+  "checks": [{
+    "type": "sql_readonly_audit",
+    "queries": [
+      {
+        "name": "gate2d_payments_sep_soft",
+        "sql": "SELECT UnidadNegocio,COUNT(*) AS pagos,COUNT(DISTINCT NumeroTicket) AS tickets,SUM(ISNULL(Importe,0)) AS importe,SUM(ISNULL(Propina,0)) AS propina,MIN(FechaHora) AS fecha_min,MAX(FechaHora) AS fecha_max FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE ISNULL(Activo,1)=1 AND SistemaOrigen='SoftRestaurant' AND FechaHora >= '2026-09-01' AND FechaHora < '2026-09-08' GROUP BY UnidadNegocio ORDER BY UnidadNegocio"
+      },
+      {
+        "name": "gate2d_sales_vs_payments_soft",
+        "sql": "SELECT c.unidad_negocio_id,COUNT(DISTINCT c.numero_ticket) AS ventas_tickets,COUNT(DISTINCT CASE WHEN p.NumeroTicket IS NOT NULL THEN c.numero_ticket END) AS matched_payment_tickets,COUNT(DISTINCT CASE WHEN p.NumeroTicket IS NULL THEN c.numero_ticket END) AS unmatched_payment_tickets FROM dbo.Comercial_Inteligencia_VentasDetalleProducto c LEFT JOIN dbo.Finanzas_CortesCaja_DetallePagos p ON p.UnidadNegocio=c.unidad_negocio_id AND p.NumeroTicket=c.numero_ticket AND p.SistemaOrigen='SoftRestaurant' AND ISNULL(p.Activo,1)=1 AND p.FechaHora >= '2026-09-01' AND p.FechaHora < '2026-09-08' WHERE ISNULL(c.activo,1)=1 AND ISNULL(c.es_kpi_valido,1)=1 AND c.fecha_operacion >= '2026-09-01' AND c.fecha_operacion < '2026-09-08' AND UPPER(ISNULL(c.fuente_original,'')) LIKE '%SOFT%' GROUP BY c.unidad_negocio_id ORDER BY c.unidad_negocio_id"
+      },
+      {
+        "name": "gate2d_payment_latest_soft",
+        "sql": "SELECT UnidadNegocio,MAX(FechaHora) AS fecha_max,COUNT(*) AS filas FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE ISNULL(Activo,1)=1 AND SistemaOrigen='SoftRestaurant' GROUP BY UnidadNegocio ORDER BY UnidadNegocio"
+      },
+      {
+        "name": "gate2d_cortes_sep_soft",
+        "sql": "SELECT UnidadNegocioID,UnidadNegocioNombre,COUNT(*) AS cortes,SUM(ISNULL(TotalVenta,0)) AS total_venta,MIN(FechaApertura) AS fecha_min,MAX(FechaApertura) AS fecha_max FROM dbo.Finanzas_CortesCaja WHERE ISNULL(Activo,1)=1 AND UPPER(ISNULL(SistemaOrigen,'')) LIKE '%SOFT%' AND FechaApertura >= '2026-09-01' AND FechaApertura < '2026-09-08' GROUP BY UnidadNegocioID,UnidadNegocioNombre ORDER BY UnidadNegocioNombre"
+      },
+      {
+        "name": "gate2d_cortes_latest_soft",
+        "sql": "SELECT UnidadNegocioNombre,MAX(FechaApertura) AS fecha_max,COUNT(*) AS cortes FROM dbo.Finanzas_CortesCaja WHERE ISNULL(Activo,1)=1 AND UPPER(ISNULL(SistemaOrigen,'')) LIKE '%SOFT%' GROUP BY UnidadNegocioNombre ORDER BY UnidadNegocioNombre"
+      }
+    ]
+  }],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
