@@ -1,0 +1,28 @@
+{
+  "base_sha": "531ff3d9f19e23b9fb16bd7c4eb25578dbb944cc",
+  "blockers": [],
+  "candidate_sha": "545d95f88cf7c0746d9104c65f79605e6124cb03",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-07T03:49:06Z",
+  "development_sha": "545d95f88cf7c0746d9104c65f79605e6124cb03",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    ".github/workflows/cavas-corporativas-development-migration.yml",
+    "ops/migrations/requests/CAVAS-CORPORATIVAS-CORE-20260907.execute"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-CHANNEL-R2-20260907",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-07T03:49:07Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-07T03:49:01Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
