@@ -1,0 +1,25 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-POSTPATCH-GATE-R17-READONLY-20260907T225500Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Medir despues del parche R16 las brechas reales entre KPIs V2 y detalle canonico ISCAM para SoftRestaurant, junto con frescura de pagos y cortes. Solo lectura, sin tocar codigo ni datos ni Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {"name":"soft_kpi_detail_gap_summary","sql":"WITH k AS (SELECT unidad_negocio_id, unidad_negocio_nombre, fecha_operacion, SUM(ISNULL(ventas_total,0)) ventas, SUM(ISNULL(tickets_total,0)) tickets, SUM(ISNULL(pax_total,0)) pax FROM dbo.Comercial_KPIs_Diarios_v2 WHERE unidad_negocio_nombre IN ('ESTELAR','CIENFUEGOS','130MID') AND fecha_operacion >= '2026-01-01' AND fecha_operacion < '2026-09-08' AND ISNULL(activo,1)=1 GROUP BY unidad_negocio_id,unidad_negocio_nombre,fecha_operacion), d AS (SELECT unidad_negocio_id, fecha_operacion, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN ISNULL(importe_neto,0) ELSE 0 END) ventas, COUNT(DISTINCT CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN numero_ticket END) tickets, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN ISNULL(pax,0) ELSE 0 END) pax FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE fecha_operacion >= '2026-01-01' AND fecha_operacion < '2026-09-08' AND ISNULL(activo,1)=1 GROUP BY unidad_negocio_id,fecha_operacion) SELECT k.unidad_negocio_nombre, MIN(k.fecha_operacion) min_kpi, MAX(k.fecha_operacion) max_kpi, COUNT(*) dias_kpi, SUM(CASE WHEN d.fecha_operacion IS NULL THEN 1 ELSE 0 END) dias_sin_detalle, SUM(CASE WHEN d.fecha_operacion IS NOT NULL AND (ABS(k.ventas-d.ventas)>0.01 OR k.tickets<>d.tickets OR k.pax<>d.pax) THEN 1 ELSE 0 END) dias_descuadrados, MAX(d.fecha_operacion) max_detalle FROM k LEFT JOIN d ON d.unidad_negocio_id=k.unidad_negocio_id AND d.fecha_operacion=k.fecha_operacion GROUP BY k.unidad_negocio_nombre ORDER BY k.unidad_negocio_nombre"},
+        {"name":"estelar_20260901_kpi_vs_detalle","sql":"WITH k AS (SELECT unidad_negocio_id,unidad_negocio_nombre,fecha_operacion,SUM(ISNULL(ventas_total,0)) ventas,SUM(ISNULL(tickets_total,0)) tickets,SUM(ISNULL(pax_total,0)) pax FROM dbo.Comercial_KPIs_Diarios_v2 WHERE unidad_negocio_nombre='ESTELAR' AND fecha_operacion='2026-09-01' AND ISNULL(activo,1)=1 GROUP BY unidad_negocio_id,unidad_negocio_nombre,fecha_operacion), d AS (SELECT unidad_negocio_id,fecha_operacion,SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN ISNULL(importe_neto,0) ELSE 0 END) ventas,COUNT(DISTINCT CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN numero_ticket END) tickets,SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN ISNULL(pax,0) ELSE 0 END) pax,COUNT(*) filas FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE fecha_operacion='2026-09-01' AND ISNULL(activo,1)=1 GROUP BY unidad_negocio_id,fecha_operacion) SELECT k.unidad_negocio_nombre,k.fecha_operacion,k.ventas ventas_kpi,k.tickets tickets_kpi,k.pax pax_kpi,d.ventas ventas_detalle,d.tickets tickets_detalle,d.pax pax_detalle,d.filas filas_detalle FROM k LEFT JOIN d ON d.unidad_negocio_id=k.unidad_negocio_id AND d.fecha_operacion=k.fecha_operacion"},
+        {"name":"soft_payments_freshness","sql":"SELECT UnidadNegocio, MIN(FechaHora) min_fecha, MAX(FechaHora) max_fecha, COUNT(*) filas FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE UnidadNegocio IN ('ESTELAR','CIENFUEGOS','130MID') GROUP BY UnidadNegocio ORDER BY UnidadNegocio"},
+        {"name":"soft_cortes_freshness","sql":"SELECT UnidadNegocio, MIN(FechaApertura) min_apertura, MAX(FechaApertura) max_apertura, MIN(FechaCierre) min_cierre, MAX(FechaCierre) max_cierre, COUNT(*) filas FROM dbo.Finanzas_CortesCaja WHERE UnidadNegocio IN ('ESTELAR','CIENFUEGOS','130MID') GROUP BY UnidadNegocio ORDER BY UnidadNegocio"},
+        {"name":"soft_latest_kpi_detail","sql":"SELECT k.unidad_negocio_nombre, MAX(k.fecha_operacion) max_kpi, MAX(d.fecha_operacion) max_detalle FROM dbo.Comercial_KPIs_Diarios_v2 k LEFT JOIN dbo.Comercial_Inteligencia_VentasDetalleProducto d ON d.unidad_negocio_id=k.unidad_negocio_id AND ISNULL(d.activo,1)=1 WHERE k.unidad_negocio_nombre IN ('ESTELAR','CIENFUEGOS','130MID') AND ISNULL(k.activo,1)=1 GROUP BY k.unidad_negocio_nombre ORDER BY k.unidad_negocio_nombre"}
+      ]
+    }
+  ],
+  "constraints": ["READ_ONLY_SQL ONLY","NO actions","NO DDL/DML","NO Production","NO LIVE POS source connections"],
+  "human_summary_language": "es",
+  "human_summary_level": "technical"
+}
