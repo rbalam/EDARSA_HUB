@@ -1,0 +1,5 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "converge the existing Universal Worker runtime to current certified Edarsahub_Desarrollo after worker-runtime-test-harness-hardening-r2 and pickup already-emitted worker-concurrency-deterministic-replay-no-rebase-r6-20260908T0524Z; do not create another worker, do not modify dispatcher/supervisor/watchdog, do not touch Production",
+  "production_touched": false
+}
