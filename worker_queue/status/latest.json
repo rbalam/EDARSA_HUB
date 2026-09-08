@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "0ab55e369598fcaac07e9754b856ecea09abf028",
-  "generated_at_utc": "2026-09-08T16:59:22Z",
+  "generated_at_utc": "2026-09-08T17:00:33Z",
   "history": {
     "done_total_local": 161,
     "pending_total_local": 0,
@@ -13,37 +13,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2041,
+      "age_seconds": 2112,
       "job_id": "EDARSAHUB-ISCAM-CF-AUG2026-DETAIL-BACKFILL-DRYRUN-R34-CARLOS-20260908T162400Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2094,
+      "age_seconds": 2165,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-COMMIT-R33-CARLOS-20260908T154100Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2022,
+      "age_seconds": 2093,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-COMMIT-R34-CARLOS-20260908T162500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2701,
+      "age_seconds": 2772,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-PARITY-BACKFILL-R33-CARLOS-20260908T161000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3559,
-      "job_id": "worker-softrestaurant-130mid-write-r1-20260908T1515Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 147,
+      "age_seconds": 218,
       "job_id": "worker-softrestaurant-cienfuegos-connectivity-dryrun-r1-20260908T1655Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -56,13 +50,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-08T16:59:22Z",
-    "last_receive_utc": "2026-09-08T16:59:22Z",
+    "last_cycle_utc": "2026-09-08T16:59:49Z",
+    "last_receive_utc": "2026-09-08T16:59:44Z",
     "last_terminal_utc": "2026-09-08T16:56:54Z",
     "pid": "144"
   },
