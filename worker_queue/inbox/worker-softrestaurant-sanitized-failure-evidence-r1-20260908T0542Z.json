@@ -1,0 +1,65 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-softrestaurant-sanitized-failure-evidence-r1-20260908T0542Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Agregar evidencia publica sanitizada para fallos de SOFTRESTAURANT_FULL_HISTORY_RESYNC sin publicar operation_output ni stdout crudo. Extraer del evento summary solamente unidad, status, conteos, dominios de error y tipos de excepcion; permitir esos campos en el result publisher. Agregar regresion. No tocar SQL, Production, supervisor ni watchdog.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "def now() -> str:\n    return datetime.now(timezone.utc).strftime(\"%Y-%m-%dT%H:%M:%SZ\")\n\n\ndef run(args: list[str], cwd: Path | None = None, check: bool = False, timeout: int | None = None, env_extra: dict[str, str] | None = None):\n",
+      "new": "def now() -> str:\n    return datetime.now(timezone.utc).strftime(\"%Y-%m-%dT%H:%M:%SZ\")\n\n\ndef summarize_softrestaurant_output(output: str) -> dict[str, Any]:\n    summary: dict[str, Any] = {\"results\": []}\n    for raw_line in reversed((output or \"\").splitlines()):\n        try:\n            payload = json.loads(raw_line)\n        except Exception:\n            continue\n        if not isinstance(payload, dict) or payload.get(\"event\") != \"summary\":\n            continue\n        rows = payload.get(\"results\") or []\n        if not isinstance(rows, list):\n            return summary\n        sanitized = []\n        for row in rows:\n            if not isinstance(row, dict):\n                continue\n            error_domains = []\n            error_types = []\n            errors = row.get(\"errors\") or []\n            if isinstance(errors, list):\n                for error in errors:\n                    if isinstance(error, dict):\n                        domain = str(error.get(\"domain\") or \"\").strip()\n                        if domain:\n                            error_domains.append(domain)\n                        value = error.get(\"error\")\n                        error_types.append(type(value).__name__)\n                    elif isinstance(error, str):\n                        error_types.append(error.split(\":\", 1)[0][:80])\n            sanitized.append({\n                \"unidad\": str(row.get(\"unidad\") or \"\"),\n                \"status\": str(row.get(\"status\") or \"\"),\n                \"payment_windows\": int(row.get(\"payment_windows\") or 0),\n                \"corte_windows\": int(row.get(\"corte_windows\") or 0),\n                \"pagos_insertados\": int(row.get(\"pagos_insertados\") or 0),\n                \"error_domains\": sorted(set(error_domains)),\n                \"error_types\": sorted(set(error_types)),\n            })\n        return {\"results\": sanitized}\n    return summary\n\n\ndef run(args: list[str], cwd: Path | None = None, check: bool = False, timeout: int | None = None, env_extra: dict[str, str] | None = None):\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "            result[\"operation_output\"] = execution.stdout[-20000:]\n            result[\"files_changed\"] = []\n            if execution.returncode != 0:\n                result[\"blockers\"].append(f\"softrestaurant_resync_failed:rc={execution.returncode}\")\n",
+      "new": "            result[\"operation_output\"] = execution.stdout[-20000:]\n            result[\"operation_summary\"] = summarize_softrestaurant_output(execution.stdout)\n            result[\"files_changed\"] = []\n            if execution.returncode != 0:\n                result[\"blockers\"].append(f\"softrestaurant_resync_failed:rc={execution.returncode}\")\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "old": "        \"percent_complete\", \"certification\", \"production_touched\",\n    )\n",
+      "new": "        \"percent_complete\", \"certification\", \"production_touched\",\n        \"operation\", \"dry_run\", \"units\", \"canonical_sql_mutation\",\n        \"operation_summary\",\n    )\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_softrestaurant_sanitized_failure_evidence.py",
+      "content": "import importlib.util\nimport sys\nfrom pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nTOOLS = ROOT / 'tools' / 'mirror_sync'\nDISPATCHER = TOOLS / 'universal_job_dispatcher.py'\nPUBLISHER = TOOLS / 'universal_job_result_publisher.py'\n\n\ndef _load_dispatcher():\n    sys.path.insert(0, str(TOOLS))\n    try:\n        spec = importlib.util.spec_from_file_location('dispatcher_soft_summary', DISPATCHER)\n        module = importlib.util.module_from_spec(spec)\n        assert spec and spec.loader\n        spec.loader.exec_module(module)\n        return module\n    finally:\n        if sys.path and sys.path[0] == str(TOOLS):\n            sys.path.pop(0)\n\n\ndef test_summary_is_sanitized_and_identifies_failed_unit():\n    module = _load_dispatcher()\n    output = '{\"event\":\"start\",\"execute\":true}\\n' + '{\"event\":\"summary\",\"results\":[{\"unidad\":\"130MID\",\"status\":\"FAIL\",\"payment_windows\":3,\"corte_windows\":0,\"pagos_insertados\":7,\"errors\":[\"OperationalError:secret detail must not publish\"]}]}\\n'\n    value = module.summarize_softrestaurant_output(output)\n    assert value['results'][0]['unidad'] == '130MID'\n    assert value['results'][0]['status'] == 'FAIL'\n    assert value['results'][0]['error_types'] == ['OperationalError']\n    assert 'secret detail' not in str(value)\n\n\ndef test_publisher_allows_summary_but_not_raw_output():\n    text = PUBLISHER.read_text(encoding='utf-8')\n    assert '\"operation_summary\"' in text\n    allowed_block = text.split('def sanitize', 1)[1].split('public =', 1)[0]\n    assert '\"operation_output\"' not in allowed_block\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "backend/tests/test_worker_softrestaurant_sanitized_failure_evidence.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_softrestaurant_sanitized_failure_evidence.py",
+        "backend/tests/test_worker_softrestaurant_full_history_capability_contract.py",
+        "backend/tests/test_universal_job_dispatcher_python_runtime.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "SoftRestaurant sanitized failure evidence"
+  },
+  "human_summary_language": "es"
+}
