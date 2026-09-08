@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-CF-AUG2026-DETAIL-BACKFILL-DRYRUN-R34-CARLOS-20260908T162400Z",
+  "created_at_utc": "2026-09-08T16:24:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "0ab55e369598fcaac07e9754b856ecea09abf028",
+  "production_allowed": false,
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "objective": "DRY RUN del backfill canonico de detalle ISCAM para CIENFUEGOS, agosto completo 2026 (fecha_operacion >= 2026-08-01 y < 2026-09-01). No escribir datos. Debe identificar dias YA_CONCILIADO, OK_HEADER_CANONICO reparables, SIN_RUNTIME omitibles y cualquier dia BLOQUEADO. La meta de negocio posterior es que el detalle ISCAM concilie contra Runtime V2 y contra Ventas por Periodo: aproximadamente 3,959,563 de venta neta, 1,027 cheques y 2,899 pax segun el reporte observado por el usuario. No usar Sync_Sales ni cheqdet.totalsrx/subtotalsrx; conservar cheques.total y turnos.apertura.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "actions": [],
+  "units": ["CIENFUEGOS"],
+  "fecha_inicio": "2026-08-01",
+  "fecha_fin": "2026-09-01",
+  "dry_run": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "cf_aug_runtime_total",
+          "sql": "SELECT CAST(SUM(ISNULL(ventas_total,0)) AS decimal(18,2)) AS ventas_runtime, SUM(ISNULL(tickets_total,0)) AS tickets_runtime, SUM(ISNULL(pax_total,0)) AS pax_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion >= '2026-08-01' AND fecha_operacion < '2026-09-01'"
+        },
+        {
+          "name": "cf_aug_detail_total_before",
+          "sql": "SELECT CAST(SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN ISNULL(importe_neto,0) ELSE 0 END) AS decimal(18,2)) AS ventas_detalle, COUNT(DISTINCT CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN id_transaccion END) AS tickets_detalle, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN ISNULL(pax,0) ELSE 0 END) AS pax_detalle, MIN(fecha_operacion) AS fecha_min, MAX(fecha_operacion) AS fecha_max FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion >= '2026-08-01' AND fecha_operacion < '2026-09-01' AND ISNULL(activo,1)=1"
+        },
+        {
+          "name": "cf_aug_detail_daily_coverage_before",
+          "sql": "SELECT fecha_operacion, CAST(SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN ISNULL(importe_neto,0) ELSE 0 END) AS decimal(18,2)) AS ventas_detalle, COUNT(DISTINCT CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN id_transaccion END) AS tickets_detalle, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN ISNULL(pax,0) ELSE 0 END) AS pax_detalle FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion >= '2026-08-01' AND fecha_operacion < '2026-09-01' AND ISNULL(activo,1)=1 GROUP BY fecha_operacion ORDER BY fecha_operacion"
+        }
+      ]
+    }
+  ]
+}
