@@ -1,63 +1,63 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "2729c7cbb323f4574f25caa877c6b30a81a84aa8",
-  "generated_at_utc": "2026-09-08T15:59:19Z",
+  "generated_at_utc": "2026-09-08T16:00:33Z",
   "history": {
-    "done_total_local": 158,
+    "done_total_local": 159,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 303,
-    "results_total_local": 410
+    "results_total_local": 411
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1377,
+      "age_seconds": 1451,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-DRYRUN-R31-CARLOS-20260908T153500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1361,
+      "age_seconds": 1435,
       "job_id": "EDARSAHUB-ISCAM-R31-RUNTIME-VALIDATION-R32-CARLOS-20260908T152500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2772,
+      "age_seconds": 2846,
       "job_id": "worker-softrestaurant-130mid-connectivity-dryrun-r1-20260908T1509Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3289,
-      "job_id": "worker-softrestaurant-full-history-write-r3-20260908T1500Z",
+      "age_seconds": 30,
+      "job_id": "worker-softrestaurant-130mid-write-r1-20260908T1515Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 875,
-      "job_id": "worker-softrestaurant-130mid-write-r1-20260908T1515Z",
+      "age_seconds": 3363,
+      "job_id": "worker-softrestaurant-full-history-write-r3-20260908T1500Z",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
-  "queue_running": 1,
+  "queue_result_ready_recent": 5,
+  "queue_running": 0,
   "runtime": {
-    "current_job_id": "worker-softrestaurant-130mid-write-r1-20260908T1515Z",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-08T15:59:14Z",
-    "last_receive_utc": "2026-09-08T15:59:15Z",
-    "last_terminal_utc": "2026-09-08T15:36:38Z",
+    "last_cycle_utc": "2026-09-08T16:00:04Z",
+    "last_receive_utc": "2026-09-08T15:59:59Z",
+    "last_terminal_utc": "2026-09-08T16:00:02Z",
     "pid": "144"
   },
   "schema": "edarsahub.worker-health.v3",
