@@ -32,6 +32,7 @@ LOCK_PATH = Path("/tmp/edarsahub-universal-worker-wake.lock")
 COOLDOWN_PATH = Path("/tmp/edarsahub-universal-worker-wake.last")
 WORKER_TREE_STATE = RUNTIME_DIR / "active_worker_code_tree_sha"
 WORKER_CODE_TREE_SPEC = "HEAD:tools/mirror_sync"
+WAKE_ROUTE_VERSION = "r30-code-aware"
 _SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 
 
@@ -202,6 +203,7 @@ def wake_worker(
             "heartbeat_age_seconds": round(heartbeat_age, 3),
             "worker_code_tree": current_worker_tree,
             "runtime_convergence": convergence,
+            "wake_route_version": WAKE_ROUTE_VERSION,
             "production_touched": False,
         }
 
@@ -243,6 +245,7 @@ def wake_worker(
             "worker_code_tree": current_worker_tree,
             "worker_code_changed": not worker_code_current,
             "runtime_convergence": convergence,
+            "wake_route_version": WAKE_ROUTE_VERSION,
             "requested_at_utc": requested_at,
             "production_touched": False,
         },
