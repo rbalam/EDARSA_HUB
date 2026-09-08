@@ -1,0 +1,37 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"worker-runtime-test-harness-hardening-r2-20260908T0521Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Corregir exclusivamente el harness de tests runtime del Universal Worker. Al cargar universal_job_dispatcher.py por importlib, agregar temporalmente tools/mirror_sync a sys.path para resolver worker_concurrency igual que en ejecucion real; reemplazar el test fragil de integrate/credential-helper por un contrato estatico del push seguro. No cambiar logica funcional del dispatcher. Ejecutar todo test_universal_job_dispatcher_python_runtime.py y git diff check. No Production.",
+  "actions":[
+    {
+      "type":"replace_text",
+      "path":"backend/tests/test_universal_job_dispatcher_python_runtime.py",
+      "expected_count":1,
+      "old":"import importlib.util\nimport os\nfrom pathlib import Path\nfrom types import SimpleNamespace",
+      "new":"import importlib.util\nimport os\nimport sys\nfrom pathlib import Path\nfrom types import SimpleNamespace"
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/tests/test_universal_job_dispatcher_python_runtime.py",
+      "expected_count":1,
+      "old":"def load_dispatcher():\n    spec = importlib.util.spec_from_file_location(\n        \"universal_job_dispatcher_runtime_test\",\n        DISPATCHER,\n    )\n    module = importlib.util.module_from_spec(spec)\n    assert spec.loader is not None\n    spec.loader.exec_module(module)\n    return module",
+      "new":"def load_dispatcher():\n    spec = importlib.util.spec_from_file_location(\n        \"universal_job_dispatcher_runtime_test\",\n        DISPATCHER,\n    )\n    module = importlib.util.module_from_spec(spec)\n    assert spec.loader is not None\n    mirror_sync_dir = str(DISPATCHER.parent)\n    inserted = mirror_sync_dir not in sys.path\n    if inserted:\n        sys.path.insert(0, mirror_sync_dir)\n    try:\n        spec.loader.exec_module(module)\n    finally:\n        if inserted:\n            sys.path.remove(mirror_sync_dir)\n    return module"
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/tests/test_universal_job_dispatcher_python_runtime.py",
+      "expected_count":1,
+      "old":"def test_integrate_push_uses_only_repository_local_credential_helper(monkeypatch):\n    module = load_dispatcher()\n    calls = []\n\n    def fake_git(*args, **kwargs):\n        if args[:3] == (\"config\", \"--local\", \"--get\"):\n            return SimpleNamespace(returncode=0, stdout=\"store --file=/safe/credentials\\n\")\n        if args[:2] == (\"rev-parse\", \"origin/Edarsahub_Desarrollo\"):\n            return SimpleNamespace(returncode=0, stdout=\"base\\n\")\n        return SimpleNamespace(returncode=0, stdout=\"\")\n\n    def fake_run(args, **kwargs):\n        calls.append((args, kwargs))\n        return SimpleNamespace(returncode=0, stdout=\"ok\")\n\n    monkeypatch.setattr(module, \"git\", fake_git)\n    monkeypatch.setattr(module, \"run\", fake_run)\n\n    ok, detail = module.integrate(\"candidate\", \"base\")\n\n    assert ok is False or ok is True\n    push_calls = [call for call in calls if \"push\" in call[0]]\n    assert push_calls\n    push_args = push_calls[0][0]\n    assert \"credential.helper=\" in push_args\n    assert \"credential.helper=store --file=/safe/credentials\" in push_args\n    assert \"gh auth git-credential\" not in \" \".join(push_args)\n",
+      "new":"def test_integrate_push_uses_only_repository_local_credential_helper():\n    text = DISPATCHER.read_text(encoding=\"utf-8\")\n\n    assert 'git(\"config\", \"--local\", \"--get\", \"credential.helper\", cwd=ROOT, check=False)' in text\n    assert '\"-c\", \"credential.helper=\"' in text\n    assert 'f\"credential.helper={credential_helper}\"' in text\n    assert '\"push\", REMOTE' in text\n    assert \"gh auth git-credential\" not in text\n"
+    }
+  ],
+  "checks":[
+    {"type":"pytest","paths":["backend/tests/test_universal_job_dispatcher_python_runtime.py"]},
+    {"type":"git_diff_check"}
+  ],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0","chat":"Runtime test harness hardening R2"},
+  "human_summary_language":"es"
+}
