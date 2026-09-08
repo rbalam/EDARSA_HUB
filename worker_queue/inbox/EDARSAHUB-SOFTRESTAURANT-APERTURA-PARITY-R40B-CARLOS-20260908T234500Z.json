@@ -1,0 +1,109 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SOFTRESTAURANT-APERTURA-PARITY-R40B-CARLOS-20260908T234500Z",
+  "created_at_utc": "2026-09-08T23:45:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "da426c80ecfc7ec2c90e70471f1accfd6f9555de",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "CORRECCION INMEDIATA de R40. Para TODAS las unidades SoftRestaurant, copiar el contrato de la consulta homologada query_ventas_periodo_sr del Reporte Ejecutivo/Ventas por Periodo: los tickets pertenecen al rango por turnos.apertura, con fecha calendario fecha_inicio..fecha_fin, INNER JOIN turnos ON turnos.idturno=cheques.idturno y cheques.cancelado=0. NO usar Sistema_TurnosOperativosUnidad, COMIDA/CENA, tolerancias, 09:00, turnos.cierre ni idempresa para seleccionar tickets. Header Runtime V2 y detalle ISCAM deben seleccionar la misma poblacion. Para un dia usar [00:00:00 del dia, 00:00:00 del siguiente) equivalente a CONVERT(varchar, turnos.apertura,112)=YYYYMMDD. Mantener propina separada y ventas_total=SUM(cheques.total), como query homologada. Corregir tambien el bug introducido en R40 donde fecha_siguiente quedo referenciada sin definirse. No modificar backend/modules/comercial/queries/softrestaurant.py; esa es la fuente de referencia. No usar EDARSA_SQL_AUDITOR como dependencia. No tocar Produccion.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+      "expected_count": 1,
+      "old": "QUERY_SOFTRESTAURANT_VENTAS_CERRADAS_DIA = \"\"\"\nSELECT\n    CONVERT(datetime, '{fecha_operacion} 12:00:00 AM') AS fecha_hora,\n    CONVERT(date, '{fecha_operacion}') AS fecha_operacion,\n    SUM(ch.totalalimentossindescuentos) AS alimentos,\n    SUM(ch.totalbebidassindescuentos) AS bebidas,\n    SUM(ch.totalotrossindescuentos) AS otros,\n    SUM(ch.totalcortesias) AS cortesias,\n    SUM(ch.totaldescuentos) AS descuentos,\n    SUM(ch.subtotal) AS subtotal,\n    SUM(ch.totalimpuesto1) AS iva,\n    SUM(ch.total) AS ventas_total,\n    SUM(ch.propina) AS propinas,\n    SUM(ch.total + ch.propina) AS total_con_propina,\n    SUM(ch.nopersonas) AS num_personas,\n    COUNT(ch.folio) AS num_cheques\nFROM cheques AS ch\nINNER JOIN turnos AS tr\n    ON tr.idturno = ch.idturno\n   AND tr.idempresa = ch.idempresa\nWHERE ch.idempresa = '{empresa_id}'\n  AND tr.idempresa = '{empresa_id}'\n  AND tr.apertura >= '{inicio_operativo}'\n  AND tr.apertura < '{fin_operativo}'\n  AND tr.cierre IS NOT NULL\n  AND ch.cancelado = 0\n\"\"\"",
+      "new": "QUERY_SOFTRESTAURANT_VENTAS_CERRADAS_DIA = \"\"\"\nSELECT\n    CONVERT(datetime, '{fecha_operacion} 12:00:00 AM') AS fecha_hora,\n    CONVERT(date, '{fecha_operacion}') AS fecha_operacion,\n    SUM(ch.totalalimentossindescuentos) AS alimentos,\n    SUM(ch.totalbebidassindescuentos) AS bebidas,\n    SUM(ch.totalotrossindescuentos) AS otros,\n    SUM(ch.totalcortesias) AS cortesias,\n    SUM(ch.totaldescuentos) AS descuentos,\n    SUM(ch.subtotal) AS subtotal,\n    SUM(ch.totalimpuesto1) AS iva,\n    SUM(ch.total) AS ventas_total,\n    SUM(ch.propina) AS propinas,\n    SUM(ch.total + ch.propina) AS total_con_propina,\n    SUM(ch.nopersonas) AS num_personas,\n    COUNT(DISTINCT ch.folio) AS num_cheques\nFROM cheques AS ch\nINNER JOIN turnos AS tr\n    ON tr.idturno = ch.idturno\nWHERE CONVERT(varchar, tr.apertura, 112) = '{fecha_operacion_sql}'\n  AND ch.cancelado = 0\n\"\"\""
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+      "expected_count": 1,
+      "old": "def build_softrestaurant_ventas_cerradas_query(\n    server_config: Dict[str, Any],\n    fecha_inicio: date,\n    fecha_fin: date,\n) -> str:\n    \"\"\"Construye ventas cerradas con paridad exacta header/detalle ISCAM.\"\"\"\n    from core.utils.operational_window import (\n        get_operational_datetime_range_for_fecha_operacion,\n    )\n\n    unidad_operativa = str(\n        (server_config or {}).get('unidad_negocio_pk')\n        or (server_config or {}).get('unidad_codigo')\n        or ''\n    ).strip()\n    if not unidad_operativa:\n        raise ValueError('SoftRestaurant sin unidad canonica para resolver ventana operativa')\n\n    bloques = []\n    fecha_actual = fecha_inicio\n    while fecha_actual <= fecha_fin:\n        inicio_dt, fin_dt, _window_meta = (\n            get_operational_datetime_range_for_fecha_operacion(\n                unidad_operativa, fecha_actual\n            )\n        )\n        inicio_operativo = inicio_dt.strftime('%Y-%m-%d %H:%M:%S')\n        fin_operativo = fin_dt.strftime('%Y-%m-%d %H:%M:%S')\n        empresa_id = _resolve_softrestaurant_empresa_id_for_window(\n            server_config, inicio_operativo, fin_operativo\n        )\n        empresa_sql = empresa_id.replace(\"'\", \"''\")\n        bloques.append(QUERY_SOFTRESTAURANT_VENTAS_CERRADAS_DIA.format(\n            fecha_operacion=fecha_actual.strftime('%Y-%m-%d'),\n            empresa_id=empresa_sql,\n            inicio_operativo=inicio_operativo,\n            fin_operativo=fin_operativo,\n        ))\n        fecha_actual = fecha_siguiente\n    return \"\\nUNION ALL\\n\".join(bloques)",
+      "new": "def build_softrestaurant_ventas_cerradas_query(\n    server_config: Dict[str, Any],\n    fecha_inicio: date,\n    fecha_fin: date,\n) -> str:\n    \"\"\"Construye ventas SoftRestaurant con el contrato del Reporte Ejecutivo.\n\n    La pertenencia al día se define SOLO por la fecha calendario de\n    turnos.apertura. No usa turnos operativos, cierre ni idempresa.\n    \"\"\"\n    del server_config\n    bloques = []\n    fecha_actual = fecha_inicio\n    while fecha_actual <= fecha_fin:\n        bloques.append(QUERY_SOFTRESTAURANT_VENTAS_CERRADAS_DIA.format(\n            fecha_operacion=fecha_actual.strftime('%Y-%m-%d'),\n            fecha_operacion_sql=fecha_actual.strftime('%Y%m%d'),\n        ))\n        fecha_actual += timedelta(days=1)\n    return \"\\nUNION ALL\\n\".join(bloques)"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+      "expected_count": 1,
+      "old": "def _agrupar_ventas_cerradas_por_fecha_operacion(rows, config, fecha_inicio=None, fecha_fin=None):\n    from collections import OrderedDict\n    from core.utils.operational_window import get_fecha_operacion\n\n    unidad_negocio_pk = _resolver_unidad_negocio_pk_from_config(config)",
+      "new": "def _agrupar_ventas_cerradas_por_fecha_operacion(rows, config, fecha_inicio=None, fecha_fin=None):\n    from collections import OrderedDict"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+      "expected_count": 1,
+      "old": "        elif sistema_origen == SistemaOrigen.SOFTRESTAURANT:\n            fecha_operacion = _normalizar_fecha_operacion_value(\n                get_fecha_operacion(unidad_negocio_pk, fecha_hora)\n            )",
+      "new": "        elif sistema_origen == SistemaOrigen.SOFTRESTAURANT:\n            # Mismo contrato que Reporte Ejecutivo: fecha calendario de apertura.\n            fecha_operacion = _normalizar_fecha_operacion_value(fecha_hora)"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "expected_count": 1,
+      "old": "def _soft_operational_datetime_range(cfg: Dict[str, Any], dia: date) -> Tuple[str, str]:\n    \"\"\"Ventana SoftRestaurant única, tomada del servicio operativo canónico.\n\n    Header Runtime V2 y detalle ISCAM deben usar exactamente la partición\n    definida en Sistema_TurnosOperativosUnidad, incluida la tolerancia de\n    inicio. No se permite una hora fija duplicada en este extractor.\n    \"\"\"\n    from core.utils.operational_window import (\n        get_operational_datetime_range_for_fecha_operacion,\n    )\n\n    unidad_operativa = _unidad_operativa_id_for_window(cfg)\n    inicio, fin, _meta = get_operational_datetime_range_for_fecha_operacion(\n        unidad_operativa, dia\n    )\n    return (\n        inicio.strftime(\"%Y-%m-%d %H:%M:%S\"),\n        fin.strftime(\"%Y-%m-%d %H:%M:%S\"),\n    )",
+      "new": "def _soft_operational_datetime_range(cfg: Dict[str, Any], dia: date) -> Tuple[str, str]:\n    \"\"\"Rango diario SoftRestaurant equivalente a fecha de turnos.apertura.\n\n    Reporte Ejecutivo compara CONVERT(varchar, turnos.apertura, 112) contra\n    fecha_inicio/fecha_fin. Para un solo día, el equivalente sargable es\n    [00:00:00 del día, 00:00:00 del día siguiente).\n    \"\"\"\n    del cfg\n    inicio = datetime.combine(dia, datetime.min.time())\n    fin = inicio + timedelta(days=1)\n    return (\n        inicio.strftime(\"%Y-%m-%d %H:%M:%S\"),\n        fin.strftime(\"%Y-%m-%d %H:%M:%S\"),\n    )"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "expected_count": 1,
+      "old": "        fi, ff = _soft_operational_datetime_range(cfg, dia)\n        empresa_id = _softrestaurant_empresa_id_for_window(conn, fi, ff)\n\n        sql = f\"\"\"",
+      "new": "        fi, ff = _soft_operational_datetime_range(cfg, dia)\n\n        sql = f\"\"\""
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "expected_count": 1,
+      "old": "            INNER JOIN turnos tr WITH (NOLOCK)\n                ON tr.idturno = ch.idturno\n               AND tr.idempresa = ch.idempresa\n            WHERE ch.idempresa = %s\n              AND tr.idempresa = %s\n              AND tr.apertura >= %s\n              AND tr.apertura < %s\n              AND tr.cierre IS NOT NULL",
+      "new": "            INNER JOIN turnos tr WITH (NOLOCK)\n                ON tr.idturno = ch.idturno\n            WHERE tr.apertura >= %s\n              AND tr.apertura < %s\n              AND ISNULL(ch.cancelado, 0) = 0"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "expected_count": 1,
+      "old": "        cur.execute(sql, (empresa_id, empresa_id, fi, ff))",
+      "new": "        cur.execute(sql, (fi, ff))"
+    },
+    {
+      "type": "delete_file",
+      "path": "backend/tests/test_iscam_soft_detail_window_parity_r35.py"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_soft_detail_window_parity_r35.py",
+      "content": "from datetime import date\nfrom pathlib import Path\n\nfrom scripts.poblar_ventas_detalle_producto_canonico import _soft_operational_datetime_range\n\nROOT = Path(__file__).resolve().parents[2]\nSYNC = ROOT / 'backend' / 'modules' / 'comercial_v2' / 'sync_comercial_edarsahub.py'\nDETAIL = ROOT / 'backend' / 'scripts' / 'poblar_ventas_detalle_producto_canonico.py'\n\n\ndef test_detail_day_is_calendar_apertura_day():\n    fi, ff = _soft_operational_datetime_range({}, date(2026, 9, 5))\n    assert fi == '2026-09-05 00:00:00'\n    assert ff == '2026-09-06 00:00:00'\n\n\ndef test_header_and_detail_select_by_turnos_apertura_only():\n    header = SYNC.read_text(encoding='utf-8')\n    detail = DETAIL.read_text(encoding='utf-8')\n    query_block = header.split('QUERY_SOFTRESTAURANT_VENTAS_CERRADAS_DIA', 1)[1].split('def _resolve_softrestaurant_empresa_id_for_window', 1)[0]\n    assert \"CONVERT(varchar, tr.apertura, 112) = '{fecha_operacion_sql}'\" in query_block\n    assert 'ch.cancelado = 0' in query_block\n    assert 'cierre IS NOT NULL' not in query_block\n    assert 'idempresa' not in query_block\n    block = detail.split('def _extract_soft(', 1)[1].split('def _mpro_operational_datetime_range', 1)[0]\n    assert 'tr.apertura >= %s' in block\n    assert 'tr.apertura < %s' in block\n    assert 'ISNULL(ch.cancelado, 0) = 0' in block\n    assert 'tr.cierre IS NOT NULL' not in block\n    assert 'ch.idempresa = %s' not in block\n    assert 'tr.idempresa = %s' not in block\n\n\ndef test_soft_daily_range_does_not_use_operational_turn_service():\n    fn = DETAIL.read_text(encoding='utf-8').split('def _soft_operational_datetime_range', 1)[1].split('def _softrestaurant_empresa_id_for_window', 1)[0]\n    assert 'get_operational_datetime_range_for_fecha_operacion' not in fn\n    assert 'Sistema_TurnosOperativosUnidad' not in fn\n"
+    },
+    {
+      "type": "delete_file",
+      "path": "backend/tests/test_softrestaurant_header_detail_empresa_parity_r39.py"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_softrestaurant_header_detail_empresa_parity_r39.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nSYNC = ROOT / 'backend' / 'modules' / 'comercial_v2' / 'sync_comercial_edarsahub.py'\nDETAIL = ROOT / 'backend' / 'scripts' / 'poblar_ventas_detalle_producto_canonico.py'\n\n\ndef test_softrestaurant_selection_does_not_gate_by_empresa_id():\n    header = SYNC.read_text(encoding='utf-8')\n    query_block = header.split('QUERY_SOFTRESTAURANT_VENTAS_CERRADAS_DIA', 1)[1].split('def _resolve_softrestaurant_empresa_id_for_window', 1)[0]\n    detail_block = DETAIL.read_text(encoding='utf-8').split('def _extract_soft(', 1)[1].split('def _mpro_operational_datetime_range', 1)[0]\n    assert 'idempresa' not in query_block\n    assert 'ch.idempresa = %s' not in detail_block\n    assert 'tr.idempresa = %s' not in detail_block\n\n\ndef test_softrestaurant_matches_executive_apertura_contract():\n    header = SYNC.read_text(encoding='utf-8')\n    assert 'CONVERT(varchar, tr.apertura, 112)' in header\n    assert 'COUNT(DISTINCT ch.folio)' in header\n"
+    },
+    {
+      "type": "delete_file",
+      "path": "backend/tests/test_softrestaurant_canonical_window_join_r40.py"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_softrestaurant_canonical_window_join_r40.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nSYNC = ROOT / 'backend' / 'modules' / 'comercial_v2' / 'sync_comercial_edarsahub.py'\nDETAIL = ROOT / 'backend' / 'scripts' / 'poblar_ventas_detalle_producto_canonico.py'\nEXECUTIVE = ROOT / 'backend' / 'modules' / 'comercial' / 'queries' / 'softrestaurant.py'\n\n\ndef test_r40_superseded_by_executive_apertura_contract():\n    executive = EXECUTIVE.read_text(encoding='utf-8')\n    header = SYNC.read_text(encoding='utf-8')\n    detail = DETAIL.read_text(encoding='utf-8')\n    assert 'WHERE CONVERT(varchar, turnos.apertura, 112)' in executive\n    assert 'AND cheques.cancelado = 0' in executive\n    query_block = header.split('QUERY_SOFTRESTAURANT_VENTAS_CERRADAS_DIA', 1)[1].split('def _resolve_softrestaurant_empresa_id_for_window', 1)[0]\n    assert 'CONVERT(varchar, tr.apertura, 112)' in query_block\n    assert 'ch.cancelado = 0' in query_block\n    assert 'get_operational_datetime_range_for_fecha_operacion' not in header.split('def build_softrestaurant_ventas_cerradas_query', 1)[1].split('QUERY_SOFTRESTAURANT_VENTAS_ABIERTAS', 1)[0]\n    detail_range = detail.split('def _soft_operational_datetime_range', 1)[1].split('def _softrestaurant_empresa_id_for_window', 1)[0]\n    assert 'get_operational_datetime_range_for_fecha_operacion' not in detail_range\n    assert \"fecha_actual += timedelta(days=1)\" in header\n    assert 'fecha_siguiente' not in header.split('def build_softrestaurant_ventas_cerradas_query', 1)[1].split('QUERY_SOFTRESTAURANT_VENTAS_ABIERTAS', 1)[0]\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/comercial_v2/sync_comercial_edarsahub.py", "backend/scripts/poblar_ventas_detalle_producto_canonico.py", "backend/tests/test_iscam_soft_detail_window_parity_r35.py", "backend/tests/test_softrestaurant_header_detail_empresa_parity_r39.py", "backend/tests/test_softrestaurant_canonical_window_join_r40.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_iscam_soft_detail_window_parity_r35.py", "backend/tests/test_softrestaurant_header_detail_empresa_parity_r39.py", "backend/tests/test_softrestaurant_canonical_window_join_r40.py", "backend/tests/test_iscam_detail_only_manual_resync_r37.py"]}
+  ]
+}
