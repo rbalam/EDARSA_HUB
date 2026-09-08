@@ -1,0 +1,5 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Verify canonical runtime convergence after wake hardening r2; require safe fast-forward or aligned state before accepting healthy worker runtime; do not touch Production.",
+  "production_touched": false
+}
