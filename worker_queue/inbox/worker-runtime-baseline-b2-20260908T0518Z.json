@@ -1,0 +1,15 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"worker-runtime-baseline-b2-20260908T0518Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Aislar baseline runtime B2. Si pytest pasa, bloquear con py_compile inexistente.",
+  "actions":[{"type":"replace_text","path":"backend/tests/test_universal_job_dispatcher_python_runtime.py","expected_count":1,"old":"    ok, detail = module.integrate(\"candidate\", \"base\")\n\n    assert ok is False or ok is True","new":"    ok, detail, final_head, evidence = module.integrate(\n        Path('.'),\n        'agent/test',\n        'candidate',\n        'base',\n        {'safe.txt'},\n    )\n\n    assert ok is False or ok is True\n    assert final_head == 'candidate'\n    assert isinstance(evidence, list)"}],
+  "checks":[{"type":"pytest","paths":[
+    "backend/tests/test_universal_job_dispatcher_python_runtime.py::test_backend_runtime_env_does_not_override_process_env",
+    "backend/tests/test_universal_job_dispatcher_python_runtime.py::test_frontend_build_reuses_canonical_frontend_toolchain"
+  ]},{"type":"py_compile","paths":["backend/tests/__intentional_missing_runtime_b2__.py"]}],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
