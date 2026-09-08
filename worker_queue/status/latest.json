@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "a36abe729c49d46643b1dd63b3d1833a44738a87",
-  "generated_at_utc": "2026-09-08T00:03:39Z",
+  "generated_at_utc": "2026-09-08T00:04:57Z",
   "history": {
     "done_total_local": 146,
     "pending_total_local": 0,
@@ -13,37 +13,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1727,
+      "age_seconds": 1805,
       "job_id": "BOS-DIRECCION-RECURRENT-STATUS-GATE5-R4-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1503,
+      "age_seconds": 1580,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P0-RBAC-20260907T2306Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3549,
-      "job_id": "EDARSAHUB-WORKER-CODE-AWARE-WAKE-R28-CARLOS-20260907T233100Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 779,
+      "age_seconds": 857,
       "job_id": "worker-readonly-certification-evidence-hardening-r6-scope-aware-20260907",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 806,
+      "age_seconds": 883,
       "job_id": "worker-runtime-convergence-wake-hardening-r2-20260907T2347Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1529,
+      "age_seconds": 1606,
       "job_id": "worker-runtime-convergence-wake-hardening-v1-20260907T2248Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -56,13 +50,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-08T00:03:39Z",
-    "last_receive_utc": "2026-09-08T00:03:34Z",
+    "last_cycle_utc": "2026-09-08T00:04:52Z",
+    "last_receive_utc": "2026-09-08T00:04:54Z",
     "last_terminal_utc": "2026-09-07T23:50:39Z",
     "pid": "290"
   },
