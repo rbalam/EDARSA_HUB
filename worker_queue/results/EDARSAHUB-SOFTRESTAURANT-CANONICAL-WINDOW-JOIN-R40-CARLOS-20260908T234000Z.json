@@ -1,0 +1,31 @@
+{
+  "base_sha": "19b52356dc8e5244b8e1db60b14ea954be3c43de",
+  "blockers": [],
+  "candidate_sha": "da426c80ecfc7ec2c90e70471f1accfd6f9555de",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-08T23:31:36Z",
+  "development_sha": "da426c80ecfc7ec2c90e70471f1accfd6f9555de",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+    "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+    "backend/tests/test_iscam_soft_detail_window_parity_r35.py",
+    "backend/tests/test_softrestaurant_canonical_window_join_r40.py",
+    "backend/tests/test_softrestaurant_header_detail_empresa_parity_r39.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SOFTRESTAURANT-CANONICAL-WINDOW-JOIN-R40-CARLOS-20260908T234000Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-08T23:32:56Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-08T23:31:31Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
