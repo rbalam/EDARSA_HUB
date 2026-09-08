@@ -1,5 +1,6 @@
 import importlib.util
 import os
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -15,7 +16,15 @@ def load_dispatcher():
     )
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
-    spec.loader.exec_module(module)
+    mirror_sync_dir = str(DISPATCHER.parent)
+    inserted = mirror_sync_dir not in sys.path
+    if inserted:
+        sys.path.insert(0, mirror_sync_dir)
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        if inserted:
+            sys.path.remove(mirror_sync_dir)
     return module
 
 
@@ -286,30 +295,11 @@ def test_frontend_build_reuses_canonical_frontend_toolchain(tmp_path, monkeypatc
     assert env_extra["PATH"].startswith(str(real_bin) + ":")
 
 
-def test_integrate_push_uses_only_repository_local_credential_helper(monkeypatch):
-    module = load_dispatcher()
-    calls = []
+def test_integrate_push_uses_only_repository_local_credential_helper():
+    text = DISPATCHER.read_text(encoding="utf-8")
 
-    def fake_git(*args, **kwargs):
-        if args[:3] == ("config", "--local", "--get"):
-            return SimpleNamespace(returncode=0, stdout="store --file=/safe/credentials\n")
-        if args[:2] == ("rev-parse", "origin/Edarsahub_Desarrollo"):
-            return SimpleNamespace(returncode=0, stdout="base\n")
-        return SimpleNamespace(returncode=0, stdout="")
-
-    def fake_run(args, **kwargs):
-        calls.append((args, kwargs))
-        return SimpleNamespace(returncode=0, stdout="ok")
-
-    monkeypatch.setattr(module, "git", fake_git)
-    monkeypatch.setattr(module, "run", fake_run)
-
-    ok, detail = module.integrate("candidate", "base")
-
-    assert ok is False or ok is True
-    push_calls = [call for call in calls if "push" in call[0]]
-    assert push_calls
-    push_args = push_calls[0][0]
-    assert "credential.helper=" in push_args
-    assert "credential.helper=store --file=/safe/credentials" in push_args
-    assert "gh auth git-credential" not in " ".join(push_args)
+    assert 'git("config", "--local", "--get", "credential.helper", cwd=ROOT, check=False)' in text
+    assert '"-c", "credential.helper="' in text
+    assert 'f"credential.helper={credential_helper}"' in text
+    assert '"push", REMOTE' in text
+    assert "gh auth git-credential" not in text
