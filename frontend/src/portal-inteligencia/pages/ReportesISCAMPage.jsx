@@ -297,10 +297,16 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
   }, [fetchReport, fetchFreshness]);
 
   const syncMissingClosedDays = async () => {
+    const headerGap = Boolean(freshness?.stale);
     const detailGap = Boolean(freshness?.detail_stale);
-    const syncFrom = detailGap ? freshness?.detail_missing_from : freshness?.missing_from;
-    const syncTo = detailGap ? freshness?.detail_missing_to : freshness?.missing_to;
-    if (!(freshness?.stale || detailGap) || !syncFrom || !syncTo || syncing) return;
+    const detailOnly = detailGap && !headerGap;
+    const syncFrom = detailOnly
+      ? freshness?.detail_missing_from
+      : (freshness?.missing_from || freshness?.detail_missing_from);
+    const syncTo = detailOnly
+      ? freshness?.detail_missing_to
+      : (freshness?.missing_to || freshness?.detail_missing_to);
+    if (!(headerGap || detailGap) || !syncFrom || !syncTo || syncing) return;
     setSyncing(true);
     setSyncMessage(null);
     try {
@@ -311,19 +317,25 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
           unidad_negocio_id: unidad,
           fecha_inicio: fechaInicio,
           fecha_fin: fechaFin,
-          motivo: 'ISCAM sincronizar dias cerrados faltantes',
+          motivo: detailOnly ? 'ISCAM sincronizar detalle faltante' : 'ISCAM sincronizar dias cerrados faltantes',
+          detail_only: detailOnly,
         };
         const dry = await apiPost('/admin/scheduler/resync/execute', { ...basePayload, dry_run: true }, { timeout: 120000 });
         if (dry.estado !== ESTADO.OK || dry.data?.success !== true) {
-          throw new Error(`DRY RUN no aprobado para ${fechaInicio} a ${fechaFin}`);
+          const dryError = dry.data?.error_message || dry.data?.resultado?.error_message || dry.data?.detail || dry.mensaje;
+          throw new Error(dryError || `No se pudo validar la sincronización para ${fechaInicio} a ${fechaFin}`);
         }
         const real = await apiPost('/admin/scheduler/resync/execute', { ...basePayload, dry_run: false }, { timeout: 120000 });
         if (real.estado !== ESTADO.OK || real.data?.success !== true) {
-          throw new Error(`Re-sync no completado para ${fechaInicio} a ${fechaFin}`);
+          const realError = real.data?.error_message || real.data?.resultado?.error_message || real.data?.detail || real.mensaje;
+          throw new Error(realError || `No se pudo completar la sincronización para ${fechaInicio} a ${fechaFin}`);
         }
       }
       await Promise.all([fetchReport(), fetchFreshness()]);
-      setSyncMessage({ tipo: 'ok', texto: 'Sincronización de faltantes completada.' });
+      setSyncMessage({
+        tipo: 'ok',
+        texto: detailOnly ? 'Detalle ISCAM sincronizado y validado.' : 'Sincronización de faltantes completada.',
+      });
     } catch (error) {
       setSyncMessage({ tipo: 'error', texto: error?.message || 'No se pudo sincronizar el rango faltante.' });
     } finally {

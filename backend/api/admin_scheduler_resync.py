@@ -112,6 +112,7 @@ class ResyncExecuteRequest(BaseModel):
     fecha_fin: date = Field(..., description="Fecha fin del rango")
     motivo: str = Field(..., min_length=10, description="Motivo obligatorio (mín 10 caracteres)")
     dry_run: bool = Field(True, description="True=simular sin modificar, False=ejecutar real")
+    detail_only: bool = Field(False, description="True=sincronizar solo detalle ISCAM sin reconsultar/regrabar el header comercial")
 
 
 class ResyncResponse(BaseModel):
@@ -541,6 +542,7 @@ def _registrar_resync_log(request, current_user, estado: str, mensaje: str, unid
             "fecha_inicio": str(getattr(request, 'fecha_inicio', '')),
             "fecha_fin": str(getattr(request, 'fecha_fin', '')),
             "motivo": getattr(request, 'motivo', None),
+            "detail_only": bool(getattr(request, 'detail_only', False)),
         })
         conn = _get_conn(); cur = conn.cursor()
         cur.execute(
@@ -605,6 +607,78 @@ async def ejecutar_resync(
     # Generar IDs
     ejecucion_id = str(uuid.uuid4())
     sync_run_id = f"RESYNC-{request.unidad_negocio_id}-{request.fecha_inicio.strftime('%Y%m%d')}-{request.fecha_fin.strftime('%Y%m%d')}-{str(uuid.uuid4())[:4]}"
+
+    # ISCAM detalle-only: cuando el header canónico ya está actualizado no se debe
+    # bloquear la reparación del detalle por la conectividad del DRY RUN del header.
+    # El backfill mantiene su propia validación contra Runtime V2 y solo escribe días
+    # que cuadran; commit=False sigue siendo estrictamente de solo lectura.
+    if request.detail_only:
+        if request.tipo_sync != 'comercial_ventas_cerradas':
+            raise HTTPException(status_code=400, detail='detail_only solo aplica a comercial_ventas_cerradas')
+
+        resultado_detalle = _ejecutar_backfill_detalle_iscam(
+            request.unidad_negocio_id,
+            request.fecha_inicio,
+            request.fecha_fin,
+            commit=not request.dry_run,
+        )
+        resumen_detalle = resultado_detalle.get('resumen') or {}
+        registros_detalle = int(
+            resumen_detalle.get('filas_insertadas')
+            or resumen_detalle.get('dias_reparables')
+            or 0
+        )
+        accion_detalle = (
+            'ISCAM_DETAIL_DRY_RUN_SUCCESS' if request.dry_run and resultado_detalle.get('success')
+            else 'ISCAM_DETAIL_DRY_RUN_FAILED' if request.dry_run
+            else 'ISCAM_DETAIL_REAL_SUCCESS' if resultado_detalle.get('success')
+            else 'ISCAM_DETAIL_REAL_FAILED'
+        )
+        _registrar_en_bitacora(
+            job_name='RESYNC_ISCAM_DETAIL',
+            run_id=sync_run_id,
+            accion=accion_detalle,
+            server_id=unidad.get('server_id', ''),
+            detalles={
+                'unidad': request.unidad_negocio_id,
+                'fecha_inicio': str(request.fecha_inicio),
+                'fecha_fin': str(request.fecha_fin),
+                'motivo': request.motivo,
+                'dry_run': request.dry_run,
+                'detail_only': True,
+                'header_resync_skipped': True,
+                'usuario': user_email,
+                'resultado': resultado_detalle,
+            },
+            exito=bool(resultado_detalle.get('success')),
+            error_mensaje=resultado_detalle.get('error_message'),
+        )
+        _registrar_resync_log(
+            request,
+            current_user,
+            'SUCCESS' if resultado_detalle.get('success') else 'FAILED',
+            resultado_detalle.get('error_message')
+            or ('Detalle ISCAM sincronizado' if not request.dry_run else 'DRY RUN detalle ISCAM aprobado'),
+            unidad,
+            registros_detalle,
+        )
+        return ResyncResponse(
+            success=bool(resultado_detalle.get('success')),
+            ejecucion_id=ejecucion_id,
+            sync_run_id=sync_run_id,
+            modo='DRY_RUN' if request.dry_run else 'REAL',
+            tipo_sync=request.tipo_sync,
+            unidad_negocio_id=request.unidad_negocio_id,
+            fecha_inicio=request.fecha_inicio.isoformat(),
+            fecha_fin=request.fecha_fin.isoformat(),
+            validacion_previa={
+                'rango': validacion_rango,
+                'detail_only': True,
+                'header_resync_skipped': True,
+            },
+            resultado=resultado_detalle,
+            error_message=resultado_detalle.get('error_message'),
+        )
 
     if _is_netpay_sync(tipo_sync, request.tipo_sync):
         modo = 'DRY_RUN' if request.dry_run else 'REAL'
