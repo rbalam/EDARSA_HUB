@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "da426c80ecfc7ec2c90e70471f1accfd6f9555de",
-  "generated_at_utc": "2026-09-08T23:33:49Z",
+  "generated_at_utc": "2026-09-08T23:35:00Z",
   "history": {
     "done_total_local": 168,
     "pending_total_local": 0,
@@ -13,19 +13,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 132,
+      "age_seconds": 204,
       "job_id": "EDARSAHUB-SOFTRESTAURANT-CANONICAL-WINDOW-JOIN-R40-CARLOS-20260908T234000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1534,
+      "age_seconds": 1605,
       "job_id": "EDARSAHUB-SOFTRESTAURANT-PER-DAY-EMPRESA-PARITY-R39-CARLOS-20260908T231000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1230,
+      "age_seconds": 1302,
       "job_id": "EDARSAHUB-SOFTRESTAURANT-PER-DAY-EMPRESA-PARITY-R39B-CARLOS-20260908T232000Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -43,8 +43,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-08T23:33:46Z",
-    "last_receive_utc": "2026-09-08T23:33:46Z",
+    "last_cycle_utc": "2026-09-08T23:34:57Z",
+    "last_receive_utc": "2026-09-08T23:34:58Z",
     "last_terminal_utc": "2026-09-08T23:31:36Z",
     "pid": "285"
   },
