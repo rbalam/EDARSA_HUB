@@ -56,7 +56,7 @@ def evaluate_scope_advance(
     if conflicts:
         decision = "SCOPE_CONFLICT"
     elif scope or allow_empty_scope_advance:
-        decision = "SAFE_REBASE"
+        decision = "SAFE_REPLAY"
     else:
         decision = "EMPTY_SCOPE_STRICT"
 

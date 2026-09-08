@@ -18,14 +18,14 @@ def test_exact_base_passes_without_rebase():
     assert result["scope_conflicts"] == []
 
 
-def test_unrelated_head_advance_is_safe_rebase():
+def test_unrelated_head_advance_is_safe_replay():
     result = evaluate_scope_advance(
         "abc",
         "def",
         ["finanzas.py"],
         ["docs/cavas.md", "backend/core/bos.py"],
     )
-    assert result["decision"] == "SAFE_REBASE"
+    assert result["decision"] == "SAFE_REPLAY"
     assert result["scope_conflicts"] == []
 
 
@@ -48,7 +48,7 @@ def test_read_only_empty_scope_can_advance_when_explicitly_allowed():
         ["backend/core/unrelated.py"],
         allow_empty_scope_advance=True,
     )
-    assert result["decision"] == "SAFE_REBASE"
+    assert result["decision"] == "SAFE_REPLAY"
 
 
 def test_empty_scope_stays_strict_by_default():

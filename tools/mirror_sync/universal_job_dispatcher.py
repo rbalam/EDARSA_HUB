@@ -40,7 +40,7 @@ LOCK_FILE = STATE / "dispatcher.lock"
 REMOTE = os.environ.get("EDARSAHUB_QUEUE_REMOTE", "origin")
 DEV_BRANCH = "Edarsahub_Desarrollo"
 MAX_SECONDS = int(os.environ.get("EDARSAHUB_JOB_MAX_SECONDS", "1800"))
-MAX_SCOPE_REBASE_ATTEMPTS = int(os.environ.get("EDARSAHUB_SCOPE_REBASE_ATTEMPTS", "3"))
+MAX_CONCURRENCY_REPLAY_ATTEMPTS = int(os.environ.get("EDARSAHUB_CONCURRENCY_REPLAY_ATTEMPTS", "3"))
 JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
 ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit"}
@@ -340,75 +340,72 @@ def create_commit(worktree: Path, job_id: str, files: list[str]) -> str:
 
 def integrate(worktree: Path, branch: str, head: str, base_sha: str, write_scope: set[str]) -> tuple[bool, str, str, list[dict[str, Any]]]:
     candidate = head
-    candidate_base = base_sha
     evidence: list[dict[str, Any]] = []
     credential_helper = resolve_repository_credential_helper()
     if not credential_helper:
         return False, "development_push_credential_helper_missing", candidate, evidence
 
-    for attempt in range(1, MAX_SCOPE_REBASE_ATTEMPTS + 1):
-        git("fetch", REMOTE, DEV_BRANCH)
-        remote_dev = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
-        step: dict[str, Any] = {"attempt": attempt, "candidate_base_sha": candidate_base, "remote_development_sha": remote_dev, "candidate_sha_before": candidate}
-
-        if remote_dev != candidate_base:
-            if not git_is_ancestor(candidate_base, remote_dev):
-                step["decision"] = "NON_FAST_FORWARD"
-                evidence.append(step)
-                return False, f"development_non_fast_forward:{remote_dev}", candidate, evidence
-            changed = git_changed_paths(candidate_base, remote_dev)
-            policy = evaluate_scope_advance(candidate_base, remote_dev, write_scope, changed)
-            step["scope_policy"] = policy
-            if policy["decision"] != "SAFE_REBASE":
-                step["decision"] = "BLOCK"
-                evidence.append(step)
-                conflicts = ",".join(policy.get("scope_conflicts") or [])
-                return False, f"development_scope_conflict:{conflicts or remote_dev}", candidate, evidence
-            rebase = git("rebase", "--onto", remote_dev, candidate_base, branch, cwd=worktree, check=False)
-            if rebase.returncode != 0:
-                git("rebase", "--abort", cwd=worktree, check=False)
-                step["decision"] = "REBASE_FAILED"
-                step["rebase_output"] = rebase.stdout[-2000:]
-                evidence.append(step)
-                return False, f"development_safe_rebase_failed:{rebase.stdout[-1000:]}", candidate, evidence
-            candidate = git("rev-parse", "HEAD", cwd=worktree).stdout.strip()
-            candidate_base = remote_dev
-            step["candidate_sha_after_rebase"] = candidate
-            step["decision"] = "SAFE_REBASE"
-        else:
-            step["decision"] = "EXACT_BASE"
-
-        guard = ROOT / "scripts" / "agent_guardrails" / "validate_repository_artifacts.py"
-        if guard.is_file():
-            check = run([PYTHON_BIN, str(guard), "--range", candidate_base, candidate], cwd=ROOT)
-            if check.returncode != 0:
-                step["artifact_guard"] = "FAIL"
-                step["artifact_guard_output"] = check.stdout[-1000:]
-                evidence.append(step)
-                return False, "repository_artifact_guard_failed:" + check.stdout[-1000:], candidate, evidence
-            step["artifact_guard"] = "PASS"
-
-        push = run(["git", "-c", "credential.helper=", "-c", f"credential.helper={credential_helper}", "push", REMOTE, f"{candidate}:refs/heads/{DEV_BRANCH}"], cwd=ROOT, env_extra={"EDARSA_ALLOW_PUSH": "1"})
-        step["push_returncode"] = push.returncode
-        if push.returncode == 0:
-            git("fetch", REMOTE, DEV_BRANCH)
-            after = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
-            step["remote_after_push"] = after
+    git("fetch", REMOTE, DEV_BRANCH)
+    remote_dev = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
+    step: dict[str, Any] = {"candidate_base_sha": base_sha, "remote_development_sha": remote_dev, "candidate_sha_before": candidate, "concurrent_head_changes": []}
+    if remote_dev != base_sha:
+        if not git_is_ancestor(base_sha, remote_dev):
+            step["decision"] = "NON_FAST_FORWARD"
             evidence.append(step)
-            if after == candidate:
-                return True, after, candidate, evidence
-            candidate_base = remote_dev
-            continue
-
-        step["push_output"] = push.stdout[-1000:]
+            return False, f"CONCURRENT_NON_FAST_FORWARD:{remote_dev}", candidate, evidence
+        changed = git_changed_paths(base_sha, remote_dev)
+        step["concurrent_head_changes"] = changed
+        policy = evaluate_scope_advance(base_sha, remote_dev, write_scope, changed)
+        step["scope_policy"] = policy
+        if policy["decision"] != "SAFE_REPLAY":
+            step["decision"] = "CONCURRENT_SCOPE_CONFLICT"
+            evidence.append(step)
+            conflicts = ",".join(policy.get("scope_conflicts") or [])
+            return False, f"CONCURRENT_SCOPE_CONFLICT:{conflicts or remote_dev}", candidate, evidence
+        step["decision"] = "REPLAY_REQUIRED"
         evidence.append(step)
-        git("fetch", REMOTE, DEV_BRANCH)
-        latest = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
-        if latest == remote_dev:
-            return False, f"development_push_failed:{push.stdout[-1000:]}", candidate, evidence
-        candidate_base = remote_dev
+        return False, f"CONCURRENT_REPLAY_REQUIRED:{remote_dev}", candidate, evidence
 
-    return False, "development_race_retry_exhausted", candidate, evidence
+    guard = ROOT / "scripts" / "agent_guardrails" / "validate_repository_artifacts.py"
+    if guard.is_file():
+        check = run([PYTHON_BIN, str(guard), "--range", base_sha, candidate], cwd=ROOT)
+        if check.returncode != 0:
+            step["artifact_guard"] = "FAIL"
+            step["artifact_guard_output"] = check.stdout[-1000:]
+            evidence.append(step)
+            return False, "repository_artifact_guard_failed:" + check.stdout[-1000:], candidate, evidence
+        step["artifact_guard"] = "PASS"
+
+    push = run(["git", "-c", "credential.helper=", "-c", f"credential.helper={credential_helper}", "push", REMOTE, f"{candidate}:refs/heads/{DEV_BRANCH}"], cwd=ROOT, env_extra={"EDARSA_ALLOW_PUSH": "1"})
+    step["push_returncode"] = push.returncode
+    if push.returncode == 0:
+        git("fetch", REMOTE, DEV_BRANCH)
+        after = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
+        step["remote_after_push"] = after
+        evidence.append(step)
+        if after == candidate:
+            step["decision"] = "PUSHED"
+            return True, after, candidate, evidence
+
+    step["push_output"] = push.stdout[-1000:]
+    git("fetch", REMOTE, DEV_BRANCH)
+    latest = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
+    if latest != remote_dev:
+        changed = git_changed_paths(base_sha, latest) if git_is_ancestor(base_sha, latest) else []
+        step["concurrent_head_changes"] = changed
+        policy = evaluate_scope_advance(base_sha, latest, write_scope, changed) if changed else {"decision": "NON_FAST_FORWARD", "scope_conflicts": []}
+        step["scope_policy"] = policy
+        if policy.get("decision") == "SAFE_REPLAY":
+            step["decision"] = "REPLAY_REQUIRED_AFTER_PUSH_RACE"
+            evidence.append(step)
+            return False, f"CONCURRENT_REPLAY_REQUIRED:{latest}", candidate, evidence
+        step["decision"] = "CONCURRENT_SCOPE_CONFLICT"
+        evidence.append(step)
+        conflicts = ",".join(policy.get("scope_conflicts") or [])
+        return False, f"CONCURRENT_SCOPE_CONFLICT:{conflicts or latest}", candidate, evidence
+    step["decision"] = "PUSH_FAILED"
+    evidence.append(step)
+    return False, f"development_push_failed:{push.stdout[-1000:]}", candidate, evidence
 
 
 def release_agent_guard_claim(job_id: str) -> tuple[bool, str]:
@@ -452,14 +449,19 @@ def process_one(path: Path) -> int:
                 raise RuntimeError(f"BASE_NOT_ANCESTOR:expected={expected_base}:actual={current_head}")
             changed = git_changed_paths(expected_base, current_head)
             pickup_policy = evaluate_scope_advance(expected_base, current_head, requested_paths, changed, allow_empty_scope_advance=(mode == "READ_ONLY_SQL"))
-            if pickup_policy["decision"] not in {"SAFE_REBASE", "EXACT_BASE"}:
+            if pickup_policy["decision"] not in {"SAFE_REPLAY", "EXACT_BASE"}:
                 conflicts = ",".join(pickup_policy.get("scope_conflicts") or [])
-                raise RuntimeError(f"BASE_SCOPE_CONFLICT:expected={expected_base}:actual={current_head}:paths={conflicts}")
+                raise RuntimeError(f"CONCURRENT_SCOPE_CONFLICT:expected={expected_base}:actual={current_head}:paths={conflicts}")
         else:
             pickup_policy = evaluate_scope_advance(expected_base, current_head, requested_paths, [], allow_empty_scope_advance=(mode == "READ_ONLY_SQL"))
         base_sha = current_head
         result["requested_base_sha"] = expected_base
         result["base_sha"] = base_sha
+        result["initial_base_sha"] = expected_base or base_sha
+        result["execution_base_sha"] = base_sha
+        result["integration_attempts"] = 0
+        result["concurrency_replays"] = 0
+        result["concurrent_head_changes"] = []
         result["concurrency"] = {"pickup": pickup_policy, "integration": []}
 
         if mode == "READ_ONLY_SQL":
@@ -608,19 +610,38 @@ def process_one(path: Path) -> int:
                 result["certification"] = "NOT_CERTIFIED"
             return 0
 
-        worktree, branch = prepare_worktree(job_id, base_sha, requested_paths)
-        agent_guard_claim_created = True
-        result["job_branch"] = branch
-        allowed_files: set[str] = set()
-        for action in job.get("actions") or []:
-            relative = apply_action(worktree, action)
-            allowed_files.add(relative)
-        scope_blockers = validate_scope(worktree, base_sha, allowed_files)
-        result["blockers"].extend(scope_blockers)
-        result["files_changed"] = changed_files(worktree, base_sha)
+        execution_base_sha = base_sha
+        accumulated_integration: list[dict[str, Any]] = []
+        for replay_attempt in range(1, MAX_CONCURRENCY_REPLAY_ATTEMPTS + 1):
+            if replay_attempt > 1:
+                if agent_guard_claim_created:
+                    release_ok, release_detail = release_agent_guard_claim(job_id)
+                    if not release_ok:
+                        result["blockers"].append("agent_guard_release_failed_before_replay:" + release_detail)
+                        break
+                    agent_guard_claim_created = False
+                if worktree is not None:
+                    git("worktree", "remove", "--force", str(worktree), check=False)
+                    worktree = None
+                if branch:
+                    git("branch", "-D", branch, check=False)
+                    branch = ""
+                result["concurrency_replays"] += 1
 
-        check_results: list[dict[str, Any]] = []
-        if not result["blockers"]:
+            result["execution_base_sha"] = execution_base_sha
+            worktree, branch = prepare_worktree(job_id, execution_base_sha, requested_paths)
+            agent_guard_claim_created = True
+            result["job_branch"] = branch
+            allowed_files: set[str] = set()
+            for action in job.get("actions") or []:
+                relative = apply_action(worktree, action)
+                allowed_files.add(relative)
+            scope_blockers = validate_scope(worktree, execution_base_sha, allowed_files)
+            if scope_blockers:
+                result["blockers"].extend(scope_blockers)
+                break
+            result["files_changed"] = changed_files(worktree, execution_base_sha)
+            check_results: list[dict[str, Any]] = []
             checks = job.get("checks") or [{"type": "git_diff_check"}]
             for check in checks:
                 check_result = run_check(worktree, check)
@@ -628,28 +649,33 @@ def process_one(path: Path) -> int:
                 if check_result["status"] != "PASS":
                     result["blockers"].append(f"check_failed:{check_result['type']}")
                     break
-        result["checks"] = check_results
-        result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else ("PASS" if not check_results and not result["blockers"] else "FAIL")
-        result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
+            result["checks"] = check_results
+            result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else ("PASS" if not check_results and not result["blockers"] else "FAIL")
+            result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
+            if result["blockers"]:
+                break
 
-        head: str | None = None
-        if not result["blockers"]:
             head = create_commit(worktree, job_id, sorted(allowed_files))
             result["candidate_sha"] = head
-
-        if head:
-            ok, detail, final_head, integration_evidence = integrate(worktree, branch, head, base_sha, allowed_files)
-            result["concurrency"]["integration"] = integration_evidence
-            if final_head != head:
-                result["rebased_candidate_sha"] = final_head
+            ok, detail, final_head, integration_evidence = integrate(worktree, branch, head, execution_base_sha, allowed_files)
+            accumulated_integration.extend(integration_evidence)
+            result["concurrency"]["integration"] = accumulated_integration
+            result["integration_attempts"] = len(accumulated_integration)
+            result["concurrent_head_changes"] = sorted({p for step in accumulated_integration for p in (step.get("concurrent_head_changes") or [])})
             if ok:
                 result["status"] = "INTEGRATED"
                 result["development_sha"] = final_head
                 result["percent_complete"] = 95
                 result["certification"] = "PENDING_AUDIT_EVIDENCE"
-                result["summary_es"] = "ChatGPT envio cambios exactos, el worker verifico concurrencia por alcance, aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada."
-            else:
-                result["blockers"].append(detail)
+                result["summary_es"] = "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada."
+                break
+            if detail.startswith("CONCURRENT_REPLAY_REQUIRED:"):
+                execution_base_sha = detail.split(":", 1)[1]
+                continue
+            result["blockers"].append(detail)
+            break
+        else:
+            result["blockers"].append("CONCURRENT_REPLAY_EXHAUSTED")
 
         if result["status"] != "INTEGRATED":
             result["percent_complete"] = 80 if result.get("files_changed") else 0
