@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-R31-RUNTIME-VALIDATION-R32-CARLOS-20260908T152500Z",
+  "created_at_utc": "2026-09-08T15:25:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2729c7cbb323f4574f25caa877c6b30a81a84aa8",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Validacion funcional final post R31, sin escrituras. Confirmar que LA ESTELAR tiene el dia operativo cerrado 2026-09-06 en la fuente canonica exacta que comparten Reportes ISCAM Ventas por Periodo y Dashboard Ejecutivo, revisar frescura hasta el ultimo dia cerrado disponible, y confirmar que una ejecucion reciente y exitosa de sync_comercial_v2 ya se registra con Exito=1 despues de la correccion del logger. No modificar codigo ni datos.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "estelar_20260906_fuente_canonica_compartida",
+          "sql": "SELECT unidad_negocio_id, unidad_negocio_nombre, CAST(fecha_operacion AS date) AS fecha_operacion, CAST(ISNULL(ventas_total,0) AS decimal(18,2)) AS ventas_total, CAST(ISNULL(propinas_total,0) AS decimal(18,2)) AS propinas_total, CAST(ISNULL(tickets_total,0) AS bigint) AS cheques_total, CAST(ISNULL(pax_total,0) AS bigint) AS pax_total FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='ESTELAR' AND CAST(fecha_operacion AS date)=CONVERT(date,'2026-09-06')"
+        },
+        {
+          "name": "estelar_frescura_ultimos_dias",
+          "sql": "SELECT TOP 7 unidad_negocio_id, unidad_negocio_nombre, CAST(fecha_operacion AS date) AS fecha_operacion, CAST(ISNULL(ventas_total,0) AS decimal(18,2)) AS ventas_total, CAST(ISNULL(tickets_total,0) AS bigint) AS cheques_total, CAST(ISNULL(pax_total,0) AS bigint) AS pax_total FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='ESTELAR' ORDER BY fecha_operacion DESC"
+        },
+        {
+          "name": "sync_comercial_v2_ultimo_finish",
+          "sql": "SELECT TOP 10 FechaAccion, RunID, Exito, MensajeError, JSON_VALUE(DetallesJSON,'$.status') AS status_detalle, TRY_CONVERT(int,JSON_VALUE(DetallesJSON,'$.processed_count')) AS processed_count, TRY_CONVERT(int,JSON_VALUE(DetallesJSON,'$.success_count')) AS success_count, TRY_CONVERT(int,JSON_VALUE(DetallesJSON,'$.failed_count')) AS failed_count, TRY_CONVERT(int,JSON_VALUE(DetallesJSON,'$.skipped_count')) AS skipped_count FROM dbo.Scheduler_BitacoraJobs WHERE JobName='sync_comercial_v2' AND Accion='FINISH' ORDER BY FechaAccion DESC"
+        },
+        {
+          "name": "sync_comercial_v2_actividad_3h",
+          "sql": "SELECT (SELECT COUNT(DISTINCT RunID) FROM dbo.Scheduler_BitacoraJobs WHERE JobName='sync_comercial_v2' AND Accion='START' AND FechaAccion>=DATEADD(HOUR,-3,SYSUTCDATETIME())) AS starts_3h, (SELECT COUNT(DISTINCT RunID) FROM dbo.Scheduler_BitacoraJobs WHERE JobName='sync_comercial_v2' AND Accion='FINISH' AND FechaAccion>=DATEADD(HOUR,-3,SYSUTCDATETIME()) AND Exito=1) AS finishes_exitosos_3h, (SELECT MAX(FechaAccion) FROM dbo.Scheduler_BitacoraJobs WHERE JobName='sync_comercial_v2' AND Accion='FINISH' AND Exito=1) AS ultimo_finish_exitoso, SYSUTCDATETIME() AS hora_consulta_utc"
+        }
+      ]
+    }
+  ]
+}
