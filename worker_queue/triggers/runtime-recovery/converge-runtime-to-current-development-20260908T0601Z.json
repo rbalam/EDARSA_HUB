@@ -1,0 +1,5 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Converge /app to current Edarsahub_Desarrollo using canonical configured public wake endpoint. Require fast-forward only, preserve local work, fail closed on wrong branch, non-fast-forward, or unsafe local state. Restart only edarsahub-universal-worker when required. Production must not be touched.",
+  "production_touched": false
+}
