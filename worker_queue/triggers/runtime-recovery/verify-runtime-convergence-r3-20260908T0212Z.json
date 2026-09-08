@@ -1,0 +1,5 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Re-run canonical runtime recovery after Worker Wake Endpoint Bootstrap PASS. Require /api/internal/worker/wake to return accepted and runtime_convergence to be ALIGNED or FF_APPLIED. Preserve dirty worktree and fail closed on wrong branch, non-fast-forward, or local changes. Production must not be touched.",
+  "production_touched": false
+}
