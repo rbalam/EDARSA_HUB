@@ -1,0 +1,124 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-FRESHNESS-MANUAL-SYNC-LOGGER-R31-CARLOS-20260908T010100Z",
+  "created_at_utc": "2026-09-08T01:01:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "56b0e25ca4d6142d3cabd82730c75fcf88e931df",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Sustituir el R10 huerfano mediante worker/requests y aplicar solamente lo pendiente: estado de frescura canonica y boton manual de re-sync en Reportes ISCAM, mas robustecer la clasificacion Exito de Scheduler_BitacoraJobs. Conservar todos los fixes R20-R30 ya integrados. No tocar Produccion. Ventas por Periodo debe seguir leyendo KPIsCanonicosService/resumen_periodo_desglosado y nunca volver a Sync_Sales como fuente principal.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/job_logger.py",
+      "old": "class JobLogger:\n",
+      "new": "_SUCCESS_STATUSES = frozenset({\"success\", \"completed\", \"completado\", \"ok\"})\n\n\ndef _is_success_status(value: str) -> bool:\n    \"\"\"Clasifica estados terminales exitosos sin depender de idioma o mayusculas.\"\"\"\n    return str(value or \"\").strip().lower() in _SUCCESS_STATUSES\n\n\nclass JobLogger:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/job_logger.py",
+      "old": "            exito=(status in {\"success\", \"completed\"}),",
+      "new": "            exito=_is_success_status(status),",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "import calendar\nimport logging\nfrom typing import Optional\nfrom datetime import datetime, timedelta\n",
+      "new": "import calendar\nimport logging\nfrom typing import Optional\nfrom datetime import datetime, timedelta\nfrom zoneinfo import ZoneInfo\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "@iscam_router.get(\"/ventas-periodos/productos\")",
+      "new": "@iscam_router.get(\"/freshness\")\nasync def iscam_freshness(unidad: str = Query(...), desde: Optional[str] = None, hasta: Optional[str] = None):\n    \"\"\"Frescura de la fuente canonica para dias operativos ya cerrados.\"\"\"\n    unidad_codigo = UnidadesService.resolver_codigo(unidad)\n    if not unidad_codigo:\n        raise HTTPException(status_code=404, detail=f\"Unidad no encontrada: {unidad}\")\n\n    d, h = _rango_fechas(desde, hasta)\n    range_start = datetime.strptime(d, \"%Y-%m-%d\").date()\n    range_end = datetime.strptime(h, \"%Y-%m-%d\").date() - timedelta(days=1)\n    today_local = datetime.now(ZoneInfo(\"America/Mexico_City\")).date()\n    previous_closed_day = today_local - timedelta(days=1)\n    expected_latest = min(range_end, previous_closed_day)\n\n    if expected_latest < range_start:\n        return {\n            \"success\": True,\n            \"source\": \"dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\",\n            \"unidad\": unidad,\n            \"latest_canonical_date\": None,\n            \"expected_latest_closed_date\": None,\n            \"missing_closed_dates\": [],\n            \"missing_from\": None,\n            \"missing_to\": None,\n            \"stale\": False,\n            \"current_open_day\": today_local.isoformat(),\n        }\n\n    expected_exclusive = (expected_latest + timedelta(days=1)).isoformat()\n    rows = _q(\n        \"\"\"\n        SELECT MAX(CAST(fecha_operacion AS date)) AS ultima_fecha\n        FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\n        WHERE unidad_negocio_id = %s\n          AND fecha_operacion >= %s\n          AND fecha_operacion < %s\n        \"\"\",\n        (str(unidad_codigo), d, expected_exclusive),\n    )\n    latest_raw = rows[0].get(\"ultima_fecha\") if rows else None\n    if isinstance(latest_raw, datetime):\n        latest = latest_raw.date()\n    elif latest_raw is None:\n        latest = None\n    elif hasattr(latest_raw, \"isoformat\"):\n        latest = latest_raw\n    else:\n        latest = datetime.strptime(str(latest_raw)[:10], \"%Y-%m-%d\").date()\n\n    stale = latest is None or latest < expected_latest\n    missing_closed_dates = []\n    missing_from = None\n    missing_to = None\n    if stale:\n        cursor = max(range_start, (latest + timedelta(days=1)) if latest else range_start)\n        missing_from = cursor.isoformat()\n        missing_to = expected_latest.isoformat()\n        while cursor <= expected_latest:\n            missing_closed_dates.append(cursor.isoformat())\n            cursor += timedelta(days=1)\n\n    return {\n        \"success\": True,\n        \"source\": \"dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\",\n        \"unidad\": unidad,\n        \"latest_canonical_date\": latest.isoformat() if latest else None,\n        \"expected_latest_closed_date\": expected_latest.isoformat(),\n        \"missing_closed_dates\": missing_closed_dates,\n        \"missing_from\": missing_from,\n        \"missing_to\": missing_to,\n        \"stale\": stale,\n        \"current_open_day\": today_local.isoformat(),\n    }\n\n\n@iscam_router.get(\"/ventas-periodos/productos\")",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+      "old": "  FileSpreadsheet, FileText,\n} from 'lucide-react';\nimport { apiGet, ESTADO } from '../api/client';",
+      "new": "  FileSpreadsheet, FileText, RefreshCw,\n} from 'lucide-react';\nimport { apiGet, apiPost, ESTADO } from '../api/client';",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+      "old": "const MESES = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];\nconst NOW = new Date();\nconst YEARS = Array.from({ length: 4 }, (_, i) => NOW.getFullYear() - 3 + i);",
+      "new": "const MESES = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];\nconst NOW = new Date();\nconst YEARS = Array.from({ length: 4 }, (_, i) => NOW.getFullYear() - 3 + i);\nconst parseYmdUtc = (value) => {\n  const [y, m, d] = String(value || '').split('-').map(Number);\n  return new Date(Date.UTC(y, (m || 1) - 1, d || 1));\n};\nconst ymdUtc = (value) => value.toISOString().slice(0, 10);\nconst formatDateMx = (value) => {\n  if (!value) return 'Sin datos';\n  const [y, m, d] = value.split('-');\n  return `${d}/${m}/${y}`;\n};\nconst splitDateChunks = (start, end, maxDays = 30) => {\n  if (!start || !end) return [];\n  const chunks = [];\n  let cursor = parseYmdUtc(start);\n  const last = parseYmdUtc(end);\n  while (cursor <= last) {\n    const chunkStart = new Date(cursor);\n    const chunkEnd = new Date(cursor);\n    chunkEnd.setUTCDate(chunkEnd.getUTCDate() + maxDays - 1);\n    if (chunkEnd > last) chunkEnd.setTime(last.getTime());\n    chunks.push([ymdUtc(chunkStart), ymdUtc(chunkEnd)]);\n    cursor = new Date(chunkEnd);\n    cursor.setUTCDate(cursor.getUTCDate() + 1);\n  }\n  return chunks;\n};",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+      "old": "  const [drill, setDrill] = useState(null);",
+      "new": "  const [drill, setDrill] = useState(null);\n  const [freshness, setFreshness] = useState(null);\n  const [freshnessLoading, setFreshnessLoading] = useState(false);\n  const [syncing, setSyncing] = useState(false);\n  const [syncMessage, setSyncMessage] = useState(null);",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+      "old": "  useEffect(() => { fetchReport(); }, [fetchReport]);\n\n  // ---- Drill-downs ----",
+      "new": "  const fetchFreshness = useCallback(async () => {\n    if (sinUnidad) { setFreshness(null); return; }\n    setFreshnessLoading(true);\n    const res = await apiGet('/inteligencia/iscam/freshness', { unidad, desde: desdeStr, hasta: hastaStr });\n    setFreshness(res.estado === ESTADO.OK ? res.data : null);\n    setFreshnessLoading(false);\n  }, [sinUnidad, unidad, desdeStr, hastaStr]);\n\n  useEffect(() => {\n    fetchReport();\n    fetchFreshness();\n  }, [fetchReport, fetchFreshness]);\n\n  const syncMissingClosedDays = async () => {\n    if (!freshness?.stale || !freshness?.missing_from || !freshness?.missing_to || syncing) return;\n    setSyncing(true);\n    setSyncMessage(null);\n    try {\n      const chunks = splitDateChunks(freshness.missing_from, freshness.missing_to, 30);\n      for (const [fechaInicio, fechaFin] of chunks) {\n        const basePayload = {\n          tipo_sync: 'comercial_ventas_cerradas',\n          unidad_negocio_id: unidad,\n          fecha_inicio: fechaInicio,\n          fecha_fin: fechaFin,\n          motivo: 'ISCAM sincronizar dias cerrados faltantes',\n        };\n        const dry = await apiPost('/admin/scheduler/resync/execute', { ...basePayload, dry_run: true }, { timeout: 120000 });\n        if (dry.estado !== ESTADO.OK || dry.data?.success !== true) {\n          throw new Error(`DRY RUN no aprobado para ${fechaInicio} a ${fechaFin}`);\n        }\n        const real = await apiPost('/admin/scheduler/resync/execute', { ...basePayload, dry_run: false }, { timeout: 120000 });\n        if (real.estado !== ESTADO.OK || real.data?.success !== true) {\n          throw new Error(`Re-sync no completado para ${fechaInicio} a ${fechaFin}`);\n        }\n      }\n      await Promise.all([fetchReport(), fetchFreshness()]);\n      setSyncMessage({ tipo: 'ok', texto: 'Sincronización de faltantes completada.' });\n    } catch (error) {\n      setSyncMessage({ tipo: 'error', texto: error?.message || 'No se pudo sincronizar el rango faltante.' });\n    } finally {\n      setSyncing(false);\n    }\n  };\n\n  // ---- Drill-downs ----",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+      "old": "        <div className=\"ml-auto flex items-end gap-2\">\n          <button onClick={onExcel} disabled={!puedeExportar} data-testid=\"iscam-export-excel\"",
+      "new": "        <div className=\"ml-auto flex items-end gap-2\">\n          <div className=\"self-center text-xs text-slate-400\" data-testid=\"iscam-freshness-status\">\n            {freshnessLoading\n              ? 'Verificando actualización...'\n              : freshness?.latest_canonical_date\n                ? `Actualizado hasta ${formatDateMx(freshness.latest_canonical_date)}`\n                : 'Sin fecha canónica disponible'}\n          </div>\n          {freshness?.stale && (\n            <button onClick={syncMissingClosedDays} disabled={syncing} data-testid=\"iscam-sync-missing\"\n              className=\"inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-sky-600 text-white hover:bg-sky-500 disabled:opacity-40 disabled:cursor-not-allowed\">\n              <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />\n              {syncing ? 'Sincronizando...' : 'Sincronizar faltantes'}\n            </button>\n          )}\n          <button onClick={onExcel} disabled={!puedeExportar} data-testid=\"iscam-export-excel\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+      "old": "      {sinUnidad && (",
+      "new": "      {syncMessage && (\n        <div data-testid=\"iscam-sync-message\"\n          className={`text-sm rounded-lg px-4 py-3 border ${syncMessage.tipo === 'ok'\n            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'\n            : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}>\n          {syncMessage.texto}\n        </div>\n      )}\n\n      {sinUnidad && (",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_freshness_manual_sync_r31.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nROUTES = ROOT / 'backend' / 'modules' / 'inteligencia_comercial' / 'iscam_routes.py'\nFRONTEND = ROOT / 'frontend' / 'src' / 'portal-inteligencia' / 'pages' / 'ReportesISCAMPage.jsx'\n\n\ndef test_freshness_uses_runtime_and_previous_closed_day():\n    text = ROUTES.read_text(encoding='utf-8')\n    assert '@iscam_router.get(\"/freshness\")' in text\n    assert 'dbo.vw_Comercial_KPIs_Diarios_v2_Runtime' in text\n    assert 'ZoneInfo(\"America/Mexico_City\")' in text\n    assert 'previous_closed_day = today_local - timedelta(days=1)' in text\n    assert '\"stale\": stale' in text\n    assert '\"missing_from\": missing_from' in text\n    assert '\"missing_to\": missing_to' in text\n\n\ndef test_manual_sync_is_dry_run_gated_and_refetches():\n    text = FRONTEND.read_text(encoding='utf-8')\n    assert 'apiGet, apiPost, ESTADO' in text\n    assert 'RefreshCw' in text\n    assert 'Sincronizar faltantes' in text\n    assert \"'/inteligencia/iscam/freshness'\" in text\n    assert \"'/admin/scheduler/resync/execute'\" in text\n    assert 'dry_run: true' in text\n    assert 'dry_run: false' in text\n    assert 'splitDateChunks(freshness.missing_from, freshness.missing_to, 30)' in text\n    assert 'Promise.all([fetchReport(), fetchFreshness()])' in text\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_job_logger_success_status_r31.py",
+      "content": "from core.scheduler.job_logger import _is_success_status\n\n\ndef test_success_statuses_are_true():\n    for value in ('success', 'SUCCESS', 'completed', 'COMPLETED', 'completado', 'COMPLETADO', 'ok', 'OK'):\n        assert _is_success_status(value) is True\n\n\ndef test_failed_and_partial_statuses_are_false():\n    for value in ('failed', 'FAILED', 'fallido', 'FALLIDO', 'partial', 'PARCIAL', 'error', None, ''):\n        assert _is_success_status(value) is False\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/scheduler/job_logger.py",
+        "backend/modules/inteligencia_comercial/iscam_routes.py",
+        "backend/tests/test_iscam_freshness_manual_sync_r31.py",
+        "backend/tests/test_job_logger_success_status_r31.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_freshness_manual_sync_r31.py",
+        "backend/tests/test_job_logger_success_status_r31.py",
+        "backend/tests/test_scheduler_comercial_status.py",
+        "backend/tests/test_iscam_detail_code_scope_r20.py",
+        "backend/tests/test_iscam_comandas_none_serialization.py"
+      ]
+    },
+    {"type": "frontend_build", "directory": "frontend"}
+  ]
+}
