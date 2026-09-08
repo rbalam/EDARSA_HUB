@@ -1,0 +1,27 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"worker-concurrency-r5-runtime-others-r1-20260908T0510Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Aislar todos los tests runtime excepto el test integrate modificado por R5. Si pytest pasa, bloquear con py_compile inexistente. No integrar ni tocar Production.",
+  "actions":[
+    {"type":"replace_text","path":"backend/tests/test_universal_job_dispatcher_python_runtime.py","expected_count":1,"old":"    ok, detail = module.integrate(\"candidate\", \"base\")\n\n    assert ok is False or ok is True","new":"    ok, detail, final_head, evidence = module.integrate(\n        Path('.'),\n        'agent/test',\n        'candidate',\n        'base',\n        {'safe.txt'},\n    )\n\n    assert ok is False or ok is True\n    assert final_head == 'candidate'\n    assert isinstance(evidence, list)"}
+  ],
+  "checks":[
+    {"type":"pytest","paths":[
+      "backend/tests/test_universal_job_dispatcher_python_runtime.py::test_dispatcher_prefers_runtime_virtualenv",
+      "backend/tests/test_universal_job_dispatcher_python_runtime.py::test_dispatcher_falls_back_to_sys_executable",
+      "backend/tests/test_universal_job_dispatcher_python_runtime.py::test_dispatcher_prefers_executable_repo_python",
+      "backend/tests/test_universal_job_dispatcher_python_runtime.py::test_py_compile_uses_canonical_python",
+      "backend/tests/test_universal_job_dispatcher_python_runtime.py::test_pytest_uses_canonical_python",
+      "backend/tests/test_universal_job_dispatcher_python_runtime.py::test_all_internal_python_subprocesses_are_canonical",
+      "backend/tests/test_universal_job_dispatcher_python_runtime.py::test_pytest_loads_missing_backend_runtime_env",
+      "backend/tests/test_universal_job_dispatcher_python_runtime.py::test_backend_runtime_env_does_not_override_process_env",
+      "backend/tests/test_universal_job_dispatcher_python_runtime.py::test_frontend_build_reuses_canonical_frontend_toolchain"
+    ]},
+    {"type":"py_compile","paths":["backend/tests/__intentional_missing_r5_runtime_others__.py"]}
+  ],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
