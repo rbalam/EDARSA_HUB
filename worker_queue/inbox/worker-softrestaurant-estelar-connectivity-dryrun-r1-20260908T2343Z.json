@@ -1,0 +1,31 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-softrestaurant-estelar-connectivity-dryrun-r1-20260908T2343Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Validacion READ-ONLY operacional de la conectividad canonica SoftRestaurant para ESTELAR usando exclusivamente la capability SOFTRESTAURANT_FULL_HISTORY_RESYNC en dry_run. No ejecutar --execute, no escribir tablas destino, no shell, no script_path arbitrario, no rutas externas y no tocar Production. Si la conectividad queda CERTIFIED_OPERATIONAL al 100%, habilitar posteriormente el write idempotente exclusivo para ESTELAR.",
+  "mode": "SOFTRESTAURANT_FULL_HISTORY_RESYNC",
+  "actions": [],
+  "units": ["ESTELAR"],
+  "dry_run": true,
+  "confirm_full_history_resync": false,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "canonical_target_tables_exist_pre_estelar_write",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name FROM sys.tables t INNER JOIN sys.schemas s ON s.schema_id = t.schema_id WHERE s.name = 'dbo' AND t.name IN ('Finanzas_CortesCaja','Finanzas_CortesCaja_DetallePagos') ORDER BY t.name;"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "ESTELAR connectivity validation before per-unit Gate C"
+  },
+  "human_summary_language": "es"
+}
