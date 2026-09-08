@@ -1,58 +1,58 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "acc7c3a1e478b6c2ca1d27e399cc1f1ba47944f6",
-  "generated_at_utc": "2026-09-08T17:26:52Z",
+  "generated_at_utc": "2026-09-08T17:36:50Z",
   "history": {
-    "done_total_local": 162,
-    "pending_total_local": 1,
+    "done_total_local": 163,
+    "pending_total_local": 0,
     "processing_total_local": 1,
     "rejected_total_local": 306,
-    "results_total_local": 417
+    "results_total_local": 418
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 542,
-      "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-COMMIT-R36-CARLOS-20260908T171900Z",
-      "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
-      "state": "BLOCKED"
-    },
-    {
-      "age_seconds": 729,
+      "age_seconds": 1327,
       "job_id": "EDARSAHUB-ISCAM-CF-DETAIL-WINDOW-PARITY-R35-CARLOS-20260908T163800Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1797,
+      "age_seconds": 2395,
       "job_id": "worker-softrestaurant-cienfuegos-connectivity-dryrun-r1-20260908T1655Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 621,
+      "age_seconds": 585,
       "job_id": "worker-softrestaurant-cienfuegos-write-r1-20260908T1714Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1140,
+      "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-COMMIT-R36-CARLOS-20260908T171900Z",
       "reason": null,
       "state": "RUNNING"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
-  "queue_blocked": 1,
-  "queue_depth": 2,
+  "queue_blocked": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 3,
   "queue_running": 1,
   "runtime": {
-    "current_job_id": "worker-softrestaurant-cienfuegos-write-r1-20260908T1714Z",
+    "current_job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-COMMIT-R36-CARLOS-20260908T171900Z",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-08T17:26:51Z",
-    "last_receive_utc": "2026-09-08T17:26:51Z",
-    "last_terminal_utc": "2026-09-08T17:14:42Z",
-    "pid": "144"
+    "last_cycle_utc": "2026-09-08T17:36:47Z",
+    "last_receive_utc": "2026-09-08T17:36:48Z",
+    "last_terminal_utc": "2026-09-08T17:27:04Z",
+    "pid": "286"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
