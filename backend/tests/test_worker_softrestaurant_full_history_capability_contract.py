@@ -24,7 +24,7 @@ def test_dispatcher_uses_only_fixed_resync_script():
 
 def test_resync_mode_has_no_arbitrary_shell_or_path_contract():
     text = DISPATCHER.read_text(encoding='utf-8')
-    capability = text.split('if str(job.get("mode") or "") == SOFTRESTAURANT_FULL_HISTORY_MODE:', 1)[1].split('requested_paths = sorted(', 1)[0]
+    capability = text.split('if mode == SOFTRESTAURANT_FULL_HISTORY_MODE:', 1)[1].split('worktree, branch = prepare_worktree(', 1)[0]
     assert 'job.get("command")' not in capability
     assert 'job.get("path")' not in capability
     assert 'shell=True' not in capability
