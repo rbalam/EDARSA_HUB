@@ -1,57 +1,57 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "acc7c3a1e478b6c2ca1d27e399cc1f1ba47944f6",
-  "generated_at_utc": "2026-09-08T17:53:48Z",
+  "generated_at_utc": "2026-09-08T17:55:03Z",
   "history": {
     "done_total_local": 163,
     "pending_total_local": 0,
-    "processing_total_local": 1,
-    "rejected_total_local": 306,
-    "results_total_local": 418
+    "processing_total_local": 0,
+    "rejected_total_local": 307,
+    "results_total_local": 419
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2345,
+      "age_seconds": 2420,
       "job_id": "EDARSAHUB-ISCAM-CF-DETAIL-WINDOW-PARITY-R35-CARLOS-20260908T163800Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3413,
+      "age_seconds": 23,
+      "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-COMMIT-R36-CARLOS-20260908T171900Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3488,
       "job_id": "worker-softrestaurant-cienfuegos-connectivity-dryrun-r1-20260908T1655Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1603,
+      "age_seconds": 1678,
       "job_id": "worker-softrestaurant-cienfuegos-write-r1-20260908T1714Z",
       "reason": null,
       "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 50,
-      "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-COMMIT-R36-CARLOS-20260908T171900Z",
-      "reason": null,
-      "state": "RUNNING"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
-  "queue_running": 1,
+  "queue_result_ready_recent": 4,
+  "queue_running": 0,
   "runtime": {
-    "current_job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-COMMIT-R36-CARLOS-20260908T171900Z",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-08T17:53:46Z",
-    "last_receive_utc": "2026-09-08T17:53:47Z",
-    "last_terminal_utc": "2026-09-08T17:27:04Z",
+    "last_cycle_utc": "2026-09-08T17:54:58Z",
+    "last_receive_utc": "2026-09-08T17:54:59Z",
+    "last_terminal_utc": "2026-09-08T17:54:40Z",
     "pid": "286"
   },
   "schema": "edarsahub.worker-health.v3",
