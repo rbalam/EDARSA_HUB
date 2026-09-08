@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "2729c7cbb323f4574f25caa877c6b30a81a84aa8",
-  "generated_at_utc": "2026-09-08T15:50:26Z",
+  "generated_at_utc": "2026-09-08T15:50:37Z",
   "history": {
     "done_total_local": 158,
     "pending_total_local": 0,
@@ -13,31 +13,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 844,
+      "age_seconds": 855,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-DRYRUN-R31-CARLOS-20260908T153500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 828,
+      "age_seconds": 839,
       "job_id": "EDARSAHUB-ISCAM-R31-RUNTIME-VALIDATION-R32-CARLOS-20260908T152500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2238,
+      "age_seconds": 2250,
       "job_id": "worker-softrestaurant-130mid-connectivity-dryrun-r1-20260908T1509Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2756,
+      "age_seconds": 2768,
       "job_id": "worker-softrestaurant-full-history-write-r3-20260908T1500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 342,
+      "age_seconds": 353,
       "job_id": "worker-softrestaurant-130mid-write-r1-20260908T1515Z",
       "reason": null,
       "state": "RUNNING"
@@ -55,8 +55,8 @@
   "runtime": {
     "current_job_id": "worker-softrestaurant-130mid-write-r1-20260908T1515Z",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-08T15:50:24Z",
-    "last_receive_utc": "2026-09-08T15:50:25Z",
+    "last_cycle_utc": "2026-09-08T15:50:35Z",
+    "last_receive_utc": "2026-09-08T15:50:36Z",
     "last_terminal_utc": "2026-09-08T15:36:38Z",
     "pid": "144"
   },
