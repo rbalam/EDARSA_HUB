@@ -1,0 +1,29 @@
+{
+  "base_sha": "81704eff670b162a9b062a3aa6f3d4b0728b1658",
+  "blockers": [],
+  "candidate_sha": "7e679f53f039b69d653b74082d3f610403daafa6",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-08T05:41:26Z",
+  "development_sha": "7e679f53f039b69d653b74082d3f610403daafa6",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_worker_softrestaurant_sanitized_failure_evidence.py",
+    "tools/mirror_sync/universal_job_dispatcher.py",
+    "tools/mirror_sync/universal_job_result_publisher.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-softrestaurant-sanitized-failure-evidence-r1-20260908T0542Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-08T05:41:51Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-08T05:41:21Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos, el worker verifico concurrencia por alcance, aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
