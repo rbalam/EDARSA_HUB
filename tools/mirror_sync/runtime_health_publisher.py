@@ -20,6 +20,8 @@ HEALTH_BRANCH = os.environ.get(
 )
 MIN_INTERVAL = int(os.environ.get("EDARSAHUB_HEARTBEAT_SECONDS", "60"))
 STALE_SECONDS = int(os.environ.get("EDARSAHUB_JOB_STALE_SECONDS", "180"))
+OPERATIONAL_STALE_SECONDS = int(os.environ.get("EDARSAHUB_OPERATIONAL_JOB_STALE_SECONDS", "21600"))
+OPERATIONAL_MODES = {"SOFTRESTAURANT_FULL_HISTORY_RESYNC", "ISCAM_DETAIL_BACKFILL"}
 TERMINAL_RETENTION_SECONDS = int(
     os.environ.get("EDARSAHUB_HEALTH_TERMINAL_RETENTION_SECONDS", "3600")
 )
@@ -66,6 +68,16 @@ def terminal_visible(path: Path) -> bool:
     return age_seconds(path) <= TERMINAL_RETENTION_SECONDS
 
 
+def processing_stale_seconds(path: Path) -> int:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        job = payload.get("job") if isinstance(payload, dict) else None
+        mode = str(job.get("mode") or "") if isinstance(job, dict) else ""
+    except Exception:
+        mode = ""
+    return OPERATIONAL_STALE_SECONDS if mode in OPERATIONAL_MODES else STALE_SECONDS
+
+
 def public_rejection(path: Path) -> dict:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -106,7 +118,8 @@ def queue_jobs() -> list[dict]:
             if path.stem in result_ids:
                 continue
             age = age_seconds(path)
-            effective_state = "BLOCKED" if age >= STALE_SECONDS else "RUNNING"
+            stale_seconds = processing_stale_seconds(path)
+            effective_state = "BLOCKED" if age >= stale_seconds else "RUNNING"
             rows.append(
                 {
                     "job_id": path.stem,
