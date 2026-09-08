@@ -1,0 +1,43 @@
+{
+  "base_sha": "2e76f66103565405272dc571fa9dd9d9af999727",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-09-08T23:58:05Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-softrestaurant-estelar-write-r1-20260908T2354Z",
+  "operation": "SOFTRESTAURANT_FULL_HISTORY_RESYNC",
+  "operation_summary": {
+    "results": [
+      {
+        "corte_windows": 16,
+        "error_domains": [],
+        "error_types": [],
+        "pagos_insertados": 29541,
+        "payment_windows": 16,
+        "status": "PASS",
+        "unidad": "ESTELAR"
+      }
+    ]
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-08T23:58:24Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-08T23:55:56Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker universal ejecuto la capacidad cerrada de resync historico SoftRestaurant y despues certifico el resultado mediante auditoria SQL de solo lectura. No ejecuto shell arbitrario ni acepto rutas o comandos externos.",
+  "tests": "PASS",
+  "units": [
+    "ESTELAR"
+  ],
+  "work_completion": "COMPLETE"
+}
