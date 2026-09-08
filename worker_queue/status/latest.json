@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "0ab55e369598fcaac07e9754b856ecea09abf028",
-  "generated_at_utc": "2026-09-08T17:01:58Z",
+  "generated_at_utc": "2026-09-08T17:03:13Z",
   "history": {
     "done_total_local": 161,
     "pending_total_local": 0,
@@ -13,31 +13,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2197,
+      "age_seconds": 2271,
       "job_id": "EDARSAHUB-ISCAM-CF-AUG2026-DETAIL-BACKFILL-DRYRUN-R34-CARLOS-20260908T162400Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2249,
+      "age_seconds": 2324,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-COMMIT-R33-CARLOS-20260908T154100Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2178,
+      "age_seconds": 2252,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-COMMIT-R34-CARLOS-20260908T162500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2856,
+      "age_seconds": 2931,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-PARITY-BACKFILL-R33-CARLOS-20260908T161000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 303,
+      "age_seconds": 378,
       "job_id": "worker-softrestaurant-cienfuegos-connectivity-dryrun-r1-20260908T1655Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -55,8 +55,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-08T17:01:57Z",
-    "last_receive_utc": "2026-09-08T17:01:58Z",
+    "last_cycle_utc": "2026-09-08T17:03:09Z",
+    "last_receive_utc": "2026-09-08T17:03:10Z",
     "last_terminal_utc": "2026-09-08T16:56:54Z",
     "pid": "144"
   },
