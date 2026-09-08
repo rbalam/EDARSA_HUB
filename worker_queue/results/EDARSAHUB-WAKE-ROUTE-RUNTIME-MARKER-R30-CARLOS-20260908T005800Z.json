@@ -1,0 +1,27 @@
+{
+  "base_sha": "830d25bc74c023ef3734e0b0d6b755ffdf41d04c",
+  "blockers": [],
+  "candidate_sha": "56b0e25ca4d6142d3cabd82730c75fcf88e931df",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-08T00:57:32Z",
+  "development_sha": "56b0e25ca4d6142d3cabd82730c75fcf88e931df",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/worker_runtime_wake/routes.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-WAKE-ROUTE-RUNTIME-MARKER-R30-CARLOS-20260908T005800Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-08T00:57:47Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-08T00:57:25Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos, el worker aplico solamente esos cambios, las validaciones pasaron y el commit quedo integrado en Edarsahub_Desarrollo. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
