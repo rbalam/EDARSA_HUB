@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-CF-AUG2026-DETAIL-BACKFILL-DRYRUN-R36-CARLOS-20260908T184500Z",
+  "created_at_utc": "2026-09-08T18:45:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "acc7c3a1e478b6c2ca1d27e399cc1f1ba47944f6",
+  "production_allowed": false,
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "objective": "DRY RUN posterior a R35 para CIENFUEGOS agosto 2026. Validar que el extractor de detalle con ventana identica al header SoftRestaurant [09:00, siguiente 09:00) ahora concilia por fecha contra vw_Comercial_KPIs_Diarios_v2_Runtime, incluyendo los dias historicamente ausentes 2026-08-01..13 y 2026-08-18 y los MISMATCH detectados en Issue #82. No escribir datos. Requerir cero dias BLOQUEADO para autorizar el backfill REAL. Mantener cheques.total como neto autoritativo, turnos.apertura para fecha operativa, cierre IS NOT NULL solo elegibilidad; no usar Sync_Sales ni totalsrx/subtotalsrx. Produccion prohibida.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "actions": [],
+  "units": ["CIENFUEGOS"],
+  "fecha_inicio": "2026-08-01",
+  "fecha_fin": "2026-09-01",
+  "dry_run": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "cf_aug_runtime_total",
+          "sql": "SELECT CAST(SUM(ISNULL(ventas_total,0)) AS decimal(18,2)) AS ventas_runtime, SUM(ISNULL(tickets_total,0)) AS tickets_runtime, SUM(ISNULL(pax_total,0)) AS pax_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion >= '2026-08-01' AND fecha_operacion < '2026-09-01'"
+        },
+        {
+          "name": "cf_aug_detail_total_before",
+          "sql": "SELECT CAST(SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN ISNULL(importe_neto,0) ELSE 0 END) AS decimal(18,2)) AS ventas_detalle, COUNT(DISTINCT CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN id_transaccion END) AS tickets_detalle, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN ISNULL(pax,0) ELSE 0 END) AS pax_detalle FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion >= '2026-08-01' AND fecha_operacion < '2026-09-01' AND ISNULL(activo,1)=1"
+        }
+      ]
+    }
+  ]
+}
