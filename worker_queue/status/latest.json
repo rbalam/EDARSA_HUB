@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "60271740a535e216c3b7e032fa579dc66f71b1bc",
-  "generated_at_utc": "2026-09-08T06:00:01Z",
+  "generated_at_utc": "2026-09-08T06:01:13Z",
   "history": {
     "done_total_local": 156,
     "pending_total_local": 0,
@@ -13,97 +13,97 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1946,
+      "age_seconds": 2019,
       "job_id": "worker-concurrency-deterministic-replay-no-rebase-r6-20260908T0524Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3507,
+      "age_seconds": 3580,
       "job_id": "worker-concurrency-r5-runtime-call-isolation-r1-20260908T0507Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3116,
+      "age_seconds": 3189,
       "job_id": "worker-concurrency-r5-runtime-group-a-r1-20260908T0514Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3112,
+      "age_seconds": 3184,
       "job_id": "worker-concurrency-r5-runtime-group-b-r1-20260908T0514Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3438,
+      "age_seconds": 3511,
       "job_id": "worker-concurrency-r5-runtime-integrate-r1-20260908T0510Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3443,
+      "age_seconds": 3515,
       "job_id": "worker-concurrency-r5-runtime-others-r1-20260908T0510Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1226,
+      "age_seconds": 1299,
       "job_id": "worker-health-operational-stale-threshold-r1-20260908T0540Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3020,
+      "age_seconds": 3093,
       "job_id": "worker-runtime-baseline-a1-20260908T0518Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3011,
+      "age_seconds": 3084,
       "job_id": "worker-runtime-baseline-a2-20260908T0518Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3004,
+      "age_seconds": 3077,
       "job_id": "worker-runtime-baseline-b1-20260908T0518Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2999,
+      "age_seconds": 3071,
       "job_id": "worker-runtime-baseline-b2-20260908T0518Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3152,
+      "age_seconds": 3224,
       "job_id": "worker-runtime-credential-helper-test-hardening-r1-20260908T0509Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2901,
+      "age_seconds": 2974,
       "job_id": "worker-runtime-test-harness-hardening-r2-20260908T0521Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1297,
+      "age_seconds": 1370,
       "job_id": "worker-softrestaurant-full-history-write-r1-20260908T0534Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 711,
+      "age_seconds": 783,
       "job_id": "worker-softrestaurant-full-history-write-r2-20260908T0543Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1114,
+      "age_seconds": 1186,
       "job_id": "worker-softrestaurant-sanitized-failure-evidence-r1-20260908T0542Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -121,8 +121,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-08T05:59:56Z",
-    "last_receive_utc": "2026-09-08T05:59:58Z",
+    "last_cycle_utc": "2026-09-08T06:01:10Z",
+    "last_receive_utc": "2026-09-08T06:01:10Z",
     "last_terminal_utc": "2026-09-08T05:48:09Z",
     "pid": "287"
   },
