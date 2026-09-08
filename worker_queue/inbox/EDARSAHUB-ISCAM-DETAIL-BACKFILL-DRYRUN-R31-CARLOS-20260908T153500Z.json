@@ -1,0 +1,20 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-ISCAM-DETAIL-BACKFILL-DRYRUN-R31-CARLOS-20260908T153500Z",
+  "created_at_utc":"2026-09-08T15:35:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"2729c7cbb323f4574f25caa877c6b30a81a84aa8",
+  "production_allowed":false,
+  "mode":"ISCAM_DETAIL_BACKFILL",
+  "objective":"Dry-run controlado del backfill canonico de detalle ISCAM para ESTELAR, CIENFUEGOS y 130MID del 1 al 7 de septiembre de 2026. No escribir datos. Identificar dias ya conciliados, reparables, bloqueados o sin Runtime usando el contrato canonico por turnos.apertura antes de autorizar el backfill real.",
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer",
+  "actions":[],
+  "units":["ESTELAR","CIENFUEGOS","130MID"],
+  "fecha_inicio":"2026-09-01",
+  "fecha_fin":"2026-09-08",
+  "dry_run":true,
+  "checks":[{"type":"sql_readonly_audit","queries":[{"name":"detalle_frescura_por_unidad","sql":"SELECT unidad_negocio_id, unidad_negocio_nombre, MIN(fecha_operacion) AS fecha_min, MAX(fecha_operacion) AS fecha_max, COUNT(*) AS filas FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('ESTELAR','CIENFUEGOS','130MID') AND ISNULL(activo,1)=1 GROUP BY unidad_negocio_id,unidad_negocio_nombre ORDER BY unidad_negocio_id"},{"name":"detalle_cobertura_1_7_sep","sql":"SELECT unidad_negocio_id, fecha_operacion, COUNT(DISTINCT CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN numero_ticket END) AS tickets, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN ISNULL(pax,0) ELSE 0 END) AS pax, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN ISNULL(importe_neto,0) ELSE 0 END) AS ventas_neto FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('ESTELAR','CIENFUEGOS','130MID') AND fecha_operacion >= '2026-09-01' AND fecha_operacion < '2026-09-08' AND ISNULL(activo,1)=1 GROUP BY unidad_negocio_id, fecha_operacion ORDER BY unidad_negocio_id, fecha_operacion"}]}]
+}
