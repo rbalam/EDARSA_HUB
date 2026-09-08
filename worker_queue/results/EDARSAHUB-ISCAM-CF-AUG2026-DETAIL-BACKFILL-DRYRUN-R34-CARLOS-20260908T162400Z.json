@@ -1,0 +1,30 @@
+{
+  "base_sha": "0ab55e369598fcaac07e9754b856ecea09abf028",
+  "blockers": [
+    "iscam_detail_backfill_failed:rc=1"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-08T16:25:21Z",
+  "dry_run": true,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-CF-AUG2026-DETAIL-BACKFILL-DRYRUN-R34-CARLOS-20260908T162400Z",
+  "operation": "ISCAM_DETAIL_BACKFILL",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-08T16:25:21Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-08T16:24:51Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "work_completion": "NOT_CERTIFIED"
+}
