@@ -1,0 +1,21 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-lifecycle-operational-complete-done-r1-20260908T0338Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Cerrar Gate A lifecycle sin modificar la logica ya correcta del dispatcher: agregar una prueba de regresion que certifique explicitamente que OPERATIONAL_COMPLETE se enruta al directorio DONE y no a REJECTED. No tocar Production, no usar base_sha y preservar el flujo latest-at-pickup.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_operational_complete_lifecycle.py",
+      "content": "from pathlib import Path\nimport re\n\nROOT = Path(__file__).resolve().parents[2]\nDISPATCHER = ROOT / 'tools' / 'mirror_sync' / 'universal_job_dispatcher.py'\n\n\ndef test_operational_complete_routes_to_done_not_rejected():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    match = re.search(\n        r'target = DONE / path\\.name if result\\[\\\"status\\\"\\] in \\{([^}]*)\\} else REJECTED / path\\.name',\n        text,\n    )\n    assert match is not None, 'terminal lifecycle routing expression not found'\n    terminal_done_states = {\n        token.strip().strip('\\\"\\\'')\n        for token in match.group(1).split(',')\n        if token.strip()\n    }\n    assert 'OPERATIONAL_COMPLETE' in terminal_done_states\n    assert 'READ_ONLY_COMPLETE' in terminal_done_states\n    assert 'INTEGRATED' in terminal_done_states\n"
+    }
+  ],
+  "checks": [
+    {"type": "pytest", "paths": ["backend/tests/test_worker_operational_complete_lifecycle.py", "backend/tests/test_worker_softrestaurant_full_history_capability_contract.py"]},
+    {"type": "git_diff_check"}
+  ],
+  "requester": {"email": "ricardo@edarsa.com.mx", "source": "chatgpt-classic", "project": "EDARSAHUB BOS V1.0"},
+  "human_summary_language": "es"
+}
