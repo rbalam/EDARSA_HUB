@@ -1,0 +1,5 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "pickup the three already-emitted concurrency pytest isolation probes; diagnostic only; do not modify worker, dispatcher, supervisor, watchdog or Production",
+  "production_touched": false
+}
