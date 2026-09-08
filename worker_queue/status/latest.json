@@ -1,19 +1,28 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "60271740a535e216c3b7e032fa579dc66f71b1bc",
-  "generated_at_utc": "2026-09-08T04:58:21Z",
+  "generated_at_utc": "2026-09-08T04:59:34Z",
   "history": {
     "done_total_local": 152,
     "pending_total_local": 0,
-    "processing_total_local": 0,
-    "rejected_total_local": 286,
+    "processing_total_local": 1,
+    "rejected_total_local": 287,
     "results_total_local": 388
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 4,
+      "age_seconds": 60,
+      "job_id": "worker-concurrency-r5-isolate-runtime-20260908T0501Z",
+      "reasons": [
+        "CHECK_2_INVALID_TYPE"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 76,
       "job_id": "worker-concurrency-r5-isolate-scope-20260908T0500Z",
       "reasons": [
         "CHECK_2_INVALID_TYPE"
@@ -22,74 +31,80 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3411,
+      "age_seconds": 3484,
       "job_id": "worker-concurrency-deterministic-replay-no-rebase-r1-20260908T0402Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3249,
+      "age_seconds": 3322,
       "job_id": "worker-concurrency-deterministic-replay-no-rebase-r2-20260908T0408Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2038,
+      "age_seconds": 2111,
       "job_id": "worker-concurrency-deterministic-replay-no-rebase-r3-20260908T0424Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1804,
+      "age_seconds": 1877,
       "job_id": "worker-concurrency-deterministic-replay-no-rebase-r4-20260908T0430Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 408,
+      "age_seconds": 480,
       "job_id": "worker-concurrency-deterministic-replay-no-rebase-r5-20260908T0453Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2495,
+      "age_seconds": 2568,
       "job_id": "worker-concurrency-pytest-isolation-replay-r1-20260908T0415Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2490,
+      "age_seconds": 2563,
       "job_id": "worker-concurrency-pytest-isolation-runtime-r1-20260908T0415Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2506,
+      "age_seconds": 2579,
       "job_id": "worker-concurrency-pytest-isolation-scope-r1-20260908T0415Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 330,
+      "age_seconds": 402,
       "job_id": "worker-concurrency-r4-isolation-scope-r1-20260908T0449Z",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3,
+      "job_id": "worker-concurrency-r5-isolate-scope-r2-20260908T0504Z",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 1,
+  "queue_rejected_recent": 2,
   "queue_result_ready_recent": 9,
-  "queue_running": 0,
+  "queue_running": 1,
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "worker-concurrency-r5-isolate-scope-r2-20260908T0504Z",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-08T04:58:16Z",
-    "last_receive_utc": "2026-09-08T04:58:17Z",
+    "last_cycle_utc": "2026-09-08T04:59:29Z",
+    "last_receive_utc": "2026-09-08T04:59:30Z",
     "last_terminal_utc": "2026-09-08T04:52:51Z",
     "pid": "181"
   },
