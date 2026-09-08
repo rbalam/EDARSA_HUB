@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-ALMACENES-REGRESSION-AUDIT-R1-20260908T162700Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Auditar SQL-first la regresion de Operaciones > Analisis de Inventarios donde no se enlistan almacenes y, por dependencia, desaparecen recurrentemente inventarios iniciales/finales. Identificar exclusivamente la fuente canonica EDARSAHUB SQL existente para almacenes por unidad y la fuente canonica ya publicada para inventarios fisicos. No crear tablas/columnas, no LIVE POS, no Mongo, no hardcodes, no DML/DDL. La evidencia debe permitir parche determinista y pruebas anti-regresion que garanticen Unidad -> Almacenes -> Inventarios inicial/final.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "warehouse_candidate_tables",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name LIKE '%Almacen%' OR t.name LIKE '%Inventario%' ORDER BY t.name;"
+        },
+        {
+          "name": "warehouse_candidate_columns",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE '%Almacen%' OR t.name IN ('Unidades_Negocio','Comercial_Inventarios_Fisicos','Inventarios_Fisicos','Inventario_Fisico') ORDER BY t.name,c.column_id;"
+        },
+        {
+          "name": "cienfuegos_unit_identity",
+          "sql": "SELECT CAST(id AS varchar(100)) AS unidad_id, codigo, nombre, CAST(server_id AS varchar(100)) AS server_id, sucursal_origen_id, system_type, activo FROM dbo.Unidades_Negocio WHERE UPPER(codigo)='CIENFUEGOS' OR UPPER(nombre) LIKE '%CIENFUEGOS%';"
+        },
+        {
+          "name": "inventory_canonical_candidate_views",
+          "sql": "SELECT s.name AS schema_name, v.name AS view_name FROM sys.views v JOIN sys.schemas s ON s.schema_id=v.schema_id WHERE v.name LIKE '%Invent%' OR v.name LIKE '%Almacen%' ORDER BY v.name;"
+        },
+        {
+          "name": "inventory_sync_tables_columns",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE '%Inventario%Fisic%' OR t.name LIKE '%Inventarios%Sync%' OR t.name LIKE '%Inventario%Sync%' ORDER BY t.name,c.column_id;"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Inventarios Analisis - blindaje almacenes e inventarios"
+  },
+  "human_summary_language": "es"
+}
