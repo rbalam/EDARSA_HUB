@@ -1,0 +1,21 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-ISCAM-DETAIL-BACKFILL-COMMIT-R33-CARLOS-20260908T154100Z",
+  "created_at_utc":"2026-09-08T15:41:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"2729c7cbb323f4574f25caa877c6b30a81a84aa8",
+  "production_allowed":false,
+  "mode":"ISCAM_DETAIL_BACKFILL",
+  "objective":"Ejecutar ahora el backfill REAL y fail-closed del detalle canonico ISCAM para ESTELAR, CIENFUEGOS y 130MID del 1 al 7 de septiembre de 2026. Escribir exclusivamente dias que pasen OK_HEADER_CANONICO contra Runtime V2 usando el contrato por turnos.apertura; no escribir dias bloqueados o sin Runtime. Certificar posteriormente por SQL de solo lectura. Produccion no se toca.",
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer",
+  "actions":[],
+  "units":["ESTELAR","CIENFUEGOS","130MID"],
+  "fecha_inicio":"2026-09-01",
+  "fecha_fin":"2026-09-08",
+  "dry_run":false,
+  "confirm_detail_backfill":true,
+  "checks":[{"type":"sql_readonly_audit","queries":[{"name":"detalle_frescura_post_backfill","sql":"SELECT unidad_negocio_id, unidad_negocio_nombre, MIN(fecha_operacion) AS fecha_min, MAX(fecha_operacion) AS fecha_max, COUNT(*) AS filas FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('ESTELAR','CIENFUEGOS','130MID') AND ISNULL(activo,1)=1 GROUP BY unidad_negocio_id,unidad_negocio_nombre ORDER BY unidad_negocio_id"},{"name":"detalle_cobertura_post_backfill_1_7_sep","sql":"SELECT unidad_negocio_id, fecha_operacion, COUNT(DISTINCT CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN numero_ticket END) AS tickets, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN ISNULL(pax,0) ELSE 0 END) AS pax, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN ISNULL(importe_neto,0) ELSE 0 END) AS ventas_neto FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('ESTELAR','CIENFUEGOS','130MID') AND fecha_operacion >= '2026-09-01' AND fecha_operacion < '2026-09-08' AND ISNULL(activo,1)=1 GROUP BY unidad_negocio_id, fecha_operacion ORDER BY unidad_negocio_id, fecha_operacion"}]}]
+}
