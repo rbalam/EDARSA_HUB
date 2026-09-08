@@ -1,0 +1,31 @@
+{
+  "base_sha": "2729c7cbb323f4574f25caa877c6b30a81a84aa8",
+  "blockers": [],
+  "candidate_sha": "0ab55e369598fcaac07e9754b856ecea09abf028",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-08T16:14:21Z",
+  "development_sha": "0ab55e369598fcaac07e9754b856ecea09abf028",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/api/admin_scheduler_resync.py",
+    "backend/modules/inteligencia_comercial/iscam_routes.py",
+    "backend/scripts/backfill_detalle_producto_pendientes.py",
+    "backend/tests/test_iscam_detail_parity_backfill_r33.py",
+    "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-DETAIL-PARITY-BACKFILL-R33-CARLOS-20260908T161000Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-08T16:14:44Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-08T16:12:17Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
