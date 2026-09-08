@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "60271740a535e216c3b7e032fa579dc66f71b1bc",
-  "generated_at_utc": "2026-09-08T05:58:46Z",
+  "generated_at_utc": "2026-09-08T06:00:01Z",
   "history": {
     "done_total_local": 156,
     "pending_total_local": 0,
@@ -13,109 +13,97 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1871,
+      "age_seconds": 1946,
       "job_id": "worker-concurrency-deterministic-replay-no-rebase-r6-20260908T0524Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3537,
-      "job_id": "worker-concurrency-r5-isolate-runtime-r2-20260908T0504Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3550,
-      "job_id": "worker-concurrency-r5-isolate-scope-r2-20260908T0504Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3432,
+      "age_seconds": 3507,
       "job_id": "worker-concurrency-r5-runtime-call-isolation-r1-20260908T0507Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3042,
+      "age_seconds": 3116,
       "job_id": "worker-concurrency-r5-runtime-group-a-r1-20260908T0514Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3037,
+      "age_seconds": 3112,
       "job_id": "worker-concurrency-r5-runtime-group-b-r1-20260908T0514Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3363,
+      "age_seconds": 3438,
       "job_id": "worker-concurrency-r5-runtime-integrate-r1-20260908T0510Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3368,
+      "age_seconds": 3443,
       "job_id": "worker-concurrency-r5-runtime-others-r1-20260908T0510Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1151,
+      "age_seconds": 1226,
       "job_id": "worker-health-operational-stale-threshold-r1-20260908T0540Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2945,
+      "age_seconds": 3020,
       "job_id": "worker-runtime-baseline-a1-20260908T0518Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2936,
+      "age_seconds": 3011,
       "job_id": "worker-runtime-baseline-a2-20260908T0518Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2930,
+      "age_seconds": 3004,
       "job_id": "worker-runtime-baseline-b1-20260908T0518Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2924,
+      "age_seconds": 2999,
       "job_id": "worker-runtime-baseline-b2-20260908T0518Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3077,
+      "age_seconds": 3152,
       "job_id": "worker-runtime-credential-helper-test-hardening-r1-20260908T0509Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2826,
+      "age_seconds": 2901,
       "job_id": "worker-runtime-test-harness-hardening-r2-20260908T0521Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1222,
+      "age_seconds": 1297,
       "job_id": "worker-softrestaurant-full-history-write-r1-20260908T0534Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 636,
+      "age_seconds": 711,
       "job_id": "worker-softrestaurant-full-history-write-r2-20260908T0543Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1039,
+      "age_seconds": 1114,
       "job_id": "worker-softrestaurant-sanitized-failure-evidence-r1-20260908T0542Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -128,13 +116,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 18,
+  "queue_result_ready_recent": 16,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-08T05:58:24Z",
-    "last_receive_utc": "2026-09-08T05:58:44Z",
+    "last_cycle_utc": "2026-09-08T05:59:56Z",
+    "last_receive_utc": "2026-09-08T05:59:58Z",
     "last_terminal_utc": "2026-09-08T05:48:09Z",
     "pid": "287"
   },
