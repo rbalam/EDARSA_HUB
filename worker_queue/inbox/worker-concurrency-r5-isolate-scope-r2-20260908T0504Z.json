@@ -1,0 +1,19 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"worker-concurrency-r5-isolate-scope-r2-20260908T0504Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Probe diagnostico descartable para aislar exclusivamente el pytest de scope policy del candidato R5. Si pytest pasa, py_compile intencional inexistente debe bloquear. No integrar ni tocar Production.",
+  "actions":[
+    {"type":"replace_text","path":"tools/mirror_sync/worker_concurrency.py","expected_count":1,"old":"    if conflicts:\n        decision = \"SCOPE_CONFLICT\"\n    elif scope or allow_empty_scope_advance:\n        decision = \"SAFE_REBASE\"\n    else:\n        decision = \"EMPTY_SCOPE_STRICT\"","new":"    if conflicts:\n        decision = \"SCOPE_CONFLICT\"\n    elif scope or allow_empty_scope_advance:\n        decision = \"SAFE_REPLAY\"\n    else:\n        decision = \"EMPTY_SCOPE_STRICT\""},
+    {"type":"replace_text","path":"backend/tests/test_universal_worker_scope_concurrency_policy.py","expected_count":2,"old":"SAFE_REBASE","new":"SAFE_REPLAY"},
+    {"type":"replace_text","path":"backend/tests/test_universal_worker_scope_concurrency_policy.py","expected_count":1,"old":"def test_unrelated_head_advance_is_safe_rebase():","new":"def test_unrelated_head_advance_is_safe_replay():"}
+  ],
+  "checks":[
+    {"type":"pytest","paths":["backend/tests/test_universal_worker_scope_concurrency_policy.py"]},
+    {"type":"py_compile","paths":["backend/tests/__intentional_missing_r5_scope__.py"]}
+  ],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
