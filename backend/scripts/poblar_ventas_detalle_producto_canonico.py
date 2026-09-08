@@ -689,35 +689,21 @@ def _unidad_operativa_id_for_window(cfg: Dict[str, Any]) -> str:
 
 
 def _soft_operational_datetime_range(cfg: Dict[str, Any], dia: date) -> Tuple[str, str]:
+    """Ventana del detalle idéntica al header Comercial V2 SoftRestaurant.
+
+    El contrato vigente de build_softrestaurant_ventas_cerradas_query asigna
+    cada fecha_operacion por turnos.apertura desde las 09:00 del día hasta
+    antes de las 09:00 del siguiente día. El detalle NO puede usar una segunda
+    definición horaria porque desplaza tickets entre fechas y rompe la paridad
+    contra Runtime V2.
     """
-    Rango POS canónico para SoftRestaurant usando FechaOperacion.
-    Reemplaza el rango civil dia 00:00 -> dia+1 00:00.
-    No usa Mongo.
-    """
-    from core.utils.operational_window import (
-        get_operational_datetime_range_for_fecha_operacion,
+    del cfg
+    inicio = datetime.combine(dia, datetime.min.time()).replace(hour=9)
+    fin = inicio + timedelta(days=1)
+    return (
+        inicio.strftime("%Y-%m-%d %H:%M:%S"),
+        fin.strftime("%Y-%m-%d %H:%M:%S"),
     )
-
-    unidad_operativa = _unidad_operativa_id_for_window(cfg)
-    inicio, fin, meta = get_operational_datetime_range_for_fecha_operacion(
-        unidad_operativa,
-        dia,
-    )
-
-    print({
-        "soft_operational_window": unidad_operativa,
-        "fecha_operacion": dia.isoformat(),
-        "turno_inicio_codigo": meta.get("turno_inicio_codigo"),
-        "turno_fin_codigo": meta.get("turno_fin_codigo"),
-        "hora_inicio": str(meta.get("hora_inicio")),
-        "hora_fin": str(meta.get("hora_fin")),
-        "cruza_medianoche": bool(meta.get("cruza_medianoche")),
-        "turnos_count": meta.get("turnos_count"),
-        "query_inicio": inicio.strftime("%Y-%m-%d %H:%M:%S"),
-        "query_fin": fin.strftime("%Y-%m-%d %H:%M:%S"),
-    })
-
-    return inicio.strftime("%Y-%m-%d %H:%M:%S"), fin.strftime("%Y-%m-%d %H:%M:%S")
 
 
 def _softrestaurant_empresa_id_for_window(conn, fi: str, ff: str) -> str:
