@@ -1,0 +1,52 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-CF-DETAIL-WINDOW-PARITY-R35-CARLOS-20260908T163800Z",
+  "created_at_utc": "2026-09-08T16:38:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "0ab55e369598fcaac07e9754b856ecea09abf028",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir el bloqueo R34. SQL Auditor Issue #82 demuestra que CIENFUEGOS agosto tiene detalle ausente 2026-08-01..13 y 2026-08-18, y varios MISMATCH de un ticket/importe desplazado entre dias (ej. 20: detalle +15000 y 21: detalle -15000; otros pares similares). La causa en codigo es que el header canónico Comercial V2 usa turnos.apertura 09:00:00 -> siguiente dia 08:59:59 en build_softrestaurant_ventas_cerradas_query, mientras el extractor de detalle usa _soft_operational_datetime_range() basado en Sistema_TurnosOperativosUnidad, creando un universo temporal distinto. Hacer que el detalle SoftRestaurant use EXACTAMENTE la misma ventana de apertura del header canónico: [dia 09:00:00, dia+1 09:00:00), con cierre IS NOT NULL solo como elegibilidad. No cambiar Ventas por Periodo ni Runtime V2. No tocar Produccion.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "def _soft_operational_datetime_range(cfg: Dict[str, Any], dia: date) -> Tuple[str, str]:\n    \"\"\"\n    Rango POS canónico para SoftRestaurant usando FechaOperacion.\n    Reemplaza el rango civil dia 00:00 -> dia+1 00:00.\n    No usa Mongo.\n    \"\"\"\n    from core.utils.operational_window import (\n        get_operational_datetime_range_for_fecha_operacion,\n    )\n\n    unidad_operativa = _unidad_operativa_id_for_window(cfg)\n    inicio, fin, meta = get_operational_datetime_range_for_fecha_operacion(\n        unidad_operativa,\n        dia,\n    )\n\n    print({\n        \"soft_operational_window\": unidad_operativa,\n        \"fecha_operacion\": dia.isoformat(),\n        \"turno_inicio_codigo\": meta.get(\"turno_inicio_codigo\"),\n        \"turno_fin_codigo\": meta.get(\"turno_fin_codigo\"),\n        \"hora_inicio\": str(meta.get(\"hora_inicio\")),\n        \"hora_fin\": str(meta.get(\"hora_fin\")),\n        \"cruza_medianoche\": bool(meta.get(\"cruza_medianoche\")),\n        \"turnos_count\": meta.get(\"turnos_count\"),\n        \"query_inicio\": inicio.strftime(\"%Y-%m-%d %H:%M:%S\"),\n        \"query_fin\": fin.strftime(\"%Y-%m-%d %H:%M:%S\"),\n    })\n\n    return inicio.strftime(\"%Y-%m-%d %H:%M:%S\"), fin.strftime(\"%Y-%m-%d %H:%M:%S\")",
+      "new": "def _soft_operational_datetime_range(cfg: Dict[str, Any], dia: date) -> Tuple[str, str]:\n    \"\"\"Ventana del detalle idéntica al header Comercial V2 SoftRestaurant.\n\n    El contrato vigente de build_softrestaurant_ventas_cerradas_query asigna\n    cada fecha_operacion por turnos.apertura desde las 09:00 del día hasta\n    antes de las 09:00 del siguiente día. El detalle NO puede usar una segunda\n    definición horaria porque desplaza tickets entre fechas y rompe la paridad\n    contra Runtime V2.\n    \"\"\"\n    del cfg\n    inicio = datetime.combine(dia, datetime.min.time()).replace(hour=9)\n    fin = inicio + timedelta(days=1)\n    return (\n        inicio.strftime(\"%Y-%m-%d %H:%M:%S\"),\n        fin.strftime(\"%Y-%m-%d %H:%M:%S\"),\n    )",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_soft_detail_window_parity_r35.py",
+      "content": "from datetime import date\nfrom pathlib import Path\n\nfrom scripts.poblar_ventas_detalle_producto_canonico import _soft_operational_datetime_range\n\nROOT = Path(__file__).resolve().parents[2]\nSYNC = ROOT / 'backend' / 'modules' / 'comercial_v2' / 'sync_comercial_edarsahub.py'\nDETAIL = ROOT / 'backend' / 'scripts' / 'poblar_ventas_detalle_producto_canonico.py'\n\n\ndef test_detail_window_is_same_09_to_09_contract_as_header():\n    fi, ff = _soft_operational_datetime_range({}, date(2026, 8, 20))\n    assert fi == '2026-08-20 09:00:00'\n    assert ff == '2026-08-21 09:00:00'\n\n\ndef test_header_and_detail_both_assign_by_turnos_apertura():\n    header = SYNC.read_text(encoding='utf-8')\n    detail = DETAIL.read_text(encoding='utf-8')\n    assert \"inicio_operativo=fecha_actual.strftime('%Y-%m-%d 09:00:00')\" in header\n    assert \"fin_operativo=fecha_siguiente.strftime('%Y-%m-%d 08:59:59')\" in header\n    block = detail.split('def _extract_soft(', 1)[1].split('def _mpro_operational_datetime_range', 1)[0]\n    assert 'tr.apertura >= %s' in block\n    assert 'tr.apertura < %s' in block\n    assert 'tr.cierre IS NOT NULL' in block\n    assert 'tr.cierre >=' not in block\n    assert 'tr.cierre <' not in block\n\n\ndef test_detail_does_not_use_separate_operational_window_service_anymore():\n    fn = DETAIL.read_text(encoding='utf-8').split('def _soft_operational_datetime_range', 1)[1].split('def _softrestaurant_empresa_id_for_window', 1)[0]\n    assert 'get_operational_datetime_range_for_fecha_operacion' not in fn\n    assert 'Sistema_TurnosOperativosUnidad' not in fn\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+        "backend/tests/test_iscam_soft_detail_window_parity_r35.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_soft_detail_window_parity_r35.py",
+        "backend/tests/test_iscam_detail_parity_backfill_r33.py",
+        "backend/tests/test_iscam_ventas_periodos_executive_parity_r3.py",
+        "backend/tests/test_sync_comercial_v2_detail_integration_contract.py"
+      ]
+    }
+  ]
+}
