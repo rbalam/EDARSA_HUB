@@ -628,11 +628,60 @@ WHERE idempresa = '{empresa_id}'
   AND idturno IN (
       SELECT idturno FROM turnos
       WHERE idempresa = '{empresa_id}'
-        AND apertura BETWEEN '{inicio_operativo}' AND '{fin_operativo}'
+        AND apertura >= '{inicio_operativo}'
+        AND apertura < '{fin_operativo}'
         AND cierre IS NOT NULL
   )
   AND cancelado = 0
 """
+
+
+def _resolve_softrestaurant_empresa_id_for_window(
+    server_config: Dict[str, Any],
+    inicio_operativo: str,
+    fin_operativo: str,
+) -> str:
+    """Resuelve idempresa desde turnos cerrados del mismo dia operativo."""
+    discovery_query = """
+SELECT DISTINCT
+    LTRIM(RTRIM(CONVERT(NVARCHAR(100), t.idempresa))) AS empresa_id
+FROM turnos AS t
+WHERE t.apertura >= '{inicio_operativo}'
+  AND t.apertura < '{fin_operativo}'
+  AND t.cierre IS NOT NULL
+  AND NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(100), t.idempresa))), '') IS NOT NULL
+ORDER BY empresa_id
+""".format(
+        inicio_operativo=inicio_operativo,
+        fin_operativo=fin_operativo,
+    )
+    discovery_rows, discovery_status = execute_query_on_server(
+        server_config, discovery_query
+    )
+    if discovery_status != ConnectionStatus.ONLINE:
+        raise ValueError(
+            "No fue posible resolver idempresa desde el origen SoftRestaurant"
+        )
+    candidates = sorted({
+        str(row.get("empresa_id") or "").strip()
+        for row in discovery_rows or []
+        if str(row.get("empresa_id") or "").strip()
+    })
+    if len(candidates) == 1:
+        configured = str((server_config or {}).get("empresa_id") or "").strip()
+        if configured and configured != candidates[0]:
+            logger.warning(
+                "SoftRestaurant empresa_id del catalogo difiere del origen; "
+                "se usara turnos.idempresa de la ventana operativa"
+            )
+        return candidates[0]
+    if not candidates:
+        raise ValueError(
+            "No se encontro idempresa en turnos cerrados de la ventana operativa"
+        )
+    raise ValueError(
+        "Se encontraron multiples idempresa en la ventana operativa SoftRestaurant"
+    )
 
 
 def build_softrestaurant_ventas_cerradas_query(
@@ -640,69 +689,22 @@ def build_softrestaurant_ventas_cerradas_query(
     fecha_inicio: date,
     fecha_fin: date,
 ) -> str:
-    """Construye el SELECT oficial de ventas cerradas por turno.
-
-    empresa_id se toma primero del catalogo canonico. Si la conexion legacy no
-    lo tiene, se descubre en modo read-only desde turnos cerrados del mismo
-    rango y solo se acepta cuando existe un unico candidato.
-    """
-    empresa_id = str(
-        (server_config or {}).get("empresa_id") or ""
-    ).strip()
-
-    if not empresa_id:
-        discovery_query = """
-SELECT DISTINCT
-    LTRIM(RTRIM(CONVERT(NVARCHAR(100), t.idempresa))) AS empresa_id
-FROM turnos AS t
-WHERE t.apertura >= DATEADD(DAY, -1, CONVERT(DATETIME, REPLACE('{fecha_inicio}', '-', ''), 112))
-  AND t.apertura < DATEADD(DAY, 2, CONVERT(DATETIME, REPLACE('{fecha_fin}', '-', ''), 112))
-  AND t.cierre IS NOT NULL
-  AND NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(100), t.idempresa))), '') IS NOT NULL
-ORDER BY empresa_id
-""".format(
-            fecha_inicio=fecha_inicio.isoformat(),
-            fecha_fin=fecha_fin.isoformat(),
-        )
-        discovery_rows, discovery_status = execute_query_on_server(
-            server_config,
-            discovery_query,
-        )
-        if discovery_status != ConnectionStatus.ONLINE:
-            raise ValueError(
-                "No fue posible resolver idempresa desde el origen SoftRestaurant"
-            )
-
-        candidates = sorted({
-            str(row.get("empresa_id") or "").strip()
-            for row in discovery_rows or []
-            if str(row.get("empresa_id") or "").strip()
-        })
-        if len(candidates) == 1:
-            empresa_id = candidates[0]
-            logger.info(
-                "SoftRestaurant empresa_id resuelta desde turnos cerrados del rango"
-            )
-        elif not candidates:
-            raise ValueError(
-                "No se encontro idempresa en turnos cerrados del rango solicitado"
-            )
-        else:
-            raise ValueError(
-                "Se encontraron multiples idempresa en el origen SoftRestaurant; "
-                "configure empresa_id canonica antes de sincronizar"
-            )
-
-    empresa_sql = empresa_id.replace("'", "''")
+    """Construye ventas cerradas con paridad exacta header/detalle ISCAM."""
     bloques = []
     fecha_actual = fecha_inicio
     while fecha_actual <= fecha_fin:
         fecha_siguiente = fecha_actual + timedelta(days=1)
+        inicio_operativo = fecha_actual.strftime('%Y-%m-%d 09:00:00')
+        fin_operativo = fecha_siguiente.strftime('%Y-%m-%d 09:00:00')
+        empresa_id = _resolve_softrestaurant_empresa_id_for_window(
+            server_config, inicio_operativo, fin_operativo
+        )
+        empresa_sql = empresa_id.replace("'", "''")
         bloques.append(QUERY_SOFTRESTAURANT_VENTAS_CERRADAS_DIA.format(
             fecha_operacion=fecha_actual.strftime('%Y-%m-%d'),
             empresa_id=empresa_sql,
-            inicio_operativo=fecha_actual.strftime('%Y-%m-%d 09:00:00'),
-            fin_operativo=fecha_siguiente.strftime('%Y-%m-%d 08:59:59'),
+            inicio_operativo=inicio_operativo,
+            fin_operativo=fin_operativo,
         ))
         fecha_actual = fecha_siguiente
     return "\nUNION ALL\n".join(bloques)

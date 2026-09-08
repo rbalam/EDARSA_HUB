@@ -17,8 +17,9 @@ def test_detail_window_is_same_09_to_09_contract_as_header():
 def test_header_and_detail_both_assign_by_turnos_apertura():
     header = SYNC.read_text(encoding='utf-8')
     detail = DETAIL.read_text(encoding='utf-8')
-    assert "inicio_operativo=fecha_actual.strftime('%Y-%m-%d 09:00:00')" in header
-    assert "fin_operativo=fecha_siguiente.strftime('%Y-%m-%d 08:59:59')" in header
+    assert "inicio_operativo = fecha_actual.strftime('%Y-%m-%d 09:00:00')" in header
+    assert "fin_operativo = fecha_siguiente.strftime('%Y-%m-%d 09:00:00')" in header
+    assert "AND apertura < '{fin_operativo}'" in header
     block = detail.split('def _extract_soft(', 1)[1].split('def _mpro_operational_datetime_range', 1)[0]
     assert 'tr.apertura >= %s' in block
     assert 'tr.apertura < %s' in block
