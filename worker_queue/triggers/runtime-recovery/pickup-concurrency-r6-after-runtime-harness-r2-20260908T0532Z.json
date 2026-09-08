@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Converge Preview runtime to current Edarsahub_Desarrollo after certified runtime test harness hardening and wake the canonical Universal Worker so it consumes the already-emitted worker-concurrency-deterministic-replay-no-rebase-r6-20260908T0524Z. Do not duplicate R6, do not modify worker/supervisor/watchdog, and do not touch Production.",
+  "target_job_id": "worker-concurrency-deterministic-replay-no-rebase-r6-20260908T0524Z",
+  "production_touched": false
+}
