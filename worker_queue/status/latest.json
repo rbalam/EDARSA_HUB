@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "a36abe729c49d46643b1dd63b3d1833a44738a87",
-  "generated_at_utc": "2026-09-08T01:00:12Z",
+  "generated_at_utc": "2026-09-08T01:01:31Z",
   "history": {
     "done_total_local": 148,
     "pending_total_local": 0,
@@ -13,19 +13,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 160,
+      "age_seconds": 239,
       "job_id": "EDARSAHUB-WAKE-ROUTE-RUNTIME-MARKER-R30-CARLOS-20260908T005800Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 698,
+      "age_seconds": 777,
       "job_id": "EDARSAHUB-WAKE-ROUTER-MOUNT-R29-CARLOS-20260908T004300Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 72,
+      "age_seconds": 151,
       "job_id": "EDARSAHUB-ISCAM-FRESHNESS-MANUAL-SYNC-LOGGER-R31-CARLOS-20260908T010100Z",
       "reason": null,
       "state": "RUNNING"
@@ -43,8 +43,8 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-ISCAM-FRESHNESS-MANUAL-SYNC-LOGGER-R31-CARLOS-20260908T010100Z",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-08T01:00:09Z",
-    "last_receive_utc": "2026-09-08T01:00:11Z",
+    "last_cycle_utc": "2026-09-08T01:01:31Z",
+    "last_receive_utc": "2026-09-08T01:01:26Z",
     "last_terminal_utc": "2026-09-08T00:57:32Z",
     "pid": "287"
   },
