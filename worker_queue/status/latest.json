@@ -1,25 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "60271740a535e216c3b7e032fa579dc66f71b1bc",
-  "generated_at_utc": "2026-09-08T05:38:00Z",
+  "generated_at_utc": "2026-09-08T05:39:15Z",
   "history": {
     "done_total_local": 154,
     "pending_total_local": 0,
-    "processing_total_local": 1,
-    "rejected_total_local": 299,
-    "results_total_local": 402
+    "processing_total_local": 0,
+    "rejected_total_local": 300,
+    "results_total_local": 403
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 252,
-      "job_id": "worker-softrestaurant-full-history-write-r1-20260908T0534Z",
-      "reason": "El worker no termino esta orden dentro del tiempo esperado.",
-      "state": "BLOCKED"
-    },
-    {
-      "age_seconds": 2365,
+      "age_seconds": 2440,
       "job_id": "worker-concurrency-r5-isolate-runtime-20260908T0501Z",
       "reasons": [
         "CHECK_2_INVALID_TYPE"
@@ -28,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2382,
+      "age_seconds": 2457,
       "job_id": "worker-concurrency-r5-isolate-scope-20260908T0500Z",
       "reasons": [
         "CHECK_2_INVALID_TYPE"
@@ -37,117 +31,123 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2786,
+      "age_seconds": 2861,
       "job_id": "worker-concurrency-deterministic-replay-no-rebase-r5-20260908T0453Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 626,
+      "age_seconds": 701,
       "job_id": "worker-concurrency-deterministic-replay-no-rebase-r6-20260908T0524Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2708,
+      "age_seconds": 2783,
       "job_id": "worker-concurrency-r4-isolation-scope-r1-20260908T0449Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2291,
+      "age_seconds": 2366,
       "job_id": "worker-concurrency-r5-isolate-runtime-r2-20260908T0504Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2304,
+      "age_seconds": 2379,
       "job_id": "worker-concurrency-r5-isolate-scope-r2-20260908T0504Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2186,
+      "age_seconds": 2261,
       "job_id": "worker-concurrency-r5-runtime-call-isolation-r1-20260908T0507Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1796,
+      "age_seconds": 1871,
       "job_id": "worker-concurrency-r5-runtime-group-a-r1-20260908T0514Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1791,
+      "age_seconds": 1866,
       "job_id": "worker-concurrency-r5-runtime-group-b-r1-20260908T0514Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2117,
+      "age_seconds": 2192,
       "job_id": "worker-concurrency-r5-runtime-integrate-r1-20260908T0510Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2122,
+      "age_seconds": 2197,
       "job_id": "worker-concurrency-r5-runtime-others-r1-20260908T0510Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1699,
+      "age_seconds": 1774,
       "job_id": "worker-runtime-baseline-a1-20260908T0518Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1690,
+      "age_seconds": 1765,
       "job_id": "worker-runtime-baseline-a2-20260908T0518Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1684,
+      "age_seconds": 1759,
       "job_id": "worker-runtime-baseline-b1-20260908T0518Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1678,
+      "age_seconds": 1753,
       "job_id": "worker-runtime-baseline-b2-20260908T0518Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1831,
+      "age_seconds": 1906,
       "job_id": "worker-runtime-credential-helper-test-hardening-r1-20260908T0509Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1580,
+      "age_seconds": 1655,
       "job_id": "worker-runtime-test-harness-hardening-r2-20260908T0521Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 52,
+      "job_id": "worker-softrestaurant-full-history-write-r1-20260908T0534Z",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
-  "queue_blocked": 1,
-  "queue_depth": 1,
+  "queue_blocked": 0,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 2,
-  "queue_result_ready_recent": 16,
+  "queue_result_ready_recent": 17,
   "queue_running": 0,
   "runtime": {
-    "current_job_id": "worker-softrestaurant-full-history-write-r1-20260908T0534Z",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-08T05:37:57Z",
-    "last_receive_utc": "2026-09-08T05:37:58Z",
-    "last_terminal_utc": "2026-09-08T05:27:34Z",
+    "last_cycle_utc": "2026-09-08T05:39:13Z",
+    "last_receive_utc": "2026-09-08T05:39:14Z",
+    "last_terminal_utc": "2026-09-08T05:38:23Z",
     "pid": "287"
   },
   "schema": "edarsahub.worker-health.v3",
