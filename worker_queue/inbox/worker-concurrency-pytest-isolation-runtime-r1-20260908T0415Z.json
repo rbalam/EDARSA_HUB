@@ -1,0 +1,15 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-concurrency-pytest-isolation-runtime-r1-20260908T0415Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Diagnostico descartable: aislar exclusivamente backend/tests/test_universal_job_dispatcher_python_runtime.py. Si pytest pasa, el check py_compile posterior sobre ruta inexistente debe bloquear intencionalmente el job para impedir integracion. No Production.",
+  "actions": [{"type":"write_file","path":"backend/tests/.worker_diag_runtime_probe.txt","content":"diagnostic only; must never integrate\n"}],
+  "checks": [
+    {"type":"pytest","paths":["backend/tests/test_universal_job_dispatcher_python_runtime.py"]},
+    {"type":"py_compile","paths":["backend/tests/__intentional_missing_concurrency_diag__.py"]}
+  ],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0","chat":"Concurrency pytest isolation"},
+  "human_summary_language":"es"
+}
