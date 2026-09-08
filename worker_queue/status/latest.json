@@ -1,57 +1,57 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "2729c7cbb323f4574f25caa877c6b30a81a84aa8",
-  "generated_at_utc": "2026-09-08T16:14:19Z",
+  "development_sha": "0ab55e369598fcaac07e9754b856ecea09abf028",
+  "generated_at_utc": "2026-09-08T16:15:35Z",
   "history": {
-    "done_total_local": 159,
+    "done_total_local": 160,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 303,
-    "results_total_local": 411
+    "results_total_local": 412
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2277,
+      "age_seconds": 2353,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-DRYRUN-R31-CARLOS-20260908T153500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2261,
+      "age_seconds": 74,
+      "job_id": "EDARSAHUB-ISCAM-DETAIL-PARITY-BACKFILL-R33-CARLOS-20260908T161000Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2337,
       "job_id": "EDARSAHUB-ISCAM-R31-RUNTIME-VALIDATION-R32-CARLOS-20260908T152500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 856,
+      "age_seconds": 932,
       "job_id": "worker-softrestaurant-130mid-write-r1-20260908T1515Z",
       "reason": null,
       "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 122,
-      "job_id": "EDARSAHUB-ISCAM-DETAIL-PARITY-BACKFILL-R33-CARLOS-20260908T161000Z",
-      "reason": null,
-      "state": "RUNNING"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
-  "queue_running": 1,
+  "queue_result_ready_recent": 4,
+  "queue_running": 0,
   "runtime": {
-    "current_job_id": "EDARSAHUB-ISCAM-DETAIL-PARITY-BACKFILL-R33-CARLOS-20260908T161000Z",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-08T16:14:18Z",
-    "last_receive_utc": "2026-09-08T16:14:13Z",
-    "last_terminal_utc": "2026-09-08T16:00:02Z",
+    "last_cycle_utc": "2026-09-08T16:15:34Z",
+    "last_receive_utc": "2026-09-08T16:15:35Z",
+    "last_terminal_utc": "2026-09-08T16:14:21Z",
     "pid": "144"
   },
   "schema": "edarsahub.worker-health.v3",
