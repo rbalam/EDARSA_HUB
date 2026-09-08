@@ -16757,6 +16757,17 @@ except Exception as e:
     logger.warning(f"Error registrando SQL Compat Bridge router: {e}")
 
 
+# =============================================================================
+# UNIVERSAL WORKER - WAKE INTERNO CANONICO
+# =============================================================================
+try:
+    from modules.worker_runtime_wake.routes import router as worker_runtime_wake_router
+    app.include_router(worker_runtime_wake_router, prefix="/api")
+    logger.info("Universal Worker wake router registrado")
+except Exception as e:
+    logger.warning(f"Error registrando Universal Worker wake router: {e}")
+
+
 # Startup: Iniciar scheduler
 @app.on_event("startup")
 async def startup_scheduler():
