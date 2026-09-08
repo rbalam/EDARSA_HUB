@@ -1,0 +1,28 @@
+{
+  "base_sha": "d684b92563c614d9068c0135ba5566fb2a6df897",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-08T23:08:15Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+    "backend/tests/test_softrestaurant_header_detail_empresa_parity_r39.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SOFTRESTAURANT-PER-DAY-EMPRESA-PARITY-R39-CARLOS-20260908T231000Z",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-08T23:08:30Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-08T23:08:11Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
