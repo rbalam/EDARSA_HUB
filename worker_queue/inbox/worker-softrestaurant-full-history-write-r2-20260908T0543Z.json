@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-softrestaurant-full-history-write-r2-20260908T0543Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Gate C R2 idempotente: reejecutar el resync historico completo de SoftRestaurant mediante la capability cerrada SOFTRESTAURANT_FULL_HISTORY_RESYNC sobre todas las unidades SoftRestaurant resueltas por configuracion canonica. La ejecucion debe ser idempotente y usar exclusivamente el --execute fijo de la capability. No aceptar shell, script_path arbitrario ni rutas externas. Publicar solamente evidencia sanitizada de operacion y certificar mediante SQL de solo lectura. No tocar Edarsahub_Produccion.",
+  "mode": "SOFTRESTAURANT_FULL_HISTORY_RESYNC",
+  "actions": [],
+  "units": [],
+  "dry_run": false,
+  "confirm_full_history_resync": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "softrestaurant_full_history_target_tables_exist_after_write_r2",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name FROM sys.tables t INNER JOIN sys.schemas s ON s.schema_id = t.schema_id WHERE s.name = 'dbo' AND t.name IN ('Finanzas_CortesCaja','Finanzas_CortesCaja_DetallePagos') ORDER BY t.name;"
+        },
+        {
+          "name": "softrestaurant_full_history_cortes_count_after_write_r2",
+          "sql": "SELECT COUNT_BIG(*) AS total_rows FROM dbo.Finanzas_CortesCaja;"
+        },
+        {
+          "name": "softrestaurant_full_history_detalle_pagos_count_after_write_r2",
+          "sql": "SELECT COUNT_BIG(*) AS total_rows FROM dbo.Finanzas_CortesCaja_DetallePagos;"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Gate C SoftRestaurant full history write R2 idempotent"
+  },
+  "human_summary_language": "es"
+}
