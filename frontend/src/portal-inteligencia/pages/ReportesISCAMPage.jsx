@@ -9,9 +9,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   FileBarChart, Loader2, X, Receipt, ClipboardList, CreditCard, ChevronRight,
-  FileSpreadsheet, FileText,
+  FileSpreadsheet, FileText, RefreshCw,
 } from 'lucide-react';
-import { apiGet, ESTADO } from '../api/client';
+import { apiGet, apiPost, ESTADO } from '../api/client';
 import { exportToExcel, exportToPDF } from '../utils/exportUtils';
 
 const money = (n) => (n ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
@@ -20,6 +20,32 @@ const num = (n) => (n ?? 0).toLocaleString('es-MX', { maximumFractionDigits: 2 }
 const MESES = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const NOW = new Date();
 const YEARS = Array.from({ length: 4 }, (_, i) => NOW.getFullYear() - 3 + i);
+const parseYmdUtc = (value) => {
+  const [y, m, d] = String(value || '').split('-').map(Number);
+  return new Date(Date.UTC(y, (m || 1) - 1, d || 1));
+};
+const ymdUtc = (value) => value.toISOString().slice(0, 10);
+const formatDateMx = (value) => {
+  if (!value) return 'Sin datos';
+  const [y, m, d] = value.split('-');
+  return `${d}/${m}/${y}`;
+};
+const splitDateChunks = (start, end, maxDays = 30) => {
+  if (!start || !end) return [];
+  const chunks = [];
+  let cursor = parseYmdUtc(start);
+  const last = parseYmdUtc(end);
+  while (cursor <= last) {
+    const chunkStart = new Date(cursor);
+    const chunkEnd = new Date(cursor);
+    chunkEnd.setUTCDate(chunkEnd.getUTCDate() + maxDays - 1);
+    if (chunkEnd > last) chunkEnd.setTime(last.getTime());
+    chunks.push([ymdUtc(chunkStart), ymdUtc(chunkEnd)]);
+    cursor = new Date(chunkEnd);
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return chunks;
+};
 
 const SUBTABS = [
   { id: 'periodos', label: 'Ventas por Periodo', icon: FileBarChart },
@@ -222,6 +248,10 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
   const [hastaAnio, setHastaAnio] = useState(NOW.getFullYear());
   const [hastaMes, setHastaMes] = useState(NOW.getMonth() + 1);
   const [drill, setDrill] = useState(null);
+  const [freshness, setFreshness] = useState(null);
+  const [freshnessLoading, setFreshnessLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState(null);
 
   const unidad = unidadSeleccionada;
   const sinUnidad = !unidad || unidad === 'todas';
@@ -253,7 +283,50 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
     setLoading(false);
   }, [getReportRequest, sinUnidad]);
 
-  useEffect(() => { fetchReport(); }, [fetchReport]);
+  const fetchFreshness = useCallback(async () => {
+    if (sinUnidad) { setFreshness(null); return; }
+    setFreshnessLoading(true);
+    const res = await apiGet('/inteligencia/iscam/freshness', { unidad, desde: desdeStr, hasta: hastaStr });
+    setFreshness(res.estado === ESTADO.OK ? res.data : null);
+    setFreshnessLoading(false);
+  }, [sinUnidad, unidad, desdeStr, hastaStr]);
+
+  useEffect(() => {
+    fetchReport();
+    fetchFreshness();
+  }, [fetchReport, fetchFreshness]);
+
+  const syncMissingClosedDays = async () => {
+    if (!freshness?.stale || !freshness?.missing_from || !freshness?.missing_to || syncing) return;
+    setSyncing(true);
+    setSyncMessage(null);
+    try {
+      const chunks = splitDateChunks(freshness.missing_from, freshness.missing_to, 30);
+      for (const [fechaInicio, fechaFin] of chunks) {
+        const basePayload = {
+          tipo_sync: 'comercial_ventas_cerradas',
+          unidad_negocio_id: unidad,
+          fecha_inicio: fechaInicio,
+          fecha_fin: fechaFin,
+          motivo: 'ISCAM sincronizar dias cerrados faltantes',
+        };
+        const dry = await apiPost('/admin/scheduler/resync/execute', { ...basePayload, dry_run: true }, { timeout: 120000 });
+        if (dry.estado !== ESTADO.OK || dry.data?.success !== true) {
+          throw new Error(`DRY RUN no aprobado para ${fechaInicio} a ${fechaFin}`);
+        }
+        const real = await apiPost('/admin/scheduler/resync/execute', { ...basePayload, dry_run: false }, { timeout: 120000 });
+        if (real.estado !== ESTADO.OK || real.data?.success !== true) {
+          throw new Error(`Re-sync no completado para ${fechaInicio} a ${fechaFin}`);
+        }
+      }
+      await Promise.all([fetchReport(), fetchFreshness()]);
+      setSyncMessage({ tipo: 'ok', texto: 'Sincronización de faltantes completada.' });
+    } catch (error) {
+      setSyncMessage({ tipo: 'error', texto: error?.message || 'No se pudo sincronizar el rango faltante.' });
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   // ---- Drill-downs ----
   const drillProductos = async (periodo) => {
@@ -416,6 +489,20 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
         )}
 
         <div className="ml-auto flex items-end gap-2">
+          <div className="self-center text-xs text-slate-400" data-testid="iscam-freshness-status">
+            {freshnessLoading
+              ? 'Verificando actualización...'
+              : freshness?.latest_canonical_date
+                ? `Actualizado hasta ${formatDateMx(freshness.latest_canonical_date)}`
+                : 'Sin fecha canónica disponible'}
+          </div>
+          {freshness?.stale && (
+            <button onClick={syncMissingClosedDays} disabled={syncing} data-testid="iscam-sync-missing"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-sky-600 text-white hover:bg-sky-500 disabled:opacity-40 disabled:cursor-not-allowed">
+              <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+              {syncing ? 'Sincronizando...' : 'Sincronizar faltantes'}
+            </button>
+          )}
           <button onClick={onExcel} disabled={!puedeExportar} data-testid="iscam-export-excel"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed">
             <FileSpreadsheet className="h-4 w-4" /> Excel
@@ -426,6 +513,15 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
           </button>
         </div>
       </div>
+
+      {syncMessage && (
+        <div data-testid="iscam-sync-message"
+          className={`text-sm rounded-lg px-4 py-3 border ${syncMessage.tipo === 'ok'
+            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+            : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}>
+          {syncMessage.texto}
+        </div>
+      )}
 
       {sinUnidad && (
         <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 text-sm rounded-lg px-4 py-3">

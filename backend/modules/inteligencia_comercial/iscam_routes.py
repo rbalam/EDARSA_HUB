@@ -16,6 +16,7 @@ import calendar
 import logging
 from typing import Optional
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Query, HTTPException
 
@@ -187,6 +188,81 @@ async def ventas_periodos(unidad: str = Query(...), desde: Optional[str] = None,
         "unidad": unidad,
         "group_by": gb,
         "periodos": data,
+    }
+
+
+@iscam_router.get("/freshness")
+async def iscam_freshness(unidad: str = Query(...), desde: Optional[str] = None, hasta: Optional[str] = None):
+    """Frescura de la fuente canonica para dias operativos ya cerrados."""
+    unidad_codigo = UnidadesService.resolver_codigo(unidad)
+    if not unidad_codigo:
+        raise HTTPException(status_code=404, detail=f"Unidad no encontrada: {unidad}")
+
+    d, h = _rango_fechas(desde, hasta)
+    range_start = datetime.strptime(d, "%Y-%m-%d").date()
+    range_end = datetime.strptime(h, "%Y-%m-%d").date() - timedelta(days=1)
+    today_local = datetime.now(ZoneInfo("America/Mexico_City")).date()
+    previous_closed_day = today_local - timedelta(days=1)
+    expected_latest = min(range_end, previous_closed_day)
+
+    if expected_latest < range_start:
+        return {
+            "success": True,
+            "source": "dbo.vw_Comercial_KPIs_Diarios_v2_Runtime",
+            "unidad": unidad,
+            "latest_canonical_date": None,
+            "expected_latest_closed_date": None,
+            "missing_closed_dates": [],
+            "missing_from": None,
+            "missing_to": None,
+            "stale": False,
+            "current_open_day": today_local.isoformat(),
+        }
+
+    expected_exclusive = (expected_latest + timedelta(days=1)).isoformat()
+    rows = _q(
+        """
+        SELECT MAX(CAST(fecha_operacion AS date)) AS ultima_fecha
+        FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime
+        WHERE unidad_negocio_id = %s
+          AND fecha_operacion >= %s
+          AND fecha_operacion < %s
+        """,
+        (str(unidad_codigo), d, expected_exclusive),
+    )
+    latest_raw = rows[0].get("ultima_fecha") if rows else None
+    if isinstance(latest_raw, datetime):
+        latest = latest_raw.date()
+    elif latest_raw is None:
+        latest = None
+    elif hasattr(latest_raw, "isoformat"):
+        latest = latest_raw
+    else:
+        latest = datetime.strptime(str(latest_raw)[:10], "%Y-%m-%d").date()
+
+    stale = latest is None or latest < expected_latest
+    missing_closed_dates = []
+    missing_from = None
+    missing_to = None
+    if stale:
+        cursor = max(range_start, (latest + timedelta(days=1)) if latest else range_start)
+        missing_from = cursor.isoformat()
+        missing_to = expected_latest.isoformat()
+        while cursor <= expected_latest:
+            missing_closed_dates.append(cursor.isoformat())
+            cursor += timedelta(days=1)
+
+    return {
+        "success": True,
+        "source": "dbo.vw_Comercial_KPIs_Diarios_v2_Runtime",
+        "unidad": unidad,
+        "latest_canonical_date": latest.isoformat() if latest else None,
+        "expected_latest_closed_date": expected_latest.isoformat(),
+        "missing_closed_dates": missing_closed_dates,
+        "missing_from": missing_from,
+        "missing_to": missing_to,
+        "stale": stale,
+        "current_open_day": today_local.isoformat(),
     }
 
 

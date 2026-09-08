@@ -36,6 +36,14 @@ class JobExecutionLog(BaseModel):
         extra = "allow"
 
 
+_SUCCESS_STATUSES = frozenset({"success", "completed", "completado", "ok"})
+
+
+def _is_success_status(value: str) -> bool:
+    """Clasifica estados terminales exitosos sin depender de idioma o mayusculas."""
+    return str(value or "").strip().lower() in _SUCCESS_STATUSES
+
+
 class JobLogger:
     """
     Logger SQL-only de ejecuciones de jobs.
@@ -140,7 +148,7 @@ class JobLogger:
             run_id=log_entry.run_id,
             accion="FINISH",
             detalles=detalles,
-            exito=(status in {"success", "completed"}),
+            exito=_is_success_status(status),
             mensaje_error=error_detail
         )
 
