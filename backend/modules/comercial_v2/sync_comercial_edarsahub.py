@@ -611,28 +611,28 @@ QUERY_SOFTRESTAURANT_VENTAS_CERRADAS_DIA = """
 SELECT
     CONVERT(datetime, '{fecha_operacion} 12:00:00 AM') AS fecha_hora,
     CONVERT(date, '{fecha_operacion}') AS fecha_operacion,
-    SUM(totalalimentossindescuentos) AS alimentos,
-    SUM(totalbebidassindescuentos) AS bebidas,
-    SUM(totalotrossindescuentos) AS otros,
-    SUM(totalcortesias) AS cortesias,
-    SUM(totaldescuentos) AS descuentos,
-    SUM(subtotal) AS subtotal,
-    SUM(totalimpuesto1) AS iva,
-    SUM(total) AS ventas_total,
-    SUM(propina) AS propinas,
-    SUM(total + propina) AS total_con_propina,
-    SUM(nopersonas) AS num_personas,
-    COUNT(folio) AS num_cheques
-FROM cheques
-WHERE idempresa = '{empresa_id}'
-  AND idturno IN (
-      SELECT idturno FROM turnos
-      WHERE idempresa = '{empresa_id}'
-        AND apertura >= '{inicio_operativo}'
-        AND apertura < '{fin_operativo}'
-        AND cierre IS NOT NULL
-  )
-  AND cancelado = 0
+    SUM(ch.totalalimentossindescuentos) AS alimentos,
+    SUM(ch.totalbebidassindescuentos) AS bebidas,
+    SUM(ch.totalotrossindescuentos) AS otros,
+    SUM(ch.totalcortesias) AS cortesias,
+    SUM(ch.totaldescuentos) AS descuentos,
+    SUM(ch.subtotal) AS subtotal,
+    SUM(ch.totalimpuesto1) AS iva,
+    SUM(ch.total) AS ventas_total,
+    SUM(ch.propina) AS propinas,
+    SUM(ch.total + ch.propina) AS total_con_propina,
+    SUM(ch.nopersonas) AS num_personas,
+    COUNT(ch.folio) AS num_cheques
+FROM cheques AS ch
+INNER JOIN turnos AS tr
+    ON tr.idturno = ch.idturno
+   AND tr.idempresa = ch.idempresa
+WHERE ch.idempresa = '{empresa_id}'
+  AND tr.idempresa = '{empresa_id}'
+  AND tr.apertura >= '{inicio_operativo}'
+  AND tr.apertura < '{fin_operativo}'
+  AND tr.cierre IS NOT NULL
+  AND ch.cancelado = 0
 """
 
 
@@ -690,12 +690,28 @@ def build_softrestaurant_ventas_cerradas_query(
     fecha_fin: date,
 ) -> str:
     """Construye ventas cerradas con paridad exacta header/detalle ISCAM."""
+    from core.utils.operational_window import (
+        get_operational_datetime_range_for_fecha_operacion,
+    )
+
+    unidad_operativa = str(
+        (server_config or {}).get('unidad_negocio_pk')
+        or (server_config or {}).get('unidad_codigo')
+        or ''
+    ).strip()
+    if not unidad_operativa:
+        raise ValueError('SoftRestaurant sin unidad canonica para resolver ventana operativa')
+
     bloques = []
     fecha_actual = fecha_inicio
     while fecha_actual <= fecha_fin:
-        fecha_siguiente = fecha_actual + timedelta(days=1)
-        inicio_operativo = fecha_actual.strftime('%Y-%m-%d 09:00:00')
-        fin_operativo = fecha_siguiente.strftime('%Y-%m-%d 09:00:00')
+        inicio_dt, fin_dt, _window_meta = (
+            get_operational_datetime_range_for_fecha_operacion(
+                unidad_operativa, fecha_actual
+            )
+        )
+        inicio_operativo = inicio_dt.strftime('%Y-%m-%d %H:%M:%S')
+        fin_operativo = fin_dt.strftime('%Y-%m-%d %H:%M:%S')
         empresa_id = _resolve_softrestaurant_empresa_id_for_window(
             server_config, inicio_operativo, fin_operativo
         )

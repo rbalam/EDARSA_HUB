@@ -689,17 +689,20 @@ def _unidad_operativa_id_for_window(cfg: Dict[str, Any]) -> str:
 
 
 def _soft_operational_datetime_range(cfg: Dict[str, Any], dia: date) -> Tuple[str, str]:
-    """Ventana del detalle idéntica al header Comercial V2 SoftRestaurant.
+    """Ventana SoftRestaurant única, tomada del servicio operativo canónico.
 
-    El contrato vigente de build_softrestaurant_ventas_cerradas_query asigna
-    cada fecha_operacion por turnos.apertura desde las 09:00 del día hasta
-    antes de las 09:00 del siguiente día. El detalle NO puede usar una segunda
-    definición horaria porque desplaza tickets entre fechas y rompe la paridad
-    contra Runtime V2.
+    Header Runtime V2 y detalle ISCAM deben usar exactamente la partición
+    definida en Sistema_TurnosOperativosUnidad, incluida la tolerancia de
+    inicio. No se permite una hora fija duplicada en este extractor.
     """
-    del cfg
-    inicio = datetime.combine(dia, datetime.min.time()).replace(hour=9)
-    fin = inicio + timedelta(days=1)
+    from core.utils.operational_window import (
+        get_operational_datetime_range_for_fecha_operacion,
+    )
+
+    unidad_operativa = _unidad_operativa_id_for_window(cfg)
+    inicio, fin, _meta = get_operational_datetime_range_for_fecha_operacion(
+        unidad_operativa, dia
+    )
     return (
         inicio.strftime("%Y-%m-%d %H:%M:%S"),
         fin.strftime("%Y-%m-%d %H:%M:%S"),

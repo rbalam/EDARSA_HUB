@@ -9,15 +9,17 @@ def test_header_resolves_empresa_from_each_operational_window():
     text = SYNC.read_text(encoding='utf-8')
     block = text.split('def build_softrestaurant_ventas_cerradas_query', 1)[1].split('QUERY_SOFTRESTAURANT_VENTAS_ABIERTAS', 1)[0]
     assert '_resolve_softrestaurant_empresa_id_for_window(' in block
-    assert "fin_operativo = fecha_siguiente.strftime('%Y-%m-%d 09:00:00')" in block
+    assert 'get_operational_datetime_range_for_fecha_operacion' in block
+    assert "inicio_operativo = inicio_dt.strftime('%Y-%m-%d %H:%M:%S')" in block
+    assert "fin_operativo = fin_dt.strftime('%Y-%m-%d %H:%M:%S')" in block
 
 
-def test_header_uses_exclusive_0900_boundary_like_detail():
+def test_header_uses_same_exclusive_operational_boundary_as_detail():
     header = SYNC.read_text(encoding='utf-8')
     detail = DETAIL.read_text(encoding='utf-8')
-    assert "AND apertura >= '{inicio_operativo}'" in header
-    assert "AND apertura < '{fin_operativo}'" in header
-    assert "fin = inicio + timedelta(days=1)" in detail
+    assert "tr.apertura >= '{inicio_operativo}'" in header
+    assert "tr.apertura < '{fin_operativo}'" in header
+    assert 'get_operational_datetime_range_for_fecha_operacion' in detail
     assert "tr.apertura >= %s" in detail
     assert "tr.apertura < %s" in detail
 
