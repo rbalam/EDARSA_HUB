@@ -1,0 +1,41 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-operational-result-certification-publisher-r1-20260908T0355Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Cerrar el gap de certificacion publica de jobs operacionales: conservar CERTIFIED_OPERATIONAL al 100% para OPERATIONAL_COMPLETE solamente cuando el dispatcher ya certifico la operacion, tests y quality gate pasan, no hay blockers y production_touched=false. Permitir repromocion de un resultado operacional previamente publicado como NOT_CERTIFIED. No modificar el contrato SHA-bound de jobs INTEGRATED ni tocar Production.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "expected_count": 1,
+      "old": "    if result.get(\"status\") != \"INTEGRATED\":\n        return {\n            **pending,\n            \"certification\": \"NOT_CERTIFIED\",\n            \"work_completion\": \"NOT_CERTIFIED\",\n            \"percent_complete\": min(\n                int(result.get(\"percent_complete\") or 0),\n                95,\n            ),\n        }\n\n    if str(result.get(\"tests\", \"\")).upper() != \"PASS\":",
+      "new": "    if result.get(\"status\") == \"OPERATIONAL_COMPLETE\":\n        operational_certified = (\n            str(result.get(\"certification\") or \"\").upper() == \"CERTIFIED_OPERATIONAL\"\n            and str(result.get(\"tests\", \"\")).upper() == \"PASS\"\n            and str(result.get(\"quality_gate\", \"\")).upper() == \"PASS\"\n            and not (result.get(\"blockers\") or [])\n            and result.get(\"production_touched\") is False\n        )\n        if operational_certified:\n            return {\n                \"certified\": True,\n                \"certification\": \"CERTIFIED_OPERATIONAL\",\n                \"work_completion\": \"COMPLETE\",\n                \"percent_complete\": 100,\n                \"certification_basis\": \"DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS\",\n            }\n        return {\n            **pending,\n            \"certification\": \"NOT_CERTIFIED\",\n            \"work_completion\": \"NOT_CERTIFIED\",\n            \"percent_complete\": min(int(result.get(\"percent_complete\") or 0), 95),\n        }\n\n    if result.get(\"status\") != \"INTEGRATED\":\n        return {\n            **pending,\n            \"certification\": \"NOT_CERTIFIED\",\n            \"work_completion\": \"NOT_CERTIFIED\",\n            \"percent_complete\": min(\n                int(result.get(\"percent_complete\") or 0),\n                95,\n            ),\n        }\n\n    if str(result.get(\"tests\", \"\")).upper() != \"PASS\":"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "expected_count": 1,
+      "old": "    # Todo resultado ya publicado es terminal para el publisher,\n    # salvo la unica promocion permitida:\n    # evidencia previa no certificada -> CERTIFIED.\n    if desired != \"CERTIFIED\":\n        return True\n\n    return \"certification=CERTIFIED\" in marker_text",
+      "new": "    # Todo resultado ya publicado es terminal para el publisher, salvo\n    # promociones desde evidencia previa no certificada a una certificacion\n    # terminal valida del mismo contrato.\n    if desired not in {\"CERTIFIED\", \"CERTIFIED_OPERATIONAL\"}:\n        return True\n\n    return f\"certification={desired}\" in marker_text"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_operational_result_publisher_certification.py",
+      "content": "import importlib.util\nfrom pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nPUBLISHER_PATH = ROOT / 'tools' / 'mirror_sync' / 'universal_job_result_publisher.py'\n\n\ndef load_publisher():\n    spec = importlib.util.spec_from_file_location('worker_result_publisher_under_test', PUBLISHER_PATH)\n    module = importlib.util.module_from_spec(spec)\n    assert spec.loader is not None\n    spec.loader.exec_module(module)\n    return module\n\n\ndef operational_result(**overrides):\n    result = {\n        'status': 'OPERATIONAL_COMPLETE',\n        'certification': 'CERTIFIED_OPERATIONAL',\n        'tests': 'PASS',\n        'quality_gate': 'PASS',\n        'blockers': [],\n        'production_touched': False,\n        'percent_complete': 100,\n    }\n    result.update(overrides)\n    return result\n\n\ndef test_operational_complete_is_certified_without_sha_attestation():\n    publisher = load_publisher()\n    evidence = publisher.certification_evidence(operational_result())\n    assert evidence['certification'] == 'CERTIFIED_OPERATIONAL'\n    assert evidence['work_completion'] == 'COMPLETE'\n    assert evidence['percent_complete'] == 100\n    assert evidence['certification_basis'] == 'DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS'\n\n\ndef test_operational_certification_requires_all_guards():\n    publisher = load_publisher()\n    cases = [\n        {'certification': 'NOT_CERTIFIED'},\n        {'tests': 'FAIL'},\n        {'quality_gate': 'FAIL'},\n        {'blockers': ['x']},\n        {'production_touched': True},\n    ]\n    for overrides in cases:\n        evidence = publisher.certification_evidence(operational_result(**overrides))\n        assert evidence['certification'] == 'NOT_CERTIFIED'\n        assert evidence['percent_complete'] <= 95\n\n\ndef test_marker_allows_operational_repromotion(tmp_path):\n    publisher = load_publisher()\n    marker = tmp_path / 'result.marker'\n    marker.write_text('certification=NOT_CERTIFIED\\n', encoding='utf-8')\n    assert publisher.marker_satisfied(marker, {'certification': 'CERTIFIED_OPERATIONAL'}) is False\n    marker.write_text('certification=CERTIFIED_OPERATIONAL\\n', encoding='utf-8')\n    assert publisher.marker_satisfied(marker, {'certification': 'CERTIFIED_OPERATIONAL'}) is True\n"
+    }
+  ],
+  "checks": [
+    {"type": "py_compile", "paths": ["tools/mirror_sync/universal_job_result_publisher.py", "backend/tests/test_worker_operational_result_publisher_certification.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_worker_operational_result_publisher_certification.py", "backend/tests/test_universal_job_result_lineage_certification.py"]},
+    {"type": "git_diff_check"}
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Gate B operational certification publisher"
+  },
+  "human_summary_language": "es"
+}
