@@ -297,11 +297,14 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
   }, [fetchReport, fetchFreshness]);
 
   const syncMissingClosedDays = async () => {
-    if (!freshness?.stale || !freshness?.missing_from || !freshness?.missing_to || syncing) return;
+    const detailGap = Boolean(freshness?.detail_stale);
+    const syncFrom = detailGap ? freshness?.detail_missing_from : freshness?.missing_from;
+    const syncTo = detailGap ? freshness?.detail_missing_to : freshness?.missing_to;
+    if (!(freshness?.stale || detailGap) || !syncFrom || !syncTo || syncing) return;
     setSyncing(true);
     setSyncMessage(null);
     try {
-      const chunks = splitDateChunks(freshness.missing_from, freshness.missing_to, 30);
+      const chunks = splitDateChunks(syncFrom, syncTo, 30);
       for (const [fechaInicio, fechaFin] of chunks) {
         const basePayload = {
           tipo_sync: 'comercial_ventas_cerradas',
@@ -371,7 +374,10 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
   const descriptor = buildDescriptor(sub, groupBy, data);
   const rangoTxt = `${MESES[desdeMes]} ${desdeAnio} — ${MESES[hastaMes]} ${hastaAnio}`;
   const baseName = `ISCAM_${sub}_${unidad}_${desdeAnio}${String(desdeMes).padStart(2, '0')}-${hastaAnio}${String(hastaMes).padStart(2, '0')}`;
-  const puedeExportar = (descriptor.rows || []).length > 0;
+  const detalleDependienteIncompleto = Boolean(
+    freshness?.detail_stale && ((sub === 'cuentas' && groupBy === 'none') || sub === 'comandas')
+  );
+  const puedeExportar = (descriptor.rows || []).length > 0 && !detalleDependienteIncompleto;
 
   const buildExportSheets = (exportData) => {
     const exportDescriptor = buildDescriptor(sub, groupBy, exportData);
@@ -492,11 +498,13 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
           <div className="self-center text-xs text-slate-400" data-testid="iscam-freshness-status">
             {freshnessLoading
               ? 'Verificando actualización...'
-              : freshness?.latest_canonical_date
-                ? `Actualizado hasta ${formatDateMx(freshness.latest_canonical_date)}`
-                : 'Sin fecha canónica disponible'}
+              : freshness?.detail_stale
+                ? `Detalle incompleto: ${freshness.detail_problem_dates?.length || 0} día(s) · KPI hasta ${formatDateMx(freshness.latest_canonical_date)}`
+                : freshness?.latest_canonical_date
+                  ? `Actualizado hasta ${formatDateMx(freshness.latest_canonical_date)}`
+                  : 'Sin fecha canónica disponible'}
           </div>
-          {freshness?.stale && (
+          {(freshness?.stale || freshness?.detail_stale) && (
             <button onClick={syncMissingClosedDays} disabled={syncing} data-testid="iscam-sync-missing"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-sky-600 text-white hover:bg-sky-500 disabled:opacity-40 disabled:cursor-not-allowed">
               <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
@@ -513,6 +521,12 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
           </button>
         </div>
       </div>
+
+      {freshness?.detail_stale && (
+        <div data-testid="iscam-detail-incomplete" className="text-sm rounded-lg px-4 py-3 border bg-amber-500/10 border-amber-500/30 text-amber-300">
+          El encabezado canónico está actualizado, pero el detalle histórico no concilia: faltan o difieren {freshness.detail_problem_dates?.length || 0} día(s), {num(freshness.detail_ticket_gap || 0)} cheque(s) y {money(freshness.detail_sales_gap || 0)}. Sincroniza faltantes antes de certificar/exportar vistas de detalle.
+        </div>
+      )}
 
       {syncMessage && (
         <div data-testid="iscam-sync-message"

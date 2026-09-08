@@ -20,7 +20,7 @@ NO USA MONGODB - 100% SQL Server
 
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from pydantic import BaseModel, Field
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timezone, timedelta
 from typing import Optional, Dict, Any, List
 import uuid
 import time
@@ -1283,6 +1283,27 @@ async def resolver_dependencias_sync(
 # FUNCIONES DE EJECUCIÓN
 # =============================================================================
 
+def _ejecutar_backfill_detalle_iscam(
+    unidad_negocio_id: str, fecha_inicio: date, fecha_fin: date, commit: bool
+) -> Dict[str, Any]:
+    """Replica en el resync manual la fase de detalle del scheduler canónico."""
+    from scripts.backfill_detalle_producto_pendientes import ejecutar_backfill
+
+    code, resumen = ejecutar_backfill(
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin + timedelta(days=1),
+        unidades=[unidad_negocio_id],
+        commit=commit,
+    )
+    return {
+        'success': code == 0,
+        'exit_code': code,
+        'modo': 'REAL' if commit else 'DRY_RUN',
+        'resumen': resumen,
+        'error_message': None if code == 0 else 'El detalle ISCAM tiene días bloqueados que no conciliaron contra Runtime V2.',
+    }
+
+
 async def _ejecutar_dry_run(
     unidad_negocio_id: str,
     unidad_config: Dict[str, Any],
@@ -1441,10 +1462,14 @@ async def _ejecutar_dry_run(
                 'iva': float(d.get('iva') or 0),
             })
         
+        detalle_producto = _ejecutar_backfill_detalle_iscam(
+            unidad_negocio_id, fecha_inicio, fecha_fin, commit=False
+        )
+
         return {
-            'success': True,
+            'success': bool(detalle_producto.get('success')),
             'modo': 'DRY_RUN',
-            'mensaje': 'Simulación completada - NO se modificaron datos',
+            'mensaje': ('Simulación completada - NO se modificaron datos' if detalle_producto.get('success') else 'Header validado, pero el detalle ISCAM tiene días que no concilian'),
             'records_processed': len(detalle),
             'registros_que_se_sincronizarian': len(detalle),
             'registros_extraidos': len(detalle),
@@ -1457,7 +1482,8 @@ async def _ejecutar_dry_run(
                 if sistema == 'SOFTRESTAURANT'
                 else 'mpro-handler-oficial-v1'
             ),
-            'detalle': detalle
+            'detalle': detalle,
+            'detalle_producto': detalle_producto
         }
         
     except Exception as e:
@@ -1541,15 +1567,25 @@ async def _ejecutar_sync_real(
                 run_id=sync_run_id
             )
         
+        detalle_producto = (
+            _ejecutar_backfill_detalle_iscam(
+                unidad_negocio_id, fecha_inicio, fecha_fin, commit=True
+            )
+            if resultado.success
+            else {'success': False, 'modo': 'NO_EJECUTADO', 'error_message': 'Header no exitoso'}
+        )
+        success_total = bool(resultado.success and detalle_producto.get('success'))
+
         return {
-            'success': resultado.success,
+            'success': success_total,
             'records_processed': resultado.records_processed,
             'records_inserted': resultado.records_inserted,
             'records_updated': resultado.records_updated,
             'records_skipped': resultado.records_skipped,
             'records_errored': resultado.records_errored,
             'duration_seconds': resultado.duration_seconds,
-            'error_message': resultado.error_message
+            'detalle_producto': detalle_producto,
+            'error_message': resultado.error_message or detalle_producto.get('error_message')
         }
         
     except Exception as e:

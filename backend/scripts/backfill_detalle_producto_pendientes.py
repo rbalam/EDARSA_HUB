@@ -246,7 +246,7 @@ def ejecutar_backfill(
 
         resumen["unidades"].append(unidad_resumen)
 
-    return (1 if resumen["dias_bloqueados"] or resumen["dias_sin_runtime"] else 0), resumen
+    return (1 if resumen["dias_bloqueados"] else 0), resumen
 
 
 def main() -> int:
@@ -282,8 +282,10 @@ def main() -> int:
 
     if not args.commit:
         print("DRY_RUN: no se modificó dbo.Comercial_Inteligencia_VentasDetalleProducto")
-    elif resumen["dias_bloqueados"] or resumen["dias_sin_runtime"]:
-        print("ADVERTENCIA: solo se escribieron días OK_HEADER_CANONICO; quedan pendientes por revisar.")
+    elif resumen["dias_bloqueados"]:
+        print("ADVERTENCIA: solo se escribieron días OK_HEADER_CANONICO; quedan días bloqueados por revisar.")
+    elif resumen["dias_sin_runtime"]:
+        print("INFO: días sin Runtime se omitieron; no existe encabezado canónico que reparar en detalle.")
 
     return code
 

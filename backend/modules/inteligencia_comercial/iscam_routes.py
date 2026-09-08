@@ -131,6 +131,100 @@ def _period_windows(desde: str, hasta_exclusivo: str, group_by: str):
     return windows
 
 
+def _detail_coverage(unidad_codigo: str, desde: str, hasta_exclusivo: str):
+    """Compara detalle ISCAM diario contra Runtime V2 canónico.
+
+    Solo evalúa fechas con actividad canónica. Una fecha sin fila Runtime no se
+    considera faltante de detalle, porque no existe encabezado de negocio que
+    reparar.
+    """
+    rows = _q(
+        """
+        WITH runtime AS (
+            SELECT CAST(fecha_operacion AS date) AS fecha_operacion,
+                   SUM(CAST(ISNULL(ventas_total,0) AS decimal(18,4))) AS ventas_runtime,
+                   SUM(CAST(ISNULL(tickets_total,0) AS bigint)) AS tickets_runtime,
+                   SUM(CAST(ISNULL(pax_total,0) AS bigint)) AS pax_runtime
+            FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime
+            WHERE unidad_negocio_id = %s
+              AND fecha_operacion >= %s AND fecha_operacion < %s
+              AND (ISNULL(ventas_total,0) <> 0 OR ISNULL(tickets_total,0) <> 0 OR ISNULL(pax_total,0) <> 0)
+            GROUP BY CAST(fecha_operacion AS date)
+        ),
+        detalle AS (
+            SELECT CAST(fecha_operacion AS date) AS fecha_operacion,
+                   SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) AS ventas_detalle,
+                   COUNT(DISTINCT id_transaccion) AS tickets_detalle,
+                   SUM(CAST(ISNULL(pax,0) AS bigint)) AS pax_detalle
+            FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
+            WHERE unidad_negocio_id = %s
+              AND fecha_operacion >= %s AND fecha_operacion < %s
+              AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
+            GROUP BY CAST(fecha_operacion AS date)
+        )
+        SELECT r.fecha_operacion, r.ventas_runtime, r.tickets_runtime, r.pax_runtime,
+               d.fecha_operacion AS detalle_fecha,
+               ISNULL(d.ventas_detalle,0) AS ventas_detalle,
+               ISNULL(d.tickets_detalle,0) AS tickets_detalle,
+               ISNULL(d.pax_detalle,0) AS pax_detalle
+        FROM runtime r
+        LEFT JOIN detalle d ON d.fecha_operacion = r.fecha_operacion
+        ORDER BY r.fecha_operacion
+        """,
+        (unidad_codigo, desde, hasta_exclusivo, unidad_codigo, desde, hasta_exclusivo),
+    )
+
+    missing = []
+    mismatch = []
+    runtime_sales = loaded_sales = 0.0
+    runtime_tickets = loaded_tickets = 0
+    runtime_pax = loaded_pax = 0
+    latest_detail = None
+
+    for row in rows:
+        fecha = _iso(row.get("fecha_operacion"))[:10]
+        rt_sales = _f(row.get("ventas_runtime"))
+        dt_sales = _f(row.get("ventas_detalle"))
+        rt_tickets = int(row.get("tickets_runtime") or 0)
+        dt_tickets = int(row.get("tickets_detalle") or 0)
+        rt_pax = int(row.get("pax_runtime") or 0)
+        dt_pax = int(row.get("pax_detalle") or 0)
+
+        runtime_sales += rt_sales
+        loaded_sales += dt_sales
+        runtime_tickets += rt_tickets
+        loaded_tickets += dt_tickets
+        runtime_pax += rt_pax
+        loaded_pax += dt_pax
+
+        if row.get("detalle_fecha") is None:
+            missing.append(fecha)
+        else:
+            latest_detail = max(latest_detail, fecha) if latest_detail else fecha
+            if abs(rt_sales - dt_sales) > 0.05 or rt_tickets != dt_tickets or rt_pax != dt_pax:
+                mismatch.append(fecha)
+
+    problem_dates = sorted(set(missing + mismatch))
+    return {
+        "detail_stale": bool(problem_dates),
+        "detail_missing_dates": missing,
+        "detail_mismatch_dates": mismatch,
+        "detail_problem_dates": problem_dates,
+        "detail_missing_from": problem_dates[0] if problem_dates else None,
+        "detail_missing_to": problem_dates[-1] if problem_dates else None,
+        "detail_latest_date": latest_detail,
+        "detail_runtime_sales": round(runtime_sales, 2),
+        "detail_loaded_sales": round(loaded_sales, 2),
+        "detail_sales_gap": round(runtime_sales - loaded_sales, 2),
+        "detail_runtime_tickets": runtime_tickets,
+        "detail_loaded_tickets": loaded_tickets,
+        "detail_ticket_gap": runtime_tickets - loaded_tickets,
+        "detail_runtime_pax": runtime_pax,
+        "detail_loaded_pax": loaded_pax,
+        "detail_pax_gap": runtime_pax - loaded_pax,
+    }
+
+
 # ============================================================================
 # 1) VENTAS POR PERIODOS (agrupable por Año / Mes)
 # ============================================================================
@@ -216,6 +310,22 @@ async def iscam_freshness(unidad: str = Query(...), desde: Optional[str] = None,
             "missing_from": None,
             "missing_to": None,
             "stale": False,
+            "detail_stale": False,
+            "detail_missing_dates": [],
+            "detail_mismatch_dates": [],
+            "detail_problem_dates": [],
+            "detail_missing_from": None,
+            "detail_missing_to": None,
+            "detail_latest_date": None,
+            "detail_runtime_sales": 0.0,
+            "detail_loaded_sales": 0.0,
+            "detail_sales_gap": 0.0,
+            "detail_runtime_tickets": 0,
+            "detail_loaded_tickets": 0,
+            "detail_ticket_gap": 0,
+            "detail_runtime_pax": 0,
+            "detail_loaded_pax": 0,
+            "detail_pax_gap": 0,
             "current_open_day": today_local.isoformat(),
         }
 
@@ -252,6 +362,10 @@ async def iscam_freshness(unidad: str = Query(...), desde: Optional[str] = None,
             missing_closed_dates.append(cursor.isoformat())
             cursor += timedelta(days=1)
 
+    detail_coverage = _detail_coverage(
+        str(unidad_codigo), d, (expected_latest + timedelta(days=1)).isoformat()
+    )
+
     return {
         "success": True,
         "source": "dbo.vw_Comercial_KPIs_Diarios_v2_Runtime",
@@ -262,6 +376,7 @@ async def iscam_freshness(unidad: str = Query(...), desde: Optional[str] = None,
         "missing_from": missing_from,
         "missing_to": missing_to,
         "stale": stale,
+        **detail_coverage,
         "current_open_day": today_local.isoformat(),
     }
 
