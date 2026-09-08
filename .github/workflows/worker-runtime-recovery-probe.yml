@@ -18,6 +18,7 @@ on:
 
 permissions:
   contents: read
+  statuses: write
 
 concurrency:
   group: edarsahub-worker-runtime-recovery
@@ -63,12 +64,17 @@ jobs:
           echo "CANONICAL_RUNTIME_URL=${CANONICAL_URL%/}"
 
       - name: Wake canonical Universal Worker through authoritative endpoint
+        id: wake
+        continue-on-error: true
         shell: bash
         env:
           QUEUE_SHA: ${{ steps.queue.outputs.queue_sha }}
           RUNTIME_URL: ${{ steps.runtime.outputs.runtime_url }}
         run: |
           set -euo pipefail
+          FINAL_HTTP=000
+          FINAL_STATE=FAILED
+          FINAL_DETAIL=unavailable
 
           for attempt in 1 2 3 4 5 6; do
             echo "WAKE_ATTEMPT=$attempt"
@@ -79,24 +85,54 @@ jobs:
               -H "X-Worker-Queue-Sha: ${QUEUE_SHA}" \
               "$RUNTIME_URL/api/internal/worker/wake" || true)"
 
+            FINAL_HTTP="$HTTP_CODE"
+            BODY="$(cat /tmp/wake-body.txt 2>/dev/null || true)"
             echo "WAKE_HTTP_CODE=$HTTP_CODE"
-            cat /tmp/wake-body.txt || true
-            echo
+            printf '%s\n' "$BODY"
 
             if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "202" ]; then
+              FINAL_STATE="$(printf '%s' "$BODY" | jq -r '.runtime_convergence.state // "ACCEPTED"' 2>/dev/null || echo ACCEPTED)"
+              FINAL_DETAIL="$(printf '%s' "$BODY" | jq -r '.runtime_convergence.new_sha // .runtime_convergence.remote_sha // .runtime_convergence.local_sha // "accepted"' 2>/dev/null || echo accepted)"
               echo "WORKER_WAKE_ACCEPTED=1"
-              echo "WORKER_WAKE_URL=$RUNTIME_URL"
-              exit 0
+              break
             fi
 
+            FINAL_DETAIL="$(printf '%s' "$BODY" | jq -r '.detail // "http_'"$HTTP_CODE"'"' 2>/dev/null || echo "http_$HTTP_CODE")"
             if [ "$HTTP_CODE" = "429" ]; then
               echo "WORKER_WAKE_ROUTE_REACHABLE_COOLDOWN=1"
             fi
-
-            if [ "$attempt" -lt 6 ]; then
-              sleep 8
-            fi
+            if [ "$attempt" -lt 6 ]; then sleep 8; fi
           done
 
-          echo "WORKER_WAKE_ACCEPTED=0"
+          FINAL_DETAIL="$(printf '%s' "$FINAL_DETAIL" | tr '\n\r' '  ' | cut -c1-100)"
+          echo "http_code=$FINAL_HTTP" >> "$GITHUB_OUTPUT"
+          echo "convergence_state=$FINAL_STATE" >> "$GITHUB_OUTPUT"
+          echo "detail=$FINAL_DETAIL" >> "$GITHUB_OUTPUT"
+          if [ "$FINAL_HTTP" = "200" ] || [ "$FINAL_HTTP" = "202" ]; then exit 0; fi
           exit 12
+
+      - name: Publish sanitized runtime convergence status
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WAKE_OUTCOME: ${{ steps.wake.outcome }}
+          HTTP_CODE: ${{ steps.wake.outputs.http_code }}
+          CONVERGENCE_STATE: ${{ steps.wake.outputs.convergence_state }}
+          DETAIL: ${{ steps.wake.outputs.detail }}
+        run: |
+          set -euo pipefail
+          if [ "$WAKE_OUTCOME" = "success" ]; then STATE=success; else STATE=failure; fi
+          DESC="http=${HTTP_CODE:-na} convergence=${CONVERGENCE_STATE:-FAILED} detail=${DETAIL:-unavailable}"
+          DESC="$(printf '%s' "$DESC" | cut -c1-140)"
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -f state="$STATE" \
+            -f context='edarsahub/runtime-convergence' \
+            -f description="$DESC" >/dev/null
+          echo "RUNTIME_CONVERGENCE_STATUS=$STATE"
+          echo "RUNTIME_CONVERGENCE_DESCRIPTION=$DESC"
+
+      - name: Enforce wake success
+        if: steps.wake.outcome != 'success'
+        shell: bash
+        run: exit 12
