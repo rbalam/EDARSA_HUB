@@ -1,0 +1,18 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"worker-concurrency-r5-runtime-call-isolation-r1-20260908T0507Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Diagnosticar si el test runtime R5 falla dentro de la llamada integrate o en las aserciones posteriores. Probe descartable; si pytest pasa, bloquear con py_compile inexistente. No integrar ni tocar Production.",
+  "actions":[
+    {"type":"replace_text","path":"backend/tests/test_universal_job_dispatcher_python_runtime.py","expected_count":1,"old":"    ok, detail = module.integrate(\"candidate\", \"base\")\n\n    assert ok is False or ok is True","new":"    ok, detail, final_head, evidence = module.integrate(\n        Path('.'),\n        'agent/test',\n        'candidate',\n        'base',\n        {'safe.txt'},\n    )\n\n    assert ok is False or ok is True"},
+    {"type":"replace_text","path":"backend/tests/test_universal_job_dispatcher_python_runtime.py","expected_count":1,"old":"    push_calls = [call for call in calls if \"push\" in call[0]]\n    assert push_calls\n    push_args = push_calls[0][0]\n    assert \"credential.helper=\" in push_args\n    assert \"credential.helper=store --file=/safe/credentials\" in push_args\n    assert \"gh auth git-credential\" not in \" \".join(push_args)","new":"    assert isinstance(detail, str)\n    assert final_head == 'candidate'\n    assert isinstance(evidence, list)"}
+  ],
+  "checks":[
+    {"type":"pytest","paths":["backend/tests/test_universal_job_dispatcher_python_runtime.py::test_integrate_push_uses_only_repository_local_credential_helper"]},
+    {"type":"py_compile","paths":["backend/tests/__intentional_missing_r5_runtime_call__.py"]}
+  ],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
