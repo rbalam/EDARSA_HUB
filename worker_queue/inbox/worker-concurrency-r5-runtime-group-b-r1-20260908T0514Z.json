@@ -1,0 +1,20 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"worker-concurrency-r5-runtime-group-b-r1-20260908T0514Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Aislar grupo B de tests runtime del candidato R5. Aplicar la misma modificacion de firma del test R5 y ejecutar solo cuatro tests no-integrate. Si pasan, bloquear despues con py_compile inexistente. No integrar ni tocar Production.",
+  "actions":[{"type":"replace_text","path":"backend/tests/test_universal_job_dispatcher_python_runtime.py","expected_count":1,"old":"    ok, detail = module.integrate(\"candidate\", \"base\")\n\n    assert ok is False or ok is True","new":"    ok, detail, final_head, evidence = module.integrate(\n        Path('.'),\n        'agent/test',\n        'candidate',\n        'base',\n        {'safe.txt'},\n    )\n\n    assert ok is False or ok is True\n    assert final_head == 'candidate'\n    assert isinstance(evidence, list)"}],
+  "checks":[
+    {"type":"pytest","paths":[
+      "backend/tests/test_universal_job_dispatcher_python_runtime.py::test_all_internal_python_subprocesses_are_canonical",
+      "backend/tests/test_universal_job_dispatcher_python_runtime.py::test_pytest_loads_missing_backend_runtime_env",
+      "backend/tests/test_universal_job_dispatcher_python_runtime.py::test_backend_runtime_env_does_not_override_process_env",
+      "backend/tests/test_universal_job_dispatcher_python_runtime.py::test_frontend_build_reuses_canonical_frontend_toolchain"
+    ]},
+    {"type":"py_compile","paths":["backend/tests/__intentional_missing_r5_runtime_group_b__.py"]}
+  ],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
