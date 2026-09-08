@@ -1,61 +1,67 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "60271740a535e216c3b7e032fa579dc66f71b1bc",
-  "generated_at_utc": "2026-09-08T04:51:07Z",
+  "generated_at_utc": "2026-09-08T04:52:19Z",
   "history": {
     "done_total_local": 152,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 283,
-    "results_total_local": 386
+    "rejected_total_local": 284,
+    "results_total_local": 387
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2977,
+      "age_seconds": 3049,
       "job_id": "worker-concurrency-deterministic-replay-no-rebase-r1-20260908T0402Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2815,
+      "age_seconds": 2887,
       "job_id": "worker-concurrency-deterministic-replay-no-rebase-r2-20260908T0408Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1604,
+      "age_seconds": 1676,
       "job_id": "worker-concurrency-deterministic-replay-no-rebase-r3-20260908T0424Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1370,
+      "age_seconds": 1442,
       "job_id": "worker-concurrency-deterministic-replay-no-rebase-r4-20260908T0430Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2061,
+      "age_seconds": 46,
+      "job_id": "worker-concurrency-deterministic-replay-no-rebase-r5-20260908T0453Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2133,
       "job_id": "worker-concurrency-pytest-isolation-replay-r1-20260908T0415Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2056,
+      "age_seconds": 2128,
       "job_id": "worker-concurrency-pytest-isolation-runtime-r1-20260908T0415Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2072,
+      "age_seconds": 2144,
       "job_id": "worker-concurrency-pytest-isolation-scope-r1-20260908T0415Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3268,
+      "age_seconds": 3340,
       "job_id": "worker-operational-result-certification-publisher-r1-20260908T0355Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -68,14 +74,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 8,
+  "queue_result_ready_recent": 9,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-08T04:51:05Z",
-    "last_receive_utc": "2026-09-08T04:51:05Z",
-    "last_terminal_utc": "2026-09-08T04:28:17Z",
+    "last_cycle_utc": "2026-09-08T04:52:18Z",
+    "last_receive_utc": "2026-09-08T04:52:18Z",
+    "last_terminal_utc": "2026-09-08T04:51:33Z",
     "pid": "181"
   },
   "schema": "edarsahub.worker-health.v3",
