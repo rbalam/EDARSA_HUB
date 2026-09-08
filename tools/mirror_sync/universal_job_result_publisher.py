@@ -122,6 +122,29 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
         "percent_complete": 95,
     }
 
+    if result.get("status") == "OPERATIONAL_COMPLETE":
+        operational_certified = (
+            str(result.get("certification") or "").upper() == "CERTIFIED_OPERATIONAL"
+            and str(result.get("tests", "")).upper() == "PASS"
+            and str(result.get("quality_gate", "")).upper() == "PASS"
+            and not (result.get("blockers") or [])
+            and result.get("production_touched") is False
+        )
+        if operational_certified:
+            return {
+                "certified": True,
+                "certification": "CERTIFIED_OPERATIONAL",
+                "work_completion": "COMPLETE",
+                "percent_complete": 100,
+                "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+            }
+        return {
+            **pending,
+            "certification": "NOT_CERTIFIED",
+            "work_completion": "NOT_CERTIFIED",
+            "percent_complete": min(int(result.get("percent_complete") or 0), 95),
+        }
+
     if result.get("status") != "INTEGRATED":
         return {
             **pending,
@@ -418,13 +441,13 @@ def marker_satisfied(marker: Path, public: dict[str, Any]) -> bool:
 
     desired = public.get("certification")
 
-    # Todo resultado ya publicado es terminal para el publisher,
-    # salvo la unica promocion permitida:
-    # evidencia previa no certificada -> CERTIFIED.
-    if desired != "CERTIFIED":
+    # Todo resultado ya publicado es terminal para el publisher, salvo
+    # promociones desde evidencia previa no certificada a una certificacion
+    # terminal valida del mismo contrato.
+    if desired not in {"CERTIFIED", "CERTIFIED_OPERATIONAL"}:
         return True
 
-    return "certification=CERTIFIED" in marker_text
+    return f"certification={desired}" in marker_text
 
 
 
