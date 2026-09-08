@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "2729c7cbb323f4574f25caa877c6b30a81a84aa8",
-  "generated_at_utc": "2026-09-08T06:20:32Z",
+  "generated_at_utc": "2026-09-08T06:21:46Z",
   "history": {
     "done_total_local": 156,
     "pending_total_local": 0,
@@ -13,31 +13,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3177,
+      "age_seconds": 3252,
       "job_id": "worker-concurrency-deterministic-replay-no-rebase-r6-20260908T0524Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2457,
+      "age_seconds": 2532,
       "job_id": "worker-health-operational-stale-threshold-r1-20260908T0540Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2528,
+      "age_seconds": 2603,
       "job_id": "worker-softrestaurant-full-history-write-r1-20260908T0534Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1942,
+      "age_seconds": 2017,
       "job_id": "worker-softrestaurant-full-history-write-r2-20260908T0543Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2345,
+      "age_seconds": 2420,
       "job_id": "worker-softrestaurant-sanitized-failure-evidence-r1-20260908T0542Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -55,8 +55,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-08T06:20:27Z",
-    "last_receive_utc": "2026-09-08T06:20:28Z",
+    "last_cycle_utc": "2026-09-08T06:21:41Z",
+    "last_receive_utc": "2026-09-08T06:21:42Z",
     "last_terminal_utc": "2026-09-08T05:48:09Z",
     "pid": "238798"
   },
