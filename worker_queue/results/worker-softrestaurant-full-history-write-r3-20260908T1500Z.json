@@ -1,0 +1,44 @@
+{
+  "base_sha": "2729c7cbb323f4574f25caa877c6b30a81a84aa8",
+  "blockers": [
+    "softrestaurant_resync_failed:rc=2"
+  ],
+  "canonical_sql_mutation": true,
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-08T15:04:29Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-softrestaurant-full-history-write-r3-20260908T1500Z",
+  "operation": "SOFTRESTAURANT_FULL_HISTORY_RESYNC",
+  "operation_summary": {
+    "results": [
+      {
+        "corte_windows": 0,
+        "error_domains": [],
+        "error_types": [
+          "OperationalError"
+        ],
+        "pagos_insertados": 0,
+        "payment_windows": 0,
+        "status": "FAIL",
+        "unidad": "130MID"
+      }
+    ]
+  },
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-08T15:05:22Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-08T15:02:37Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "units": [],
+  "work_completion": "NOT_CERTIFIED"
+}
