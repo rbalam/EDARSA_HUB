@@ -1,0 +1,87 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SOFTRESTAURANT-CANONICAL-WINDOW-JOIN-R40-CARLOS-20260908T234000Z",
+  "created_at_utc": "2026-09-08T23:40:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "19b52356dc8e5244b8e1db60b14ea954be3c43de",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir definitivamente la paridad SoftRestaurant header Runtime V2 vs detalle ISCAM. Evidencia SQL Issue #84: ESTELAR/CIENFUEGOS/130MID tienen turnos operativos configurados COMIDA 13:00-18:59 y CENA 19:00-12:59; por tanto la ventana fija 09:00->09:00 introducida en R35/R39 contradice el servicio canonico Sistema_TurnosOperativosUnidad. Evidencia #98: aun con R39B el scheduler INCR reescribe ESTELAR Sep 5-7 con valores distintos al reporte real. Unificar header y detalle para usar get_operational_datetime_range_for_fecha_operacion por unidad/fecha, incluida tolerancia canonica, y hacer que el header use el mismo INNER JOIN cheques->turnos que el detalle (idturno+idempresa) en vez de idturno IN(...). Mantener idempresa por ventana, cierre IS NOT NULL, cancelado=0, fail-closed, sin EDARSA_SQL_AUDITOR como dependencia y sin tocar Produccion.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+      "old": "    SUM(totalalimentossindescuentos) AS alimentos,\n    SUM(totalbebidassindescuentos) AS bebidas,\n    SUM(totalotrossindescuentos) AS otros,\n    SUM(totalcortesias) AS cortesias,\n    SUM(totaldescuentos) AS descuentos,\n    SUM(subtotal) AS subtotal,\n    SUM(totalimpuesto1) AS iva,\n    SUM(total) AS ventas_total,\n    SUM(propina) AS propinas,\n    SUM(total + propina) AS total_con_propina,\n    SUM(nopersonas) AS num_personas,\n    COUNT(folio) AS num_cheques\nFROM cheques\nWHERE idempresa = '{empresa_id}'\n  AND idturno IN (\n      SELECT idturno FROM turnos\n      WHERE idempresa = '{empresa_id}'\n        AND apertura >= '{inicio_operativo}'\n        AND apertura < '{fin_operativo}'\n        AND cierre IS NOT NULL\n  )\n  AND cancelado = 0",
+      "new": "    SUM(ch.totalalimentossindescuentos) AS alimentos,\n    SUM(ch.totalbebidassindescuentos) AS bebidas,\n    SUM(ch.totalotrossindescuentos) AS otros,\n    SUM(ch.totalcortesias) AS cortesias,\n    SUM(ch.totaldescuentos) AS descuentos,\n    SUM(ch.subtotal) AS subtotal,\n    SUM(ch.totalimpuesto1) AS iva,\n    SUM(ch.total) AS ventas_total,\n    SUM(ch.propina) AS propinas,\n    SUM(ch.total + ch.propina) AS total_con_propina,\n    SUM(ch.nopersonas) AS num_personas,\n    COUNT(ch.folio) AS num_cheques\nFROM cheques AS ch\nINNER JOIN turnos AS tr\n    ON tr.idturno = ch.idturno\n   AND tr.idempresa = ch.idempresa\nWHERE ch.idempresa = '{empresa_id}'\n  AND tr.idempresa = '{empresa_id}'\n  AND tr.apertura >= '{inicio_operativo}'\n  AND tr.apertura < '{fin_operativo}'\n  AND tr.cierre IS NOT NULL\n  AND ch.cancelado = 0",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+      "old": "    bloques = []\n    fecha_actual = fecha_inicio\n    while fecha_actual <= fecha_fin:\n        fecha_siguiente = fecha_actual + timedelta(days=1)\n        inicio_operativo = fecha_actual.strftime('%Y-%m-%d 09:00:00')\n        fin_operativo = fecha_siguiente.strftime('%Y-%m-%d 09:00:00')\n        empresa_id = _resolve_softrestaurant_empresa_id_for_window(\n            server_config, inicio_operativo, fin_operativo\n        )",
+      "new": "    from core.utils.operational_window import (\n        get_operational_datetime_range_for_fecha_operacion,\n    )\n\n    unidad_operativa = str(\n        (server_config or {}).get('unidad_negocio_pk')\n        or (server_config or {}).get('unidad_codigo')\n        or ''\n    ).strip()\n    if not unidad_operativa:\n        raise ValueError('SoftRestaurant sin unidad canonica para resolver ventana operativa')\n\n    bloques = []\n    fecha_actual = fecha_inicio\n    while fecha_actual <= fecha_fin:\n        inicio_dt, fin_dt, _window_meta = (\n            get_operational_datetime_range_for_fecha_operacion(\n                unidad_operativa, fecha_actual\n            )\n        )\n        inicio_operativo = inicio_dt.strftime('%Y-%m-%d %H:%M:%S')\n        fin_operativo = fin_dt.strftime('%Y-%m-%d %H:%M:%S')\n        empresa_id = _resolve_softrestaurant_empresa_id_for_window(\n            server_config, inicio_operativo, fin_operativo\n        )",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "def _soft_operational_datetime_range(cfg: Dict[str, Any], dia: date) -> Tuple[str, str]:\n    \"\"\"Ventana del detalle idéntica al header Comercial V2 SoftRestaurant.\n\n    El contrato vigente de build_softrestaurant_ventas_cerradas_query asigna\n    cada fecha_operacion por turnos.apertura desde las 09:00 del día hasta\n    antes de las 09:00 del siguiente día. El detalle NO puede usar una segunda\n    definición horaria porque desplaza tickets entre fechas y rompe la paridad\n    contra Runtime V2.\n    \"\"\"\n    del cfg\n    inicio = datetime.combine(dia, datetime.min.time()).replace(hour=9)\n    fin = inicio + timedelta(days=1)\n    return (\n        inicio.strftime(\"%Y-%m-%d %H:%M:%S\"),\n        fin.strftime(\"%Y-%m-%d %H:%M:%S\"),\n    )",
+      "new": "def _soft_operational_datetime_range(cfg: Dict[str, Any], dia: date) -> Tuple[str, str]:\n    \"\"\"Ventana SoftRestaurant única, tomada del servicio operativo canónico.\n\n    Header Runtime V2 y detalle ISCAM deben usar exactamente la partición\n    definida en Sistema_TurnosOperativosUnidad, incluida la tolerancia de\n    inicio. No se permite una hora fija duplicada en este extractor.\n    \"\"\"\n    from core.utils.operational_window import (\n        get_operational_datetime_range_for_fecha_operacion,\n    )\n\n    unidad_operativa = _unidad_operativa_id_for_window(cfg)\n    inicio, fin, _meta = get_operational_datetime_range_for_fecha_operacion(\n        unidad_operativa, dia\n    )\n    return (\n        inicio.strftime(\"%Y-%m-%d %H:%M:%S\"),\n        fin.strftime(\"%Y-%m-%d %H:%M:%S\"),\n    )",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_soft_detail_window_parity_r35.py",
+      "old": "def test_detail_window_is_same_09_to_09_contract_as_header():\n    fi, ff = _soft_operational_datetime_range({}, date(2026, 8, 20))\n    assert fi == '2026-08-20 09:00:00'\n    assert ff == '2026-08-21 09:00:00'",
+      "new": "def test_detail_window_uses_canonical_operational_window(monkeypatch):\n    import core.utils.operational_window as ow\n\n    monkeypatch.setattr(\n        ow,\n        'get_operational_datetime_range_for_fecha_operacion',\n        lambda unidad, dia: (\n            __import__('datetime').datetime(2026, 8, 20, 12, 55),\n            __import__('datetime').datetime(2026, 8, 21, 12, 55),\n            {'unidad': unidad},\n        ),\n    )\n    fi, ff = _soft_operational_datetime_range(\n        {'unidad_codigo': 'ESTELAR'}, date(2026, 8, 20)\n    )\n    assert fi == '2026-08-20 12:55:00'\n    assert ff == '2026-08-21 12:55:00'",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_soft_detail_window_parity_r35.py",
+      "old": "def test_header_and_detail_both_assign_by_turnos_apertura():\n    header = SYNC.read_text(encoding='utf-8')\n    detail = DETAIL.read_text(encoding='utf-8')\n    assert \"inicio_operativo = fecha_actual.strftime('%Y-%m-%d 09:00:00')\" in header\n    assert \"fin_operativo = fecha_siguiente.strftime('%Y-%m-%d 09:00:00')\" in header\n    assert \"AND apertura < '{fin_operativo}'\" in header\n    block = detail.split('def _extract_soft(', 1)[1].split('def _mpro_operational_datetime_range', 1)[0]\n    assert 'tr.apertura >= %s' in block\n    assert 'tr.apertura < %s' in block\n    assert 'tr.cierre IS NOT NULL' in block\n    assert 'tr.cierre >=' not in block\n    assert 'tr.cierre <' not in block",
+      "new": "def test_header_and_detail_both_use_operational_service_and_turnos_join():\n    header = SYNC.read_text(encoding='utf-8')\n    detail = DETAIL.read_text(encoding='utf-8')\n    assert 'get_operational_datetime_range_for_fecha_operacion' in header\n    assert \"INNER JOIN turnos AS tr\" in header\n    assert \"tr.apertura >= '{inicio_operativo}'\" in header\n    assert \"tr.apertura < '{fin_operativo}'\" in header\n    block = detail.split('def _extract_soft(', 1)[1].split('def _mpro_operational_datetime_range', 1)[0]\n    assert 'tr.apertura >= %s' in block\n    assert 'tr.apertura < %s' in block\n    assert 'tr.cierre IS NOT NULL' in block\n    assert 'tr.cierre >=' not in block\n    assert 'tr.cierre <' not in block",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_soft_detail_window_parity_r35.py",
+      "old": "def test_detail_does_not_use_separate_operational_window_service_anymore():\n    fn = DETAIL.read_text(encoding='utf-8').split('def _soft_operational_datetime_range', 1)[1].split('def _softrestaurant_empresa_id_for_window', 1)[0]\n    assert 'get_operational_datetime_range_for_fecha_operacion' not in fn\n    assert 'Sistema_TurnosOperativosUnidad' not in fn",
+      "new": "def test_detail_does_not_hardcode_a_second_window():\n    fn = DETAIL.read_text(encoding='utf-8').split('def _soft_operational_datetime_range', 1)[1].split('def _softrestaurant_empresa_id_for_window', 1)[0]\n    assert 'get_operational_datetime_range_for_fecha_operacion' in fn\n    assert 'replace(hour=9)' not in fn\n    assert '09:00:00' not in fn",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_softrestaurant_header_detail_empresa_parity_r39.py",
+      "old": "    assert '_resolve_softrestaurant_empresa_id_for_window(' in block\n    assert \"fin_operativo = fecha_siguiente.strftime('%Y-%m-%d 09:00:00')\" in block",
+      "new": "    assert '_resolve_softrestaurant_empresa_id_for_window(' in block\n    assert 'get_operational_datetime_range_for_fecha_operacion' in block\n    assert \"inicio_operativo = inicio_dt.strftime('%Y-%m-%d %H:%M:%S')\" in block\n    assert \"fin_operativo = fin_dt.strftime('%Y-%m-%d %H:%M:%S')\" in block",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_softrestaurant_header_detail_empresa_parity_r39.py",
+      "old": "def test_header_uses_exclusive_0900_boundary_like_detail():\n    header = SYNC.read_text(encoding='utf-8')\n    detail = DETAIL.read_text(encoding='utf-8')\n    assert \"AND apertura >= '{inicio_operativo}'\" in header\n    assert \"AND apertura < '{fin_operativo}'\" in header\n    assert \"fin = inicio + timedelta(days=1)\" in detail\n    assert \"tr.apertura >= %s\" in detail\n    assert \"tr.apertura < %s\" in detail",
+      "new": "def test_header_uses_same_exclusive_operational_boundary_as_detail():\n    header = SYNC.read_text(encoding='utf-8')\n    detail = DETAIL.read_text(encoding='utf-8')\n    assert \"tr.apertura >= '{inicio_operativo}'\" in header\n    assert \"tr.apertura < '{fin_operativo}'\" in header\n    assert 'get_operational_datetime_range_for_fecha_operacion' in detail\n    assert \"tr.apertura >= %s\" in detail\n    assert \"tr.apertura < %s\" in detail",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_softrestaurant_canonical_window_join_r40.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nSYNC = ROOT / 'backend' / 'modules' / 'comercial_v2' / 'sync_comercial_edarsahub.py'\nDETAIL = ROOT / 'backend' / 'scripts' / 'poblar_ventas_detalle_producto_canonico.py'\n\n\ndef test_soft_header_and_detail_share_turnos_population_contract():\n    header = SYNC.read_text(encoding='utf-8')\n    detail = DETAIL.read_text(encoding='utf-8')\n    header_query = header.split('QUERY_SOFTRESTAURANT_VENTAS_CERRADAS_DIA =', 1)[1].split('def _resolve_softrestaurant_empresa_id_for_window', 1)[0]\n    detail_query = detail.split('def _extract_soft(', 1)[1].split('def _mpro_operational_datetime_range', 1)[0]\n    assert 'INNER JOIN turnos AS tr' in header_query\n    assert 'tr.idturno = ch.idturno' in header_query\n    assert 'tr.idempresa = ch.idempresa' in header_query\n    assert 'tr.apertura >=' in header_query and 'tr.apertura <' in header_query\n    assert 'tr.cierre IS NOT NULL' in header_query\n    assert 'ch.cancelado = 0' in header_query\n    assert 'INNER JOIN turnos tr' in detail_query\n    assert 'tr.idturno = ch.idturno' in detail_query\n    assert 'tr.idempresa = ch.idempresa' in detail_query\n\n\ndef test_no_fixed_0900_window_remains_in_soft_header_or_detail_window_helpers():\n    header = SYNC.read_text(encoding='utf-8')\n    detail = DETAIL.read_text(encoding='utf-8')\n    builder = header.split('def build_softrestaurant_ventas_cerradas_query', 1)[1].split('QUERY_SOFTRESTAURANT_VENTAS_ABIERTAS', 1)[0]\n    detail_window = detail.split('def _soft_operational_datetime_range', 1)[1].split('def _softrestaurant_empresa_id_for_window', 1)[0]\n    assert \"09:00:00\" not in builder\n    assert \"09:00:00\" not in detail_window\n    assert 'get_operational_datetime_range_for_fecha_operacion' in builder\n    assert 'get_operational_datetime_range_for_fecha_operacion' in detail_window\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/comercial_v2/sync_comercial_edarsahub.py", "backend/scripts/poblar_ventas_detalle_producto_canonico.py", "backend/tests/test_softrestaurant_canonical_window_join_r40.py", "backend/tests/test_iscam_soft_detail_window_parity_r35.py", "backend/tests/test_softrestaurant_header_detail_empresa_parity_r39.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_softrestaurant_canonical_window_join_r40.py", "backend/tests/test_iscam_soft_detail_window_parity_r35.py", "backend/tests/test_softrestaurant_header_detail_empresa_parity_r39.py", "backend/tests/test_iscam_detail_only_manual_resync_r37.py"]}
+  ]
+}
