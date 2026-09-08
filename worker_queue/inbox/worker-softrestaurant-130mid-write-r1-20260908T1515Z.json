@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-softrestaurant-130mid-write-r1-20260908T1515Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Ejecutar de forma idempotente el resync historico completo SoftRestaurant exclusivamente para 130MID, ahora que su dry-run de conectividad fue CERTIFIED_OPERATIONAL al 100%. Usar solamente la capability cerrada SOFTRESTAURANT_FULL_HISTORY_RESYNC con --execute interno fijo. No aceptar shell, script_path arbitrario, rutas externas ni comandos adicionales. Al finalizar ejecutar auditoria SQL de solo lectura sobre las tablas canonicas y publicar evidencia sanitizada. No tocar Edarsahub_Produccion.",
+  "mode": "SOFTRESTAURANT_FULL_HISTORY_RESYNC",
+  "actions": [],
+  "units": ["130MID"],
+  "dry_run": false,
+  "confirm_full_history_resync": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "target_tables_exist_after_130mid_write",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name FROM sys.tables t INNER JOIN sys.schemas s ON s.schema_id = t.schema_id WHERE s.name = 'dbo' AND t.name IN ('Finanzas_CortesCaja','Finanzas_CortesCaja_DetallePagos') ORDER BY t.name;"
+        },
+        {
+          "name": "cortes_count_after_130mid_write",
+          "sql": "SELECT COUNT_BIG(*) AS total_rows FROM dbo.Finanzas_CortesCaja;"
+        },
+        {
+          "name": "detalle_pagos_count_after_130mid_write",
+          "sql": "SELECT COUNT_BIG(*) AS total_rows FROM dbo.Finanzas_CortesCaja_DetallePagos;"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Per-unit Gate C write for 130MID after certified dry-run"
+  },
+  "human_summary_language": "es"
+}
