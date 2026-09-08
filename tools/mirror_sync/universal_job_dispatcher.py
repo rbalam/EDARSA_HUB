@@ -96,6 +96,48 @@ def now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def summarize_softrestaurant_output(output: str) -> dict[str, Any]:
+    summary: dict[str, Any] = {"results": []}
+    for raw_line in reversed((output or "").splitlines()):
+        try:
+            payload = json.loads(raw_line)
+        except Exception:
+            continue
+        if not isinstance(payload, dict) or payload.get("event") != "summary":
+            continue
+        rows = payload.get("results") or []
+        if not isinstance(rows, list):
+            return summary
+        sanitized = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            error_domains = []
+            error_types = []
+            errors = row.get("errors") or []
+            if isinstance(errors, list):
+                for error in errors:
+                    if isinstance(error, dict):
+                        domain = str(error.get("domain") or "").strip()
+                        if domain:
+                            error_domains.append(domain)
+                        value = error.get("error")
+                        error_types.append(type(value).__name__)
+                    elif isinstance(error, str):
+                        error_types.append(error.split(":", 1)[0][:80])
+            sanitized.append({
+                "unidad": str(row.get("unidad") or ""),
+                "status": str(row.get("status") or ""),
+                "payment_windows": int(row.get("payment_windows") or 0),
+                "corte_windows": int(row.get("corte_windows") or 0),
+                "pagos_insertados": int(row.get("pagos_insertados") or 0),
+                "error_domains": sorted(set(error_domains)),
+                "error_types": sorted(set(error_types)),
+            })
+        return {"results": sanitized}
+    return summary
+
+
 def run(args: list[str], cwd: Path | None = None, check: bool = False, timeout: int | None = None, env_extra: dict[str, str] | None = None):
     env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
     if env_extra:
@@ -586,6 +628,7 @@ def process_one(path: Path) -> int:
             result["units"] = [u.strip().upper() for u in units]
             result["canonical_sql_mutation"] = not dry_run
             result["operation_output"] = execution.stdout[-20000:]
+            result["operation_summary"] = summarize_softrestaurant_output(execution.stdout)
             result["files_changed"] = []
             if execution.returncode != 0:
                 result["blockers"].append(f"softrestaurant_resync_failed:rc={execution.returncode}")

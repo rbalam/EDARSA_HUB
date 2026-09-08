@@ -258,6 +258,8 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
         "executor", "base_sha", "candidate_sha", "development_sha", "tests",
         "quality_gate", "files_changed", "summary_es", "blockers",
         "percent_complete", "certification", "production_touched",
+        "operation", "dry_run", "units", "canonical_sql_mutation",
+        "operation_summary",
     )
     public = {key: result.get(key) for key in allowed if key in result}
     public["published_at_utc"] = now()
