@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-COMMIT-R36-CARLOS-20260908T171900Z",
+  "created_at_utc": "2026-09-08T17:19:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "acc7c3a1e478b6c2ca1d27e399cc1f1ba47944f6",
+  "production_allowed": false,
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "objective": "Ejecutar el backfill REAL del detalle ISCAM para ESTELAR, CIENFUEGOS y 130MID del 1 al 7 de septiembre de 2026 usando el contrato corregido R35, donde SoftRestaurant reutiliza exactamente la ventana 09:00->09:00 del header Comercial V2. Escribir solo dias OK_HEADER_CANONICO y certificar por SQL read-only. Produccion no se toca.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "actions": [],
+  "units": ["ESTELAR", "CIENFUEGOS", "130MID"],
+  "fecha_inicio": "2026-09-01",
+  "fecha_fin": "2026-09-08",
+  "dry_run": false,
+  "confirm_detail_backfill": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "detalle_cobertura_post_r36",
+          "sql": "SELECT unidad_negocio_id, fecha_operacion, COUNT(DISTINCT CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN numero_ticket END) AS tickets, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN ISNULL(pax,0) ELSE 0 END) AS pax, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN ISNULL(importe_neto,0) ELSE 0 END) AS ventas_neto FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('ESTELAR','CIENFUEGOS','130MID') AND fecha_operacion >= '2026-09-01' AND fecha_operacion < '2026-09-08' AND ISNULL(activo,1)=1 GROUP BY unidad_negocio_id, fecha_operacion ORDER BY unidad_negocio_id, fecha_operacion"
+        }
+      ]
+    }
+  ]
+}
