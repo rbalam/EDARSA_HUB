@@ -7,11 +7,12 @@ on:
       - Edarsahub_Desarrollo
     paths:
       - '.github/workflows/worker-runtime-recovery-probe.yml'
+      - 'worker_queue/config/runtime-recovery.json'
       - 'worker_queue/triggers/runtime-recovery/**'
   workflow_dispatch:
     inputs:
       preview_url:
-        description: 'Override opcional de URL Preview de Emergent'
+        description: 'Override opcional de URL publica del runtime'
         required: false
         type: string
 
@@ -42,56 +43,55 @@ jobs:
           echo "queue_sha=$QUEUE_SHA" >> "$GITHUB_OUTPUT"
           echo "QUEUE_SHA=$QUEUE_SHA"
 
+      - name: Resolve canonical runtime URL
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          CONFIG='worker_queue/config/runtime-recovery.json'
+          test -r "$CONFIG"
+          CANONICAL_URL="$(jq -r '.canonical_public_url // empty' "$CONFIG")"
+          if [ -n "${PREVIEW_URL_OVERRIDE:-}" ]; then
+            CANONICAL_URL="${PREVIEW_URL_OVERRIDE%/}"
+          fi
+          test -n "$CANONICAL_URL"
+          case "$CANONICAL_URL" in
+            https://*) ;;
+            *) echo 'INVALID_CANONICAL_RUNTIME_URL'; exit 13;;
+          esac
+          echo "runtime_url=${CANONICAL_URL%/}" >> "$GITHUB_OUTPUT"
+          echo "CANONICAL_RUNTIME_URL=${CANONICAL_URL%/}"
+
       - name: Wake canonical Universal Worker through authoritative endpoint
         shell: bash
         env:
           QUEUE_SHA: ${{ steps.queue.outputs.queue_sha }}
+          RUNTIME_URL: ${{ steps.runtime.outputs.runtime_url }}
         run: |
           set -euo pipefail
 
-          candidates=()
-          if [ -n "${PREVIEW_URL_OVERRIDE:-}" ]; then
-            candidates+=("${PREVIEW_URL_OVERRIDE%/}")
-          fi
-          candidates+=(
-            'https://stock-tracker-990.preview.emergentagent.com'
-            'https://erp-crm-enterprise-1.preview.emergentagent.com'
-            'https://edarsa-hub-preview.emergentagent.com'
-          )
-
-          # No depender de rutas funcionales como /api/v2/comercial/dashboard:
-          # durante cold-start o despliegues parciales pueden devolver 404 aunque
-          # el control plane del Worker siga disponible. La unica prueba autoritativa
-          # para esta recuperacion es POST /api/internal/worker/wake.
           for attempt in 1 2 3 4 5 6; do
-            echo "WAKE_DISCOVERY_ATTEMPT=$attempt"
-            for candidate in "${candidates[@]}"; do
-              candidate="${candidate%/}"
-              [ -n "$candidate" ] || continue
+            echo "WAKE_ATTEMPT=$attempt"
+            HTTP_CODE="$(curl --silent --show-error \
+              --connect-timeout 5 --max-time 25 \
+              -o /tmp/wake-body.txt -w '%{http_code}' \
+              -X POST \
+              -H "X-Worker-Queue-Sha: ${QUEUE_SHA}" \
+              "$RUNTIME_URL/api/internal/worker/wake" || true)"
 
-              HTTP_CODE="$(curl --silent --show-error \
-                --connect-timeout 5 --max-time 25 \
-                -o /tmp/wake-body.txt -w '%{http_code}' \
-                -X POST \
-                -H "X-Worker-Queue-Sha: ${QUEUE_SHA}" \
-                "$candidate/api/internal/worker/wake" || true)"
+            echo "WAKE_HTTP_CODE=$HTTP_CODE"
+            cat /tmp/wake-body.txt || true
+            echo
 
-              echo "WAKE_CANDIDATE=$candidate HTTP_CODE=$HTTP_CODE"
-              cat /tmp/wake-body.txt || true
-              echo
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "202" ]; then
+              echo "WORKER_WAKE_ACCEPTED=1"
+              echo "WORKER_WAKE_URL=$RUNTIME_URL"
+              exit 0
+            fi
 
-              if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "202" ]; then
-                echo "WORKER_WAKE_ACCEPTED=1"
-                echo "WORKER_WAKE_URL=$candidate"
-                exit 0
-              fi
-
-              # 429 confirma que la ruta correcta existe y esta en cooldown;
-              # seguimos reintentando hasta obtener la aceptacion 200/202.
-              if [ "$HTTP_CODE" = "429" ]; then
-                echo "WORKER_WAKE_ROUTE_REACHABLE_COOLDOWN=1"
-              fi
-            done
+            if [ "$HTTP_CODE" = "429" ]; then
+              echo "WORKER_WAKE_ROUTE_REACHABLE_COOLDOWN=1"
+            fi
 
             if [ "$attempt" -lt 6 ]; then
               sleep 8
