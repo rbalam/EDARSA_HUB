@@ -1,0 +1,64 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-health-operational-stale-threshold-r1-20260908T0540Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Corregir exclusivamente el falso BLOCKED del health publisher para jobs operativos de larga duracion. Mantener 180s para jobs normales, pero usar un umbral operativo de 21600s para SOFTRESTAURANT_FULL_HISTORY_RESYNC e ISCAM_DETAIL_BACKFILL leyendo el mode del envelope processing. No tocar supervisor, watchdog, dispatcher, Production ni el Gate C actualmente en ejecucion.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/runtime_health_publisher.py",
+      "old": "STALE_SECONDS = int(os.environ.get(\"EDARSAHUB_JOB_STALE_SECONDS\", \"180\"))\nTERMINAL_RETENTION_SECONDS = int(\n",
+      "new": "STALE_SECONDS = int(os.environ.get(\"EDARSAHUB_JOB_STALE_SECONDS\", \"180\"))\nOPERATIONAL_STALE_SECONDS = int(os.environ.get(\"EDARSAHUB_OPERATIONAL_JOB_STALE_SECONDS\", \"21600\"))\nOPERATIONAL_MODES = {\"SOFTRESTAURANT_FULL_HISTORY_RESYNC\", \"ISCAM_DETAIL_BACKFILL\"}\nTERMINAL_RETENTION_SECONDS = int(\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/runtime_health_publisher.py",
+      "old": "def terminal_visible(path: Path) -> bool:\n    return age_seconds(path) <= TERMINAL_RETENTION_SECONDS\n\n\ndef public_rejection(path: Path) -> dict:\n",
+      "new": "def terminal_visible(path: Path) -> bool:\n    return age_seconds(path) <= TERMINAL_RETENTION_SECONDS\n\n\ndef processing_stale_seconds(path: Path) -> int:\n    try:\n        payload = json.loads(path.read_text(encoding=\"utf-8\"))\n        job = payload.get(\"job\") if isinstance(payload, dict) else None\n        mode = str(job.get(\"mode\") or \"\") if isinstance(job, dict) else \"\"\n    except Exception:\n        mode = \"\"\n    return OPERATIONAL_STALE_SECONDS if mode in OPERATIONAL_MODES else STALE_SECONDS\n\n\ndef public_rejection(path: Path) -> dict:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/runtime_health_publisher.py",
+      "old": "            age = age_seconds(path)\n            effective_state = \"BLOCKED\" if age >= STALE_SECONDS else \"RUNNING\"\n            rows.append(\n",
+      "new": "            age = age_seconds(path)\n            stale_seconds = processing_stale_seconds(path)\n            effective_state = \"BLOCKED\" if age >= stale_seconds else \"RUNNING\"\n            rows.append(\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_runtime_health_operational_stale_threshold.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nHEALTH = ROOT / \"tools\" / \"mirror_sync\" / \"runtime_health_publisher.py\"\n\n\ndef test_operational_jobs_have_longer_stale_threshold():\n    text = HEALTH.read_text(encoding=\"utf-8\")\n    assert 'EDARSAHUB_OPERATIONAL_JOB_STALE_SECONDS' in text\n    assert '21600' in text\n    assert 'SOFTRESTAURANT_FULL_HISTORY_RESYNC' in text\n    assert 'ISCAM_DETAIL_BACKFILL' in text\n    assert 'processing_stale_seconds(path)' in text\n    assert 'age >= stale_seconds' in text\n\n\ndef test_default_stale_threshold_remains_for_normal_jobs():\n    text = HEALTH.read_text(encoding=\"utf-8\")\n    assert 'EDARSAHUB_JOB_STALE_SECONDS' in text\n    assert '\"180\"' in text\n    assert 'else STALE_SECONDS' in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/runtime_health_publisher.py",
+        "backend/tests/test_runtime_health_operational_stale_threshold.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_runtime_health_operational_stale_threshold.py",
+        "backend/tests/test_runtime_health_publisher_git_auth_contract.py",
+        "backend/tests/test_worker_health_branch_isolation_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Health operational stale threshold hardening"
+  },
+  "human_summary_language": "es"
+}
