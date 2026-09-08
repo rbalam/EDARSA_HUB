@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-lifecycle-operational-complete-done-r3-20260908T0341Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Cerrar Gate A lifecycle corrigiendo exclusivamente el test stale de SoftRestaurant para que detecte el bloque actual if mode == SOFTRESTAURANT_FULL_HISTORY_MODE y agregando la regresion que certifica OPERATIONAL_COMPLETE -> DONE. No modificar logica funcional, no base_sha, no Production.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_softrestaurant_full_history_capability_contract.py",
+      "expected_count": 1,
+      "old": "capability = text.split('if str(job.get(\"mode\") or \"\") == SOFTRESTAURANT_FULL_HISTORY_MODE:', 1)[1].split('requested_paths = sorted(', 1)[0]",
+      "new": "capability = text.split('if mode == SOFTRESTAURANT_FULL_HISTORY_MODE:', 1)[1].split('worktree, branch = prepare_worktree(', 1)[0]"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_operational_complete_lifecycle.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nDISPATCHER = ROOT / 'tools' / 'mirror_sync' / 'universal_job_dispatcher.py'\n\n\ndef test_operational_complete_routes_to_done_not_rejected():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    expected = 'target = DONE / path.name if result[\"status\"] in {\"INTEGRATED\", \"READ_ONLY_COMPLETE\", \"OPERATIONAL_COMPLETE\"} else REJECTED / path.name'\n    assert expected in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_operational_complete_lifecycle.py",
+        "backend/tests/test_worker_softrestaurant_full_history_capability_contract.py"
+      ]
+    },
+    {"type": "git_diff_check"}
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0"
+  },
+  "human_summary_language": "es"
+}
