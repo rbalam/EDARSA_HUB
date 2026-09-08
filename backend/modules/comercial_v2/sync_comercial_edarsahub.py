@@ -504,9 +504,6 @@ def _recalcular_derivados_ventas_cerradas(row):
 
 def _agrupar_ventas_cerradas_por_fecha_operacion(rows, config, fecha_inicio=None, fecha_fin=None):
     from collections import OrderedDict
-    from core.utils.operational_window import get_fecha_operacion
-
-    unidad_negocio_pk = _resolver_unidad_negocio_pk_from_config(config)
 
     fecha_inicio_op = _normalizar_fecha_operacion_value(fecha_inicio)
     fecha_fin_op = _normalizar_fecha_operacion_value(fecha_fin)
@@ -535,9 +532,8 @@ def _agrupar_ventas_cerradas_por_fecha_operacion(rows, config, fecha_inicio=None
         elif sistema_origen == SistemaOrigen.MPRO:
             fecha_operacion = _normalizar_fecha_operacion_value(fecha_hora)
         elif sistema_origen == SistemaOrigen.SOFTRESTAURANT:
-            fecha_operacion = _normalizar_fecha_operacion_value(
-                get_fecha_operacion(unidad_negocio_pk, fecha_hora)
-            )
+            # Igual que Reporte Ejecutivo: fecha calendario de turnos.apertura.
+            fecha_operacion = _normalizar_fecha_operacion_value(fecha_hora)
         else:
             raise ValueError(
                 "Sistema origen no soportado para resolver "
@@ -622,66 +618,13 @@ SELECT
     SUM(ch.propina) AS propinas,
     SUM(ch.total + ch.propina) AS total_con_propina,
     SUM(ch.nopersonas) AS num_personas,
-    COUNT(ch.folio) AS num_cheques
+    COUNT(DISTINCT ch.folio) AS num_cheques
 FROM cheques AS ch
 INNER JOIN turnos AS tr
     ON tr.idturno = ch.idturno
-   AND tr.idempresa = ch.idempresa
-WHERE ch.idempresa = '{empresa_id}'
-  AND tr.idempresa = '{empresa_id}'
-  AND tr.apertura >= '{inicio_operativo}'
-  AND tr.apertura < '{fin_operativo}'
-  AND tr.cierre IS NOT NULL
+WHERE CONVERT(varchar, tr.apertura, 112) = '{fecha_operacion_sql}'
   AND ch.cancelado = 0
 """
-
-
-def _resolve_softrestaurant_empresa_id_for_window(
-    server_config: Dict[str, Any],
-    inicio_operativo: str,
-    fin_operativo: str,
-) -> str:
-    """Resuelve idempresa desde turnos cerrados del mismo dia operativo."""
-    discovery_query = """
-SELECT DISTINCT
-    LTRIM(RTRIM(CONVERT(NVARCHAR(100), t.idempresa))) AS empresa_id
-FROM turnos AS t
-WHERE t.apertura >= '{inicio_operativo}'
-  AND t.apertura < '{fin_operativo}'
-  AND t.cierre IS NOT NULL
-  AND NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(100), t.idempresa))), '') IS NOT NULL
-ORDER BY empresa_id
-""".format(
-        inicio_operativo=inicio_operativo,
-        fin_operativo=fin_operativo,
-    )
-    discovery_rows, discovery_status = execute_query_on_server(
-        server_config, discovery_query
-    )
-    if discovery_status != ConnectionStatus.ONLINE:
-        raise ValueError(
-            "No fue posible resolver idempresa desde el origen SoftRestaurant"
-        )
-    candidates = sorted({
-        str(row.get("empresa_id") or "").strip()
-        for row in discovery_rows or []
-        if str(row.get("empresa_id") or "").strip()
-    })
-    if len(candidates) == 1:
-        configured = str((server_config or {}).get("empresa_id") or "").strip()
-        if configured and configured != candidates[0]:
-            logger.warning(
-                "SoftRestaurant empresa_id del catalogo difiere del origen; "
-                "se usara turnos.idempresa de la ventana operativa"
-            )
-        return candidates[0]
-    if not candidates:
-        raise ValueError(
-            "No se encontro idempresa en turnos cerrados de la ventana operativa"
-        )
-    raise ValueError(
-        "Se encontraron multiples idempresa en la ventana operativa SoftRestaurant"
-    )
 
 
 def build_softrestaurant_ventas_cerradas_query(
@@ -689,40 +632,20 @@ def build_softrestaurant_ventas_cerradas_query(
     fecha_inicio: date,
     fecha_fin: date,
 ) -> str:
-    """Construye ventas cerradas con paridad exacta header/detalle ISCAM."""
-    from core.utils.operational_window import (
-        get_operational_datetime_range_for_fecha_operacion,
-    )
+    """Construye ventas SoftRestaurant con el contrato del Reporte Ejecutivo.
 
-    unidad_operativa = str(
-        (server_config or {}).get('unidad_negocio_pk')
-        or (server_config or {}).get('unidad_codigo')
-        or ''
-    ).strip()
-    if not unidad_operativa:
-        raise ValueError('SoftRestaurant sin unidad canonica para resolver ventana operativa')
-
+    La pertenencia al dia se define SOLO por la fecha calendario de
+    turnos.apertura. No usa turnos operativos, cierre ni idempresa.
+    """
+    del server_config
     bloques = []
     fecha_actual = fecha_inicio
     while fecha_actual <= fecha_fin:
-        inicio_dt, fin_dt, _window_meta = (
-            get_operational_datetime_range_for_fecha_operacion(
-                unidad_operativa, fecha_actual
-            )
-        )
-        inicio_operativo = inicio_dt.strftime('%Y-%m-%d %H:%M:%S')
-        fin_operativo = fin_dt.strftime('%Y-%m-%d %H:%M:%S')
-        empresa_id = _resolve_softrestaurant_empresa_id_for_window(
-            server_config, inicio_operativo, fin_operativo
-        )
-        empresa_sql = empresa_id.replace("'", "''")
         bloques.append(QUERY_SOFTRESTAURANT_VENTAS_CERRADAS_DIA.format(
             fecha_operacion=fecha_actual.strftime('%Y-%m-%d'),
-            empresa_id=empresa_sql,
-            inicio_operativo=inicio_operativo,
-            fin_operativo=fin_operativo,
+            fecha_operacion_sql=fecha_actual.strftime('%Y%m%d'),
         ))
-        fecha_actual = fecha_siguiente
+        fecha_actual += timedelta(days=1)
     return "\nUNION ALL\n".join(bloques)
 
 QUERY_SOFTRESTAURANT_VENTAS_ABIERTAS = """

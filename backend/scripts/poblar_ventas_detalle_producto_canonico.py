@@ -689,53 +689,17 @@ def _unidad_operativa_id_for_window(cfg: Dict[str, Any]) -> str:
 
 
 def _soft_operational_datetime_range(cfg: Dict[str, Any], dia: date) -> Tuple[str, str]:
-    """Ventana SoftRestaurant única, tomada del servicio operativo canónico.
+    """Rango diario equivalente al filtro por fecha de turnos.apertura.
 
-    Header Runtime V2 y detalle ISCAM deben usar exactamente la partición
-    definida en Sistema_TurnosOperativosUnidad, incluida la tolerancia de
-    inicio. No se permite una hora fija duplicada en este extractor.
+    Para un dia, Reporte Ejecutivo equivale a [00:00:00, siguiente 00:00:00).
     """
-    from core.utils.operational_window import (
-        get_operational_datetime_range_for_fecha_operacion,
-    )
-
-    unidad_operativa = _unidad_operativa_id_for_window(cfg)
-    inicio, fin, _meta = get_operational_datetime_range_for_fecha_operacion(
-        unidad_operativa, dia
-    )
+    del cfg
+    inicio = datetime.combine(dia, datetime.min.time())
+    fin = inicio + timedelta(days=1)
     return (
         inicio.strftime("%Y-%m-%d %H:%M:%S"),
         fin.strftime("%Y-%m-%d %H:%M:%S"),
     )
-
-
-def _softrestaurant_empresa_id_for_window(conn, fi: str, ff: str) -> str:
-    """Resuelve turnos.idempresa del POS para un rango operativo."""
-    cur = conn.cursor(as_dict=True)
-    cur.execute(
-        """
-        SELECT DISTINCT
-            LTRIM(RTRIM(CONVERT(NVARCHAR(100), t.idempresa))) AS empresa_id
-        FROM turnos t WITH (NOLOCK)
-        WHERE t.apertura >= %s
-          AND t.apertura < %s
-          AND t.cierre IS NOT NULL
-          AND NULLIF(LTRIM(RTRIM(CONVERT(NVARCHAR(100), t.idempresa))), '') IS NOT NULL
-        ORDER BY empresa_id
-        """,
-        (fi, ff),
-    )
-    candidates = sorted({
-        _s(row.get("empresa_id"))
-        for row in (cur.fetchall() or [])
-        if _s(row.get("empresa_id"))
-    })
-    cur.close()
-    if len(candidates) == 1:
-        return candidates[0]
-    if not candidates:
-        raise RuntimeError("SoftRestaurant sin idempresa en turnos cerrados del rango operativo")
-    raise RuntimeError("SoftRestaurant con multiples idempresa en el rango operativo")
 
 
 def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
@@ -755,7 +719,6 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         desc_expr = f"ISNULL(ch.{desc_col}, 0)" if desc_col else "CAST(0 AS decimal(18,4))"
 
         fi, ff = _soft_operational_datetime_range(cfg, dia)
-        empresa_id = _softrestaurant_empresa_id_for_window(conn, fi, ff)
 
         sql = f"""
         WITH h AS (
@@ -770,12 +733,9 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             FROM cheques ch WITH (NOLOCK)
             INNER JOIN turnos tr WITH (NOLOCK)
                 ON tr.idturno = ch.idturno
-               AND tr.idempresa = ch.idempresa
-            WHERE ch.idempresa = %s
-              AND tr.idempresa = %s
-              AND tr.apertura >= %s
+            WHERE tr.apertura >= %s
               AND tr.apertura < %s
-              AND tr.cierre IS NOT NULL
+              AND ISNULL(ch.cancelado, 0) = 0
         ),
         l AS (
             SELECT
@@ -853,7 +813,7 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         ORDER BY l.folio, l.producto_codigo_fuente
         """
         cur = conn.cursor(as_dict=True)
-        cur.execute(sql, (empresa_id, empresa_id, fi, ff))
+        cur.execute(sql, (fi, ff))
         rows = cur.fetchall() or []
         for r in rows:
             r["sistema_origen"] = "SOFTRESTAURANT"
