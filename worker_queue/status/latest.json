@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "2e76f66103565405272dc571fa9dd9d9af999727",
-  "generated_at_utc": "2026-09-08T23:57:31Z",
+  "generated_at_utc": "2026-09-08T23:58:44Z",
   "history": {
-    "done_total_local": 171,
+    "done_total_local": 172,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 310,
-    "results_total_local": 428
+    "results_total_local": 429
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1072,
+      "age_seconds": 1146,
       "job_id": "EDARSAHUB-SOFTRESTAURANT-APERTURA-PARITY-R40B-CARLOS-20260908T234500Z",
       "reasons": [
         "ACTION_9_EXPECTED_SHA256_REQUIRED",
@@ -24,63 +24,63 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 631,
+      "age_seconds": 704,
       "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-ALMACENES-REGRESSION-AUDIT-R1-20260908T162700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 721,
+      "age_seconds": 794,
       "job_id": "EDARSAHUB-SOFTRESTAURANT-APERTURA-PARITY-R40C-CARLOS-20260908T235000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1554,
+      "age_seconds": 1628,
       "job_id": "EDARSAHUB-SOFTRESTAURANT-CANONICAL-WINDOW-JOIN-R40-CARLOS-20260908T234000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2956,
+      "age_seconds": 3029,
       "job_id": "EDARSAHUB-SOFTRESTAURANT-PER-DAY-EMPRESA-PARITY-R39-CARLOS-20260908T231000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2653,
+      "age_seconds": 2726,
       "job_id": "EDARSAHUB-SOFTRESTAURANT-PER-DAY-EMPRESA-PARITY-R39B-CARLOS-20260908T232000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 716,
+      "age_seconds": 790,
       "job_id": "worker-softrestaurant-estelar-connectivity-dryrun-r1-20260908T2343Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 96,
+      "age_seconds": 39,
       "job_id": "worker-softrestaurant-estelar-write-r1-20260908T2354Z",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 6,
-  "queue_running": 1,
+  "queue_result_ready_recent": 7,
+  "queue_running": 0,
   "runtime": {
-    "current_job_id": "worker-softrestaurant-estelar-write-r1-20260908T2354Z",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-08T23:57:28Z",
-    "last_receive_utc": "2026-09-08T23:57:29Z",
-    "last_terminal_utc": "2026-09-08T23:47:00Z",
+    "last_cycle_utc": "2026-09-08T23:58:41Z",
+    "last_receive_utc": "2026-09-08T23:58:42Z",
+    "last_terminal_utc": "2026-09-08T23:58:05Z",
     "pid": "285"
   },
   "schema": "edarsahub.worker-health.v3",
