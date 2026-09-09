@@ -1,0 +1,502 @@
+{
+  "base_sha": "235b61a73a3e4f7ec728368736fff3ff793b3ed1",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T18:27:20Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "servers-integrations-gate5a-consumers-readonly-sql-20260909",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T18:27:47Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "database_user",
+              "original_login"
+            ],
+            "name": "gate5a_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "tipo_conexion",
+              "system_type",
+              "activo",
+              "total"
+            ],
+            "name": "gate5a_connections_inventory",
+            "row_count_returned": 13,
+            "rows": [
+              [
+                "API_LOCAL",
+                "ENTERPRISE",
+                true,
+                "2"
+              ],
+              [
+                "API_LOCAL",
+                "MPRO",
+                false,
+                "2"
+              ],
+              [
+                "API_LOCAL",
+                "MPRO",
+                true,
+                "3"
+              ],
+              [
+                "API_LOCAL",
+                "SOFTRESTAURANT_PRO",
+                true,
+                "2"
+              ],
+              [
+                "CORE",
+                "EDARSA_HUB",
+                true,
+                "1"
+              ],
+              [
+                "CORE",
+                "Otro",
+                false,
+                "1"
+              ],
+              [
+                "DATA_SOURCE",
+                "INEGI",
+                false,
+                "1"
+              ],
+              [
+                "DATA_SOURCE",
+                "MANAGEMENTPRO",
+                false,
+                "1"
+              ],
+              [
+                "DATA_SOURCE",
+                "MPRO",
+                false,
+                "5"
+              ],
+              [
+                "DATA_SOURCE",
+                "MPRO",
+                true,
+                "2"
+              ],
+              [
+                "DATA_SOURCE",
+                "SoftRestaurant",
+                false,
+                "1"
+              ],
+              [
+                "DATA_SOURCE",
+                "SOFTRESTAURANT_PRO",
+                false,
+                "1"
+              ],
+              [
+                "DATA_SOURCE",
+                "SOFTRESTAURANT_PRO",
+                true,
+                "4"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "is_nullable"
+            ],
+            "name": "gate5a_connection_health_schema",
+            "row_count_returned": 22,
+            "rows": [
+              [
+                1,
+                "Id",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                2,
+                "ServidorID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                3,
+                "ServerID",
+                "nvarchar",
+                200,
+                true
+              ],
+              [
+                4,
+                "EstadoConexion",
+                "nvarchar",
+                100,
+                true
+              ],
+              [
+                5,
+                "UltimoCheck",
+                "datetime",
+                8,
+                true
+              ],
+              [
+                6,
+                "ResponseTimeMs",
+                "int",
+                4,
+                true
+              ],
+              [
+                7,
+                "PayloadMongo",
+                "nvarchar",
+                -1,
+                true
+              ],
+              [
+                8,
+                "MongoId",
+                "nvarchar",
+                200,
+                true
+              ],
+              [
+                9,
+                "ColeccionOrigen",
+                "nvarchar",
+                400,
+                true
+              ],
+              [
+                10,
+                "MigradoDesdeMongo",
+                "bit",
+                1,
+                true
+              ],
+              [
+                11,
+                "FechaMigracionMongo",
+                "datetime",
+                8,
+                true
+              ],
+              [
+                12,
+                "Activo",
+                "bit",
+                1,
+                false
+              ],
+              [
+                13,
+                "FechaCreacion",
+                "datetime",
+                8,
+                false
+              ],
+              [
+                14,
+                "UltimaPruebaUTC",
+                "datetime2",
+                7,
+                true
+              ],
+              [
+                15,
+                "UltimoExitoUTC",
+                "datetime2",
+                7,
+                true
+              ],
+              [
+                16,
+                "UltimoErrorUTC",
+                "datetime2",
+                7,
+                true
+              ],
+              [
+                17,
+                "UltimoErrorCodigo",
+                "nvarchar",
+                160,
+                true
+              ],
+              [
+                18,
+                "UltimoErrorMensaje",
+                "nvarchar",
+                2000,
+                true
+              ],
+              [
+                19,
+                "LatenciaMs",
+                "int",
+                4,
+                true
+              ],
+              [
+                20,
+                "UltimoSyncUTC",
+                "datetime2",
+                7,
+                true
+              ],
+              [
+                21,
+                "UltimoSyncExitosoUTC",
+                "datetime2",
+                7,
+                true
+              ],
+              [
+                22,
+                "FechaActualizacionUTC",
+                "datetime2",
+                7,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_rows",
+              "with_ultima_prueba_utc",
+              "with_ultimo_exito_utc",
+              "with_ultimo_error_utc",
+              "with_ultimo_sync_utc",
+              "with_fecha_actualizacion_utc"
+            ],
+            "name": "gate5a_connection_health_rows",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0",
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_rows",
+              "with_conexion_id",
+              "with_unidad_id",
+              "with_codigo_sync",
+              "with_started_utc",
+              "with_finished_utc",
+              "with_idempotency_key"
+            ],
+            "name": "gate5a_sync_ledger_adoption",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "4712",
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "total"
+            ],
+            "name": "gate5a_universal_new_tables_rows",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "Sistema_Sync_Capacidades",
+                "0"
+              ],
+              [
+                "Sync_Control_Evidencias",
+                "0"
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_syncs",
+              "active_syncs",
+              "implemented_handlers",
+              "allows_resync"
+            ],
+            "name": "gate5a_sync_catalog_inventory",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "10",
+                8,
+                10,
+                10
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_capabilities",
+              "active_capabilities"
+            ],
+            "name": "gate5a_capabilities_inventory",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "40",
+                40
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc"
+            ],
+            "name": "gate5a_communications_objects",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                "dbo",
+                "DF_Usuario_PortalConfiguracion_RecibeWhatsApp",
+                "DEFAULT_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "EventNotificationErrorsQueue",
+                "SERVICE_QUEUE"
+              ],
+              [
+                "dbo",
+                "Operativo_Notificaciones_Log",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "QueryNotificationErrorsQueue",
+                "SERVICE_QUEUE"
+              ],
+              [
+                "dbo",
+                "Sistema_NotificacionesConfig",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "UQ_OpNotif_NotificacionID",
+                "UNIQUE_CONSTRAINT"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_notification_logs"
+            ],
+            "name": "gate5a_notification_log_rows",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "codigo",
+              "nombre",
+              "modulo",
+              "activo"
+            ],
+            "name": "gate5a_rbac_connection_communication_permissions",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_units",
+              "with_timezone_iana",
+              "with_locale_operativo"
+            ],
+            "name": "gate5a_timezone_adoption",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "5",
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T18:27:17Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
