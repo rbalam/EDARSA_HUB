@@ -1,0 +1,59 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"CENTRO-CONTROL-SYNC-MONITOR-GATE2-P4A-R2-VISUAL-SYNC-MONITOR-20260908T2340Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Ajustar solo SyncMonitor.js al estilo visual EDARSAHUB ya existente. Mantener backend, endpoints, RBAC y semantica intactos. Mostrar SIN_SLA_THRESHOLD_CONFIGURADO y SIN_TELEMETRIA de forma explicita y sustituir gradientes azules genericos por superficies zinc/neutras.",
+  "actions":[
+    {
+      "type":"replace_text",
+      "path":"frontend/src/pages/SyncMonitor.js",
+      "old":"  STALE: { \n    bg: 'bg-gray-500/20', \n    border: 'border-gray-500/50', \n    text: 'text-gray-400',\n    dot: 'bg-gray-500',\n    label: 'INACTIVO'\n  },\n};\n\nconst getStatusConfig = (status) => STATUS_CONFIG[status] || STATUS_CONFIG.STALE;",
+      "new":"  STALE: { bg: 'bg-zinc-500/10', border: 'border-zinc-500/30', text: 'text-zinc-400', dot: 'bg-zinc-500', label: 'STALE' },\n  SIN_SLA_THRESHOLD_CONFIGURADO: { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-300', dot: 'bg-amber-400', label: 'SIN SLA' },\n  SIN_TELEMETRIA: { bg: 'bg-zinc-800', border: 'border-zinc-700', text: 'text-zinc-400', dot: 'bg-zinc-500', label: 'SIN TELEMETRIA' },\n};\n\nconst getStatusConfig = (status) => STATUS_CONFIG[status] || STATUS_CONFIG.SIN_TELEMETRIA;",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"frontend/src/pages/SyncMonitor.js",
+      "old":"  const colors = {\n    blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/30',\n    green: 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/30',\n    amber: 'from-amber-500/20 to-amber-600/10 border-amber-500/30',\n    red: 'from-red-500/20 to-red-600/10 border-red-500/30',\n    gray: 'from-gray-500/20 to-gray-600/10 border-gray-500/30',\n  };",
+      "new":"  const colors = {\n    blue: 'border-zinc-800',\n    green: 'border-emerald-900/60',\n    amber: 'border-amber-900/60',\n    red: 'border-red-900/60',\n    gray: 'border-zinc-800',\n  };",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"frontend/src/pages/SyncMonitor.js",
+      "old":"    <div className={`bg-gradient-to-br ${colors[color]} border rounded-xl p-4`}>",
+      "new":"    <div className={`bg-zinc-950/70 ${colors[color]} border rounded-lg p-4 shadow-sm`}>",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"frontend/src/pages/SyncMonitor.js",
+      "old":"    <div className=\"space-y-6 p-6\" data-testid=\"sync-monitor-page\">",
+      "new":"    <div className=\"space-y-6 p-6 text-zinc-100\" data-testid=\"sync-monitor-page\">",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"frontend/src/pages/SyncMonitor.js",
+      "old":"            className=\"flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white/70 transition-colors disabled:opacity-50\"",
+      "new":"            className=\"flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-md text-zinc-200 transition-colors disabled:opacity-50\"",
+      "expected_count":1
+    }
+  ],
+  "checks":[
+    {"type":"git_diff_check"},
+    {"type":"frontend_build","directory":"frontend"}
+  ],
+  "constraints":[
+    "NO Production",
+    "NO backend changes",
+    "NO endpoint changes",
+    "NO RBAC changes",
+    "NO KPI semantic changes",
+    "Only frontend/src/pages/SyncMonitor.js may change"
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"technical"
+}
