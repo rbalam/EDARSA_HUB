@@ -1,0 +1,74 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE8C-ALERTAS-CONTROLLED-IMPLEMENTATION-R1-20260909",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d4b9cf82341efc9e8c1f7b822ee951156b1b263a",
+  "production_allowed": false,
+  "objective": "Gate 8C Catalogo Ampliado. Implementar de forma controlada el planner y dispatcher internos de alertas sobre el contrato Gate8B y linaje SQL Gate8A. Planner SQL idempotente sobre Gobierno_AlertaEvento; dispatcher materializa canal TAREA en Sistema_Tareas usando la infraestructura canonica existente; EMAIL/WHATSAPP/APP quedan fail-closed sin envio LIVE ni log falso hasta un gate de entrega externa autorizado. Agregar consulta administrativa de eventos con RBAC existente. No DDL, no scheduler paralelo, no provider externo, no Production.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/catalogo_ampliado/alert_service.py",
+      "content": "\"\"\"Planner/dispatcher controlado de alertas de Gobierno Corporativo.\n\nGate 8C: no realiza entregas externas. Solo materializa TAREA en el motor\ncanonico dbo.Sistema_Tareas; EMAIL/WHATSAPP/APP permanecen fail-closed hasta\nque un gate posterior autorice la capa canonica de entrega externa.\n\"\"\"\n\nfrom . import repository as repo\n\nEXTERNAL_CHANNELS = {\"EMAIL\", \"WHATSAPP\", \"APP\"}\n\n\ndef planificar_alertas() -> dict:\n    creadas = repo.plan_alerta_eventos()\n    return {\"planned\": int(creadas or 0)}\n\n\ndef despachar_alertas(limit: int = 50) -> dict:\n    limit = max(1, min(int(limit), 200))\n    eventos = repo.list_due_alert_events(limit)\n    resultados = []\n    for evento in eventos:\n        canal = str(evento.get(\"Canal\") or \"\").upper()\n        evento_id = int(evento[\"AlertaEventoID\"])\n        if canal == \"TAREA\":\n            tarea = repo.ensure_canonical_task_for_alert(evento_id)\n            resultados.append({\"alerta_evento_id\": evento_id, \"canal\": canal, \"status\": \"GENERADA\", \"reference\": str(tarea.get(\"TareaSistemaID\"))})\n            continue\n        if canal in EXTERNAL_CHANNELS:\n            resultados.append({\"alerta_evento_id\": evento_id, \"canal\": canal, \"status\": \"BLOCKED_EXTERNAL_DELIVERY_NOT_AUTHORIZED\"})\n            continue\n        resultados.append({\"alerta_evento_id\": evento_id, \"canal\": canal, \"status\": \"BLOCKED_UNSUPPORTED_CHANNEL\"})\n    return {\"processed\": len(resultados), \"items\": resultados}\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/catalogo_ampliado/repository.py",
+      "old": "def create_alerta_regla(empresa_id: int, data, usuario_id: int):\n    return _insert_one(\"\"\"INSERT INTO dbo.Gobierno_AlertaRegla(EmpresaID,TipoDocumentoID,UsuarioObjetivoID,DiasAntes,Canal,UsuarioAltaID) OUTPUT INSERTED.* VALUES(%s,%s,%s,%s,%s,%s)\"\"\", [empresa_id,data.get('tipo_documento_id'),data.get('usuario_objetivo_id'),data['dias_antes'],data['canal'],usuario_id])\n",
+      "new": "def create_alerta_regla(empresa_id: int, data, usuario_id: int):\n    return _insert_one(\"\"\"INSERT INTO dbo.Gobierno_AlertaRegla(EmpresaID,TipoDocumentoID,UsuarioObjetivoID,DiasAntes,Canal,UsuarioAltaID) OUTPUT INSERTED.* VALUES(%s,%s,%s,%s,%s,%s)\"\"\", [empresa_id,data.get('tipo_documento_id'),data.get('usuario_objetivo_id'),data['dias_antes'],data['canal'],usuario_id])\n\n\ndef list_alerta_eventos(empresa_id: int, limit: int = 200):\n    limit=max(1,min(int(limit),500))\n    return fetch_all_dict(f\"\"\"SELECT TOP {limit} e.*,r.Canal,r.DiasAntes,r.UsuarioObjetivoID,d.DocumentoID,d.Titulo,v.FechaVencimiento,COALESCE(d.EmpresaID,pr.EmpresaID) EmpresaID FROM dbo.Gobierno_AlertaEvento e JOIN dbo.Gobierno_AlertaRegla r ON r.AlertaReglaID=e.AlertaReglaID JOIN dbo.Gobierno_DocumentoVersion v ON v.DocumentoVersionID=e.DocumentoVersionID JOIN dbo.Gobierno_Documento d ON d.DocumentoID=v.DocumentoID LEFT JOIN dbo.Gobierno_PersonaEmpresaRol pr ON pr.PersonaEmpresaRolID=d.PersonaEmpresaRolID WHERE COALESCE(d.EmpresaID,pr.EmpresaID)=%s ORDER BY e.FechaProgramada DESC,e.AlertaEventoID DESC\"\"\", [empresa_id])\n\n\ndef plan_alerta_eventos() -> int:\n    with sql_connection() as conn:\n        cur=conn.cursor()\n        cur.execute(\"\"\"\n        INSERT INTO dbo.Gobierno_AlertaEvento(DocumentoVersionID,AlertaReglaID,FechaObjetivo,FechaProgramada)\n        SELECT v.DocumentoVersionID,r.AlertaReglaID,v.FechaVencimiento,DATEADD(DAY,-r.DiasAntes,v.FechaVencimiento)\n        FROM dbo.Gobierno_Documento d\n        JOIN dbo.Gobierno_DocumentoVersion v ON v.DocumentoID=d.DocumentoID\n        LEFT JOIN dbo.Gobierno_PersonaEmpresaRol pr ON pr.PersonaEmpresaRolID=d.PersonaEmpresaRolID\n        JOIN dbo.Gobierno_EmpresaConfiguracion cfg ON cfg.EmpresaID=COALESCE(d.EmpresaID,pr.EmpresaID) AND cfg.Activo=1 AND cfg.CatalogoLegalAmpliadoActivo=1\n        JOIN dbo.Gobierno_AlertaRegla r ON r.Activo=1 AND (r.EmpresaID=COALESCE(d.EmpresaID,pr.EmpresaID) OR r.EmpresaID IS NULL) AND (r.TipoDocumentoID=d.TipoDocumentoID OR r.TipoDocumentoID IS NULL)\n        WHERE d.Activo=1 AND d.Estado='VIGENTE' AND v.EstadoRevision='VALIDADO' AND v.FechaVencimiento IS NOT NULL\n          AND v.NumeroVersion=(SELECT MAX(v2.NumeroVersion) FROM dbo.Gobierno_DocumentoVersion v2 WHERE v2.DocumentoID=d.DocumentoID)\n          AND NOT EXISTS(SELECT 1 FROM dbo.Gobierno_AlertaEvento e WITH (UPDLOCK,HOLDLOCK) WHERE e.DocumentoVersionID=v.DocumentoVersionID AND e.AlertaReglaID=r.AlertaReglaID AND e.FechaObjetivo=v.FechaVencimiento);\n        SELECT @@ROWCOUNT;\n        \"\"\")\n        row=cur.fetchone(); conn.commit(); return int(row[0] if row else 0)\n\n\ndef list_due_alert_events(limit: int = 50):\n    limit=max(1,min(int(limit),200))\n    return fetch_all_dict(f\"\"\"SELECT TOP {limit} e.AlertaEventoID,e.Estado,e.TareaReferencia,e.NotificacionReferencia,e.FechaObjetivo,e.FechaProgramada,r.Canal,r.UsuarioObjetivoID,d.DocumentoID,d.Titulo,COALESCE(d.EmpresaID,pr.EmpresaID) EmpresaID FROM dbo.Gobierno_AlertaEvento e JOIN dbo.Gobierno_AlertaRegla r ON r.AlertaReglaID=e.AlertaReglaID JOIN dbo.Gobierno_DocumentoVersion v ON v.DocumentoVersionID=e.DocumentoVersionID JOIN dbo.Gobierno_Documento d ON d.DocumentoID=v.DocumentoID LEFT JOIN dbo.Gobierno_PersonaEmpresaRol pr ON pr.PersonaEmpresaRolID=d.PersonaEmpresaRolID WHERE e.Estado='PENDIENTE' AND e.FechaProgramada<=CAST(GETDATE() AS date) AND r.Activo=1 AND d.Activo=1 AND d.Estado='VIGENTE' AND v.EstadoRevision='VALIDADO' ORDER BY e.FechaProgramada,e.AlertaEventoID\"\"\")\n\n\ndef ensure_canonical_task_for_alert(alerta_evento_id: int):\n    with sql_connection() as conn:\n        cur=conn.cursor()\n        cur.execute(\"\"\"SELECT e.AlertaEventoID,e.Estado,e.TareaReferencia,r.Canal,r.UsuarioObjetivoID,d.Titulo,COALESCE(d.EmpresaID,pr.EmpresaID) EmpresaID,e.FechaObjetivo FROM dbo.Gobierno_AlertaEvento e WITH (UPDLOCK,HOLDLOCK) JOIN dbo.Gobierno_AlertaRegla r ON r.AlertaReglaID=e.AlertaReglaID JOIN dbo.Gobierno_DocumentoVersion v ON v.DocumentoVersionID=e.DocumentoVersionID JOIN dbo.Gobierno_Documento d ON d.DocumentoID=v.DocumentoID LEFT JOIN dbo.Gobierno_PersonaEmpresaRol pr ON pr.PersonaEmpresaRolID=d.PersonaEmpresaRolID WHERE e.AlertaEventoID=%s AND e.Estado IN('PENDIENTE','GENERADA') AND r.Activo=1 AND r.Canal='TAREA' AND d.Activo=1 AND d.Estado='VIGENTE' AND v.EstadoRevision='VALIDADO'\"\"\", [alerta_evento_id])\n        row=cur.fetchone()\n        if not row: raise RuntimeError('ALERTA_EVENTO_NO_EJECUTABLE')\n        cols=[d[0] for d in cur.description]; event=dict(zip(cols,row))\n        if event.get('TareaReferencia'):\n            cur.execute(\"SELECT TOP 1 * FROM dbo.Sistema_Tareas WHERE TareaSistemaID=%s\", [int(event['TareaReferencia'])]); task=cur.fetchone(); task_cols=[d[0] for d in cur.description] if cur.description else []; conn.commit(); return dict(zip(task_cols,task)) if task else {'TareaSistemaID':int(event['TareaReferencia'])}\n        cur.execute(\"SELECT TOP 1 * FROM dbo.Sistema_Tareas WHERE Modulo='CATALOGO_AMPLIADO' AND EntidadTipo='GOBIERNO_ALERTA_EVENTO' AND EntidadID=%s ORDER BY TareaSistemaID\", [str(alerta_evento_id)])\n        task=cur.fetchone()\n        if task:\n            task_cols=[d[0] for d in cur.description]; task_dict=dict(zip(task_cols,task))\n        else:\n            codigo=f'GOB-ALERTA-{alerta_evento_id}'\n            cur.execute(\"\"\"INSERT INTO dbo.Sistema_Tareas(CodigoTarea,TipoTarea,EstadoTarea,Prioridad,TituloTarea,Descripcion,Modulo,EntidadTipo,EntidadID,EmpresaID,AsignadoAUsuarioID,CreadoPorUsuarioID,FechaLimite,MetadataJSON,CreatedAt,CreatedBy) OUTPUT INSERTED.* VALUES(%s,'CUMPLIMIENTO_DOCUMENTAL','PENDIENTE','MEDIA',%s,%s,'CATALOGO_AMPLIADO','GOBIERNO_ALERTA_EVENTO',%s,%s,%s,%s,%s,%s,GETDATE(),%s)\"\"\", [codigo,f\"Cumplimiento documental: {event['Titulo']}\",f\"Revisar documento con fecha objetivo {event['FechaObjetivo']}\",str(alerta_evento_id),event['EmpresaID'],event['UsuarioObjetivoID'],event['UsuarioObjetivoID'],event['FechaObjetivo'],f'{{\"alerta_evento_id\":{alerta_evento_id}}}',str(event['UsuarioObjetivoID'])])\n            task_row=cur.fetchone(); task_cols=[d[0] for d in cur.description]; task_dict=dict(zip(task_cols,task_row))\n        tarea_id=int(task_dict['TareaSistemaID'])\n        cur.execute(\"UPDATE dbo.Gobierno_AlertaEvento SET TareaReferencia=%s,Estado='GENERADA',FechaEjecucion=SYSUTCDATETIME(),ErrorMensaje=NULL WHERE AlertaEventoID=%s\", [str(tarea_id),alerta_evento_id])\n        conn.commit(); return task_dict\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/catalogo_ampliado/routes.py",
+      "old": "@router.post('/empresas/{empresa_id}/alertas/reglas',status_code=201)\ndef crear_regla_alerta(empresa_id:int,body:AlertaReglaCreate,current_user:dict=Depends(_gobierno_admin)):\n    _assert_empresa(empresa_id); return {'success':True,'data':repo.create_alerta_regla(empresa_id,body.model_dump(),_usuario_id(current_user))}\n",
+      "new": "@router.post('/empresas/{empresa_id}/alertas/reglas',status_code=201)\ndef crear_regla_alerta(empresa_id:int,body:AlertaReglaCreate,current_user:dict=Depends(_gobierno_admin)):\n    _assert_empresa(empresa_id); return {'success':True,'data':repo.create_alerta_regla(empresa_id,body.model_dump(),_usuario_id(current_user))}\n\n@router.get('/empresas/{empresa_id}/alertas/eventos')\ndef eventos_alerta(empresa_id:int,limit:int=Query(default=200,ge=1,le=500),current_user:dict=Depends(_gobierno_admin)):\n    _assert_empresa(empresa_id); return {'success':True,'data':repo.list_alerta_eventos(empresa_id,limit)}\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_catalogo_ampliado_gate8c_alerts.py",
+      "content": "from pathlib import Path\n\nROOT=Path(__file__).resolve().parents[2]\nREPO=ROOT/'backend/modules/catalogo_ampliado/repository.py'\nSERVICE=ROOT/'backend/modules/catalogo_ampliado/alert_service.py'\nROUTES=ROOT/'backend/modules/catalogo_ampliado/routes.py'\n\n\ndef test_planner_is_sql_idempotent_and_uses_existing_event_unique_shape():\n    t=REPO.read_text(encoding='utf-8')\n    assert 'def plan_alerta_eventos' in t\n    assert \"v.EstadoRevision='VALIDADO'\" in t\n    assert 'v.NumeroVersion=(SELECT MAX' in t\n    assert 'NOT EXISTS(SELECT 1 FROM dbo.Gobierno_AlertaEvento' in t\n    assert 'DocumentoVersionID=v.DocumentoVersionID' in t\n    assert 'AlertaReglaID=r.AlertaReglaID' in t\n    assert 'FechaObjetivo=v.FechaVencimiento' in t\n\n\ndef test_dispatcher_reuses_sistema_tareas_and_has_no_external_live_send():\n    r=REPO.read_text(encoding='utf-8')\n    s=SERVICE.read_text(encoding='utf-8')\n    assert 'INSERT INTO dbo.Sistema_Tareas' in r\n    assert \"Modulo='CATALOGO_AMPLIADO'\" in r\n    assert \"EntidadTipo='GOBIERNO_ALERTA_EVENTO'\" in r\n    assert 'NotificationDispatcher' not in s\n    assert 'send_message' not in s\n    assert 'BLOCKED_EXTERNAL_DELIVERY_NOT_AUTHORIZED' in s\n\n\ndef test_no_parallel_schema_or_scheduler_and_admin_events_route_is_rbac_guarded():\n    text='\\n'.join([REPO.read_text(encoding='utf-8'),SERVICE.read_text(encoding='utf-8'),ROUTES.read_text(encoding='utf-8')]).lower()\n    assert 'create table' not in text\n    assert 'scheduler' not in SERVICE.read_text(encoding='utf-8').lower()\n    routes=ROUTES.read_text(encoding='utf-8')\n    assert \"@router.get('/empresas/{empresa_id}/alertas/eventos')\" in routes\n    assert 'Depends(_gobierno_admin)' in routes\n\n\ndef test_service_dispatches_task_once_and_blocks_external(monkeypatch):\n    from modules.catalogo_ampliado import alert_service\n    class DummyRepo:\n        def list_due_alert_events(self, limit):\n            return [\n                {'AlertaEventoID':1,'Canal':'TAREA'},\n                {'AlertaEventoID':2,'Canal':'EMAIL'},\n                {'AlertaEventoID':3,'Canal':'WHATSAPP'},\n                {'AlertaEventoID':4,'Canal':'APP'},\n            ]\n        def ensure_canonical_task_for_alert(self, event_id):\n            assert event_id==1\n            return {'TareaSistemaID':99}\n    monkeypatch.setattr(alert_service,'repo',DummyRepo())\n    out=alert_service.despachar_alertas()\n    assert out['processed']==4\n    assert out['items'][0]['reference']=='99'\n    assert all(x['status']=='BLOCKED_EXTERNAL_DELIVERY_NOT_AUTHORIZED' for x in out['items'][1:])\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/catalogo_ampliado/repository.py",
+        "backend/modules/catalogo_ampliado/routes.py",
+        "backend/modules/catalogo_ampliado/alert_service.py",
+        "backend/tests/test_catalogo_ampliado_gate8c_alerts.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_catalogo_ampliado_gate2_ddl_contract.py",
+        "backend/tests/test_catalogo_ampliado_backend_gate4.py",
+        "backend/tests/test_catalogo_ampliado_gate6_runtime.py",
+        "backend/tests/test_catalogo_ampliado_gate6_contract.py",
+        "backend/tests/test_catalogo_ampliado_gate8c_alerts.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "NO Production",
+    "NO DDL",
+    "NO Mongo",
+    "NO hardcodes of company/user identities",
+    "NO LIVE external delivery",
+    "NO parallel task engine",
+    "NO parallel notification engine",
+    "NO parallel scheduler",
+    "NO Worker/Supervisor/watchdog modifications",
+    "TAREA must reuse dbo.Sistema_Tareas",
+    "EMAIL/WHATSAPP/APP must fail closed until explicitly authorized in a later gate",
+    "No public planner/dispatcher execution endpoint"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
