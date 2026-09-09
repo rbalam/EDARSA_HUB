@@ -1,0 +1,30 @@
+{
+  "base_sha": "ba11768eaa287511523880e8009da4475279bc55",
+  "blockers": [
+    "development_push_failed:.vscode/tasks.json:1:1: error: AGENT_STORAGE_POLICY_V1: artefacto regenerable nuevo dentro de /app: .emergent/system_deps.txt.tmp; bytes=0; usar /tmp/edarsahub-agents/<agent>/outputs/\nerror: failed to push some refs to 'https://github.com/rbalam/EDARSA_HUB.git'\n"
+  ],
+  "candidate_sha": "32bd784d1495679c81add79eab4d530ceba350b5",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-09T01:41:11Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/database/migrations/20260908_catalogo_ampliado_gobierno_core.sql",
+    "backend/tests/test_catalogo_ampliado_gate2_ddl_contract.py",
+    "docs/architecture/CATALOGO_AMPLIADO_GATE2_DDL_DOSSIER.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CATALOGO-AMPLIADO-GATE2-DDL-DESIGN-CERT-R1-20260908",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T01:41:22Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-09T01:40:57Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
