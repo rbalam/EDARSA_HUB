@@ -1,0 +1,30 @@
+{
+  "base_sha": "c2c543210e47ba1171b91be40acf4fedbfe86187",
+  "blockers": [],
+  "candidate_sha": "2f532f2649921dcdf391665df966245b86206631",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-09T05:34:50Z",
+  "development_sha": "2f532f2649921dcdf391665df966245b86206631",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/scripts/fn_calcular_proyeccion_mensual.py",
+    "backend/scripts/update_proyeccion_con_funcion.py",
+    "backend/tests/test_projection_month_no_fixed_may_fallback.py",
+    "docs/sql/FN_CALCULAR_PROYECCION_MENSUAL.sql"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "FINANZAS-PROYECCION-MES-HARDCODE-FIX-V2-20260908",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T05:35:04Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-09T05:34:43Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
