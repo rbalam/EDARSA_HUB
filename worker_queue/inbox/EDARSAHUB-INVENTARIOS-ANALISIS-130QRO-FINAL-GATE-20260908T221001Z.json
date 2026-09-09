@@ -1,0 +1,13 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-ANALISIS-130QRO-FINAL-GATE-20260908T221001Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Gate final de solo lectura para certificar 130QRO en Operaciones > Analisis. Validar inventarios canonicos y correspondencia completa de almacenes contra dbo.Inventario_Almacenes. Sin POS LIVE, Mongo, DDL, DML ni Produccion.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[{"name":"unit_final_gate","sql":"WITH inv AS (SELECT DISTINCT LTRIM(RTRIM(almacen_id)) AS almacen_id, UPPER(LTRIM(RTRIM(almacen))) AS almacen FROM dbo.Compras_Inventarios_Fisicos_Sync WHERE UPPER(unidad_negocio_codigo)='130QRO' AND sync_status IN ('ACTIVE','REPLACED') AND NULLIF(LTRIM(RTRIM(almacen_id)),'') IS NOT NULL), matches AS (SELECT a.SucursalID, COUNT_BIG(*) AS coincidencias FROM dbo.Inventario_Almacenes a INNER JOIN inv i ON LTRIM(RTRIM(a.CodigoAlmacen))=i.almacen_id AND UPPER(LTRIM(RTRIM(a.NombreAlmacen)))=i.almacen GROUP BY a.SucursalID), canonical AS (SELECT TOP (1) SucursalID, coincidencias FROM matches ORDER BY coincidencias DESC, SucursalID) SELECT (SELECT COUNT_BIG(*) FROM dbo.Compras_Inventarios_Fisicos_Sync WHERE UPPER(unidad_negocio_codigo)='130QRO') AS inventarios_total, (SELECT COUNT_BIG(*) FROM inv) AS almacenes_en_inventarios, ISNULL((SELECT coincidencias FROM canonical),0) AS almacenes_correspondientes, ISNULL((SELECT COUNT_BIG(*) FROM dbo.Inventario_Almacenes a INNER JOIN canonical c ON c.SucursalID=a.SucursalID WHERE a.Activo=1),0) AS almacenes_activos_catalogo"}]}],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0","chat":"Inventarios Analisis unit final certification"},
+  "human_summary_language":"es"
+}
