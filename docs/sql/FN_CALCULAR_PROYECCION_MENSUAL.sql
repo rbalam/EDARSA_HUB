@@ -44,11 +44,9 @@ BEGIN
     IF @NumeroMes IS NULL
         RETURN NULL;
 
-    -- Validar año seguro para evitar desbordamiento en DATEFROMPARTS
+    -- Un año inválido no se sustituye silenciosamente por otro periodo.
     IF @Anio IS NULL OR @Anio < 1900 OR @Anio > 2100
-    BEGIN
-        SET @Anio = YEAR(GETDATE());
-    END
+        RETURN NULL;
 
     -- Obtener la cantidad de días del mes de forma dinámica (soporta bisiestos)
     SET @DiasTotales = CAST(DAY(EOMONTH(DATEFROMPARTS(@Anio, @NumeroMes, 1))) AS DECIMAL(5, 2));
