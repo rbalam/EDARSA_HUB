@@ -1,0 +1,68 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-R4-RBAC-DETERMINISTIC-OFFLINE-20260909T2000Z",
+  "project": "EDARSAHUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Repetir exactamente el cambio quirurgico RBAC de P5-R2 sobre las 32 dependencias ya definidas, sin ampliar alcance, y validar solo con checks deterministas/offline. Excluir explicitamente backend/tests/test_centro_control_whatsapp.py y cualquier prueba que requiera backend HTTP real, credenciales, SMTP, Twilio o WebSocket runtime. No modificar Worker, .env, conexiones, credenciales, endpoints, contratos funcionales ni Produccion.",
+  "constraints": [
+    "Trabajar unicamente sobre Edarsahub_Desarrollo",
+    "No tocar Edarsahub_Produccion",
+    "No modificar Worker",
+    "No modificar .env, conexiones, usuarios, passwords, tokens ni secretos",
+    "No cambiar logica funcional, endpoints ni payloads; solo las 32 dependencias RBAC ya definidas por P5-R2",
+    "Reusar RBAC SQL canonico require_explicit_permission; no introducir bypass ni hardcode",
+    "Excluir backend/tests/test_centro_control_whatsapp.py del Gate",
+    "Excluir pruebas runtime HTTP/SMTP/Twilio/WebSocket del Gate; se validaran en E2E separado",
+    "Si el estado actual del archivo ya contiene alguna sustitucion de P5-R2, preservar la intencion exacta y no duplicar ni ampliar cambios"
+  ],
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "Depends(get_current_user)",
+      "new": "Depends(require_explicit_permission(\"centro_control_VER\"))",
+      "expected_replacements": 32,
+      "description": "Repetir exactamente la sustitucion quirurgica de P5-R2 en las 32 dependencias RBAC previamente identificadas. No alterar ninguna otra parte del archivo. Si el conteo exacto ya no es 32 por cambios concurrentes o porque parte de P5-R2 ya esta presente, detener y reportar evidencia en vez de adivinar."
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check",
+      "paths": [
+        "backend/core/centro_control/routes.py"
+      ],
+      "expect_only_paths": true
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/centro_control/routes.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_centro_control_p2b_sql_persistence_contract.py"
+      ],
+      "exclude": [
+        "backend/tests/test_centro_control_whatsapp.py"
+      ],
+      "offline_only": true
+    },
+    {
+      "type": "frontend_build"
+    }
+  ],
+  "acceptance": [
+    "Diff limitado a backend/core/centro_control/routes.py",
+    "32 sustituciones exactas de Depends(get_current_user) por Depends(require_explicit_permission(\"centro_control_VER\")) conforme P5-R2, o rechazo seguro si el conteo actual no coincide",
+    "py_compile PASS",
+    "pytest determinista/offline PASS",
+    "frontend_build PASS",
+    "backend/tests/test_centro_control_whatsapp.py no ejecutado",
+    "Ninguna prueba runtime HTTP/SMTP/Twilio/WebSocket ejecutada en este Gate",
+    "Produccion no tocada"
+  ]
+}
