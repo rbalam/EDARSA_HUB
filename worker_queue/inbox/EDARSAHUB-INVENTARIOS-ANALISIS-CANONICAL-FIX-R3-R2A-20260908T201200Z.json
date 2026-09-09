@@ -1,0 +1,29 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-CANONICAL-FIX-R3-R2A-20260908T201200Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Recuperacion R3-R2A backend. Sustituir solo el placeholder de listar_almacenes por una implementacion EDARSAHUB SQL canonica, sin POS LIVE ni Mongo. Resolver la sucursal canonica del catalogo por mayor correspondencia de codigo+nombre contra el historial canonico de Compras_Inventarios_Fisicos_Sync de la unidad y devolver todos los almacenes activos de esa sucursal, incluyendo almacenes sin inventario reciente. No tocar frontend ni Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/configuracion/repositories/config_asignaciones_repository.py",
+      "expected_count": 1,
+      "old": "    async def listar_almacenes(self, unidad_negocio_pk: str) -> List[Dict]:\n        \"\"\"\n        Lista almacenes disponibles para una unidad de negocio.\n        Retorna opción \"(Todos)\" + almacenes del servidor.\n        \"\"\"\n        resultado = [{\"id\": \"\", \"nombre\": \"(Todos los almacenes)\"}]\n        \n        # Intentar obtener almacenes desde SQL Server (tablas del servidor)\n        try:\n            # Buscar el server_id asociado a la unidad\n            server_query = \"\"\"\n                SELECT CAST(id AS VARCHAR(50)) as id, host, db_name\n                FROM Servidores_Conexiones\n                WHERE activo = 1 AND (\n                    CAST(id AS VARCHAR(50)) = %s OR nombre = %s\n                )\n            \"\"\"\n            servers = await _execute_sql_async(server_query, (unidad_negocio_pk, unidad_negocio_pk))\n            \n            if servers:\n                # Por ahora retornar lista vacía de almacenes específicos\n                # La implementación completa requeriría consultar al servidor remoto\n                pass\n        except Exception as e:\n            logger.debug(f\"Error listando almacenes: {e}\")\n        \n        return resultado\n",
+      "new": "    async def listar_almacenes(self, unidad_negocio_pk: str) -> List[Dict]:\n        \"\"\"Lista almacenes canonicos de una unidad desde EDARSAHUB SQL.\"\"\"\n        resultado = [{\"id\": \"\", \"nombre\": \"(Todos los almacenes)\", \"source\": \"EDARSAHUB_SQL\"}]\n        query = \"\"\"\n            WITH inventarios_unidad AS (\n                SELECT DISTINCT\n                    LTRIM(RTRIM(almacen_id)) AS almacen_id,\n                    UPPER(LTRIM(RTRIM(almacen))) AS almacen\n                FROM dbo.Compras_Inventarios_Fisicos_Sync\n                WHERE unidad_negocio_id = %s\n                  AND sync_status IN ('ACTIVE', 'REPLACED')\n                  AND NULLIF(LTRIM(RTRIM(almacen_id)), '') IS NOT NULL\n            ), candidatos AS (\n                SELECT a.SucursalID, COUNT_BIG(*) AS coincidencias\n                FROM dbo.Inventario_Almacenes a\n                INNER JOIN inventarios_unidad i\n                    ON LTRIM(RTRIM(a.CodigoAlmacen)) = i.almacen_id\n                   AND UPPER(LTRIM(RTRIM(a.NombreAlmacen))) = i.almacen\n                GROUP BY a.SucursalID\n            ), sucursal_canonica AS (\n                SELECT TOP (1) SucursalID\n                FROM candidatos\n                ORDER BY coincidencias DESC, SucursalID\n            )\n            SELECT\n                LTRIM(RTRIM(a.CodigoAlmacen)) AS id,\n                LTRIM(RTRIM(a.CodigoAlmacen)) AS almacen_id,\n                LTRIM(RTRIM(a.NombreAlmacen)) AS nombre,\n                LTRIM(RTRIM(a.NombreAlmacen)) AS almacen,\n                a.TipoAlmacen AS tipo_almacen,\n                'EDARSAHUB_SQL' AS source\n            FROM dbo.Inventario_Almacenes a\n            INNER JOIN sucursal_canonica s ON s.SucursalID = a.SucursalID\n            WHERE a.Activo = 1\n            ORDER BY a.NombreAlmacen, a.CodigoAlmacen\n        \"\"\"\n        try:\n            resultado.extend(await _execute_sql_async(query, (unidad_negocio_pk,)))\n        except Exception as e:\n            logger.error(f\"[CONFIG_ASIG] Error listando almacenes canonicos: {e}\")\n        return resultado\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_inventory_analysis_warehouse_canonical_contract.py",
+      "content": "from pathlib import Path\n\n\ndef test_warehouse_catalog_is_sql_first_and_unit_scoped():\n    root = Path(__file__).resolve().parents[2]\n    source = (root / 'backend/modules/configuracion/repositories/config_asignaciones_repository.py').read_text(encoding='utf-8')\n    start = source.index('    async def listar_almacenes(self, unidad_negocio_pk: str)')\n    end = source.index('    async def sincronizar_almacenes_unidad', start)\n    block = source[start:end]\n    assert 'dbo.Compras_Inventarios_Fisicos_Sync' in block\n    assert 'dbo.Inventario_Almacenes' in block\n    assert 'unidad_negocio_id = %s' in block\n    assert 'Servidores_Conexiones' not in block\n    assert 'servidor remoto' not in block.lower()\n    assert \"'EDARSAHUB_SQL'\" in block\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/configuracion/repositories/config_asignaciones_repository.py", "backend/tests/test_inventory_analysis_warehouse_canonical_contract.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_inventory_analysis_warehouse_canonical_contract.py"]}
+  ],
+  "requester": {"email": "ricardo@edarsa.com.mx", "source": "chatgpt-classic", "project": "EDARSAHUB BOS V1.0", "chat": "Inventarios Analisis R3 recovery"},
+  "human_summary_language": "es"
+}
