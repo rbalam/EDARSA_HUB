@@ -1,0 +1,50 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P2B-R2-METRICS-BLINDAJE-TRUTH-20260908T1928Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "GATE 2 P2B-R2 limitado a dos hallazgos de auditoría: (1) eliminar métricas fabricadas de éxito/score cuando dbo.Scheduler_BitacoraJobs no contiene evidencia canónica suficiente para conocer checks exitosos; devolver NULL + estado explícito de evidencia insuficiente en lugar de 100%. (2) eliminar detección heurística de catálogo de blindaje por LIKE en sys.tables; hasta que una auditoría certifique una tabla exacta de registro canónico, declarar NO_CANONICAL_SQL_REGISTRY y modulos=[] sin inventar datos. Mantener intacta la persistencia P2B, WebSocket, alertas, bitácora, Sync Monitor, UI salvo manejo seguro del score NULL. NO Production, NO Mongo, NO LIVE, NO DDL.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/sql_store.py",
+      "old": "def metrics() -> Dict[str, Any]:\n    checks = _fetchone(\"SELECT COUNT(*) AS total, MIN(FechaAccion) AS inicio, MAX(FechaAccion) AS ultima FROM dbo.Scheduler_BitacoraJobs WHERE JobName=%s AND Accion='regression_check'\", (EVENT_JOB,)) or {}\n    alerts = _fetchone(\"SELECT COUNT(*) AS total, SUM(CASE WHEN ISNULL(Acknowledged,0)=1 THEN 1 ELSE 0 END) AS ack FROM dbo.Alertas_Sistema WHERE AlertaID LIKE %s\", (f\"{ALERT_PREFIX}%\",)) or {}\n    total_checks = int(checks.get(\"total\") or 0)\n    alert_total = int(alerts.get(\"total\") or 0)\n    alert_ack = int(alerts.get(\"ack\") or 0)\n    start = checks.get(\"inicio\")\n    uptime = round((datetime.now(timezone.utc).replace(tzinfo=None) - start).total_seconds()/3600, 2) if start else 0.0\n    tasa_exito = 100.0\n    tasa_ack = (alert_ack / alert_total * 100) if alert_total else 100.0\n    uptime_score = min(uptime / 24 * 100, 100)\n    score = round(tasa_exito * 0.4 + tasa_ack * 0.3 + uptime_score * 0.3, 1)\n    return {\"uptime_horas\": uptime, \"checks_ejecutados\": total_checks, \"checks_exitosos\": total_checks, \"alertas_generadas\": alert_total, \"alertas_reconocidas\": alert_ack, \"ultima_regresion\": _dt(checks.get(\"ultima\")), \"inicio_monitoreo\": _dt(start), \"tasa_exito_checks\": round(tasa_exito,1), \"tasa_alertas_reconocidas\": round(tasa_ack,1), \"score_estabilidad\": score}\n\n\ndef blindaje_registry_status() -> Dict[str, Any]:\n    rows = _fetchall(\"SELECT t.name AS table_name FROM sys.tables t WHERE t.name LIKE '%Blindaje%' OR t.name LIKE '%CentroControl%' ORDER BY t.name\")\n    return {\"source\": \"EDARSAHUB_SQL\", \"status\": \"CANONICAL_REGISTRY_PRESENT\" if rows else \"NO_CANONICAL_SQL_REGISTRY\", \"registry_tables\": [r.get(\"table_name\") for r in rows], \"modulos\": []}\n",
+      "new": "def metrics() -> Dict[str, Any]:\n    checks = _fetchone(\"SELECT COUNT(*) AS total, MIN(FechaAccion) AS inicio, MAX(FechaAccion) AS ultima FROM dbo.Scheduler_BitacoraJobs WHERE JobName=%s AND Accion='regression_check'\", (EVENT_JOB,)) or {}\n    alerts = _fetchone(\"SELECT COUNT(*) AS total, SUM(CASE WHEN ISNULL(Acknowledged,0)=1 THEN 1 ELSE 0 END) AS ack FROM dbo.Alertas_Sistema WHERE AlertaID LIKE %s\", (f\"{ALERT_PREFIX}%\",)) or {}\n    total_checks = int(checks.get(\"total\") or 0)\n    alert_total = int(alerts.get(\"total\") or 0)\n    alert_ack = int(alerts.get(\"ack\") or 0)\n    start = checks.get(\"inicio\")\n    uptime = round((datetime.now(timezone.utc).replace(tzinfo=None) - start).total_seconds()/3600, 2) if start else 0.0\n    # P2B-R2: Scheduler_BitacoraJobs certifica que hubo una ejecución, pero no\n    # contiene el resultado granular necesario para afirmar cuántos checks pasaron.\n    # Por contrato de verdad, esos KPIs quedan NULL hasta tener evidencia canónica.\n    tasa_ack = (alert_ack / alert_total * 100) if alert_total else None\n    return {\n        \"uptime_horas\": uptime,\n        \"checks_ejecutados\": total_checks,\n        \"checks_exitosos\": None,\n        \"alertas_generadas\": alert_total,\n        \"alertas_reconocidas\": alert_ack,\n        \"ultima_regresion\": _dt(checks.get(\"ultima\")),\n        \"inicio_monitoreo\": _dt(start),\n        \"tasa_exito_checks\": None,\n        \"tasa_alertas_reconocidas\": round(tasa_ack, 1) if tasa_ack is not None else None,\n        \"score_estabilidad\": None,\n        \"metricas_calidad\": \"INSUFFICIENT_CANONICAL_CHECK_RESULT_EVIDENCE\",\n    }\n\n\ndef blindaje_registry_status() -> Dict[str, Any]:\n    # P2A-R2 no certificó una tabla exacta que sea el registro canónico de blindaje.\n    # Un nombre parecido no constituye evidencia. No usar LIKE/sys.tables para inferirlo.\n    return {\n        \"source\": \"EDARSAHUB_SQL\",\n        \"status\": \"NO_CANONICAL_SQL_REGISTRY\",\n        \"registry_tables\": [],\n        \"registry_evidence\": \"P2A_R2_NO_EXPLICIT_REGISTRY_CERTIFIED\",\n        \"modulos\": [],\n    }\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "    metricas_sql = cc_store.metrics()\n    score_estabilidad = metricas_sql.get(\"score_estabilidad\", 0)\n    return {\n        \"timestamp\": datetime.now(timezone.utc).isoformat(),\n        \"metricas\": metricas_sql,\n        \"interpretacion\": {\n            \"score_estabilidad\": \"excelente\" if score_estabilidad >= 90 else (\n                \"bueno\" if score_estabilidad >= 70 else (\n                    \"regular\" if score_estabilidad >= 50 else \"crítico\"\n                )\n            ),\n            \"recomendaciones\": []\n        }\n    }",
+      "new": "    metricas_sql = cc_store.metrics()\n    score_estabilidad = metricas_sql.get(\"score_estabilidad\")\n    if score_estabilidad is None:\n        interpretacion_score = \"sin_evidencia_canonica_suficiente\"\n    else:\n        interpretacion_score = \"excelente\" if score_estabilidad >= 90 else (\n            \"bueno\" if score_estabilidad >= 70 else (\n                \"regular\" if score_estabilidad >= 50 else \"crítico\"\n            )\n        )\n    return {\n        \"timestamp\": datetime.now(timezone.utc).isoformat(),\n        \"metricas\": metricas_sql,\n        \"interpretacion\": {\n            \"score_estabilidad\": interpretacion_score,\n            \"recomendaciones\": []\n        }\n    }",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_centro_control_p2b_sql_persistence_contract.py",
+      "old": "def test_frontend_mock_blindaje_removed():\n    assert \"const modulosBlindados = [\" not in FRONT\n    assert \"api.get('/centro-control/blindaje/modulos')\" in FRONT\n    assert 'Sin catálogo SQL canónico de blindaje' in FRONT\n",
+      "new": "def test_frontend_mock_blindaje_removed():\n    assert \"const modulosBlindados = [\" not in FRONT\n    assert \"api.get('/centro-control/blindaje/modulos')\" in FRONT\n    assert 'Sin catálogo SQL canónico de blindaje' in FRONT\n\n\ndef test_metrics_do_not_fabricate_check_success_or_score():\n    assert 'tasa_exito = 100.0' not in STORE\n    assert '\"checks_exitosos\": total_checks' not in STORE\n    assert '\"checks_exitosos\": None' in STORE\n    assert '\"tasa_exito_checks\": None' in STORE\n    assert '\"score_estabilidad\": None' in STORE\n    assert 'INSUFFICIENT_CANONICAL_CHECK_RESULT_EVIDENCE' in STORE\n    assert 'sin_evidencia_canonica_suficiente' in ROUTES\n\n\ndef test_blindaje_requires_explicit_registry_evidence():\n    assert \"LIKE '%Blindaje%'\" not in STORE\n    assert \"LIKE '%CentroControl%'\" not in STORE\n    assert '\"status\": \"NO_CANONICAL_SQL_REGISTRY\"' in STORE\n    assert '\"registry_tables\": []' in STORE\n    assert 'P2A_R2_NO_EXPLICIT_REGISTRY_CERTIFIED' in STORE\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/core/centro_control/sql_store.py", "backend/core/centro_control/routes.py", "backend/tests/test_centro_control_p2b_sql_persistence_contract.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_centro_control_p2b_sql_persistence_contract.py", "backend/tests/test_sync_monitor_rbac_contract.py", "backend/tests/test_sync_monitor_exact_error_kpi_contract.py"]}
+  ],
+  "constraints": [
+    "Only close the two P2B audit findings plus null-safe metric interpretation",
+    "NO Production",
+    "NO Mongo",
+    "NO LIVE",
+    "NO DDL",
+    "NO new persistence tables",
+    "NO changes to Sync Monitor logic",
+    "NO changes to WebSocket/email/WhatsApp flow",
+    "NO changes to Universal Worker structure",
+    "Do not claim blindaje registry exists without an exact table certified by READ_ONLY_SQL"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "technical"
+}
