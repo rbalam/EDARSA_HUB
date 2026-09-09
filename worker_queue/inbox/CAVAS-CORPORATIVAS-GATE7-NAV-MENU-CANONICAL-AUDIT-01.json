@@ -1,0 +1,42 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE7-NAV-MENU-CANONICAL-AUDIT-01",
+  "created_at_utc": "2026-09-09T02:32:30Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d9da23bf4d7052c492e9f077438949dcbc2db3ec",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate 7 paso 1: auditar el contrato real de navegacion/menu SQL canonico y descubrimiento operativo para Cavas Corporativas antes de insertar o modificar registros. Descubrir tablas, columnas, jerarquias, rutas, modulos, permisos y asignaciones por contexto/unidad relacionadas con menus, navegacion y Cavas. No escribir SQL ni repositorio.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "menu_navigation_candidate_tables",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' AND (LOWER(TABLE_NAME) LIKE '%menu%' OR LOWER(TABLE_NAME) LIKE '%naveg%' OR LOWER(TABLE_NAME) LIKE '%modul%' OR LOWER(TABLE_NAME) LIKE '%permiso%') ORDER BY TABLE_SCHEMA, TABLE_NAME"
+        },
+        {
+          "name": "menu_navigation_candidate_columns",
+          "sql": "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND (LOWER(TABLE_NAME) LIKE '%menu%' OR LOWER(TABLE_NAME) LIKE '%naveg%' OR LOWER(TABLE_NAME) LIKE '%modul%' OR LOWER(TABLE_NAME) LIKE '%permiso%') ORDER BY TABLE_NAME, ORDINAL_POSITION"
+        },
+        {
+          "name": "canonical_modules_cavas_related",
+          "sql": "SELECT TOP 200 * FROM dbo.Usuario_Modulos WHERE LOWER(CodigoModulo) LIKE '%cava%' OR LOWER(CodigoModulo) LIKE '%corpor%' ORDER BY CodigoModulo"
+        },
+        {
+          "name": "canonical_actions_active",
+          "sql": "SELECT TOP 200 * FROM dbo.Usuario_Acciones WHERE Activo=1 ORDER BY CodigoAccion"
+        },
+        {
+          "name": "menu_like_objects",
+          "sql": "SELECT s.name AS schema_name, o.name AS object_name, o.type_desc FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND (LOWER(o.name) LIKE '%menu%' OR LOWER(o.name) LIKE '%naveg%' OR LOWER(o.name) LIKE '%modul%') ORDER BY o.type_desc, s.name, o.name"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
