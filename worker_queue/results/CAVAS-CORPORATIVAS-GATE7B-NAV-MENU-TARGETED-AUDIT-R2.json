@@ -1,0 +1,713 @@
+{
+  "base_sha": "49fec3d91d359cb436f7fdb2dd03b1dd26319d19",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T04:13:20Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CORPORATIVAS-GATE7B-NAV-MENU-TARGETED-AUDIT-R2",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T04:13:30Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "COLUMN_NAME",
+              "DATA_TYPE",
+              "IS_NULLABLE",
+              "CHARACTER_MAXIMUM_LENGTH"
+            ],
+            "name": "sistema_modulos_columns",
+            "row_count_returned": 12,
+            "rows": [
+              [
+                "ModuloID",
+                "int",
+                "NO",
+                null
+              ],
+              [
+                "Codigo",
+                "nvarchar",
+                "NO",
+                50
+              ],
+              [
+                "Nombre",
+                "nvarchar",
+                "NO",
+                100
+              ],
+              [
+                "Descripcion",
+                "nvarchar",
+                "YES",
+                500
+              ],
+              [
+                "Icono",
+                "nvarchar",
+                "YES",
+                50
+              ],
+              [
+                "Orden",
+                "int",
+                "YES",
+                null
+              ],
+              [
+                "EsPrincipal",
+                "bit",
+                "YES",
+                null
+              ],
+              [
+                "EsSatelite",
+                "bit",
+                "YES",
+                null
+              ],
+              [
+                "EsPortal",
+                "bit",
+                "YES",
+                null
+              ],
+              [
+                "URLExterna",
+                "nvarchar",
+                "YES",
+                255
+              ],
+              [
+                "Activo",
+                "bit",
+                "YES",
+                null
+              ],
+              [
+                "FechaCreacion",
+                "datetime",
+                "YES",
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "COLUMN_NAME",
+              "DATA_TYPE",
+              "IS_NULLABLE",
+              "CHARACTER_MAXIMUM_LENGTH"
+            ],
+            "name": "sistema_modulos_menus_columns",
+            "row_count_returned": 12,
+            "rows": [
+              [
+                "MenuID",
+                "int",
+                "NO",
+                null
+              ],
+              [
+                "ModuloID",
+                "int",
+                "NO",
+                null
+              ],
+              [
+                "MenuPadreID",
+                "int",
+                "YES",
+                null
+              ],
+              [
+                "Codigo",
+                "nvarchar",
+                "NO",
+                100
+              ],
+              [
+                "Nombre",
+                "nvarchar",
+                "NO",
+                100
+              ],
+              [
+                "Descripcion",
+                "nvarchar",
+                "YES",
+                255
+              ],
+              [
+                "Icono",
+                "nvarchar",
+                "YES",
+                50
+              ],
+              [
+                "Ruta",
+                "nvarchar",
+                "YES",
+                255
+              ],
+              [
+                "Orden",
+                "int",
+                "YES",
+                null
+              ],
+              [
+                "RequierePermiso",
+                "nvarchar",
+                "YES",
+                100
+              ],
+              [
+                "Activo",
+                "bit",
+                "YES",
+                null
+              ],
+              [
+                "FechaCreacion",
+                "datetime",
+                "YES",
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ModuloID",
+              "Codigo",
+              "Nombre",
+              "Descripcion",
+              "Icono",
+              "Orden",
+              "EsPrincipal",
+              "EsSatelite",
+              "EsPortal",
+              "URLExterna",
+              "Activo",
+              "FechaCreacion"
+            ],
+            "name": "cava_modules_exact",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                7,
+                "CAVA_SOCIOS",
+                "Cava de Socios",
+                "Socios, botellas, resguardo, consumos",
+                "Wine",
+                7,
+                true,
+                false,
+                false,
+                null,
+                true,
+                "2026-05-24T09:21:27.707000"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "MenuID",
+              "ModuloID",
+              "MenuPadreID",
+              "Codigo",
+              "Nombre",
+              "Descripcion",
+              "Icono",
+              "Ruta",
+              "Orden",
+              "RequierePermiso",
+              "Activo",
+              "FechaCreacion"
+            ],
+            "name": "cava_menu_rows_exact",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                46,
+                7,
+                null,
+                "cava.dashboard",
+                "Dashboard",
+                "Resumen cava",
+                "Wine",
+                "/cava-socios",
+                1,
+                "cava_socios",
+                true,
+                "2026-05-24T09:40:44.487000"
+              ],
+              [
+                47,
+                7,
+                null,
+                "cava.socios",
+                "Socios",
+                "Gestión de socios",
+                "Users",
+                "/cava-socios/socios",
+                2,
+                "cava_socios",
+                true,
+                "2026-05-24T09:40:44.517000"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "TABLE_NAME",
+              "COLUMN_NAME",
+              "DATA_TYPE",
+              "IS_NULLABLE"
+            ],
+            "name": "sistema_modulos_permissions_columns",
+            "row_count_returned": 44,
+            "rows": [
+              [
+                "Sistema_ModulosPermisos",
+                "PermisoID",
+                "int",
+                "NO"
+              ],
+              [
+                "Sistema_ModulosPermisos",
+                "ModuloID",
+                "int",
+                "NO"
+              ],
+              [
+                "Sistema_ModulosPermisos",
+                "Codigo",
+                "nvarchar",
+                "NO"
+              ],
+              [
+                "Sistema_ModulosPermisos",
+                "Nombre",
+                "nvarchar",
+                "NO"
+              ],
+              [
+                "Sistema_ModulosPermisos",
+                "Descripcion",
+                "nvarchar",
+                "YES"
+              ],
+              [
+                "Sistema_ModulosPermisos",
+                "Categoria",
+                "nvarchar",
+                "YES"
+              ],
+              [
+                "Sistema_ModulosPermisos",
+                "Activo",
+                "bit",
+                "YES"
+              ],
+              [
+                "Sistema_ModulosPermisos",
+                "FechaCreacion",
+                "datetime",
+                "YES"
+              ],
+              [
+                "Sistema_ModulosVisibilidad",
+                "ModuloVisibilidadID",
+                "int",
+                "NO"
+              ],
+              [
+                "Sistema_ModulosVisibilidad",
+                "SistemaTipoID",
+                "int",
+                "NO"
+              ],
+              [
+                "Sistema_ModulosVisibilidad",
+                "CodigoModulo",
+                "varchar",
+                "NO"
+              ],
+              [
+                "Sistema_ModulosVisibilidad",
+                "DescripcionModulo",
+                "nvarchar",
+                "YES"
+              ],
+              [
+                "Sistema_ModulosVisibilidad",
+                "Visible",
+                "bit",
+                "YES"
+              ],
+              [
+                "Sistema_ModulosVisibilidad",
+                "OrdenMenu",
+                "int",
+                "YES"
+              ],
+              [
+                "Sistema_ModulosVisibilidad",
+                "ConfiguracionJSON",
+                "nvarchar",
+                "YES"
+              ],
+              [
+                "Sistema_ModulosVisibilidad",
+                "Activo",
+                "bit",
+                "YES"
+              ],
+              [
+                "Sistema_ModulosVisibilidad",
+                "CreatedAt",
+                "datetime",
+                "YES"
+              ],
+              [
+                "Sistema_RBAC_Permisos",
+                "permiso_id",
+                "uniqueidentifier",
+                "NO"
+              ],
+              [
+                "Sistema_RBAC_Permisos",
+                "codigo",
+                "nvarchar",
+                "NO"
+              ],
+              [
+                "Sistema_RBAC_Permisos",
+                "nombre",
+                "nvarchar",
+                "NO"
+              ],
+              [
+                "Sistema_RBAC_Permisos",
+                "modulo",
+                "nvarchar",
+                "NO"
+              ],
+              [
+                "Sistema_RBAC_Permisos",
+                "descripcion",
+                "nvarchar",
+                "YES"
+              ],
+              [
+                "Sistema_RBAC_Permisos",
+                "activo",
+                "bit",
+                "NO"
+              ],
+              [
+                "Sistema_RBAC_Permisos",
+                "fecha_alta",
+                "datetime2",
+                "NO"
+              ],
+              [
+                "Sistema_RBAC_Permisos",
+                "fecha_ultima_actualizacion",
+                "datetime2",
+                "NO"
+              ],
+              [
+                "Sistema_RBAC_RolesPermisos",
+                "rol_permiso_id",
+                "uniqueidentifier",
+                "NO"
+              ],
+              [
+                "Sistema_RBAC_RolesPermisos",
+                "rol_id",
+                "uniqueidentifier",
+                "NO"
+              ],
+              [
+                "Sistema_RBAC_RolesPermisos",
+                "permiso_id",
+                "uniqueidentifier",
+                "NO"
+              ],
+              [
+                "Sistema_RBAC_RolesPermisos",
+                "activo",
+                "bit",
+                "NO"
+              ],
+              [
+                "Sistema_RBAC_RolesPermisos",
+                "fecha_alta",
+                "datetime2",
+                "NO"
+              ],
+              [
+                "Usuario_PermisosRolModulo",
+                "PermisoRolModuloID",
+                "bigint",
+                "NO"
+              ],
+              [
+                "Usuario_PermisosRolModulo",
+                "RolID",
+                "int",
+                "NO"
+              ],
+              [
+                "Usuario_PermisosRolModulo",
+                "ModuloID",
+                "int",
+                "NO"
+              ],
+              [
+                "Usuario_PermisosRolModulo",
+                "AccionID",
+                "smallint",
+                "NO"
+              ],
+              [
+                "Usuario_PermisosRolModulo",
+                "Permitido",
+                "bit",
+                "NO"
+              ],
+              [
+                "Usuario_PermisosRolModulo",
+                "RestriccionPropietario",
+                "bit",
+                "NO"
+              ],
+              [
+                "Usuario_PermisosRolModulo",
+                "RestriccionSucursal",
+                "bit",
+                "NO"
+              ],
+              [
+                "Usuario_PermisosRolModulo",
+                "RequiereAutorizacion",
+                "bit",
+                "NO"
+              ],
+              [
+                "Usuario_PermisosRolModulo",
+                "NivelAutorizacionRequerido",
+                "smallint",
+                "YES"
+              ],
+              [
+                "Usuario_PermisosRolModulo",
+                "Activo",
+                "bit",
+                "NO"
+              ],
+              [
+                "Usuario_PermisosRolModulo",
+                "FechaAlta",
+                "datetime2",
+                "NO"
+              ],
+              [
+                "Usuario_PermisosRolModulo",
+                "FechaModificacion",
+                "datetime2",
+                "YES"
+              ],
+              [
+                "Usuario_PermisosRolModulo",
+                "CreatedBy",
+                "varchar",
+                "YES"
+              ],
+              [
+                "Usuario_PermisosRolModulo",
+                "ModifiedBy",
+                "varchar",
+                "YES"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "PermisoID",
+              "ModuloID",
+              "Codigo",
+              "Nombre",
+              "Descripcion",
+              "Categoria",
+              "Activo",
+              "FechaCreacion"
+            ],
+            "name": "cava_permissions_existing",
+            "row_count_returned": 13,
+            "rows": [
+              [
+                1,
+                1,
+                "comercial.perfil_unidad.ver",
+                "Ver Perfil Digital Unidad",
+                "Permite ver el perfil digital de la unidad de negocio",
+                "Pricing IA",
+                true,
+                "2026-05-24T22:56:32.913000"
+              ],
+              [
+                2,
+                1,
+                "comercial.perfil_unidad.editar",
+                "Editar Perfil Digital Unidad",
+                "Permite editar el perfil digital de la unidad de negocio",
+                "Pricing IA",
+                true,
+                "2026-05-24T22:56:32.917000"
+              ],
+              [
+                3,
+                1,
+                "comercial.competidores.ver",
+                "Ver Competidores",
+                "Permite ver el catálogo de competidores",
+                "Pricing IA",
+                true,
+                "2026-05-24T22:56:32.923000"
+              ],
+              [
+                4,
+                1,
+                "comercial.competidores.crear",
+                "Crear Competidores",
+                "Permite agregar competidores al catálogo",
+                "Pricing IA",
+                true,
+                "2026-05-24T22:56:32.927000"
+              ],
+              [
+                5,
+                1,
+                "comercial.competidores.editar",
+                "Editar Competidores",
+                "Permite editar competidores existentes",
+                "Pricing IA",
+                true,
+                "2026-05-24T22:56:32.937000"
+              ],
+              [
+                6,
+                1,
+                "comercial.competidores.inactivar",
+                "Inactivar Competidores",
+                "Permite inactivar competidores",
+                "Pricing IA",
+                true,
+                "2026-05-24T22:56:32.937000"
+              ],
+              [
+                7,
+                1,
+                "comercial.benchmark.ver",
+                "Ver Benchmark",
+                "Permite ver análisis de benchmark competitivo",
+                "Pricing IA",
+                true,
+                "2026-05-24T22:56:32.937000"
+              ],
+              [
+                8,
+                1,
+                "comercial.benchmark.validar",
+                "Validar Benchmark",
+                "Permite validar comparables de benchmark",
+                "Pricing IA",
+                true,
+                "2026-05-24T22:56:32.940000"
+              ],
+              [
+                9,
+                1,
+                "comercial.benchmark.exportar",
+                "Exportar Benchmark",
+                "Permite exportar datos de benchmark",
+                "Pricing IA",
+                true,
+                "2026-05-24T22:56:32.940000"
+              ],
+              [
+                10,
+                1,
+                "comercial.precios_sugeridos.ver",
+                "Ver Precios Sugeridos",
+                "Permite ver precios sugeridos del menú",
+                "Pricing IA",
+                true,
+                "2026-05-24T22:56:32.940000"
+              ],
+              [
+                11,
+                1,
+                "comercial.precios_sugeridos.generar",
+                "Generar Precios Sugeridos",
+                "Permite generar cálculo de precios sugeridos",
+                "Pricing IA",
+                true,
+                "2026-05-24T22:56:32.940000"
+              ],
+              [
+                12,
+                1,
+                "comercial.precios_sugeridos.ver_ia",
+                "Ver Análisis IA",
+                "Permite ver justificaciones y análisis de IA",
+                "Pricing IA",
+                true,
+                "2026-05-24T22:56:32.940000"
+              ],
+              [
+                13,
+                1,
+                "comercial.precios_sugeridos.crear_solicitud",
+                "Crear Solicitud de Precio",
+                "Permite crear solicitud de cambio de precio desde precio sugerido",
+                "Pricing IA",
+                true,
+                "2026-05-24T22:56:32.940000"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T04:13:19Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
