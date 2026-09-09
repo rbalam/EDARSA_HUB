@@ -1,0 +1,28 @@
+{
+  "base_sha": "bd50a2dd612ac40e16c5e9000cfa0fc0469c514b",
+  "blockers": [],
+  "candidate_sha": "c6e3fc382a6d97951d3487f3a878391538ab662d",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-09T04:48:32Z",
+  "development_sha": "c6e3fc382a6d97951d3487f3a878391538ab662d",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    ".github/workflows/catalogo-ampliado-gate6-e2e-cert-r8.yml",
+    "ops/e2e/requests/CATALOGO-AMPLIADO-GATE6-R8-20260908.execute"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CATALOGO-AMPLIADO-GATE6-E2E-CERT-R8-20260908",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T04:49:07Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-09T04:47:51Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
