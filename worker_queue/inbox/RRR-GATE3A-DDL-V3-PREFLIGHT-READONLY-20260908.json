@@ -1,0 +1,22 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"RRR-GATE3A-DDL-V3-PREFLIGHT-READONLY-20260908",
+  "created_at_utc":"2026-09-09T04:37:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"97a53f76ab9b5ded191a8f53e797a31d029c9e25",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"GATE 3A preflight inmediato antes de ejecutar RRR_GATE2_MINIMUM_DDL_V3.sql. Certificar que las siete tablas RRR objetivo no existen, que los cinco maestros externos y sus claves exactas existen con tipos certificados, que no hay colision de constraints/indices RRR y que la identidad SQL dispone de permisos DDL en la base no-Production. No ejecutar DDL/DML.",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"rrr_target_absence","sql":"SELECT t.name AS existing_target FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE s.name='dbo' AND t.name IN ('RRR_Reglas','RRR_ReglasVersiones','RRR_Eventos','RRR_Beneficios','RRR_LedgerMovimientos','RRR_ScoreHistorial','RRR_RankingHistorial') ORDER BY t.name"},
+    {"name":"rrr_external_key_contracts","sql":"SELECT s.name schema_name,t.name table_name,c.name column_name,ty.name data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND ((t.name='Cliente_Catalogo' AND c.name='ClienteID') OR (t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Venta_Encabezado' AND c.name='VentaID') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID')) ORDER BY t.name"},
+    {"name":"rrr_external_keys_pk_unique","sql":"SELECT t.name table_name,i.name index_name,i.is_primary_key,i.is_unique,c.name column_name FROM sys.tables t JOIN sys.indexes i ON i.object_id=t.object_id JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE ((t.name='Cliente_Catalogo' AND c.name='ClienteID') OR (t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Venta_Encabezado' AND c.name='VentaID') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID')) AND i.is_hypothetical=0 ORDER BY t.name,i.is_primary_key DESC,i.is_unique DESC,i.name"},
+    {"name":"rrr_name_collision_scan","sql":"SELECT 'OBJECT' kind,o.name FROM sys.objects o WHERE o.name LIKE 'RRR[_]%' UNION ALL SELECT 'INDEX',i.name FROM sys.indexes i WHERE i.name LIKE 'RRR[_]%' OR i.name LIKE 'PK_RRR[_]%' OR i.name LIKE 'UQ_RRR[_]%' OR i.name LIKE 'FK_RRR[_]%' OR i.name LIKE 'CK_RRR[_]%' ORDER BY kind,name"},
+    {"name":"rrr_ddl_permissions","sql":"SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS user_name,COALESCE(HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE TABLE'),0) AS can_create_table,COALESCE(HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER'),0) AS can_alter_dbo"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
