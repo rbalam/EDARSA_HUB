@@ -1,0 +1,27 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-A-FOUNDATION-CERTIFICATION",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Certificar formalmente Gate A - Fundacion usando exclusivamente evidencia e implementacion ya existente. No rehacer funcionalidad. Verificar que el contrato BOS define arquitectura SQL-first, multiempresa, multiunidad, multisoftware, timezone/moneda/internacionalizacion, integraciones desacopladas y ausencia de hardcodes estructurales; comprobar que la implementacion existente usa los maestros canonicos de conexiones y turnos operativos y que el status estrategico vigente ya clasifica Fundacion en 100%. Persistir solamente dossier y prueba de certificacion. No tocar Production, SQL, Worker, Supervisor, watchdog ni runtime.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/BOS/certifications/BOS_V1_GATE_A_FOUNDATION_CERTIFICATION.md",
+      "content": "# BOS V1 Gate A - Foundation Certification\n\nCertificacion de evidencia existente. No implementa funcionalidad nueva.\n\nCriterio: arquitectura SQL-first, multiempresa, multiunidad, multisoftware, zonas horarias, monedas, internacionalizacion, integraciones desacopladas y sin hardcodes estructurales.\n\nEvidencia: Programa Estrategico BOS; Status Programa Estrategico BOS; uso canonico de Servidores_Conexiones y Sistema_TurnosOperativosUnidad en el codigo existente.\n\nProduction: NO.\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_bos_v1_gate_a_foundation_certification.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nPROGRAM = ROOT / 'docs' / 'BOS' / 'PROGRAMA_ESTRATEGICO_BOS_EDARSAHUB_DIRECCION.md'\nSTATUS = ROOT / 'docs' / 'BOS' / 'STATUS_PROGRAMA_ESTRATEGICO_BOS_DIRECCION.md'\nCOMERCIAL = ROOT / 'backend' / 'modules' / 'comercial_v2' / 'sync_comercial_edarsahub.py'\n\ndef test_gate_a_contract_and_existing_canonical_foundation():\n    program = PROGRAM.read_text(encoding='utf-8')\n    status = STATUS.read_text(encoding='utf-8')\n    comercial = COMERCIAL.read_text(encoding='utf-8')\n    assert 'Gate A - Fundacion' in program\n    for token in ('SQL-first', 'multiempresa', 'multiunidad', 'multisoftware', 'zonas horarias', 'monedas', 'internacionalizacion', 'integraciones desacopladas', 'sin hardcodes estructurales'):\n        assert token in program\n    assert '| Fundacion tecnologica y arquitectura BOS | 100% |' in status\n    assert 'Servidores_Conexiones' in comercial\n    assert 'Sistema_TurnosOperativosUnidad' in comercial\n"
+    }
+  ],
+  "checks": [
+    {"type": "py_compile", "paths": ["backend/tests/test_bos_v1_gate_a_foundation_certification.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_bos_v1_gate_a_foundation_certification.py"]},
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
