@@ -1,0 +1,40 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"RRR-GATE4C-CUSTOMER360-VIEWS-PREFLIGHT-READONLY-20260909",
+  "created_at_utc":"2026-09-09T06:28:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"519743ffc5e095b2d519cbc80ed6df6e13ddc810",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"RRR GATE 4C: preflight READ_ONLY de docs/RRR/sql/RRR_GATE4_CUSTOMER360_VIEWS_V1.sql antes de cualquier CREATE VIEW. Validar ausencia de colisiones de nombres, columnas fuente exactas, compilabilidad lógica mediante SELECT equivalentes, cardinalidad de una fila por ClienteID y permisos CREATE VIEW/ALTER dbo. No ejecutar DDL/DML.",
+  "actions":[],
+  "acceptance":[
+    "READ_ONLY_SQL solamente",
+    "actions=[]",
+    "production_touched=false",
+    "ninguna de las 4 vistas objetivo existe",
+    "columnas Cliente_Catalogo requeridas existen",
+    "columnas Venta_Encabezado requeridas existen",
+    "columnas RRR_ScoreHistorial y RRR_RankingHistorial requeridas existen",
+    "SELECT equivalente a actividad comercial compila",
+    "SELECT equivalente a score actual compila",
+    "SELECT equivalente a ranking actual compila",
+    "SELECT equivalente a Customer360 compila",
+    "Customer360 equivalente no produce duplicados por ClienteID",
+    "permisos CREATE VIEW y ALTER dbo presentes"
+  ],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"customer360_view_name_absence","sql":"SELECT s.name schema_name,o.name object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE s.name='dbo' AND o.name IN ('vw_RRR_ClienteActividadComercial','vw_RRR_ClienteScoreActual','vw_RRR_ClienteRankingActual','vw_RRR_Customer360') ORDER BY o.name"},
+    {"name":"customer360_source_columns","sql":"SELECT t.name table_name,c.name column_name,ty.name data_type,c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (t.name='Cliente_Catalogo' AND c.name IN ('ClienteID','CodigoCliente','RazonSocial','NombreComercial','EmailPrincipal','TelefonoPrincipal','SectorID','TamanoClienteID','RiesgoCuentaID','EsProspecto','EsPartner','EsCuentaEstrategica','FechaUltimaInteraccion')) OR (t.name='Venta_Encabezado' AND c.name IN ('ClienteID','FechaVenta','Total')) OR (t.name='RRR_ScoreHistorial' AND c.name IN ('ClienteID','ScoreID','ModeloVersion','Score','CalculadoAtUtc','FechaOperacionCorte')) OR (t.name='RRR_RankingHistorial' AND c.name IN ('ClienteID','RankingID','ScoreID','ModeloVersion','RankCode','CalculadoAtUtc','VigenteDesde','VigenteHasta')) ORDER BY t.name,c.column_id"},
+    {"name":"customer360_activity_select_compile","sql":"SELECT TOP (0) v.ClienteID,COUNT_BIG(*) AS VentasCount,MIN(v.FechaVenta) AS FechaPrimeraVenta,MAX(v.FechaVenta) AS FechaUltimaVenta,SUM(v.Total) AS VentasTotal FROM dbo.Venta_Encabezado v GROUP BY v.ClienteID"},
+    {"name":"customer360_score_select_compile","sql":"SELECT TOP (0) ClienteID,ScoreID,ModeloVersion,Score,CalculadoAtUtc,FechaOperacionCorte FROM (SELECT s.*,ROW_NUMBER() OVER (PARTITION BY s.ClienteID ORDER BY s.CalculadoAtUtc DESC,s.ScoreID DESC) rn FROM dbo.RRR_ScoreHistorial s) x WHERE rn=1"},
+    {"name":"customer360_rank_select_compile","sql":"SELECT TOP (0) ClienteID,RankingID,ScoreID,ModeloVersion,RankCode,CalculadoAtUtc,VigenteDesde,VigenteHasta FROM (SELECT r.*,ROW_NUMBER() OVER (PARTITION BY r.ClienteID ORDER BY r.CalculadoAtUtc DESC,r.RankingID DESC) rn FROM dbo.RRR_RankingHistorial r) x WHERE rn=1"},
+    {"name":"customer360_composite_select_compile","sql":"WITH a AS (SELECT v.ClienteID,COUNT_BIG(*) VentasCount,MIN(v.FechaVenta) FechaPrimeraVenta,MAX(v.FechaVenta) FechaUltimaVenta,SUM(v.Total) VentasTotal FROM dbo.Venta_Encabezado v GROUP BY v.ClienteID),s AS (SELECT ClienteID,Score,ModeloVersion,CalculadoAtUtc FROM (SELECT sh.*,ROW_NUMBER() OVER(PARTITION BY sh.ClienteID ORDER BY sh.CalculadoAtUtc DESC,sh.ScoreID DESC) rn FROM dbo.RRR_ScoreHistorial sh) q WHERE rn=1),r AS (SELECT ClienteID,RankCode,ModeloVersion,CalculadoAtUtc FROM (SELECT rh.*,ROW_NUMBER() OVER(PARTITION BY rh.ClienteID ORDER BY rh.CalculadoAtUtc DESC,rh.RankingID DESC) rn FROM dbo.RRR_RankingHistorial rh) q WHERE rn=1) SELECT TOP (0) c.ClienteID,c.CodigoCliente,c.RazonSocial,c.NombreComercial,c.EmailPrincipal,c.TelefonoPrincipal,c.SectorID,c.TamanoClienteID,c.RiesgoCuentaID,c.EsProspecto,c.EsPartner,c.EsCuentaEstrategica,c.FechaUltimaInteraccion,a.FechaPrimeraVenta,a.FechaUltimaVenta,COALESCE(a.VentasCount,0) VentasCount,COALESCE(a.VentasTotal,0) VentasTotal,s.Score ScoreRRR,s.ModeloVersion ScoreModeloVersion,s.CalculadoAtUtc ScoreCalculadoAtUtc,r.RankCode,r.ModeloVersion RankModeloVersion,r.CalculadoAtUtc RankCalculadoAtUtc FROM dbo.Cliente_Catalogo c LEFT JOIN a ON a.ClienteID=c.ClienteID LEFT JOIN s ON s.ClienteID=c.ClienteID LEFT JOIN r ON r.ClienteID=c.ClienteID"},
+    {"name":"customer360_cardinality_duplicate_check","sql":"WITH a AS (SELECT v.ClienteID,COUNT_BIG(*) VentasCount,MIN(v.FechaVenta) FechaPrimeraVenta,MAX(v.FechaVenta) FechaUltimaVenta,SUM(v.Total) VentasTotal FROM dbo.Venta_Encabezado v GROUP BY v.ClienteID),s AS (SELECT ClienteID FROM (SELECT sh.ClienteID,ROW_NUMBER() OVER(PARTITION BY sh.ClienteID ORDER BY sh.CalculadoAtUtc DESC,sh.ScoreID DESC) rn FROM dbo.RRR_ScoreHistorial sh) q WHERE rn=1),r AS (SELECT ClienteID FROM (SELECT rh.ClienteID,ROW_NUMBER() OVER(PARTITION BY rh.ClienteID ORDER BY rh.CalculadoAtUtc DESC,rh.RankingID DESC) rn FROM dbo.RRR_RankingHistorial rh) q WHERE rn=1),c360 AS (SELECT c.ClienteID FROM dbo.Cliente_Catalogo c LEFT JOIN a ON a.ClienteID=c.ClienteID LEFT JOIN s ON s.ClienteID=c.ClienteID LEFT JOIN r ON r.ClienteID=c.ClienteID) SELECT ClienteID,COUNT_BIG(*) row_count FROM c360 GROUP BY ClienteID HAVING COUNT_BIG(*)>1"},
+    {"name":"customer360_permissions","sql":"SELECT DB_NAME() database_name,SUSER_SNAME() login_name,USER_NAME() user_name,COALESCE(HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE VIEW'),0) can_create_view,COALESCE(HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER'),0) can_alter_dbo"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
