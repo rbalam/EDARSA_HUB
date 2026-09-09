@@ -25,6 +25,7 @@ from .locks import get_lock_manager
 from .job_logger import get_job_logger
 from .jobs.sla_job import create_sla_job
 from .jobs.notifications_job import create_notifications_job
+from .jobs.catalogo_ampliado_alertas_job import execute_catalogo_ampliado_alertas
 from .jobs.auditorias_job import create_auditorias_job
 from .jobs.pedidos_detector_job import create_pedidos_detector_job
 from .jobs.inventarios_detector_job import create_inventarios_detector_job
@@ -193,6 +194,34 @@ class SchedulerManager:
         
         job = create_notifications_job(self.db, job_config)
         await job.run()
+
+    async def _run_catalogo_ampliado_alertas_job(self):
+        job_config = self.config.jobs.get("catalogo_ampliado_alertas")
+        if not job_config or not job_config.enabled:
+            return
+        lock_manager = get_lock_manager(self.db)
+        lock = lock_manager.get_lock("catalogo_ampliado_alertas")
+        if not await lock.acquire(timeout_seconds=job_config.timeout_seconds):
+            logger.warning("[CATALOGO_AMPLIADO_ALERTAS] ejecucion omitida por lock activo")
+            return
+        job_logger = get_job_logger()
+        log_entry = await job_logger.start_execution("catalogo_ampliado_alertas")
+        try:
+            result = await execute_catalogo_ampliado_alertas(job_config.batch_size)
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status="success",
+                processed_count=result.get("processed", 0),
+                success_count=result.get("processed", 0),
+                message=f"planned={result.get('planned', 0)} processed={result.get('processed', 0)}",
+                extra_metadata={"external_delivery_authorized": False},
+            )
+            return result
+        except Exception:
+            await job_logger.finish_execution(log_entry=log_entry, status="failed", error_detail="Error interno del servidor")
+            raise
+        finally:
+            await lock.release()
     
     async def _run_auditorias_job(self):
         """Wrapper async para ejecutar job de auditorías programadas."""
@@ -1220,6 +1249,21 @@ class SchedulerManager:
             )
             self._jobs["notifications_dispatcher"] = notif_config
             logger.info(f"Job Notificaciones registrado: intervalo={notif_config.interval_seconds}s")
+
+        catalogo_alertas_config = self.config.jobs.get("catalogo_ampliado_alertas")
+        if catalogo_alertas_config and catalogo_alertas_config.enabled:
+            trigger = IntervalTrigger(seconds=catalogo_alertas_config.interval_seconds)
+            self._scheduler.add_job(
+                self._run_catalogo_ampliado_alertas_job,
+                trigger=trigger,
+                id="catalogo_ampliado_alertas",
+                name="Catalogo Ampliado - Alertas",
+                replace_existing=True,
+                max_instances=1,
+                coalesce=True,
+            )
+            self._jobs["catalogo_ampliado_alertas"] = catalogo_alertas_config
+            logger.info(f"Job Catalogo Ampliado Alertas registrado: intervalo={catalogo_alertas_config.interval_seconds}s")
         
         # Job Auditorías Programadas
         audit_config = self.config.jobs.get("auditorias_scheduler")
@@ -1852,6 +1896,9 @@ class SchedulerManager:
             return {"status": "executed", "job_id": job_id}
         elif job_id == "notifications_dispatcher":
             await self._run_notifications_job()
+            return {"status": "executed", "job_id": job_id}
+        elif job_id == "catalogo_ampliado_alertas":
+            await self._run_catalogo_ampliado_alertas_job()
             return {"status": "executed", "job_id": job_id}
         elif job_id == "auditorias_scheduler":
             await self._run_auditorias_job()
