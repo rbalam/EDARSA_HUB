@@ -1,0 +1,22 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"servers-integrations-gate5d-communications-preflight-readonly-20260909",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"7b58dc633e034ce5b1708775ab63a5e529900a62",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Gate 5D preflight READ_ONLY: identificar objetos SQL canonicos reutilizables para Communications (configuracion, providers/conexiones, templates, cola, logs, RBAC) y evitar crear tablas paralelas. No leer secretos ni valores cifrados. Sin DDL/DML. Production prohibida.",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"gate5d_identity","sql":"SELECT DB_NAME() database_name,SUSER_SNAME() login_name,USER_NAME() database_user,ORIGINAL_LOGIN() original_login"},
+    {"name":"gate5d_communication_objects","sql":"SELECT s.name schema_name,o.name object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name LIKE '%Notifica%' OR o.name LIKE '%Comunic%' OR o.name LIKE '%Mensaje%' OR o.name LIKE '%Template%' OR o.name LIKE '%Plantilla%' OR o.name LIKE '%Twilio%' OR o.name LIKE '%WhatsApp%' OR o.name LIKE '%SMTP%' OR o.name LIKE '%Email%' ORDER BY o.type_desc,o.name"},
+    {"name":"gate5d_candidate_columns","sql":"SELECT t.name table_name,c.column_id,c.name column_name,ty.name data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN (SELECT o.name FROM sys.objects o WHERE o.type='U' AND (o.name LIKE '%Notifica%' OR o.name LIKE '%Comunic%' OR o.name LIKE '%Mensaje%' OR o.name LIKE '%Template%' OR o.name LIKE '%Plantilla%' OR o.name LIKE '%Twilio%' OR o.name LIKE '%WhatsApp%' OR o.name LIKE '%SMTP%' OR o.name LIKE '%Email%')) ORDER BY t.name,c.column_id"},
+    {"name":"gate5d_connections_communications","sql":"SELECT CONVERT(varchar(36),id) ConexionID,nombre,system_type,tipo_conexion,api_url,activo,scope_global,scope_empresa,scope_sucursal,scope_categoria,scope_departamento,CASE WHEN password_encrypted IS NOT NULL THEN 1 ELSE 0 END has_password_secret,CASE WHEN api_key_encrypted IS NOT NULL THEN 1 ELSE 0 END has_api_secret FROM dbo.Servidores_Conexiones WHERE UPPER(ISNULL(system_type,'')) LIKE '%TWILIO%' OR UPPER(ISNULL(system_type,'')) LIKE '%WHATS%' OR UPPER(ISNULL(system_type,'')) LIKE '%SMTP%' OR UPPER(ISNULL(system_type,'')) LIKE '%EMAIL%' OR UPPER(ISNULL(nombre,'')) LIKE '%TWILIO%' OR UPPER(ISNULL(nombre,'')) LIKE '%WHATS%' OR UPPER(ISNULL(nombre,'')) LIKE '%SMTP%' OR UPPER(ISNULL(nombre,'')) LIKE '%EMAIL%' ORDER BY nombre"},
+    {"name":"gate5d_log_count","sql":"SELECT CASE WHEN OBJECT_ID('dbo.Operativo_Notificaciones_Log','U') IS NULL THEN -1 ELSE (SELECT COUNT_BIG(*) FROM dbo.Operativo_Notificaciones_Log) END total_logs"},
+    {"name":"gate5d_rbac","sql":"SELECT codigo,nombre,modulo,activo FROM dbo.Sistema_RBAC_Permisos WHERE codigo LIKE '%NOTIFIC%' OR codigo LIKE '%COMUNIC%' OR codigo LIKE '%MENSAJ%' OR codigo LIKE '%TWILIO%' OR codigo LIKE '%WHATS%' ORDER BY codigo"},
+    {"name":"gate5d_existing_config_like_rows","sql":"SELECT t.name table_name, SUM(p.rows) approx_rows FROM sys.tables t JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE t.name LIKE '%Notifica%' OR t.name LIKE '%Comunic%' OR t.name LIKE '%Mensaje%' OR t.name LIKE '%Template%' OR t.name LIKE '%Plantilla%' GROUP BY t.name ORDER BY t.name"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
