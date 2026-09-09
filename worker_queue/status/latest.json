@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "dafa5a743c8335e4f26964f2e280f2b50c5ff897",
-  "generated_at_utc": "2026-09-09T23:41:13Z",
+  "generated_at_utc": "2026-09-09T23:42:25Z",
   "history": {
     "done_total_local": 341,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1527,
+      "age_seconds": 1598,
       "job_id": "coa-gate5a-facturacion-cfdi-emitidos-readonly-v1-20260909",
       "reasons": [
         "CHECK_1_QUERIES_REQUIRED"
@@ -22,91 +22,85 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1546,
+      "age_seconds": 1618,
       "job_id": "CAVAS-CORPORATIVAS-GATE12A-IDENTIDAD-SOCIO-METADATA-AUDIT-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1351,
+      "age_seconds": 1422,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-E2E-HTTP-RBAC-NOTIFICATIONS-20260909T2301Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1991,
+      "age_seconds": 2062,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5C-R2-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1320,
+      "age_seconds": 1392,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5D-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 748,
+      "age_seconds": 820,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5D-R2-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3100,
+      "age_seconds": 3171,
       "job_id": "servers-integrations-gate5c-formal-certification-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3557,
-      "job_id": "servers-integrations-gate5c-health-ledger-r1-20260909",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3412,
+      "age_seconds": 3484,
       "job_id": "servers-integrations-gate5c-ledger-r2-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3315,
+      "age_seconds": 3387,
       "job_id": "servers-integrations-gate5c-ledger-r3-timeout-utc-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3253,
+      "age_seconds": 3324,
       "job_id": "servers-integrations-gate5c-postaudit-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 798,
+      "age_seconds": 869,
       "job_id": "servers-integrations-gate5d-communications-preflight-r2-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 890,
+      "age_seconds": 962,
       "job_id": "servers-integrations-gate5d-communications-preflight-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 502,
+      "age_seconds": 573,
       "job_id": "servers-integrations-gate5d-communications-runtime-r1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 352,
+      "age_seconds": 424,
       "job_id": "servers-integrations-gate5d-communications-runtime-r2-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 736,
+      "age_seconds": 807,
       "job_id": "servers-integrations-gate5d-config-classification-r3-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
@@ -119,13 +113,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 15,
+  "queue_result_ready_recent": 14,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-09T23:41:10Z",
-    "last_receive_utc": "2026-09-09T23:41:11Z",
+    "last_cycle_utc": "2026-09-09T23:42:23Z",
+    "last_receive_utc": "2026-09-09T23:42:23Z",
     "last_terminal_utc": "2026-09-09T23:35:20Z",
     "pid": "161541"
   },
