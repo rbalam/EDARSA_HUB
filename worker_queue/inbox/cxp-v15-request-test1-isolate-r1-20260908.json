@@ -1,0 +1,9 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"cxp-v15-request-test1-isolate-r1-20260908",
+  "target_repo":"rbalam/EDARSA_HUB","target_branch":"Edarsahub_Desarrollo","production_allowed":false,"base_sha":"7bd7f621b6a919f6fa427c49e217379496c6c068",
+  "objective":"Aislar la primera asercion contractual de V15. Reproducir solo el contrato de pagina sobre la fuente actual mediante un test temporal equivalente, sin cambios funcionales.",
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt","project":"V1.0","chat":"cxp-decision-analysis"},
+  "actions":[{"type":"write_file","path":"backend/tests/test_cxp_v15_isolate_test1.py","content":"from pathlib import Path\nROOT=Path(__file__).resolve().parents[2]\nPAGE=ROOT/'frontend/src/pages/Finanzas.js'\ndef test_contract():\n src=PAGE.read_text(encoding='utf-8')\n transformed=src.replace(\"activeTab === 'cxp' ||\\n      activeTab === 'decision-pago'\",\"activeTab === 'cxp'\").replace(\"(activeTab === 'cxp' || activeTab === 'decision-pago')\",\"activeTab === 'cxp'\")\n assert \"activeTab === 'cxp' ||\\n      activeTab === 'decision-pago'\" not in transformed\n assert \"(activeTab === 'cxp' || activeTab === 'decision-pago')\" not in transformed\n"}],
+  "checks":[{"type":"pytest","paths":["backend/tests/test_cxp_v15_isolate_test1.py"]}],"human_summary_language":"es"
+}
