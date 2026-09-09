@@ -61,3 +61,71 @@ def test_worker_python_precedence_is_repo_venv_then_sys_executable():
     assert 'ROOT / ".venv" / "bin" / "python"' in resolver
     assert 'return sys.executable' in resolver
     assert '/root/.venv/bin/python' not in resolver
+
+def test_sql_readonly_evidence_survives_output_truncation(monkeypatch, tmp_path):
+    import json
+    import sys
+
+    mirror_sync = ROOT / 'tools' / 'mirror_sync'
+    sys.path.insert(0, str(mirror_sync))
+    try:
+        spec = importlib.util.spec_from_file_location('worker_dispatcher_evidence_test', DISPATCHER)
+        module = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        spec.loader.exec_module(module)
+    finally:
+        sys.path.remove(str(mirror_sync))
+
+    payload = {
+        'status': 'PASS',
+        'mode': 'READ_ONLY_SQL',
+        'connection': 'readonly_sql_connection:default',
+        'evidence': [{
+            'name': 'large_schema',
+            'columns': ['value'],
+            'rows': [['x' * 15000]],
+            'row_count_returned': 1,
+            'truncated': False,
+        }],
+    }
+    full_output = json.dumps(payload)
+
+    class Completed:
+        returncode = 0
+        stdout = full_output
+
+    monkeypatch.setattr(module, 'run', lambda *args, **kwargs: Completed())
+    result = module.run_check(tmp_path, {
+        'type': 'sql_readonly_audit',
+        'queries': [{'name': 'large_schema', 'sql': 'SELECT 1'}],
+    })
+
+    assert result['status'] == 'PASS'
+    assert result['sql_evidence'] == payload
+    assert len(result['output']) == 12000
+    assert result['output'] != full_output
+
+def test_sql_readonly_invalid_json_is_not_promoted(monkeypatch, tmp_path):
+    import sys
+
+    mirror_sync = ROOT / 'tools' / 'mirror_sync'
+    sys.path.insert(0, str(mirror_sync))
+    try:
+        spec = importlib.util.spec_from_file_location('worker_dispatcher_invalid_evidence_test', DISPATCHER)
+        module = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        spec.loader.exec_module(module)
+    finally:
+        sys.path.remove(str(mirror_sync))
+
+    class Completed:
+        returncode = 0
+        stdout = 'not-json'
+
+    monkeypatch.setattr(module, 'run', lambda *args, **kwargs: Completed())
+    result = module.run_check(tmp_path, {
+        'type': 'sql_readonly_audit',
+        'queries': [{'name': 'x', 'sql': 'SELECT 1'}],
+    })
+    assert result['status'] == 'PASS'
+    assert 'sql_evidence' not in result

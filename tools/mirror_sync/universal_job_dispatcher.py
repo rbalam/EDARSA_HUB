@@ -338,8 +338,16 @@ def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:
         raise ValueError(f"UNSUPPORTED_CHECK:{kind}")
     try:
         result = run(cmd, cwd=cwd, timeout=MAX_SECONDS, env_extra=locals().get("env_extra"))
-        output = result.stdout[-12000:]
-        return {"type": kind, "status": "PASS" if result.returncode == 0 else "FAIL", "returncode": result.returncode, "started_at_utc": started, "completed_at_utc": now(), "output": output}
+        full_output = result.stdout or ""
+        response = {"type": kind, "status": "PASS" if result.returncode == 0 else "FAIL", "returncode": result.returncode, "started_at_utc": started, "completed_at_utc": now(), "output": full_output[-12000:]}
+        if kind == "sql_readonly_audit":
+            try:
+                sql_evidence = json.loads(full_output.strip())
+            except (json.JSONDecodeError, TypeError):
+                sql_evidence = None
+            if isinstance(sql_evidence, dict):
+                response["sql_evidence"] = sql_evidence
+        return response
     except subprocess.TimeoutExpired as exc:
         text = exc.stdout if isinstance(exc.stdout, str) else ""
         return {"type": kind, "status": "FAIL", "returncode": 124, "started_at_utc": started, "completed_at_utc": now(), "output": f"TIMEOUT\n{text[-8000:]}"}
