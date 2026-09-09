@@ -1,0 +1,13 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-R2D-06-WAREHOUSE-DATA-20260908T185601Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"R2D-06: obtener conteo y muestra del unico catalogo de almacenes existente dbo.Inventario_Almacenes usando solo columnas certificadas. Solo lectura, sin POS LIVE, Mongo, DDL ni DML.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[{"name":"warehouse_count_and_sample","sql":"SELECT COUNT_BIG(*) AS total_rows, SUM(CASE WHEN Activo=1 THEN 1 ELSE 0 END) AS activos, COUNT(DISTINCT SucursalID) AS sucursales FROM dbo.Inventario_Almacenes; SELECT TOP (100) AlmacenID, EmpresaID, SucursalID, CodigoAlmacen, NombreAlmacen, TipoAlmacen, PermiteCompras, PermiteVentas, Activo, FechaAlta, FechaModificacion FROM dbo.Inventario_Almacenes ORDER BY SucursalID, CodigoAlmacen, AlmacenID;"}]}],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
