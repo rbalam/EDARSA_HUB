@@ -1,0 +1,48 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-AUTO-RETRY-CONTEXT-FIX-R3-20260909T001300Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Aplicar el fix mínimo del contexto de reintentos en InventariosDetectorJob y certificarlo con una prueba funcional real que ejecute _procesar_reintentos y verifique que DetallesJSON rehidrata folio_inicial, fecha_inicial, fecha_inventario, metadata y nombres. No activar email, no crear runner paralelo, no tocar Producción.",
+  "mode":"CODE_CHANGE",
+  "actions":[
+    {
+      "type":"replace_text",
+      "path":"backend/core/scheduler/jobs/inventarios_detector_job.py",
+      "old":"import logging\nfrom datetime import datetime, timezone\nfrom typing import Optional, List, Dict, Any\nimport uuid",
+      "new":"import json\nimport logging\nfrom datetime import datetime, timezone\nfrom typing import Optional, List, Dict, Any\nimport uuid"
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/core/scheduler/jobs/inventarios_detector_job.py",
+      "old":"            # Construir registro compatible para procesamiento\n            registro_compat = {\n                'clave': {\n                    'sistema_origen': registro.get('SistemaOrigen'),\n                    'server_id': registro.get('ServerID'),\n                    'sucursal_id': registro.get('SucursalID'),\n                    'almacen_id': registro.get('AlmacenID'),\n                    'folio_inventario': registro.get('FolioInventario')\n                }\n            }",
+      "new":"            # Reconstruir el contexto original persistido en SQL para que el\n            # reintento ejecute exactamente el mismo análisis que el primer intento.\n            detalles_raw = registro.get('DetallesJSON')\n            detalles = {}\n            if isinstance(detalles_raw, dict):\n                detalles = detalles_raw\n            elif detalles_raw:\n                try:\n                    detalles = json.loads(detalles_raw) or {}\n                except (TypeError, ValueError, json.JSONDecodeError):\n                    logger.warning(\n                        \"[INVENTARIOS_DETECTOR] DetallesJSON inválido en reintento folio=%s\",\n                        registro.get('FolioInventario'),\n                    )\n\n            registro_compat = {\n                'clave': {\n                    'sistema_origen': registro.get('SistemaOrigen'),\n                    'server_id': registro.get('ServerID'),\n                    'sucursal_id': registro.get('SucursalID'),\n                    'almacen_id': registro.get('AlmacenID'),\n                    'folio_inventario': registro.get('FolioInventario')\n                },\n                'server_name': detalles.get('server_name'),\n                'almacen_nombre': detalles.get('almacen_nombre', ''),\n                'folio_inicial': detalles.get('folio_inicial'),\n                'fecha_inicial': detalles.get('fecha_inicial'),\n                'fecha_inventario': detalles.get('fecha_inventario'),\n                'metadata': detalles.get('metadata', {}),\n                'intentos': registro.get('Intentos', 1),\n            }"
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/core/scheduler/jobs/inventarios_detector_job.py",
+      "old":"                detalles={\n                    \"server_name\": inv.server_name,\n                    \"almacen_nombre\": inv.almacen_nombre,\n                    \"folio_inicial\": inv.folio_inicial\n                }",
+      "new":"                detalles={\n                    \"server_name\": inv.server_name,\n                    \"almacen_nombre\": inv.almacen_nombre,\n                    \"folio_inicial\": inv.folio_inicial,\n                    \"fecha_inicial\": inv.fecha_inicial,\n                    \"fecha_inventario\": inv.fecha_inventario,\n                    \"metadata\": inv.metadata,\n                }"
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/tests/test_inventarios_detector_system_types.py",
+      "old":"    job_logger = types.ModuleType(\"core.scheduler.job_logger\")\n    job_logger.get_job_logger = lambda db: _DummyJobLogger()",
+      "new":"    job_logger = types.ModuleType(\"core.scheduler.job_logger\")\n    job_logger.get_job_logger = lambda *args, **kwargs: _DummyJobLogger()"
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/tests/test_inventarios_detector_system_types.py",
+      "old":"    assert inv.metadata[\"source\"] == \"EDARSAHUB_SYNC\"\n",
+      "new":"    assert inv.metadata[\"source\"] == \"EDARSAHUB_SYNC\"\n\n\n@pytest.mark.asyncio\nasync def test_reintento_rehidrata_contexto_persistido(monkeypatch):\n    detector_module = _load_detector_module(monkeypatch)\n\n    async def fake_get_pendientes(max_intentos=3, limit=5):\n        assert max_intentos == detector_module.MAX_INTENTOS\n        assert limit == 5\n        return [{\n            \"SistemaOrigen\": \"MPRO\",\n            \"ServerID\": \"server-mpro\",\n            \"SucursalID\": \"0021\",\n            \"AlmacenID\": \"0001\",\n            \"FolioInventario\": \"QR-0001041\",\n            \"Intentos\": 2,\n            \"DetallesJSON\": (\n                '{\"server_name\":\"ManagementPro\",'\n                '\"almacen_nombre\":\"ALMACEN GENERAL\",'\n                '\"folio_inicial\":\"QR-0001038\",'\n                '\"fecha_inicial\":\"2026-08-01\",'\n                '\"fecha_inventario\":\"2026-09-01\",'\n                '\"metadata\":{\"source\":\"EDARSAHUB_SYNC\"}}'\n            ),\n        }]\n\n    monkeypatch.setattr(\n        detector_module,\n        \"get_inventarios_pendientes_reintento\",\n        fake_get_pendientes,\n    )\n\n    capturado = {}\n\n    async def fake_procesar(registro):\n        capturado.update(registro)\n\n    job = detector_module.InventariosDetectorJob(db={})\n    monkeypatch.setattr(job, \"_procesar_inventario_desde_registro\", fake_procesar)\n\n    await job._procesar_reintentos()\n\n    assert capturado[\"clave\"] == {\n        \"sistema_origen\": \"MPRO\",\n        \"server_id\": \"server-mpro\",\n        \"sucursal_id\": \"0021\",\n        \"almacen_id\": \"0001\",\n        \"folio_inventario\": \"QR-0001041\",\n    }\n    assert capturado[\"server_name\"] == \"ManagementPro\"\n    assert capturado[\"almacen_nombre\"] == \"ALMACEN GENERAL\"\n    assert capturado[\"folio_inicial\"] == \"QR-0001038\"\n    assert capturado[\"fecha_inicial\"] == \"2026-08-01\"\n    assert capturado[\"fecha_inventario\"] == \"2026-09-01\"\n    assert capturado[\"metadata\"] == {\"source\": \"EDARSAHUB_SYNC\"}\n    assert capturado[\"intentos\"] == 2\n    assert job.stats[\"inventarios_reintentados\"] == 1\n"
+    }
+  ],
+  "checks":[
+    {"type":"py_compile","paths":["backend/core/scheduler/jobs/inventarios_detector_job.py","backend/tests/test_inventarios_detector_system_types.py"]},
+    {"type":"pytest","paths":["backend/tests/test_inventarios_detector_system_types.py"]},
+    {"type":"git_diff_check"}
+  ],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
