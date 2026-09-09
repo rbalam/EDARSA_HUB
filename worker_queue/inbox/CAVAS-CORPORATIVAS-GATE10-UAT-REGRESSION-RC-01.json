@@ -1,0 +1,57 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE10-UAT-REGRESSION-RC-01",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "65fe54fb91d7a05efb6f1280378e613dbdb67d6f",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Cerrar Gate 10 de Cavas Corporativas como UAT tecnico, regresion y Release Candidate sobre Gates 1-9 ya certificados. Validar en conjunto backend, dominio, repositorio, servicio, rutas, RBAC, navegacion, frontend y persistencia fisica. No introducir nueva logica funcional, no ejecutar DDL/DML y no tocar Produccion. Solo emitir dossier RC si todos los checks pasan.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/CAVAS/CAVAS_CORPORATIVAS_GATE10_UAT_REGRESSION_RC.md",
+      "content": "# Cavas Corporativas - Gate 10 UAT / Regression / Release Candidate\n\nGate final de certificacion previa a deploy.\n\n## Dependencias cerradas\n- Gate 1 Architecture: CERTIFIED 100%.\n- Gate 2 SQL Evidence: CERTIFIED_READ_ONLY 100%.\n- Gate 3 Domain Core: CERTIFIED 100%.\n- Gate 4 Repository/Service: CERTIFIED 100%.\n- Gate 5 RBAC Contract Audit: CERTIFIED_READ_ONLY 100%.\n- Gate 6 E2E Integration: CERTIFIED 100%.\n- Gate 7 Navigation/Menu: CERTIFIED_READ_ONLY 100%.\n- Gate 8 Composite UX/E2E/SQL/RBAC: CERTIFIED 100%.\n- Gate 9 Physical Persistence: CERTIFIED_READ_ONLY 100%.\n\n## RC scope\n- Domain, repository, service and routes compile and test together.\n- Frontend builds with canonical route `/cavas-corporativas`.\n- Canonical SQL menu remains unique and active.\n- Physical Cavas Corporativas core remains 8 tables with idempotency index.\n- RBAC physical permissions required by the module remain present.\n- No Production writes or deploy happen in this gate.\n\nIf all checks pass, this dossier is the Release Candidate attestation for the subsequent production deployment gate.\n"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"},
+    {"type":"py_compile","paths":["backend/modules/cavas_corporativas/domain.py","backend/modules/cavas_corporativas/repository.py","backend/modules/cavas_corporativas/service.py","backend/modules/cavas_corporativas/routes.py","backend/server.py"]},
+    {"type":"pytest","paths":["backend/tests/test_cavas_corporativas_domain.py","backend/tests/test_cavas_corporativas_repository.py","backend/tests/test_cavas_corporativas_service.py","backend/tests/test_cavas_corporativas_routes.py"]},
+    {"type":"frontend_build","directory":"frontend"},
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {
+          "name":"gate10_menu_rc",
+          "sql":"SELECT MenuID, Codigo, Ruta, RequierePermiso, Activo FROM dbo.Sistema_ModulosMenus WHERE Codigo=N'cava.corporativas' OR Ruta=N'/cavas-corporativas' ORDER BY MenuID"
+        },
+        {
+          "name":"gate10_core_tables_rc",
+          "sql":"SELECT t.name AS table_name FROM sys.tables t WHERE t.name IN ('CavasCorporativas_OrganizacionesRef','CavasCorporativas_Convenios','CavasCorporativas_ConvenioUnidades','CavasCorporativas_Autorizados','CavasCorporativas_Beneficios','CavasCorporativas_BeneficioAlcances','CavasCorporativas_Politicas','CavasCorporativas_AplicacionesBeneficio') ORDER BY t.name"
+        },
+        {
+          "name":"gate10_idempotency_index_rc",
+          "sql":"SELECT t.name AS table_name, i.name AS index_name, i.is_unique FROM sys.tables t INNER JOIN sys.indexes i ON i.object_id=t.object_id WHERE t.name=N'CavasCorporativas_AplicacionesBeneficio' AND i.name=N'UQ_CC_Aplicacion_Idempotencia'"
+        },
+        {
+          "name":"gate10_rbac_permissions_rc",
+          "sql":"SELECT m.CodigoModulo, a.CodigoAccion, COUNT_BIG(*) AS GrantsActivos FROM dbo.Usuario_PermisosRolModulo prm INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID WHERE prm.Activo=1 AND prm.Permitido=1 AND ((m.CodigoModulo=N'cava_socios' AND a.CodigoAccion=N'VER') OR (m.CodigoModulo=N'cava_socios.consumos' AND a.CodigoAccion=N'CREAR')) GROUP BY m.CodigoModulo,a.CodigoAccion ORDER BY m.CodigoModulo,a.CodigoAccion"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "NO Production",
+    "NO deploy",
+    "NO SQL DDL/DML",
+    "NO new functional logic",
+    "NO new Mongo",
+    "NO parallel RBAC",
+    "Backend authoritative",
+    "Release Candidate only if every check passes",
+    "Expected Gate10 terminal: CERTIFIED + 100% + quality_gate PASS + tests PASS + production_touched false"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
