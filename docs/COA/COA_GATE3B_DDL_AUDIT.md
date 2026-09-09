@@ -47,9 +47,9 @@ Se usa `datetime2(3)` y `sysutcdatetime()` para eventos/alta/calculo, siguiendo 
 
 ## Riesgos y decisiones diferidas
 - Los codigos de estado, tipo de operacion, canal, dimension y operador quedan como codigos declarativos sin CHECK con listas hardcodeadas. Los catalogos correspondientes se decidiran en un gate funcional posterior si la operacion real los necesita.
-- `MonedaCodigo char(3)` no tiene FK porque Gate 3A no certifico un catalogo monetario unico para COA. Antes de ejecutar el DDL debe auditarse si existe un catalogo canonico que deba sustituir ese campo por FK.
+- Gate 3C certifico `dbo.Proveedor_Monedas` como catalogo monetario canonico candidato y confirmo `MonedaID` como `smallint`; el repositorio ya contiene FK existentes hacia `dbo.Proveedor_Monedas(MonedaID)`. Gate 3B-R2 reemplaza `MonedaCodigo char(3)` por `MonedaID smallint` y agrega FK canonica en `COA_ReglasComision` y `COA_ComisionAplicada`. `ClaveMoneda` queda derivable del catalogo y no se duplica en COA.
 - `SnapshotResolucion` es evidencia de calculo; el formato JSON/estructura se definira en contrato de servicio antes de persistir datos.
 - No se agregan tablas de mensajeria en este DDL minimo. Gmail/WhatsApp se modelaran despues de auditar infraestructura transversal y contratos de integracion.
 
-## Veredicto Gate 3B
-DDL MINIMO GENERADO, NO EJECUTADO. Apto para siguiente gate de preflight SQL y validacion de dependencias antes de cualquier CREATE TABLE.
+## Veredicto Gate 3B-R2
+DDL MINIMO CORREGIDO CON MONEDA CANONICA Y NO EJECUTADO. Gate 3C confirmo ausencia de colisiones de tablas/constraints/indices y validez de las dependencias canonicas. El siguiente paso debe ser un preflight final READ_ONLY sobre esta revision R2 antes de autorizar cualquier CREATE TABLE.
