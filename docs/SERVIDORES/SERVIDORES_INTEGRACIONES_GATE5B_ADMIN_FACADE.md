@@ -178,18 +178,22 @@ Ademas se corrigieron dos riesgos detectados durante la auditoria de implementac
 
 La implementacion esta integrada en Desarrollo y la revision estructural del contrato queda cerrada.
 
-Sin embargo, durante Gate 5B los canales automaticos de certificacion no estuvieron operativos:
+Se agrego una certificacion dirigida en:
 
-- el Universal Worker conserva heartbeat stale respecto al HEAD actual;
-- el wake canonico fue disparado, pero GitHub Actions termino antes de ejecutar pasos;
-- los jobs generales `backend-tests`, `frontend-build` y `artifact-policy` tambien terminaron antes de checkout, sin logs/steps de prueba.
+- `.github/workflows/servers-integrations-gate5b-cert.yml`
+- commit disparador: `4d779f3d509dbb3e9df2a153904ad123c5fd9a3d`
+- check: `certify-gate5b`
+- run: `34410295298`
 
-Por tanto, esos `failure` **no son evidencia de fallo del codigo**, pero tampoco se declaran como PASS.
+El job termino `failure` antes de ejecutar cualquier step: GitHub reporto `steps=[]`. Por tanto no llego a checkout, instalacion de dependencias, `py_compile`, `pytest` ni mount-check. Es un fallo de infraestructura/runner y **no evidencia un fallo del codigo**, pero tampoco permite declarar certificacion runtime PASS.
+
+La validacion estatica adicional confirmo que los nombres de columnas usados por la fachada coinciden con contratos existentes ya usados por el repositorio (`Sistema_Tipos` y `Sistema_VersionesSistemas`) y que la fachada no introduce writers.
 
 Estado honesto:
 
 - IMPLEMENTACION_REPO = 100%
 - REVISION_ESTRUCTURAL = PASS
+- STATIC_SCHEMA_CONTRACT = PASS
 - AUTOMATED_RUNTIME_CERTIFICATION = PENDING_INFRASTRUCTURE
 - DDL_EXECUTED = NO
 - DML_EXECUTED = NO
@@ -215,4 +219,4 @@ Gate 5E construira la UI consumiendo esta fachada.
 
 `GATE_5B_IMPLEMENTATION = 100%`
 
-La fachada administrativa unica esta implementada sin reemplazar `Servidores_Conexiones`, `server_registry`, resolvers ni RBAC. La certificacion automatica queda pendiente exclusivamente por indisponibilidad del Worker/Actions y debe ejecutarse antes de declarar `GATE_5B_CERTIFIED=100%`.
+La fachada administrativa unica esta implementada sin reemplazar `Servidores_Conexiones`, `server_registry`, resolvers ni RBAC. La certificacion automatica queda pendiente exclusivamente por indisponibilidad del runner y debe ejecutarse antes de declarar `GATE_5B_CERTIFIED=100%`.
