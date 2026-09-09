@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
-  "generated_at_utc": "2026-09-09T19:39:36Z",
+  "generated_at_utc": "2026-09-09T19:40:50Z",
   "history": {
     "done_total_local": 326,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1730,
+      "age_seconds": 1803,
       "job_id": "EDARSAHUB-ENTERPRISE-CAPABILITY-MAP-GATE1-20260909",
       "reasons": [
         "INVALID_SCHEMA",
@@ -23,7 +23,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1455,
+      "age_seconds": 1528,
       "job_id": "EDARSAHUB-SOFTRESTAURANT-RESTORE-APERTURA-CONTRACT-R43-CARLOS-20260909T182500Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -41,8 +41,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-09T19:39:33Z",
-    "last_receive_utc": "2026-09-09T19:39:34Z",
+    "last_cycle_utc": "2026-09-09T19:40:46Z",
+    "last_receive_utc": "2026-09-09T19:40:47Z",
     "last_terminal_utc": "2026-09-09T19:15:21Z",
     "pid": "285"
   },
