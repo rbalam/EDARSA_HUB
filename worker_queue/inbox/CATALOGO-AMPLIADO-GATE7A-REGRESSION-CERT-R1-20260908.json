@@ -1,0 +1,59 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE7A-REGRESSION-CERT-R1-20260908",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
+  "production_allowed": false,
+  "mode": "AUDIT",
+  "objective": "Gate 7A del Catalogo Ampliado: certificar regresion completa del modulo sobre el HEAD actual de Desarrollo despues de Gate6. Ejecutar contratos backend/frontend/Gate6, compilacion Python, frontend build canonico y validacion de navegacion. No modificar codigo funcional ni Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/catalogo_ampliado/repository.py",
+        "backend/modules/catalogo_ampliado/service.py",
+        "backend/modules/catalogo_ampliado/routes.py",
+        "backend/tests/test_catalogo_ampliado_backend_gate4.py",
+        "backend/tests/test_catalogo_ampliado_frontend_gate5_contract.py",
+        "backend/tests/test_catalogo_ampliado_gate6_contract.py",
+        "backend/tests/test_catalogo_ampliado_gate6_e2e_real.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_catalogo_ampliado_backend_gate4.py",
+        "backend/tests/test_catalogo_ampliado_frontend_gate5_contract.py",
+        "backend/tests/test_catalogo_ampliado_gate6_contract.py"
+      ]
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "NO Production",
+    "NO code mutation",
+    "NO Mongo",
+    "NO hardcodes",
+    "SQL-first",
+    "Frontend build must use repository canonical package manager",
+    "Gate7A passes only with all checks PASS and blockers empty"
+  ],
+  "expected_result": {
+    "status": "INTEGRATED",
+    "quality_gate": "PASS",
+    "tests": "PASS",
+    "blockers": [],
+    "percent_complete": 100,
+    "production_touched": false
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
