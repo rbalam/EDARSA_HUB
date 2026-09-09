@@ -1,0 +1,59 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-CANONICAL-SOURCE-CERT-R2-20260908T175000Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Certificar las fuentes canonicas UNICAS que debe consumir Operaciones > Analisis para Almacenes e Inventarios Fisicos. Regla obligatoria: NO LIVE POS en pantallas; NO Mongo; NO fallback paralelo; NO duplicar tablas/catalogos; reutilizar tablas y contratos existentes. Debe demostrar si Compras_Inventarios_Fisicos_Sync es la publicacion canonica de inventarios fisicos y determinar la tabla/catalogo canonico real de almacenes por unidad/server. Debe incluir evidencia CIENFUEGOS y relaciones de claves Unidad->Server->Almacen->Inventario. Solo lectura.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "canonical_inventory_sync_object",
+          "sql": "SELECT o.type_desc, s.name AS schema_name, o.name AS object_name FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name='Compras_Inventarios_Fisicos_Sync';"
+        },
+        {
+          "name": "canonical_inventory_sync_columns",
+          "sql": "SELECT c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.is_nullable FROM sys.columns c JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Compras_Inventarios_Fisicos_Sync') ORDER BY c.column_id;"
+        },
+        {
+          "name": "canonical_inventory_sync_counts",
+          "sql": "IF OBJECT_ID('dbo.Compras_Inventarios_Fisicos_Sync') IS NOT NULL SELECT COUNT_BIG(*) AS total_rows, COUNT(DISTINCT CAST(server_id AS varchar(100))) AS servers, COUNT(DISTINCT CAST(unidad_negocio AS varchar(200))) AS unidades FROM dbo.Compras_Inventarios_Fisicos_Sync;"
+        },
+        {
+          "name": "cienfuegos_inventory_sync_sample",
+          "sql": "IF OBJECT_ID('dbo.Compras_Inventarios_Fisicos_Sync') IS NOT NULL SELECT TOP 30 * FROM dbo.Compras_Inventarios_Fisicos_Sync WHERE UPPER(CAST(unidad_negocio AS varchar(200))) LIKE '%CIENFUEGOS%' ORDER BY fecha DESC;"
+        },
+        {
+          "name": "warehouse_objects_exact_candidates",
+          "sql": "SELECT o.type_desc, s.name AS schema_name, o.name AS object_name FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name IN ('Inventario_Almacenes','Sistema_Almacenes','Almacenes','Compras_Almacenes_Sync','Inventarios_Almacenes_Sync') ORDER BY o.name;"
+        },
+        {
+          "name": "warehouse_candidate_columns",
+          "sql": "SELECT t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Inventario_Almacenes','Sistema_Almacenes','Almacenes','Compras_Almacenes_Sync','Inventarios_Almacenes_Sync') ORDER BY t.name,c.column_id;"
+        },
+        {
+          "name": "warehouse_candidate_counts",
+          "sql": "IF OBJECT_ID('dbo.Inventario_Almacenes') IS NOT NULL SELECT 'Inventario_Almacenes' AS source, COUNT_BIG(*) AS rows_count FROM dbo.Inventario_Almacenes; IF OBJECT_ID('dbo.Sistema_Almacenes') IS NOT NULL SELECT 'Sistema_Almacenes' AS source, COUNT_BIG(*) AS rows_count FROM dbo.Sistema_Almacenes; IF OBJECT_ID('dbo.Almacenes') IS NOT NULL SELECT 'Almacenes' AS source, COUNT_BIG(*) AS rows_count FROM dbo.Almacenes; IF OBJECT_ID('dbo.Compras_Almacenes_Sync') IS NOT NULL SELECT 'Compras_Almacenes_Sync' AS source, COUNT_BIG(*) AS rows_count FROM dbo.Compras_Almacenes_Sync; IF OBJECT_ID('dbo.Inventarios_Almacenes_Sync') IS NOT NULL SELECT 'Inventarios_Almacenes_Sync' AS source, COUNT_BIG(*) AS rows_count FROM dbo.Inventarios_Almacenes_Sync;"
+        },
+        {
+          "name": "cienfuegos_unit",
+          "sql": "SELECT CAST(id AS varchar(100)) AS unidad_id, codigo, nombre, CAST(server_id AS varchar(100)) AS server_id, sucursal_origen_id, system_type, activo FROM dbo.Unidades_Negocio WHERE UPPER(codigo)='CIENFUEGOS' OR UPPER(nombre) LIKE '%CIENFUEGOS%';"
+        },
+        {
+          "name": "foreign_keys_warehouse_inventory",
+          "sql": "SELECT fk.name AS fk_name, OBJECT_NAME(fk.parent_object_id) AS parent_table, COL_NAME(fkc.parent_object_id,fkc.parent_column_id) AS parent_column, OBJECT_NAME(fk.referenced_object_id) AS referenced_table, COL_NAME(fkc.referenced_object_id,fkc.referenced_column_id) AS referenced_column FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id WHERE OBJECT_NAME(fk.parent_object_id) LIKE '%Almacen%' OR OBJECT_NAME(fk.parent_object_id) LIKE '%Inventario%' OR OBJECT_NAME(fk.referenced_object_id) LIKE '%Almacen%' OR OBJECT_NAME(fk.referenced_object_id) LIKE '%Inventario%' ORDER BY parent_table,fk_name;"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0"
+  },
+  "human_summary_language": "es"
+}
