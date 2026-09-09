@@ -1,0 +1,29 @@
+{
+  "base_sha": "75d196f702543e6b3806029eb6e98760b0cdb400",
+  "blockers": [
+    "check_failed:frontend_build"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-09T00:03:23Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "frontend/src/App.js",
+    "frontend/src/config/enterpriseMenuConfig.js",
+    "frontend/src/pages/satelites/COAHome.jsx"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "coa-satelite-bootstrap-v3-20260908",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T00:04:16Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-09T00:03:20Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
