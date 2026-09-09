@@ -1,0 +1,72 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P3A-R2-UNIVERSE-THRESHOLDS-PREFLIGHT-20260908T1952Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "GATE 2 P3A R2 schema-safe: certificar universo real del Sync Monitor y evidencia explícita de configuración SQL de thresholds/SLA/frecuencia sin asumir columnas opcionales ni existencia de tablas. Corregir el P3A bloqueado usando metadata y consultas protegidas por OBJECT_ID. El resultado debe habilitar P3B determinista: si existe fuente canónica explícita, usarla; si no existe, retirar thresholds hardcodeados y devolver SIN_SLA_THRESHOLD_CONFIGURADO. NO DDL/DML, NO Mongo, NO LIVE, NO Production.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "sync_active_servers_universe",
+          "sql": "SELECT CAST(id AS VARCHAR(100)) AS server_id,nombre,system_type,tipo_conexion,activo,fecha_ultima_sincronizacion,source_status,ultimo_error_sync FROM dbo.Servidores_Conexiones WHERE ISNULL(activo,1)=1 ORDER BY nombre"
+        },
+        {
+          "name": "sync_types_compras_by_server",
+          "sql": "SELECT server_id,sync_type,COUNT(*) AS runs,MAX(sync_end) AS last_sync,MAX(CASE WHEN status='OK' THEN sync_end END) AS last_success FROM dbo.Compras_Sync_Log GROUP BY server_id,sync_type ORDER BY server_id,sync_type"
+        },
+        {
+          "name": "sync_types_comercial_by_server",
+          "sql": "SELECT server_id,run_type AS sync_type,COUNT(*) AS runs,MAX(run_timestamp) AS last_sync,MAX(CASE WHEN status='SUCCESS' THEN run_timestamp END) AS last_success FROM dbo.Comercial_SyncLog_v2 GROUP BY server_id,run_type ORDER BY server_id,run_type"
+        },
+        {
+          "name": "sync_logs_presence_and_schema",
+          "sql": "SELECT CASE WHEN OBJECT_ID('dbo.Sync_Logs','U') IS NULL THEN 0 ELSE 1 END AS table_exists; SELECT c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.columns c JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Sync_Logs') ORDER BY c.column_id"
+        },
+        {
+          "name": "sync_logs_rowcount_if_present",
+          "sql": "IF OBJECT_ID('dbo.Sync_Logs','U') IS NULL SELECT CAST(NULL AS BIGINT) AS total_rows WHERE 1=0 ELSE SELECT COUNT_BIG(*) AS total_rows FROM dbo.Sync_Logs"
+        },
+        {
+          "name": "threshold_candidate_tables",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name LIKE '%Threshold%' OR t.name LIKE '%Umbral%' OR t.name LIKE '%SLA%' OR t.name LIKE '%Frecuencia%' OR t.name LIKE '%Intervalo%' OR t.name LIKE '%Timeout%' OR t.name LIKE '%Sync%Config%' OR t.name LIKE '%Scheduler%Config%' ORDER BY s.name,t.name"
+        },
+        {
+          "name": "threshold_candidate_columns",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE '%Threshold%' OR t.name LIKE '%Umbral%' OR t.name LIKE '%SLA%' OR t.name LIKE '%Frecuencia%' OR t.name LIKE '%Intervalo%' OR t.name LIKE '%Timeout%' OR t.name LIKE '%Sync%Config%' OR t.name LIKE '%Scheduler%Config%' OR c.name LIKE '%Threshold%' OR c.name LIKE '%Umbral%' OR c.name LIKE '%SLA%' OR c.name LIKE '%Frecuencia%' OR c.name LIKE '%Intervalo%' OR c.name LIKE '%Timeout%' ORDER BY s.name,t.name,c.column_id"
+        },
+        {
+          "name": "scheduler_tables_presence",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name IN ('Sys_Scheduler_Jobs','Sys_Scheduler_JobConfig','Scheduler_BitacoraJobs') ORDER BY t.name"
+        },
+        {
+          "name": "scheduler_config_schema",
+          "sql": "SELECT t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Sys_Scheduler_Jobs','Sys_Scheduler_JobConfig') ORDER BY t.name,c.column_id"
+        },
+        {
+          "name": "turnos_operativos_schema",
+          "sql": "SELECT c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.columns c JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Sistema_TurnosOperativosUnidad') ORDER BY c.column_id"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL ONLY",
+    "NO DDL",
+    "NO DML",
+    "NO Production",
+    "NO Mongo",
+    "NO LIVE source connections",
+    "NO threshold invention",
+    "NO universe invention",
+    "Schema-safe metadata first",
+    "P3B only from certified evidence",
+    "Do not modify Universal Worker structure"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "technical"
+}
