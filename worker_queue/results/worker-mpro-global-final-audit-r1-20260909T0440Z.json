@@ -1,0 +1,132 @@
+{
+  "base_sha": "c6e3fc382a6d97951d3487f3a878391538ab662d",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T04:48:47Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-mpro-global-final-audit-r1-20260909T0440Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T04:52:13Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "sucursal",
+              "total_source",
+              "min_source",
+              "max_source",
+              "total_target",
+              "min_target",
+              "max_target"
+            ],
+            "name": "mpro_global_source_target_by_branch",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "0021",
+                "1808",
+                "2021-09-18T00:00:00",
+                "2026-09-07T00:00:00",
+                "1808",
+                "2021-09-18",
+                "2026-09-07"
+              ],
+              [
+                "0023",
+                "2249",
+                "2022-05-20T00:00:00",
+                "2026-09-07T00:00:00",
+                "2249",
+                "2022-05-20",
+                "2026-09-07"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "duplicate_groups"
+            ],
+            "name": "mpro_global_duplicate_identity_check",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocioNombre",
+              "SucursalOrigenID",
+              "total_rows",
+              "min_fecha",
+              "max_fecha",
+              "last_sync_at"
+            ],
+            "name": "mpro_global_canonical_coverage",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "130° QUERETARO",
+                "0021",
+                "1808",
+                "2021-09-18",
+                "2026-09-07",
+                "2026-09-08 22:10:27.7900000"
+              ],
+              [
+                "ORIGEN",
+                "0023",
+                "2249",
+                "2022-05-20",
+                "2026-09-07",
+                "2026-09-08 22:38:50.9566667"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_cortes_mpro",
+              "sucursales_mpro",
+              "min_fecha_global",
+              "max_fecha_global"
+            ],
+            "name": "mpro_global_totals",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "4057",
+                2,
+                "2021-09-18",
+                "2026-09-07"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T04:48:46Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
