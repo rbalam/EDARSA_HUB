@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P3B-RECERT-SHA-BOUND-R2-20260908T2210Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "93efb6e768acd59169bf63ecd8fec9c4abc9300e",
+  "production_allowed": false,
+  "objective": "Reemisión única de la recertificación SHA-bound de Gate 2 P3B porque el JOB anterior quedó huérfano en inbox y no produjo processing/done/skipped/rejected/results. Verificar sobre el commit exacto 93efb6e768acd59169bf63ecd8fec9c4abc9300e: eliminación de STALE_THRESHOLDS hardcodeado; SIN_SLA_THRESHOLD_CONFIGURADO sin SLA canónico; SIN_TELEMETRIA sin telemetría correlacionable; universo canónico Servidores_Conexiones + Compras_Sync_Log + Comercial_SyncLog_v2; Sync_Logs global no asignable por falta de server_id; preservar RBAC P0 y KPI exacto P1. No modificar archivos. No Production. No Mongo. No LIVE.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_sync_monitor_p3b_universe_threshold_contract.py",
+        "backend/tests/test_sync_monitor_rbac_contract.py",
+        "backend/tests/test_sync_monitor_exact_error_kpi_contract.py"
+      ]
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/sync_monitor/service.py",
+        "backend/modules/sync_monitor/routes.py",
+        "backend/tests/test_sync_monitor_p3b_universe_threshold_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "EXACT SHA BINDING REQUIRED: 93efb6e768acd59169bf63ecd8fec9c4abc9300e",
+    "NO actions / NO file mutations",
+    "NO Production",
+    "NO Mongo",
+    "NO LIVE",
+    "NO DDL/DML",
+    "NO Universal Worker structure changes",
+    "Certification must fail if audited source SHA differs from the bound SHA",
+    "Return CERTIFIED only if all checks PASS and source SHA is exactly the bound SHA"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "technical"
+}
