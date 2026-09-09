@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
-  "generated_at_utc": "2026-09-09T22:32:24Z",
+  "generated_at_utc": "2026-09-09T22:33:44Z",
   "history": {
     "done_total_local": 330,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 376,
-    "results_total_local": 638
+    "rejected_total_local": 377,
+    "results_total_local": 639
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 751,
+      "age_seconds": 831,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-R4-RBAC-DETERMINISTIC-OFFLINE-20260909T2000Z",
       "reasons": [
         "INVALID_TARGET_REPO",
@@ -23,32 +23,38 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 546,
+      "age_seconds": 625,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-R4-DETERMINISTIC-RBAC-32-DEPS-20260909T2148Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 531,
+      "age_seconds": 610,
       "job_id": "EDARSAHUB-SOFTRESTAURANT-RESTORE-APERTURA-CONTRACT-R43B-CARLOS-20260909T194000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 526,
+      "age_seconds": 606,
       "job_id": "RRR-GATE4D-R1-ROLLBACK-ABSENCE-READONLY-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 513,
+      "age_seconds": 592,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5B-R4-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 510,
+      "age_seconds": 589,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5B-R5-20260909",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 9,
+      "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5C-20260909",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -60,14 +66,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 5,
+  "queue_result_ready_recent": 6,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-09T22:32:23Z",
-    "last_receive_utc": "2026-09-09T22:32:24Z",
-    "last_terminal_utc": "2026-09-09T22:23:54Z",
+    "last_cycle_utc": "2026-09-09T22:33:38Z",
+    "last_receive_utc": "2026-09-09T22:33:39Z",
+    "last_terminal_utc": "2026-09-09T22:33:34Z",
     "pid": "159"
   },
   "schema": "edarsahub.worker-health.v3",
