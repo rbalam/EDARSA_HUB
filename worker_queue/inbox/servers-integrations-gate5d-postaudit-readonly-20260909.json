@@ -1,0 +1,25 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"servers-integrations-gate5d-postaudit-readonly-20260909",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"70c512bc6098bc30048accd2ddab3239ce740136",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Gate 5D post-audit READ_ONLY: verificar estado fisico real de Communications tras integracion de codigo y dos intentos de migration Actions. Confirmar config/log preservados, existencia/estructura/filas de queue, permisos NOTIFICACIONES y asignacion SUPERADMIN, connections communications y ausencia Toast. Solo HRLectura, no secretos, no DDL/DML, Production prohibida.",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"gate5d_post_identity","sql":"SELECT DB_NAME() database_name,SUSER_SNAME() login_name,USER_NAME() database_user,ORIGINAL_LOGIN() original_login"},
+    {"name":"gate5d_post_objects","sql":"SELECT s.name schema_name,o.name object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name IN ('Sistema_NotificacionesConfig','Operativo_Notificaciones_Queue','Operativo_Notificaciones_Log') ORDER BY o.name"},
+    {"name":"gate5d_post_queue_columns","sql":"SELECT COUNT(*) queue_columns FROM sys.columns WHERE object_id=OBJECT_ID('dbo.Operativo_Notificaciones_Queue')"},
+    {"name":"gate5d_post_queue_indexes","sql":"SELECT COUNT(*) queue_indexes FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.Operativo_Notificaciones_Queue') AND name IN ('IX_Operativo_Notificaciones_Queue_Pendientes','IX_Operativo_Notificaciones_Queue_Lock')"},
+    {"name":"gate5d_post_queue_rows","sql":"SELECT CASE WHEN OBJECT_ID('dbo.Operativo_Notificaciones_Queue','U') IS NULL THEN -1 ELSE (SELECT COUNT_BIG(*) FROM dbo.Operativo_Notificaciones_Queue) END queue_rows"},
+    {"name":"gate5d_post_existing_rows","sql":"SELECT (SELECT COUNT_BIG(*) FROM dbo.Sistema_NotificacionesConfig) config_rows,(SELECT COUNT_BIG(*) FROM dbo.Operativo_Notificaciones_Log) log_rows"},
+    {"name":"gate5d_post_permissions","sql":"SELECT codigo,modulo,activo FROM dbo.Sistema_RBAC_Permisos WHERE codigo IN ('NOTIFICACIONES_VER','NOTIFICACIONES_CONFIGURAR','NOTIFICACIONES_ENVIAR') ORDER BY codigo"},
+    {"name":"gate5d_post_superadmin_links","sql":"SELECT p.codigo,COUNT_BIG(*) total FROM dbo.Sistema_RBAC_RolesPermisos rp JOIN dbo.Sistema_RBAC_Roles r ON r.rol_id=rp.rol_id JOIN dbo.Sistema_RBAC_Permisos p ON p.permiso_id=rp.permiso_id WHERE r.codigo='SUPERADMIN' AND r.activo=1 AND rp.activo=1 AND p.codigo IN ('NOTIFICACIONES_VER','NOTIFICACIONES_CONFIGURAR','NOTIFICACIONES_ENVIAR') GROUP BY p.codigo ORDER BY p.codigo"},
+    {"name":"gate5d_post_comm_connections","sql":"SELECT COUNT_BIG(*) total FROM dbo.Servidores_Conexiones WHERE UPPER(ISNULL(system_type,'')) LIKE '%TWILIO%' OR UPPER(ISNULL(system_type,'')) LIKE '%WHATS%' OR UPPER(ISNULL(system_type,'')) LIKE '%SMTP%' OR UPPER(ISNULL(system_type,'')) LIKE '%EMAIL%' OR UPPER(ISNULL(nombre,'')) LIKE '%TWILIO%' OR UPPER(ISNULL(nombre,'')) LIKE '%WHATS%' OR UPPER(ISNULL(nombre,'')) LIKE '%SMTP%' OR UPPER(ISNULL(nombre,'')) LIKE '%EMAIL%'"},
+    {"name":"gate5d_post_toast","sql":"SELECT COUNT(*) toast_tables FROM sys.tables WHERE name LIKE 'Toast[_]%'"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
