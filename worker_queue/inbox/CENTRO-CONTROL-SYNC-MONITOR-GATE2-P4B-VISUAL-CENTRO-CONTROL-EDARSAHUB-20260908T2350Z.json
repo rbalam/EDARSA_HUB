@@ -1,0 +1,63 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"CENTRO-CONTROL-SYNC-MONITOR-GATE2-P4B-VISUAL-CENTRO-CONTROL-EDARSAHUB-20260908T2350Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Normalizar exclusivamente la presentación visual de frontend/src/pages/CentroControl.jsx al lenguaje visual EDARSAHUB ya existente. Sustituir gradientes azules genéricos del encabezado y controles por superficies zinc/neutras coherentes con index.css y Sync Monitor P4A-R2. Mantener intactos hooks, endpoints, WebSocket, SQL, RBAC, acciones, tabs, textos funcionales y semántica de datos.",
+  "actions":[
+    {
+      "type":"replace_text",
+      "path":"frontend/src/pages/CentroControl.jsx",
+      "old":"          <div className=\"p-3 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl shadow-lg\">\n            <Shield className=\"w-8 h-8 text-white\" />\n          </div>",
+      "new":"          <div className=\"p-3 bg-zinc-900 border border-zinc-800 rounded-lg shadow-sm\">\n            <Shield className=\"w-8 h-8 text-zinc-100\" />\n          </div>",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"frontend/src/pages/CentroControl.jsx",
+      "old":"            <h1 className=\"text-2xl font-bold text-white\">Centro de Control EDARSA</h1>\n            <p className=\"text-sm text-zinc-400\">Estado actual del sistema</p>",
+      "new":"            <h1 className=\"text-2xl font-bold text-zinc-100\">Centro de Control EDARSA</h1>\n            <p className=\"text-sm text-zinc-400\">Estado actual del sistema</p>",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"frontend/src/pages/CentroControl.jsx",
+      "old":"        <TabsList className=\"bg-zinc-900 border border-zinc-800 flex-wrap h-auto gap-1 p-1\">",
+      "new":"        <TabsList className=\"bg-zinc-950/70 border border-zinc-800 rounded-lg flex-wrap h-auto gap-1 p-1 shadow-sm\">",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"frontend/src/pages/CentroControl.jsx",
+      "old":"          <Button \n            variant=\"outline\" \n            size=\"sm\"\n            onClick={() => setAutoRefresh(!autoRefresh)}\n            className={autoRefresh ? 'border-green-500 text-green-400' : ''}\n          >",
+      "new":"          <Button \n            variant=\"outline\" \n            size=\"sm\"\n            onClick={() => setAutoRefresh(!autoRefresh)}\n            className={autoRefresh ? 'border-emerald-800 bg-emerald-950/30 text-emerald-300' : 'border-zinc-800 bg-zinc-900 text-zinc-300'}\n          >",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"frontend/src/pages/CentroControl.jsx",
+      "old":"          <Button \n            variant=\"outline\" \n            size=\"sm\" \n            onClick={handleRefresh}\n            disabled={refreshing}\n          >",
+      "new":"          <Button \n            variant=\"outline\" \n            size=\"sm\" \n            onClick={handleRefresh}\n            disabled={refreshing}\n            className=\"border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800\"\n          >",
+      "expected_count":1
+    }
+  ],
+  "checks":[
+    {"type":"git_diff_check"},
+    {"type":"frontend_build","directory":"frontend"}
+  ],
+  "constraints":[
+    "NO Production",
+    "NO backend changes",
+    "NO SQL changes",
+    "NO endpoint changes",
+    "NO RBAC changes",
+    "NO WebSocket changes",
+    "NO functional text changes",
+    "NO data semantics changes",
+    "Only frontend/src/pages/CentroControl.jsx may change",
+    "Preserve all existing tabs and actions"
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"technical"
+}
