@@ -66,24 +66,24 @@ jobs:
           cur.close(); conn.close(); print('COA_PREFLIGHT=PASS')
           PY
 
-      - name: Resolve writer and verify DDL permission
+      - name: Resolve configured SQL access and verify DDL permission
         env:
-          MIGRATION_USER: ${{ secrets.EDARSAHUB_SQL_MIGRATION_USER }}
-          MIGRATION_PASSWORD: ${{ secrets.EDARSAHUB_SQL_MIGRATION_PASSWORD }}
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
-          test -n "${MIGRATION_USER:-}"
-          test -n "${MIGRATION_PASSWORD:-}"
-          echo "EDARSAHUB_SQL_USER=${MIGRATION_USER}" >> "$GITHUB_ENV"
-          echo "EDARSAHUB_SQL_PASSWORD=${MIGRATION_PASSWORD}" >> "$GITHUB_ENV"
+          test -n "${EDARSAHUB_SQL_PASSWORD:-}"
+          echo "EDARSAHUB_SQL_USER=HRLectura" >> "$GITHUB_ENV"
+          echo "EDARSAHUB_SQL_PASSWORD=${EDARSAHUB_SQL_PASSWORD}" >> "$GITHUB_ENV"
           python - <<'PY' | tee evidence/writer-permissions.txt
           import os,pymssql
-          conn=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['MIGRATION_USER'],password=os.environ['MIGRATION_PASSWORD'],timeout=60,login_timeout=15)
+          conn=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15)
           cur=conn.cursor(as_dict=True)
-          cur.execute("SELECT COALESCE(HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE TABLE'),0) can_create, COALESCE(HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER'),0) can_alter_schema")
+          cur.execute("SELECT DB_NAME() database_name,SUSER_SNAME() login_name,COALESCE(HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE TABLE'),0) can_create,COALESCE(HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER'),0) can_alter_schema")
           row=cur.fetchone(); print(row)
           cur.close(); conn.close()
+          if row['database_name']!='EDARSAHUB' or row['login_name']!='HRLectura': raise SystemExit('COA_DDL_IDENTITY_MISMATCH')
           if int(row['can_create'])!=1 or int(row['can_alter_schema'])!=1: raise SystemExit('COA_DDL_PERMISSION_NOT_CONFIRMED')
           PY
 
