@@ -1,23 +1,177 @@
 {
   "base_sha": "499189c7fe3f241662a3c370343681c6f9fca85b",
   "blockers": [],
-  "certification": "NOT_CERTIFIED",
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
   "completed_at_utc": "2026-09-07T17:58:08Z",
   "executor": "chatgpt-deterministic",
   "files_changed": [],
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "ISCAM-SOFTRESTAURANT-GATE2D-POSTSYNC-VALIDATION-20260907T1800Z",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-09-07T17:58:24Z",
+  "published_at_utc": "2026-09-09T01:12:32Z",
   "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
   "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "UnidadNegocio",
+              "pagos",
+              "tickets",
+              "importe",
+              "propina",
+              "fecha_min",
+              "fecha_max"
+            ],
+            "name": "gate2d_payments_sep_soft",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130MID",
+                195,
+                166,
+                "821273.00",
+                "76108.8900",
+                "2026-09-01T11:51:22",
+                "2026-09-06T11:55:22"
+              ],
+              [
+                "CIENFUEGOS",
+                284,
+                227,
+                "870256.00",
+                "84046.0200",
+                "2026-09-01T14:55:46",
+                "2026-09-06T15:37:02"
+              ],
+              [
+                "ESTELAR",
+                395,
+                329,
+                "514368.00",
+                "42002.4900",
+                "2026-09-01T11:48:55",
+                "2026-09-06T11:23:07"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "ventas_tickets",
+              "matched_payment_tickets",
+              "unmatched_payment_tickets"
+            ],
+            "name": "gate2d_sales_vs_payments_soft",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130MID",
+                59,
+                59,
+                0
+              ],
+              [
+                "CIENFUEGOS",
+                136,
+                130,
+                6
+              ],
+              [
+                "ESTELAR",
+                61,
+                59,
+                2
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocio",
+              "fecha_max",
+              "filas"
+            ],
+            "name": "gate2d_payment_latest_soft",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130MID",
+                "2026-09-06T11:55:22",
+                29525
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-06T15:37:02",
+                40784
+              ],
+              [
+                "ESTELAR",
+                "2026-09-06T11:23:07",
+                23327
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocioID",
+              "UnidadNegocioNombre",
+              "cortes",
+              "total_venta",
+              "fecha_min",
+              "fecha_max"
+            ],
+            "name": "gate2d_cortes_sep_soft",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocioNombre",
+              "fecha_max",
+              "cortes"
+            ],
+            "name": "gate2d_cortes_latest_soft",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130° MERIDA",
+                "2026-08-05 16:13:38.0000000",
+                758
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-08-05 12:59:12.0000000",
+                892
+              ],
+              [
+                "LA ESTELAR",
+                "2026-08-06 12:59:52.0000000",
+                349
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
   "started_at_utc": "2026-09-07T17:58:06Z",
   "status": "READ_ONLY_COMPLETE",
   "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
   "tests": "PASS",
-  "work_completion": "NOT_CERTIFIED"
+  "work_completion": "COMPLETE"
 }
