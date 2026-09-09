@@ -1,0 +1,28 @@
+{
+  "base_sha": "52cd791f5b82389706d3c430c61102504ee03781",
+  "blockers": [
+    "check_failed:frontend_build"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-09T01:50:51Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "frontend/src/App.js",
+    "frontend/src/pages/cavas-corporativas/CavasCorporativasDashboard.jsx"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CORPORATIVAS-GATE6-FRONTEND-UX-01",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T01:50:58Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-09T01:50:48Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
