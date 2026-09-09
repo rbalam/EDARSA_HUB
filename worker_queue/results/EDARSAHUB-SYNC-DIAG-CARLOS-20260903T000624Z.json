@@ -1,23 +1,236 @@
 {
   "base_sha": "96099d80898528b624e2b0250987f83b637541c5",
   "blockers": [],
-  "certification": "NOT_CERTIFIED",
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
   "completed_at_utc": "2026-09-03T00:06:54Z",
   "executor": "chatgpt-deterministic",
   "files_changed": [],
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "EDARSAHUB-SYNC-DIAG-CARLOS-20260903T000624Z",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-09-03T00:07:46Z",
+  "published_at_utc": "2026-09-09T01:11:24Z",
   "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
   "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "UsuarioID",
+              "Email",
+              "Username",
+              "Activo",
+              "CodigoRol",
+              "NombreRol"
+            ],
+            "name": "requester_role",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                3,
+                "carlosruz@edarsa.com.mx",
+                "carlosruz@edarsa.com.mx",
+                true,
+                "SUPERADMIN",
+                "SuperAdministrador"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "PermissionCode",
+              "RestriccionSucursal"
+            ],
+            "name": "requester_permissions",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "SCHEDULER_ADMIN",
+                false
+              ],
+              [
+                "SCHEDULER_VER",
+                false
+              ],
+              [
+                "servidores_VER",
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EmpresaID",
+              "Activo"
+            ],
+            "name": "requester_company_scope",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                1,
+                false
+              ],
+              [
+                2,
+                false
+              ],
+              [
+                3,
+                false
+              ],
+              [
+                4,
+                false
+              ],
+              [
+                5,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "id",
+              "nombre",
+              "system_type",
+              "tipo_conexion",
+              "host",
+              "port",
+              "database_name",
+              "api_url",
+              "activo",
+              "EmpresaID",
+              "visible_en_operaciones",
+              "queries_configured"
+            ],
+            "name": "api_local_connections",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "B597D88A-AB37-4B4E-897B-EFE68C9B3732",
+                "API ManagmentPro",
+                "MPRO",
+                "API_LOCAL",
+                "ManagmentPro",
+                4,
+                "CLOUD",
+                "http://54.39.104.176:8008/query",
+                true,
+                null,
+                false,
+                true
+              ],
+              [
+                "817A0AA8-6170-4738-A8F6-A72AC36BA0DF",
+                "ORIGEN LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                "54.39.104.176",
+                4,
+                "ORIGEN",
+                "http://54.39.104.176:8000/query",
+                true,
+                1,
+                false,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_pk",
+              "codigo",
+              "nombre",
+              "server_id",
+              "sucursal_origen_id",
+              "system_type",
+              "unidad_activa",
+              "servidor_nombre",
+              "servidor_system_type",
+              "servidor_activo",
+              "EmpresaID"
+            ],
+            "name": "estelar_unit_mapping",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "DFB86008-1B81-472A-9E50-8A0821DEC4B2",
+                "ESTELAR",
+                "LA ESTELAR",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                null,
+                "SoftRestaurant",
+                true,
+                "LA ESTELAR",
+                "SOFTRESTAURANT_PRO",
+                true,
+                4
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "unidad_negocio_nombre",
+              "fecha_operacion",
+              "ventas_total",
+              "propinas_total",
+              "tickets_total",
+              "pax_total",
+              "sync_run_id",
+              "activo"
+            ],
+            "name": "estelar_kpi_20260831",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "2026-08-31",
+                "18095.00",
+                "2232.50",
+                21,
+                46,
+                "INCR-20260902-235807-779e",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocio",
+              "Fecha",
+              "Tickets",
+              "Venta",
+              "UltimaFechaHora"
+            ],
+            "name": "estelar_sync_sales_20260831",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
   "started_at_utc": "2026-09-03T00:06:53Z",
   "status": "READ_ONLY_COMPLETE",
   "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
   "tests": "PASS",
-  "work_completion": "NOT_CERTIFIED"
+  "work_completion": "COMPLETE"
 }
