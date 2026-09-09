@@ -1,0 +1,25 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "RRR-GATE2D-UNIT-SUCURSAL-IDENTITY-READONLY-V1-20260908",
+  "created_at_utc": "2026-09-09T02:06:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4880b88f86c63b7998559591b299ff1fbddd7b85",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Resolver exclusivamente la identidad canonica de unidad/sucursal para RRR. Identificar tabla maestra, clave primaria, tipo exacto, codigo estable usado por Comercial/fecha_operacion, relaciones con Sistema_Empresas y patrones FK existentes. No auditar otros dominios ni ejecutar DDL/DML.",
+  "actions": [],
+  "acceptance": ["actions=[]","READ_ONLY_SQL solamente","production_touched=false","identificar maestro canonico de unidad/sucursal o certificar que no existe uno unico","identificar PK y tipo exacto","identificar codigo/nombre operativo estable","identificar relacion con Sistema_Empresas","identificar como Sistema_TurnosOperativosUnidad referencia la unidad","identificar como estructuras Comerciales/KPI referencian unidad","evidencia suficiente para decidir la columna/FK definitiva de RRR_Eventos"],
+  "checks": [{"type":"sql_readonly_audit","queries":[
+    {"name":"unit_candidate_tables_columns","sql":"SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND t.name IN ('Sistema_Sucursales','Unidades_Negocio','Sistema_TurnosOperativosUnidad','Sistema_HorariosServicioUnidad','Sistema_SyncPOS_EstadoUnidad','Sync_KPI_Ventas_Unidades','Sistema_UnidadesNegocioPerfilDigital') ORDER BY t.name,c.column_id"},
+    {"name":"unit_candidate_pk_unique","sql":"SELECT s.name AS schema_name,t.name AS table_name,i.name AS index_name,i.is_primary_key,i.is_unique,c.name AS column_name,ic.key_ordinal FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.indexes i ON i.object_id=t.object_id JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE s.name='dbo' AND t.name IN ('Sistema_Sucursales','Unidades_Negocio','Sistema_TurnosOperativosUnidad','Sistema_HorariosServicioUnidad','Sistema_SyncPOS_EstadoUnidad','Sync_KPI_Ventas_Unidades','Sistema_UnidadesNegocioPerfilDigital') AND i.is_hypothetical=0 ORDER BY t.name,i.is_primary_key DESC,i.is_unique DESC,i.name,ic.key_ordinal"},
+    {"name":"unit_candidate_fk_contracts","sql":"SELECT ps.name AS parent_schema,pt.name AS parent_table,pc.name AS parent_column,fk.name AS fk_name,rs.name AS referenced_schema,rt.name AS referenced_table,rc.name AS referenced_column FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.tables pt ON pt.object_id=fkc.parent_object_id JOIN sys.schemas ps ON ps.schema_id=pt.schema_id JOIN sys.columns pc ON pc.object_id=pt.object_id AND pc.column_id=fkc.parent_column_id JOIN sys.tables rt ON rt.object_id=fkc.referenced_object_id JOIN sys.schemas rs ON rs.schema_id=rt.schema_id JOIN sys.columns rc ON rc.object_id=rt.object_id AND rc.column_id=fkc.referenced_column_id WHERE pt.name IN ('Sistema_Sucursales','Unidades_Negocio','Sistema_TurnosOperativosUnidad','Sistema_HorariosServicioUnidad','Sistema_SyncPOS_EstadoUnidad','Sync_KPI_Ventas_Unidades','Sistema_UnidadesNegocioPerfilDigital') OR rt.name IN ('Sistema_Sucursales','Unidades_Negocio') ORDER BY pt.name,fk.name,pc.name"},
+    {"name":"unit_operational_key_usage","sql":"SELECT t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND (t.name LIKE 'Comercial%' OR t.name LIKE 'Sistema_%Unidad%' OR t.name LIKE 'Sync_KPI_Ventas_Unidades') AND (c.name LIKE '%Unidad%' OR c.name LIKE '%Sucursal%' OR c.name IN ('EmpresaID','Codigo','Clave','Nombre','fecha_operacion','FechaOperacion')) ORDER BY t.name,c.column_id"},
+    {"name":"unit_master_samples","sql":"SELECT TOP (50) * FROM dbo.Sistema_Sucursales ORDER BY 1"},
+    {"name":"unit_business_samples","sql":"SELECT TOP (50) * FROM dbo.Unidades_Negocio ORDER BY 1"},
+    {"name":"unit_turnos_samples","sql":"SELECT TOP (50) * FROM dbo.Sistema_TurnosOperativosUnidad ORDER BY 1"}
+  ]}],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
