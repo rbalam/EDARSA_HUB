@@ -1,25 +1,25 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "a7dbc2a4c7ac2dbcf2047ab31136580e5aee44ed",
-  "generated_at_utc": "2026-09-09T04:49:19Z",
+  "development_sha": "cd60901ee66fadc0b1a131eb4d664fec55041b3a",
+  "generated_at_utc": "2026-09-09T04:50:39Z",
   "history": {
-    "done_total_local": 270,
+    "done_total_local": 271,
     "pending_total_local": 0,
     "processing_total_local": 1,
-    "rejected_total_local": 353,
-    "results_total_local": 564
+    "rejected_total_local": 354,
+    "results_total_local": 566
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 764,
+      "age_seconds": 844,
       "job_id": "CATALOGO-AMPLIADO-GATE6-E2E-WORKFLOW-R6-20260908",
       "reason": "El worker no termino esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 2233,
+      "age_seconds": 2313,
       "job_id": "CATALOGO-AMPLIADO-GATE6-E2E-REAL-R1-20260908",
       "reasons": [
         "INVALID_JSON"
@@ -28,7 +28,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 846,
+      "age_seconds": 926,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P3B-RECERT-SHA-BOUND-R2-20260908T2210Z",
       "reasons": [
         "ACTIONS_REQUIRED"
@@ -37,217 +37,229 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2323,
+      "age_seconds": 2403,
       "job_id": "BOS-V1-GATE-A-FOUNDATION-CERTIFICATION",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2316,
+      "age_seconds": 2396,
       "job_id": "BOS-V1-GATE-B-AUTONOMOUS-OPERATIONS-CERTIFICATION",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 38,
+      "age_seconds": 118,
       "job_id": "BOS-V1-GATE-C-FUNCTIONAL-COVERAGE-CERTIFICATION",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 21,
+      "age_seconds": 101,
       "job_id": "BOS-V1-GATE-D-GOVERNANCE-CERTIFICATION",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2672,
+      "age_seconds": 69,
+      "job_id": "BOS-V1-GATE-E-EXECUTIVE-BOS-CERTIFICATION",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 48,
+      "job_id": "BOS-V1-GATE-F-INTELLIGENCE-CERTIFICATION",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2752,
       "job_id": "CATALOGO-AMPLIADO-GATE5-FRONTEND-R1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 46,
+      "age_seconds": 127,
       "job_id": "CATALOGO-AMPLIADO-GATE6-E2E-CERT-R8-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1515,
+      "age_seconds": 1595,
       "job_id": "CATALOGO-AMPLIADO-GATE6-E2E-REAL-R2-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1310,
+      "age_seconds": 1390,
       "job_id": "CATALOGO-AMPLIADO-GATE6-E2E-REAL-R3-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1176,
+      "age_seconds": 1256,
       "job_id": "CATALOGO-AMPLIADO-GATE6-E2E-WORKFLOW-R4-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 988,
+      "age_seconds": 1068,
       "job_id": "CATALOGO-AMPLIADO-GATE6-E2E-WORKFLOW-R5-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 325,
+      "age_seconds": 405,
       "job_id": "CATALOGO-AMPLIADO-GATE6-E2E-WORKFLOW-R7-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 305,
+      "age_seconds": 385,
       "job_id": "CAVAS-CORPORATIVAS-GATE1-ARCHITECTURE-CERTIFICATION-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2668,
+      "age_seconds": 2748,
       "job_id": "CAVAS-CORPORATIVAS-GATE6-E2E-INTEGRATION-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1762,
+      "age_seconds": 1842,
       "job_id": "CAVAS-CORPORATIVAS-GATE6-E2E-INTEGRATION-R2-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2664,
+      "age_seconds": 2744,
       "job_id": "CAVAS-CORPORATIVAS-GATE7B-NAV-MENU-TARGETED-AUDIT-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2159,
+      "age_seconds": 2239,
       "job_id": "CAVAS-CORPORATIVAS-GATE7B-NAV-MENU-TARGETED-AUDIT-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1534,
+      "age_seconds": 1614,
       "job_id": "CAVAS-CORPORATIVAS-GATE7C-CANONICAL-MENU-DDL-DML-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 90,
+      "age_seconds": 170,
       "job_id": "CAVAS-CORPORATIVAS-GATE8-OPERATIONAL-E2E-CERT-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 872,
+      "age_seconds": 952,
       "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-130MID-FINAL-GATE-20260908T221000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 868,
+      "age_seconds": 948,
       "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-130QRO-FINAL-GATE-20260908T221001Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1721,
+      "age_seconds": 1801,
       "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-ALL-UNITS-FINAL-GATE-20260908T220700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2660,
+      "age_seconds": 2740,
       "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-CANONICAL-FIX-R3-20260908T200900Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2656,
+      "age_seconds": 2736,
       "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-CIENFUEGOS-FINAL-GATE-20260908T203500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 863,
+      "age_seconds": 943,
       "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-ESTELAR-FINAL-GATE-20260908T221003Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 857,
+      "age_seconds": 937,
       "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-ORIGEN-FINAL-GATE-20260908T221002Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1233,
+      "age_seconds": 1313,
       "job_id": "FINANZAS-PRESUPUESTO-CXP-GATE1-READONLY-AUDIT-V1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 15,
+      "age_seconds": 95,
       "job_id": "FINANZAS-PRESUPUESTO-CXP-GATE2-LINEAGE-READONLY-V1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2312,
+      "age_seconds": 2392,
       "job_id": "RRR-GATE2F-FINAL-DESIGN-CERT-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1242,
+      "age_seconds": 1322,
       "job_id": "RRR-GATE2F-FINAL-DESIGN-CERT-R2-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 35,
+      "age_seconds": 115,
       "job_id": "RRR-GATE3A-DDL-V3-PREFLIGHT-READONLY-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2236,
+      "age_seconds": 2317,
       "job_id": "coa-gate3b-r2-currency-canonical-v1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1715,
+      "age_seconds": 1795,
       "job_id": "coa-gate3d-final-r2-readonly-preflight-v1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2653,
+      "age_seconds": 2733,
       "job_id": "finanzas-decision-pago-authoritative-v19-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2330,
+      "age_seconds": 2410,
       "job_id": "worker-mpro-130qro-full-history-r2-20260909T0355Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 32,
+      "age_seconds": 112,
       "job_id": "worker-mpro-global-final-audit-r1-20260909T0440Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 627,
+      "age_seconds": 707,
       "job_id": "worker-mpro-origen-full-history-r1-20260909T0415Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -260,14 +272,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 2,
-  "queue_result_ready_recent": 36,
+  "queue_result_ready_recent": 38,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-09T04:49:17Z",
-    "last_receive_utc": "2026-09-09T04:49:18Z",
-    "last_terminal_utc": "2026-09-09T04:49:04Z",
+    "last_cycle_utc": "2026-09-09T04:50:38Z",
+    "last_receive_utc": "2026-09-09T04:50:39Z",
+    "last_terminal_utc": "2026-09-09T04:49:51Z",
     "pid": "930"
   },
   "schema": "edarsahub.worker-health.v3",
