@@ -1,0 +1,22 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"servers-integrations-gate5c-ledger-r3-timeout-utc-20260909",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"b134a5894504f459328392d4e6990836341e0c5d",
+  "production_allowed":false,
+  "objective":"Gate 5C R3: completar consistencia UTC del timeout en detect_nuevos_compras. Cambio exclusivo: al marcar TIMEOUT, completar FinishedAtUTC si aun es NULL. Sin cambiar negocio, locks, RBAC, tablas ni Produccion.",
+  "actions":[{
+    "type":"replace_text",
+    "path":"backend/core/scheduler/jobs/detect_nuevos_compras_job.py",
+    "old":"                    UPDATE Sync_Control_Ejecuciones SET Status='TIMEOUT', FinishedAtMexico=%s\n                    WHERE SyncControlID=%s\n",
+    "new":"                    UPDATE Sync_Control_Ejecuciones\n                    SET Status='TIMEOUT', FinishedAtMexico=%s,\n                        FinishedAtUTC=COALESCE(FinishedAtUTC,SYSUTCDATETIME())\n                    WHERE SyncControlID=%s\n"
+  }],
+  "checks":[
+    {"type":"py_compile","paths":["backend/core/scheduler/jobs/detect_nuevos_compras_job.py"]},
+    {"type":"pytest","paths":["backend/tests/test_integrations_runtime_gate5c.py"]},
+    {"type":"git_diff_check"}
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
