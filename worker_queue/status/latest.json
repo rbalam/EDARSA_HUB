@@ -1,156 +1,151 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "e95fbe17f39fd202bc9500f2ea7b0020ec6205aa",
-  "generated_at_utc": "2026-09-09T00:39:31Z",
+  "development_sha": "a5eb09d2f472a07b248cdd4d21d45f83973799a6",
+  "generated_at_utc": "2026-09-09T00:40:48Z",
   "history": {
-    "done_total_local": 184,
+    "done_total_local": 185,
     "pending_total_local": 0,
     "processing_total_local": 1,
     "rejected_total_local": 315,
-    "results_total_local": 446
+    "results_total_local": 447
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1283,
+      "age_seconds": 1360,
       "job_id": "coa-satelite-bootstrap-v4-20260908",
       "reason": "El worker no termino esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 3592,
-      "job_id": "EDARSAHUB-SOFTRESTAURANT-APERTURA-PARITY-R40B-CARLOS-20260908T234500Z",
-      "reasons": [
-        "ACTION_9_EXPECTED_SHA256_REQUIRED",
-        "ACTION_11_EXPECTED_SHA256_REQUIRED",
-        "ACTION_13_EXPECTED_SHA256_REQUIRED"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 1840,
+      "age_seconds": 1917,
       "job_id": "BOS-DIRECCION-SCHEDULER-ACTIVATION-GATE6-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 640,
+      "age_seconds": 717,
       "job_id": "CATALOGO-AMPLIADO-GATE1-EVIDENCE-CERT-R3-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2237,
+      "age_seconds": 2314,
       "job_id": "CATALOGO-AMPLIADO-GATE1-READONLY-SCHEMA-R2-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 882,
+      "age_seconds": 959,
       "job_id": "CAVAS-CORPORATIVAS-GATE3-BACKEND-DOMAIN-CORE-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2227,
+      "age_seconds": 9,
+      "job_id": "CAVAS-CORPORATIVAS-GATE4-SQL-REPOSITORY-SERVICE-01",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2304,
       "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-EXECUTION-DOSSIER-CERT-R5-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2193,
+      "age_seconds": 2270,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P1-EXACT-KPI-20260908T0002Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3150,
+      "age_seconds": 3227,
       "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-ALMACENES-REGRESSION-AUDIT-R1-20260908T162700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2209,
+      "age_seconds": 2286,
       "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-CANONICAL-SOURCE-CERT-R2-20260908T175000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 331,
+      "age_seconds": 408,
       "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-CANONICAL-SOURCE-DISCOVERY-R2B-20260908T175200Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 492,
+      "age_seconds": 569,
       "job_id": "EDARSAHUB-ISCAM-ESTELAR-DETAIL-DRYRUN-R41-CARLOS-20260909T003200Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3240,
+      "age_seconds": 3317,
       "job_id": "EDARSAHUB-SOFTRESTAURANT-APERTURA-PARITY-R40C-CARLOS-20260908T235000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1608,
+      "age_seconds": 1685,
       "job_id": "RRR-GATE0-CONTRATO-V1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2167,
+      "age_seconds": 2244,
       "job_id": "coa-satelite-bootstrap-v3-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 896,
+      "age_seconds": 973,
       "job_id": "finanzas-decision-pago-authoritative-v15-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1956,
+      "age_seconds": 2033,
       "job_id": "save-github-final-predeploy-closure-audit-r5-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 154,
+      "age_seconds": 231,
       "job_id": "worker-mpro-130qro-origen-readonly-audit-r1-20260909T0030Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1948,
+      "age_seconds": 2025,
       "job_id": "worker-readonly-result-publisher-hardening-r7-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1340,
+      "age_seconds": 1417,
       "job_id": "worker-scope-concurrency-safe-rebase-canary-v2-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3236,
+      "age_seconds": 3313,
       "job_id": "worker-softrestaurant-estelar-connectivity-dryrun-r1-20260908T2343Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2485,
+      "age_seconds": 2562,
       "job_id": "worker-softrestaurant-estelar-write-r1-20260908T2354Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 850,
+      "age_seconds": 927,
       "job_id": "worker-softrestaurant-global-sql-audit-r1-20260909T0001Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -162,15 +157,15 @@
   "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 21,
+  "queue_rejected_recent": 0,
+  "queue_result_ready_recent": 22,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-09T00:39:28Z",
-    "last_receive_utc": "2026-09-09T00:39:29Z",
-    "last_terminal_utc": "2026-09-09T00:36:56Z",
+    "last_cycle_utc": "2026-09-09T00:40:43Z",
+    "last_receive_utc": "2026-09-09T00:40:45Z",
+    "last_terminal_utc": "2026-09-09T00:40:38Z",
     "pid": "43662"
   },
   "schema": "edarsahub.worker-health.v3",
