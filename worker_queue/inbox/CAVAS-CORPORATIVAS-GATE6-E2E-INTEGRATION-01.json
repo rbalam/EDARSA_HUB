@@ -1,0 +1,34 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE6-E2E-INTEGRATION-01",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ffd854583173192c82aa2b7e42a34d7ea7db8b8c",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Certificar e integrar end-to-end Cavas Corporativas sobre los contratos ya certificados de Gates 1-5. Verificar dominio, repositorio SQL, servicio, rutas con RBAC canonico, registro del router en server.py y build frontend que consume /cavas/corporativas/evaluar y /cavas/corporativas/aplicar. No crear fuentes paralelas, no tocar Produccion, no ejecutar DDL/DML SQL.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/CAVAS/CAVAS_CORPORATIVAS_GATE6_E2E_CERTIFICATION.md",
+      "content": "# Cavas Corporativas - Gate 6 E2E\n\nGate de certificacion end-to-end sobre los contratos cerrados de Gates 1-5.\n\n## Superficie certificada\n- Dominio: `backend/modules/cavas_corporativas/domain.py`\n- Repositorio SQL: `backend/modules/cavas_corporativas/repository.py`\n- Servicio: `backend/modules/cavas_corporativas/service.py`\n- API: `backend/modules/cavas_corporativas/routes.py`\n- Registro backend: `backend/server.py` via `api_router.include_router(cavas_corporativas_router)`\n- Frontend: consumo de `/cavas/corporativas/evaluar` y `/cavas/corporativas/aplicar`\n- RBAC: permisos SQL canonicos `cava_socios.*` certificados en Gate 5 R2\n\n## Reglas\n- SQL Server canonico.\n- Sin Mongo como fuente.\n- Sin hardcodes funcionales nuevos.\n- Sin bypass RBAC.\n- Sin Produccion.\n- Sin DDL/DML SQL en este gate.\n\nLa certificacion terminal de este dossier depende exclusivamente del resultado del Worker: pytest de dominio/repositorio/servicio/rutas, py_compile y build frontend deben terminar PASS.\n"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"},
+    {"type":"py_compile","paths":["backend/modules/cavas_corporativas/domain.py","backend/modules/cavas_corporativas/repository.py","backend/modules/cavas_corporativas/service.py","backend/modules/cavas_corporativas/routes.py","backend/server.py"]},
+    {"type":"pytest","paths":["backend/tests/test_cavas_corporativas_domain.py","backend/tests/test_cavas_corporativas_repository.py","backend/tests/test_cavas_corporativas_service.py","backend/tests/test_cavas_corporativas_routes.py"]},
+    {"type":"frontend_build","directory":"frontend"}
+  ],
+  "constraints": [
+    "NO Production",
+    "NO SQL DDL/DML",
+    "NO new Mongo",
+    "NO parallel RBAC",
+    "NO duplicate routes or services",
+    "Backend authoritative",
+    "Frontend only consumes canonical backend"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
