@@ -1,0 +1,13 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-AUTO-ERROR-GROUPS-20260908T231700Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Aislar las causas de los registros ERROR de Scheduler_InventariosProcesados agrupando por mensaje. Solo lectura.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[{"name":"error_groups","sql":"SELECT TOP (30) ISNULL(NULLIF(LTRIM(RTRIM(ErrorMensaje)),''),'(SIN_MENSAJE)') AS error_mensaje, COUNT_BIG(*) AS cantidad, MAX(FechaUltimoIntento) AS ultimo_intento FROM dbo.Scheduler_InventariosProcesados WHERE Estado='ERROR' GROUP BY ISNULL(NULLIF(LTRIM(RTRIM(ErrorMensaje)),''),'(SIN_MENSAJE)') ORDER BY COUNT_BIG(*) DESC"}]}],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
