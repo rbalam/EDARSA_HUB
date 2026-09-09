@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "e78f8ff4bcc9dbe42d822a0b8c6c047e28f6be8f",
-  "generated_at_utc": "2026-09-09T23:32:32Z",
+  "generated_at_utc": "2026-09-09T23:33:50Z",
   "history": {
     "done_total_local": 340,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 382,
-    "results_total_local": 653
+    "rejected_total_local": 383,
+    "results_total_local": 654
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1005,
+      "age_seconds": 1084,
       "job_id": "coa-gate5a-facturacion-cfdi-emitidos-readonly-v1-20260909",
       "reasons": [
         "CHECK_1_QUERIES_REQUIRED"
@@ -22,91 +22,91 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1025,
+      "age_seconds": 1103,
       "job_id": "CAVAS-CORPORATIVAS-GATE12A-IDENTIDAD-SOCIO-METADATA-AUDIT-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 829,
+      "age_seconds": 908,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-E2E-HTTP-RBAC-NOTIFICATIONS-20260909T2301Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3537,
-      "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5C-20260909",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1470,
+      "age_seconds": 1548,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5C-R2-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 799,
+      "age_seconds": 877,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5D-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 227,
+      "age_seconds": 305,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5D-R2-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2578,
+      "age_seconds": 2657,
       "job_id": "servers-integrations-gate5c-formal-certification-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3036,
+      "age_seconds": 3114,
       "job_id": "servers-integrations-gate5c-health-ledger-r1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2891,
+      "age_seconds": 2969,
       "job_id": "servers-integrations-gate5c-ledger-r2-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2794,
+      "age_seconds": 2872,
       "job_id": "servers-integrations-gate5c-ledger-r3-timeout-utc-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2732,
+      "age_seconds": 2810,
       "job_id": "servers-integrations-gate5c-postaudit-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3375,
+      "age_seconds": 3453,
       "job_id": "servers-integrations-gate5c-preflight-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 276,
+      "age_seconds": 355,
       "job_id": "servers-integrations-gate5d-communications-preflight-r2-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 369,
+      "age_seconds": 447,
       "job_id": "servers-integrations-gate5d-communications-preflight-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 215,
+      "age_seconds": 59,
+      "job_id": "servers-integrations-gate5d-communications-runtime-r1-20260909",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 293,
       "job_id": "servers-integrations-gate5d-config-classification-r3-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
@@ -124,9 +124,9 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-09T23:32:31Z",
-    "last_receive_utc": "2026-09-09T23:32:31Z",
-    "last_terminal_utc": "2026-09-09T23:28:57Z",
+    "last_cycle_utc": "2026-09-09T23:33:48Z",
+    "last_receive_utc": "2026-09-09T23:33:49Z",
+    "last_terminal_utc": "2026-09-09T23:32:51Z",
     "pid": "161541"
   },
   "schema": "edarsahub.worker-health.v3",
