@@ -1,0 +1,58 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "WORKER-SQL-READONLY-EVIDENCE-PRESERVE-R8-20260908",
+  "created_at_utc": "2026-09-09T00:35:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e95fbe17f39fd202bc9500f2ea7b0020ec6205aa",
+  "production_allowed": false,
+  "objective": "Hardening minimo del Universal Worker para preservar evidencia estructurada de checks sql_readonly_audit. Corregir exclusivamente el dispatcher para parsear el stdout JSON completo del helper antes de truncar el campo output y copiarlo a checks[].sql_evidence cuando sea un objeto JSON valido. Mantener output truncado para diagnostico, no publicar secretos, no cambiar el helper SQL, bridge, publisher, Supervisor, watchdog ni launcher. Agregar prueba de regresion que demuestre que un payload SQL mayor a 12000 caracteres conserva sql_evidence completo aunque output siga truncado. Ejecutar pruebas del worker relacionadas y git diff check. Production no se toca.",
+  "acceptance": [
+    "sql_readonly_audit conserva payload JSON completo en checks[].sql_evidence antes del truncamiento de output",
+    "output continua limitado a los ultimos 12000 caracteres",
+    "payload JSON invalido no se promueve a sql_evidence",
+    "el publisher existente puede consumir checks[].sql_evidence sin cambios adicionales",
+    "prueba de regresion con payload superior a 12000 caracteres PASS",
+    "backend/tests/test_worker_sql_readonly_audit.py PASS",
+    "backend/tests/test_worker_readonly_result_publisher.py PASS",
+    "py_compile PASS",
+    "git_diff_check PASS",
+    "production_touched=false",
+    "no modificar Supervisor, watchdog, launcher, bridge ni helper SQL"
+  ],
+  "constraints": [
+    "cambio de infraestructura acotado solo a tools/mirror_sync/universal_job_dispatcher.py y backend/tests/test_worker_sql_readonly_audit.py",
+    "no tocar universal_job_result_publisher.py porque ya soporta sql_evidence",
+    "no tocar sql_readonly_audit.py",
+    "no tocar universal_job_bridge.py",
+    "no tocar Supervisor/watchdog/launcher",
+    "no SQL DDL/DML",
+    "no Production",
+    "no Mongo",
+    "no force push"
+  ],
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        result = run(cmd, cwd=cwd, timeout=MAX_SECONDS, env_extra=locals().get(\"env_extra\"))\n        output = result.stdout[-12000:]\n        return {\"type\": kind, \"status\": \"PASS\" if result.returncode == 0 else \"FAIL\", \"returncode\": result.returncode, \"started_at_utc\": started, \"completed_at_utc\": now(), \"output\": output}\n",
+      "new": "        result = run(cmd, cwd=cwd, timeout=MAX_SECONDS, env_extra=locals().get(\"env_extra\"))\n        full_output = result.stdout or \"\"\n        response = {\"type\": kind, \"status\": \"PASS\" if result.returncode == 0 else \"FAIL\", \"returncode\": result.returncode, \"started_at_utc\": started, \"completed_at_utc\": now(), \"output\": full_output[-12000:]}\n        if kind == \"sql_readonly_audit\":\n            try:\n                sql_evidence = json.loads(full_output.strip())\n            except (json.JSONDecodeError, TypeError):\n                sql_evidence = None\n            if isinstance(sql_evidence, dict):\n                response[\"sql_evidence\"] = sql_evidence\n        return response\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_sql_readonly_audit.py",
+      "old": "    assert '/root/.venv/bin/python' not in resolver",
+      "new": "    assert '/root/.venv/bin/python' not in resolver\n\ndef test_sql_readonly_evidence_survives_output_truncation(monkeypatch, tmp_path):\n    import json\n    import sys\n\n    mirror_sync = ROOT / 'tools' / 'mirror_sync'\n    sys.path.insert(0, str(mirror_sync))\n    try:\n        spec = importlib.util.spec_from_file_location('worker_dispatcher_evidence_test', DISPATCHER)\n        module = importlib.util.module_from_spec(spec)\n        assert spec and spec.loader\n        spec.loader.exec_module(module)\n    finally:\n        sys.path.remove(str(mirror_sync))\n\n    payload = {\n        'status': 'PASS',\n        'mode': 'READ_ONLY_SQL',\n        'connection': 'readonly_sql_connection:default',\n        'evidence': [{\n            'name': 'large_schema',\n            'columns': ['value'],\n            'rows': [['x' * 15000]],\n            'row_count_returned': 1,\n            'truncated': False,\n        }],\n    }\n    full_output = json.dumps(payload)\n\n    class Completed:\n        returncode = 0\n        stdout = full_output\n\n    monkeypatch.setattr(module, 'run', lambda *args, **kwargs: Completed())\n    result = module.run_check(tmp_path, {\n        'type': 'sql_readonly_audit',\n        'queries': [{'name': 'large_schema', 'sql': 'SELECT 1'}],\n    })\n\n    assert result['status'] == 'PASS'\n    assert result['sql_evidence'] == payload\n    assert len(result['output']) == 12000\n    assert result['output'] != full_output\n\ndef test_sql_readonly_invalid_json_is_not_promoted(monkeypatch, tmp_path):\n    import sys\n\n    mirror_sync = ROOT / 'tools' / 'mirror_sync'\n    sys.path.insert(0, str(mirror_sync))\n    try:\n        spec = importlib.util.spec_from_file_location('worker_dispatcher_invalid_evidence_test', DISPATCHER)\n        module = importlib.util.module_from_spec(spec)\n        assert spec and spec.loader\n        spec.loader.exec_module(module)\n    finally:\n        sys.path.remove(str(mirror_sync))\n\n    class Completed:\n        returncode = 0\n        stdout = 'not-json'\n\n    monkeypatch.setattr(module, 'run', lambda *args, **kwargs: Completed())\n    result = module.run_check(tmp_path, {\n        'type': 'sql_readonly_audit',\n        'queries': [{'name': 'x', 'sql': 'SELECT 1'}],\n    })\n    assert result['status'] == 'PASS'\n    assert 'sql_evidence' not in result",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "py_compile", "paths": ["tools/mirror_sync/universal_job_dispatcher.py", "backend/tests/test_worker_sql_readonly_audit.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_worker_sql_readonly_audit.py", "backend/tests/test_worker_readonly_result_publisher.py"]},
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
