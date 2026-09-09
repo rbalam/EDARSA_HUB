@@ -1,0 +1,56 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE8-OPERATIONAL-E2E-CERT-01",
+  "created_at_utc": "2026-09-09T04:35:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "97a53f76ab9b5ded191a8f53e797a31d029c9e25",
+  "production_allowed": false,
+  "mode": "PATCH",
+  "objective": "Certificacion operativa extremo a extremo final de Cavas Corporativas en Development: demostrar que el menu SQL canonico esta activo y unico, que el RBAC canonico reutilizado existe, que el frontend compila con /cavas-corporativas, y que dominio+repositorio+servicio+API pasan evaluacion, 401/403, aplicacion e idempotencia. No usar credenciales personales, no sembrar datos funcionales, no tocar Produccion.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/CAVAS/CAVAS_CORPORATIVAS_OPERATIONAL_E2E_CERTIFICATION.md",
+      "content": "# Cavas Corporativas - Operational E2E Certification\n\n## Alcance\nCertificacion final Development-only de la cadena canonica: SQL menu -> RBAC -> frontend route -> backend API -> servicio -> dominio -> idempotencia.\n\n## Contratos que deben pasar en el Worker\n- Menu SQL: exactamente una fila activa `cava.corporativas` con ruta `/cavas-corporativas`, modulo `CAVA_SOCIOS` y `RequierePermiso=cava_socios`.\n- RBAC: reutilizacion de `cava_socios.VER` para evaluar y `cava_socios.consumos.CREAR` para aplicar.\n- API: 401 sin autenticacion, 403 sin permiso, 200 para evaluacion autorizada y replay idempotente al aplicar dos veces la misma operacion.\n- Backend: dominio, parseo de politicas, repositorio y servicio sin horarios hardcodeados.\n- Frontend: build completo con la ruta `/cavas-corporativas`; no se agrega menu hardcodeado en React.\n- Production: prohibida.\n\n## Evidencia terminal\nLa evidencia autoritativa es el terminal `worker/results` del job `CAVAS-CORPORATIVAS-GATE8-OPERATIONAL-E2E-CERT-01`, junto con `sql_readonly_evidence` y los checks PASS ligados al SHA certificado.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cavas_corporativas_domain.py",
+        "backend/tests/test_cavas_corporativas_repository.py",
+        "backend/tests/test_cavas_corporativas_service.py",
+        "backend/tests/test_cavas_corporativas_routes.py"
+      ]
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "canonical_corporate_menu_exact",
+          "sql": "SELECT mm.MenuID, mm.ModuloID, m.Codigo AS ModuloCodigo, mm.MenuPadreID, mm.Codigo, mm.Nombre, mm.Ruta, mm.Orden, mm.RequierePermiso, mm.Activo FROM dbo.Sistema_ModulosMenus mm INNER JOIN dbo.Sistema_Modulos m ON m.ModuloID=mm.ModuloID WHERE mm.Codigo='cava.corporativas' OR mm.Ruta='/cavas-corporativas' ORDER BY mm.MenuID"
+        },
+        {
+          "name": "canonical_cava_rbac_actions",
+          "sql": "SELECT m.ModuloID, m.CodigoModulo, m.NombreModulo, a.AccionID, a.CodigoAccion, a.NombreAccion, COUNT_BIG(*) AS PermisosActivos FROM dbo.Usuario_PermisosRolModulo prm INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID WHERE LOWER(m.CodigoModulo) LIKE 'cava_socios%' AND LOWER(a.CodigoAccion) IN ('ver','crear') AND ISNULL(prm.Activo,1)=1 AND ISNULL(prm.Permitido,1)=1 AND ISNULL(m.Activo,1)=1 AND ISNULL(a.Activo,1)=1 GROUP BY m.ModuloID,m.CodigoModulo,m.NombreModulo,a.AccionID,a.CodigoAccion,a.NombreAccion ORDER BY m.CodigoModulo,a.CodigoAccion"
+        },
+        {
+          "name": "corporate_core_tables_exist",
+          "sql": "SELECT t.name AS table_name FROM sys.tables t WHERE t.schema_id=SCHEMA_ID('dbo') AND t.name IN ('CavasCorporativas_OrganizacionesRef','CavasCorporativas_Convenios','CavasCorporativas_ConvenioUnidades','CavasCorporativas_Autorizados','CavasCorporativas_Beneficios','CavasCorporativas_BeneficioAlcances','CavasCorporativas_Politicas','CavasCorporativas_AplicacionesBeneficio') ORDER BY t.name"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
