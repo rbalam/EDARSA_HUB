@@ -1,0 +1,41 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE6-E2E-CERT-R9-20260908",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "cd60901ee66fadc0b1a131eb4d664fec55041b3a",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir exclusivamente el runner frontend del workflow Gate6 E2E certificado: usar el package manager canonico Yarn 1 con yarn.lock y disparar un nuevo marker R9. Mantener el mismo E2E API/SQL real, cleanup obligatorio y Production=false.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/catalogo-ampliado-gate6-e2e-cert-r8.yml",
+      "old": "      - ops/e2e/requests/CATALOGO-AMPLIADO-GATE6-R8-20260908.execute",
+      "new": "      - ops/e2e/requests/CATALOGO-AMPLIADO-GATE6-R9-20260908.execute"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/catalogo-ampliado-gate6-e2e-cert-r8.yml",
+      "old": "        run: npm ci --prefix frontend && npm run build --prefix frontend && grep -q 'path=\"catalogo-ampliado\"' frontend/src/App.js && grep -q 'CatalogoAmpliadoDashboard' frontend/src/App.js",
+      "new": "        run: cd frontend && yarn build && grep -q 'path=\"catalogo-ampliado\"' src/App.js && grep -q 'CatalogoAmpliadoDashboard' src/App.js"
+    },
+    {
+      "type": "write_file",
+      "path": "ops/e2e/requests/CATALOGO-AMPLIADO-GATE6-R9-20260908.execute",
+      "content": "job=CATALOGO-AMPLIADO-GATE6-E2E-CERT-R9-20260908\ntarget=development\nproduction_allowed=false\ncleanup=required\npackage_manager=yarn\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "constraints": [
+    "NO Production",
+    "NO Worker/Supervisor/watchdog changes",
+    "NO Mongo",
+    "Reuse existing Gate6 real E2E harness",
+    "GitHub Actions must execute frontend build, API/SQL E2E and cleanup"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
