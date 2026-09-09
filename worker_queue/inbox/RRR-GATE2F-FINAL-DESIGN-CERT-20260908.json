@@ -1,0 +1,26 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"RRR-GATE2F-FINAL-DESIGN-CERT-20260908",
+  "created_at_utc":"2026-09-09T04:08:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"ffd854583173192c82aa2b7e42a34d7ea7db8b8c",
+  "production_allowed":false,
+  "objective":"Certificar formalmente el cierre de RRR GATE 2 como diseño físico final listo para un gate de ejecución separado en entorno no-Production. Validar que RRR_GATE2_MINIMUM_DDL_V3.sql es el artefacto final de diseño, que incorpora contratos externos certificados, que V1/V2 quedan como historial, que no se ejecutó SQL y que Production permanece prohibida. No ejecutar DDL/DML.",
+  "actions":[
+    {
+      "type":"write_file",
+      "path":"docs/RRR/RRR_GATE2_FINAL_CERTIFICATION.md",
+      "content":"# RRR GATE 2 - Certificacion Final de Diseno\n\n## Estado\nGATE 2 DESIGN CERTIFICATION\nTarget: CERTIFIED / PASS / 100%\nProduction: PROHIBIDA\nSQL execution in this gate: PROHIBIDA\n\n## Artefacto final\n- docs/RRR/sql/RRR_GATE2_MINIMUM_DDL_V3.sql\n- docs/RRR/RRR_GATE2_DDL_V3_FINAL_DESIGN.md\n\n## Contratos externos certificados\n- Cliente: dbo.Cliente_Catalogo(ClienteID int)\n- Empresa: dbo.Sistema_Empresas(EmpresaID int)\n- Unidad de negocio: dbo.Unidades_Negocio(id uniqueidentifier)\n- Venta: dbo.Venta_Encabezado(VentaID bigint)\n- Usuario: dbo.Usuario_Catalogo(UsuarioID int)\n- Sucursal fisica: dbo.Sistema_Sucursales(SucursalID int), dominio distinto\n\n## Evidencia previa obligatoria\n- GATE 1 dossier certificado 100%\n- GATE 2B FK/type preflight CERTIFIED_READ_ONLY 100%\n- GATE 2D R2A columns CERTIFIED_READ_ONLY 100%\n- GATE 2D R2B PK/unique CERTIFIED_READ_ONLY 100%\n- GATE 2D R2C FK contracts CERTIFIED_READ_ONLY 100%\n- GATE 2E DDL V3 final design CERTIFIED 100%\n\n## Decisiones cerradas\n1. No duplicar clientes, empresas, unidades, ventas, productos, usuarios ni Cavas.\n2. Score, Reward Balance y Rank permanecen separados.\n3. Reward Balance se deriva del ledger auditable; no existe tabla mutable autoritativa de saldo.\n4. RRR_Eventos usa UnidadNegocioID uniqueidentifier con FK a dbo.Unidades_Negocio(id).\n5. SucursalID no sustituye UnidadNegocioID.\n6. Reseñas/feedback no alteran CRM_PostventaEncuestas en Gate 2.\n7. V1 y V2 permanecen como trazabilidad histórica; V3 es el único candidato de ejecución futura.\n8. Ningún SQL fue ejecutado durante Gate 2.\n\n## Criterio de salida\nPASS solamente si el Worker integra este certificado sin modificar SQL/DB, sin tocar Produccion, con tests PASS, blockers=0 y percent_complete=100.\n\n## Siguiente gate permitido\nSolo después de este certificado: GATE 3 - ejecución controlada del DDL V3 en entorno no-Production, como job separado, con preflight inmediato, transacción/rollback, post-audit y Production=false.\n"
+    },
+    {
+      "type":"write_file",
+      "path":"docs/RRR/RRR_GATE2_STATUS.md",
+      "content":"# RRR GATE 2 Status\n\nGATE: 2 - Physical Architecture + Minimum DDL Design\nFINAL_DESIGN: docs/RRR/sql/RRR_GATE2_MINIMUM_DDL_V3.sql\nSTATUS_TARGET: CERTIFIED\nPERCENT_TARGET: 100\nSQL_EXECUTED: false\nPRODUCTION_TOUCHED: false\nNEXT_GATE_IF_PASS: GATE 3 controlled non-Production DDL execution\nPRODUCTION_EXECUTION_AUTHORIZED: false\n"
+    }
+  ],
+  "checks":[{"type":"git_diff_check"}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
