@@ -1,0 +1,50 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE9-PERSISTENCE-PHYSICAL-CERTIFICATION-01",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Certificar Gate 9 de persistencia fisica de Cavas Corporativas en SQL canonico. Verificar existencia de las 8 tablas core, PK/FK internas, indices de idempotencia/operacion y conteos actuales. No escribir SQL, no modificar datos y no tocar Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "cavas_corporativas_core_tables",
+          "sql": "SELECT t.name AS table_name FROM sys.tables t WHERE t.name IN ('CavasCorporativas_OrganizacionesRef','CavasCorporativas_Convenios','CavasCorporativas_ConvenioUnidades','CavasCorporativas_Autorizados','CavasCorporativas_Beneficios','CavasCorporativas_BeneficioAlcances','CavasCorporativas_Politicas','CavasCorporativas_AplicacionesBeneficio') ORDER BY t.name"
+        },
+        {
+          "name": "cavas_corporativas_primary_keys",
+          "sql": "SELECT t.name AS table_name, i.name AS pk_name FROM sys.tables t INNER JOIN sys.indexes i ON i.object_id=t.object_id AND i.is_primary_key=1 WHERE t.name LIKE 'CavasCorporativas[_]%' ORDER BY t.name"
+        },
+        {
+          "name": "cavas_corporativas_foreign_keys",
+          "sql": "SELECT OBJECT_NAME(fk.parent_object_id) AS parent_table, fk.name AS fk_name, OBJECT_NAME(fk.referenced_object_id) AS referenced_table FROM sys.foreign_keys fk WHERE OBJECT_NAME(fk.parent_object_id) LIKE 'CavasCorporativas[_]%' ORDER BY parent_table,fk.name"
+        },
+        {
+          "name": "cavas_corporativas_required_indexes",
+          "sql": "SELECT t.name AS table_name, i.name AS index_name, i.is_unique FROM sys.tables t INNER JOIN sys.indexes i ON i.object_id=t.object_id AND i.index_id>0 WHERE t.name LIKE 'CavasCorporativas[_]%' AND i.name IN ('UQ_CC_Aplicacion_Idempotencia','UX_CC_Alcance','IX_CC_Convenios_OrganizacionEstado','IX_CC_Autorizados_Identidad','IX_CC_Aplicaciones_Operacion') ORDER BY t.name,i.name"
+        },
+        {
+          "name": "cavas_corporativas_row_counts",
+          "sql": "SELECT t.name AS table_name, SUM(p.rows) AS row_count FROM sys.tables t JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE t.name LIKE 'CavasCorporativas[_]%' GROUP BY t.name ORDER BY t.name"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL ONLY",
+    "ACTIONS MUST REMAIN EMPTY",
+    "NO DDL/DML",
+    "NO Production",
+    "Expected exactly 8 core tables",
+    "Expected PK on all 8 tables",
+    "Expected foreign keys only within CavasCorporativas domain",
+    "Expected idempotency unique constraint/index for AplicacionesBeneficio"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
