@@ -1,0 +1,13 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-R2D-02-INVENTORY-COLUMNS-20260908T185501Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"R2D-02 quirurgico: obtener columnas reales de Compras_Inventarios_Fisicos_Sync. Solo lectura; una consulta; sin POS LIVE, Mongo, DDL ni DML.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[{"name":"inventory_columns","sql":"SELECT c.column_id, c.name AS column_name, TYPE_NAME(c.user_type_id) AS data_type, c.max_length, c.precision, c.scale, c.is_nullable, c.is_identity FROM sys.columns c WHERE c.object_id=OBJECT_ID('dbo.Compras_Inventarios_Fisicos_Sync') ORDER BY c.column_id;"}]}],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
