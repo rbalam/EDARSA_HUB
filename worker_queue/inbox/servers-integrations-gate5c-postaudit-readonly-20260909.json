@@ -1,0 +1,25 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"servers-integrations-gate5c-postaudit-readonly-20260909",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"7255bdf1c454aafef72f620694e301a5a2b7d850",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Gate 5C post-audit formal READ_ONLY. Verificar estado real de health y adopcion del ledger despues del cableado de codigo. No asumir ejecucion de jobs. Confirmar integridad de CodigoSync, duplicados de IdempotencyKey y ausencia de cambios estructurales. Solo HRLectura, sin secretos, sin DDL/DML, Production prohibida.",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"gate5c_post_identity","sql":"SELECT DB_NAME() database_name,SUSER_SNAME() login_name,USER_NAME() database_user,ORIGINAL_LOGIN() original_login"},
+    {"name":"gate5c_post_health_adoption","sql":"SELECT COUNT_BIG(*) total_rows,SUM(CASE WHEN UltimaPruebaUTC IS NOT NULL THEN 1 ELSE 0 END) with_test_utc,SUM(CASE WHEN UltimoExitoUTC IS NOT NULL THEN 1 ELSE 0 END) with_success_utc,SUM(CASE WHEN UltimoErrorUTC IS NOT NULL THEN 1 ELSE 0 END) with_error_utc,SUM(CASE WHEN FechaActualizacionUTC IS NOT NULL THEN 1 ELSE 0 END) with_updated_utc FROM dbo.Servidores_ConexionEstado"},
+    {"name":"gate5c_post_health_status","sql":"SELECT EstadoConexion,COUNT_BIG(*) total FROM dbo.Servidores_ConexionEstado GROUP BY EstadoConexion ORDER BY EstadoConexion"},
+    {"name":"gate5c_post_ledger_adoption","sql":"SELECT COUNT_BIG(*) total_rows,SUM(CASE WHEN ConexionID IS NOT NULL THEN 1 ELSE 0 END) with_conexion_id,SUM(CASE WHEN UnidadNegocioID IS NOT NULL THEN 1 ELSE 0 END) with_unidad_id,SUM(CASE WHEN CodigoSync IS NOT NULL THEN 1 ELSE 0 END) with_codigo_sync,SUM(CASE WHEN StartedAtUTC IS NOT NULL THEN 1 ELSE 0 END) with_started_utc,SUM(CASE WHEN FinishedAtUTC IS NOT NULL THEN 1 ELSE 0 END) with_finished_utc,SUM(CASE WHEN IdempotencyKey IS NOT NULL THEN 1 ELSE 0 END) with_idempotency_key FROM dbo.Sync_Control_Ejecuciones"},
+    {"name":"gate5c_post_recent_universal_runs","sql":"SELECT TOP 20 SyncRunID,SyncType,CONVERT(varchar(36),ConexionID) ConexionID,CONVERT(varchar(36),UnidadNegocioID) UnidadNegocioID,CodigoSync,StartedAtUTC,FinishedAtUTC,IdempotencyKey,Status FROM dbo.Sync_Control_Ejecuciones WHERE StartedAtUTC IS NOT NULL OR FinishedAtUTC IS NOT NULL OR IdempotencyKey IS NOT NULL ORDER BY SyncControlID DESC"},
+    {"name":"gate5c_post_duplicate_idempotency","sql":"SELECT IdempotencyKey,COUNT_BIG(*) total FROM dbo.Sync_Control_Ejecuciones WHERE IdempotencyKey IS NOT NULL GROUP BY IdempotencyKey HAVING COUNT_BIG(*)>1"},
+    {"name":"gate5c_post_invalid_codigo_sync","sql":"SELECT e.CodigoSync,COUNT_BIG(*) total FROM dbo.Sync_Control_Ejecuciones e LEFT JOIN dbo.Sistema_Sync_Catalogo c ON c.Codigo=e.CodigoSync WHERE e.CodigoSync IS NOT NULL AND c.Codigo IS NULL GROUP BY e.CodigoSync"},
+    {"name":"gate5c_post_invalid_connection_refs","sql":"SELECT COUNT_BIG(*) invalid_connections FROM dbo.Sync_Control_Ejecuciones e LEFT JOIN dbo.Servidores_Conexiones c ON c.id=e.ConexionID WHERE e.ConexionID IS NOT NULL AND c.id IS NULL"},
+    {"name":"gate5c_post_invalid_unit_refs","sql":"SELECT COUNT_BIG(*) invalid_units FROM dbo.Sync_Control_Ejecuciones e LEFT JOIN dbo.Unidades_Negocio u ON u.id=e.UnidadNegocioID WHERE e.UnidadNegocioID IS NOT NULL AND u.id IS NULL"},
+    {"name":"gate5c_post_schema_guard","sql":"SELECT (SELECT COUNT_BIG(*) FROM sys.tables WHERE name='Servidores_ConexionEstado') health_table_count,(SELECT COUNT_BIG(*) FROM sys.tables WHERE name='Sync_Control_Ejecuciones') ledger_table_count,(SELECT COUNT_BIG(*) FROM sys.tables WHERE name LIKE 'Toast[_]%') toast_domain_tables"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
