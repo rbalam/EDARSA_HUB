@@ -1,0 +1,63 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate3b-r2-currency-canonical-v1-20260909",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "c5d0693856f8a72941e9eb20eb8a198888d0d36c",
+  "objective": "COA Gate 3B-R2: corregir exclusivamente el DDL de diseno certificado para usar moneda canonica, reemplazando MonedaCodigo libre por MonedaID smallint con FK a dbo.Proveedor_Monedas(MonedaID) en COA_ReglasComision y COA_ComisionAplicada. Actualizar la auditoria de Gate 3B para reflejar la resolucion de Gate 3C. No ejecutar ningun CREATE TABLE ni ningun SQL. No tocar backend, frontend, base ni Produccion. Mantener comisiones 100% configurables; 6.5% no es default ni constante.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA",
+    "chat": "coa-gate3b-r2-currency-canonical-v1-20260909"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "docs/COA/COA_GATE3B_MINIMAL_DDL.sql",
+      "expected_count": 1,
+      "old": "    Porcentaje decimal(9,6) NULL,\n    ImporteFijo decimal(19,4) NULL,\n    MonedaCodigo char(3) NULL,\n    VigenciaDesde datetime2(3) NOT NULL,",
+      "new": "    Porcentaje decimal(9,6) NULL,\n    ImporteFijo decimal(19,4) NULL,\n    MonedaID smallint NULL,\n    VigenciaDesde datetime2(3) NOT NULL,"
+    },
+    {
+      "type": "replace_text",
+      "path": "docs/COA/COA_GATE3B_MINIMAL_DDL.sql",
+      "expected_count": 1,
+      "old": "    CONSTRAINT FK_COA_ReglasComision_CreadoPor FOREIGN KEY (CreadoPorUsuarioID) REFERENCES dbo.Usuario_Catalogo(UsuarioID),\n    CONSTRAINT FK_COA_ReglasComision_ModificadoPor FOREIGN KEY (ModificadoPorUsuarioID) REFERENCES dbo.Usuario_Catalogo(UsuarioID),\n    CONSTRAINT CK_COA_ReglasComision_Valor CHECK",
+      "new": "    CONSTRAINT FK_COA_ReglasComision_CreadoPor FOREIGN KEY (CreadoPorUsuarioID) REFERENCES dbo.Usuario_Catalogo(UsuarioID),\n    CONSTRAINT FK_COA_ReglasComision_ModificadoPor FOREIGN KEY (ModificadoPorUsuarioID) REFERENCES dbo.Usuario_Catalogo(UsuarioID),\n    CONSTRAINT FK_COA_ReglasComision_Moneda FOREIGN KEY (MonedaID) REFERENCES dbo.Proveedor_Monedas(MonedaID),\n    CONSTRAINT CK_COA_ReglasComision_Valor CHECK"
+    },
+    {
+      "type": "replace_text",
+      "path": "docs/COA/COA_GATE3B_MINIMAL_DDL.sql",
+      "expected_count": 1,
+      "old": "    PorcentajeAplicado decimal(9,6) NULL,\n    ImporteFijoAplicado decimal(19,4) NULL,\n    ImporteComision decimal(19,4) NOT NULL,\n    MonedaCodigo char(3) NULL,\n    SnapshotResolucion nvarchar(max) NULL,",
+      "new": "    PorcentajeAplicado decimal(9,6) NULL,\n    ImporteFijoAplicado decimal(19,4) NULL,\n    ImporteComision decimal(19,4) NOT NULL,\n    MonedaID smallint NULL,\n    SnapshotResolucion nvarchar(max) NULL,"
+    },
+    {
+      "type": "replace_text",
+      "path": "docs/COA/COA_GATE3B_MINIMAL_DDL.sql",
+      "expected_count": 1,
+      "old": "    CONSTRAINT FK_COA_ComisionAplicada_Excepcion FOREIGN KEY (ExcepcionReglaID) REFERENCES dbo.COA_ExcepcionesRegla(ExcepcionReglaID),\n    CONSTRAINT FK_COA_ComisionAplicada_CalculadoPor FOREIGN KEY (CalculadoPorUsuarioID) REFERENCES dbo.Usuario_Catalogo(UsuarioID),",
+      "new": "    CONSTRAINT FK_COA_ComisionAplicada_Excepcion FOREIGN KEY (ExcepcionReglaID) REFERENCES dbo.COA_ExcepcionesRegla(ExcepcionReglaID),\n    CONSTRAINT FK_COA_ComisionAplicada_Moneda FOREIGN KEY (MonedaID) REFERENCES dbo.Proveedor_Monedas(MonedaID),\n    CONSTRAINT FK_COA_ComisionAplicada_CalculadoPor FOREIGN KEY (CalculadoPorUsuarioID) REFERENCES dbo.Usuario_Catalogo(UsuarioID),"
+    },
+    {
+      "type": "replace_text",
+      "path": "docs/COA/COA_GATE3B_DDL_AUDIT.md",
+      "expected_count": 1,
+      "old": "- `MonedaCodigo char(3)` no tiene FK porque Gate 3A no certifico un catalogo monetario unico para COA. Antes de ejecutar el DDL debe auditarse si existe un catalogo canonico que deba sustituir ese campo por FK.",
+      "new": "- Gate 3C certifico `dbo.Proveedor_Monedas` como catalogo monetario canonico candidato y confirmo `MonedaID` como `smallint`; el repositorio ya contiene FK existentes hacia `dbo.Proveedor_Monedas(MonedaID)`. Gate 3B-R2 reemplaza `MonedaCodigo char(3)` por `MonedaID smallint` y agrega FK canonica en `COA_ReglasComision` y `COA_ComisionAplicada`. `ClaveMoneda` queda derivable del catalogo y no se duplica en COA."
+    },
+    {
+      "type": "replace_text",
+      "path": "docs/COA/COA_GATE3B_DDL_AUDIT.md",
+      "expected_count": 1,
+      "old": "## Veredicto Gate 3B\nDDL MINIMO GENERADO, NO EJECUTADO. Apto para siguiente gate de preflight SQL y validacion de dependencias antes de cualquier CREATE TABLE.",
+      "new": "## Veredicto Gate 3B-R2\nDDL MINIMO CORREGIDO CON MONEDA CANONICA Y NO EJECUTADO. Gate 3C confirmo ausencia de colisiones de tablas/constraints/indices y validez de las dependencias canonicas. El siguiente paso debe ser un preflight final READ_ONLY sobre esta revision R2 antes de autorizar cualquier CREATE TABLE."
+    }
+  ],
+  "checks": [
+    { "type": "git_diff_check" }
+  ],
+  "human_summary_language": "es"
+}
