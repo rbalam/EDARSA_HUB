@@ -1,0 +1,47 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-CANONICAL-SOURCE-CERT-R2C-20260908T175300Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "R2C de solo lectura para certificar en EDARSAHUB SQL la fuente canonica de inventarios fisicos y el catalogo canonico de almacenes. No usar POS LIVE, Mongo, DDL, DML, hardcodes ni estructuras paralelas. Obtener evidencia suficiente para fijar el linaje Unidad de Negocio -> Almacen -> Inventario Fisico y preparar el parche anti-regresion.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "unidades_negocio",
+          "sql": "SELECT TOP (100) id, codigo, nombre, server_id, sucursal_origen_id, system_type, activo FROM dbo.Unidades_Negocio ORDER BY nombre;"
+        },
+        {
+          "name": "inventory_sync_columns",
+          "sql": "SELECT c.column_id, c.name AS column_name, TYPE_NAME(c.user_type_id) AS data_type, c.max_length, c.is_nullable FROM sys.columns c WHERE c.object_id = OBJECT_ID('dbo.Compras_Inventarios_Fisicos_Sync') ORDER BY c.column_id;"
+        },
+        {
+          "name": "inventory_sync_count",
+          "sql": "SELECT COUNT_BIG(*) AS total_rows FROM dbo.Compras_Inventarios_Fisicos_Sync;"
+        },
+        {
+          "name": "inventory_sync_sample",
+          "sql": "SELECT TOP (50) * FROM dbo.Compras_Inventarios_Fisicos_Sync;"
+        },
+        {
+          "name": "warehouse_objects",
+          "sql": "SELECT s.name AS schema_name, o.name AS object_name, o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name IN ('Inventario_Almacenes','Sistema_Almacenes','Almacenes','Compras_Almacenes_Sync','Inventarios_Almacenes_Sync') ORDER BY o.name;"
+        },
+        {
+          "name": "warehouse_columns",
+          "sql": "SELECT OBJECT_NAME(c.object_id) AS table_name, c.column_id, c.name AS column_name, TYPE_NAME(c.user_type_id) AS data_type, c.max_length, c.is_nullable FROM sys.columns c WHERE c.object_id IN (OBJECT_ID('dbo.Inventario_Almacenes'), OBJECT_ID('dbo.Sistema_Almacenes'), OBJECT_ID('dbo.Almacenes'), OBJECT_ID('dbo.Compras_Almacenes_Sync'), OBJECT_ID('dbo.Inventarios_Almacenes_Sync')) ORDER BY table_name, c.column_id;"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0"
+  },
+  "human_summary_language": "es"
+}
