@@ -1,0 +1,132 @@
+{
+  "base_sha": "87e2a9f9c34bb4c88481229b692c07c0bd9722cf",
+  "blockers": [],
+  "candidate_sha": "63e29f969337eb0bd0b7bc708eba916a5e3f5f22",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-09T06:01:59Z",
+  "development_sha": "63e29f969337eb0bd0b7bc708eba916a5e3f5f22",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "docs/CAVAS/CAVAS_CORPORATIVAS_GATE10_UAT_REGRESSION_RC.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CORPORATIVAS-GATE10-UAT-REGRESSION-RC-01",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T06:02:03Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "MenuID",
+              "Codigo",
+              "Ruta",
+              "RequierePermiso",
+              "Activo"
+            ],
+            "name": "gate10_menu_rc",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1078,
+                "cava.corporativas",
+                "/cavas-corporativas",
+                "cava_socios",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name"
+            ],
+            "name": "gate10_core_tables_rc",
+            "row_count_returned": 8,
+            "rows": [
+              [
+                "CavasCorporativas_AplicacionesBeneficio"
+              ],
+              [
+                "CavasCorporativas_Autorizados"
+              ],
+              [
+                "CavasCorporativas_BeneficioAlcances"
+              ],
+              [
+                "CavasCorporativas_Beneficios"
+              ],
+              [
+                "CavasCorporativas_Convenios"
+              ],
+              [
+                "CavasCorporativas_ConvenioUnidades"
+              ],
+              [
+                "CavasCorporativas_OrganizacionesRef"
+              ],
+              [
+                "CavasCorporativas_Politicas"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "index_name",
+              "is_unique"
+            ],
+            "name": "gate10_idempotency_index_rc",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "CavasCorporativas_AplicacionesBeneficio",
+                "UQ_CC_Aplicacion_Idempotencia",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "CodigoModulo",
+              "CodigoAccion",
+              "GrantsActivos"
+            ],
+            "name": "gate10_rbac_permissions_rc",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "cava_socios",
+                "VER",
+                "7"
+              ],
+              [
+                "cava_socios.consumos",
+                "CREAR",
+                "1"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T06:00:11Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
