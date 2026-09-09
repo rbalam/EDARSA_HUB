@@ -1,0 +1,41 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE5-RBAC-CONTRACT-AUDIT-R2",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c55eea9e8faa44342295ac786da31f77c28f5654",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Reemitir Gate 5 RBAC/Contract Audit corrigiendo exclusivamente los nombres de columnas canónicos del esquema RBAC. No escribir SQL ni repositorio; no tocar Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "rbac_modulos_cavas_y_relacionados",
+          "sql": "SELECT TOP 200 m.CodigoModulo, m.NombreModulo, m.Activo FROM dbo.Usuario_Modulos m WHERE LOWER(m.CodigoModulo) LIKE '%cava%' OR LOWER(m.NombreModulo) LIKE '%cava%' OR LOWER(m.CodigoModulo) LIKE '%corpor%' OR LOWER(m.NombreModulo) LIKE '%corpor%' ORDER BY m.CodigoModulo"
+        },
+        {
+          "name": "rbac_acciones_activas",
+          "sql": "SELECT TOP 200 a.CodigoAccion, a.NombreAccion, a.Activo FROM dbo.Usuario_Acciones a WHERE a.Activo=1 ORDER BY a.CodigoAccion"
+        },
+        {
+          "name": "rbac_permisos_relacionados",
+          "sql": "SELECT TOP 200 m.CodigoModulo, a.CodigoAccion, r.CodigoRol, prm.Permitido, prm.Activo FROM dbo.Usuario_PermisosRolModulo prm INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID INNER JOIN dbo.Usuario_Roles r ON r.RolID=prm.RolID WHERE (LOWER(m.CodigoModulo) LIKE '%cava%' OR LOWER(m.NombreModulo) LIKE '%cava%' OR LOWER(m.CodigoModulo) LIKE '%corpor%' OR LOWER(m.NombreModulo) LIKE '%corpor%') AND prm.Activo=1 ORDER BY m.CodigoModulo,a.CodigoAccion,r.CodigoRol"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL ONLY",
+    "ACTIONS MUST REMAIN EMPTY",
+    "NO DDL",
+    "NO INSERT/UPDATE/DELETE/MERGE",
+    "NO Production",
+    "NO repository writes",
+    "Change only canonical RBAC column names from Gate5 original request"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
