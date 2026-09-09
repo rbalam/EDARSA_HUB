@@ -1,0 +1,190 @@
+{
+  "base_sha": "7255bdf1c454aafef72f620694e301a5a2b7d850",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T22:47:00Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "servers-integrations-gate5c-postaudit-readonly-20260909",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T22:47:48Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "database_user",
+              "original_login"
+            ],
+            "name": "gate5c_post_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_rows",
+              "with_test_utc",
+              "with_success_utc",
+              "with_error_utc",
+              "with_updated_utc"
+            ],
+            "name": "gate5c_post_health_adoption",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0",
+                null,
+                null,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EstadoConexion",
+              "total"
+            ],
+            "name": "gate5c_post_health_status",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_rows",
+              "with_conexion_id",
+              "with_unidad_id",
+              "with_codigo_sync",
+              "with_started_utc",
+              "with_finished_utc",
+              "with_idempotency_key"
+            ],
+            "name": "gate5c_post_ledger_adoption",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "4712",
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "SyncRunID",
+              "SyncType",
+              "ConexionID",
+              "UnidadNegocioID",
+              "CodigoSync",
+              "StartedAtUTC",
+              "FinishedAtUTC",
+              "IdempotencyKey",
+              "Status"
+            ],
+            "name": "gate5c_post_recent_universal_runs",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "IdempotencyKey",
+              "total"
+            ],
+            "name": "gate5c_post_duplicate_idempotency",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "CodigoSync",
+              "total"
+            ],
+            "name": "gate5c_post_invalid_codigo_sync",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "invalid_connections"
+            ],
+            "name": "gate5c_post_invalid_connection_refs",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "invalid_units"
+            ],
+            "name": "gate5c_post_invalid_unit_refs",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "health_table_count",
+              "ledger_table_count",
+              "toast_domain_tables"
+            ],
+            "name": "gate5c_post_schema_guard",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "1",
+                "1",
+                "0"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T22:46:58Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
