@@ -1,0 +1,74 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "servers-integrations-gate5c-ledger-r2-20260909",
+  "created_at_utc": "2026-09-09T22:44:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "121b201363ae227a1ea14e34cd474dbbc1d71b2e",
+  "production_allowed": false,
+  "objective": "Gate 5C R2: migrar in-place los writers existentes sync_historicos, sync_recetas y sync_comercial_abiertas_v2 al contexto universal de Sync_Control_Ejecuciones sin inventar CodigoSync ni UnidadNegocioID. Agregar UTC, idempotencia y ConexionID solo donde ServerID individual resuelva canonicamente. Mantener contratos legacy. Production prohibida.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_historicos/repository.py",
+      "old": "            IsDryRun, Status, StartedAtMexico\n        ) VALUES (\n            '{ejecucion.sync_run_id}', '{ejecucion.sync_type}',\n            {f\"'{ejecucion.ServerID}'\" if ejecucion.ServerID else 'NULL'},\n            {ejecucion.EmpresaID if ejecucion.EmpresaID else 'NULL'},\n            '{ejecucion.fecha_inicio}', '{ejecucion.fecha_fin}',\n            {ejecucion.ventana_inicio_hora_config}, {ejecucion.ventana_fin_hora_config},\n            {1 if ejecucion.is_dry_run else 0}, 'RUNNING',\n            '{ejecucion.started_at_mexico.strftime('%Y-%m-%d %H:%M:%S')}'\n        )\n",
+      "new": "            IsDryRun, Status, StartedAtMexico, ConexionID, StartedAtUTC, IdempotencyKey\n        ) VALUES (\n            '{ejecucion.sync_run_id}', '{ejecucion.sync_type}',\n            {f\"'{ejecucion.ServerID}'\" if ejecucion.ServerID else 'NULL'},\n            {ejecucion.EmpresaID if ejecucion.EmpresaID else 'NULL'},\n            '{ejecucion.fecha_inicio}', '{ejecucion.fecha_fin}',\n            {ejecucion.ventana_inicio_hora_config}, {ejecucion.ventana_fin_hora_config},\n            {1 if ejecucion.is_dry_run else 0}, 'RUNNING',\n            '{ejecucion.started_at_mexico.strftime('%Y-%m-%d %H:%M:%S')}',\n            {f\"(SELECT TOP 1 id FROM dbo.Servidores_Conexiones WHERE id=TRY_CONVERT(uniqueidentifier, '{ejecucion.ServerID}'))\" if ejecucion.ServerID else 'NULL'},\n            SYSUTCDATETIME(),\n            '{ejecucion.sync_type}:{ejecucion.sync_run_id}'\n        )\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_historicos/repository.py",
+      "old": "            FinishedAtMexico = '{now.strftime('%Y-%m-%d %H:%M:%S')}',\n            DurationSeconds = DATEDIFF(SECOND, StartedAtMexico, '{now.strftime('%Y-%m-%d %H:%M:%S')}')\n",
+      "new": "            FinishedAtMexico = '{now.strftime('%Y-%m-%d %H:%M:%S')}',\n            FinishedAtUTC = COALESCE(FinishedAtUTC, SYSUTCDATETIME()),\n            DurationSeconds = DATEDIFF(SECOND, StartedAtMexico, '{now.strftime('%Y-%m-%d %H:%M:%S')}')\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_recetas/sync_recetas.py",
+      "old": "            StartedAtMexico, FinishedAtMexico, DurationSeconds, CreatedAt\n",
+      "new": "            StartedAtMexico, FinishedAtMexico, DurationSeconds, CreatedAt,\n            StartedAtUTC, FinishedAtUTC, IdempotencyKey\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_recetas/sync_recetas.py",
+      "old": "            {result.registros_error},\n            '{result.started_at.strftime(\"%Y-%m-%d %H:%M:%S\")}',\n            '{result.finished_at.strftime(\"%Y-%m-%d %H:%M:%S\")}',\n            {result.duration_seconds},\n            '{result.started_at.strftime(\"%Y-%m-%d %H:%M:%S\")}'\n        )\n",
+      "new": "            {result.registros_error},\n            '{result.started_at.strftime(\"%Y-%m-%d %H:%M:%S\")}',\n            '{result.finished_at.strftime(\"%Y-%m-%d %H:%M:%S\")}',\n            {result.duration_seconds},\n            '{result.started_at.strftime(\"%Y-%m-%d %H:%M:%S\")}',\n            SYSUTCDATETIME(),\n            SYSUTCDATETIME(),\n            'SYNC_RECETAS:{result.sync_run_id}'\n        )\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+      "old": "from core.utils.operational_window import (\n",
+      "new": "from modules.integrations_runtime.sync_ledger import enrich_sync_start, mark_sync_finished\nfrom core.utils.operational_window import (\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+      "old": "        ))\n\n        conn.commit()\n\n        logger.info(\n            f\"[LOCK] Adquirido: {run_id}, pid={pid}\"\n",
+      "new": "        ))\n\n        enrich_sync_start(\n            cursor,\n            sync_run_id=run_id,\n            sync_type=SYNC_TYPE_VENTAS_DIA,\n        )\n        conn.commit()\n\n        logger.info(\n            f\"[LOCK] Adquirido: {run_id}, pid={pid}\"\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+      "old": "        ))\n\n        conn.commit()\n        logger.info(f\"[LOCK] Liberado: {run_id}\")\n",
+      "new": "        ))\n\n        mark_sync_finished(cursor, run_id)\n        conn.commit()\n        logger.info(f\"[LOCK] Liberado: {run_id}\")\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/sync_compras_job.py",
+      "old": "                FinishedAtMexico = %s,\n                ErrorMessage = COALESCE(\n",
+      "new": "                FinishedAtMexico = %s,\n                FinishedAtUTC = COALESCE(FinishedAtUTC, SYSUTCDATETIME()),\n                ErrorMessage = COALESCE(\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+      "old": "                FinishedAtMexico = %s,\n                ErrorMessage = COALESCE(\n",
+      "new": "                FinishedAtMexico = %s,\n                FinishedAtUTC = COALESCE(FinishedAtUTC, SYSUTCDATETIME()),\n                ErrorMessage = COALESCE(\n"
+    }
+  ],
+  "checks": [
+    {"type": "py_compile", "paths": ["backend/modules/sync_historicos/repository.py", "backend/modules/sync_recetas/sync_recetas.py", "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py", "backend/core/scheduler/jobs/sync_compras_job.py", "backend/modules/integrations_runtime/sync_ledger.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_integrations_runtime_gate5c.py", "backend/tests/test_integrations_center_gate5b.py"]},
+    {"type": "git_diff_check"}
+  ]
+}
