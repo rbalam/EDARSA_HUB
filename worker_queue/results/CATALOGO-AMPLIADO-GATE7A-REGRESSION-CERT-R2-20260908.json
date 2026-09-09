@@ -1,0 +1,27 @@
+{
+  "base_sha": "c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
+  "blockers": [
+    "check_failed:py_compile"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-09T05:16:29Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "docs/catalogo_ampliado/CATALOGO_AMPLIADO_GATE7A_REGRESSION_CERTIFICATION.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CATALOGO-AMPLIADO-GATE7A-REGRESSION-CERT-R2-20260908",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T05:16:39Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-09T05:16:27Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
