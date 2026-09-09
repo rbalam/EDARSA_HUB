@@ -1,0 +1,706 @@
+{
+  "base_sha": "efe2c06fc73e0c7306b05a7c260af3e3b369a66e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T22:36:16Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "servers-integrations-gate5c-preflight-readonly-20260909",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T22:36:34Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "database_user"
+            ],
+            "name": "gate5c_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "is_nullable",
+              "default_definition"
+            ],
+            "name": "gate5c_health_columns",
+            "row_count_returned": 22,
+            "rows": [
+              [
+                1,
+                "Id",
+                "uniqueidentifier",
+                16,
+                false,
+                "(newid())"
+              ],
+              [
+                2,
+                "ServidorID",
+                "uniqueidentifier",
+                16,
+                true,
+                null
+              ],
+              [
+                3,
+                "ServerID",
+                "nvarchar",
+                200,
+                true,
+                null
+              ],
+              [
+                4,
+                "EstadoConexion",
+                "nvarchar",
+                100,
+                true,
+                null
+              ],
+              [
+                5,
+                "UltimoCheck",
+                "datetime",
+                8,
+                true,
+                null
+              ],
+              [
+                6,
+                "ResponseTimeMs",
+                "int",
+                4,
+                true,
+                null
+              ],
+              [
+                7,
+                "PayloadMongo",
+                "nvarchar",
+                -1,
+                true,
+                null
+              ],
+              [
+                8,
+                "MongoId",
+                "nvarchar",
+                200,
+                true,
+                null
+              ],
+              [
+                9,
+                "ColeccionOrigen",
+                "nvarchar",
+                400,
+                true,
+                null
+              ],
+              [
+                10,
+                "MigradoDesdeMongo",
+                "bit",
+                1,
+                true,
+                "((1))"
+              ],
+              [
+                11,
+                "FechaMigracionMongo",
+                "datetime",
+                8,
+                true,
+                "(getdate())"
+              ],
+              [
+                12,
+                "Activo",
+                "bit",
+                1,
+                false,
+                "((1))"
+              ],
+              [
+                13,
+                "FechaCreacion",
+                "datetime",
+                8,
+                false,
+                "(getdate())"
+              ],
+              [
+                14,
+                "UltimaPruebaUTC",
+                "datetime2",
+                7,
+                true,
+                null
+              ],
+              [
+                15,
+                "UltimoExitoUTC",
+                "datetime2",
+                7,
+                true,
+                null
+              ],
+              [
+                16,
+                "UltimoErrorUTC",
+                "datetime2",
+                7,
+                true,
+                null
+              ],
+              [
+                17,
+                "UltimoErrorCodigo",
+                "nvarchar",
+                160,
+                true,
+                null
+              ],
+              [
+                18,
+                "UltimoErrorMensaje",
+                "nvarchar",
+                2000,
+                true,
+                null
+              ],
+              [
+                19,
+                "LatenciaMs",
+                "int",
+                4,
+                true,
+                null
+              ],
+              [
+                20,
+                "UltimoSyncUTC",
+                "datetime2",
+                7,
+                true,
+                null
+              ],
+              [
+                21,
+                "UltimoSyncExitosoUTC",
+                "datetime2",
+                7,
+                true,
+                null
+              ],
+              [
+                22,
+                "FechaActualizacionUTC",
+                "datetime2",
+                7,
+                true,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "constraint_name",
+              "type_desc",
+              "column_name",
+              "key_ordinal"
+            ],
+            "name": "gate5c_health_keys",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "PK__Servidor__3214EC07422660F2",
+                "PRIMARY_KEY_CONSTRAINT",
+                "Id",
+                1
+              ],
+              [
+                "UQ__Servidor__2632954731C3EF44",
+                "UNIQUE_CONSTRAINT",
+                "MongoId",
+                1
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "Codigo",
+              "Nombre",
+              "Grupo",
+              "Handler",
+              "HandlerImplementado",
+              "RequiereUnidad",
+              "Activo"
+            ],
+            "name": "gate5c_sync_catalog",
+            "row_count_returned": 10,
+            "rows": [
+              [
+                "catalogo_productos",
+                "Catálogo de Productos",
+                "Catálogos",
+                "sync_catalogo_productos",
+                true,
+                true,
+                true
+              ],
+              [
+                "comercial_ventas_detalle",
+                "Detalle de Ventas (Sync_Sales)",
+                "Comercial",
+                "backfill_sync_sales",
+                true,
+                true,
+                true
+              ],
+              [
+                "finanzas_netpay",
+                "NetPay - Transacciones y Depósitos",
+                "Finanzas",
+                "netpay_manual_background",
+                true,
+                true,
+                true
+              ],
+              [
+                "inventarios_requisiciones",
+                "Requisiciones / Órdenes de Compra",
+                "Inventarios",
+                "sync_requisiciones",
+                true,
+                true,
+                true
+              ],
+              [
+                "finanzas_netpay_transacciones",
+                "NetPay - Transacciones",
+                "Finanzas",
+                "netpay_manual_background",
+                true,
+                true,
+                false
+              ],
+              [
+                "finanzas_netpay_depositos",
+                "NetPay - Depósitos",
+                "Finanzas",
+                "netpay_manual_background",
+                true,
+                true,
+                false
+              ],
+              [
+                "catalogo_proveedores",
+                "Catálogo de Proveedores",
+                "Catálogos",
+                "sync_catalogo_proveedores",
+                true,
+                true,
+                true
+              ],
+              [
+                "comercial_ventas_cerradas",
+                "Ventas Cerradas (KPIs)",
+                "Comercial",
+                "sync_softrestaurant_ventas_cerradas",
+                true,
+                true,
+                true
+              ],
+              [
+                "inventarios_fisicos",
+                "Inventarios Físicos",
+                "Inventarios",
+                "sync_inventarios_fisicos",
+                true,
+                true,
+                true
+              ],
+              [
+                "catalogo_filtros",
+                "Catálogo de Filtros / Familias",
+                "Catálogos",
+                "sync_catalogo_filtros",
+                true,
+                true,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "SyncType",
+              "total"
+            ],
+            "name": "gate5c_existing_sync_types",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "VENTAS_DIA_ABIERTAS",
+                "4672"
+              ],
+              [
+                "COMPRAS_SYNC",
+                "26"
+              ],
+              [
+                "VENTAS_POR_HORA",
+                "5"
+              ],
+              [
+                "SYNC_RECETAS",
+                "3"
+              ],
+              [
+                "VENTAS_HISTORICAS",
+                "3"
+              ],
+              [
+                "VENTAS_POR_DIA_SEMANA",
+                "2"
+              ],
+              [
+                "DETECT_NUEVOS",
+                "1"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ConexionID",
+              "nombre",
+              "system_type",
+              "tipo_conexion",
+              "EmpresaID",
+              "sucursales",
+              "activo"
+            ],
+            "name": "gate5c_connection_unit_candidates",
+            "row_count_returned": 26,
+            "rows": [
+              [
+                "72F6E9A7-8EA2-4EB2-802E-4EE31753435E",
+                "130° QRO LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                2,
+                "{}",
+                true
+              ],
+              [
+                "B597D88A-AB37-4B4E-897B-EFE68C9B3732",
+                "API ManagmentPro",
+                "MPRO",
+                "API_LOCAL",
+                null,
+                "{}",
+                true
+              ],
+              [
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                "CHAPUR BACKOFFICE",
+                "ENTERPRISE",
+                "API_LOCAL",
+                null,
+                "{}",
+                true
+              ],
+              [
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "CHAPUR NORTE",
+                "ENTERPRISE",
+                "API_LOCAL",
+                null,
+                "{}",
+                true
+              ],
+              [
+                "31D62F39-632B-4684-B735-256BD9293A8F",
+                "CIENFUEGOS NOMINPAQ",
+                "SOFTRESTAURANT_PRO",
+                "API_LOCAL",
+                null,
+                "{}",
+                true
+              ],
+              [
+                "2BEAD18C-73C9-4D86-AF92-2355940274F7",
+                "GARIBALDI",
+                "SOFTRESTAURANT_PRO",
+                "API_LOCAL",
+                null,
+                "{}",
+                true
+              ],
+              [
+                "817A0AA8-6170-4738-A8F6-A72AC36BA0DF",
+                "ORIGEN LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                1,
+                "{}",
+                true
+              ],
+              [
+                "DC44C86B-8F1F-4B44-9704-6CEA89297C69",
+                "TEST API LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                null,
+                "{}",
+                false
+              ],
+              [
+                "EE896463-DAC4-439A-A5EC-8D4CC183E4FA",
+                "TEST_COMMIT_1785357429",
+                "MPRO",
+                "API_LOCAL",
+                null,
+                "{}",
+                false
+              ],
+              [
+                "BEA40259-35F1-4693-BDA2-D2D10E13E56A",
+                "EDARSA HUB",
+                "Otro",
+                "CORE",
+                null,
+                "[]",
+                false
+              ],
+              [
+                "F8A9049A-96E8-4210-84AE-595FFA2822FA",
+                "EDARSA HUB",
+                "EDARSA_HUB",
+                "CORE",
+                null,
+                "[]",
+                true
+              ],
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "130° MERIDA",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                5,
+                "[]",
+                true
+              ],
+              [
+                "54F13BF8-C970-4294-9436-C2AFCDAB83C4",
+                "BENDITA AGUITA",
+                "MPRO",
+                "DATA_SOURCE",
+                null,
+                null,
+                false
+              ],
+              [
+                "FA707E51-2C41-47C5-872C-0A911FBF90F0",
+                "BENDITA AGUITA",
+                "SoftRestaurant",
+                "DATA_SOURCE",
+                null,
+                null,
+                false
+              ],
+              [
+                "874021EC-918C-4F9F-AF35-7AE948B35DE0",
+                "BENDITA AGUITA",
+                "MPRO",
+                "DATA_SOURCE",
+                null,
+                null,
+                false
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "CIENFUEGOS",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                3,
+                "[]",
+                true
+              ],
+              [
+                "6D859026-710A-4920-9A44-6DA98FABC690",
+                "CIENFUEGOS TABLAJERIA",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                3,
+                "[]",
+                true
+              ],
+              [
+                "B5175237-5E57-41F3-AB6D-B5AE2F5E780B",
+                "HR2020 ESCRITURA",
+                "MPRO",
+                "DATA_SOURCE",
+                null,
+                "[]",
+                false
+              ],
+              [
+                "1792AA66-5DA7-4B66-82FC-8F690988648F",
+                "INEGI - API Indicadores",
+                "INEGI",
+                "DATA_SOURCE",
+                null,
+                null,
+                false
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "LA ESTELAR",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                4,
+                "[]",
+                true
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "ManagmentPro",
+                "MPRO",
+                "DATA_SOURCE",
+                null,
+                "[]",
+                true
+              ],
+              [
+                "D1D8C70F-C3D0-4407-AE50-F09E8E5992EE",
+                "MPRO TABLAJERIA",
+                "MPRO",
+                "DATA_SOURCE",
+                null,
+                "[]",
+                true
+              ],
+              [
+                "D8425038-5E57-42D9-8F3A-62E287888874",
+                "PRUEBAS SOFTRESTAURANT",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                null,
+                "[]",
+                false
+              ],
+              [
+                "90A62591-65CF-439F-AE8E-D505B50FCC07",
+                "TEST_ENCRYPTED_PASSWORD_UPDATED",
+                "MPRO",
+                "DATA_SOURCE",
+                null,
+                null,
+                false
+              ],
+              [
+                "7452D373-7350-4193-B819-E36FFA800724",
+                "TEST_RBAC_ADMIN_CHECK",
+                "MPRO",
+                "DATA_SOURCE",
+                null,
+                null,
+                false
+              ],
+              [
+                "3F6FFBDF-1288-423D-AA42-3878B48E5022",
+                "TEST_SQL_FIRST_TEMP_UPDATED",
+                "MANAGEMENTPRO",
+                "DATA_SOURCE",
+                null,
+                null,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocioID",
+              "codigo",
+              "nombre",
+              "activo"
+            ],
+            "name": "gate5c_units",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "130MID",
+                "130° MERIDA",
+                true
+              ],
+              [
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                "130QRO",
+                "130° QUERETARO",
+                true
+              ],
+              [
+                "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                true
+              ],
+              [
+                "DFB86008-1B81-472A-9E50-8A0821DEC4B2",
+                "ESTELAR",
+                "LA ESTELAR",
+                true
+              ],
+              [
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "ORIGEN",
+                "ORIGEN",
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T22:36:14Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
