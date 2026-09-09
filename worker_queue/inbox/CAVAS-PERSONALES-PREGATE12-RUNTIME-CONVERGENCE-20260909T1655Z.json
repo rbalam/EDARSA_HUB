@@ -1,0 +1,34 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "CAVAS-PERSONALES-PREGATE12-RUNTIME-CONVERGENCE-20260909T1655Z",
+  "created_at_utc": "2026-09-09T16:55:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b048737f949d1acd8331e0b9e410bdbf74062621",
+  "objective": "PRECONDICION OBLIGATORIA ANTES DE GATE 12 DE CAVAS PERSONALES. Verificar que origin/Edarsahub_Desarrollo siga exactamente en b048737f949d1acd8331e0b9e410bdbf74062621 y alinear el checkout/runtime local canonico del Worker a ese mismo SHA usando exclusivamente los mecanismos operacionales existentes de refresh/sync del Worker. Solo se permite fetch y avance fast-forward/checkout seguro que preserve trabajo. Si el worktree tiene cambios locales, si la rama local diverge, si no puede hacerse fast-forward de forma segura o si el SHA remoto cambia, detenerse en estado BLOCKED y no alterar el worktree. Despues de la alineacion, publicar/actualizar health y demostrar que git HEAD local, development_sha del heartbeat y origin/Edarsahub_Desarrollo son exactamente b048737f949d1acd8331e0b9e410bdbf74062621. Este job no implementa Gate 12; solo certifica su precondicion de runtime.",
+  "acceptance": [
+    "origin/Edarsahub_Desarrollo == b048737f949d1acd8331e0b9e410bdbf74062621",
+    "checkout local canonico del Worker en Edarsahub_Desarrollo == b048737f949d1acd8331e0b9e410bdbf74062621",
+    "worker health ONLINE despues de la alineacion",
+    "development_sha publicado por health == b048737f949d1acd8331e0b9e410bdbf74062621",
+    "worktree limpio antes y despues; no se descarta trabajo local",
+    "files_changed vacio; ningun cambio de codigo o configuracion del Worker",
+    "production_touched == false",
+    "resultado terminal explicito PASS/COMPLETE o BLOCKED con causa exacta"
+  ],
+  "constraints": [
+    "NO tocar Edarsahub_Produccion",
+    "NO modificar codigo, scripts, supervisor, watchdog, launcher ni configuracion del Worker",
+    "NO bypass de RBAC",
+    "NO reset --hard",
+    "NO git clean",
+    "NO force push",
+    "NO borrar, sobrescribir ni stashear automaticamente cambios locales",
+    "NO crear ni ejecutar Gate 12 hasta que esta precondicion este certificada",
+    "NO reencolar ni duplicar este job"
+  ],
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
