@@ -1,248 +1,254 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "09197b387875aa246e2af5f3ed34036edaa7e60e",
-  "generated_at_utc": "2026-09-09T01:04:47Z",
+  "generated_at_utc": "2026-09-09T01:06:13Z",
   "history": {
     "done_total_local": 197,
-    "pending_total_local": 1,
+    "pending_total_local": 2,
     "processing_total_local": 1,
     "rejected_total_local": 324,
     "results_total_local": 468
   },
-  "intake_sla_breached": false,
+  "intake_sla_breached": true,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 27,
+      "age_seconds": 31,
+      "job_id": "WORKER-READONLY-PUBLISHER-R9-20260908",
+      "reason": null,
+      "state": "PENDING"
+    },
+    {
+      "age_seconds": 113,
       "job_id": "finanzas-decision-pago-authoritative-v18r2-20260908",
       "reason": null,
       "state": "PENDING"
     },
     {
-      "age_seconds": 858,
+      "age_seconds": 944,
       "job_id": "BOS-DIRECCION-E2E-INFORME-EJECUTIVO-GATE7-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3357,
+      "age_seconds": 3443,
       "job_id": "BOS-DIRECCION-SCHEDULER-ACTIVATION-GATE6-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2157,
+      "age_seconds": 2243,
       "job_id": "CATALOGO-AMPLIADO-GATE1-EVIDENCE-CERT-R3-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 518,
+      "age_seconds": 604,
       "job_id": "CATALOGO-AMPLIADO-GATE1-READONLY-SCHEMA-R4-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1316,
+      "age_seconds": 1402,
       "job_id": "CAVAS-BOS-V1-CANONICAL-AUDIT-03",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2399,
+      "age_seconds": 2485,
       "job_id": "CAVAS-CORPORATIVAS-GATE3-BACKEND-DOMAIN-CORE-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1449,
+      "age_seconds": 1535,
       "job_id": "CAVAS-CORPORATIVAS-GATE4-SQL-REPOSITORY-SERVICE-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 258,
+      "age_seconds": 344,
       "job_id": "CAVAS-CORPORATIVAS-GATE5-RBAC-CONTRACT-AUDIT-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1200,
+      "age_seconds": 1286,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P2A-PERSISTENCE-PREFLIGHT-20260908T1810Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1422,
+      "age_seconds": 1508,
       "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-CANONICAL-SOURCE-CERT-R2C-20260908T175300Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1848,
+      "age_seconds": 1934,
       "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-CANONICAL-SOURCE-DISCOVERY-R2B-20260908T175200Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2009,
+      "age_seconds": 2095,
       "job_id": "EDARSAHUB-ISCAM-ESTELAR-DETAIL-DRYRUN-R41-CARLOS-20260909T003200Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3125,
+      "age_seconds": 3211,
       "job_id": "RRR-GATE0-CONTRATO-V1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1193,
+      "age_seconds": 1279,
       "job_id": "RRR-GATE1-READONLY-AUDIT-V1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1071,
+      "age_seconds": 1157,
       "job_id": "WORKER-SQL-READONLY-EVIDENCE-PRESERVE-R8-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 691,
+      "age_seconds": 777,
       "job_id": "coa-satelite-bootstrap-v4-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 845,
+      "age_seconds": 931,
       "job_id": "cxp-v15-pytest-isolate-authorizer-r1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 837,
+      "age_seconds": 923,
       "job_id": "cxp-v15-pytest-isolate-canonical-auth-r1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 829,
+      "age_seconds": 915,
       "job_id": "cxp-v15-pytest-isolate-dashboard-r1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 657,
+      "age_seconds": 743,
       "job_id": "cxp-v15-pytest-isolate-request-contract-r1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 583,
+      "age_seconds": 669,
       "job_id": "cxp-v15-request-test1-isolate-r1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 542,
+      "age_seconds": 628,
       "job_id": "cxp-v15-request-test2-isolate-r1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 397,
+      "age_seconds": 483,
       "job_id": "cxp-v16-render-order-isolate-r1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2413,
+      "age_seconds": 2499,
       "job_id": "finanzas-decision-pago-authoritative-v15-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 510,
+      "age_seconds": 596,
       "job_id": "finanzas-decision-pago-authoritative-v16-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 339,
+      "age_seconds": 425,
       "job_id": "finanzas-decision-pago-authoritative-v17-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 241,
+      "age_seconds": 327,
       "job_id": "finanzas-decision-pago-authoritative-v18-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 865,
+      "age_seconds": 951,
       "job_id": "production-release-gate-v1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3473,
+      "age_seconds": 3559,
       "job_id": "save-github-final-predeploy-closure-audit-r5-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1671,
+      "age_seconds": 1757,
       "job_id": "worker-mpro-130qro-origen-readonly-audit-r1-20260909T0030Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1030,
+      "age_seconds": 1116,
       "job_id": "worker-mpro-130qro-origen-readonly-audit-r2-20260909T0045Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3464,
+      "age_seconds": 3550,
       "job_id": "worker-readonly-result-publisher-hardening-r7-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2857,
+      "age_seconds": 2943,
       "job_id": "worker-scope-concurrency-safe-rebase-canary-v2-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2367,
+      "age_seconds": 2453,
       "job_id": "worker-softrestaurant-global-sql-audit-r1-20260909T0001Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 27,
+      "age_seconds": 113,
       "job_id": "coa-satelite-bootstrap-v5-20260908",
       "reason": null,
       "state": "RUNNING"
     }
   ],
-  "oldest_pending_age_seconds": 27,
+  "oldest_pending_age_seconds": 113,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 2,
+  "queue_depth": 3,
   "queue_done_local_recent": 0,
-  "queue_pending": 1,
+  "queue_pending": 2,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 34,
   "queue_running": 1,
   "runtime": {
     "current_job_id": "coa-satelite-bootstrap-v5-20260908",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-09T01:04:41Z",
-    "last_receive_utc": "2026-09-09T01:04:44Z",
+    "last_cycle_utc": "2026-09-09T01:06:12Z",
+    "last_receive_utc": "2026-09-09T01:06:13Z",
     "last_terminal_utc": "2026-09-09T01:00:46Z",
     "pid": "288"
   },
