@@ -37,8 +37,12 @@ BEGIN
             WHEN 'octubre'    THEN 10
             WHEN 'noviembre'  THEN 11
             WHEN 'diciembre'  THEN 12
-            ELSE 5 -- fallback al mes de Mayo
+            ELSE NULL
         END;
+
+    -- Un mes inválido no se convierte silenciosamente en otro periodo.
+    IF @NumeroMes IS NULL
+        RETURN NULL;
 
     -- Validar año seguro para evitar desbordamiento en DATEFROMPARTS
     IF @Anio IS NULL OR @Anio < 1900 OR @Anio > 2100
