@@ -1,0 +1,32 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE1-ARCHITECTURE-CERTIFICATION-01",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "97a53f76ab9b5ded191a8f53e797a31d029c9e25",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Certificar formalmente Gate 1 de Cavas Corporativas sin cambiar la arquitectura congelada. Auditar y documentar las invariantes ya aprobadas: SQL Server canonico; no Mongo como fuente; Cava fisica != Asignacion != Contrato != Membresia != Socio != Botella != Movimiento; identidad canonica reutiliza Cliente_Catalogo; productos reutilizan catalogo comercial o Catalogo Extendido sin duplicacion; consumo observado no equivale a venta; backend autoritativo; RBAC SQL canonico; multiempresa/multiunidad; sin dependencias especificas de SoftRestaurant/MPRO; Produccion no se toca. Este gate no autoriza rediseño funcional, DDL ni DML SQL.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/CAVAS/CAVAS_CORPORATIVAS_GATE1_ARCHITECTURE_CERTIFICATION.md",
+      "content": "# Cavas Corporativas - Gate 1 Architecture Certification\n\n## Alcance\nCertificacion formal de la arquitectura ya congelada. Este documento no modifica el diseño ni autoriza DDL/DML.\n\n## Invariantes congeladas\n1. SQL Server es la fuente canonica del dominio.\n2. No se introduce Mongo como fuente, cache o persistencia nueva.\n3. Cava fisica, asignacion, contrato, membresia, socio, botella y movimiento son identidades/eventos distintos y no se conflan.\n4. La identidad de personas/clientes reutiliza `Cliente_Catalogo`; no se crea un maestro paralelo de entidades.\n5. Los productos reutilizan el catalogo comercial canonico cuando existe y usan Catalogo Extendido cuando no existe, sin crear `Productos_Cava` ni duplicar producto por nombre.\n6. Consumo observado en Cava no es venta, ingreso, ticket ni unidad comercial salvo existencia de transaccion comercial real.\n7. Botellas propias del socio se controlan por custodia/inventario de Cavas y no consumen inventario del POS.\n8. Beneficios/operaciones corporativas son backend-authoritative; el frontend solo consume contratos canonicos.\n9. RBAC reutiliza el esquema SQL canonico existente; no se crea un RBAC paralelo.\n10. El dominio es multiempresa y multiunidad y reutiliza contexto corporativo/unidad existente.\n11. Cavas no depende de forma especifica de SoftRestaurant, MPRO u otro POS/ERP; las integraciones externas llegan por contratos/adaptadores canonicos.\n12. Produccion no se modifica dentro de este gate.\n\n## Evidencia de implementacion posterior que debe seguir siendo compatible\n- `backend/modules/cavas_corporativas/domain.py`\n- `backend/modules/cavas_corporativas/repository.py`\n- `backend/modules/cavas_corporativas/service.py`\n- `backend/modules/cavas_corporativas/routes.py`\n- tests del dominio Cavas Corporativas\n\n## Criterio terminal\nGate 1 queda formalmente certificado solo si el Worker devuelve `CERTIFIED`, `percent_complete=100`, `quality_gate=PASS`, `tests=PASS`, sin blockers y `production_touched=false`.\n"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"},
+    {"type":"py_compile","paths":["backend/modules/cavas_corporativas/domain.py","backend/modules/cavas_corporativas/repository.py","backend/modules/cavas_corporativas/service.py","backend/modules/cavas_corporativas/routes.py"]},
+    {"type":"pytest","paths":["backend/tests/test_cavas_corporativas_domain.py","backend/tests/test_cavas_corporativas_repository.py","backend/tests/test_cavas_corporativas_service.py","backend/tests/test_cavas_corporativas_routes.py"]}
+  ],
+  "constraints": [
+    "DO NOT change frozen architecture",
+    "NO Production",
+    "NO SQL DDL/DML",
+    "NO new Mongo",
+    "NO new parallel client/product/RBAC sources",
+    "Documentation-only mutation plus certification checks"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
