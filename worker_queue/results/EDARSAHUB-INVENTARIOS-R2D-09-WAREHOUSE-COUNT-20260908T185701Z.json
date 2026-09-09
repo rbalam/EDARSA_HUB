@@ -1,0 +1,48 @@
+{
+  "base_sha": "52cd791f5b82389706d3c430c61102504ee03781",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T01:51:29Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-INVENTARIOS-R2D-09-WAREHOUSE-COUNT-20260908T185701Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T01:52:33Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "total_rows"
+            ],
+            "name": "warehouse_count",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "67"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T01:51:28Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
