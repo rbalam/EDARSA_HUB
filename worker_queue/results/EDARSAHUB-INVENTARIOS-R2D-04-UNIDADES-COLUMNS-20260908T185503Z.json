@@ -1,0 +1,152 @@
+{
+  "base_sha": "ba11768eaa287511523880e8009da4475279bc55",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T01:38:13Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-INVENTARIOS-R2D-04-UNIDADES-COLUMNS-20260908T185503Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T01:38:44Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable",
+              "is_identity"
+            ],
+            "name": "unidades_columns",
+            "row_count_returned": 10,
+            "rows": [
+              [
+                1,
+                "id",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                false,
+                false
+              ],
+              [
+                2,
+                "nombre",
+                "nvarchar",
+                200,
+                0,
+                0,
+                false,
+                false
+              ],
+              [
+                3,
+                "codigo",
+                "nvarchar",
+                100,
+                0,
+                0,
+                false,
+                false
+              ],
+              [
+                4,
+                "server_id",
+                "nvarchar",
+                200,
+                0,
+                0,
+                false,
+                false
+              ],
+              [
+                5,
+                "sucursal_origen_id",
+                "nvarchar",
+                100,
+                0,
+                0,
+                true,
+                false
+              ],
+              [
+                6,
+                "system_type",
+                "nvarchar",
+                100,
+                0,
+                0,
+                false,
+                false
+              ],
+              [
+                7,
+                "activo",
+                "bit",
+                1,
+                1,
+                0,
+                true,
+                false
+              ],
+              [
+                8,
+                "orden",
+                "int",
+                4,
+                10,
+                0,
+                true,
+                false
+              ],
+              [
+                9,
+                "created_at",
+                "datetime",
+                8,
+                23,
+                3,
+                true,
+                false
+              ],
+              [
+                10,
+                "updated_at",
+                "datetime",
+                8,
+                23,
+                3,
+                true,
+                false
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T01:38:12Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
