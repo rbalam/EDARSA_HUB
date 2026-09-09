@@ -19,9 +19,6 @@ jobs:
     environment: development
     timeout-minutes: 20
     env:
-      EDARSAHUB_SQL_HOST: ${{ vars.EDARSAHUB_SQL_HOST }}
-      EDARSAHUB_SQL_PORT: ${{ vars.EDARSAHUB_SQL_PORT }}
-      EDARSAHUB_SQL_DATABASE: ${{ vars.EDARSAHUB_SQL_DATABASE }}
       MIGRATION_SCRIPT: backend/database/migrations/20260909_001_servidores_integraciones_universal_infra.sql
       ROLLBACK_SCRIPT: backend/database/migrations/20260909_001_servidores_integraciones_universal_infra_rollback.sql
 
@@ -39,16 +36,35 @@ jobs:
       - name: Install SQL runtime
         run: python -m pip install pymssql pydantic python-dotenv email-validator
 
-      - name: Validate development connection configuration
+      - name: Resolve canonical Development SQL endpoint
         shell: bash
         run: |
           set -euo pipefail
-          test -n "${EDARSAHUB_SQL_HOST:-}"
-          test -n "${EDARSAHUB_SQL_PORT:-}"
-          test -n "${EDARSAHUB_SQL_DATABASE:-}"
           test "${GITHUB_REF}" = 'refs/heads/Edarsahub_Desarrollo'
           test -f "${MIGRATION_SCRIPT}"
           test -f "${ROLLBACK_SCRIPT}"
+          test -f '.github/workflows/coa-core-development-migration.yml'
+          python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          text = Path('.github/workflows/coa-core-development-migration.yml').read_text(encoding='utf-8')
+          keys = ('EDARSAHUB_SQL_HOST', 'EDARSAHUB_SQL_PORT', 'EDARSAHUB_SQL_DATABASE')
+          values = []
+          for key in keys:
+              pattern = r"^\s*" + re.escape(key) + r":\s*['\"]?([^'\"\n#]+)['\"]?\s*$"
+              match = re.search(pattern, text, re.M)
+              if not match:
+                  raise SystemExit('GATE4D_CANONICAL_ENDPOINT_NOT_FOUND:' + key)
+              value = match.group(1).strip()
+              if not value:
+                  raise SystemExit('GATE4D_CANONICAL_ENDPOINT_EMPTY:' + key)
+              values.append(f'{key}={value}')
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as handle:
+              handle.write('\n'.join(values) + '\n')
+          print('GATE4D_CANONICAL_ENDPOINT=RESOLVED')
+          PY
 
       - name: Preflight with readonly account
         env:
@@ -59,17 +75,44 @@ jobs:
           set -euo pipefail
           mkdir -p evidence
           python - <<'PY' | tee evidence/preflight.txt
-          import os,pymssql
-          conn=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15)
-          cur=conn.cursor(as_dict=True)
-          new_tables=['Sistema_Sync_Capacidades','Sync_Control_Evidencias','Sistema_IdentificadoresExternos']
-          cur.execute("SELECT name FROM sys.tables WHERE name IN (%s)" % ','.join(["'%s'"%x for x in new_tables]))
-          rows=cur.fetchall(); print({'existing_new_tables':rows})
-          if rows: raise SystemExit('GATE4D_PREFLIGHT_TABLE_COLLISION')
-          checks=[('Unidades_Negocio',['timezone_iana','locale_operativo']),('Sync_Control_Ejecuciones',['ConexionID','UnidadNegocioID','CodigoSync','StartedAtUTC','FinishedAtUTC','IdempotencyKey']),('Servidores_ConexionEstado',['UltimaPruebaUTC','UltimoExitoUTC','UltimoErrorUTC','UltimoErrorCodigo','UltimoErrorMensaje','LatenciaMs','UltimoSyncUTC','UltimoSyncExitosoUTC','FechaActualizacionUTC'])]
-          for table,cols in checks:
-              cur.execute("SELECT name FROM sys.columns WHERE object_id=OBJECT_ID(%s) AND name IN (%s)",('dbo.'+table, ','.join(cols)))
-          cur.close(); conn.close(); print('GATE4D_PREFLIGHT=PASS')
+          import os
+          import pymssql
+
+          conn = pymssql.connect(
+              server=os.environ['EDARSAHUB_SQL_HOST'],
+              port=int(os.environ['EDARSAHUB_SQL_PORT']),
+              database=os.environ['EDARSAHUB_SQL_DATABASE'],
+              user=os.environ['EDARSAHUB_SQL_USER'],
+              password=os.environ['EDARSAHUB_SQL_PASSWORD'],
+              timeout=60,
+              login_timeout=15,
+          )
+          cur = conn.cursor(as_dict=True)
+          new_tables = ['Sistema_Sync_Capacidades', 'Sync_Control_Evidencias', 'Sistema_IdentificadoresExternos']
+          placeholders = ','.join(['%s'] * len(new_tables))
+          cur.execute(f"SELECT name FROM sys.tables WHERE name IN ({placeholders})", tuple(new_tables))
+          rows = cur.fetchall()
+          print({'existing_new_tables': rows})
+          if rows:
+              raise SystemExit('GATE4D_PREFLIGHT_TABLE_COLLISION')
+
+          checks = [
+              ('Unidades_Negocio', ['timezone_iana', 'locale_operativo']),
+              ('Sync_Control_Ejecuciones', ['ConexionID', 'UnidadNegocioID', 'CodigoSync', 'StartedAtUTC', 'FinishedAtUTC', 'IdempotencyKey']),
+              ('Servidores_ConexionEstado', ['UltimaPruebaUTC', 'UltimoExitoUTC', 'UltimoErrorUTC', 'UltimoErrorCodigo', 'UltimoErrorMensaje', 'LatenciaMs', 'UltimoSyncUTC', 'UltimoSyncExitosoUTC', 'FechaActualizacionUTC']),
+          ]
+          for table, cols in checks:
+              placeholders = ','.join(['%s'] * len(cols))
+              cur.execute(
+                  f"SELECT name FROM sys.columns WHERE object_id=OBJECT_ID(%s) AND name IN ({placeholders})",
+                  tuple(['dbo.' + table] + cols),
+              )
+              found = cur.fetchall()
+              if found:
+                  raise SystemExit('GATE4D_PREFLIGHT_COLUMN_COLLISION:' + table + ':' + ','.join(sorted(row['name'] for row in found)))
+          cur.close()
+          conn.close()
+          print('GATE4D_PREFLIGHT=PASS')
           PY
 
       - name: Resolve writer and verify DDL permission
@@ -84,11 +127,26 @@ jobs:
           echo "EDARSAHUB_SQL_USER=${MIGRATION_USER}" >> "$GITHUB_ENV"
           echo "EDARSAHUB_SQL_PASSWORD=${MIGRATION_PASSWORD}" >> "$GITHUB_ENV"
           python - <<'PY' | tee evidence/writer-permissions.txt
-          import os,pymssql
-          conn=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['MIGRATION_USER'],password=os.environ['MIGRATION_PASSWORD'],timeout=60,login_timeout=15)
-          cur=conn.cursor(as_dict=True); cur.execute("SELECT COALESCE(HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE TABLE'),0) can_create, COALESCE(HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER'),0) can_alter_schema")
-          row=cur.fetchone(); print(row); cur.close(); conn.close()
-          if int(row['can_create'])!=1 or int(row['can_alter_schema'])!=1: raise SystemExit('GATE4D_DDL_PERMISSION_NOT_CONFIRMED')
+          import os
+          import pymssql
+
+          conn = pymssql.connect(
+              server=os.environ['EDARSAHUB_SQL_HOST'],
+              port=int(os.environ['EDARSAHUB_SQL_PORT']),
+              database=os.environ['EDARSAHUB_SQL_DATABASE'],
+              user=os.environ['MIGRATION_USER'],
+              password=os.environ['MIGRATION_PASSWORD'],
+              timeout=60,
+              login_timeout=15,
+          )
+          cur = conn.cursor(as_dict=True)
+          cur.execute("SELECT COALESCE(HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE TABLE'),0) can_create, COALESCE(HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER'),0) can_alter_schema")
+          row = cur.fetchone()
+          print(row)
+          cur.close()
+          conn.close()
+          if int(row['can_create']) != 1 or int(row['can_alter_schema']) != 1:
+              raise SystemExit('GATE4D_DDL_PERMISSION_NOT_CONFIRMED')
           PY
 
       - name: Execute transactional migration
@@ -109,23 +167,75 @@ jobs:
         run: |
           set -euo pipefail
           python - <<'PY' | tee evidence/postcheck.txt
-          import os,pymssql
-          conn=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15)
-          cur=conn.cursor(as_dict=True)
-          expected_tables=['Sistema_Sync_Capacidades','Sync_Control_Evidencias','Sistema_IdentificadoresExternos']
-          cur.execute("SELECT COUNT(*) n FROM sys.tables WHERE name IN (%s)" % ','.join(["'%s'"%x for x in expected_tables])); tables=int(cur.fetchone()['n'])
-          expected_cols={'Unidades_Negocio':['timezone_iana','locale_operativo'],'Sync_Control_Ejecuciones':['ConexionID','UnidadNegocioID','CodigoSync','StartedAtUTC','FinishedAtUTC','IdempotencyKey'],'Servidores_ConexionEstado':['UltimaPruebaUTC','UltimoExitoUTC','UltimoErrorUTC','UltimoErrorCodigo','UltimoErrorMensaje','LatenciaMs','UltimoSyncUTC','UltimoSyncExitosoUTC','FechaActualizacionUTC']}
-          col_count=0
-          for table,cols in expected_cols.items():
-              cur.execute("SELECT COUNT(*) n FROM sys.columns WHERE object_id=OBJECT_ID(%s) AND name IN (%s)",('dbo.'+table, ','.join(cols))); col_count += int(cur.fetchone()['n'])
-          target_fks=['FK_Sistema_Sync_Capacidades_Sync','FK_Sistema_Sync_Capacidades_Capacidad','FK_Sync_Control_Ejecuciones_Conexion','FK_Sync_Control_Ejecuciones_Unidad','FK_Sync_Control_Ejecuciones_CodigoSync','FK_Sync_Control_Evidencias_Ejecucion','FK_Sistema_IdentificadoresExternos_Unidad','FK_Sistema_IdentificadoresExternos_Sistema','FK_Sistema_IdentificadoresExternos_Version','FK_Sistema_IdentificadoresExternos_Conexion']
-          cur.execute("SELECT COUNT(*) n FROM sys.foreign_keys WHERE name IN (%s)" % ','.join(["'%s'"%x for x in target_fks])); fks=int(cur.fetchone()['n'])
-          target_ix=['UX_Sync_Control_Ejecuciones_IdempotencyKey','IX_Sync_Control_Ejecuciones_Conexion_CodigoSync','IX_Sistema_IdentificadoresExternos_UnidadSistema','IX_Sistema_IdentificadoresExternos_Conexion']
-          cur.execute("SELECT COUNT(*) n FROM sys.indexes WHERE name IN (%s)" % ','.join(["'%s'"%x for x in target_ix])); indexes=int(cur.fetchone()['n'])
-          cur.execute("SELECT COALESCE(SUM(p.rows),0) n FROM sys.tables t JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE t.name IN (%s)" % ','.join(["'%s'"%x for x in expected_tables])); rows=int(cur.fetchone()['n'])
-          print({'tables':tables,'columns':col_count,'fks':fks,'indexes':indexes,'new_table_rows':rows})
-          cur.close(); conn.close()
-          if tables!=3 or col_count!=17 or fks!=10 or indexes!=4 or rows!=0: raise SystemExit('GATE4D_POSTCHECK_CONTRACT_MISMATCH')
+          import os
+          import pymssql
+
+          conn = pymssql.connect(
+              server=os.environ['EDARSAHUB_SQL_HOST'],
+              port=int(os.environ['EDARSAHUB_SQL_PORT']),
+              database=os.environ['EDARSAHUB_SQL_DATABASE'],
+              user=os.environ['EDARSAHUB_SQL_USER'],
+              password=os.environ['EDARSAHUB_SQL_PASSWORD'],
+              timeout=60,
+              login_timeout=15,
+          )
+          cur = conn.cursor(as_dict=True)
+          expected_tables = ['Sistema_Sync_Capacidades', 'Sync_Control_Evidencias', 'Sistema_IdentificadoresExternos']
+          placeholders = ','.join(['%s'] * len(expected_tables))
+          cur.execute(f"SELECT COUNT(*) n FROM sys.tables WHERE name IN ({placeholders})", tuple(expected_tables))
+          tables = int(cur.fetchone()['n'])
+
+          expected_cols = {
+              'Unidades_Negocio': ['timezone_iana', 'locale_operativo'],
+              'Sync_Control_Ejecuciones': ['ConexionID', 'UnidadNegocioID', 'CodigoSync', 'StartedAtUTC', 'FinishedAtUTC', 'IdempotencyKey'],
+              'Servidores_ConexionEstado': ['UltimaPruebaUTC', 'UltimoExitoUTC', 'UltimoErrorUTC', 'UltimoErrorCodigo', 'UltimoErrorMensaje', 'LatenciaMs', 'UltimoSyncUTC', 'UltimoSyncExitosoUTC', 'FechaActualizacionUTC'],
+          }
+          col_count = 0
+          for table, cols in expected_cols.items():
+              placeholders = ','.join(['%s'] * len(cols))
+              cur.execute(
+                  f"SELECT COUNT(*) n FROM sys.columns WHERE object_id=OBJECT_ID(%s) AND name IN ({placeholders})",
+                  tuple(['dbo.' + table] + cols),
+              )
+              col_count += int(cur.fetchone()['n'])
+
+          target_fks = [
+              'FK_Sistema_Sync_Capacidades_Sync',
+              'FK_Sistema_Sync_Capacidades_Capacidad',
+              'FK_Sync_Control_Ejecuciones_Conexion',
+              'FK_Sync_Control_Ejecuciones_Unidad',
+              'FK_Sync_Control_Ejecuciones_CodigoSync',
+              'FK_Sync_Control_Evidencias_Ejecucion',
+              'FK_Sistema_IdentificadoresExternos_Unidad',
+              'FK_Sistema_IdentificadoresExternos_Sistema',
+              'FK_Sistema_IdentificadoresExternos_Version',
+              'FK_Sistema_IdentificadoresExternos_Conexion',
+          ]
+          placeholders = ','.join(['%s'] * len(target_fks))
+          cur.execute(f"SELECT COUNT(*) n FROM sys.foreign_keys WHERE name IN ({placeholders})", tuple(target_fks))
+          fks = int(cur.fetchone()['n'])
+
+          target_ix = [
+              'UX_Sync_Control_Ejecuciones_IdempotencyKey',
+              'IX_Sync_Control_Ejecuciones_Conexion_CodigoSync',
+              'IX_Sistema_IdentificadoresExternos_UnidadSistema',
+              'IX_Sistema_IdentificadoresExternos_Conexion',
+          ]
+          placeholders = ','.join(['%s'] * len(target_ix))
+          cur.execute(f"SELECT COUNT(*) n FROM sys.indexes WHERE name IN ({placeholders})", tuple(target_ix))
+          indexes = int(cur.fetchone()['n'])
+
+          placeholders = ','.join(['%s'] * len(expected_tables))
+          cur.execute(
+              f"SELECT COALESCE(SUM(p.rows),0) n FROM sys.tables t JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE t.name IN ({placeholders})",
+              tuple(expected_tables),
+          )
+          rows = int(cur.fetchone()['n'])
+          print({'tables': tables, 'columns': col_count, 'fks': fks, 'indexes': indexes, 'new_table_rows': rows})
+          cur.close()
+          conn.close()
+          if tables != 3 or col_count != 17 or fks != 10 or indexes != 4 or rows != 0:
+              raise SystemExit('GATE4D_POSTCHECK_CONTRACT_MISMATCH')
           print('GATE4D_POSTCHECK=PASS')
           PY
 
