@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
-  "generated_at_utc": "2026-09-09T22:45:29Z",
+  "generated_at_utc": "2026-09-09T22:47:06Z",
   "history": {
-    "done_total_local": 333,
+    "done_total_local": 335,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 377,
-    "results_total_local": 642
+    "results_total_local": 644
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1536,
+      "age_seconds": 1633,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-R4-RBAC-DETERMINISTIC-OFFLINE-20260909T2000Z",
       "reasons": [
         "INVALID_TARGET_REPO",
@@ -23,55 +23,67 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1330,
+      "age_seconds": 1427,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-R4-DETERMINISTIC-RBAC-32-DEPS-20260909T2148Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1315,
+      "age_seconds": 1412,
       "job_id": "EDARSAHUB-SOFTRESTAURANT-RESTORE-APERTURA-CONTRACT-R43B-CARLOS-20260909T194000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1311,
+      "age_seconds": 1408,
       "job_id": "RRR-GATE4D-R1-ROLLBACK-ABSENCE-READONLY-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1297,
+      "age_seconds": 1394,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5B-R4-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1294,
+      "age_seconds": 1391,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5B-R5-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 714,
+      "age_seconds": 811,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5C-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 213,
+      "age_seconds": 310,
       "job_id": "servers-integrations-gate5c-health-ledger-r1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 68,
+      "age_seconds": 165,
       "job_id": "servers-integrations-gate5c-ledger-r2-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 552,
+      "age_seconds": 68,
+      "job_id": "servers-integrations-gate5c-ledger-r3-timeout-utc-20260909",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 6,
+      "job_id": "servers-integrations-gate5c-postaudit-readonly-20260909",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 649,
       "job_id": "servers-integrations-gate5c-preflight-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
@@ -84,14 +96,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 9,
+  "queue_result_ready_recent": 11,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-09T22:45:24Z",
-    "last_receive_utc": "2026-09-09T22:45:25Z",
-    "last_terminal_utc": "2026-09-09T22:44:20Z",
+    "last_cycle_utc": "2026-09-09T22:47:02Z",
+    "last_receive_utc": "2026-09-09T22:47:03Z",
+    "last_terminal_utc": "2026-09-09T22:47:00Z",
     "pid": "159"
   },
   "schema": "edarsahub.worker-health.v3",
