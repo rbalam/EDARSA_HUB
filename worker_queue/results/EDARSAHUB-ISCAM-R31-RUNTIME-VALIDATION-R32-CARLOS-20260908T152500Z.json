@@ -1,23 +1,278 @@
 {
   "base_sha": "2729c7cbb323f4574f25caa877c6b30a81a84aa8",
   "blockers": [],
-  "certification": "NOT_CERTIFIED",
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
   "completed_at_utc": "2026-09-08T15:36:38Z",
   "executor": "chatgpt-deterministic",
   "files_changed": [],
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "EDARSAHUB-ISCAM-R31-RUNTIME-VALIDATION-R32-CARLOS-20260908T152500Z",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-09-08T15:37:51Z",
+  "published_at_utc": "2026-09-09T01:10:32Z",
   "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
   "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "unidad_negocio_nombre",
+              "fecha_operacion",
+              "ventas_total",
+              "propinas_total",
+              "cheques_total",
+              "pax_total"
+            ],
+            "name": "estelar_20260906_fuente_canonica_compartida",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "2026-09-06",
+                "17195.00",
+                "1513.75",
+                "21",
+                "36"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "unidad_negocio_nombre",
+              "fecha_operacion",
+              "ventas_total",
+              "cheques_total",
+              "pax_total"
+            ],
+            "name": "estelar_frescura_ultimos_dias",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "2026-09-07",
+                "31124.75",
+                "15",
+                "36"
+              ],
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "2026-09-06",
+                "17195.00",
+                "21",
+                "36"
+              ],
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "2026-09-05",
+                "252998.00",
+                "167",
+                "480"
+              ],
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "2026-09-04",
+                "119840.00",
+                "81",
+                "195"
+              ],
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "2026-09-03",
+                "41110.00",
+                "32",
+                "110"
+              ],
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "2026-09-02",
+                "23115.00",
+                "16",
+                "48"
+              ],
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "2026-09-01",
+                "60110.00",
+                "29",
+                "77"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "FechaAccion",
+              "RunID",
+              "Exito",
+              "MensajeError",
+              "status_detalle",
+              "processed_count",
+              "success_count",
+              "failed_count",
+              "skipped_count"
+            ],
+            "name": "sync_comercial_v2_ultimo_finish",
+            "row_count_returned": 10,
+            "rows": [
+              [
+                "2026-09-08T15:33:59.040000",
+                "ac06b3293fb5",
+                true,
+                null,
+                "success",
+                19,
+                5,
+                0,
+                4
+              ],
+              [
+                "2026-09-08T15:29:30.287000",
+                "d5e79c45be50",
+                false,
+                null,
+                "completado",
+                16,
+                5,
+                0,
+                1
+              ],
+              [
+                "2026-09-08T15:19:09.803000",
+                "613292307cb5",
+                true,
+                null,
+                "success",
+                19,
+                5,
+                0,
+                4
+              ],
+              [
+                "2026-09-08T15:14:28.233000",
+                "6cfa74d0c6a8",
+                false,
+                null,
+                "completado",
+                16,
+                5,
+                0,
+                16
+              ],
+              [
+                "2026-09-08T14:59:30.217000",
+                "b890aff873f1",
+                false,
+                null,
+                "completado",
+                16,
+                5,
+                0,
+                16
+              ],
+              [
+                "2026-09-08T14:44:28.233000",
+                "b3dfb92376c3",
+                false,
+                null,
+                "completado",
+                16,
+                5,
+                0,
+                16
+              ],
+              [
+                "2026-09-08T14:29:28.877000",
+                "a707f775b15b",
+                false,
+                null,
+                "completado",
+                16,
+                5,
+                0,
+                16
+              ],
+              [
+                "2026-09-08T14:14:28.207000",
+                "013dde8e3b2d",
+                false,
+                null,
+                "completado",
+                16,
+                5,
+                0,
+                16
+              ],
+              [
+                "2026-09-08T13:59:30.020000",
+                "9a66f2da417e",
+                false,
+                null,
+                "completado",
+                16,
+                5,
+                0,
+                16
+              ],
+              [
+                "2026-09-08T13:44:28.267000",
+                "b2f9ad49a120",
+                false,
+                null,
+                "completado",
+                16,
+                5,
+                0,
+                16
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "starts_3h",
+              "finishes_exitosos_3h",
+              "ultimo_finish_exitoso",
+              "hora_consulta_utc"
+            ],
+            "name": "sync_comercial_v2_actividad_3h",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                14,
+                2,
+                "2026-09-08T15:33:59.040000",
+                "2026-09-08 15:36:38.0144245"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
   "started_at_utc": "2026-09-08T15:36:36Z",
   "status": "READ_ONLY_COMPLETE",
   "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
   "tests": "PASS",
-  "work_completion": "NOT_CERTIFIED"
+  "work_completion": "COMPLETE"
 }
