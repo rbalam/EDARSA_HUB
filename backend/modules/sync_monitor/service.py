@@ -194,7 +194,26 @@ def get_sync_monitor_data() -> Dict[str, Any]:
         """, (hace_24h,))
         # cursor as_dict ya retorna dicts
         comercial_syncs = cursor.fetchall()
-        
+
+        # KPI exacto de errores 24h: los listados posteriores usan TOP N solo para UI.
+        cursor.execute("""
+            SELECT COUNT(*) AS total
+            FROM Compras_Sync_Log
+            WHERE status != 'OK'
+              AND sync_start >= %s
+        """, (hace_24h,))
+        row = cursor.fetchone() or {}
+        total_errores_compras_24h = int(row.get("total") or 0)
+
+        cursor.execute("""
+            SELECT COUNT(*) AS total
+            FROM Comercial_SyncLog_v2
+            WHERE status != 'SUCCESS'
+              AND run_timestamp >= %s
+        """, (hace_24h,))
+        row = cursor.fetchone() or {}
+        total_errores_comercial_24h = int(row.get("total") or 0)
+
         # 4. Obtener errores últimas 24h
         cursor.execute("""
             SELECT TOP 50
@@ -414,7 +433,7 @@ def get_sync_monitor_data() -> Dict[str, Any]:
         servidores_error = len([s for s in servidores if s["status"] == "ERROR"])
         servidores_stale = len([s for s in servidores if s["status"] == "STALE"])
         
-        total_errores_24h = len(errores)
+        total_errores_24h = total_errores_compras_24h + total_errores_comercial_24h
         total_records_24h = sum(p["total_records_24h"] for p in procesos)
         total_runs_24h = sum(p["total_runs_24h"] for p in procesos)
         
