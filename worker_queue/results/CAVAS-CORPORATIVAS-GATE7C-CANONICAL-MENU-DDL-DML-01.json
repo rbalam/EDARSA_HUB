@@ -1,0 +1,29 @@
+{
+  "base_sha": "fb21c5d40d5662fbf47958eadd8f83123141bf59",
+  "blockers": [],
+  "candidate_sha": "a5a8d290d38e9261d874a604f5e4e7a73903bba5",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-09T04:23:45Z",
+  "development_sha": "a5a8d290d38e9261d874a604f5e4e7a73903bba5",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    ".github/workflows/cavas-corporativas-menu-development-migration.yml",
+    "backend/database/migrations/20260909_cavas_corporativas_menu.sql",
+    "ops/migrations/requests/CAVAS-CORPORATIVAS-MENU-20260909.execute"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CORPORATIVAS-GATE7C-CANONICAL-MENU-DDL-DML-01",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T04:23:49Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-09T04:23:40Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
