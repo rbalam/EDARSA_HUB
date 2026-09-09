@@ -22,7 +22,7 @@ def _load_detector_module(monkeypatch):
     jobs_pkg.__path__ = []
 
     job_logger = types.ModuleType("core.scheduler.job_logger")
-    job_logger.get_job_logger = lambda db: _DummyJobLogger()
+    job_logger.get_job_logger = lambda *args, **kwargs: _DummyJobLogger()
 
     sql_repository = types.ModuleType("core.scheduler.sql_repository")
 
@@ -170,3 +170,60 @@ async def test_detectar_softrestaurant_usa_sync_edarsahub(monkeypatch):
     assert inv.clave.folio_inventario == "200"
     assert inv.folio_inicial == "100"
     assert inv.metadata["source"] == "EDARSAHUB_SYNC"
+
+
+@pytest.mark.asyncio
+async def test_reintento_rehidrata_contexto_persistido(monkeypatch):
+    detector_module = _load_detector_module(monkeypatch)
+
+    async def fake_get_pendientes(max_intentos=3, limit=5):
+        assert max_intentos == detector_module.MAX_INTENTOS
+        assert limit == 5
+        return [{
+            "SistemaOrigen": "MPRO",
+            "ServerID": "server-mpro",
+            "SucursalID": "0021",
+            "AlmacenID": "0001",
+            "FolioInventario": "QR-0001041",
+            "Intentos": 2,
+            "DetallesJSON": (
+                '{"server_name":"ManagementPro",'
+                '"almacen_nombre":"ALMACEN GENERAL",'
+                '"folio_inicial":"QR-0001038",'
+                '"fecha_inicial":"2026-08-01",'
+                '"fecha_inventario":"2026-09-01",'
+                '"metadata":{"source":"EDARSAHUB_SYNC"}}'
+            ),
+        }]
+
+    monkeypatch.setattr(
+        detector_module,
+        "get_inventarios_pendientes_reintento",
+        fake_get_pendientes,
+    )
+
+    capturado = {}
+
+    async def fake_procesar(registro):
+        capturado.update(registro)
+
+    job = detector_module.InventariosDetectorJob(db={})
+    monkeypatch.setattr(job, "_procesar_inventario_desde_registro", fake_procesar)
+
+    await job._procesar_reintentos()
+
+    assert capturado["clave"] == {
+        "sistema_origen": "MPRO",
+        "server_id": "server-mpro",
+        "sucursal_id": "0021",
+        "almacen_id": "0001",
+        "folio_inventario": "QR-0001041",
+    }
+    assert capturado["server_name"] == "ManagementPro"
+    assert capturado["almacen_nombre"] == "ALMACEN GENERAL"
+    assert capturado["folio_inicial"] == "QR-0001038"
+    assert capturado["fecha_inicial"] == "2026-08-01"
+    assert capturado["fecha_inventario"] == "2026-09-01"
+    assert capturado["metadata"] == {"source": "EDARSAHUB_SYNC"}
+    assert capturado["intentos"] == 2
+    assert job.stats["inventarios_reintentados"] == 1

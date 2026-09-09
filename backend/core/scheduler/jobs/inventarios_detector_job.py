@@ -41,6 +41,7 @@ BLINDAJE DE AISLAMIENTO (Abril 2026):
 Fecha: Abril 2026
 """
 
+import json
 import logging
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
@@ -326,7 +327,21 @@ class InventariosDetectorJob:
             self.stats["inventarios_reintentados"] += 1
             logger.info(f"[INVENTARIOS_DETECTOR] Reintentando folio={registro.get('FolioInventario')}")
             
-            # Construir registro compatible para procesamiento
+            # Reconstruir el contexto original persistido en SQL para que el
+            # reintento ejecute exactamente el mismo análisis que el primer intento.
+            detalles_raw = registro.get('DetallesJSON')
+            detalles = {}
+            if isinstance(detalles_raw, dict):
+                detalles = detalles_raw
+            elif detalles_raw:
+                try:
+                    detalles = json.loads(detalles_raw) or {}
+                except (TypeError, ValueError, json.JSONDecodeError):
+                    logger.warning(
+                        "[INVENTARIOS_DETECTOR] DetallesJSON inválido en reintento folio=%s",
+                        registro.get('FolioInventario'),
+                    )
+
             registro_compat = {
                 'clave': {
                     'sistema_origen': registro.get('SistemaOrigen'),
@@ -334,7 +349,14 @@ class InventariosDetectorJob:
                     'sucursal_id': registro.get('SucursalID'),
                     'almacen_id': registro.get('AlmacenID'),
                     'folio_inventario': registro.get('FolioInventario')
-                }
+                },
+                'server_name': detalles.get('server_name'),
+                'almacen_nombre': detalles.get('almacen_nombre', ''),
+                'folio_inicial': detalles.get('folio_inicial'),
+                'fecha_inicial': detalles.get('fecha_inicial'),
+                'fecha_inventario': detalles.get('fecha_inventario'),
+                'metadata': detalles.get('metadata', {}),
+                'intentos': registro.get('Intentos', 1),
             }
             
             # Intentar procesar
@@ -579,7 +601,10 @@ class InventariosDetectorJob:
                 detalles={
                     "server_name": inv.server_name,
                     "almacen_nombre": inv.almacen_nombre,
-                    "folio_inicial": inv.folio_inicial
+                    "folio_inicial": inv.folio_inicial,
+                    "fecha_inicial": inv.fecha_inicial,
+                    "fecha_inventario": inv.fecha_inventario,
+                    "metadata": inv.metadata,
                 }
             )
             if not success:
