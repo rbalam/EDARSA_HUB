@@ -1,0 +1,222 @@
+{
+  "base_sha": "a71a5a21e36831114fe3de389b200db7ca56d889",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T02:16:13Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "RRR-GATE2D-R2C-UNIT-FK-READONLY-20260908",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T02:17:07Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "parent_schema",
+              "parent_table",
+              "parent_column",
+              "fk_name",
+              "referenced_schema",
+              "referenced_table",
+              "referenced_column"
+            ],
+            "name": "unit_fk_contracts",
+            "row_count_returned": 19,
+            "rows": [
+              [
+                "dbo",
+                "Comercial_CostosMargenesConfiguracion",
+                "UnidadNegocioID",
+                "FK_CostosMargenesConfig_Unidad",
+                "dbo",
+                "Unidades_Negocio",
+                "id"
+              ],
+              [
+                "dbo",
+                "Compras_CFDI_RutasIngesta",
+                "UnidadNegocioID",
+                "FK_Compras_CFDI_RutasIngesta_UnidadNegocio",
+                "dbo",
+                "Unidades_Negocio",
+                "id"
+              ],
+              [
+                "dbo",
+                "Compras_DocumentosFiscalesRelaciones",
+                "UnidadNegocioID",
+                "FK_Compras_DocFiscalRel_UnidadNegocio",
+                "dbo",
+                "Unidades_Negocio",
+                "id"
+              ],
+              [
+                "dbo",
+                "Compras_Ordenes",
+                "unidad_negocio_pk",
+                "FK_Compras_Ordenes_UnidadNegocio",
+                "dbo",
+                "Unidades_Negocio",
+                "id"
+              ],
+              [
+                "dbo",
+                "Compras_Pedidos",
+                "unidad_negocio_pk",
+                "FK_Compras_Pedidos_UnidadNegocio",
+                "dbo",
+                "Unidades_Negocio",
+                "id"
+              ],
+              [
+                "dbo",
+                "Compras_Recepciones",
+                "unidad_negocio_pk",
+                "FK_Compras_Recepciones_UnidadNegocio",
+                "dbo",
+                "Unidades_Negocio",
+                "id"
+              ],
+              [
+                "dbo",
+                "Economia_ContextoOperativo",
+                "UnidadNegocioID",
+                "FK_Economia_ContextoOperativo_Unidad",
+                "dbo",
+                "Unidades_Negocio",
+                "id"
+              ],
+              [
+                "dbo",
+                "Finanzas_Comprobaciones",
+                "UnidadNegocioID",
+                "FK_Finanzas_Comprobaciones_UnidadNegocio",
+                "dbo",
+                "Unidades_Negocio",
+                "id"
+              ],
+              [
+                "dbo",
+                "Finanzas_CxP_DecisionesPago",
+                "UnidadNegocioID",
+                "FK_Finanzas_CxP_DecisionesPago_UnidadNegocio",
+                "dbo",
+                "Unidades_Negocio",
+                "id"
+              ],
+              [
+                "dbo",
+                "Finanzas_CxP_PagosOrigenQueue",
+                "UnidadNegocioID",
+                "FK_Finanzas_CxP_PagosOrigenQueue_UnidadNegocio",
+                "dbo",
+                "Unidades_Negocio",
+                "id"
+              ],
+              [
+                "dbo",
+                "Finanzas_Presupuestos",
+                "UnidadNegocioID",
+                "FK_Finanzas_Presupuestos_UnidadNegocio",
+                "dbo",
+                "Unidades_Negocio",
+                "id"
+              ],
+              [
+                "dbo",
+                "Inventario_Almacenes",
+                "SucursalID",
+                "FK_Inventario_Almacenes_Sucursal",
+                "dbo",
+                "Sistema_Sucursales",
+                "SucursalID"
+              ],
+              [
+                "dbo",
+                "Inventario_Movimientos",
+                "SucursalID",
+                "FK_Inventario_Movimientos_Sucursal",
+                "dbo",
+                "Sistema_Sucursales",
+                "SucursalID"
+              ],
+              [
+                "dbo",
+                "Sistema_CorreccionesDatosHorario",
+                "unidad_negocio_id",
+                "FK_SCDH_unidad",
+                "dbo",
+                "Unidades_Negocio",
+                "id"
+              ],
+              [
+                "dbo",
+                "Sistema_ServidorSucursalesConfig",
+                "SucursalID",
+                "FK__Sistema_S__Sucur__2B754518",
+                "dbo",
+                "Sistema_Sucursales",
+                "SucursalID"
+              ],
+              [
+                "dbo",
+                "Sistema_Sucursales",
+                "EmpresaID",
+                "FK__Sistema_S__Empre__21EBDADE",
+                "dbo",
+                "Sistema_Empresas",
+                "EmpresaID"
+              ],
+              [
+                "dbo",
+                "Sistema_SucursalServidorMapeo",
+                "SucursalID",
+                "FK__Sistema_S__Sucur__26B08FFB",
+                "dbo",
+                "Sistema_Sucursales",
+                "SucursalID"
+              ],
+              [
+                "dbo",
+                "Sistema_TurnosOperativosUnidad_Versiones",
+                "unidad_negocio_id",
+                "FK_STOUV_unidad",
+                "dbo",
+                "Unidades_Negocio",
+                "id"
+              ],
+              [
+                "dbo",
+                "Sistema_UnidadesNegocioPerfilDigital",
+                "EmpresaID",
+                "FK_PerfilDigital_Empresa",
+                "dbo",
+                "Sistema_Empresas",
+                "EmpresaID"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T02:16:12Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
