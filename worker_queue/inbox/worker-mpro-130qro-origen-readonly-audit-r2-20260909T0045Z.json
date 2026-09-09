@@ -1,0 +1,40 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-mpro-130qro-origen-readonly-audit-r2-20260909T0045Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Reejecutar la auditoria estrictamente READ_ONLY de MPRO para 130QRO y ORIGEN usando exclusivamente columnas ya certificadas por el diagnostico SQL canonico del repositorio. Determinar cobertura historica almacenada, ultima sincronizacion, duplicados y bitacora de sync. No escribir SQL, no ejecutar resync, no tocar Production.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "mpro_units_canonical",
+          "sql": "SELECT CONVERT(nvarchar(100),u.id) AS unidad_negocio_id,u.codigo AS unidad_codigo,u.nombre AS unidad_nombre,CONVERT(nvarchar(100),u.server_id) AS unidad_server_id,CONVERT(nvarchar(100),s.id) AS servidor_id,s.nombre AS servidor_nombre,s.system_type,s.database_name FROM dbo.Unidades_Negocio u LEFT JOIN dbo.Servidores_Conexiones s ON CONVERT(nvarchar(100),u.server_id)=CONVERT(nvarchar(100),s.id) WHERE u.activo=1 AND (UPPER(COALESCE(u.codigo,N'')) IN (N'130QRO',N'ORIGEN') OR UPPER(COALESCE(u.nombre,N'')) LIKE N'%QUERETARO%' OR UPPER(COALESCE(u.nombre,N'')) LIKE N'%ORIGEN%') ORDER BY u.nombre;"
+        },
+        {
+          "name": "mpro_cortes_coverage",
+          "sql": "SELECT COALESCE(UnidadNegocioNombre,N'<NULL>') AS unidad_nombre,CONVERT(nvarchar(100),UnidadNegocioID) AS unidad_negocio_id,CONVERT(nvarchar(100),ServerID) AS server_id,COALESCE(SistemaOrigen,N'<NULL>') AS sistema_origen,COUNT_BIG(*) AS total_rows,SUM(CASE WHEN Activo=1 THEN 1 ELSE 0 END) AS active_rows,MIN(FechaCorte) AS min_fecha_corte,MAX(FechaCorte) AS max_fecha_corte,MAX(FechaSincronizacion) AS last_sync_at FROM dbo.Finanzas_CortesCaja WHERE SistemaOrigen='MPRO' GROUP BY UnidadNegocioNombre,UnidadNegocioID,ServerID,SistemaOrigen ORDER BY unidad_nombre;"
+        },
+        {
+          "name": "mpro_duplicate_identity_check",
+          "sql": "SELECT COUNT_BIG(*) AS duplicate_groups FROM (SELECT ServerID,FolioCorte,COUNT_BIG(*) AS c FROM dbo.Finanzas_CortesCaja WHERE SistemaOrigen='MPRO' GROUP BY ServerID,FolioCorte HAVING COUNT_BIG(*)>1) d;"
+        },
+        {
+          "name": "mpro_sync_log_recent",
+          "sql": "SELECT TOP (30) FechaInicio,FechaFin,CONVERT(nvarchar(100),UnidadNegocioID) AS unidad_negocio_id,CONVERT(nvarchar(100),ServerID) AS server_id,SistemaOrigen,FechaDesde,FechaHasta,RegistrosLeidos,RegistrosInsertados,RegistrosActualizados,RegistrosOmitidos,RegistrosError,Estatus,TipoEjecucion FROM dbo.Finanzas_CortesCaja_SyncLog WHERE SistemaOrigen='MPRO' ORDER BY FechaInicio DESC;"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "MPRO audit R2 after schema-compatible retry"
+  },
+  "human_summary_language": "es"
+}
