@@ -1,0 +1,22 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"FINANZAS-PROYECCION-MES-HARDCODE-FIX-V2-20260908",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
+  "production_allowed":false,
+  "objective":"Eliminar el hardcode de Mayo en la proyección mensual. Un mes inválido no debe convertirse silenciosamente en mayo ni usar DATEFROMPARTS(...,5,...). La función SQL y su helper Python deben rechazar/propagar mes inválido de forma explícita, y el recalculador masivo debe dejar de fabricar días de venta con fallback fijo a mayo. No tocar Producción.",
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt","project":"V1.0","chat":"cxp-decision-analysis"},
+  "actions":[
+    {"type":"replace_text","path":"docs/sql/FN_CALCULAR_PROYECCION_MENSUAL.sql","expected_count":1,"old":"            WHEN 'diciembre'  THEN 12\n            ELSE 5 -- fallback al mes de Mayo\n        END;\n\n    -- Validar año seguro para evitar desbordamiento en DATEFROMPARTS","new":"            WHEN 'diciembre'  THEN 12\n            ELSE NULL\n        END;\n\n    -- Un mes inválido no se convierte silenciosamente en otro periodo.\n    IF @NumeroMes IS NULL\n        RETURN NULL;\n\n    -- Validar año seguro para evitar desbordamiento en DATEFROMPARTS"},
+    {"type":"replace_text","path":"backend/scripts/fn_calcular_proyeccion_mensual.py","expected_count":1,"old":"    num_mes = mes_map.get(mes.lower().strip(), 5)\n    _, total_dias = calendar.monthrange(anio, num_mes)","new":"    num_mes = mes_map.get(mes.lower().strip())\n    if num_mes is None:\n        return None\n    _, total_dias = calendar.monthrange(anio, num_mes)"},
+    {"type":"replace_text","path":"backend/scripts/update_proyeccion_con_funcion.py","expected_count":1,"old":"                    ISNULL(Dias_Con_Ventas, CASE WHEN Mes = 'Mayo' THEN 30.0 ELSE DAY(EOMONTH(DATEFROMPARTS(Anio, 5, 1))) END),","new":"                    Dias_Con_Ventas,"},
+    {"type":"write_file","path":"backend/tests/test_projection_month_no_fixed_may_fallback.py","content":"from pathlib import Path\nimport importlib.util\n\nROOT = Path(__file__).resolve().parents[2]\nSQL = ROOT / 'docs/sql/FN_CALCULAR_PROYECCION_MENSUAL.sql'\nHELPER = ROOT / 'backend/scripts/fn_calcular_proyeccion_mensual.py'\nUPDATER = ROOT / 'backend/scripts/update_proyeccion_con_funcion.py'\n\ndef test_sql_has_no_fixed_may_fallback():\n    src = SQL.read_text(encoding='utf-8')\n    assert 'ELSE 5 -- fallback al mes de Mayo' not in src\n    assert 'ELSE NULL' in src\n    assert 'IF @NumeroMes IS NULL' in src\n    assert 'RETURN NULL' in src\n\ndef test_python_helper_rejects_invalid_month_instead_of_may():\n    spec = importlib.util.spec_from_file_location('proj', HELPER)\n    mod = importlib.util.module_from_spec(spec)\n    assert spec and spec.loader\n    spec.loader.exec_module(mod)\n    assert mod.py_calcular_proyeccion_mensual(100, 10, 'mes-invalido', 2026) is None\n\ndef test_mass_updater_does_not_invent_may_days():\n    src = UPDATER.read_text(encoding='utf-8')\n    assert \"Mes = 'Mayo'\" not in src\n    assert 'DATEFROMPARTS(Anio, 5, 1)' not in src\n    assert 'Dias_Con_Ventas,' in src\n"}
+  ],
+  "checks":[
+    {"type":"git_diff_check"},
+    {"type":"py_compile","paths":["backend/scripts/fn_calcular_proyeccion_mensual.py","backend/scripts/update_proyeccion_con_funcion.py","backend/tests/test_projection_month_no_fixed_may_fallback.py"]},
+    {"type":"pytest","paths":["backend/tests/test_projection_month_no_fixed_may_fallback.py"]}
+  ],
+  "human_summary_language":"es"
+}
