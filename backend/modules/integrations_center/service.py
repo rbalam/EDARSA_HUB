@@ -45,6 +45,13 @@ def _bool(value, default: bool = False) -> bool:
     return bool(value)
 
 
+def _scope_sucursales(raw: Dict) -> List:
+    value = raw.get("sucursales")
+    if not isinstance(value, list):
+        value = raw.get("config")
+    return value if isinstance(value, list) else []
+
+
 def _normalize_connection(raw: Dict, source_contract: str) -> Dict:
     """Proyecta una conexion a contrato seguro y comun sin valores de secretos."""
     connection_type = (
@@ -74,6 +81,13 @@ def _normalize_connection(raw: Dict, source_contract: str) -> Dict:
         "username": raw.get("username"),
         "api_url": raw.get("api_url") or raw.get("url"),
         "sistema_version_id": raw.get("sistema_version_id"),
+        "scope": {
+            "empresa_id": raw.get("EmpresaID") or raw.get("empresa_id") or raw.get("servidor_padre_id"),
+            "unidad_negocio_ids": [],
+            "sucursales": _scope_sucursales(raw),
+            "source": "dbo.Servidores_Conexiones",
+            "unit_mapping_status": "NOT_EXPLICIT_IN_CONNECTION_CONTRACT",
+        },
         "secret_metadata": {
             "password_configured": _bool(raw.get("password_configured"), False),
             "api_key_configured": _bool(raw.get("api_key_configured"), api_key_marker == "***CONFIGURED***"),
@@ -168,7 +182,11 @@ async def list_connections(
         extra = enrichment.get(lookup_key, {})
         if not item.get("sistema_version_id"):
             item["sistema_version_id"] = extra.get("sistema_version_id")
-        item["empresa_id"] = extra.get("EmpresaID") or extra.get("empresa_id")
+        item["scope"]["empresa_id"] = (
+            extra.get("EmpresaID")
+            or extra.get("empresa_id")
+            or item["scope"].get("empresa_id")
+        )
         _attach_health(item, health_map.get(lookup_key))
 
     if connection_type:
