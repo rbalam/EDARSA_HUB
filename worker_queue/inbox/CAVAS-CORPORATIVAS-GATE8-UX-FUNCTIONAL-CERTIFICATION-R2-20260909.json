@@ -1,0 +1,32 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE8-UX-FUNCTIONAL-CERTIFICATION-R2-20260909",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "62bac89a45777479e05a68d8ffd6495ca149a20d",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Reemitir exclusivamente la certificacion Gate 8 UX funcional de Cavas Corporativas con job_id y rama de trabajo unicos, porque el intento anterior quedo bloqueado por colision de rama agent/worker ya existente. Reutilizar la implementacion ya integrada y certificada; validar frontend, rutas backend, RBAC y flujo evaluar/aplicar sin cambiar logica funcional ni tocar Produccion.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/CAVAS/CAVAS_CORPORATIVAS_GATE8_UX_FUNCTIONAL_CERTIFICATION_R2.md",
+      "content": "# Cavas Corporativas - Gate 8 UX Functional Certification R2\n\nRecertificacion formal de la UX funcional ya integrada.\n\n## Alcance\n- Pantalla CavasCorporativasDashboard.\n- Ruta frontend /cavas-corporativas.\n- Consumo backend /cavas/corporativas/evaluar y /cavas/corporativas/aplicar.\n- Contexto de unidad via useAccessContext.\n- RBAC backend autoritativo.\n- Estados de respuesta y errores cubiertos por tests de routes.\n- Sin fuentes paralelas, sin mocks productivos, sin Produccion.\n\n## Motivo de R2\nEl intento 01 quedo bloqueado antes de checks por colision de rama de trabajo ya existente. R2 usa identidad unica y no cambia logica funcional.\n\nLa certificacion requiere build frontend PASS y tests backend corporativos PASS.\n"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"},
+    {"type":"py_compile","paths":["backend/modules/cavas_corporativas/routes.py","backend/modules/cavas_corporativas/service.py","backend/modules/cavas_corporativas/repository.py","backend/modules/cavas_corporativas/domain.py"]},
+    {"type":"pytest","paths":["backend/tests/test_cavas_corporativas_routes.py","backend/tests/test_cavas_corporativas_service.py","backend/tests/test_cavas_corporativas_repository.py","backend/tests/test_cavas_corporativas_domain.py"]},
+    {"type":"frontend_build","directory":"frontend"}
+  ],
+  "constraints": [
+    "NO Production",
+    "NO new functional logic",
+    "NO parallel routes/services",
+    "NO RBAC bypass",
+    "Frontend consumes canonical backend only"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
