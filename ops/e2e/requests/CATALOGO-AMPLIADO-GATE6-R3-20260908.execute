@@ -1,0 +1,4 @@
+job=CATALOGO-AMPLIADO-GATE6-E2E-REAL-R3-20260908
+target=development
+production_allowed=false
+cleanup=required
