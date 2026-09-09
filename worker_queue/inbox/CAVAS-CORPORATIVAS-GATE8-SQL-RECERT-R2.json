@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE8-SQL-RECERT-R2",
+  "created_at_utc": "2026-09-09T05:03:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Recertificar exclusivamente el blocker SQL read-only de Gate 8 de Cavas Corporativas. No modificar desarrollo ni Production. Sustituir la consulta RBAC sobredimensionada por lectura directa del catalogo canonico Sistema_RBAC_Permisos para verificar exactamente los permisos de API ya certificados: cava_socios.VER y cava_socios.consumos.CREAR.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate8_rbac_catalog_schema",
+          "sql": "SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Sistema_RBAC_Permisos' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "gate8_cava_api_permissions_exact",
+          "sql": "SELECT permiso_id, codigo, nombre, modulo, activo FROM dbo.Sistema_RBAC_Permisos WHERE LOWER(codigo) IN ('cava_socios.ver','cava_socios.consumos.crear') ORDER BY LOWER(codigo)"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
