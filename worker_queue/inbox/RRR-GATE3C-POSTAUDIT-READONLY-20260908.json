@@ -1,0 +1,33 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"RRR-GATE3C-POSTAUDIT-READONLY-20260908",
+  "created_at_utc":"2026-09-09T05:47:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"c2c543210e47ba1171b91be40acf4fedbfe86187",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"GATE 3C: post-audit READ_ONLY independiente y posterior al workflow de migracion RRR Gate 3B. Abrir nueva conexion canonica HRLectura y certificar persistencia real de las siete tablas RRR, sus PK, FK/UQ/CK, tipos clave y ausencia de datos iniciales. No modificar repositorio funcional, SQL ni Produccion.",
+  "actions":[],
+  "acceptance":[
+    "READ_ONLY_SQL unicamente",
+    "actions=[]",
+    "production_touched=false",
+    "7 tablas RRR presentes",
+    "7 PK presentes",
+    "constraints FK/UQ/CK esperadas presentes",
+    "tipos clave externos e internos compatibles",
+    "7 tablas RRR siguen vacias",
+    "evidencia publicada como sql_readonly_evidence"
+  ],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"rrr_tables_present","sql":"SELECT t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE s.name='dbo' AND t.name IN ('RRR_Reglas','RRR_ReglasVersiones','RRR_Eventos','RRR_Beneficios','RRR_LedgerMovimientos','RRR_ScoreHistorial','RRR_RankingHistorial') ORDER BY t.name"},
+    {"name":"rrr_pk_constraints","sql":"SELECT t.name AS table_name,kc.name AS pk_name FROM sys.key_constraints kc JOIN sys.tables t ON t.object_id=kc.parent_object_id JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE s.name='dbo' AND kc.type='PK' AND t.name IN ('RRR_Reglas','RRR_ReglasVersiones','RRR_Eventos','RRR_Beneficios','RRR_LedgerMovimientos','RRR_ScoreHistorial','RRR_RankingHistorial') ORDER BY t.name"},
+    {"name":"rrr_all_constraints","sql":"SELECT t.name AS table_name,o.type AS object_type,o.name AS constraint_name FROM sys.objects o JOIN sys.tables t ON t.object_id=o.parent_object_id JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE s.name='dbo' AND t.name IN ('RRR_Reglas','RRR_ReglasVersiones','RRR_Eventos','RRR_Beneficios','RRR_LedgerMovimientos','RRR_ScoreHistorial','RRR_RankingHistorial') AND o.type IN ('PK','UQ','F','C') ORDER BY t.name,o.type,o.name"},
+    {"name":"rrr_key_column_types","sql":"SELECT t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND ((t.name='RRR_Eventos' AND c.name IN ('EventoID','ClienteID','EmpresaID','UnidadNegocioID','VentaID')) OR (t.name='RRR_LedgerMovimientos' AND c.name IN ('MovimientoID','ClienteID','EventoID','ReglaVersionID','BeneficioID','ReversalMovimientoID','UsuarioCreacionID')) OR (t.name='RRR_ScoreHistorial' AND c.name IN ('ScoreID','ClienteID')) OR (t.name='RRR_RankingHistorial' AND c.name IN ('RankingID','ClienteID','ScoreID')) OR (t.name='RRR_Reglas' AND c.name IN ('ReglaID','UsuarioCreacionID')) OR (t.name='RRR_ReglasVersiones' AND c.name IN ('ReglaVersionID','ReglaID','UsuarioCreacionID')) OR (t.name='RRR_Beneficios' AND c.name IN ('BeneficioID','UsuarioCreacionID'))) ORDER BY t.name,c.column_id"},
+    {"name":"rrr_row_counts","sql":"SELECT 'RRR_Reglas' table_name,COUNT_BIG(*) row_count FROM dbo.RRR_Reglas UNION ALL SELECT 'RRR_ReglasVersiones',COUNT_BIG(*) FROM dbo.RRR_ReglasVersiones UNION ALL SELECT 'RRR_Eventos',COUNT_BIG(*) FROM dbo.RRR_Eventos UNION ALL SELECT 'RRR_Beneficios',COUNT_BIG(*) FROM dbo.RRR_Beneficios UNION ALL SELECT 'RRR_LedgerMovimientos',COUNT_BIG(*) FROM dbo.RRR_LedgerMovimientos UNION ALL SELECT 'RRR_ScoreHistorial',COUNT_BIG(*) FROM dbo.RRR_ScoreHistorial UNION ALL SELECT 'RRR_RankingHistorial',COUNT_BIG(*) FROM dbo.RRR_RankingHistorial ORDER BY table_name"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
