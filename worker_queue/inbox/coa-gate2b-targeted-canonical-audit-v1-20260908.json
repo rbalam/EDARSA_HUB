@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate2b-targeted-canonical-audit-v1-20260908",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "8af51e20ccf558bc8bd6c40bce68543cb8f8103a",
+  "mode": "READ_ONLY_SQL",
+  "objective": "COA Gate 2B: profundizar exclusivamente por metadata SQL read-only sobre los objetos canónicos candidatos identificados en Gate 2A. Obtener estructura exacta, PK/FK, índices y relaciones para decidir REUTILIZAR/EXTENDER/CREAR sin DDL. Confirmar si ya existe algún agregado COA y distinguir patrones reutilizables de tablas de dominio específico. La comisión COA no es fija: 6.5% es solo una posible regla comercial; no reutilizar porcentajes TPV/finanzas como defaults COA. No consultar datos sensibles, secretos ni credenciales; no DDL/DML/EXEC/SELECT INTO; Producción=false.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA",
+    "chat": "coa-gate2b-targeted-canonical-audit-v1-20260908"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "coa_existing_objects_exact",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name LIKE 'COA%' ORDER BY s.name,o.name"
+        },
+        {
+          "name": "coa_target_columns_exact",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Cliente_Catalogo','Proveedor_Catalogo','Proveedor_Contactos','Proveedor_Documentos','CRM_Contratos','Compras_DocumentosFiscales','Compras_DocumentosFiscalesRelaciones','Finanzas_ComprobacionesDocumentos','Finanzas_Pagos','Finanzas_CxP_DecisionesPago','Finanzas_CxP_PagosOrigenQueue','Operativo_DocumentosGenerados','Operativo_Notificaciones_Log','CRM_Tareas','RH_Nomina','RH_Nomina_Detalle','RH_Nomina_Dispersion','RH_Nomina_Recibos','RH_Colaboradores_Expediente','RH_Colaboradores_Documentos','RH_Contratos','RH_Flujo_Nomina_Sucursal','RH_Cat_Sucursales','Usuario_Catalogo','Usuario_EmpresasAsignacion','Config_Asignaciones','CRM_Automation_Reglas','Comercial_ReglasPrecio','Comercial_CostosMargenesConfiguracion','Finanzas_PropinasConfig') ORDER BY t.name,c.column_id"
+        },
+        {
+          "name": "coa_target_foreign_keys_exact",
+          "sql": "SELECT sch1.name AS parent_schema,t1.name AS parent_table,c1.name AS parent_column,fk.name AS fk_name,sch2.name AS referenced_schema,t2.name AS referenced_table,c2.name AS referenced_column FROM sys.foreign_key_columns fkc JOIN sys.foreign_keys fk ON fk.object_id=fkc.constraint_object_id JOIN sys.tables t1 ON t1.object_id=fkc.parent_object_id JOIN sys.schemas sch1 ON sch1.schema_id=t1.schema_id JOIN sys.columns c1 ON c1.object_id=t1.object_id AND c1.column_id=fkc.parent_column_id JOIN sys.tables t2 ON t2.object_id=fkc.referenced_object_id JOIN sys.schemas sch2 ON sch2.schema_id=t2.schema_id JOIN sys.columns c2 ON c2.object_id=t2.object_id AND c2.column_id=fkc.referenced_column_id WHERE t1.name IN ('Cliente_Catalogo','Proveedor_Catalogo','Proveedor_Contactos','Proveedor_Documentos','CRM_Contratos','Compras_DocumentosFiscales','Compras_DocumentosFiscalesRelaciones','Finanzas_ComprobacionesDocumentos','Finanzas_Pagos','Finanzas_CxP_DecisionesPago','Finanzas_CxP_PagosOrigenQueue','Operativo_DocumentosGenerados','Operativo_Notificaciones_Log','CRM_Tareas','RH_Nomina','RH_Nomina_Detalle','RH_Nomina_Dispersion','RH_Nomina_Recibos','RH_Colaboradores_Expediente','RH_Colaboradores_Documentos','RH_Contratos','RH_Flujo_Nomina_Sucursal','RH_Cat_Sucursales','Usuario_Catalogo','Usuario_EmpresasAsignacion','Config_Asignaciones','CRM_Automation_Reglas','Comercial_ReglasPrecio','Comercial_CostosMargenesConfiguracion','Finanzas_PropinasConfig') OR t2.name IN ('Cliente_Catalogo','Proveedor_Catalogo','CRM_Contratos','Compras_DocumentosFiscales','Finanzas_Pagos','RH_Nomina','RH_Colaboradores_Expediente','RH_Cat_Sucursales','Usuario_Catalogo') ORDER BY t1.name,fk.name"
+        },
+        {
+          "name": "coa_target_primary_keys_exact",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,kc.name AS pk_name,c.name AS column_name,ic.key_ordinal FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.key_constraints kc ON kc.parent_object_id=t.object_id AND kc.type='PK' JOIN sys.index_columns ic ON ic.object_id=t.object_id AND ic.index_id=kc.unique_index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE t.name IN ('Cliente_Catalogo','Proveedor_Catalogo','CRM_Contratos','Compras_DocumentosFiscales','Compras_DocumentosFiscalesRelaciones','Finanzas_ComprobacionesDocumentos','Finanzas_Pagos','Finanzas_CxP_DecisionesPago','Finanzas_CxP_PagosOrigenQueue','Operativo_DocumentosGenerados','Operativo_Notificaciones_Log','CRM_Tareas','RH_Nomina','RH_Nomina_Detalle','RH_Nomina_Dispersion','RH_Nomina_Recibos','RH_Colaboradores_Expediente','RH_Colaboradores_Documentos','RH_Contratos','RH_Flujo_Nomina_Sucursal','RH_Cat_Sucursales','Usuario_Catalogo','Usuario_EmpresasAsignacion','Config_Asignaciones') ORDER BY t.name,ic.key_ordinal"
+        },
+        {
+          "name": "coa_company_unit_relationship_targets",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,fk.name AS fk_name,rs.name AS referenced_schema,rt.name AS referenced_table,rc.name AS referenced_column FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id LEFT JOIN sys.foreign_key_columns fkc ON fkc.parent_object_id=t.object_id AND fkc.parent_column_id=c.column_id LEFT JOIN sys.foreign_keys fk ON fk.object_id=fkc.constraint_object_id LEFT JOIN sys.tables rt ON rt.object_id=fkc.referenced_object_id LEFT JOIN sys.schemas rs ON rs.schema_id=rt.schema_id LEFT JOIN sys.columns rc ON rc.object_id=rt.object_id AND rc.column_id=fkc.referenced_column_id WHERE c.name IN ('EmpresaID','UnidadNegocioID','SucursalID','SucursalFiscalID','ClienteID','ProveedorID','UsuarioID') AND t.name IN ('Usuario_EmpresasAsignacion','Config_Asignaciones','CRM_Contratos','Compras_DocumentosFiscales','Finanzas_CxP_DecisionesPago','Finanzas_CxP_PagosOrigenQueue','RH_Flujo_Nomina_Sucursal','RH_Nomina','Proveedor_Documentos') ORDER BY t.name,c.name"
+        },
+        {
+          "name": "coa_target_row_counts_metadata",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,SUM(CASE WHEN p.index_id IN (0,1) THEN p.rows ELSE 0 END) AS approx_rows FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.partitions p ON p.object_id=t.object_id WHERE t.name IN ('Cliente_Catalogo','Proveedor_Catalogo','CRM_Contratos','Compras_DocumentosFiscales','Compras_DocumentosFiscalesRelaciones','Finanzas_ComprobacionesDocumentos','Finanzas_Pagos','Finanzas_CxP_DecisionesPago','Finanzas_CxP_PagosOrigenQueue','Operativo_DocumentosGenerados','Operativo_Notificaciones_Log','CRM_Tareas','RH_Nomina','RH_Nomina_Detalle','RH_Nomina_Dispersion','RH_Nomina_Recibos','RH_Colaboradores_Expediente','RH_Colaboradores_Documentos','RH_Contratos','RH_Flujo_Nomina_Sucursal','RH_Cat_Sucursales','Usuario_Catalogo','Usuario_EmpresasAsignacion','Config_Asignaciones','CRM_Automation_Reglas','Comercial_ReglasPrecio','Comercial_CostosMargenesConfiguracion','Finanzas_PropinasConfig') GROUP BY s.name,t.name ORDER BY t.name"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
