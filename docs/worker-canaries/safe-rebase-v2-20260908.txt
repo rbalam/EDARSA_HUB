@@ -1,0 +1,2 @@
+EDARSAHUB SAFE_REBASE real canary v2
+Expected behavior: stale ancestor base + unrelated intervening changes => SAFE_REBASE, quality gate PASS, integrated, production untouched.
