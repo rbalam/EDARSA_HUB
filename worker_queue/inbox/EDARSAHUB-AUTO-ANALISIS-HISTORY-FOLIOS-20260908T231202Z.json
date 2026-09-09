@@ -1,0 +1,13 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-AUTO-ANALISIS-HISTORY-FOLIOS-20260908T231202Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Auditar historial de folios procesados por automatizacion de inventarios con una consulta simple de solo lectura. Sin cambios ni Produccion.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[{"name":"folios_history","sql":"SELECT COUNT_BIG(*) AS total_folios, SUM(CASE WHEN estado='EXITOSO' THEN 1 ELSE 0 END) AS exitosos, SUM(CASE WHEN estado='EN_PROCESO' THEN 1 ELSE 0 END) AS en_proceso, SUM(CASE WHEN estado='ERROR' THEN 1 ELSE 0 END) AS errores, MAX(fecha_procesado) AS ultima_fecha_procesado FROM dbo.automatizacion_inventarios_folios_procesados"}]}],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
