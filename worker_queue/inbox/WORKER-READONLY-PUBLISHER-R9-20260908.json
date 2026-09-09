@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "WORKER-READONLY-PUBLISHER-R9-20260908",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b2e211eb1115ea4d249667a54bee9aeea1e07a8a",
+  "production_allowed": false,
+  "mode": "DETERMINISTIC_PATCH",
+  "objective": "Incluir CERTIFIED_READ_ONLY entre las certificaciones terminales que el result publisher puede volver a publicar cuando el resultado local mejora respecto del marcador anterior. No ejecutar SQL ni tocar Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "expected_count": 1,
+      "old": "    if desired not in {\"CERTIFIED\", \"CERTIFIED_OPERATIONAL\"}:\n        return True",
+      "new": "    if desired not in {\"CERTIFIED\", \"CERTIFIED_OPERATIONAL\", \"CERTIFIED_READ_ONLY\"}:\n        return True"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["tools/mirror_sync/universal_job_result_publisher.py"]}
+  ],
+  "constraints": [
+    "NO Production",
+    "NO SQL execution",
+    "NO dispatcher modification",
+    "NO schema changes"
+  ],
+  "human_summary_language": "es"
+}
