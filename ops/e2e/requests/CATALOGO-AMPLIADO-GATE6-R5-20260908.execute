@@ -1,0 +1,4 @@
+job=CATALOGO-AMPLIADO-GATE6-E2E-WORKFLOW-R5-20260908
+target=development
+production_allowed=false
+cleanup=required
