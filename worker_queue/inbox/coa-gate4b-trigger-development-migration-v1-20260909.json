@@ -1,0 +1,26 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate4b-trigger-development-migration-v1-20260909",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "59f52d06942148f0c9fb2f499e598ebcd563247c",
+  "objective": "COA Gate 4B: crear exclusivamente el trigger ops/migrations/requests/COA-CORE-20260909.execute para disparar el workflow de migracion fisica controlada en Development ya certificado en Gate 4A. No modificar migracion, rollback, workflow ni ningun otro archivo. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA",
+    "chat": "coa-gate4b-trigger-development-migration-v1-20260909"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "ops/migrations/requests/COA-CORE-20260909.execute",
+      "content": "COA_CORE_DEVELOPMENT_MIGRATION\nGATE=4B\nSOURCE_GATE4A_SHA=59f52d06942148f0c9fb2f499e598ebcd563247c\nPRODUCTION=false\n"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
