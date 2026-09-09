@@ -73,6 +73,8 @@ const CentroControl = () => {
   // Estado de notificaciones (TODO: mover a hook dedicado)
   const [destinatarios, setDestinatarios] = useState([]);
   const [notificacionesConfig, setNotificacionesConfig] = useState(null);
+  const [modulosBlindados, setModulosBlindados] = useState([]);
+  const [blindajeStatus, setBlindajeStatus] = useState(null);
   
   // Estado para formulario de nuevo destinatario
   const [nuevoDestinatario, setNuevoDestinatario] = useState({
@@ -189,6 +191,18 @@ const CentroControl = () => {
     }
   }, []);
 
+  const fetchBlindaje = useCallback(async () => {
+    try {
+      const response = await api.get('/centro-control/blindaje/modulos');
+      setModulosBlindados(response.data.modulos || []);
+      setBlindajeStatus(response.data.status || null);
+    } catch (err) {
+      logger.error('Error cargando blindaje:', err);
+      setModulosBlindados([]);
+      setBlindajeStatus('ERROR');
+    }
+  }, []);
+
   // ============================================================================
   // FUNCIONES DE GESTIÓN DE DESTINATARIOS
   // ============================================================================
@@ -280,6 +294,9 @@ const CentroControl = () => {
       fetchDestinatarios();
       fetchNotificacionesConfig();
     }
+    if (activeTab === 'blindaje') {
+      fetchBlindaje();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
@@ -294,24 +311,7 @@ const CentroControl = () => {
   const fuentesOnline = fuentes.filter(f => f.estado === 'healthy').length;
   const fuentesTotal = fuentes.length;
 
-  // ============================================================================
-  // MOCK DATA PARA ENDPOINTS FALTANTES
-  // ============================================================================
-  
-  /**
-   * MOCK: Módulos blindados
-   * TODO: Crear endpoint GET /api/centro-control/blindaje/modulos
-   */
-  const modulosBlindados = [
-    { id: 'tablero_ejecutivo', nombre: 'Tablero Ejecutivo', fecha_cierre: '2026-04-19', documento: 'CIERRE_Y_BLINDAJE_TABLERO_EJECUTIVO.md' },
-    { id: 'auditoria_compras', nombre: 'Auditoría de Compras', fecha_cierre: '2026-04-19', documento: 'CIERRE_Y_BLINDAJE_AUDITORIA_COMPRAS.md' },
-    { id: 'operaciones_analisis', nombre: 'Operaciones / Análisis', fecha_cierre: '2026-04-19', documento: 'CIERRE_Y_BLINDAJE_OPERACIONES_ANALISIS.md' }
-  ];
-
-  /**
-   * MOCK: Cambios recientes
-   * TODO: Crear endpoint GET /api/centro-control/cambios
-   */
+  // Cambios recientes se derivan de la bitácora SQL ya cargada.
   const cambiosRecientes = bitacora.filter(b => ['deploy', 'cambio_codigo', 'hotfix', 'config'].includes(b.tipo));
 
   // ============================================================================
@@ -1342,6 +1342,13 @@ const CentroControl = () => {
               <CardDescription>Módulos congelados funcionalmente - cambios requieren autorización</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {modulosBlindados.length === 0 && (
+                <EstadoVacio
+                  icon={Lock}
+                  titulo="Sin catálogo SQL canónico de blindaje"
+                  descripcion={blindajeStatus === 'NO_CANONICAL_SQL_REGISTRY' ? 'No se muestran datos simulados. Falta registrar el catálogo canónico en SQL.' : 'No hay módulos de blindaje disponibles.'}
+                />
+              )}
               {modulosBlindados.map((modulo, idx) => (
                 <div key={modulo.nombre || `blindado-${idx}`} className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
                   <div className="flex items-center justify-between mb-2">

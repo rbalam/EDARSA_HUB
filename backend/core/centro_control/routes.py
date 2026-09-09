@@ -86,6 +86,7 @@ from core.centro_control.recipients_manager import (
     delete_recipient,
     get_recipients_summary
 )
+from core.centro_control import sql_store as cc_store
 
 logger = logging.getLogger(__name__)
 
@@ -302,79 +303,25 @@ class SchedulerJobRunRequest(BaseModel):
     parametros: Optional[Dict[str, Any]] = None
 
 # ============================================================================
-# STORAGE EN MEMORIA (para historial de la sesión)
+# PERSISTENCIA SQL CANÓNICA - Gate 2 P2B
 # ============================================================================
 
-_historial_eventos: List[Dict[str, Any]] = []
-_alertas_activas: List[Dict[str, Any]] = []
-_bitacora_cambios: List[Dict[str, Any]] = []
-_metricas_estabilidad: Dict[str, Any] = {
-    "uptime_horas": 0,
-    "checks_ejecutados": 0,
-    "checks_exitosos": 0,
-    "alertas_generadas": 0,
-    "alertas_reconocidas": 0,
-    "ultima_regresion": None,
-    "inicio_monitoreo": datetime.now(timezone.utc).isoformat()
-}
-_ultimo_check_regresion: Optional[datetime] = None
-_ultimo_reporte_salud: Optional[Dict[str, Any]] = None
-
 def _registrar_evento(tipo: str, modulo: str, mensaje: str, severidad: str = "info", data: Dict = None):
-    """Registra un evento en el historial"""
-    global _historial_eventos
-    evento = {
-        "id": f"evt_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')[:18]}",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "tipo": tipo,
-        "modulo": modulo,
-        "mensaje": mensaje,
-        "severidad": severidad,
-        "data": data or {}
-    }
-    _historial_eventos.insert(0, evento)
-    
-    # Mantener solo últimos 200 eventos
-    if len(_historial_eventos) > 200:
-        _historial_eventos = _historial_eventos[:200]
-    
-    return evento
+    return cc_store.record_event(tipo, modulo, mensaje, severidad, data)
 
 def _crear_alerta(titulo: str, modulo: str, severidad: str, detalle: str):
-    """Crea una alerta activa y notifica via WebSocket, Email y WhatsApp si es crítica"""
-    global _alertas_activas
-    alerta = {
-        "id": f"alrt_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')[:18]}",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "titulo": titulo,
-        "modulo": modulo,
-        "severidad": severidad,
-        "detalle": detalle,
-        "reconocida": False,
-        "reconocida_por": None,
-        "reconocida_at": None
-    }
-    _alertas_activas.insert(0, alerta)
-    
-    # Mantener solo últimas 50 alertas
-    if len(_alertas_activas) > 50:
-        _alertas_activas = _alertas_activas[:50]
-    
-    # Notificar via WebSocket, Email y WhatsApp (async en background)
-    import asyncio
+    """Persiste alerta en SQL y conserva notificación en tiempo real."""
+    alerta = cc_store.create_alert(titulo, modulo, severidad, detalle)
     try:
         manager = get_notification_manager()
         if severidad == "critical":
             asyncio.create_task(manager.broadcast_alerta_critica(alerta))
-            # Enviar email para alertas críticas
             asyncio.create_task(_enviar_email_alerta_critica(alerta))
-            # Enviar WhatsApp para alertas críticas
             asyncio.create_task(_enviar_whatsapp_alerta_critica(alerta))
         else:
             asyncio.create_task(manager.broadcast_alerta_nueva(alerta))
     except Exception as e:
         logger.warning(f"[ALERTA] No se pudo notificar via WS: {e}")
-    
     return alerta
 
 
@@ -419,8 +366,6 @@ async def obtener_salud_sistema(current_user: Dict = Depends(get_current_user)):
     - Regresiones recientes
     - Eventos recientes
     """
-    global _ultimo_reporte_salud
-    
     logger.info(f"[CENTRO CONTROL] Usuario {current_user.get('email')} solicitó reporte de salud")
     
     try:
@@ -435,13 +380,10 @@ async def obtener_salud_sistema(current_user: Dict = Depends(get_current_user)):
             severidad="info"
         )
         
-        # Guardar último reporte
-        _ultimo_reporte_salud = reporte
-        
-        # Agregar metadatos adicionales
+        # Agregar metadatos adicionales desde SQL canónico
         reporte["centro_control"] = {
             "version": "1.0.0",
-            "alertas_activas": len([a for a in _alertas_activas if not a.get("reconocida")]),
+            "alertas_activas": cc_store.active_alert_count(),
             "ultimo_check": datetime.now(timezone.utc).isoformat()
         }
         
@@ -473,7 +415,7 @@ async def obtener_resumen_ejecutivo(current_user: Dict = Depends(get_current_use
         resumen = create_health_summary()
         
         # Agregar alertas activas
-        alertas_no_reconocidas = [a for a in _alertas_activas if not a.get("reconocida")]
+        alertas_no_reconocidas = cc_store.list_alerts(active_only=True, limit=100)
         resumen["alertas"] = {
             "activas": len(alertas_no_reconocidas),
             "criticas": len([a for a in alertas_no_reconocidas if a.get("severidad") == "critical"]),
@@ -504,8 +446,6 @@ async def ejecutar_checks_regresion(
     - Comparativos no disponibles
     - ConnectionResolver no operativo
     """
-    global _ultimo_check_regresion
-    
     logger.info(f"[CENTRO CONTROL] Usuario {current_user.get('email')} ejecutó checks de regresión")
     
     try:
@@ -545,9 +485,7 @@ async def ejecutar_checks_regresion(
                             detalle=result.message
                         )
         
-        # Actualizar timestamp
-        _ultimo_check_regresion = datetime.now(timezone.utc)
-        
+        # Registrar evento persistente en SQL
         # Registrar evento
         _registrar_evento(
             tipo="regression_check",
@@ -659,14 +597,10 @@ async def obtener_alertas(
     - Una fuente de datos cae
     - Un módulo entra en estado degradado/crítico
     """
-    if solo_activas:
-        alertas = [a for a in _alertas_activas if not a.get("reconocida")]
-    else:
-        alertas = _alertas_activas
-    
+    alertas = cc_store.list_alerts(active_only=solo_activas, limit=limite)
     return {
         "total": len(alertas),
-        "alertas": alertas[:limite]
+        "alertas": alertas
     }
 
 
@@ -678,26 +612,17 @@ async def reconocer_alerta(
     """
     Reconoce (acknowledge) una alerta para indicar que fue revisada.
     """
-    global _alertas_activas
-    
-    for alerta in _alertas_activas:
-        if alerta["id"] == request.alert_id:
-            alerta["reconocida"] = True
-            alerta["reconocida_por"] = current_user.get("email")
-            alerta["reconocida_at"] = datetime.now(timezone.utc).isoformat()
-            alerta["comentario_ack"] = request.comentario
-            
-            _registrar_evento(
-                tipo="alert_acknowledged",
-                modulo=alerta.get("modulo", "sistema"),
-                mensaje=f"Alerta reconocida: {alerta.get('titulo')}",
-                severidad="info",
-                data={"alert_id": request.alert_id, "usuario": current_user.get("email")}
-            )
-            
-            return {"success": True, "message": "Alerta reconocida", "alerta": alerta}
-    
-    raise HTTPException(status_code=404, detail="Alerta no encontrada")
+    alerta = cc_store.acknowledge_alert(request.alert_id, current_user.get("email"), request.comentario)
+    if not alerta:
+        raise HTTPException(status_code=404, detail="Alerta no encontrada")
+    _registrar_evento(
+        tipo="alert_acknowledged",
+        modulo=alerta.get("modulo", "sistema"),
+        mensaje=f"Alerta reconocida: {alerta.get('titulo')}",
+        severidad="info",
+        data={"alert_id": request.alert_id, "usuario": current_user.get("email")}
+    )
+    return {"success": True, "message": "Alerta reconocida", "alerta": alerta}
 
 # ============================================================================
 # ENDPOINTS: HISTORIAL
@@ -720,17 +645,10 @@ async def obtener_historial(
     - alert_acknowledged: Alerta reconocida
     - error: Errores del sistema
     """
-    eventos = _historial_eventos
-    
-    if tipo:
-        eventos = [e for e in eventos if e.get("tipo") == tipo]
-    
-    if modulo:
-        eventos = [e for e in eventos if e.get("modulo") == modulo]
-    
+    eventos = cc_store.list_events(limit=limite, tipo=tipo, modulo=modulo)
     return {
         "total": len(eventos),
-        "eventos": eventos[:limite]
+        "eventos": eventos
     }
 
 # ============================================================================
@@ -781,9 +699,9 @@ async def ping_centro_control():
         "service": "CENTRO DE CONTROL EDARSA",
         "version": "2.0.0",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "alertas_activas": len([a for a in _alertas_activas if not a.get("reconocida")]),
-        "ultimo_check_salud": _ultimo_reporte_salud.get("generated_at") if _ultimo_reporte_salud else None,
-        "ultimo_check_regresion": _ultimo_check_regresion.isoformat() if _ultimo_check_regresion else None
+        "alertas_activas": cc_store.active_alert_count(),
+        "ultimo_check_salud": cc_store.latest_event_timestamp("health_check"),
+        "ultimo_check_regresion": cc_store.latest_event_timestamp("regression_check")
     }
 
 # ============================================================================
@@ -803,14 +721,12 @@ async def obtener_estado_general(current_user: Dict = Depends(get_current_user))
     - Métricas de estabilidad
     - Últimos cambios en bitácora
     """
-    global _metricas_estabilidad
-    
     try:
         # 1. Salud del sistema
         health_summary = create_health_summary()
         
-        # 2. Alertas
-        alertas_activas = [a for a in _alertas_activas if not a.get("reconocida")]
+        # 2. Alertas desde SQL canónico
+        alertas_activas = cc_store.list_alerts(active_only=True, limit=100)
         
         # 3. Jobs (si scheduler disponible)
         jobs_status = {"running": False, "jobs_activos": 0, "proxima_ejecucion": None}
@@ -823,9 +739,9 @@ async def obtener_estado_general(current_user: Dict = Depends(get_current_user))
         except Exception:
             pass
         
-        # 4. Actualizar métricas
-        inicio = datetime.fromisoformat(_metricas_estabilidad["inicio_monitoreo"].replace('Z', '+00:00'))
-        _metricas_estabilidad["uptime_horas"] = round((datetime.now(timezone.utc) - inicio).total_seconds() / 3600, 2)
+        # 4. Métricas derivadas de evidencia SQL persistente
+        metricas_sql = cc_store.metrics()
+        bitacora_sql = cc_store.bitacora_summary()
         
         return {
             "centro_control": "CENTRO DE CONTROL EDARSA",
@@ -845,14 +761,11 @@ async def obtener_estado_general(current_user: Dict = Depends(get_current_user))
                 },
                 "regresiones": {
                     "ultimas_24h": health_summary.get("kpis", {}).get("regressions_24h", 0),
-                    "ultimo_check": _ultimo_check_regresion.isoformat() if _ultimo_check_regresion else None
+                    "ultimo_check": cc_store.latest_event_timestamp("regression_check")
                 },
                 "jobs": jobs_status,
-                "bitacora": {
-                    "entradas_recientes": len(_bitacora_cambios),
-                    "ultimo_cambio": _bitacora_cambios[0]["timestamp"] if _bitacora_cambios else None
-                },
-                "metricas": _metricas_estabilidad
+                "bitacora": bitacora_sql,
+                "metricas": metricas_sql
             },
             "modulos": health_summary.get("modules_summary", []),
             "fuentes": health_summary.get("sources_summary", [])
@@ -1183,17 +1096,10 @@ async def obtener_bitacora(
     - Incidentes y resoluciones
     - Hotfixes
     """
-    entradas = _bitacora_cambios
-    
-    if tipo:
-        entradas = [e for e in entradas if e.get("tipo") == tipo]
-    
-    if modulo:
-        entradas = [e for e in entradas if e.get("modulo") == modulo]
-    
+    entradas = cc_store.list_bitacora(limit=limite, tipo=tipo, modulo=modulo)
     return {
         "total": len(entradas),
-        "entradas": entradas[:limite],
+        "entradas": entradas,
         "tipos_disponibles": ["cambio_codigo", "deploy", "config", "incidente", "hotfix"]
     }
 
@@ -1213,8 +1119,6 @@ async def registrar_cambio_bitacora(
     - incidente: Incidente detectado
     - hotfix: Corrección urgente
     """
-    global _bitacora_cambios
-    
     tipos_validos = ["cambio_codigo", "deploy", "config", "incidente", "hotfix"]
     if request.tipo not in tipos_validos:
         raise HTTPException(
@@ -1222,23 +1126,10 @@ async def registrar_cambio_bitacora(
             detail=f"Tipo inválido. Opciones: {tipos_validos}"
         )
     
-    entrada = {
-        "id": f"btc_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')[:18]}",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "tipo": request.tipo,
-        "modulo": request.modulo,
-        "descripcion": request.descripcion,
-        "impacto": request.impacto,
-        "autor": request.autor or current_user.get("email"),
-        "referencias": request.referencias or [],
-        "registrado_por": current_user.get("email")
-    }
-    
-    _bitacora_cambios.insert(0, entrada)
-    
-    # Mantener solo últimas 500 entradas
-    if len(_bitacora_cambios) > 500:
-        _bitacora_cambios = _bitacora_cambios[:500]
+    entrada = cc_store.record_bitacora(
+        request.tipo, request.modulo, request.descripcion, request.impacto,
+        request.autor or current_user.get("email"), request.referencias or [], current_user.get("email")
+    )
     
     # Registrar también en historial de eventos
     _registrar_evento(
@@ -1267,40 +1158,11 @@ async def obtener_metricas_estabilidad(current_user: Dict = Depends(get_current_
     - Última regresión detectada
     - Score de estabilidad
     """
-    global _metricas_estabilidad
-    
-    # Actualizar uptime
-    inicio = datetime.fromisoformat(_metricas_estabilidad["inicio_monitoreo"].replace('Z', '+00:00'))
-    _metricas_estabilidad["uptime_horas"] = round((datetime.now(timezone.utc) - inicio).total_seconds() / 3600, 2)
-    
-    # Calcular tasa de éxito
-    total_checks = _metricas_estabilidad["checks_ejecutados"]
-    exitosos = _metricas_estabilidad["checks_exitosos"]
-    tasa_exito = (exitosos / total_checks * 100) if total_checks > 0 else 100.0
-    
-    # Calcular score de estabilidad (0-100)
-    # Factores: tasa de éxito (40%), alertas reconocidas (30%), uptime (30%)
-    alertas_gen = _metricas_estabilidad["alertas_generadas"]
-    alertas_ack = _metricas_estabilidad["alertas_reconocidas"]
-    tasa_ack = (alertas_ack / alertas_gen * 100) if alertas_gen > 0 else 100.0
-    
-    uptime_score = min(_metricas_estabilidad["uptime_horas"] / 24 * 100, 100)  # Max 100 después de 24h
-    
-    score_estabilidad = round(
-        (tasa_exito * 0.4) + 
-        (tasa_ack * 0.3) + 
-        (uptime_score * 0.3),
-        1
-    )
-    
+    metricas_sql = cc_store.metrics()
+    score_estabilidad = metricas_sql.get("score_estabilidad", 0)
     return {
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "metricas": {
-            **_metricas_estabilidad,
-            "tasa_exito_checks": round(tasa_exito, 1),
-            "tasa_alertas_reconocidas": round(tasa_ack, 1),
-            "score_estabilidad": score_estabilidad
-        },
+        "metricas": metricas_sql,
         "interpretacion": {
             "score_estabilidad": "excelente" if score_estabilidad >= 90 else (
                 "bueno" if score_estabilidad >= 70 else (
@@ -1311,6 +1173,15 @@ async def obtener_metricas_estabilidad(current_user: Dict = Depends(get_current_
         }
     }
 
+
+# ============================================================================
+# ENDPOINTS: BLINDAJE - VERDAD SQL, SIN MOCK
+# ============================================================================
+
+@router.get("/blindaje/modulos")
+async def obtener_modulos_blindados(current_user: Dict = Depends(get_current_user)):
+    """No inventa módulos: reporta el estado real del registro SQL de blindaje."""
+    return cc_store.blindaje_registry_status()
 
 # ============================================================================
 # ENDPOINTS: WEBSOCKET PARA NOTIFICACIONES EN TIEMPO REAL
