@@ -1,0 +1,119 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-CANONICAL-FIX-R3-20260908T200900Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Corregir y blindar Operaciones > Analisis para que almacenes e inventarios fisicos consuman exclusivamente EDARSAHUB SQL canonico por unidad de negocio. Almacenes deben salir de dbo.Inventario_Almacenes relacionados con dbo.Compras_Inventarios_Fisicos_Sync y dbo.Unidades_Negocio; inventarios deben usar /compras/inventarios-fisicos/{unidad_id}. Eliminar del flujo de Reportes los endpoints legacy /servers/{server_id}/almacenes y /servers/{server_id}/inventarios. Evitar que errores transitorios borren listas validas ya cargadas. Agregar pruebas anti-regresion. No POS LIVE, no Mongo, no hardcodes, no Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/configuracion/repositories/config_asignaciones_repository.py",
+      "expected_count": 1,
+      "old": "    async def listar_almacenes(self, unidad_negocio_pk: str) -> List[Dict]:\n        \"\"\"\n        Lista almacenes disponibles para una unidad de negocio.\n        Retorna opción \"(Todos)\" + almacenes del servidor.\n        \"\"\"\n        resultado = [{\"id\": \"\", \"nombre\": \"(Todos los almacenes)\"}]\n        \n        # Intentar obtener almacenes desde SQL Server (tablas del servidor)\n        try:\n            # Buscar el server_id asociado a la unidad\n            server_query = \"\"\"\n                SELECT CAST(id AS VARCHAR(50)) as id, host, db_name\n                FROM Servidores_Conexiones\n                WHERE activo = 1 AND (\n                    CAST(id AS VARCHAR(50)) = %s OR nombre = %s\n                )\n            \"\"\"\n            servers = await _execute_sql_async(server_query, (unidad_negocio_pk, unidad_negocio_pk))\n            \n            if servers:\n                # Por ahora retornar lista vacía de almacenes específicos\n                # La implementación completa requeriría consultar al servidor remoto\n                pass\n        except Exception as e:\n            logger.debug(f\"Error listando almacenes: {e}\")\n        \n        return resultado\n",
+      "new": "    async def listar_almacenes(self, unidad_negocio_pk: str) -> List[Dict]:\n        \"\"\"\n        Lista almacenes canónicos disponibles para una unidad de negocio.\n\n        Fuente única: EDARSAHUB SQL. La relación se obtiene por el historial\n        canónico de inventarios físicos de la unidad y se valida contra el\n        catálogo canónico dbo.Inventario_Almacenes. No consulta el POS LIVE.\n        \"\"\"\n        resultado = [{\"id\": \"\", \"nombre\": \"(Todos los almacenes)\", \"source\": \"EDARSAHUB_SQL\"}]\n\n        query = \"\"\"\n            SELECT DISTINCT\n                LTRIM(RTRIM(i.almacen_id)) AS id,\n                LTRIM(RTRIM(i.almacen_id)) AS almacen_id,\n                COALESCE(\n                    NULLIF(LTRIM(RTRIM(a.NombreAlmacen)), ''),\n                    NULLIF(LTRIM(RTRIM(i.almacen)), ''),\n                    LTRIM(RTRIM(i.almacen_id))\n                ) AS nombre,\n                COALESCE(\n                    NULLIF(LTRIM(RTRIM(a.NombreAlmacen)), ''),\n                    NULLIF(LTRIM(RTRIM(i.almacen)), ''),\n                    LTRIM(RTRIM(i.almacen_id))\n                ) AS almacen,\n                a.TipoAlmacen AS tipo_almacen,\n                'EDARSAHUB_SQL' AS source\n            FROM dbo.Unidades_Negocio u\n            INNER JOIN dbo.Compras_Inventarios_Fisicos_Sync i\n                ON i.unidad_negocio_id = CAST(u.id AS VARCHAR(50))\n            INNER JOIN dbo.Inventario_Almacenes a\n                ON LTRIM(RTRIM(a.CodigoAlmacen)) = LTRIM(RTRIM(i.almacen_id))\n               AND UPPER(LTRIM(RTRIM(a.NombreAlmacen))) = UPPER(LTRIM(RTRIM(i.almacen)))\n            WHERE CAST(u.id AS VARCHAR(50)) = %s\n              AND ISNULL(u.activo, 1) = 1\n              AND ISNULL(a.Activo, 1) = 1\n              AND i.sync_status IN ('ACTIVE', 'REPLACED')\n              AND NULLIF(LTRIM(RTRIM(i.almacen_id)), '') IS NOT NULL\n            ORDER BY nombre\n        \"\"\"\n\n        try:\n            rows = await _execute_sql_async(query, (unidad_negocio_pk,))\n            resultado.extend(rows)\n        except Exception as e:\n            logger.error(f\"[CONFIG_ASIG] Error listando almacenes canónicos: {e}\")\n\n        return resultado\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "  // Track previous server to detect changes\n  const prevServerIdRef = useRef(filters.server_id);\n  \n  useEffect(() => {\n    if (filters.server_id) {\n      // Si cambió el servidor, limpiar estados dependientes\n      if (prevServerIdRef.current && prevServerIdRef.current !== filters.server_id) {\n",
+      "new": "  // Track previous canonical business unit to detect scope changes.\n  const prevUnidadRef = useRef(selectedUnidad);\n  \n  useEffect(() => {\n    if (filters.server_id && selectedUnidad) {\n      // Si cambió la unidad canónica, limpiar estados dependientes aunque comparta servidor.\n      if (prevUnidadRef.current && prevUnidadRef.current !== selectedUnidad) {\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "      prevServerIdRef.current = filters.server_id;\n",
+      "new": "      prevUnidadRef.current = selectedUnidad;\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "  }, [filters.server_id, servers, filters.sucursal_id]);\n\n  // Cargar almacenes para SoftRestaurant desde EDARSAHUB SQL canónico\n",
+      "new": "  }, [selectedUnidad, filters.server_id, servers, filters.sucursal_id]);\n\n  // Cargar almacenes para SoftRestaurant desde EDARSAHUB SQL canónico\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "      const response = await api.get(`/servers/${filters.server_id}/almacenes`);\n      const rows = Array.isArray(response.data)\n        ? response.data\n        : Array.isArray(response.data?.data)\n          ? response.data.data\n          : [];\n",
+      "new": "      if (!selectedUnidad) return;\n      const response = await api.get(`/config-asignaciones/almacenes/${selectedUnidad}`);\n      const rows = Array.isArray(response.data?.data) ? response.data.data : [];\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "        const almacenId = String(item.id ?? item.almacen_id ?? item.idalmacen ?? '').trim();\n",
+      "new": "        const almacenId = String(item.id ?? item.almacen_id ?? '').trim();\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "      logger.error('Error al cargar almacenes canónicos SoftRestaurant:', error);\n      setAlmacenes([]);\n",
+      "new": "      logger.error('Error al cargar almacenes canónicos SoftRestaurant:', error);\n      // No destruir una lista válida por un fallo transitorio de red/API.\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "  const loadAlmacenes = async () => {\n    try {\n      logger.log('[loadAlmacenes] Llamando API con sucursal_id:', filters.sucursal_id);\n      const response = await api.get(`/servers/${filters.server_id}/almacenes`, {\n        params: { sucursal_id: filters.sucursal_id }\n      });\n      logger.log('[loadAlmacenes] Respuesta:', response.data);\n      setAlmacenes(response.data);\n    } catch (error) {\n      logger.error('Error al cargar almacenes:', error);\n      setAlmacenes([]);\n    }\n  };\n",
+      "new": "  const loadAlmacenes = async () => {\n    if (!selectedUnidad) return;\n    try {\n      logger.log('[loadAlmacenes] Cargando catálogo canónico para unidad:', selectedUnidad);\n      const response = await api.get(`/config-asignaciones/almacenes/${selectedUnidad}`);\n      const rows = Array.isArray(response.data?.data) ? response.data.data : [];\n      const canonicos = rows\n        .filter((item) => String(item?.id ?? item?.almacen_id ?? '').trim())\n        .map((item) => {\n          const id = String(item.id ?? item.almacen_id).trim();\n          const nombre = String(item.nombre ?? item.almacen ?? id).trim();\n          return {\n            ...item,\n            id,\n            almacen_id: id,\n            nombre,\n            almacen: nombre,\n            label: nombre,\n            value: nombre,\n            source: 'EDARSAHUB_SQL',\n            unidad_natural: 'insumos'\n          };\n        });\n      logger.log('[loadAlmacenes] Almacenes canónicos recibidos:', canonicos.length);\n      setAlmacenes(canonicos);\n    } catch (error) {\n      logger.error('Error al cargar almacenes canónicos:', error);\n      // Mantener el último catálogo válido ante fallos transitorios.\n    }\n  };\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "      const response = await api.get(`/servers/${filters.server_id}/inventarios`, {\n        params: { \n          sucursal_id: filters.sucursal_id,\n          almacen_id: filters.almacen_id\n        }\n      });\n",
+      "new": "      if (!selectedUnidad) return;\n      const response = await api.get(`/compras/inventarios-fisicos/${selectedUnidad}`, {\n        params: { \n          sucursal_id: filters.sucursal_id,\n          almacen_id: filters.almacen_id\n        }\n      });\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "      logger.error('Error al cargar inventarios:', error);\n      setInventarios([]);\n",
+      "new": "      logger.error('Error al cargar inventarios:', error);\n      // Mantener la última lista válida ante un fallo transitorio.\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "          const response = await api.get(`/compras/inventarios-fisicos/${filters.server_id}`, { params });\n",
+      "new": "          const response = await api.get(`/compras/inventarios-fisicos/${selectedUnidad}`, { params });\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "      } catch (error) {\n        logger.error('Error cargando inventarios:', error);\n        setInventarios([]);\n      }\n    };\n    \n    if (filters.server_id && selectedAlmacenes.length > 0) {\n",
+      "new": "      } catch (error) {\n        logger.error('Error cargando inventarios:', error);\n        // No destruir inventarios ya válidos por un fallo transitorio.\n      }\n    };\n    \n    if (selectedUnidad && selectedAlmacenes.length > 0) {\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "  }, [filters.server_id, filters.sucursal_id, selectedAlmacenes, selectedServer, filters.sucursal]);\n",
+      "new": "  }, [selectedUnidad, filters.sucursal_id, selectedAlmacenes, selectedServer, filters.sucursal]);\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_reportes_inventory_analysis_canonical_contract.py",
+      "content": "from pathlib import Path\n\n\ndef _repo_root() -> Path:\n    return Path(__file__).resolve().parents[2]\n\n\ndef test_reportes_inventory_analysis_uses_canonical_unit_routes_only():\n    source = (_repo_root() / 'frontend/src/pages/Reportes.js').read_text(encoding='utf-8')\n\n    assert '/config-asignaciones/almacenes/${selectedUnidad}' in source\n    assert '/compras/inventarios-fisicos/${selectedUnidad}' in source\n    assert '/servers/${filters.server_id}/almacenes' not in source\n    assert '/servers/${filters.server_id}/inventarios' not in source\n    assert '/compras/inventarios-fisicos/${filters.server_id}' not in source\n    assert 'const prevUnidadRef = useRef(selectedUnidad);' in source\n    assert '[selectedUnidad, filters.server_id, servers, filters.sucursal_id]' in source\n\n\ndef test_canonical_warehouse_repository_joins_single_sources_of_truth():\n    source = (_repo_root() / 'backend/modules/configuracion/repositories/config_asignaciones_repository.py').read_text(encoding='utf-8')\n    start = source.index('    async def listar_almacenes(self, unidad_negocio_pk: str)')\n    end = source.index('    async def sincronizar_almacenes_unidad', start)\n    block = source[start:end]\n\n    assert 'dbo.Unidades_Negocio' in block\n    assert 'dbo.Compras_Inventarios_Fisicos_Sync' in block\n    assert 'dbo.Inventario_Almacenes' in block\n    assert \"i.sync_status IN ('ACTIVE', 'REPLACED')\" in block\n    assert 'Servidores_Conexiones' not in block\n    assert 'servidor remoto' not in block.lower()\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/configuracion/repositories/config_asignaciones_repository.py", "backend/tests/test_reportes_inventory_analysis_canonical_contract.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_reportes_inventory_analysis_canonical_contract.py"]},
+    {"type": "frontend_build", "directory": "frontend"}
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Inventarios Analisis canonical warehouse inventory regression"
+  },
+  "human_summary_language": "es"
+}
