@@ -1,0 +1,186 @@
+{
+  "base_sha": "ba11768eaa287511523880e8009da4475279bc55",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T01:38:02Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-INVENTARIOS-R2D-03-WAREHOUSE-COLUMNS-20260908T185502Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T01:38:32Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable",
+              "is_identity"
+            ],
+            "name": "warehouse_columns",
+            "row_count_returned": 11,
+            "rows": [
+              [
+                "dbo",
+                "Inventario_Almacenes",
+                1,
+                "AlmacenID",
+                "int",
+                4,
+                10,
+                0,
+                false,
+                true
+              ],
+              [
+                "dbo",
+                "Inventario_Almacenes",
+                2,
+                "EmpresaID",
+                "int",
+                4,
+                10,
+                0,
+                true,
+                false
+              ],
+              [
+                "dbo",
+                "Inventario_Almacenes",
+                3,
+                "SucursalID",
+                "int",
+                4,
+                10,
+                0,
+                false,
+                false
+              ],
+              [
+                "dbo",
+                "Inventario_Almacenes",
+                4,
+                "CodigoAlmacen",
+                "varchar",
+                20,
+                0,
+                0,
+                false,
+                false
+              ],
+              [
+                "dbo",
+                "Inventario_Almacenes",
+                5,
+                "NombreAlmacen",
+                "varchar",
+                120,
+                0,
+                0,
+                false,
+                false
+              ],
+              [
+                "dbo",
+                "Inventario_Almacenes",
+                6,
+                "TipoAlmacen",
+                "varchar",
+                20,
+                0,
+                0,
+                false,
+                false
+              ],
+              [
+                "dbo",
+                "Inventario_Almacenes",
+                7,
+                "PermiteCompras",
+                "bit",
+                1,
+                1,
+                0,
+                false,
+                false
+              ],
+              [
+                "dbo",
+                "Inventario_Almacenes",
+                8,
+                "PermiteVentas",
+                "bit",
+                1,
+                1,
+                0,
+                false,
+                false
+              ],
+              [
+                "dbo",
+                "Inventario_Almacenes",
+                9,
+                "Activo",
+                "bit",
+                1,
+                1,
+                0,
+                false,
+                false
+              ],
+              [
+                "dbo",
+                "Inventario_Almacenes",
+                10,
+                "FechaAlta",
+                "datetime2",
+                6,
+                19,
+                0,
+                false,
+                false
+              ],
+              [
+                "dbo",
+                "Inventario_Almacenes",
+                11,
+                "FechaModificacion",
+                "datetime2",
+                6,
+                19,
+                0,
+                true,
+                false
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T01:38:01Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
