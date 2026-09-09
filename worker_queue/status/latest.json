@@ -1,25 +1,25 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
-  "generated_at_utc": "2026-09-09T05:54:57Z",
+  "generated_at_utc": "2026-09-09T05:56:11Z",
   "history": {
-    "done_total_local": 298,
+    "done_total_local": 299,
     "pending_total_local": 0,
-    "processing_total_local": 2,
+    "processing_total_local": 1,
     "rejected_total_local": 363,
-    "results_total_local": 599
+    "results_total_local": 600
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2035,
+      "age_seconds": 2109,
       "job_id": "CATALOGO-AMPLIADO-GATE7A-REGRESSION-CERT-R3-20260908",
       "reason": "El worker no termino esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 2385,
+      "age_seconds": 2459,
       "job_id": "CATALOGO-AMPLIADO-GATE7A-REGRESSION-CERT-R1-20260908",
       "reasons": [
         "ACTIONS_REQUIRED"
@@ -28,7 +28,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1389,
+      "age_seconds": 1464,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P4A-VISUAL-SYNC-MONITOR-EDARSAHUB-20260908T2330Z",
       "reasons": [
         "INVALID_JSON"
@@ -37,7 +37,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2776,
+      "age_seconds": 2851,
       "job_id": "FINANZAS-PROYECCION-MES-HARDCODE-FIX-V1-20260908",
       "reasons": [
         "REQUESTER_EMAIL_INVALID"
@@ -46,225 +46,225 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3280,
+      "age_seconds": 3355,
       "job_id": "CATALOGO-AMPLIADO-GATE6-E2E-CERT-R9-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2592,
+      "age_seconds": 2667,
       "job_id": "CATALOGO-AMPLIADO-GATE6-E2E-WORKFLOW-R6-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2307,
+      "age_seconds": 2382,
       "job_id": "CATALOGO-AMPLIADO-GATE7A-REGRESSION-CERT-R2-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 824,
+      "age_seconds": 898,
       "job_id": "CATALOGO-AMPLIADO-GATE7A-REGRESSION-CERT-R4-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 30,
+      "age_seconds": 105,
       "job_id": "CATALOGO-AMPLIADO-GATE8A-ALERTAS-LINEAGE-READONLY-R1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2341,
+      "age_seconds": 2416,
       "job_id": "CAVAS-CORPORATIVAS-GATE7-NAV-MENU-CERTIFICATION-R2-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 686,
+      "age_seconds": 760,
       "job_id": "CAVAS-CORPORATIVAS-GATE8-COMPOSITE-CERTIFICATION-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2043,
+      "age_seconds": 2117,
       "job_id": "CAVAS-CORPORATIVAS-GATE8-RBAC-PHYSICAL-RECERT-R3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2685,
+      "age_seconds": 2760,
       "job_id": "CAVAS-CORPORATIVAS-GATE8-SQL-RECERT-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 175,
+      "age_seconds": 249,
       "job_id": "CAVAS-CORPORATIVAS-GATE8-UX-FUNCTIONAL-CERTIFICATION-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2119,
+      "age_seconds": 2193,
       "job_id": "CAVAS-CORPORATIVAS-GATE9-PERSISTENCE-PHYSICAL-CERTIFICATION-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 34,
+      "age_seconds": 109,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P4A-R2-VISUAL-SYNC-MONITOR-20260908T2340Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3249,
+      "age_seconds": 3324,
       "job_id": "EDARSAHUB-AUTO-ANALISIS-ENVIO-AUDIT-CONFIG-20260908T221500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3225,
+      "age_seconds": 3300,
       "job_id": "EDARSAHUB-AUTO-ANALISIS-ENVIO-AUDIT-RUNTIME-20260908T221600Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2484,
+      "age_seconds": 2559,
       "job_id": "EDARSAHUB-AUTO-ANALISIS-HISTORY-EJECUCIONES-20260908T231200Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2439,
+      "age_seconds": 2514,
       "job_id": "EDARSAHUB-AUTO-ANALISIS-HISTORY-ENVIOS-20260908T231201Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2435,
+      "age_seconds": 2510,
       "job_id": "EDARSAHUB-AUTO-ANALISIS-HISTORY-FOLIOS-20260908T231202Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1291,
+      "age_seconds": 1366,
       "job_id": "EDARSAHUB-INVENTARIOS-AUTO-AUDIT-CANONICAL-RECIPIENTS-20260908T231502Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1303,
+      "age_seconds": 1377,
       "job_id": "EDARSAHUB-INVENTARIOS-AUTO-AUDIT-SCHEDULER-BITACORA-20260908T231501Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1337,
+      "age_seconds": 1411,
       "job_id": "EDARSAHUB-INVENTARIOS-AUTO-AUDIT-SCHEDULER-TRACKING-20260908T231500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 599,
+      "age_seconds": 673,
       "job_id": "EDARSAHUB-INVENTARIOS-AUTO-ERROR-GROUPS-20260908T231700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 588,
+      "age_seconds": 662,
       "job_id": "EDARSAHUB-INVENTARIOS-AUTO-LATEST-ROWS-20260908T231701Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 159,
+      "age_seconds": 234,
       "job_id": "EDARSAHUB-INVENTARIOS-AUTO-RETRY-CONTEXT-FIX-R1-20260908T232000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 582,
+      "age_seconds": 657,
       "job_id": "EDARSAHUB-INVENTARIOS-AUTO-STUCK-ROW-20260908T231702Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1207,
+      "age_seconds": 67,
+      "job_id": "FINANZAS-PROYECCION-ANIO-FALLBACK-FIX-V1-20260908",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1281,
       "job_id": "FINANZAS-PROYECCION-MES-HARDCODE-FIX-V2-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1382,
+      "age_seconds": 1457,
       "job_id": "RRR-GATE3B-DDL-V3-EXECUTION-CHANNEL-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 156,
+      "age_seconds": 230,
       "job_id": "RRR-GATE3C-POSTAUDIT-READONLY-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1792,
+      "age_seconds": 1867,
       "job_id": "coa-gate4a-development-migration-channel-v1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 148,
+      "age_seconds": 222,
       "job_id": "coa-gate4b-rerun2-development-migration-v1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1389,
+      "age_seconds": 1463,
       "job_id": "coa-gate4b-trigger-development-migration-v1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2641,
+      "age_seconds": 2716,
       "job_id": "servers-integrations-gate1-readonly-sql-r3-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1404,
+      "age_seconds": 1479,
       "job_id": "servers-integrations-gate2a-gap-sql-readonly-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 205,
+      "age_seconds": 279,
       "job_id": "servers-integrations-gate2b-sql-repo-dossier-20260908",
       "reason": null,
       "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3,
-      "job_id": "FINANZAS-PROYECCION-ANIO-FALLBACK-FIX-V1-20260908",
-      "reason": null,
-      "state": "RUNNING"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 1,
-  "queue_depth": 2,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 3,
-  "queue_result_ready_recent": 33,
-  "queue_running": 1,
+  "queue_result_ready_recent": 34,
+  "queue_running": 0,
   "runtime": {
-    "current_job_id": "FINANZAS-PROYECCION-ANIO-FALLBACK-FIX-V1-20260908",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-09T05:54:52Z",
-    "last_receive_utc": "2026-09-09T05:54:54Z",
-    "last_terminal_utc": "2026-09-09T05:54:26Z",
+    "last_cycle_utc": "2026-09-09T05:56:11Z",
+    "last_receive_utc": "2026-09-09T05:56:06Z",
+    "last_terminal_utc": "2026-09-09T05:55:03Z",
     "pid": "1370"
   },
   "schema": "edarsahub.worker-health.v3",
