@@ -1,0 +1,23 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"servers-integrations-gate4e-postaudit-readonly-20260909",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"b048737f949d1acd8331e0b9e410bdbf74062621",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Gate 4E post-audit READ_ONLY inmediatamente posterior a la migracion universal Gate 4D ejecutada con postcheck PASS en Development. Certificar esquema persistido exacto, FKs/indices trusted, cero seed rows, sin Toast_* nuevos y Production untouched. No DDL/DML ni secretos.",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"gate4e_identity","sql":"SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user,ORIGINAL_LOGIN() AS original_login"},
+    {"name":"gate4e_new_tables","sql":"SELECT s.name AS schema_name,t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name IN ('Sistema_Sync_Capacidades','Sync_Control_Evidencias','Sistema_IdentificadoresExternos') ORDER BY t.name"},
+    {"name":"gate4e_target_columns","sql":"SELECT o.name AS object_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable FROM sys.objects o JOIN sys.columns c ON c.object_id=o.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (o.name='Unidades_Negocio' AND c.name IN ('timezone_iana','locale_operativo')) OR (o.name='Sync_Control_Ejecuciones' AND c.name IN ('ConexionID','UnidadNegocioID','CodigoSync','StartedAtUTC','FinishedAtUTC','IdempotencyKey')) OR (o.name='Servidores_ConexionEstado' AND c.name IN ('UltimaPruebaUTC','UltimoExitoUTC','UltimoErrorUTC','UltimoErrorCodigo','UltimoErrorMensaje','LatenciaMs','UltimoSyncUTC','UltimoSyncExitosoUTC','FechaActualizacionUTC')) ORDER BY o.name,c.name"},
+    {"name":"gate4e_named_foreign_keys","sql":"SELECT fk.name,OBJECT_NAME(fk.parent_object_id) AS parent_table,OBJECT_NAME(fk.referenced_object_id) AS referenced_table,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk WHERE fk.name IN ('FK_Sistema_Sync_Capacidades_Sync','FK_Sistema_Sync_Capacidades_Capacidad','FK_Sync_Control_Ejecuciones_Conexion','FK_Sync_Control_Ejecuciones_Unidad','FK_Sync_Control_Ejecuciones_CodigoSync','FK_Sync_Control_Evidencias_Ejecucion','FK_Sistema_IdentificadoresExternos_Unidad','FK_Sistema_IdentificadoresExternos_Sistema','FK_Sistema_IdentificadoresExternos_Version','FK_Sistema_IdentificadoresExternos_Conexion') ORDER BY fk.name"},
+    {"name":"gate4e_named_indexes","sql":"SELECT OBJECT_NAME(i.object_id) AS table_name,i.name,i.is_unique,i.has_filter,i.filter_definition FROM sys.indexes i WHERE i.name IN ('UX_Sync_Control_Ejecuciones_IdempotencyKey','IX_Sync_Control_Ejecuciones_Conexion_CodigoSync','IX_Sistema_IdentificadoresExternos_UnidadSistema','IX_Sistema_IdentificadoresExternos_Conexion') ORDER BY i.name"},
+    {"name":"gate4e_new_table_rows","sql":"SELECT t.name AS table_name,SUM(p.rows) AS row_count FROM sys.tables t JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE t.name IN ('Sistema_Sync_Capacidades','Sync_Control_Evidencias','Sistema_IdentificadoresExternos') GROUP BY t.name ORDER BY t.name"},
+    {"name":"gate4e_base_objects_preserved","sql":"SELECT name,type_desc FROM sys.objects WHERE name IN ('Unidades_Negocio','Servidores_Conexiones','Servidores_ConexionEstado','Sistema_Tipos','Sistema_VersionesSistemas','Sistema_Capacidades','Sistema_Sync_Catalogo','Sync_Control_Ejecuciones') ORDER BY name"},
+    {"name":"gate4e_no_toast_domain_objects","sql":"SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND (o.name LIKE 'Toast[_]%' OR o.name LIKE '%ToastRobot%' OR o.name LIKE '%RobotConnection%') ORDER BY o.name"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
