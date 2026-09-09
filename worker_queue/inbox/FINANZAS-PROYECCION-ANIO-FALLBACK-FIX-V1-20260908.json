@@ -1,0 +1,30 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"FINANZAS-PROYECCION-ANIO-FALLBACK-FIX-V1-20260908",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"116ded1e6b4fb0f7c2449bb9d26a81fdc24c3441",
+  "production_allowed":false,
+  "objective":"Eliminar el fallback silencioso de año inválido a YEAR(GETDATE()) en dbo.fn_CalcularProyeccionMensual. Un periodo inválido no debe mutar automáticamente al año actual porque eso atribuye una proyección a un periodo distinto. Mantener el comportamiento certificado de mes inválido=>NULL, agregar regresión y no tocar Producción.",
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt","project":"V1.0","chat":"cxp-decision-analysis"},
+  "actions":[
+    {
+      "type":"replace_text",
+      "path":"docs/sql/FN_CALCULAR_PROYECCION_MENSUAL.sql",
+      "expected_count":1,
+      "old":"    -- Validar año seguro para evitar desbordamiento en DATEFROMPARTS\n    IF @Anio IS NULL OR @Anio < 1900 OR @Anio > 2100\n    BEGIN\n        SET @Anio = YEAR(GETDATE());\n    END\n\n    -- Obtener la cantidad de días del mes de forma dinámica (soporta bisiestos)",
+      "new":"    -- Un año inválido no se sustituye silenciosamente por otro periodo.\n    IF @Anio IS NULL OR @Anio < 1900 OR @Anio > 2100\n        RETURN NULL;\n\n    -- Obtener la cantidad de días del mes de forma dinámica (soporta bisiestos)"
+    },
+    {
+      "type":"write_file",
+      "path":"backend/tests/test_projection_year_no_current_year_fallback.py",
+      "content":"from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nSQL = ROOT / 'docs/sql/FN_CALCULAR_PROYECCION_MENSUAL.sql'\n\ndef test_invalid_year_is_not_replaced_with_current_year():\n    src = SQL.read_text(encoding='utf-8')\n    assert 'SET @Anio = YEAR(GETDATE())' not in src\n    assert 'IF @Anio IS NULL OR @Anio < 1900 OR @Anio > 2100' in src\n    year_guard = src[src.index('IF @Anio IS NULL OR @Anio < 1900 OR @Anio > 2100'):src.index('-- Obtener la cantidad de días del mes')]\n    assert 'RETURN NULL' in year_guard\n\ndef test_month_and_year_invalid_periods_fail_closed():\n    src = SQL.read_text(encoding='utf-8')\n    assert 'IF @NumeroMes IS NULL' in src\n    assert src.count('RETURN NULL') >= 2\n"
+    }
+  ],
+  "checks":[
+    {"type":"git_diff_check"},
+    {"type":"py_compile","paths":["backend/tests/test_projection_year_no_current_year_fallback.py"]},
+    {"type":"pytest","paths":["backend/tests/test_projection_month_no_fixed_may_fallback.py","backend/tests/test_projection_year_no_current_year_fallback.py"]}
+  ],
+  "human_summary_language":"es"
+}
