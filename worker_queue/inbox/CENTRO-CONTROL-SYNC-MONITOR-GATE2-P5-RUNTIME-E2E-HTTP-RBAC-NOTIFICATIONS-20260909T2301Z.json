@@ -1,0 +1,37 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-E2E-HTTP-RBAC-NOTIFICATIONS-20260909T2301Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"P5 runtime E2E real y separado: validar contra backend en ejecucion la sesion/login real, denegacion sin autenticacion, RBAC HTTP explicito para Centro de Control y Sync Monitor, carga real de ambos modulos, y configuracion observable de SMTP/WhatsApp/WebSocket sin asumir que credenciales o destinatarios externos existan y sin enviar mensajes. Las credenciales de prueba y base URL se leen solo de configuracion de entorno centralizada; nunca se hardcodean ni se imprimen. No tocar Produccion ni fuentes LIVE.",
+  "actions":[
+    {
+      "type":"write_file",
+      "path":"backend/tests/test_control_sync_p5_runtime_e2e.py",
+      "content":"import os\nimport requests\n\nfrom tests.test_config import test_config\n\n\ndef _base_url():\n    value = (test_config.TEST_BASE_URL or '').rstrip('/')\n    assert value, 'RUNTIME_E2E_CONFIG_MISSING: TEST_BASE_URL/REACT_APP_BACKEND_URL'\n    return value\n\n\ndef _credentials():\n    email = test_config.TEST_ADMIN_EMAIL\n    password = test_config.TEST_ADMIN_PASSWORD\n    assert email and password, 'RUNTIME_E2E_CONFIG_MISSING: TEST_ADMIN_EMAIL/TEST_ADMIN_PASSWORD'\n    return {'email': email, 'password': password}\n\n\ndef _login_session():\n    session = requests.Session()\n    response = session.post(\n        f'{_base_url()}/api/auth/login',\n        json=_credentials(),\n        timeout=20,\n    )\n    assert response.status_code == 200, f'RUNTIME_LOGIN_FAILED: status={response.status_code}'\n    payload = response.json()\n    token = payload.get('token')\n    assert token, 'RUNTIME_LOGIN_FAILED: token_missing'\n    session.headers.update({'Authorization': f'Bearer {token}'})\n    return session\n\n\ndef test_runtime_backend_is_reachable_and_centro_ping_is_public():\n    response = requests.get(f'{_base_url()}/api/centro-control/ping', timeout=20)\n    assert response.status_code == 200, f'CENTRO_PING_FAILED: status={response.status_code}'\n    payload = response.json()\n    assert payload.get('status') == 'ok'\n\n\ndef test_runtime_rbac_rejects_unauthenticated_requests_for_both_modules():\n    centro = requests.get(f'{_base_url()}/api/centro-control/estado', timeout=20)\n    sync = requests.get(f'{_base_url()}/api/admin/sync-monitor', timeout=20)\n    assert centro.status_code in (401, 403), f'CENTRO_UNAUTH_EXPECTED_401_403: status={centro.status_code}'\n    assert sync.status_code in (401, 403), f'SYNC_UNAUTH_EXPECTED_401_403: status={sync.status_code}'\n\n\ndef test_runtime_authenticated_session_can_load_centro_control():\n    session = _login_session()\n    response = session.get(f'{_base_url()}/api/centro-control/estado', timeout=30)\n    assert response.status_code == 200, f'CENTRO_RBAC_OR_RUNTIME_FAILED: status={response.status_code}'\n    payload = response.json()\n    assert isinstance(payload, dict)\n\n\ndef test_runtime_authenticated_session_can_load_sync_monitor():\n    session = _login_session()\n    response = session.get(f'{_base_url()}/api/admin/sync-monitor', timeout=30)\n    assert response.status_code == 200, f'SYNC_RBAC_OR_RUNTIME_FAILED: status={response.status_code}'\n    payload = response.json()\n    assert isinstance(payload, dict)\n    assert 'procesos' in payload\n    assert 'kpis' in payload\n\n\ndef test_runtime_centro_control_core_endpoints_load_with_same_session():\n    session = _login_session()\n    paths = [\n        '/api/centro-control/salud/resumen',\n        '/api/centro-control/alertas',\n        '/api/centro-control/fuentes',\n        '/api/centro-control/jobs',\n        '/api/centro-control/bitacora',\n        '/api/centro-control/metricas',\n        '/api/centro-control/historial',\n        '/api/centro-control/matriz-resolucion',\n        '/api/centro-control/blindaje/modulos',\n    ]\n    for path in paths:\n        response = session.get(f'{_base_url()}{path}', timeout=30)\n        assert response.status_code == 200, f'CENTRO_ENDPOINT_FAILED: path={path} status={response.status_code}'\n\n\ndef test_runtime_external_notification_configuration_is_truthful_without_assuming_credentials():\n    session = _login_session()\n    email_response = session.get(f'{_base_url()}/api/centro-control/email/config', timeout=20)\n    whatsapp_response = session.get(f'{_base_url()}/api/centro-control/whatsapp/config', timeout=20)\n    all_response = session.get(f'{_base_url()}/api/centro-control/notificaciones/config', timeout=20)\n    for name, response in [('email', email_response), ('whatsapp', whatsapp_response), ('all', all_response)]:\n        assert response.status_code == 200, f'NOTIFICATION_CONFIG_FAILED: service={name} status={response.status_code}'\n    email_payload = email_response.json()\n    whatsapp_payload = whatsapp_response.json()\n    all_payload = all_response.json()\n    assert isinstance(email_payload.get('config'), dict)\n    assert isinstance(whatsapp_payload.get('config'), dict)\n    assert isinstance(all_payload.get('servicios'), dict)\n    email_cfg = email_payload['config']\n    whatsapp_cfg = whatsapp_payload['config']\n    for field in ('configured', 'enabled'):\n        assert field in email_cfg\n        assert isinstance(email_cfg[field], bool)\n    for field in ('configured', 'enabled', 'twilio_configured'):\n        assert field in whatsapp_cfg\n        assert isinstance(whatsapp_cfg[field], bool)\n    servicios = all_payload['servicios']\n    assert {'email', 'whatsapp', 'websocket'}.issubset(servicios.keys())\n\n\ndef test_runtime_e2e_never_sends_external_test_messages():\n    source = __file__\n    text = open(source, encoding='utf-8').read()\n    assert '/email/test' not in text\n    assert '/whatsapp/test' not in text\n    assert '/alerta-critica' not in text\n"
+    }
+  ],
+  "checks":[
+    {"type":"git_diff_check"},
+    {"type":"py_compile","paths":["backend/tests/test_control_sync_p5_runtime_e2e.py"]},
+    {"type":"pytest","paths":["backend/tests/test_control_sync_p5_runtime_e2e.py"]}
+  ],
+  "constraints":[
+    "NO Production",
+    "NO Mongo writes",
+    "NO LIVE source connections",
+    "NO SQL schema/data changes",
+    "NO frontend changes",
+    "NO backend functional code changes",
+    "NO email send",
+    "NO WhatsApp send",
+    "NO alert broadcast side effects",
+    "NO hardcoded credentials, tokens, URLs or secrets",
+    "Use only TEST_BASE_URL/REACT_APP_BACKEND_URL and TEST_ADMIN_EMAIL/TEST_ADMIN_PASSWORD from centralized environment configuration",
+    "Only backend/tests/test_control_sync_p5_runtime_e2e.py may change",
+    "Do not modify Universal Worker structure"
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"technical"
+}
