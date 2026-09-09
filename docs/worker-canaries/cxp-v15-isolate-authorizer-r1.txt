@@ -1,0 +1,1 @@
+CxP V15 pytest isolation: authorizer visibility contract
