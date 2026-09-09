@@ -1501,5 +1501,7 @@
     "tablajeria.ordenes",
     "tablajeria.plantillas"
   ],
-  "routeExemptions": []
+  "routeExemptions": [
+    "/cavas-corporativas"
+  ]
 }

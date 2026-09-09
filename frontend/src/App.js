@@ -64,6 +64,9 @@ import CapturaDirectaPage from '@/pages/tablajeria/CapturaDirectaPage';
 // Cava de Socios
 import { CavaSociosDashboard, SociosList, SocioDetail, SocioForm, InventarioCava, ConsumosCava } from '@/pages/cava-socios';
 
+// Cavas Corporativas B2B
+import CavasCorporativasDashboard from '@/pages/cavas-corporativas/CavasCorporativasDashboard';
+
 // Costos y Márgenes (FASE 1C-3D)
 import CostosMargenes from '@/pages/comercial/CostosMargenes';
 import CatalogoEnriquecido from '@/pages/comercial/CatalogoEnriquecido';
@@ -179,6 +182,8 @@ function App() {
               <Route path="cava-socios/socios/:id/editar" element={<SocioForm />} />
               <Route path="cava-socios/inventario" element={<InventarioCava />} />
               <Route path="cava-socios/consumos" element={<ConsumosCava />} />
+              {/* Cavas Corporativas B2B - reglas y RBAC permanecen en backend */}
+              <Route path="cavas-corporativas" element={<CavasCorporativasDashboard />} />
               <Route path="recursos-humanos" element={<RecursosHumanos />} />
               <Route path="importador-rh" element={<ImportadorRH />} />
               <Route path="reportes-bi" element={<ReportesBI />} />
