@@ -1,0 +1,534 @@
+{
+  "base_sha": "e95fbe17f39fd202bc9500f2ea7b0020ec6205aa",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T00:25:20Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-softrestaurant-global-sql-audit-r1-20260909T0001Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T00:26:20Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "UnidadNegocioID",
+              "UnidadNegocioNombre",
+              "total_cortes",
+              "fecha_min",
+              "fecha_max",
+              "ultima_sync"
+            ],
+            "name": "softrestaurant_cortes_by_unit",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "19e076fb-c6de-4ea5-84ab-1caa9e86082c",
+                "130° MERIDA",
+                "5126",
+                "2016-06-15",
+                "2026-09-08",
+                "2026-09-08 10:00:01.7666667"
+              ],
+              [
+                "b06ee652-0370-4267-b0a8-da6fc39b590a",
+                "CIENFUEGOS",
+                "2664",
+                "2019-12-31",
+                "2026-09-08",
+                "2026-09-08 11:27:03.6966667"
+              ],
+              [
+                "dfb86008-1b81-472a-9e50-8a0821dec4b2",
+                "LA ESTELAR",
+                "459",
+                "2025-06-14",
+                "2026-09-08",
+                "2026-09-08 17:58:04.3766667"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "duplicate_groups"
+            ],
+            "name": "softrestaurant_duplicate_identity_check",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_cortes_softrestaurant"
+            ],
+            "name": "softrestaurant_total_cortes",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "8249"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_detalle_pagos"
+            ],
+            "name": "detalle_pagos_total_rows",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "288069"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "column_id",
+              "column_name",
+              "data_type"
+            ],
+            "name": "canonical_tables_columns_snapshot",
+            "row_count_returned": 68,
+            "rows": [
+              [
+                "Finanzas_CortesCaja",
+                1,
+                "CorteCajaID",
+                "bigint"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                2,
+                "SucursalID",
+                "int"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                3,
+                "FechaCorte",
+                "date"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                4,
+                "TurnoID",
+                "int"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                5,
+                "TotalEfectivo",
+                "decimal"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                6,
+                "TotalTarjetaDebito",
+                "decimal"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                7,
+                "TotalTarjetaCredito",
+                "decimal"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                8,
+                "TotalAmex",
+                "decimal"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                9,
+                "TotalInternacional",
+                "decimal"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                10,
+                "TotalVales",
+                "decimal"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                11,
+                "TotalOtros",
+                "decimal"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                12,
+                "ComisionDebito",
+                "decimal"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                13,
+                "ComisionCredito",
+                "decimal"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                14,
+                "ComisionAmex",
+                "decimal"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                15,
+                "ComisionInternacional",
+                "decimal"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                16,
+                "FechaDepositoEfectivo",
+                "date"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                17,
+                "FechaDepositoDebito",
+                "date"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                18,
+                "FechaDepositoCredito",
+                "date"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                19,
+                "FechaDepositoAmex",
+                "date"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                20,
+                "FechaDepositoInternacional",
+                "date"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                21,
+                "DepositadoEfectivo",
+                "bit"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                22,
+                "DepositadoDebito",
+                "bit"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                23,
+                "DepositadoCredito",
+                "bit"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                24,
+                "DepositadoAmex",
+                "bit"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                25,
+                "DepositadoInternacional",
+                "bit"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                26,
+                "EstatusCierreID",
+                "tinyint"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                27,
+                "Observaciones",
+                "varchar"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                28,
+                "Activo",
+                "bit"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                29,
+                "FechaAlta",
+                "datetime2"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                30,
+                "UnidadNegocioID",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                31,
+                "UnidadNegocioNombre",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                32,
+                "EmpresaID",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                33,
+                "ServerID",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                34,
+                "SistemaOrigen",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                35,
+                "BaseDatosOrigen",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                36,
+                "TablaOrigen",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                37,
+                "FolioCorte",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                38,
+                "IdOrigen",
+                "bigint"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                39,
+                "SucursalOrigenID",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                40,
+                "FechaApertura",
+                "datetime2"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                41,
+                "FechaCierre",
+                "datetime2"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                42,
+                "CajeroID",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                43,
+                "CajeroNombre",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                44,
+                "CajaID",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                45,
+                "CajaNombre",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                46,
+                "Propinas",
+                "decimal"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                47,
+                "Retiros",
+                "decimal"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                48,
+                "FondoInicial",
+                "decimal"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                49,
+                "TotalVenta",
+                "decimal"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                50,
+                "HashOrigen",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                51,
+                "FechaSincronizacion",
+                "datetime2"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                52,
+                "FechaUltimaActualizacion",
+                "datetime2"
+              ],
+              [
+                "Finanzas_CortesCaja",
+                53,
+                "EsDemo",
+                "bit"
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                1,
+                "DetalleID",
+                "bigint"
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                2,
+                "CorteCajaID",
+                "bigint"
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                3,
+                "FormaPago",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                4,
+                "FormaPagoCodigo",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                5,
+                "Importe",
+                "decimal"
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                6,
+                "Referencia",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                7,
+                "SistemaOrigen",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                8,
+                "IdOrigen",
+                "bigint"
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                9,
+                "HashOrigen",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                10,
+                "FechaAlta",
+                "datetime2"
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                11,
+                "Activo",
+                "bit"
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                12,
+                "UnidadNegocio",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                13,
+                "NumeroTicket",
+                "nvarchar"
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                14,
+                "FechaHora",
+                "datetime"
+              ],
+              [
+                "Finanzas_CortesCaja_DetallePagos",
+                15,
+                "Propina",
+                "decimal"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T00:25:18Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
