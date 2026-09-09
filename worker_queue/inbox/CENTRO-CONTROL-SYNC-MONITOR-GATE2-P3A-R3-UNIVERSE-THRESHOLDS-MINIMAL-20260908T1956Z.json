@@ -1,0 +1,24 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P3A-R3-UNIVERSE-THRESHOLDS-MINIMAL-20260908T1956Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "GATE 2 P3A R3 minimal: aislar exactamente qué consulta impide certificar universo/thresholds del Sync Monitor. Ejecutar solo consultas simples, una por una, sobre objetos/columnas ya demostrados por el código actual o sys metadata. NO DDL/DML, NO Mongo, NO LIVE, NO Production. P3B solo después de evidencia certificada.",
+  "actions": [],
+  "checks": [
+    {"type":"sql_readonly_audit","queries":[
+      {"name":"p3r3_01_servers","sql":"SELECT TOP 100 CAST(id AS VARCHAR(100)) AS server_id,nombre,system_type,tipo_conexion,activo FROM dbo.Servidores_Conexiones ORDER BY nombre"},
+      {"name":"p3r3_02_compras_types","sql":"SELECT TOP 200 server_id,sync_type,COUNT(*) AS runs,MAX(sync_end) AS last_sync FROM dbo.Compras_Sync_Log GROUP BY server_id,sync_type ORDER BY server_id,sync_type"},
+      {"name":"p3r3_03_comercial_types","sql":"SELECT TOP 200 server_id,run_type AS sync_type,COUNT(*) AS runs,MAX(run_timestamp) AS last_sync FROM dbo.Comercial_SyncLog_v2 GROUP BY server_id,run_type ORDER BY server_id,run_type"},
+      {"name":"p3r3_04_sync_logs_exists","sql":"SELECT CASE WHEN OBJECT_ID('dbo.Sync_Logs','U') IS NULL THEN 0 ELSE 1 END AS table_exists"},
+      {"name":"p3r3_05_sync_logs_columns","sql":"SELECT TOP 100 c.column_id,c.name AS column_name,ty.name AS data_type FROM sys.columns c JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Sync_Logs') ORDER BY c.column_id"},
+      {"name":"p3r3_06_threshold_named_tables","sql":"SELECT TOP 100 s.name AS schema_name,t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name LIKE '%Threshold%' OR t.name LIKE '%Umbral%' OR t.name LIKE '%SLA%' OR t.name LIKE '%Frecuencia%' OR t.name LIKE '%Intervalo%' ORDER BY s.name,t.name"},
+      {"name":"p3r3_07_threshold_named_columns","sql":"SELECT TOP 200 s.name AS schema_name,t.name AS table_name,c.name AS column_name,ty.name AS data_type FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.name LIKE '%Threshold%' OR c.name LIKE '%Umbral%' OR c.name LIKE '%SLA%' OR c.name LIKE '%Frecuencia%' OR c.name LIKE '%Intervalo%' ORDER BY s.name,t.name,c.column_id"}
+    ]}
+  ],
+  "constraints":["READ_ONLY_SQL ONLY","NO DDL","NO DML","NO Production","NO Mongo","NO LIVE","NO threshold invention","NO universe invention","Do not modify Universal Worker structure"],
+  "human_summary_language":"es",
+  "human_summary_level":"technical"
+}
