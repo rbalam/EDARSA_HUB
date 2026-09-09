@@ -1,0 +1,23 @@
+{
+  "base_sha": "e95fbe17f39fd202bc9500f2ea7b0020ec6205aa",
+  "blockers": [],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-09T00:28:50Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CATALOGO-AMPLIADO-GATE1-EVIDENCE-CERT-R3-20260908",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T00:29:07Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-09T00:28:49Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
