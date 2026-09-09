@@ -1,0 +1,26 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-scope-concurrency-safe-rebase-canary-v2-20260908",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "c332eefa0928261f79373c7cc80178d9fc8063e8",
+  "objective": "Canario real del hardening de concurrencia por alcance. La base esta deliberadamente atrasada; los cambios intermedios no deben intersectar el unico archivo nuevo de este job. Debe continuar mediante SAFE_REBASE, ejecutar el gate y quedar integrado sin tocar Produccion.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "cxp-decision-analysis"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/worker-canaries/safe-rebase-v2-20260908.txt",
+      "content": "EDARSAHUB SAFE_REBASE real canary v2\nExpected behavior: stale ancestor base + unrelated intervening changes => SAFE_REBASE, quality gate PASS, integrated, production untouched.\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
