@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "e95fbe17f39fd202bc9500f2ea7b0020ec6205aa",
-  "generated_at_utc": "2026-09-09T00:32:11Z",
+  "generated_at_utc": "2026-09-09T00:33:23Z",
   "history": {
     "done_total_local": 183,
     "pending_total_local": 0,
@@ -13,13 +13,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 843,
+      "age_seconds": 915,
       "job_id": "coa-satelite-bootstrap-v4-20260908",
       "reason": "El worker no termino esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 3152,
+      "age_seconds": 3224,
       "job_id": "EDARSAHUB-SOFTRESTAURANT-APERTURA-PARITY-R40B-CARLOS-20260908T234500Z",
       "reasons": [
         "ACTION_9_EXPECTED_SHA256_REQUIRED",
@@ -30,115 +30,115 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1400,
+      "age_seconds": 1472,
       "job_id": "BOS-DIRECCION-SCHEDULER-ACTIVATION-GATE6-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 200,
+      "age_seconds": 272,
       "job_id": "CATALOGO-AMPLIADO-GATE1-EVIDENCE-CERT-R3-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1797,
+      "age_seconds": 1869,
       "job_id": "CATALOGO-AMPLIADO-GATE1-READONLY-SCHEMA-R2-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 442,
+      "age_seconds": 514,
       "job_id": "CAVAS-CORPORATIVAS-GATE3-BACKEND-DOMAIN-CORE-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1787,
+      "age_seconds": 1859,
       "job_id": "CAVAS-CORPORATIVAS-SQL-MIGRATION-EXECUTION-DOSSIER-CERT-R5-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1753,
+      "age_seconds": 1825,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P1-EXACT-KPI-20260908T0002Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2710,
+      "age_seconds": 2782,
       "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-ALMACENES-REGRESSION-AUDIT-R1-20260908T162700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1769,
+      "age_seconds": 1841,
       "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-CANONICAL-SOURCE-CERT-R2-20260908T175000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 52,
+      "age_seconds": 124,
       "job_id": "EDARSAHUB-ISCAM-ESTELAR-DETAIL-DRYRUN-R41-CARLOS-20260909T003200Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2800,
+      "age_seconds": 2872,
       "job_id": "EDARSAHUB-SOFTRESTAURANT-APERTURA-PARITY-R40C-CARLOS-20260908T235000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1169,
+      "age_seconds": 1241,
       "job_id": "RRR-GATE0-CONTRATO-V1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1728,
+      "age_seconds": 1800,
       "job_id": "coa-satelite-bootstrap-v3-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 457,
+      "age_seconds": 529,
       "job_id": "finanzas-decision-pago-authoritative-v15-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1516,
+      "age_seconds": 1588,
       "job_id": "save-github-final-predeploy-closure-audit-r5-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1508,
+      "age_seconds": 1580,
       "job_id": "worker-readonly-result-publisher-hardening-r7-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 900,
+      "age_seconds": 972,
       "job_id": "worker-scope-concurrency-safe-rebase-canary-v2-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2796,
+      "age_seconds": 2868,
       "job_id": "worker-softrestaurant-estelar-connectivity-dryrun-r1-20260908T2343Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2045,
+      "age_seconds": 2117,
       "job_id": "worker-softrestaurant-estelar-write-r1-20260908T2354Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 410,
+      "age_seconds": 482,
       "job_id": "worker-softrestaurant-global-sql-audit-r1-20260909T0001Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -156,8 +156,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-09T00:32:09Z",
-    "last_receive_utc": "2026-09-09T00:32:09Z",
+    "last_cycle_utc": "2026-09-09T00:33:21Z",
+    "last_receive_utc": "2026-09-09T00:33:22Z",
     "last_terminal_utc": "2026-09-09T00:31:18Z",
     "pid": "286"
   },
