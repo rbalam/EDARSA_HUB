@@ -1,0 +1,32 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-mpro-direct-source-probe-r1-20260909T0056Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Sonda estrictamente READ_ONLY para determinar si la base MPRO CENTRAL2020 y dbo.Comanda_Corte son visibles desde la conexion canonica de auditoria. Si son visibles, obtener MIN/MAX/COUNT por Sc_Cve_Sucursal para 0021 y 0023. No escribir, no ejecutar resync, no tocar Production.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "mpro_central2020_visibility",
+          "sql": "SELECT DB_ID(N'CENTRAL2020') AS central2020_db_id;"
+        },
+        {
+          "name": "mpro_comanda_corte_min_max_count",
+          "sql": "SELECT Sc_Cve_Sucursal, COUNT_BIG(*) AS total_rows, MIN(Cc_Fecha) AS min_fecha, MAX(Cc_Fecha) AS max_fecha FROM CENTRAL2020.dbo.Comanda_Corte WHERE Sc_Cve_Sucursal IN ('0021','0023') AND (Es_Cve_Estado IS NULL OR Es_Cve_Estado <> 'BAJA') GROUP BY Sc_Cve_Sucursal ORDER BY Sc_Cve_Sucursal;"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Direct MPRO Comanda_Corte source audit probe"
+  },
+  "human_summary_language": "es"
+}
