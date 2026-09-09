@@ -1,0 +1,66 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P4A-VISUAL-SYNC-MONITOR-EDARSAHUB-20260908T2330Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "GATE 2 P4A VISUAL: normalizar Monitor de Sincronización al lenguaje visual EDARSAHUB ya existente: superficies zinc/neutras, tipografía Manrope/IBM Plex/JetBrains heredada, acento primario sobrio en vez de gradientes azules genéricos, tarjetas KPI coherentes, y soporte visual explícito para SIN_SLA_THRESHOLD_CONFIGURADO y SIN_TELEMETRIA introducidos por P3B. No tocar backend, semántica de datos, endpoints, RBAC ni Producción.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/SyncMonitor.js",
+      "old": "  STALE: { \n    bg: 'bg-gray-500/20', \n    border: 'border-gray-500/50', \n    text: 'text-gray-400',\n    dot: 'bg-gray-500',\n    label: 'INACTIVO'\n  },\n};\n\nconst getStatusConfig = (status) => STATUS_CONFIG[status] || STATUS_CONFIG.STALE;",
+      "new": "  STALE: { \n    bg: 'bg-zinc-500/10', \n    border: 'border-zinc-500/30', \n    text: 'text-zinc-400',\n    dot: 'bg-zinc-500',\n    label: 'STALE'\n  },\n  SIN_SLA_THRESHOLD_CONFIGURADO: {\n    bg: 'bg-amber-500/10',\n    border: 'border-amber-500/30',\n    text: 'text-amber-300',\n    dot: 'bg-amber-400',\n    label: 'SIN SLA'\n  },\n  SIN_TELEMETRIA: {\n    bg: 'bg-zinc-800',\n    border: 'border-zinc-700',\n    text: 'text-zinc-400',\n    dot: 'bg-zinc-500',\n    label: 'SIN TELEMETRÍA'\n  },\n};\n\nconst getStatusConfig = (status) => STATUS_CONFIG[status] || STATUS_CONFIG.SIN_TELEMETRIA;",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/SyncMonitor.js",
+      "old": "const KpiCard = ({ icon: Icon, label, value, subvalue, color = 'blue' }) => {\n  const colors = {\n    blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/30',\n    green: 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/30',\n    amber: 'from-amber-500/20 to-amber-600/10 border-amber-500/30',\n    red: 'from-red-500/20 to-red-600/10 border-red-500/30',\n    gray: 'from-gray-500/20 to-gray-600/10 border-gray-500/30',\n  };\n  \n  return (\n    <div className={`bg-gradient-to-br ${colors[color]} border rounded-xl p-4`}>\n      <div className=\"flex items-center gap-3\">\n        <div className=\"p-2 bg-white/5 rounded-lg\">",
+      "new": "const KpiCard = ({ icon: Icon, label, value, subvalue, color = 'blue' }) => {\n  const colors = {\n    blue: 'border-zinc-800',\n    green: 'border-emerald-900/60',\n    amber: 'border-amber-900/60',\n    red: 'border-red-900/60',\n    gray: 'border-zinc-800',\n  };\n  \n  return (\n    <div className={`bg-zinc-950/70 ${colors[color]} border rounded-lg p-4 shadow-sm`}>\n      <div className=\"flex items-center gap-3\">\n        <div className=\"p-2 bg-zinc-900 border border-zinc-800 rounded-md\">",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/SyncMonitor.js",
+      "old": "    <div className=\"space-y-6 p-6\" data-testid=\"sync-monitor-page\">",
+      "new": "    <div className=\"space-y-6 p-6 text-zinc-100\" data-testid=\"sync-monitor-page\">",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/SyncMonitor.js",
+      "old": "          <h1 className=\"text-2xl font-bold text-white flex items-center gap-3\">\n            <Activity className=\"w-7 h-7 text-blue-400\" />",
+      "new": "          <h1 className=\"text-2xl font-bold text-zinc-100 flex items-center gap-3\">\n            <span className=\"inline-flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-900 border border-zinc-800\">\n              <Activity className=\"w-5 h-5 text-zinc-200\" />\n            </span>",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/SyncMonitor.js",
+      "old": "            className=\"flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white/70 transition-colors disabled:opacity-50\"",
+      "new": "            className=\"flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-md text-zinc-200 transition-colors disabled:opacity-50\"",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "frontend/src/pages/__tests__/SyncMonitorVisualContract.test.js",
+      "content": "const fs = require('fs');\nconst path = require('path');\n\nconst source = fs.readFileSync(path.resolve(__dirname, '..', 'SyncMonitor.js'), 'utf8');\n\ntest('sync monitor renders canonical no-SLA and no-telemetry states', () => {\n  expect(source).toContain('SIN_SLA_THRESHOLD_CONFIGURADO');\n  expect(source).toContain('SIN_TELEMETRIA');\n  expect(source).toContain("label: 'SIN SLA'");\n  expect(source).toContain("label: 'SIN TELEMETRÍA'");\n});\n\ntest('sync monitor no longer uses generic blue KPI gradients', () => {\n  expect(source).not.toContain('from-blue-500/20 to-blue-600/10');\n  expect(source).toContain('bg-zinc-950/70');\n  expect(source).toContain('border-zinc-800');\n});\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "frontend_build", "directory": "frontend"}
+  ],
+  "constraints": [
+    "NO Production",
+    "NO backend changes",
+    "NO endpoint changes",
+    "NO RBAC changes",
+    "NO semantic KPI changes",
+    "Preserve P3B status values and universe truth",
+    "Use EDARSAHUB neutral zinc visual language already present in CentroControl/index.css rather than introducing a new design system",
+    "Do not modify Universal Worker structure"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "technical"
+}
