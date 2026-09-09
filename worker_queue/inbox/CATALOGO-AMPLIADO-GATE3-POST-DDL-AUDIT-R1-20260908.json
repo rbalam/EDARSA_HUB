@@ -1,0 +1,24 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"CATALOGO-AMPLIADO-GATE3-POST-DDL-AUDIT-R1-20260908",
+  "created_at_utc":"2026-09-09T02:09:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"d270216d6d1bafcb8f48d53d5c8832d664672298",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "objective":"Auditoria post-DDL READ_ONLY de Catalogo Ampliado despues del canal Gate 3 ligado al blob 0178fca34652b41a6e641125d078822055c83483. Certificar que las 11 tablas Gobierno_* existen, cada una tiene PK, los indices esperados existen, las FK hacia seis maestros canonicos existen y todas las tablas nuevas permanecen vacias. No modificar base, repo ni Produccion.",
+  "acceptance":["11 tablas Gobierno_* presentes","11 PK presentes","15 indices esperados presentes","FK externas a Sistema_Empresas, Usuario_Catalogo, Cliente_Catalogo, Proveedor_Catalogo, Cliente_Contactos y Proveedor_Contactos presentes","COUNT_BIG(*)=0 en las 11 tablas","sql_readonly_evidence presente","CERTIFIED_READ_ONLY","percent_complete=100","production_touched=false"],
+  "constraints":["READ_ONLY_SQL solamente","NO DDL","NO DML","NO Production","NO cambios de repo"],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"postddl_tables","sql":"SELECT t.name AS table_name FROM sys.tables t WHERE t.schema_id=SCHEMA_ID('dbo') AND t.name IN ('Gobierno_EmpresaConfiguracion','Gobierno_Persona','Gobierno_PersonaVinculo','Gobierno_RolCorporativoCatalogo','Gobierno_PersonaEmpresaRol','Gobierno_TipoDocumento','Gobierno_Documento','Gobierno_DocumentoVersion','Gobierno_DocumentoMovimiento','Gobierno_AlertaRegla','Gobierno_AlertaEvento') ORDER BY t.name"},
+    {"name":"postddl_primary_keys","sql":"SELECT t.name AS table_name,kc.name AS pk_name FROM sys.key_constraints kc JOIN sys.tables t ON t.object_id=kc.parent_object_id WHERE kc.type='PK' AND t.name IN ('Gobierno_EmpresaConfiguracion','Gobierno_Persona','Gobierno_PersonaVinculo','Gobierno_RolCorporativoCatalogo','Gobierno_PersonaEmpresaRol','Gobierno_TipoDocumento','Gobierno_Documento','Gobierno_DocumentoVersion','Gobierno_DocumentoMovimiento','Gobierno_AlertaRegla','Gobierno_AlertaEvento') ORDER BY t.name"},
+    {"name":"postddl_indexes","sql":"SELECT t.name AS table_name,i.name AS index_name,i.is_unique FROM sys.indexes i JOIN sys.tables t ON t.object_id=i.object_id WHERE i.name IN ('UX_GobPersona_RFC','UX_GobPersona_CURP','UX_GobPV_Usuario','UX_GobPV_Cliente','UX_GobPV_Proveedor','UX_GobPV_ContactoCliente','UX_GobPV_ContactoProveedor','IX_GobPER_EmpresaRol','IX_GobPER_Persona','IX_GobDoc_Empresa','IX_GobDoc_Persona','IX_GobDocVer_Vencimiento','IX_GobMov_DocFecha','IX_GobAR_EmpTipo','IX_GobAE_Programada') ORDER BY i.name"},
+    {"name":"postddl_foreign_keys","sql":"SELECT p.name AS parent_table,fk.name AS fk_name,r.name AS referenced_table FROM sys.foreign_keys fk JOIN sys.tables p ON p.object_id=fk.parent_object_id JOIN sys.tables r ON r.object_id=fk.referenced_object_id WHERE p.name IN ('Gobierno_EmpresaConfiguracion','Gobierno_Persona','Gobierno_PersonaVinculo','Gobierno_RolCorporativoCatalogo','Gobierno_PersonaEmpresaRol','Gobierno_TipoDocumento','Gobierno_Documento','Gobierno_DocumentoVersion','Gobierno_DocumentoMovimiento','Gobierno_AlertaRegla','Gobierno_AlertaEvento') ORDER BY p.name,fk.name"},
+    {"name":"postddl_row_counts","sql":"SELECT 'Gobierno_EmpresaConfiguracion' table_name,COUNT_BIG(*) row_count FROM dbo.Gobierno_EmpresaConfiguracion UNION ALL SELECT 'Gobierno_Persona',COUNT_BIG(*) FROM dbo.Gobierno_Persona UNION ALL SELECT 'Gobierno_PersonaVinculo',COUNT_BIG(*) FROM dbo.Gobierno_PersonaVinculo UNION ALL SELECT 'Gobierno_RolCorporativoCatalogo',COUNT_BIG(*) FROM dbo.Gobierno_RolCorporativoCatalogo UNION ALL SELECT 'Gobierno_PersonaEmpresaRol',COUNT_BIG(*) FROM dbo.Gobierno_PersonaEmpresaRol UNION ALL SELECT 'Gobierno_TipoDocumento',COUNT_BIG(*) FROM dbo.Gobierno_TipoDocumento UNION ALL SELECT 'Gobierno_Documento',COUNT_BIG(*) FROM dbo.Gobierno_Documento UNION ALL SELECT 'Gobierno_DocumentoVersion',COUNT_BIG(*) FROM dbo.Gobierno_DocumentoVersion UNION ALL SELECT 'Gobierno_DocumentoMovimiento',COUNT_BIG(*) FROM dbo.Gobierno_DocumentoMovimiento UNION ALL SELECT 'Gobierno_AlertaRegla',COUNT_BIG(*) FROM dbo.Gobierno_AlertaRegla UNION ALL SELECT 'Gobierno_AlertaEvento',COUNT_BIG(*) FROM dbo.Gobierno_AlertaEvento ORDER BY table_name"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
