@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
-  "generated_at_utc": "2026-09-09T06:42:40Z",
+  "generated_at_utc": "2026-09-09T06:43:51Z",
   "history": {
     "done_total_local": 317,
     "pending_total_local": 0,
@@ -13,199 +13,193 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2786,
+      "age_seconds": 2858,
       "job_id": "CATALOGO-AMPLIADO-GATE7A-REGRESSION-CERT-R3-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2893,
+      "age_seconds": 2964,
       "job_id": "CATALOGO-AMPLIADO-GATE8A-ALERTAS-LINEAGE-READONLY-R1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2433,
+      "age_seconds": 2505,
       "job_id": "CATALOGO-AMPLIADO-GATE8B-ALERTAS-INTEGRATION-DESIGN-R1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1812,
+      "age_seconds": 1883,
       "job_id": "CATALOGO-AMPLIADO-GATE8C-ALERTAS-CONTROLLED-IMPLEMENTATION-R1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 160,
+      "age_seconds": 231,
       "job_id": "CATALOGO-AMPLIADO-GATE8D-SCHEDULER-CANONICAL-INTEGRATION-R1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2440,
+      "age_seconds": 2511,
       "job_id": "CAVAS-CORPORATIVAS-GATE10-UAT-REGRESSION-RC-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3548,
-      "job_id": "CAVAS-CORPORATIVAS-GATE8-COMPOSITE-CERTIFICATION-01",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3038,
+      "age_seconds": 3109,
       "job_id": "CAVAS-CORPORATIVAS-GATE8-UX-FUNCTIONAL-CERTIFICATION-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2565,
+      "age_seconds": 2637,
       "job_id": "CAVAS-CORPORATIVAS-GATE8-UX-FUNCTIONAL-CERTIFICATION-R2-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2897,
+      "age_seconds": 2968,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P4A-R2-VISUAL-SYNC-MONITOR-20260908T2340Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2198,
+      "age_seconds": 2270,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P4B-VISUAL-CENTRO-CONTROL-EDARSAHUB-20260908T2350Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1073,
+      "age_seconds": 1145,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-E2E-FUNCTIONAL-RBAC-BUILD-20260909T0005Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3462,
+      "age_seconds": 3533,
       "job_id": "EDARSAHUB-INVENTARIOS-AUTO-ERROR-GROUPS-20260908T231700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3450,
+      "age_seconds": 3522,
       "job_id": "EDARSAHUB-INVENTARIOS-AUTO-LATEST-ROWS-20260908T231701Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3022,
+      "age_seconds": 3093,
       "job_id": "EDARSAHUB-INVENTARIOS-AUTO-RETRY-CONTEXT-FIX-R1-20260908T232000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1972,
+      "age_seconds": 2044,
       "job_id": "EDARSAHUB-INVENTARIOS-AUTO-RETRY-CONTEXT-FIX-R2-20260908T233000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 305,
+      "age_seconds": 377,
       "job_id": "EDARSAHUB-INVENTARIOS-AUTO-RETRY-CONTEXT-FIX-R3-20260909T001300Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3445,
+      "age_seconds": 3516,
       "job_id": "EDARSAHUB-INVENTARIOS-AUTO-STUCK-ROW-20260908T231702Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 911,
+      "age_seconds": 983,
       "job_id": "FINANZAS-CXC-DECISION-GATE1-READONLY-AUDIT-V1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2856,
+      "age_seconds": 2927,
       "job_id": "FINANZAS-PROYECCION-ANIO-FALLBACK-FIX-V1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3018,
+      "age_seconds": 3090,
       "job_id": "RRR-GATE3C-POSTAUDIT-READONLY-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1939,
+      "age_seconds": 2011,
       "job_id": "RRR-GATE4A-CUSTOMER360-READONLY-AUDIT-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1077,
+      "age_seconds": 1148,
       "job_id": "RRR-GATE4B-CUSTOMER360-DESIGN-V1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 268,
+      "age_seconds": 340,
       "job_id": "RRR-GATE4C-CUSTOMER360-VIEWS-PREFLIGHT-READONLY-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3010,
+      "age_seconds": 3082,
       "job_id": "coa-gate4b-rerun2-development-migration-v1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2306,
+      "age_seconds": 2378,
       "job_id": "coa-gate4b-rerun3-development-migration-v1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2558,
+      "age_seconds": 2630,
       "job_id": "servers-integrations-gate2-formal-certification-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3067,
+      "age_seconds": 3139,
       "job_id": "servers-integrations-gate2b-sql-repo-dossier-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2193,
+      "age_seconds": 2264,
       "job_id": "servers-integrations-gate3a-preflight-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1827,
+      "age_seconds": 1898,
       "job_id": "servers-integrations-gate3b-physical-design-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 676,
+      "age_seconds": 747,
       "job_id": "servers-integrations-gate4a-implementation-preflight-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 502,
+      "age_seconds": 574,
       "job_id": "servers-integrations-gate4b-universal-infra-migration-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 156,
+      "age_seconds": 228,
       "job_id": "servers-integrations-gate4c-execution-preflight-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
@@ -218,13 +212,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 33,
+  "queue_result_ready_recent": 32,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-09T06:42:40Z",
-    "last_receive_utc": "2026-09-09T06:42:35Z",
+    "last_cycle_utc": "2026-09-09T06:43:51Z",
+    "last_receive_utc": "2026-09-09T06:43:46Z",
     "last_terminal_utc": "2026-09-09T06:40:03Z",
     "pid": "1370"
   },
