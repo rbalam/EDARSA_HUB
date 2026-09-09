@@ -1,0 +1,13 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-R2D-05-CIENFUEGOS-INVENTORY-20260908T185600Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"R2D-05: obtener conteo y muestra canonica de inventarios fisicos de CIENFUEGOS usando solo columnas ya certificadas de dbo.Compras_Inventarios_Fisicos_Sync. Solo lectura, sin POS LIVE, Mongo, DDL ni DML.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[{"name":"cienfuegos_inventory_count_and_sample","sql":"SELECT COUNT_BIG(*) AS total_rows, COUNT(DISTINCT folio) AS folios, COUNT(DISTINCT almacen_id) AS almacenes FROM dbo.Compras_Inventarios_Fisicos_Sync WHERE UPPER(unidad_negocio_codigo)='CIENFUEGOS'; SELECT TOP (40) id, unidad_negocio_id, unidad_negocio_codigo, server_id, system_type, folio, fecha, almacen, almacen_id, sucursal, sucursal_id, tipo, estatus, total_productos, sync_source, sync_timestamp, sync_status, comentario FROM dbo.Compras_Inventarios_Fisicos_Sync WHERE UPPER(unidad_negocio_codigo)='CIENFUEGOS' ORDER BY fecha DESC, folio DESC;"}]}],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
