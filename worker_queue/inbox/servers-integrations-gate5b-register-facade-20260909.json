@@ -1,0 +1,23 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"servers-integrations-gate5b-register-facade-20260909",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"73f2023891c5516786e07748f0a5803b62869014",
+  "production_allowed":false,
+  "objective":"Gate 5B: registrar la fachada administrativa read-only integrations_center ya implementada. Cambio exclusivo en backend/server.py. No reemplazar Servidores_Conexiones, server_registry, resolvers ni RBAC; no UI; no DDL/DML; no Production.",
+  "actions":[{
+    "type":"replace_text",
+    "path":"backend/server.py",
+    "expected_count":1,
+    "old":"app = FastAPI(title=\"EDARSA HUB API\")\napi_router = APIRouter(prefix=\"/api\")\n\n# CAVAS CORPORATIVAS GATE 5 - API backend B2B separada y RBAC SQL explicito",
+    "new":"app = FastAPI(title=\"EDARSA HUB API\")\napi_router = APIRouter(prefix=\"/api\")\n\n# GATE 5B - Centro unificado de Conexiones y Comunicaciones (read-only)\ntry:\n    from modules.integrations_center import router as integrations_center_router\n    api_router.include_router(integrations_center_router)\n    print(\"[INTEGRATIONS-CENTER] Router Gate 5B registrado\")\nexcept Exception as _ic_import_err:\n    print(f\"[INTEGRATIONS-CENTER] WARNING router no registrado: {_ic_import_err}\")\n\n# CAVAS CORPORATIVAS GATE 5 - API backend B2B separada y RBAC SQL explicito"
+  }],
+  "checks":[
+    {"type":"git_diff_check"},
+    {"type":"py_compile","paths":["backend/server.py","backend/modules/integrations_center/__init__.py","backend/modules/integrations_center/repository.py","backend/modules/integrations_center/service.py","backend/modules/integrations_center/routes.py"]},
+    {"type":"pytest","paths":["backend/tests/test_integrations_center_gate5b.py"]}
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
