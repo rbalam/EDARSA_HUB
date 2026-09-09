@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-mpro-130qro-origen-readonly-audit-r1-20260909T0030Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Auditar en modo estrictamente READ_ONLY el estado canónico de MPRO para 130QRO/130° QUERETARO y ORIGEN después del cierre certificado de SoftRestaurant. Validar catálogo canónico de unidades y conexiones MPRO sin exponer secretos; cobertura histórica existente en Finanzas_CortesCaja; fechas mínima/máxima y última sincronización; duplicados por identidad canónica; estado de SyncLog MPRO; y evidencia suficiente para decidir si requiere resync histórico. No escribir SQL, no ejecutar sincronización, no tocar Production, no shell ni rutas arbitrarias.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "mpro_canonical_units_and_connections",
+          "sql": "SELECT u.id AS unidad_negocio_id, u.nombre AS unidad_nombre, u.codigo AS unidad_codigo, u.sucursal_origen_id, u.activo, s.id AS server_id, s.nombre AS servidor_nombre, s.system_type, s.database_name FROM dbo.Unidades_Negocio u LEFT JOIN dbo.Servidores_Conexiones s ON CAST(u.server_id AS NVARCHAR(100)) = CAST(s.id AS NVARCHAR(100)) WHERE u.activo = 1 AND s.system_type = 'MPRO' AND (UPPER(u.nombre) LIKE '%QUERETARO%' OR UPPER(u.nombre) LIKE '%QUERÉTARO%' OR UPPER(u.codigo) IN ('130QRO','QRO') OR UPPER(u.nombre) = 'ORIGEN' OR UPPER(u.codigo) = 'ORIGEN') ORDER BY u.nombre;"
+        },
+        {
+          "name": "mpro_cortes_by_unit",
+          "sql": "SELECT UnidadNegocioID, UnidadNegocioNombre, SucursalOrigenID, COUNT_BIG(*) AS total_cortes, MIN(FechaCorte) AS fecha_min, MAX(FechaCorte) AS fecha_max, MAX(FechaSincronizacion) AS ultima_sync FROM dbo.Finanzas_CortesCaja WHERE SistemaOrigen = 'MPRO' AND (UPPER(UnidadNegocioNombre) LIKE '%QUERETARO%' OR UPPER(UnidadNegocioNombre) LIKE '%QUERÉTARO%' OR UPPER(UnidadNegocioNombre) = 'ORIGEN') GROUP BY UnidadNegocioID, UnidadNegocioNombre, SucursalOrigenID ORDER BY UnidadNegocioNombre;"
+        },
+        {
+          "name": "mpro_duplicate_identity_check",
+          "sql": "SELECT COUNT_BIG(*) AS duplicate_groups FROM (SELECT ServerID, FolioCorte, COUNT_BIG(*) AS c FROM dbo.Finanzas_CortesCaja WHERE SistemaOrigen = 'MPRO' AND (UPPER(UnidadNegocioNombre) LIKE '%QUERETARO%' OR UPPER(UnidadNegocioNombre) LIKE '%QUERÉTARO%' OR UPPER(UnidadNegocioNombre) = 'ORIGEN') GROUP BY ServerID, FolioCorte HAVING COUNT_BIG(*) > 1) d;"
+        },
+        {
+          "name": "mpro_total_cortes",
+          "sql": "SELECT COUNT_BIG(*) AS total_cortes_mpro, MIN(FechaCorte) AS fecha_min_global, MAX(FechaCorte) AS fecha_max_global, MAX(FechaSincronizacion) AS ultima_sync_global FROM dbo.Finanzas_CortesCaja WHERE SistemaOrigen = 'MPRO';"
+        },
+        {
+          "name": "mpro_synclog_recent",
+          "sql": "SELECT TOP (20) UnidadNegocioID, ServerID, SistemaOrigen, FechaDesde, FechaHasta, RegistrosLeidos, RegistrosInsertados, RegistrosActualizados, RegistrosOmitidos, RegistrosError, Estatus, TipoEjecucion, FechaInicio, FechaFin FROM dbo.Finanzas_CortesCaja_SyncLog WHERE SistemaOrigen = 'MPRO' ORDER BY FechaInicio DESC;"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "MPRO post-SoftRestaurant read-only audit for 130QRO and ORIGEN"
+  },
+  "human_summary_language": "es"
+}
