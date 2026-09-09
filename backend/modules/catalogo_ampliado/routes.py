@@ -104,3 +104,7 @@ def reglas_alerta(empresa_id:int,current_user:dict=Depends(_gobierno_admin)):
 @router.post('/empresas/{empresa_id}/alertas/reglas',status_code=201)
 def crear_regla_alerta(empresa_id:int,body:AlertaReglaCreate,current_user:dict=Depends(_gobierno_admin)):
     _assert_empresa(empresa_id); return {'success':True,'data':repo.create_alerta_regla(empresa_id,body.model_dump(),_usuario_id(current_user))}
+
+@router.get('/empresas/{empresa_id}/alertas/eventos')
+def eventos_alerta(empresa_id:int,limit:int=Query(default=200,ge=1,le=500),current_user:dict=Depends(_gobierno_admin)):
+    _assert_empresa(empresa_id); return {'success':True,'data':repo.list_alerta_eventos(empresa_id,limit)}

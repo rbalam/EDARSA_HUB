@@ -81,3 +81,54 @@ def list_alerta_reglas(empresa_id: int):
 
 def create_alerta_regla(empresa_id: int, data, usuario_id: int):
     return _insert_one("""INSERT INTO dbo.Gobierno_AlertaRegla(EmpresaID,TipoDocumentoID,UsuarioObjetivoID,DiasAntes,Canal,UsuarioAltaID) OUTPUT INSERTED.* VALUES(%s,%s,%s,%s,%s,%s)""", [empresa_id,data.get('tipo_documento_id'),data.get('usuario_objetivo_id'),data['dias_antes'],data['canal'],usuario_id])
+
+
+def list_alerta_eventos(empresa_id: int, limit: int = 200):
+    limit=max(1,min(int(limit),500))
+    return fetch_all_dict(f"""SELECT TOP {limit} e.*,r.Canal,r.DiasAntes,r.UsuarioObjetivoID,d.DocumentoID,d.Titulo,v.FechaVencimiento,COALESCE(d.EmpresaID,pr.EmpresaID) EmpresaID FROM dbo.Gobierno_AlertaEvento e JOIN dbo.Gobierno_AlertaRegla r ON r.AlertaReglaID=e.AlertaReglaID JOIN dbo.Gobierno_DocumentoVersion v ON v.DocumentoVersionID=e.DocumentoVersionID JOIN dbo.Gobierno_Documento d ON d.DocumentoID=v.DocumentoID LEFT JOIN dbo.Gobierno_PersonaEmpresaRol pr ON pr.PersonaEmpresaRolID=d.PersonaEmpresaRolID WHERE COALESCE(d.EmpresaID,pr.EmpresaID)=%s ORDER BY e.FechaProgramada DESC,e.AlertaEventoID DESC""", [empresa_id])
+
+
+def plan_alerta_eventos() -> int:
+    with sql_connection() as conn:
+        cur=conn.cursor()
+        cur.execute("""
+        INSERT INTO dbo.Gobierno_AlertaEvento(DocumentoVersionID,AlertaReglaID,FechaObjetivo,FechaProgramada)
+        SELECT v.DocumentoVersionID,r.AlertaReglaID,v.FechaVencimiento,DATEADD(DAY,-r.DiasAntes,v.FechaVencimiento)
+        FROM dbo.Gobierno_Documento d
+        JOIN dbo.Gobierno_DocumentoVersion v ON v.DocumentoID=d.DocumentoID
+        LEFT JOIN dbo.Gobierno_PersonaEmpresaRol pr ON pr.PersonaEmpresaRolID=d.PersonaEmpresaRolID
+        JOIN dbo.Gobierno_EmpresaConfiguracion cfg ON cfg.EmpresaID=COALESCE(d.EmpresaID,pr.EmpresaID) AND cfg.Activo=1 AND cfg.CatalogoLegalAmpliadoActivo=1
+        JOIN dbo.Gobierno_AlertaRegla r ON r.Activo=1 AND (r.EmpresaID=COALESCE(d.EmpresaID,pr.EmpresaID) OR r.EmpresaID IS NULL) AND (r.TipoDocumentoID=d.TipoDocumentoID OR r.TipoDocumentoID IS NULL)
+        WHERE d.Activo=1 AND d.Estado='VIGENTE' AND v.EstadoRevision='VALIDADO' AND v.FechaVencimiento IS NOT NULL
+          AND v.NumeroVersion=(SELECT MAX(v2.NumeroVersion) FROM dbo.Gobierno_DocumentoVersion v2 WHERE v2.DocumentoID=d.DocumentoID)
+          AND NOT EXISTS(SELECT 1 FROM dbo.Gobierno_AlertaEvento e WITH (UPDLOCK,HOLDLOCK) WHERE e.DocumentoVersionID=v.DocumentoVersionID AND e.AlertaReglaID=r.AlertaReglaID AND e.FechaObjetivo=v.FechaVencimiento);
+        SELECT @@ROWCOUNT;
+        """)
+        row=cur.fetchone(); conn.commit(); return int(row[0] if row else 0)
+
+
+def list_due_alert_events(limit: int = 50):
+    limit=max(1,min(int(limit),200))
+    return fetch_all_dict(f"""SELECT TOP {limit} e.AlertaEventoID,e.Estado,e.TareaReferencia,e.NotificacionReferencia,e.FechaObjetivo,e.FechaProgramada,r.Canal,r.UsuarioObjetivoID,d.DocumentoID,d.Titulo,COALESCE(d.EmpresaID,pr.EmpresaID) EmpresaID FROM dbo.Gobierno_AlertaEvento e JOIN dbo.Gobierno_AlertaRegla r ON r.AlertaReglaID=e.AlertaReglaID JOIN dbo.Gobierno_DocumentoVersion v ON v.DocumentoVersionID=e.DocumentoVersionID JOIN dbo.Gobierno_Documento d ON d.DocumentoID=v.DocumentoID LEFT JOIN dbo.Gobierno_PersonaEmpresaRol pr ON pr.PersonaEmpresaRolID=d.PersonaEmpresaRolID WHERE e.Estado='PENDIENTE' AND e.FechaProgramada<=CAST(GETDATE() AS date) AND r.Activo=1 AND d.Activo=1 AND d.Estado='VIGENTE' AND v.EstadoRevision='VALIDADO' ORDER BY e.FechaProgramada,e.AlertaEventoID""")
+
+
+def ensure_canonical_task_for_alert(alerta_evento_id: int):
+    with sql_connection() as conn:
+        cur=conn.cursor()
+        cur.execute("""SELECT e.AlertaEventoID,e.Estado,e.TareaReferencia,r.Canal,r.UsuarioObjetivoID,d.Titulo,COALESCE(d.EmpresaID,pr.EmpresaID) EmpresaID,e.FechaObjetivo FROM dbo.Gobierno_AlertaEvento e WITH (UPDLOCK,HOLDLOCK) JOIN dbo.Gobierno_AlertaRegla r ON r.AlertaReglaID=e.AlertaReglaID JOIN dbo.Gobierno_DocumentoVersion v ON v.DocumentoVersionID=e.DocumentoVersionID JOIN dbo.Gobierno_Documento d ON d.DocumentoID=v.DocumentoID LEFT JOIN dbo.Gobierno_PersonaEmpresaRol pr ON pr.PersonaEmpresaRolID=d.PersonaEmpresaRolID WHERE e.AlertaEventoID=%s AND e.Estado IN('PENDIENTE','GENERADA') AND r.Activo=1 AND r.Canal='TAREA' AND d.Activo=1 AND d.Estado='VIGENTE' AND v.EstadoRevision='VALIDADO'""", [alerta_evento_id])
+        row=cur.fetchone()
+        if not row: raise RuntimeError('ALERTA_EVENTO_NO_EJECUTABLE')
+        cols=[d[0] for d in cur.description]; event=dict(zip(cols,row))
+        if event.get('TareaReferencia'):
+            cur.execute("SELECT TOP 1 * FROM dbo.Sistema_Tareas WHERE TareaSistemaID=%s", [int(event['TareaReferencia'])]); task=cur.fetchone(); task_cols=[d[0] for d in cur.description] if cur.description else []; conn.commit(); return dict(zip(task_cols,task)) if task else {'TareaSistemaID':int(event['TareaReferencia'])}
+        cur.execute("SELECT TOP 1 * FROM dbo.Sistema_Tareas WHERE Modulo='CATALOGO_AMPLIADO' AND EntidadTipo='GOBIERNO_ALERTA_EVENTO' AND EntidadID=%s ORDER BY TareaSistemaID", [str(alerta_evento_id)])
+        task=cur.fetchone()
+        if task:
+            task_cols=[d[0] for d in cur.description]; task_dict=dict(zip(task_cols,task))
+        else:
+            codigo=f'GOB-ALERTA-{alerta_evento_id}'
+            cur.execute("""INSERT INTO dbo.Sistema_Tareas(CodigoTarea,TipoTarea,EstadoTarea,Prioridad,TituloTarea,Descripcion,Modulo,EntidadTipo,EntidadID,EmpresaID,AsignadoAUsuarioID,CreadoPorUsuarioID,FechaLimite,MetadataJSON,CreatedAt,CreatedBy) OUTPUT INSERTED.* VALUES(%s,'CUMPLIMIENTO_DOCUMENTAL','PENDIENTE','MEDIA',%s,%s,'CATALOGO_AMPLIADO','GOBIERNO_ALERTA_EVENTO',%s,%s,%s,%s,%s,%s,GETDATE(),%s)""", [codigo,f"Cumplimiento documental: {event['Titulo']}",f"Revisar documento con fecha objetivo {event['FechaObjetivo']}",str(alerta_evento_id),event['EmpresaID'],event['UsuarioObjetivoID'],event['UsuarioObjetivoID'],event['FechaObjetivo'],f'{{"alerta_evento_id":{alerta_evento_id}}}',str(event['UsuarioObjetivoID'])])
+            task_row=cur.fetchone(); task_cols=[d[0] for d in cur.description]; task_dict=dict(zip(task_cols,task_row))
+        tarea_id=int(task_dict['TareaSistemaID'])
+        cur.execute("UPDATE dbo.Gobierno_AlertaEvento SET TareaReferencia=%s,Estado='GENERADA',FechaEjecucion=SYSUTCDATETIME(),ErrorMensaje=NULL WHERE AlertaEventoID=%s", [str(tarea_id),alerta_evento_id])
+        conn.commit(); return task_dict
