@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
-  "generated_at_utc": "2026-09-09T23:02:58Z",
+  "generated_at_utc": "2026-09-09T23:04:13Z",
   "history": {
     "done_total_local": 336,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2585,
+      "age_seconds": 2660,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-R4-RBAC-DETERMINISTIC-OFFLINE-20260909T2000Z",
       "reasons": [
         "INVALID_TARGET_REPO",
@@ -23,73 +23,73 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2379,
+      "age_seconds": 2454,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-R4-DETERMINISTIC-RBAC-32-DEPS-20260909T2148Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2364,
+      "age_seconds": 2440,
       "job_id": "EDARSAHUB-SOFTRESTAURANT-RESTORE-APERTURA-CONTRACT-R43B-CARLOS-20260909T194000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2360,
+      "age_seconds": 2435,
       "job_id": "RRR-GATE4D-R1-ROLLBACK-ABSENCE-READONLY-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2346,
+      "age_seconds": 2422,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5B-R4-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2343,
+      "age_seconds": 2418,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5B-R5-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1763,
+      "age_seconds": 1838,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5C-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 804,
+      "age_seconds": 880,
       "job_id": "servers-integrations-gate5c-formal-certification-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1262,
+      "age_seconds": 1337,
       "job_id": "servers-integrations-gate5c-health-ledger-r1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1117,
+      "age_seconds": 1192,
       "job_id": "servers-integrations-gate5c-ledger-r2-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1020,
+      "age_seconds": 1095,
       "job_id": "servers-integrations-gate5c-ledger-r3-timeout-utc-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 958,
+      "age_seconds": 1033,
       "job_id": "servers-integrations-gate5c-postaudit-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1601,
+      "age_seconds": 1677,
       "job_id": "servers-integrations-gate5c-preflight-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
@@ -107,8 +107,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-09T23:02:54Z",
-    "last_receive_utc": "2026-09-09T23:02:56Z",
+    "last_cycle_utc": "2026-09-09T23:04:07Z",
+    "last_receive_utc": "2026-09-09T23:04:08Z",
     "last_terminal_utc": "2026-09-09T22:49:33Z",
     "pid": "159"
   },
