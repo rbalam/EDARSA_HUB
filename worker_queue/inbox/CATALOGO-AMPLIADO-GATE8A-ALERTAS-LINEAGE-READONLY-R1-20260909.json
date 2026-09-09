@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE8A-ALERTAS-LINEAGE-READONLY-R1-20260909",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "116ded1e6b4fb0f7c2449bb9d26a81fdc24c3441",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Catalogo Ampliado Gate 8A. Auditar SQL real y cerrar el linaje operacional de Gobierno_AlertaEvento antes de implementar ejecucion. Descubrir estructuras canonicas existentes de tareas, notificaciones, comunicaciones, scheduler/automatizacion y usuarios; auditar columnas, claves, indices y referencias; confirmar estructura exacta de Gobierno_AlertaRegla y Gobierno_AlertaEvento y su estado actual. No leer secretos, no crear tablas, no DML/DDL, no modificar codigo ni Worker, no Produccion. El objetivo es determinar de forma SQL-first que componentes canonicos deben reutilizarse para TAREA/EMAIL/WHATSAPP/APP y evitar motores paralelos.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "readonly_identity",
+          "sql": "SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS database_user, ORIGINAL_LOGIN() AS original_login"
+        },
+        {
+          "name": "gobierno_alert_objects",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,o.type_desc,o.create_date,o.modify_date FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name IN ('Gobierno_AlertaRegla','Gobierno_AlertaEvento','Gobierno_Documento','Gobierno_DocumentoVersion','Gobierno_EmpresaConfiguracion','Usuario_Catalogo') ORDER BY o.name"
+        },
+        {
+          "name": "gobierno_alert_columns",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity,dc.definition AS default_definition FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id JOIN sys.columns c ON c.object_id=o.object_id JOIN sys.types t ON t.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id WHERE o.name IN ('Gobierno_AlertaRegla','Gobierno_AlertaEvento','Gobierno_Documento','Gobierno_DocumentoVersion','Gobierno_EmpresaConfiguracion','Usuario_Catalogo') ORDER BY o.name,c.column_id"
+        },
+        {
+          "name": "gobierno_alert_foreign_keys",
+          "sql": "SELECT sch1.name AS parent_schema,obj1.name AS parent_table,fk.name AS fk_name,col1.name AS parent_column,sch2.name AS referenced_schema,obj2.name AS referenced_table,col2.name AS referenced_column,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.objects obj1 ON obj1.object_id=fk.parent_object_id JOIN sys.schemas sch1 ON sch1.schema_id=obj1.schema_id JOIN sys.columns col1 ON col1.object_id=fkc.parent_object_id AND col1.column_id=fkc.parent_column_id JOIN sys.objects obj2 ON obj2.object_id=fk.referenced_object_id JOIN sys.schemas sch2 ON sch2.schema_id=obj2.schema_id JOIN sys.columns col2 ON col2.object_id=fkc.referenced_object_id AND col2.column_id=fkc.referenced_column_id WHERE obj1.name IN ('Gobierno_AlertaRegla','Gobierno_AlertaEvento','Gobierno_Documento','Gobierno_DocumentoVersion','Gobierno_EmpresaConfiguracion') OR obj2.name IN ('Gobierno_AlertaRegla','Gobierno_AlertaEvento','Gobierno_Documento','Gobierno_DocumentoVersion','Gobierno_EmpresaConfiguracion') ORDER BY parent_table,fk_name,fkc.constraint_column_id"
+        },
+        {
+          "name": "gobierno_alert_indexes",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,i.name AS index_name,i.type_desc,i.is_unique,i.is_primary_key,i.has_filter,i.filter_definition,ic.key_ordinal,ic.is_included_column,c.name AS column_name FROM sys.indexes i JOIN sys.objects o ON o.object_id=i.object_id JOIN sys.schemas s ON s.schema_id=o.schema_id JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE o.name IN ('Gobierno_AlertaRegla','Gobierno_AlertaEvento') AND i.index_id>0 ORDER BY o.name,i.name,ic.key_ordinal,ic.index_column_id"
+        },
+        {
+          "name": "canonical_delivery_objects_discovery",
+          "sql": "SELECT TOP (250) s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND (o.name LIKE '%Tarea%' OR o.name LIKE '%Task%' OR o.name LIKE '%Notific%' OR o.name LIKE '%Comunic%' OR o.name LIKE '%Mensaje%' OR o.name LIKE '%Message%' OR o.name LIKE '%Email%' OR o.name LIKE '%Correo%' OR o.name LIKE '%Whats%' OR o.name LIKE '%Scheduler%' OR o.name LIKE '%Program%' OR o.name LIKE '%Automat%' OR o.name LIKE '%Alerta%') ORDER BY o.name"
+        },
+        {
+          "name": "canonical_delivery_columns_discovery",
+          "sql": "SELECT TOP (500) s.name AS schema_name,o.name AS object_name,c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id JOIN sys.columns c ON c.object_id=o.object_id JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE o.is_ms_shipped=0 AND (o.name LIKE '%Tarea%' OR o.name LIKE '%Task%' OR o.name LIKE '%Notific%' OR o.name LIKE '%Comunic%' OR o.name LIKE '%Mensaje%' OR o.name LIKE '%Message%' OR o.name LIKE '%Email%' OR o.name LIKE '%Correo%' OR o.name LIKE '%Whats%' OR o.name LIKE '%Scheduler%' OR o.name LIKE '%Program%' OR o.name LIKE '%Automat%' OR o.name LIKE '%Alerta%') ORDER BY o.name,c.column_id"
+        },
+        {
+          "name": "delivery_reference_candidate_columns",
+          "sql": "SELECT TOP (300) s.name AS schema_name,o.name AS object_name,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id JOIN sys.columns c ON c.object_id=o.object_id JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE o.is_ms_shipped=0 AND (c.name LIKE '%Tarea%' OR c.name LIKE '%Task%' OR c.name LIKE '%Notific%' OR c.name LIKE '%Mensaje%' OR c.name LIKE '%Message%' OR c.name LIKE '%Canal%' OR c.name LIKE '%Destino%' OR c.name LIKE '%UsuarioObjetivo%' OR c.name LIKE '%Referencia%' OR c.name LIKE '%Scheduler%' OR c.name LIKE '%Programada%' OR c.name LIKE '%Ejecucion%') ORDER BY o.name,c.column_id"
+        },
+        {
+          "name": "alert_row_counts",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,SUM(CASE WHEN p.index_id IN (0,1) THEN p.rows ELSE 0 END) AS row_count FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id LEFT JOIN sys.partitions p ON p.object_id=o.object_id WHERE o.name IN ('Gobierno_AlertaRegla','Gobierno_AlertaEvento') GROUP BY s.name,o.name ORDER BY o.name"
+        },
+        {
+          "name": "alert_state_distribution",
+          "sql": "SELECT Estado,COUNT_BIG(*) AS cantidad FROM dbo.Gobierno_AlertaEvento GROUP BY Estado ORDER BY Estado"
+        },
+        {
+          "name": "alert_rule_channel_distribution",
+          "sql": "SELECT Canal,Activo,COUNT_BIG(*) AS cantidad FROM dbo.Gobierno_AlertaRegla GROUP BY Canal,Activo ORDER BY Canal,Activo"
+        },
+        {
+          "name": "duplicate_delivery_named_objects",
+          "sql": "SELECT o.name AS object_name,COUNT(*) AS occurrences FROM sys.objects o WHERE o.is_ms_shipped=0 AND (o.name LIKE '%Tarea%' OR o.name LIKE '%Notific%' OR o.name LIKE '%Comunic%' OR o.name LIKE '%Mensaje%' OR o.name LIKE '%Automat%' OR o.name LIKE '%Scheduler%') GROUP BY o.name HAVING COUNT(*)>1 ORDER BY occurrences DESC,o.name"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "NO Production",
+    "READ_ONLY_SQL only",
+    "NO DML",
+    "NO DDL",
+    "NO secrets or secret values",
+    "NO Worker/Supervisor/watchdog modifications",
+    "NO parallel task/notification engine",
+    "SQL-first",
+    "Reuse canonical task/notification/communication infrastructure if present"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
