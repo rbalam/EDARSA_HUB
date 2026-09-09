@@ -1,0 +1,33 @@
+{
+  "base_sha": "e78f8ff4bcc9dbe42d822a0b8c6c047e28f6be8f",
+  "blockers": [],
+  "candidate_sha": "86a67b52ece80ba9f74f73148685735ba2b54041",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-09T23:35:20Z",
+  "development_sha": "86a67b52ece80ba9f74f73148685735ba2b54041",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/core/communications/dispatcher/dispatcher.py",
+    "backend/core/communications/notifications/repository.py",
+    "backend/core/communications/notifications/repository_sql.py",
+    "backend/core/communications/templates/template_service.py",
+    "backend/database/migrations/20260909_002_communications_queue_rbac.sql",
+    "backend/database/migrations/20260909_002_communications_queue_rbac_rollback.sql",
+    "backend/tests/test_communications_gate5d_sql_first.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "servers-integrations-gate5d-communications-runtime-r2-20260909",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T23:35:27Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-09T23:35:15Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
