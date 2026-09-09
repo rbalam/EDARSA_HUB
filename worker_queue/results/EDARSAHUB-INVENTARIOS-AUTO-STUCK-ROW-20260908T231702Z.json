@@ -1,0 +1,74 @@
+{
+  "base_sha": "116ded1e6b4fb0f7c2449bb9d26a81fdc24c3441",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T05:45:14Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-INVENTARIOS-AUTO-STUCK-ROW-20260908T231702Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T05:45:38Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "ID",
+              "SistemaOrigen",
+              "ServerID",
+              "SucursalID",
+              "AlmacenID",
+              "FolioInventario",
+              "Estado",
+              "Intentos",
+              "FechaDeteccion",
+              "FechaProcesamiento",
+              "FechaUltimoIntento",
+              "ErrorMensaje",
+              "WorkflowID",
+              "DetallesJSON"
+            ],
+            "name": "stuck_row",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                301,
+                "MPRO",
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "0021",
+                "0001",
+                "QR-0001041",
+                "EN_PROCESO",
+                1,
+                "2026-09-01T17:07:50.563000",
+                null,
+                "2026-09-01T17:07:50.563000",
+                null,
+                null,
+                "{\"server_name\": \"ManagmentPro\", \"almacen_nombre\": \"ALMACEN GENERAL\", \"folio_inicial\": \"QR-0001038\"}"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T05:45:13Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
