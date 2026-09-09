@@ -1,0 +1,538 @@
+{
+  "base_sha": "1ec68762a4e3c1ea923c4206435292b512b3afa7",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T05:52:21Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "RRR-GATE3C-POSTAUDIT-READONLY-20260908",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T05:53:38Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "table_name"
+            ],
+            "name": "rrr_tables_present",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "RRR_Beneficios"
+              ],
+              [
+                "RRR_Eventos"
+              ],
+              [
+                "RRR_LedgerMovimientos"
+              ],
+              [
+                "RRR_RankingHistorial"
+              ],
+              [
+                "RRR_Reglas"
+              ],
+              [
+                "RRR_ReglasVersiones"
+              ],
+              [
+                "RRR_ScoreHistorial"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "pk_name"
+            ],
+            "name": "rrr_pk_constraints",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "RRR_Beneficios",
+                "PK_RRR_Beneficios"
+              ],
+              [
+                "RRR_Eventos",
+                "PK_RRR_Eventos"
+              ],
+              [
+                "RRR_LedgerMovimientos",
+                "PK_RRR_LedgerMovimientos"
+              ],
+              [
+                "RRR_RankingHistorial",
+                "PK_RRR_RankingHistorial"
+              ],
+              [
+                "RRR_Reglas",
+                "PK_RRR_Reglas"
+              ],
+              [
+                "RRR_ReglasVersiones",
+                "PK_RRR_ReglasVersiones"
+              ],
+              [
+                "RRR_ScoreHistorial",
+                "PK_RRR_ScoreHistorial"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "object_type",
+              "constraint_name"
+            ],
+            "name": "rrr_all_constraints",
+            "row_count_returned": 30,
+            "rows": [
+              [
+                "RRR_Beneficios",
+                "F ",
+                "FK_RRR_Beneficios_UsuarioCreacion"
+              ],
+              [
+                "RRR_Beneficios",
+                "PK",
+                "PK_RRR_Beneficios"
+              ],
+              [
+                "RRR_Beneficios",
+                "UQ",
+                "UQ_RRR_Beneficios_Codigo"
+              ],
+              [
+                "RRR_Eventos",
+                "F ",
+                "FK_RRR_Eventos_Cliente"
+              ],
+              [
+                "RRR_Eventos",
+                "F ",
+                "FK_RRR_Eventos_Empresa"
+              ],
+              [
+                "RRR_Eventos",
+                "F ",
+                "FK_RRR_Eventos_UnidadNegocio"
+              ],
+              [
+                "RRR_Eventos",
+                "F ",
+                "FK_RRR_Eventos_Venta"
+              ],
+              [
+                "RRR_Eventos",
+                "PK",
+                "PK_RRR_Eventos"
+              ],
+              [
+                "RRR_Eventos",
+                "UQ",
+                "UQ_RRR_Eventos_Source"
+              ],
+              [
+                "RRR_LedgerMovimientos",
+                "C ",
+                "CK_RRR_Ledger_Tipo"
+              ],
+              [
+                "RRR_LedgerMovimientos",
+                "F ",
+                "FK_RRR_Ledger_Beneficio"
+              ],
+              [
+                "RRR_LedgerMovimientos",
+                "F ",
+                "FK_RRR_Ledger_Cliente"
+              ],
+              [
+                "RRR_LedgerMovimientos",
+                "F ",
+                "FK_RRR_Ledger_Evento"
+              ],
+              [
+                "RRR_LedgerMovimientos",
+                "F ",
+                "FK_RRR_Ledger_ReglaVersion"
+              ],
+              [
+                "RRR_LedgerMovimientos",
+                "F ",
+                "FK_RRR_Ledger_Reversal"
+              ],
+              [
+                "RRR_LedgerMovimientos",
+                "F ",
+                "FK_RRR_Ledger_UsuarioCreacion"
+              ],
+              [
+                "RRR_LedgerMovimientos",
+                "PK",
+                "PK_RRR_LedgerMovimientos"
+              ],
+              [
+                "RRR_LedgerMovimientos",
+                "UQ",
+                "UQ_RRR_Ledger_Idempotency"
+              ],
+              [
+                "RRR_RankingHistorial",
+                "F ",
+                "FK_RRR_Ranking_Cliente"
+              ],
+              [
+                "RRR_RankingHistorial",
+                "F ",
+                "FK_RRR_Ranking_Score"
+              ],
+              [
+                "RRR_RankingHistorial",
+                "PK",
+                "PK_RRR_RankingHistorial"
+              ],
+              [
+                "RRR_Reglas",
+                "F ",
+                "FK_RRR_Reglas_UsuarioCreacion"
+              ],
+              [
+                "RRR_Reglas",
+                "PK",
+                "PK_RRR_Reglas"
+              ],
+              [
+                "RRR_Reglas",
+                "UQ",
+                "UQ_RRR_Reglas_Codigo"
+              ],
+              [
+                "RRR_ReglasVersiones",
+                "F ",
+                "FK_RRR_ReglasVersiones_Regla"
+              ],
+              [
+                "RRR_ReglasVersiones",
+                "F ",
+                "FK_RRR_ReglasVersiones_UsuarioCreacion"
+              ],
+              [
+                "RRR_ReglasVersiones",
+                "PK",
+                "PK_RRR_ReglasVersiones"
+              ],
+              [
+                "RRR_ReglasVersiones",
+                "UQ",
+                "UQ_RRR_ReglasVersiones_ReglaVersion"
+              ],
+              [
+                "RRR_ScoreHistorial",
+                "F ",
+                "FK_RRR_Score_Cliente"
+              ],
+              [
+                "RRR_ScoreHistorial",
+                "PK",
+                "PK_RRR_ScoreHistorial"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "column_name",
+              "data_type",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable"
+            ],
+            "name": "rrr_key_column_types",
+            "row_count_returned": 24,
+            "rows": [
+              [
+                "RRR_Beneficios",
+                "BeneficioID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                false
+              ],
+              [
+                "RRR_Beneficios",
+                "UsuarioCreacionID",
+                "int",
+                4,
+                10,
+                0,
+                true
+              ],
+              [
+                "RRR_Eventos",
+                "EventoID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                false
+              ],
+              [
+                "RRR_Eventos",
+                "ClienteID",
+                "int",
+                4,
+                10,
+                0,
+                false
+              ],
+              [
+                "RRR_Eventos",
+                "EmpresaID",
+                "int",
+                4,
+                10,
+                0,
+                true
+              ],
+              [
+                "RRR_Eventos",
+                "UnidadNegocioID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                true
+              ],
+              [
+                "RRR_Eventos",
+                "VentaID",
+                "bigint",
+                8,
+                19,
+                0,
+                true
+              ],
+              [
+                "RRR_LedgerMovimientos",
+                "MovimientoID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                false
+              ],
+              [
+                "RRR_LedgerMovimientos",
+                "ClienteID",
+                "int",
+                4,
+                10,
+                0,
+                false
+              ],
+              [
+                "RRR_LedgerMovimientos",
+                "EventoID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                true
+              ],
+              [
+                "RRR_LedgerMovimientos",
+                "ReglaVersionID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                true
+              ],
+              [
+                "RRR_LedgerMovimientos",
+                "BeneficioID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                true
+              ],
+              [
+                "RRR_LedgerMovimientos",
+                "ReversalMovimientoID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                true
+              ],
+              [
+                "RRR_LedgerMovimientos",
+                "UsuarioCreacionID",
+                "int",
+                4,
+                10,
+                0,
+                true
+              ],
+              [
+                "RRR_RankingHistorial",
+                "RankingID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                false
+              ],
+              [
+                "RRR_RankingHistorial",
+                "ClienteID",
+                "int",
+                4,
+                10,
+                0,
+                false
+              ],
+              [
+                "RRR_RankingHistorial",
+                "ScoreID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                true
+              ],
+              [
+                "RRR_Reglas",
+                "ReglaID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                false
+              ],
+              [
+                "RRR_Reglas",
+                "UsuarioCreacionID",
+                "int",
+                4,
+                10,
+                0,
+                true
+              ],
+              [
+                "RRR_ReglasVersiones",
+                "ReglaVersionID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                false
+              ],
+              [
+                "RRR_ReglasVersiones",
+                "ReglaID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                false
+              ],
+              [
+                "RRR_ReglasVersiones",
+                "UsuarioCreacionID",
+                "int",
+                4,
+                10,
+                0,
+                true
+              ],
+              [
+                "RRR_ScoreHistorial",
+                "ScoreID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                false
+              ],
+              [
+                "RRR_ScoreHistorial",
+                "ClienteID",
+                "int",
+                4,
+                10,
+                0,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "row_count"
+            ],
+            "name": "rrr_row_counts",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "RRR_Beneficios",
+                "0"
+              ],
+              [
+                "RRR_Eventos",
+                "0"
+              ],
+              [
+                "RRR_LedgerMovimientos",
+                "0"
+              ],
+              [
+                "RRR_RankingHistorial",
+                "0"
+              ],
+              [
+                "RRR_Reglas",
+                "0"
+              ],
+              [
+                "RRR_ReglasVersiones",
+                "0"
+              ],
+              [
+                "RRR_ScoreHistorial",
+                "0"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T05:52:19Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
