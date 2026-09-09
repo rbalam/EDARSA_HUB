@@ -1,0 +1,13 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-AUTO-STUCK-ROW-20260908T231702Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Identificar exactamente el registro EN_PROCESO en Scheduler_InventariosProcesados y su antigüedad. Solo lectura.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[{"name":"stuck_row","sql":"SELECT ID,SistemaOrigen,ServerID,SucursalID,AlmacenID,FolioInventario,Estado,Intentos,FechaDeteccion,FechaProcesamiento,FechaUltimoIntento,ErrorMensaje,WorkflowID,DetallesJSON FROM dbo.Scheduler_InventariosProcesados WHERE Estado='EN_PROCESO' ORDER BY FechaDeteccion ASC"}]}],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
