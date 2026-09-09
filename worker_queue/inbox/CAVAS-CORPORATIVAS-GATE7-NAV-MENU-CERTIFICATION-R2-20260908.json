@@ -1,0 +1,40 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE7-NAV-MENU-CERTIFICATION-R2-20260908",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Certificar Gate 7 de Cavas Corporativas verificando fisicamente en SQL canonico que la navegacion/menu corporativo existe, esta activo, apunta a /cavas-corporativas y reutiliza el modulo CAVA_SOCIOS sin duplicar RBAC. No escribir SQL ni repositorio y no tocar Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "cavas_corporativas_canonical_menu",
+          "sql": "SELECT MenuID, ModuloID, MenuPadreID, Codigo, Nombre, Ruta, Orden, RequierePermiso, Activo FROM dbo.Sistema_ModulosMenus WHERE Codigo=N'cava.corporativas' OR Ruta=N'/cavas-corporativas' ORDER BY MenuID"
+        },
+        {
+          "name": "cavas_corporativas_menu_module_binding",
+          "sql": "SELECT sm.ModuloID, sm.Codigo AS ModuloCodigo, sm.Nombre AS ModuloNombre, sm.Activo AS ModuloActivo, mm.MenuID, mm.Codigo AS MenuCodigo, mm.Ruta, mm.RequierePermiso, mm.Activo AS MenuActivo FROM dbo.Sistema_Modulos sm INNER JOIN dbo.Sistema_ModulosMenus mm ON mm.ModuloID=sm.ModuloID WHERE sm.Codigo=N'CAVA_SOCIOS' AND (mm.Codigo=N'cava.corporativas' OR mm.Ruta=N'/cavas-corporativas') ORDER BY mm.MenuID"
+        },
+        {
+          "name": "cavas_corporativas_menu_collision_count",
+          "sql": "SELECT SUM(CASE WHEN Codigo=N'cava.corporativas' THEN 1 ELSE 0 END) AS code_count, SUM(CASE WHEN Ruta=N'/cavas-corporativas' THEN 1 ELSE 0 END) AS route_count FROM dbo.Sistema_ModulosMenus"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL ONLY",
+    "ACTIONS MUST REMAIN EMPTY",
+    "NO DDL/DML",
+    "NO Production",
+    "Expected canonical row: Codigo=cava.corporativas, Ruta=/cavas-corporativas, RequierePermiso=cava_socios, Activo=1",
+    "Expected no collision: code_count=1 and route_count=1"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
