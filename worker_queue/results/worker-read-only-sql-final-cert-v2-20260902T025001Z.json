@@ -1,23 +1,98 @@
 {
   "base_sha": "024caebcd0581b979527b5fda4455ad113757b18",
   "blockers": [],
-  "certification": "NOT_CERTIFIED",
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
   "completed_at_utc": "2026-09-02T02:50:24Z",
   "executor": "chatgpt-deterministic",
   "files_changed": [],
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "worker-read-only-sql-final-cert-v2-20260902T025001Z",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-09-02T02:50:48Z",
+  "published_at_utc": "2026-09-09T01:14:49Z",
   "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
   "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name"
+            ],
+            "name": "database_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "usuario_count"
+            ],
+            "name": "canonical_users_count",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "26"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "RolID",
+              "CodigoRol",
+              "NombreRol"
+            ],
+            "name": "canonical_roles_sample",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                1,
+                "ADMIN",
+                "Administrador"
+              ],
+              [
+                2,
+                "GERENCIA",
+                "Gerencia"
+              ],
+              [
+                3,
+                "COMPRAS",
+                "Compras"
+              ],
+              [
+                4,
+                "VENTAS",
+                "Ventas"
+              ],
+              [
+                5,
+                "TESORERIA",
+                "Tesoreria"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
   "started_at_utc": "2026-09-02T02:50:23Z",
   "status": "READ_ONLY_COMPLETE",
   "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
   "tests": "PASS",
-  "work_completion": "NOT_CERTIFIED"
+  "work_completion": "COMPLETE"
 }
