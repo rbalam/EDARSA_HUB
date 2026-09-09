@@ -1,0 +1,442 @@
+{
+  "base_sha": "d270216d6d1bafcb8f48d53d5c8832d664672298",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T02:08:45Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CATALOGO-AMPLIADO-GATE3-POST-DDL-AUDIT-R1-20260908",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T02:08:56Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "table_name"
+            ],
+            "name": "postddl_tables",
+            "row_count_returned": 11,
+            "rows": [
+              [
+                "Gobierno_AlertaEvento"
+              ],
+              [
+                "Gobierno_AlertaRegla"
+              ],
+              [
+                "Gobierno_Documento"
+              ],
+              [
+                "Gobierno_DocumentoMovimiento"
+              ],
+              [
+                "Gobierno_DocumentoVersion"
+              ],
+              [
+                "Gobierno_EmpresaConfiguracion"
+              ],
+              [
+                "Gobierno_Persona"
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol"
+              ],
+              [
+                "Gobierno_PersonaVinculo"
+              ],
+              [
+                "Gobierno_RolCorporativoCatalogo"
+              ],
+              [
+                "Gobierno_TipoDocumento"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "pk_name"
+            ],
+            "name": "postddl_primary_keys",
+            "row_count_returned": 11,
+            "rows": [
+              [
+                "Gobierno_AlertaEvento",
+                "PK_Gobierno_AlertaEvento"
+              ],
+              [
+                "Gobierno_AlertaRegla",
+                "PK_Gobierno_AlertaRegla"
+              ],
+              [
+                "Gobierno_Documento",
+                "PK_Gobierno_Documento"
+              ],
+              [
+                "Gobierno_DocumentoMovimiento",
+                "PK_Gobierno_DocumentoMovimiento"
+              ],
+              [
+                "Gobierno_DocumentoVersion",
+                "PK_Gobierno_DocumentoVersion"
+              ],
+              [
+                "Gobierno_EmpresaConfiguracion",
+                "PK_Gobierno_EmpresaConfiguracion"
+              ],
+              [
+                "Gobierno_Persona",
+                "PK_Gobierno_Persona"
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol",
+                "PK_Gobierno_PersonaEmpresaRol"
+              ],
+              [
+                "Gobierno_PersonaVinculo",
+                "PK_Gobierno_PersonaVinculo"
+              ],
+              [
+                "Gobierno_RolCorporativoCatalogo",
+                "PK_Gobierno_RolCorporativoCatalogo"
+              ],
+              [
+                "Gobierno_TipoDocumento",
+                "PK_Gobierno_TipoDocumento"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "index_name",
+              "is_unique"
+            ],
+            "name": "postddl_indexes",
+            "row_count_returned": 15,
+            "rows": [
+              [
+                "Gobierno_AlertaEvento",
+                "IX_GobAE_Programada",
+                false
+              ],
+              [
+                "Gobierno_AlertaRegla",
+                "IX_GobAR_EmpTipo",
+                false
+              ],
+              [
+                "Gobierno_Documento",
+                "IX_GobDoc_Empresa",
+                false
+              ],
+              [
+                "Gobierno_Documento",
+                "IX_GobDoc_Persona",
+                false
+              ],
+              [
+                "Gobierno_DocumentoVersion",
+                "IX_GobDocVer_Vencimiento",
+                false
+              ],
+              [
+                "Gobierno_DocumentoMovimiento",
+                "IX_GobMov_DocFecha",
+                false
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol",
+                "IX_GobPER_EmpresaRol",
+                false
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol",
+                "IX_GobPER_Persona",
+                false
+              ],
+              [
+                "Gobierno_Persona",
+                "UX_GobPersona_CURP",
+                true
+              ],
+              [
+                "Gobierno_Persona",
+                "UX_GobPersona_RFC",
+                true
+              ],
+              [
+                "Gobierno_PersonaVinculo",
+                "UX_GobPV_Cliente",
+                true
+              ],
+              [
+                "Gobierno_PersonaVinculo",
+                "UX_GobPV_ContactoCliente",
+                true
+              ],
+              [
+                "Gobierno_PersonaVinculo",
+                "UX_GobPV_ContactoProveedor",
+                true
+              ],
+              [
+                "Gobierno_PersonaVinculo",
+                "UX_GobPV_Proveedor",
+                true
+              ],
+              [
+                "Gobierno_PersonaVinculo",
+                "UX_GobPV_Usuario",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "parent_table",
+              "fk_name",
+              "referenced_table"
+            ],
+            "name": "postddl_foreign_keys",
+            "row_count_returned": 31,
+            "rows": [
+              [
+                "Gobierno_AlertaEvento",
+                "FK_GobAE_Regla",
+                "Gobierno_AlertaRegla"
+              ],
+              [
+                "Gobierno_AlertaEvento",
+                "FK_GobAE_Ver",
+                "Gobierno_DocumentoVersion"
+              ],
+              [
+                "Gobierno_AlertaRegla",
+                "FK_GobAR_Emp",
+                "Sistema_Empresas"
+              ],
+              [
+                "Gobierno_AlertaRegla",
+                "FK_GobAR_Tipo",
+                "Gobierno_TipoDocumento"
+              ],
+              [
+                "Gobierno_AlertaRegla",
+                "FK_GobAR_UsuarioAlta",
+                "Usuario_Catalogo"
+              ],
+              [
+                "Gobierno_AlertaRegla",
+                "FK_GobAR_UsuarioObjetivo",
+                "Usuario_Catalogo"
+              ],
+              [
+                "Gobierno_Documento",
+                "FK_GobDoc_Empresa",
+                "Sistema_Empresas"
+              ],
+              [
+                "Gobierno_Documento",
+                "FK_GobDoc_Persona",
+                "Gobierno_Persona"
+              ],
+              [
+                "Gobierno_Documento",
+                "FK_GobDoc_Rel",
+                "Gobierno_PersonaEmpresaRol"
+              ],
+              [
+                "Gobierno_Documento",
+                "FK_GobDoc_Tipo",
+                "Gobierno_TipoDocumento"
+              ],
+              [
+                "Gobierno_Documento",
+                "FK_GobDoc_UsuarioAlta",
+                "Usuario_Catalogo"
+              ],
+              [
+                "Gobierno_DocumentoMovimiento",
+                "FK_GobMov_Doc",
+                "Gobierno_Documento"
+              ],
+              [
+                "Gobierno_DocumentoMovimiento",
+                "FK_GobMov_Usuario",
+                "Usuario_Catalogo"
+              ],
+              [
+                "Gobierno_DocumentoMovimiento",
+                "FK_GobMov_Ver",
+                "Gobierno_DocumentoVersion"
+              ],
+              [
+                "Gobierno_DocumentoVersion",
+                "FK_GobDocVer_Doc",
+                "Gobierno_Documento"
+              ],
+              [
+                "Gobierno_DocumentoVersion",
+                "FK_GobDocVer_Revisor",
+                "Usuario_Catalogo"
+              ],
+              [
+                "Gobierno_DocumentoVersion",
+                "FK_GobDocVer_UsuarioAlta",
+                "Usuario_Catalogo"
+              ],
+              [
+                "Gobierno_EmpresaConfiguracion",
+                "FK_GobEmpCfg_Empresa",
+                "Sistema_Empresas"
+              ],
+              [
+                "Gobierno_EmpresaConfiguracion",
+                "FK_GobEmpCfg_Usuario",
+                "Usuario_Catalogo"
+              ],
+              [
+                "Gobierno_Persona",
+                "FK_GobPersona_UsuarioActualizacion",
+                "Usuario_Catalogo"
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol",
+                "FK_GobPER_Empresa",
+                "Sistema_Empresas"
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol",
+                "FK_GobPER_Persona",
+                "Gobierno_Persona"
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol",
+                "FK_GobPER_Rol",
+                "Gobierno_RolCorporativoCatalogo"
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol",
+                "FK_GobPER_UsuarioAlta",
+                "Usuario_Catalogo"
+              ],
+              [
+                "Gobierno_PersonaVinculo",
+                "FK_GobPV_Cliente",
+                "Cliente_Catalogo"
+              ],
+              [
+                "Gobierno_PersonaVinculo",
+                "FK_GobPV_ContactoCliente",
+                "Cliente_Contactos"
+              ],
+              [
+                "Gobierno_PersonaVinculo",
+                "FK_GobPV_ContactoProveedor",
+                "Proveedor_Contactos"
+              ],
+              [
+                "Gobierno_PersonaVinculo",
+                "FK_GobPV_Persona",
+                "Gobierno_Persona"
+              ],
+              [
+                "Gobierno_PersonaVinculo",
+                "FK_GobPV_Proveedor",
+                "Proveedor_Catalogo"
+              ],
+              [
+                "Gobierno_PersonaVinculo",
+                "FK_GobPV_Usuario",
+                "Usuario_Catalogo"
+              ],
+              [
+                "Gobierno_PersonaVinculo",
+                "FK_GobPV_UsuarioAlta",
+                "Usuario_Catalogo"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "row_count"
+            ],
+            "name": "postddl_row_counts",
+            "row_count_returned": 11,
+            "rows": [
+              [
+                "Gobierno_AlertaEvento",
+                "0"
+              ],
+              [
+                "Gobierno_AlertaRegla",
+                "0"
+              ],
+              [
+                "Gobierno_Documento",
+                "0"
+              ],
+              [
+                "Gobierno_DocumentoMovimiento",
+                "0"
+              ],
+              [
+                "Gobierno_DocumentoVersion",
+                "0"
+              ],
+              [
+                "Gobierno_EmpresaConfiguracion",
+                "0"
+              ],
+              [
+                "Gobierno_Persona",
+                "0"
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol",
+                "0"
+              ],
+              [
+                "Gobierno_PersonaVinculo",
+                "0"
+              ],
+              [
+                "Gobierno_RolCorporativoCatalogo",
+                "0"
+              ],
+              [
+                "Gobierno_TipoDocumento",
+                "0"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T02:08:43Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
