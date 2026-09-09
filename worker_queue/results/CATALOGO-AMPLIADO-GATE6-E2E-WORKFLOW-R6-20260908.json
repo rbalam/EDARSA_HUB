@@ -1,0 +1,23 @@
+{
+  "base_sha": "c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:GIT_FAILED:branch agent/worker/CATALOGO-AMPLIADO-GATE6-E2E-WORKFLOW-R6-20260908 c3ae8aaebe80b98005a6f0f7619912d39f0b8cca:fatal: a branch named 'agent/worker/CATALOGO-AMPLIADO-GATE6-E2E-WORKFLOW-R6-20260908' already exists\n"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-09T05:11:44Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CATALOGO-AMPLIADO-GATE6-E2E-WORKFLOW-R6-20260908",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T05:11:45Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-09T05:11:44Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
