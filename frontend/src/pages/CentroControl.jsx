@@ -340,11 +340,11 @@ const CentroControl = () => {
       {/* ================================================================== */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl shadow-lg">
-            <Shield className="w-8 h-8 text-white" />
+          <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-lg shadow-sm">
+            <Shield className="w-8 h-8 text-zinc-100" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Centro de Control EDARSA</h1>
+            <h1 className="text-2xl font-bold text-zinc-100">Centro de Control EDARSA</h1>
             <p className="text-sm text-zinc-400">Estado actual del sistema</p>
           </div>
         </div>
@@ -372,7 +372,7 @@ const CentroControl = () => {
             variant="outline" 
             size="sm"
             onClick={() => setAutoRefresh(!autoRefresh)}
-            className={autoRefresh ? 'border-green-500 text-green-400' : ''}
+            className={autoRefresh ? 'border-emerald-800 bg-emerald-950/30 text-emerald-300' : 'border-zinc-800 bg-zinc-900 text-zinc-300'}
           >
             <Clock className="w-4 h-4 mr-2" />
             Auto {autoRefresh ? 'ON' : 'OFF'}
@@ -382,6 +382,7 @@ const CentroControl = () => {
             size="sm" 
             onClick={handleRefresh}
             disabled={refreshing}
+            className="border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             Refrescar
@@ -407,7 +408,7 @@ const CentroControl = () => {
       {/* TABS */}
       {/* ================================================================== */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-zinc-900 border border-zinc-800 flex-wrap h-auto gap-1 p-1">
+        <TabsList className="bg-zinc-950/70 border border-zinc-800 rounded-lg flex-wrap h-auto gap-1 p-1 shadow-sm">
           <TabsTrigger value="resumen" className="text-xs">Resumen</TabsTrigger>
           <TabsTrigger value="modulos" className="text-xs">Módulos</TabsTrigger>
           <TabsTrigger value="alertas" className="text-xs relative">
