@@ -1,0 +1,254 @@
+{
+  "base_sha": "c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T05:19:38Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CORPORATIVAS-GATE9-PERSISTENCE-PHYSICAL-CERTIFICATION-01",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T05:20:02Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "table_name"
+            ],
+            "name": "cavas_corporativas_core_tables",
+            "row_count_returned": 8,
+            "rows": [
+              [
+                "CavasCorporativas_AplicacionesBeneficio"
+              ],
+              [
+                "CavasCorporativas_Autorizados"
+              ],
+              [
+                "CavasCorporativas_BeneficioAlcances"
+              ],
+              [
+                "CavasCorporativas_Beneficios"
+              ],
+              [
+                "CavasCorporativas_Convenios"
+              ],
+              [
+                "CavasCorporativas_ConvenioUnidades"
+              ],
+              [
+                "CavasCorporativas_OrganizacionesRef"
+              ],
+              [
+                "CavasCorporativas_Politicas"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "pk_name"
+            ],
+            "name": "cavas_corporativas_primary_keys",
+            "row_count_returned": 8,
+            "rows": [
+              [
+                "CavasCorporativas_AplicacionesBeneficio",
+                "PK_CavasCorporativas_AplicacionesBeneficio"
+              ],
+              [
+                "CavasCorporativas_Autorizados",
+                "PK_CavasCorporativas_Autorizados"
+              ],
+              [
+                "CavasCorporativas_BeneficioAlcances",
+                "PK_CavasCorporativas_BeneficioAlcances"
+              ],
+              [
+                "CavasCorporativas_Beneficios",
+                "PK_CavasCorporativas_Beneficios"
+              ],
+              [
+                "CavasCorporativas_Convenios",
+                "PK_CavasCorporativas_Convenios"
+              ],
+              [
+                "CavasCorporativas_ConvenioUnidades",
+                "PK_CavasCorporativas_ConvenioUnidades"
+              ],
+              [
+                "CavasCorporativas_OrganizacionesRef",
+                "PK_CavasCorporativas_OrganizacionesRef"
+              ],
+              [
+                "CavasCorporativas_Politicas",
+                "PK_CavasCorporativas_Politicas"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "parent_table",
+              "fk_name",
+              "referenced_table"
+            ],
+            "name": "cavas_corporativas_foreign_keys",
+            "row_count_returned": 10,
+            "rows": [
+              [
+                "CavasCorporativas_AplicacionesBeneficio",
+                "FK_CC_Aplicacion_Autorizado",
+                "CavasCorporativas_Autorizados"
+              ],
+              [
+                "CavasCorporativas_AplicacionesBeneficio",
+                "FK_CC_Aplicacion_Beneficio",
+                "CavasCorporativas_Beneficios"
+              ],
+              [
+                "CavasCorporativas_AplicacionesBeneficio",
+                "FK_CC_Aplicacion_Convenio",
+                "CavasCorporativas_Convenios"
+              ],
+              [
+                "CavasCorporativas_Autorizados",
+                "FK_CC_Autorizado_Convenio",
+                "CavasCorporativas_Convenios"
+              ],
+              [
+                "CavasCorporativas_BeneficioAlcances",
+                "FK_CC_Alcance_Beneficio",
+                "CavasCorporativas_Beneficios"
+              ],
+              [
+                "CavasCorporativas_Beneficios",
+                "FK_CC_Beneficio_Convenio",
+                "CavasCorporativas_Convenios"
+              ],
+              [
+                "CavasCorporativas_Convenios",
+                "FK_CC_Convenio_Organizacion",
+                "CavasCorporativas_OrganizacionesRef"
+              ],
+              [
+                "CavasCorporativas_ConvenioUnidades",
+                "FK_CC_ConvenioUnidad_Convenio",
+                "CavasCorporativas_Convenios"
+              ],
+              [
+                "CavasCorporativas_Politicas",
+                "FK_CC_Politica_Beneficio",
+                "CavasCorporativas_Beneficios"
+              ],
+              [
+                "CavasCorporativas_Politicas",
+                "FK_CC_Politica_Convenio",
+                "CavasCorporativas_Convenios"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "index_name",
+              "is_unique"
+            ],
+            "name": "cavas_corporativas_required_indexes",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "CavasCorporativas_AplicacionesBeneficio",
+                "IX_CC_Aplicaciones_Operacion",
+                false
+              ],
+              [
+                "CavasCorporativas_AplicacionesBeneficio",
+                "UQ_CC_Aplicacion_Idempotencia",
+                true
+              ],
+              [
+                "CavasCorporativas_Autorizados",
+                "IX_CC_Autorizados_Identidad",
+                false
+              ],
+              [
+                "CavasCorporativas_BeneficioAlcances",
+                "UX_CC_Alcance",
+                true
+              ],
+              [
+                "CavasCorporativas_Convenios",
+                "IX_CC_Convenios_OrganizacionEstado",
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "row_count"
+            ],
+            "name": "cavas_corporativas_row_counts",
+            "row_count_returned": 8,
+            "rows": [
+              [
+                "CavasCorporativas_AplicacionesBeneficio",
+                "0"
+              ],
+              [
+                "CavasCorporativas_Autorizados",
+                "0"
+              ],
+              [
+                "CavasCorporativas_BeneficioAlcances",
+                "0"
+              ],
+              [
+                "CavasCorporativas_Beneficios",
+                "0"
+              ],
+              [
+                "CavasCorporativas_Convenios",
+                "0"
+              ],
+              [
+                "CavasCorporativas_ConvenioUnidades",
+                "0"
+              ],
+              [
+                "CavasCorporativas_OrganizacionesRef",
+                "0"
+              ],
+              [
+                "CavasCorporativas_Politicas",
+                "0"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T05:19:35Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
