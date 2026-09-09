@@ -1,0 +1,61 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate3d-final-r2-readonly-preflight-v1-20260909",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "49fec3d91d359cb436f7fdb2dd03b1dd26319d19",
+  "mode": "READ_ONLY_SQL",
+  "objective": "COA Gate 3D: preflight FINAL exclusivamente READ_ONLY sobre el DDL R2 certificado en docs/COA/COA_GATE3B_MINIMAL_DDL.sql. Validar nuevamente ausencia de colisiones de tablas/constraints/indexes, compatibilidad exacta de todas las FK, incluyendo la nueva MonedaID smallint -> dbo.Proveedor_Monedas(MonedaID), y confirmar que Proveedor_Monedas.MonedaID es PK o UNIQUE referenciable. Verificar tambien que no exista MonedaCodigo libre en los objetos COA propuestos y que no haya cambios de schema que invaliden el DDL desde Gate 3C. No ejecutar CREATE TABLE ni ningun DDL/DML/EXEC/SELECT INTO. No tocar Produccion. Solo si todas las verificaciones pasan, el resultado podra considerarse READY_FOR_EXECUTION_PREFLIGHT.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA",
+    "chat": "coa-gate3d-final-r2-readonly-preflight-v1-20260909"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "coa_r2_object_collisions",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name IN ('COA_Expedientes','COA_ExpedienteEventos','COA_ExpedienteReferencias','COA_ReglasComision','COA_ReglasComisionCondiciones','COA_ExcepcionesRegla','COA_ComisionAplicada') ORDER BY s.name,o.name"
+        },
+        {
+          "name": "coa_r2_constraint_collisions",
+          "sql": "SELECT o.name AS constraint_name,o.type_desc,OBJECT_SCHEMA_NAME(o.parent_object_id) AS parent_schema,OBJECT_NAME(o.parent_object_id) AS parent_table FROM sys.objects o WHERE o.name LIKE 'PK_COA_%' OR o.name LIKE 'FK_COA_%' OR o.name LIKE 'CK_COA_%' OR o.name LIKE 'UQ_COA_%' OR o.name LIKE 'DF_COA_%' ORDER BY o.name"
+        },
+        {
+          "name": "coa_r2_index_collisions",
+          "sql": "SELECT OBJECT_SCHEMA_NAME(i.object_id) AS schema_name,OBJECT_NAME(i.object_id) AS table_name,i.name AS index_name FROM sys.indexes i WHERE i.name LIKE 'IX_COA_%' ORDER BY i.name"
+        },
+        {
+          "name": "coa_r2_required_reference_columns",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID') OR (t.name='Cliente_Catalogo' AND c.name='ClienteID') OR (t.name='Proveedor_Catalogo' AND c.name='ProveedorID') OR (t.name='Proveedor_Monedas' AND c.name='MonedaID') OR (t.name='Compras_DocumentosFiscales' AND c.name='DocumentoFiscalID') OR (t.name='Finanzas_Pagos' AND c.name='PagoID') OR (t.name='Finanzas_CxP_DecisionesPago' AND c.name='DecisionPagoID') OR (t.name='RH_Nomina' AND c.name='NominaID') OR (t.name='RH_Nomina_Dispersion' AND c.name='DispersionNominaID') OR (t.name='RH_Nomina_Recibos' AND c.name='NominaReciboID') OR (t.name='RH_Colaboradores_Expediente' AND c.name='ColaboradorID') OR (t.name='CRM_Contratos' AND c.name='ContratoID') ORDER BY t.name,c.name"
+        },
+        {
+          "name": "coa_r2_required_reference_pk_unique",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,i.name AS index_name,i.is_primary_key,i.is_unique,ic.key_ordinal FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.indexes i ON i.object_id=t.object_id AND (i.is_primary_key=1 OR i.is_unique=1) JOIN sys.index_columns ic ON ic.object_id=t.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE ((t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID') OR (t.name='Cliente_Catalogo' AND c.name='ClienteID') OR (t.name='Proveedor_Catalogo' AND c.name='ProveedorID') OR (t.name='Proveedor_Monedas' AND c.name='MonedaID') OR (t.name='Compras_DocumentosFiscales' AND c.name='DocumentoFiscalID') OR (t.name='Finanzas_Pagos' AND c.name='PagoID') OR (t.name='Finanzas_CxP_DecisionesPago' AND c.name='DecisionPagoID') OR (t.name='RH_Nomina' AND c.name='NominaID') OR (t.name='RH_Nomina_Dispersion' AND c.name='DispersionNominaID') OR (t.name='RH_Nomina_Recibos' AND c.name='NominaReciboID') OR (t.name='RH_Colaboradores_Expediente' AND c.name='ColaboradorID') OR (t.name='CRM_Contratos' AND c.name='ContratoID')) AND ic.key_ordinal=1 ORDER BY t.name,c.name,i.is_primary_key DESC"
+        },
+        {
+          "name": "coa_r2_moneda_catalog_contract",
+          "sql": "SELECT c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable,c.is_identity,dc.definition AS default_definition FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=t.object_id AND dc.parent_column_id=c.column_id WHERE t.name='Proveedor_Monedas' ORDER BY c.column_id"
+        },
+        {
+          "name": "coa_r2_moneda_existing_fk_usage",
+          "sql": "SELECT sch1.name AS parent_schema,t1.name AS parent_table,c1.name AS parent_column,fk.name AS fk_name,sch2.name AS referenced_schema,t2.name AS referenced_table,c2.name AS referenced_column FROM sys.foreign_key_columns fkc JOIN sys.foreign_keys fk ON fk.object_id=fkc.constraint_object_id JOIN sys.tables t1 ON t1.object_id=fkc.parent_object_id JOIN sys.schemas sch1 ON sch1.schema_id=t1.schema_id JOIN sys.columns c1 ON c1.object_id=t1.object_id AND c1.column_id=fkc.parent_column_id JOIN sys.tables t2 ON t2.object_id=fkc.referenced_object_id JOIN sys.schemas sch2 ON sch2.schema_id=t2.schema_id JOIN sys.columns c2 ON c2.object_id=t2.object_id AND c2.column_id=fkc.referenced_column_id WHERE t2.name='Proveedor_Monedas' AND c2.name='MonedaID' ORDER BY sch1.name,t1.name,fk.name"
+        },
+        {
+          "name": "coa_r2_schema_fingerprint_references",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Sistema_Empresas','Unidades_Negocio','Usuario_Catalogo','Cliente_Catalogo','Proveedor_Catalogo','Proveedor_Monedas','Compras_DocumentosFiscales','Finanzas_Pagos','Finanzas_CxP_DecisionesPago','RH_Nomina','RH_Nomina_Dispersion','RH_Nomina_Recibos','RH_Colaboradores_Expediente','CRM_Contratos') AND c.name IN ('EmpresaID','id','UsuarioID','ClienteID','ProveedorID','MonedaID','DocumentoFiscalID','PagoID','DecisionPagoID','NominaID','DispersionNominaID','NominaReciboID','ColaboradorID','ContratoID') ORDER BY t.name,c.name"
+        },
+        {
+          "name": "coa_r2_database_contract",
+          "sql": "SELECT DB_NAME() AS database_name,DATABASEPROPERTYEX(DB_NAME(),'Collation') AS database_collation,compatibility_level FROM sys.databases WHERE name=DB_NAME()"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
