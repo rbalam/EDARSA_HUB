@@ -1,0 +1,22 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"servers-integrations-gate5c-preflight-readonly-20260909",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"efe2c06fc73e0c7306b05a7c260af3e3b369a66e",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Gate 5C preflight. Confirmar contrato exacto de Servidores_ConexionEstado para persistencia de health y mapear jobs existentes de Sync_Control_Ejecuciones al Codigo exacto de Sistema_Sync_Catalogo. Solo lectura. No secretos. No DDL/DML. Production prohibida.",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"gate5c_identity","sql":"SELECT DB_NAME() database_name,SUSER_SNAME() login_name,USER_NAME() database_user"},
+    {"name":"gate5c_health_columns","sql":"SELECT c.column_id,c.name column_name,t.name data_type,c.max_length,c.is_nullable,dc.definition default_definition FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id WHERE c.object_id=OBJECT_ID('dbo.Servidores_ConexionEstado') ORDER BY c.column_id"},
+    {"name":"gate5c_health_keys","sql":"SELECT kc.name constraint_name,kc.type_desc,c.name column_name,ic.key_ordinal FROM sys.key_constraints kc JOIN sys.index_columns ic ON ic.object_id=kc.parent_object_id AND ic.index_id=kc.unique_index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE kc.parent_object_id=OBJECT_ID('dbo.Servidores_ConexionEstado') ORDER BY kc.name,ic.key_ordinal"},
+    {"name":"gate5c_sync_catalog","sql":"SELECT Codigo,Nombre,Grupo,Handler,HandlerImplementado,RequiereUnidad,Activo FROM dbo.Sistema_Sync_Catalogo ORDER BY Orden,Codigo"},
+    {"name":"gate5c_existing_sync_types","sql":"SELECT TOP 100 SyncType,COUNT_BIG(*) total FROM dbo.Sync_Control_Ejecuciones GROUP BY SyncType ORDER BY COUNT_BIG(*) DESC,SyncType"},
+    {"name":"gate5c_connection_unit_candidates","sql":"SELECT TOP 100 CONVERT(varchar(36),id) ConexionID,nombre,system_type,tipo_conexion,EmpresaID,sucursales,activo FROM dbo.Servidores_Conexiones ORDER BY tipo_conexion,nombre"},
+    {"name":"gate5c_units","sql":"SELECT CONVERT(varchar(36),id) UnidadNegocioID,codigo,nombre,activo FROM dbo.Unidades_Negocio ORDER BY nombre"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
