@@ -1,0 +1,72 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE12A-IDENTIDAD-SOCIO-METADATA-AUDIT-20260909",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "efe2c06fc73e0c7306b05a7c260af3e3b369a66e",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate 12A de Cavas Corporativas: auditar sin mutacion la relacion fisica actual entre dbo.CavaSocios_Socios y dbo.Cliente_Catalogo para definir la normalizacion Cliente canonico <-> membresia Socio Cava. Confirmar columnas, PK, FK, indices, columnas de identidad/contacto duplicadas y dependencias que pudieran romperse. No inferir nombres no observados, no leer valores PII y no modificar SQL, codigo ni Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate12a_socios_columns",
+          "sql": "SELECT c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.precision, c.scale, c.is_nullable, dc.definition AS default_definition FROM sys.columns c INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id WHERE c.object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') ORDER BY c.column_id"
+        },
+        {
+          "name": "gate12a_cliente_columns_identity_contact",
+          "sql": "SELECT c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.precision, c.scale, c.is_nullable FROM sys.columns c INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID(N'dbo.Cliente_Catalogo') AND (c.name LIKE N'%Cliente%' OR c.name LIKE N'%Email%' OR c.name LIKE N'%Correo%' OR c.name LIKE N'%Telefono%' OR c.name LIKE N'%Celular%' OR c.name LIKE N'%Activo%' OR c.name LIKE N'%RFC%' OR c.name LIKE N'%Codigo%') ORDER BY c.column_id"
+        },
+        {
+          "name": "gate12a_socios_primary_unique_indexes",
+          "sql": "SELECT i.name AS index_name, i.is_primary_key, i.is_unique, i.is_unique_constraint, ic.key_ordinal, c.name AS column_name, ic.is_included_column FROM sys.indexes i INNER JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id INNER JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND i.index_id>0 ORDER BY i.index_id, ic.key_ordinal, ic.index_column_id"
+        },
+        {
+          "name": "gate12a_cliente_primary_unique_indexes",
+          "sql": "SELECT i.name AS index_name, i.is_primary_key, i.is_unique, i.is_unique_constraint, ic.key_ordinal, c.name AS column_name, ic.is_included_column FROM sys.indexes i INNER JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id INNER JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.Cliente_Catalogo') AND i.index_id>0 ORDER BY i.index_id, ic.key_ordinal, ic.index_column_id"
+        },
+        {
+          "name": "gate12a_foreign_keys_touching_socios",
+          "sql": "SELECT fk.name AS fk_name, OBJECT_SCHEMA_NAME(fk.parent_object_id) AS parent_schema, OBJECT_NAME(fk.parent_object_id) AS parent_table, pc.name AS parent_column, OBJECT_SCHEMA_NAME(fk.referenced_object_id) AS referenced_schema, OBJECT_NAME(fk.referenced_object_id) AS referenced_table, rc.name AS referenced_column, fk.delete_referential_action_desc, fk.update_referential_action_desc, fk.is_disabled, fk.is_not_trusted FROM sys.foreign_keys fk INNER JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id INNER JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id INNER JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fk.parent_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') OR fk.referenced_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') ORDER BY fk.name, fkc.constraint_column_id"
+        },
+        {
+          "name": "gate12a_direct_fk_socios_cliente",
+          "sql": "SELECT fk.name AS fk_name, pc.name AS socio_column, rc.name AS cliente_column, fk.is_disabled, fk.is_not_trusted FROM sys.foreign_keys fk INNER JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id INNER JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id INNER JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fk.parent_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND fk.referenced_object_id=OBJECT_ID(N'dbo.Cliente_Catalogo') ORDER BY fk.name, fkc.constraint_column_id"
+        },
+        {
+          "name": "gate12a_identity_contact_overlap",
+          "sql": "SELECT s.name AS socio_column, sty.name AS socio_type, s.max_length AS socio_max_length, s.is_nullable AS socio_nullable, c.name AS cliente_column, cty.name AS cliente_type, c.max_length AS cliente_max_length, c.is_nullable AS cliente_nullable FROM sys.columns s INNER JOIN sys.types sty ON sty.user_type_id=s.user_type_id INNER JOIN sys.columns c ON c.object_id=OBJECT_ID(N'dbo.Cliente_Catalogo') INNER JOIN sys.types cty ON cty.user_type_id=c.user_type_id WHERE s.object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND ((s.name LIKE N'%Email%' AND (c.name LIKE N'%Email%' OR c.name LIKE N'%Correo%')) OR (s.name LIKE N'%Correo%' AND (c.name LIKE N'%Email%' OR c.name LIKE N'%Correo%')) OR (s.name LIKE N'%Telefono%' AND (c.name LIKE N'%Telefono%' OR c.name LIKE N'%Celular%')) OR (s.name LIKE N'%Celular%' AND (c.name LIKE N'%Telefono%' OR c.name LIKE N'%Celular%')) OR (s.name=N'Activo' AND c.name=N'Activo')) ORDER BY s.column_id,c.column_id"
+        },
+        {
+          "name": "gate12a_objects_depending_on_socios",
+          "sql": "SELECT DISTINCT OBJECT_SCHEMA_NAME(d.referencing_id) AS referencing_schema, OBJECT_NAME(d.referencing_id) AS referencing_object, o.type_desc AS referencing_type FROM sys.sql_expression_dependencies d INNER JOIN sys.objects o ON o.object_id=d.referencing_id WHERE d.referenced_id=OBJECT_ID(N'dbo.CavaSocios_Socios') ORDER BY referencing_schema, referencing_object"
+        },
+        {
+          "name": "gate12a_socios_fk_children",
+          "sql": "SELECT DISTINCT OBJECT_SCHEMA_NAME(fk.parent_object_id) AS child_schema, OBJECT_NAME(fk.parent_object_id) AS child_table, fk.name AS fk_name FROM sys.foreign_keys fk WHERE fk.referenced_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') ORDER BY child_schema, child_table, fk.name"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL ONLY",
+    "ACTIONS MUST REMAIN EMPTY",
+    "NO DDL/DML",
+    "NO Production",
+    "NO .env OR SECRETS",
+    "NO PII VALUE READS; METADATA ONLY",
+    "NO Mongo",
+    "NO new tables, columns, endpoints, migrations or code changes",
+    "Cliente_Catalogo remains the canonical customer identity; do not create Entidad_Catalogo or a parallel customer catalog",
+    "CavaSocios_Socios is evaluated as a Cava membership extension, not assumed to be the identity master",
+    "Do not assume the linking column name; certify it only if physically observed in FK/index/column metadata",
+    "Do not deprecate Email/Telefono/other duplicated fields yet; only identify candidates and dependencies",
+    "Preserve NumeroSocio, MaximoBotellas, membership status and Cava-specific attributes unless evidence proves otherwise",
+    "Output must support a later REUSE / EXTEND / DEPRECATE / NOT_DETERMINABLE decision without guessing"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
