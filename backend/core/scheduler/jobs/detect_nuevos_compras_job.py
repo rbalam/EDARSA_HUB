@@ -86,7 +86,9 @@ def _acquire_detect_lock(run_id: str) -> bool:
                 started = started.replace(tzinfo=ZoneInfo("America/Mexico_City"))
             if started < timeout_threshold:
                 cursor.execute("""
-                    UPDATE Sync_Control_Ejecuciones SET Status='TIMEOUT', FinishedAtMexico=%s
+                    UPDATE Sync_Control_Ejecuciones
+                    SET Status='TIMEOUT', FinishedAtMexico=%s,
+                        FinishedAtUTC=COALESCE(FinishedAtUTC,SYSUTCDATETIME())
                     WHERE SyncControlID=%s
                 """, (now_mx.replace(tzinfo=None), active['SyncControlID']))
                 conn.commit()
