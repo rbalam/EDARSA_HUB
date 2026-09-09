@@ -1,0 +1,13 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-R2D-08-INVENTORY-COUNT-20260908T185700Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"R2D-08: conteo aislado de inventarios fisicos canonicos de CIENFUEGOS en dbo.Compras_Inventarios_Fisicos_Sync. Una sola sentencia SELECT, solo lectura.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[{"name":"inventory_count","sql":"SELECT COUNT_BIG(*) AS total_rows FROM dbo.Compras_Inventarios_Fisicos_Sync WHERE UPPER(unidad_negocio_codigo)='CIENFUEGOS'"}]}],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
