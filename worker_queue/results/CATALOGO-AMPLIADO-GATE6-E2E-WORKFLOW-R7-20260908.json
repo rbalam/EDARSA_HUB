@@ -1,0 +1,23 @@
+{
+  "base_sha": "97a53f76ab9b5ded191a8f53e797a31d029c9e25",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:AGENT_GUARD_WORKTREE_CREATE_FAILED:.vscode/tasks.json:1:1: error: AGENT_GUARD: Scope superpuesto con worker-CATALOGO-AMPLIADO-GATE6-E2E-WORKFLOW-R6-20260908: .github/workflows/catalogo-ampliado-gate6-e2e.yml <-> .github/workflows/catalogo-ampliado-gate6-e2e.yml\n"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-09T04:43:53Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CATALOGO-AMPLIADO-GATE6-E2E-WORKFLOW-R7-20260908",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T04:44:19Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-09T04:43:52Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
