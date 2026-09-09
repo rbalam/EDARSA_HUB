@@ -1,0 +1,46 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P1-EXACT-KPI-20260908T0002Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "GATE 2 P1: corregir verdad de KPI de errores 24h del Monitor de Sincronización. El listado visual puede seguir limitado a TOP N, pero kpis.total_errores_24h debe provenir de COUNT(*) SQL exacto sobre Compras_Sync_Log y Comercial_SyncLog_v2. No alterar el universo de fuentes, thresholds, UI ni otras reglas en este segmento. SQL-first, no Mongo, no LIVE, no Production.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_monitor/service.py",
+      "old": "        comercial_syncs = cursor.fetchall()\n        \n        # 4. Obtener errores últimas 24h\n",
+      "new": "        comercial_syncs = cursor.fetchall()\n\n        # KPI exacto de errores 24h: los listados posteriores usan TOP N solo para UI.\n        cursor.execute(\"\"\"\n            SELECT COUNT(*) AS total\n            FROM Compras_Sync_Log\n            WHERE status != 'OK'\n              AND sync_start >= %s\n        \"\"\", (hace_24h,))\n        row = cursor.fetchone() or {}\n        total_errores_compras_24h = int(row.get(\"total\") or 0)\n\n        cursor.execute(\"\"\"\n            SELECT COUNT(*) AS total\n            FROM Comercial_SyncLog_v2\n            WHERE status != 'SUCCESS'\n              AND run_timestamp >= %s\n        \"\"\", (hace_24h,))\n        row = cursor.fetchone() or {}\n        total_errores_comercial_24h = int(row.get(\"total\") or 0)\n\n        # 4. Obtener errores últimas 24h\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_monitor/service.py",
+      "old": "        total_errores_24h = len(errores)\n",
+      "new": "        total_errores_24h = total_errores_compras_24h + total_errores_comercial_24h\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_sync_monitor_exact_error_kpi_contract.py",
+      "content": "from pathlib import Path\n\n\ndef _service_source() -> str:\n    return (\n        Path(__file__).resolve().parents[1]\n        / \"modules\"\n        / \"sync_monitor\"\n        / \"service.py\"\n    ).read_text(encoding=\"utf-8\")\n\n\ndef test_error_kpi_uses_exact_sql_counts_not_truncated_list_length():\n    source = _service_source()\n    assert \"SELECT COUNT(*) AS total\" in source\n    assert \"total_errores_compras_24h\" in source\n    assert \"total_errores_comercial_24h\" in source\n    assert \"total_errores_24h = total_errores_compras_24h + total_errores_comercial_24h\" in source\n    assert \"total_errores_24h = len(errores)\" not in source\n\n\ndef test_error_detail_lists_remain_bounded_for_ui():\n    source = _service_source()\n    assert source.count(\"SELECT TOP 50\") >= 2\n    assert '\"errores\": errores[:20]' in source\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/sync_monitor/service.py", "backend/tests/test_sync_monitor_exact_error_kpi_contract.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_sync_monitor_exact_error_kpi_contract.py", "backend/tests/test_sync_monitor_rbac_contract.py"]}
+  ],
+  "constraints": [
+    "NO Production",
+    "NO Mongo",
+    "NO LIVE source connections",
+    "NO threshold changes in this job",
+    "NO UI changes in this job",
+    "NO worker structure changes",
+    "Do not replace TOP N detail queries; only decouple KPI truth from list truncation",
+    "Preserve Gate 2 P0 explicit RBAC contract"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "technical"
+}
