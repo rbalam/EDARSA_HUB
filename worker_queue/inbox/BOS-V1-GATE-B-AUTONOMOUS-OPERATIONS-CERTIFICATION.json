@@ -1,0 +1,27 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-B-AUTONOMOUS-OPERATIONS-CERTIFICATION",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Certificar formalmente Gate B - Operacion autonoma usando exclusivamente evidencia existente. No rehacer Worker ni infraestructura. Verificar Universal Worker, intake/dispatch/result/health desacoplados, mirror/watchdog/self-healing, cola, evidencia terminal, idempotencia/gates y protecciones contra cambios destructivos ya certificadas o implementadas; usar health canonico worker/health y el status estrategico que clasifica Automatizacion/Worker/self-healing en 100%. Persistir solamente dossier y prueba de certificacion. No tocar Production ni modificar Worker, Supervisor, watchdog o cron.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/BOS/certifications/BOS_V1_GATE_B_AUTONOMOUS_OPERATIONS_CERTIFICATION.md",
+      "content": "# BOS V1 Gate B - Autonomous Operations Certification\n\nCertificacion de evidencia existente. No modifica Worker ni infraestructura.\n\nCriterio: Universal Worker, mirror, watchdog, self-healing, cola, evidencias, idempotencia, gates y proteccion contra cambios destructivos.\n\nEvidencia: Programa Estrategico BOS; Status Programa Estrategico BOS; arquitectura del Universal Worker con loops independientes de intake/dispatch/result/health; health canonico en worker/health.\n\nProduction: NO.\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_bos_v1_gate_b_autonomous_operations_certification.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nPROGRAM = ROOT / 'docs' / 'BOS' / 'PROGRAMA_ESTRATEGICO_BOS_EDARSAHUB_DIRECCION.md'\nSTATUS = ROOT / 'docs' / 'BOS' / 'STATUS_PROGRAMA_ESTRATEGICO_BOS_DIRECCION.md'\nWORKER = ROOT / 'tools' / 'mirror_sync' / 'universal_job_worker.sh'\n\ndef test_gate_b_contract_and_existing_autonomous_worker():\n    program = PROGRAM.read_text(encoding='utf-8')\n    status = STATUS.read_text(encoding='utf-8')\n    worker = WORKER.read_text(encoding='utf-8')\n    assert 'Gate B - Operacion autonoma' in program\n    for token in ('Universal Worker', 'mirror', 'watchdog', 'self-healing', 'cola', 'evidencias', 'idempotencia', 'gates', 'proteccion contra cambios destructivos'):\n        assert token in program\n    assert '| Automatizacion / Worker / self-healing | 100% |' in status\n    assert 'intake_loop &' in worker\n    assert 'dispatch_loop &' in worker\n    assert 'result_loop &' in worker\n    assert 'health_loop &' in worker\n"
+    }
+  ],
+  "checks": [
+    {"type": "py_compile", "paths": ["backend/tests/test_bos_v1_gate_b_autonomous_operations_certification.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_bos_v1_gate_b_autonomous_operations_certification.py"]},
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
