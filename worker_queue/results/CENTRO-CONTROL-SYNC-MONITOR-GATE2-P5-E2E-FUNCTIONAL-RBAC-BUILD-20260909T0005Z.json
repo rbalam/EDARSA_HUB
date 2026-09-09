@@ -1,0 +1,23 @@
+{
+  "base_sha": "519743ffc5e095b2d519cbc80ed6df6e13ddc810",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:REPLACE_COUNT_MISMATCH:backend/core/centro_control/routes.py:expected=1:actual=32"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-09T06:24:46Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-E2E-FUNCTIONAL-RBAC-BUILD-20260909T0005Z",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T06:24:56Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-09T06:24:44Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
