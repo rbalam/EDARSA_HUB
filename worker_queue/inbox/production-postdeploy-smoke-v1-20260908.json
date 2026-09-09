@@ -1,0 +1,28 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "production-postdeploy-smoke-v1-20260908",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Produccion",
+  "production_allowed": true,
+  "base_sha": "7bd7f621b6a919f6fa427c49e217379496c6c068",
+  "objective": "Validar post-deploy de Produccion sin modificar archivos ni datos: confirmar integridad del backend, rutas criticas /api/health y /api/auth/login, flujo auth refresh E2E cuando las credenciales de prueba y REACT_APP_BACKEND_URL esten disponibles, y build frontend. No aplicar acciones, no escribir en Produccion, no ejecutar SQL de escritura.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/server.py",
+        "tools/repository_safety/backend_route_smoke.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_backend_route_smoke_contract.py",
+        "backend/tests/test_auth_refresh_flow.py"
+      ]
+    },
+    {"type": "frontend_build", "directory": "frontend"}
+  ],
+  "human_summary_language": "es"
+}
