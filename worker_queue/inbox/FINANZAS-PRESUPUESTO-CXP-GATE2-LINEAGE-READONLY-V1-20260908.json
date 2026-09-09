@@ -1,0 +1,57 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"FINANZAS-PRESUPUESTO-CXP-GATE2-LINEAGE-READONLY-V1-20260908",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"97a53f76ab9b5ded191a8f53e797a31d029c9e25",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Cerrar con evidencia SQL las cuatro preguntas de Presupuesto↔CxP: (1) qué alimenta realmente Finanzas_Presupuestos.Monto_Ejecutado; (2) cómo se relacionan Compras_Recepciones/CxP con Categoria/SubCategoria presupuestal; (3) cómo distinguir ejecutado vs comprometido para evitar doble conteo; (4) si dbo.fn_CalcularProyeccionMensual es reutilizable para forecast presupuestal. No DDL/DML, no LIVE, no Mongo, no Production.",
+  "actions":[],
+  "checks":[{
+    "type":"sql_readonly_audit",
+    "queries":[
+      {
+        "name":"budget_execution_writers_dependencies",
+        "sql":"SELECT s.name AS schema_name,o.name AS object_name,o.type_desc,CASE WHEN sm.definition LIKE '%Monto_Ejecutado%' THEN 1 ELSE 0 END AS references_monto_ejecutado,CASE WHEN sm.definition LIKE '%Finanzas_Presupuestos%' THEN 1 ELSE 0 END AS references_presupuestos FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id LEFT JOIN sys.sql_modules sm ON sm.object_id=o.object_id WHERE o.is_ms_shipped=0 AND sm.definition IS NOT NULL AND (sm.definition LIKE '%Monto_Ejecutado%' OR sm.definition LIKE '%Finanzas_Presupuestos%') ORDER BY o.type_desc,s.name,o.name"
+      },
+      {
+        "name":"budget_execution_trigger_inventory",
+        "sql":"SELECT s.name AS schema_name,t.name AS table_name,tr.name AS trigger_name,tr.is_disabled,OBJECT_DEFINITION(tr.object_id) AS trigger_definition FROM sys.triggers tr JOIN sys.tables t ON t.object_id=tr.parent_id JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name='Finanzas_Presupuestos' OR OBJECT_DEFINITION(tr.object_id) LIKE '%Finanzas_Presupuestos%' OR OBJECT_DEFINITION(tr.object_id) LIKE '%Monto_Ejecutado%' ORDER BY s.name,t.name,tr.name"
+      },
+      {
+        "name":"budget_execution_profile",
+        "sql":"SELECT COUNT_BIG(*) AS rows_total,SUM(CASE WHEN ISNULL(Monto_Ejecutado,0)<>0 THEN 1 ELSE 0 END) AS rows_with_execution,MIN(Fecha_Creacion) AS min_created,MAX(Fecha_Modificacion) AS max_modified,MIN(Anio) AS min_year,MAX(Anio) AS max_year FROM dbo.Finanzas_Presupuestos"
+      },
+      {
+        "name":"budget_classification_columns_full",
+        "sql":"SELECT t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Finanzas_Presupuestos','Compras_Recepciones','Compras_RecepcionesDetalle','Compras','Compras_Detalle','Finanzas_CxP_Sync','Finanzas_CxP_DecisionesPago','Producto_Catalogo','Producto_Familias','Producto_Subfamilias','Producto_Grupos','Proveedor_Catalogo') ORDER BY t.name,c.column_id"
+      },
+      {
+        "name":"classification_fk_paths",
+        "sql":"SELECT pt.name AS parent_table,pc.name AS parent_column,fk.name AS fk_name,rt.name AS referenced_table,rc.name AS referenced_column FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.tables pt ON pt.object_id=fkc.parent_object_id JOIN sys.columns pc ON pc.object_id=pt.object_id AND pc.column_id=fkc.parent_column_id JOIN sys.tables rt ON rt.object_id=fkc.referenced_object_id JOIN sys.columns rc ON rc.object_id=rt.object_id AND rc.column_id=fkc.referenced_column_id WHERE pt.name IN ('Finanzas_Presupuestos','Compras_Recepciones','Compras_RecepcionesDetalle','Compras','Compras_Detalle','Finanzas_CxP_Sync','Finanzas_CxP_DecisionesPago','Producto_Catalogo','Producto_Familias','Producto_Subfamilias','Producto_Grupos','Proveedor_Catalogo') OR rt.name IN ('Finanzas_Presupuestos','Producto_Catalogo','Producto_Familias','Producto_Subfamilias','Producto_Grupos','Proveedor_Catalogo','Unidades_Negocio') ORDER BY pt.name,fk.name,pc.name"
+      },
+      {
+        "name":"cxp_receipt_common_key_columns",
+        "sql":"SELECT a.name AS cxp_column,b.name AS receipt_column,TYPE_NAME(a.user_type_id) AS cxp_type,TYPE_NAME(b.user_type_id) AS receipt_type FROM sys.columns a CROSS JOIN sys.columns b WHERE a.object_id=OBJECT_ID('dbo.Finanzas_CxP_Sync') AND b.object_id=OBJECT_ID('dbo.Compras_Recepciones') AND LOWER(a.name)=LOWER(b.name) ORDER BY a.name"
+      },
+      {
+        "name":"cxp_decision_sync_common_key_columns",
+        "sql":"SELECT a.name AS decision_column,b.name AS sync_column,TYPE_NAME(a.user_type_id) AS decision_type,TYPE_NAME(b.user_type_id) AS sync_type FROM sys.columns a CROSS JOIN sys.columns b WHERE a.object_id=OBJECT_ID('dbo.Finanzas_CxP_DecisionesPago') AND b.object_id=OBJECT_ID('dbo.Finanzas_CxP_Sync') AND LOWER(a.name)=LOWER(b.name) ORDER BY a.name"
+      },
+      {
+        "name":"cxp_decision_fk_paths",
+        "sql":"SELECT pt.name AS parent_table,pc.name AS parent_column,fk.name AS fk_name,rt.name AS referenced_table,rc.name AS referenced_column FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.tables pt ON pt.object_id=fkc.parent_object_id JOIN sys.columns pc ON pc.object_id=pt.object_id AND pc.column_id=fkc.parent_column_id JOIN sys.tables rt ON rt.object_id=fkc.referenced_object_id JOIN sys.columns rc ON rc.object_id=rt.object_id AND rc.column_id=fkc.referenced_column_id WHERE pt.name IN ('Finanzas_CxP_DecisionesPago','Finanzas_CxP_PagosOrigenQueue') ORDER BY pt.name,fk.name"
+      },
+      {
+        "name":"projection_function_live_definition",
+        "sql":"SELECT s.name AS schema_name,o.name AS object_name,o.type_desc,OBJECT_DEFINITION(o.object_id) AS definition FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE s.name='dbo' AND o.name IN ('fn_CalcularProyeccionMensual','fn_CalcularProyeccionAnual365') ORDER BY o.name"
+      },
+      {
+        "name":"projection_function_parameters",
+        "sql":"SELECT o.name AS object_name,p.parameter_id,p.name AS parameter_name,TYPE_NAME(p.user_type_id) AS data_type,p.max_length,p.precision,p.scale FROM sys.objects o JOIN sys.parameters p ON p.object_id=o.object_id WHERE o.name IN ('fn_CalcularProyeccionMensual','fn_CalcularProyeccionAnual365') ORDER BY o.name,p.parameter_id"
+      }
+    ]
+  }],
+  "human_summary_language":"es"
+}
