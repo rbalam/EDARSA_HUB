@@ -1,0 +1,38 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"servers-integrations-gate4d-channel-fix-r3-20260909",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"9e76067a605e13ae5744528a9ab41b5f89e2acaf",
+  "production_allowed":false,
+  "objective":"Corregir el canal Gate 4D antes del reintento. La primera ejecución falló antes de SQL porque vars.EDARSAHUB_SQL_HOST/PORT/DATABASE están vacías. Reutilizar la configuración no secreta del canal canónico COA ya operativo sin duplicar valores hardcodeados. Corregir también la parametrización IN() del preflight/postcheck. No ejecutar migración en este job; Production prohibida.",
+  "actions":[
+    {
+      "type":"replace_text",
+      "path":".github/workflows/servers-integrations-universal-development-migration.yml",
+      "old_text":"    env:\n      EDARSAHUB_SQL_HOST: ${{ vars.EDARSAHUB_SQL_HOST }}\n      EDARSAHUB_SQL_PORT: ${{ vars.EDARSAHUB_SQL_PORT }}\n      EDARSAHUB_SQL_DATABASE: ${{ vars.EDARSAHUB_SQL_DATABASE }}\n      MIGRATION_SCRIPT: backend/database/migrations/20260909_001_servidores_integraciones_universal_infra.sql\n      ROLLBACK_SCRIPT: backend/database/migrations/20260909_001_servidores_integraciones_universal_infra_rollback.sql",
+      "new_text":"    env:\n      MIGRATION_SCRIPT: backend/database/migrations/20260909_001_servidores_integraciones_universal_infra.sql\n      ROLLBACK_SCRIPT: backend/database/migrations/20260909_001_servidores_integraciones_universal_infra_rollback.sql"
+    },
+    {
+      "type":"replace_text",
+      "path":".github/workflows/servers-integrations-universal-development-migration.yml",
+      "old_text":"      - name: Validate development connection configuration\n        shell: bash\n        run: |\n          set -euo pipefail\n          test -n \"${EDARSAHUB_SQL_HOST:-}\"\n          test -n \"${EDARSAHUB_SQL_PORT:-}\"\n          test -n \"${EDARSAHUB_SQL_DATABASE:-}\"\n          test \"${GITHUB_REF}\" = 'refs/heads/Edarsahub_Desarrollo'\n          test -f \"${MIGRATION_SCRIPT}\"\n          test -f \"${ROLLBACK_SCRIPT}\"",
+      "new_text":"      - name: Resolve canonical Development SQL endpoint\n        shell: bash\n        run: |\n          set -euo pipefail\n          test \"${GITHUB_REF}\" = 'refs/heads/Edarsahub_Desarrollo'\n          test -f \"${MIGRATION_SCRIPT}\"\n          test -f \"${ROLLBACK_SCRIPT}\"\n          test -f '.github/workflows/coa-core-development-migration.yml'\n          python - <<'PY'\n          import os,re\n          from pathlib import Path\n          text=Path('.github/workflows/coa-core-development-migration.yml').read_text(encoding='utf-8')\n          keys=('EDARSAHUB_SQL_HOST','EDARSAHUB_SQL_PORT','EDARSAHUB_SQL_DATABASE')\n          out=[]\n          for key in keys:\n              m=re.search(r'^\\s*'+re.escape(key)+r':\\s*[\\\"\\\']?([^\\\"\\\'\\n#]+)[\\\"\\\']?\\s*$', text, re.M)\n              if not m:\n                  raise SystemExit('GATE4D_CANONICAL_ENDPOINT_NOT_FOUND:'+key)\n              value=m.group(1).strip()\n              if not value:\n                  raise SystemExit('GATE4D_CANONICAL_ENDPOINT_EMPTY:'+key)\n              out.append(f'{key}={value}')\n          with open(os.environ['GITHUB_ENV'],'a',encoding='utf-8') as f:\n              f.write('\\n'.join(out)+'\\n')\n          print('GATE4D_CANONICAL_ENDPOINT=RESOLVED')\n          PY"
+    },
+    {
+      "type":"replace_text",
+      "path":".github/workflows/servers-integrations-universal-development-migration.yml",
+      "old_text":"          for table,cols in checks:\n              cur.execute(\"SELECT name FROM sys.columns WHERE object_id=OBJECT_ID(%s) AND name IN (%s)\",('dbo.'+table, ','.join(cols)))\n          cur.close(); conn.close(); print('GATE4D_PREFLIGHT=PASS')",
+      "new_text":"          for table,cols in checks:\n              placeholders=','.join(['%s']*len(cols))\n              cur.execute(f\"SELECT name FROM sys.columns WHERE object_id=OBJECT_ID(%s) AND name IN ({placeholders})\", tuple(['dbo.'+table]+cols))\n              found=cur.fetchall()\n              if found: raise SystemExit('GATE4D_PREFLIGHT_COLUMN_COLLISION:'+table+':'+','.join(sorted(r['name'] for r in found)))\n          cur.close(); conn.close(); print('GATE4D_PREFLIGHT=PASS')"
+    },
+    {
+      "type":"replace_text",
+      "path":".github/workflows/servers-integrations-universal-development-migration.yml",
+      "old_text":"          for table,cols in expected_cols.items():\n              cur.execute(\"SELECT COUNT(*) n FROM sys.columns WHERE object_id=OBJECT_ID(%s) AND name IN (%s)\",('dbo.'+table, ','.join(cols))); col_count += int(cur.fetchone()['n'])",
+      "new_text":"          for table,cols in expected_cols.items():\n              placeholders=','.join(['%s']*len(cols))\n              cur.execute(f\"SELECT COUNT(*) n FROM sys.columns WHERE object_id=OBJECT_ID(%s) AND name IN ({placeholders})\", tuple(['dbo.'+table]+cols)); col_count += int(cur.fetchone()['n'])"
+    }
+  ],
+  "checks":[{"type":"git_diff_check"}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
