@@ -1,0 +1,276 @@
+{
+  "base_sha": "c5d0693856f8a72941e9eb20eb8a198888d0d36c",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-09-09T04:10:28Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-mpro-130qro-full-history-r2-20260909T0355Z",
+  "operation": "MPRO_FULL_HISTORY_RESYNC",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T04:10:46Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "total_source",
+              "min_source",
+              "max_source",
+              "total_target",
+              "min_target",
+              "max_target"
+            ],
+            "name": "mpro_130qro_source_target_bounds_compare",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "1808",
+                "2021-09-18T00:00:00",
+                "2026-09-07T00:00:00",
+                "1808",
+                "2021-09-18",
+                "2026-09-07"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "duplicate_groups"
+            ],
+            "name": "mpro_130qro_duplicate_identity_check",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocioNombre",
+              "SucursalOrigenID",
+              "total_rows",
+              "min_fecha",
+              "max_fecha",
+              "last_sync_at"
+            ],
+            "name": "mpro_130qro_coverage_after_full_history",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "130° QUERETARO",
+                "0021",
+                "1808",
+                "2021-09-18",
+                "2026-09-07",
+                "2026-09-08 22:10:27.7900000"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "FechaInicio",
+              "FechaFin",
+              "FechaDesde",
+              "FechaHasta",
+              "RegistrosLeidos",
+              "RegistrosInsertados",
+              "RegistrosActualizados",
+              "RegistrosOmitidos",
+              "RegistrosError",
+              "Estatus",
+              "TipoEjecucion"
+            ],
+            "name": "mpro_130qro_recent_synclog",
+            "row_count_returned": 12,
+            "rows": [
+              [
+                "2026-08-06 15:35:32.9266667",
+                "2026-08-06 15:35:32.9266667",
+                "2026-08-04",
+                "2026-08-06",
+                0,
+                0,
+                0,
+                0,
+                1,
+                "ERROR",
+                "MANUAL"
+              ],
+              [
+                "2026-08-06 15:05:33.1333333",
+                "2026-08-06 15:05:33.1333333",
+                "2026-08-04",
+                "2026-08-06",
+                0,
+                0,
+                0,
+                0,
+                1,
+                "ERROR",
+                "MANUAL"
+              ],
+              [
+                "2026-06-29 22:48:28.1566667",
+                "2026-06-29 22:48:28.1566667",
+                "2026-06-28",
+                "2026-06-30",
+                0,
+                0,
+                0,
+                0,
+                1,
+                "ERROR",
+                "MANUAL"
+              ],
+              [
+                "2026-06-27 12:08:52.1600000",
+                "2026-06-27 12:08:52.1600000",
+                "2026-06-25",
+                "2026-06-27",
+                0,
+                0,
+                0,
+                0,
+                1,
+                "ERROR",
+                "MANUAL"
+              ],
+              [
+                "2026-06-27 11:03:40.2133333",
+                "2026-06-27 11:03:40.2133333",
+                "2026-06-25",
+                "2026-06-27",
+                0,
+                0,
+                0,
+                0,
+                1,
+                "ERROR",
+                "MANUAL"
+              ],
+              [
+                "2026-06-24 10:33:32.8033333",
+                "2026-06-24 10:33:32.8033333",
+                "2026-06-22",
+                "2026-06-24",
+                0,
+                0,
+                0,
+                0,
+                1,
+                "ERROR",
+                "MANUAL"
+              ],
+              [
+                "2026-06-18 19:01:52.0100000",
+                "2026-06-18 19:01:52.0100000",
+                "2026-06-17",
+                "2026-06-19",
+                0,
+                0,
+                0,
+                0,
+                1,
+                "ERROR",
+                "MANUAL"
+              ],
+              [
+                "2026-06-12 15:50:08.4366667",
+                "2026-06-12 15:50:08.4366667",
+                "2026-06-10",
+                "2026-06-12",
+                0,
+                0,
+                0,
+                0,
+                1,
+                "ERROR",
+                "MANUAL"
+              ],
+              [
+                "2026-06-10 20:54:38.3600000",
+                "2026-06-10 20:54:38.3600000",
+                "2026-06-09",
+                "2026-06-11",
+                0,
+                0,
+                0,
+                0,
+                0,
+                "COMPLETADO",
+                "MANUAL"
+              ],
+              [
+                "2026-06-10 20:39:37.9766667",
+                "2026-06-10 20:39:37.9766667",
+                "2026-06-09",
+                "2026-06-11",
+                0,
+                0,
+                0,
+                0,
+                0,
+                "COMPLETADO",
+                "MANUAL"
+              ],
+              [
+                "2026-06-10 20:24:38.3500000",
+                "2026-06-10 20:24:38.3500000",
+                "2026-06-09",
+                "2026-06-11",
+                0,
+                0,
+                0,
+                0,
+                0,
+                "COMPLETADO",
+                "MANUAL"
+              ],
+              [
+                "2026-06-10 20:09:38.2933333",
+                "2026-06-10 20:09:38.2933333",
+                "2026-06-09",
+                "2026-06-11",
+                0,
+                0,
+                0,
+                0,
+                0,
+                "COMPLETADO",
+                "MANUAL"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T04:07:23Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto la capability cerrada de resync historico MPRO para una sola unidad y certifico el resultado con SQL READ_ONLY. No acepto shell, rutas ni comandos externos y no toco Produccion.",
+  "tests": "PASS",
+  "units": [
+    "130QRO"
+  ],
+  "work_completion": "COMPLETE"
+}
