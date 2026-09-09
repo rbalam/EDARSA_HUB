@@ -1,0 +1,17 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"servers-integrations-gate4d-execute-development-20260909",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"449b3a613f7da762002d041632c51327a26dcdbf",
+  "production_allowed":false,
+  "objective":"Disparar exclusivamente el canal certificado Gate 4D de migracion universal en Development. Crear solo el trigger ops/migrations/requests/SERVERS-INTEGRATIONS-UNIVERSAL-20260909.execute. El workflow existente ejecuta preflight readonly, verifica writer, aplica migracion transaccional, postcheck y rollback automatico si falla. Production prohibida.",
+  "actions":[{
+    "type":"write_file",
+    "path":"ops/migrations/requests/SERVERS-INTEGRATIONS-UNIVERSAL-20260909.execute",
+    "content":"SERVERS_INTEGRATIONS_UNIVERSAL_DEVELOPMENT_MIGRATION\nGATE=4D\nSOURCE_GATE4C=servers-integrations-gate4c-execution-preflight-readonly-20260909\nSOURCE_MIGRATION_COMMIT=0fd4acf7feeb6c93a39a589bbbb23e9af467dd26\nCHANNEL_COMMIT=5552702f296226b4b3a06684c82ee3f2efc43f7a\nPRODUCTION=false\n"
+  }],
+  "checks":[{"type":"git_diff_check"}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
