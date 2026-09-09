@@ -1,0 +1,75 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE8D-SCHEDULER-CANONICAL-INTEGRATION-R1-20260909",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2617489e2299d0a799d70956f8937966088e4aa8",
+  "production_allowed": false,
+  "objective": "Integrar planner/dispatcher de alertas de Catalogo Ampliado Gate8C con el scheduler canonico backend/core/scheduler, sin scheduler paralelo ni entrega externa. Registrar job configurable catalogo_ampliado_alertas, con lock canonico, JobLogger canonico, intervalo/env vars, max_instances=1 y run_job_now. El job debe invocar alert_service.planificar_alertas y alert_service.despachar_alertas. EMAIL/WHATSAPP/APP permanecen fail-closed. No DDL, no Production.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/core/scheduler/jobs/catalogo_ampliado_alertas_job.py",
+      "content": "\"\"\"Job canonico del scheduler para alertas de Catalogo Ampliado.\"\"\"\n\nimport asyncio\n\n\nasync def execute_catalogo_ampliado_alertas(batch_size: int = 50) -> dict:\n    from modules.catalogo_ampliado import alert_service\n\n    planned = await asyncio.to_thread(alert_service.planificar_alertas)\n    dispatched = await asyncio.to_thread(alert_service.despachar_alertas, batch_size)\n    return {\n        \"planned\": int((planned or {}).get(\"planned\", 0)),\n        \"processed\": int((dispatched or {}).get(\"processed\", 0)),\n        \"items\": (dispatched or {}).get(\"items\", []),\n    }\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/config.py",
+      "old": "        # Auditorías Programadas Job config\n        audit_interval = int(os.environ.get(\"SCHEDULER_AUDITORIAS_INTERVAL_SECONDS\", \"3600\"))  # 1 hora\n        audit_enabled = os.environ.get(\"SCHEDULER_AUDITORIAS_ENABLED\", \"true\").lower() == \"true\"\n",
+      "new": "        # Catalogo Ampliado - alertas documentales\n        catalogo_alertas_interval = int(os.environ.get(\"SCHEDULER_CATALOGO_AMPLIADO_ALERTAS_INTERVAL_SECONDS\", \"3600\"))\n        catalogo_alertas_enabled = os.environ.get(\"SCHEDULER_CATALOGO_AMPLIADO_ALERTAS_ENABLED\", \"true\").lower() == \"true\"\n        if catalogo_alertas_interval < 60:\n            raise ValueError(\"SCHEDULER_CATALOGO_AMPLIADO_ALERTAS_INTERVAL_SECONDS must be >= 60\")\n\n        # Auditorías Programadas Job config\n        audit_interval = int(os.environ.get(\"SCHEDULER_AUDITORIAS_INTERVAL_SECONDS\", \"3600\"))  # 1 hora\n        audit_enabled = os.environ.get(\"SCHEDULER_AUDITORIAS_ENABLED\", \"true\").lower() == \"true\"\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/config.py",
+      "old": "            \"auditorias_scheduler\": JobConfig(\n                job_id=\"auditorias_scheduler\",\n                job_name=\"Auditorias Scheduler\",\n",
+      "new": "            \"catalogo_ampliado_alertas\": JobConfig(\n                job_id=\"catalogo_ampliado_alertas\",\n                job_name=\"Catalogo Ampliado - Alertas\",\n                description=\"Planifica alertas documentales y materializa tareas canonicas; canales externos permanecen fail-closed\",\n                enabled=catalogo_alertas_enabled,\n                interval_seconds=catalogo_alertas_interval,\n                batch_size=50,\n                timeout_seconds=300\n            ),\n            \"auditorias_scheduler\": JobConfig(\n                job_id=\"auditorias_scheduler\",\n                job_name=\"Auditorias Scheduler\",\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/scheduler_manager.py",
+      "old": "from .jobs.notifications_job import create_notifications_job\nfrom .jobs.auditorias_job import create_auditorias_job\n",
+      "new": "from .jobs.notifications_job import create_notifications_job\nfrom .jobs.catalogo_ampliado_alertas_job import execute_catalogo_ampliado_alertas\nfrom .jobs.auditorias_job import create_auditorias_job\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/scheduler_manager.py",
+      "old": "        job = create_notifications_job(self.db, job_config)\n        await job.run()\n    \n    async def _run_auditorias_job(self):\n",
+      "new": "        job = create_notifications_job(self.db, job_config)\n        await job.run()\n\n    async def _run_catalogo_ampliado_alertas_job(self):\n        job_config = self.config.jobs.get(\"catalogo_ampliado_alertas\")\n        if not job_config or not job_config.enabled:\n            return\n        lock_manager = get_lock_manager(self.db)\n        lock = lock_manager.get_lock(\"catalogo_ampliado_alertas\")\n        if not await lock.acquire(timeout_seconds=job_config.timeout_seconds):\n            logger.warning(\"[CATALOGO_AMPLIADO_ALERTAS] ejecucion omitida por lock activo\")\n            return\n        job_logger = get_job_logger()\n        log_entry = await job_logger.start_execution(\"catalogo_ampliado_alertas\")\n        try:\n            result = await execute_catalogo_ampliado_alertas(job_config.batch_size)\n            await job_logger.finish_execution(\n                log_entry=log_entry,\n                status=\"success\",\n                processed_count=result.get(\"processed\", 0),\n                success_count=result.get(\"processed\", 0),\n                message=f\"planned={result.get('planned', 0)} processed={result.get('processed', 0)}\",\n                extra_metadata={\"external_delivery_authorized\": False},\n            )\n            return result\n        except Exception:\n            await job_logger.finish_execution(log_entry=log_entry, status=\"failed\", error_detail=\"Error interno del servidor\")\n            raise\n        finally:\n            await lock.release()\n    \n    async def _run_auditorias_job(self):\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/scheduler_manager.py",
+      "old": "            self._jobs[\"notifications_dispatcher\"] = notif_config\n            logger.info(f\"Job Notificaciones registrado: intervalo={notif_config.interval_seconds}s\")\n        \n        # Job Auditorías Programadas\n",
+      "new": "            self._jobs[\"notifications_dispatcher\"] = notif_config\n            logger.info(f\"Job Notificaciones registrado: intervalo={notif_config.interval_seconds}s\")\n\n        catalogo_alertas_config = self.config.jobs.get(\"catalogo_ampliado_alertas\")\n        if catalogo_alertas_config and catalogo_alertas_config.enabled:\n            trigger = IntervalTrigger(seconds=catalogo_alertas_config.interval_seconds)\n            self._scheduler.add_job(\n                self._run_catalogo_ampliado_alertas_job,\n                trigger=trigger,\n                id=\"catalogo_ampliado_alertas\",\n                name=\"Catalogo Ampliado - Alertas\",\n                replace_existing=True,\n                max_instances=1,\n                coalesce=True,\n            )\n            self._jobs[\"catalogo_ampliado_alertas\"] = catalogo_alertas_config\n            logger.info(f\"Job Catalogo Ampliado Alertas registrado: intervalo={catalogo_alertas_config.interval_seconds}s\")\n        \n        # Job Auditorías Programadas\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/scheduler_manager.py",
+      "old": "        elif job_id == \"notifications_dispatcher\":\n            await self._run_notifications_job()\n            return {\"status\": \"executed\", \"job_id\": job_id}\n        elif job_id == \"auditorias_scheduler\":\n",
+      "new": "        elif job_id == \"notifications_dispatcher\":\n            await self._run_notifications_job()\n            return {\"status\": \"executed\", \"job_id\": job_id}\n        elif job_id == \"catalogo_ampliado_alertas\":\n            await self._run_catalogo_ampliado_alertas_job()\n            return {\"status\": \"executed\", \"job_id\": job_id}\n        elif job_id == \"auditorias_scheduler\":\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_catalogo_ampliado_gate8d_scheduler.py",
+      "content": "from pathlib import Path\n\nROOT=Path(__file__).resolve().parents[2]\nCFG=ROOT/'backend/core/scheduler/config.py'\nMAN=ROOT/'backend/core/scheduler/scheduler_manager.py'\nJOB=ROOT/'backend/core/scheduler/jobs/catalogo_ampliado_alertas_job.py'\nSERVICE=ROOT/'backend/modules/catalogo_ampliado/alert_service.py'\n\n\ndef test_uses_canonical_scheduler_and_config():\n    cfg=CFG.read_text(encoding='utf-8')\n    man=MAN.read_text(encoding='utf-8')\n    assert 'SCHEDULER_CATALOGO_AMPLIADO_ALERTAS_ENABLED' in cfg\n    assert 'SCHEDULER_CATALOGO_AMPLIADO_ALERTAS_INTERVAL_SECONDS' in cfg\n    assert '\"catalogo_ampliado_alertas\": JobConfig' in cfg\n    assert 'self._scheduler.add_job' in man\n    assert 'id=\"catalogo_ampliado_alertas\"' in man\n    assert 'replace_existing=True' in man\n    assert 'max_instances=1' in man\n    assert 'get_lock_manager' in man and 'get_job_logger' in man\n\n\ndef test_scheduler_calls_gate8c_service_and_external_stays_fail_closed():\n    job=JOB.read_text(encoding='utf-8')\n    svc=SERVICE.read_text(encoding='utf-8')\n    assert 'alert_service.planificar_alertas' in job\n    assert 'alert_service.despachar_alertas' in job\n    assert 'BLOCKED_EXTERNAL_DELIVERY_NOT_AUTHORIZED' in svc\n    assert 'send_message' not in svc\n\n\ndef test_no_parallel_scheduler_or_schema():\n    joined='\\n'.join([CFG.read_text(encoding='utf-8'),MAN.read_text(encoding='utf-8'),JOB.read_text(encoding='utf-8')]).lower()\n    assert 'create table' not in joined\n    assert 'asyncioscheduler(' in MAN.read_text(encoding='utf-8').lower()\n    assert 'production' not in JOB.read_text(encoding='utf-8').lower()\n"
+    }
+  ],
+  "checks": [
+    {"type":"py_compile","paths":["backend/core/scheduler/config.py","backend/core/scheduler/scheduler_manager.py","backend/core/scheduler/jobs/catalogo_ampliado_alertas_job.py","backend/tests/test_catalogo_ampliado_gate8d_scheduler.py"]},
+    {"type":"pytest","paths":["backend/tests/test_catalogo_ampliado_gate8c_alerts.py","backend/tests/test_catalogo_ampliado_gate8d_scheduler.py","backend/tests/test_scheduler_persistent_pause_contract.py"]},
+    {"type":"git_diff_check"}
+  ],
+  "constraints": [
+    "NO Production",
+    "NO DDL",
+    "NO Mongo",
+    "NO parallel scheduler",
+    "NO external LIVE delivery",
+    "EMAIL/WHATSAPP/APP remain fail-closed",
+    "Reuse backend/core/scheduler AsyncIOScheduler, locks and JobLogger",
+    "NO Worker/Supervisor/watchdog modifications"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
