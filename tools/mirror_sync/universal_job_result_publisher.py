@@ -112,6 +112,65 @@ def valid_sha(value: Any) -> bool:
     )
 
 
+SENSITIVE_COLUMN_TOKENS = (
+    "secret", "password", "passwd", "token", "credential",
+    "credencial", "encrypted", "cifrad", "api_key", "apikey",
+    "private_key", "access_key",
+)
+
+
+def _sensitive_column(name: Any) -> bool:
+    normalized = str(name or "").strip().lower()
+    return any(token in normalized for token in SENSITIVE_COLUMN_TOKENS)
+
+
+def sanitize_readonly_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
+    checks = result.get("checks") or []
+    sanitized_checks = []
+    for check in checks:
+        if not isinstance(check, dict) or check.get("type") != "sql_readonly_audit":
+            continue
+        payload = check.get("sql_evidence")
+        if not isinstance(payload, dict):
+            raw = check.get("output")
+            if isinstance(raw, str):
+                try:
+                    candidate = json.loads(raw.strip())
+                except (json.JSONDecodeError, TypeError):
+                    candidate = None
+                if isinstance(candidate, dict):
+                    payload = candidate
+        if not isinstance(payload, dict) or payload.get("status") != "PASS":
+            continue
+        entries = []
+        for entry in payload.get("evidence") or []:
+            if not isinstance(entry, dict):
+                continue
+            columns = [str(value) for value in (entry.get("columns") or [])]
+            rows = []
+            for row in entry.get("rows") or []:
+                if not isinstance(row, list):
+                    continue
+                rows.append([
+                    "[REDACTED]" if index < len(columns) and _sensitive_column(columns[index]) else value
+                    for index, value in enumerate(row)
+                ])
+            entries.append({
+                "name": entry.get("name"),
+                "columns": columns,
+                "rows": rows,
+                "row_count_returned": entry.get("row_count_returned"),
+                "truncated": entry.get("truncated"),
+            })
+        sanitized_checks.append({
+            "status": "PASS",
+            "mode": payload.get("mode"),
+            "connection": payload.get("connection"),
+            "evidence": entries,
+        })
+    return {"checks": sanitized_checks} if sanitized_checks else None
+
+
 def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
     source_sha = result.get("development_sha")
 
@@ -121,6 +180,29 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
         "work_completion": "PENDING_CERTIFICATION",
         "percent_complete": 95,
     }
+
+    if result.get("status") == "READ_ONLY_COMPLETE":
+        readonly_evidence = sanitize_readonly_evidence(result)
+        if (
+            str(result.get("tests", "")).upper() == "PASS"
+            and str(result.get("quality_gate", "")).upper() == "PASS"
+            and result.get("production_touched") is False
+            and not (result.get("blockers") or [])
+            and readonly_evidence is not None
+        ):
+            return {
+                "certified": True,
+                "certification": "CERTIFIED_READ_ONLY",
+                "work_completion": "COMPLETE",
+                "percent_complete": 100,
+                "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+            }
+        return {
+            **pending,
+            "certification": "NOT_CERTIFIED",
+            "work_completion": "NOT_CERTIFIED",
+            "percent_complete": min(int(result.get("percent_complete") or 0), 95),
+        }
 
     if result.get("status") == "OPERATIONAL_COMPLETE":
         operational_certified = (
@@ -267,6 +349,10 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
     public["source_branch"] = "Edarsahub_Desarrollo"
     public["human_summary_language"] = "es"
     public["human_summary_level"] = "13yo-non-programmer"
+    readonly_evidence = sanitize_readonly_evidence(result)
+    if readonly_evidence is not None:
+        public["sql_readonly_evidence"] = readonly_evidence
+
     evidence = certification_evidence(result)
 
     public["certification"] = evidence["certification"]
