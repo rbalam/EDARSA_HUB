@@ -1,0 +1,13 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"cxp-v15-pytest-isolate-canonical-auth-r1-20260908",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "base_sha":"e95fbe17f39fd202bc9500f2ea7b0020ec6205aa",
+  "objective":"Aislar baseline del pytest backend/tests/test_cxp_canonical_authorization_integration.py sin tocar codigo funcional; usar archivo canario aislado y reportar PASS/FAIL.",
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt","project":"V1.0","chat":"cxp-decision-analysis"},
+  "actions":[{"type":"write_file","path":"docs/worker-canaries/cxp-v15-isolate-canonical-auth-r1.txt","content":"CxP V15 pytest isolation: canonical authorization integration\n"}],
+  "checks":[{"type":"pytest","paths":["backend/tests/test_cxp_canonical_authorization_integration.py"]}],
+  "human_summary_language":"es"
+}
