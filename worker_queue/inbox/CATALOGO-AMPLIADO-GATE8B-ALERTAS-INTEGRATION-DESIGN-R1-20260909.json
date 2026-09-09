@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE8B-ALERTAS-INTEGRATION-DESIGN-R1-20260909",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "65fe54fb91d7a05efb6f1280378e613dbdb67d6f",
+  "production_allowed": false,
+  "objective": "Catalogo Ampliado Gate 8B. Persistir el contrato de integracion de alertas sobre el linaje SQL certificado por Gate8A y el codigo canonico existente. No implementar todavia ejecucion ni crear infraestructura paralela. El diseno debe reutilizar Sistema_Tareas para tareas, core/communications/notifications y Operativo_Notificaciones_Log para entrega/evidencia de notificaciones, Sistema_NotificacionesConfig y Usuario_PortalConfiguracion para configuracion/preferencias, y Gobierno_AlertaRegla/Gobierno_AlertaEvento solo como dominio de reglas/eventos. Debe definir idempotencia, maquina de estados, referencias canonicas, fail-closed, RBAC y pruebas para la futura implementacion. Production=false.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/catalogo_ampliado/CATALOGO_AMPLIADO_GATE8B_ALERTAS_INTEGRATION_DESIGN.md",
+      "content": "# Catalogo Ampliado - Gate 8B Alertas Integration Design\n\n## Base certificada\nGate 8A certifico SQL real READ_ONLY para Gobierno_AlertaRegla y Gobierno_AlertaEvento. Este Gate 8B no crea tablas ni ejecuta alertas; fija el contrato de integracion para la siguiente implementacion.\n\n## Principio rector\nCatalogo Ampliado es propietario unicamente de reglas y eventos de cumplimiento. No crea un motor paralelo de tareas, notificaciones, comunicaciones ni scheduler.\n\n## Componentes canonicos a reutilizar\n1. dbo.Sistema_Tareas: destino canonico para canal TAREA. El patron de escritura ya existe en backend/modules/catalogos_workflow_sql/repository.py.\n2. backend/core/communications/notifications: capa canonica de notificaciones. Catalogo Ampliado debe consumir esta capa, no insertar directamente en proveedores externos.\n3. dbo.Operativo_Notificaciones_Log: evidencia/log canonico de entrega. Incluye NotificacionID, TareaID, Mensaje, Canal y ErrorMensaje.\n4. dbo.Sistema_NotificacionesConfig: configuracion canonica de notificaciones.\n5. dbo.Usuario_PortalConfiguracion: preferencias de usuario; respetar RecibeEmailNotificaciones, RecibeWhatsAppNotificaciones y RecibePushNotificaciones.\n6. dbo.Usuario_Catalogo: identidad canonica del destinatario.\n7. dbo.Gobierno_AlertaRegla y dbo.Gobierno_AlertaEvento: dominio propio de Gobierno Corporativo.\n\n## Flujo objetivo\n### A. Planificacion idempotente\n- Seleccionar solo documentos activos cuya ultima version este VALIDADA y tenga FechaVencimiento.\n- Resolver la empresa propietaria desde EmpresaID directo o desde PersonaEmpresaRolID.\n- Aplicar solo reglas activas cuyo EmpresaID sea la empresa o NULL y cuyo TipoDocumentoID corresponda o sea NULL.\n- FechaObjetivo = FechaVencimiento.\n- FechaProgramada = FechaObjetivo - DiasAntes.\n- Crear Gobierno_AlertaEvento solo si no existe la combinacion unica DocumentoVersionID + AlertaReglaID + FechaObjetivo.\n- Nunca duplicar eventos por reintento.\n\n### B. Ejecucion\n- Procesar exclusivamente eventos PENDIENTE cuya FechaProgramada <= fecha operativa/fecha actual segun contrato que se certifique en implementacion.\n- Verificar nuevamente que regla, documento, version y destinatario sigan vigentes antes de entregar.\n- Si la condicion ya no aplica, Estado=CANCELADA.\n\n### C. Canal TAREA\n- Crear la tarea mediante la infraestructura/patron canonico de Sistema_Tareas; no crear tabla propia.\n- TipoTarea propuesto: CUMPLIMIENTO_DOCUMENTAL.\n- Modulo: CATALOGO_AMPLIADO.\n- EntidadTipo: GOBIERNO_ALERTA_EVENTO.\n- EntidadID: AlertaEventoID.\n- AsignadoAUsuarioID: UsuarioObjetivoID resuelto de la regla.\n- Guardar en Gobierno_AlertaEvento.TareaReferencia la identidad canonica retornada por el motor de tareas, serializada como texto compatible con varchar(50). No inventar otra clave.\n\n### D. Canales EMAIL / WHATSAPP / APP\n- Invocar exclusivamente backend/core/communications/notifications.\n- Resolver identidad/destino desde Usuario_Catalogo y las preferencias/configuraciones canonicas.\n- EMAIL requiere permiso/preferencia activa de email.\n- WHATSAPP requiere permiso/preferencia activa de WhatsApp.\n- APP se mapea al canal push/app soportado por la capa canonica y requiere RecibePushNotificaciones.\n- El resultado debe quedar registrado por la infraestructura existente en Operativo_Notificaciones_Log.\n- Guardar Gobierno_AlertaEvento.NotificacionReferencia con el NotificacionID canonico retornado/registrado, sin duplicar log propio.\n\n## Estados de Gobierno_AlertaEvento\nUsar exclusivamente los estados ya permitidos por SQL: PENDIENTE, GENERADA, ENVIADA, ERROR, CANCELADA.\n- PENDIENTE: evento planificado, aun sin artefacto canonico.\n- GENERADA: tarea/notificacion canonica creada y referencia persistida.\n- ENVIADA: entrega confirmada por infraestructura canonica cuando el canal implique envio. Para TAREA, GENERADA es el estado terminal de creacion salvo que el contrato canonico de tareas exija otra transicion certificada.\n- ERROR: fallo real despues de intento; ErrorMensaje sanitizado, sin secretos.\n- CANCELADA: regla/documento/destinatario dejo de aplicar antes de ejecucion.\n\n## Idempotencia y concurrencia\n- La UQ de Gobierno_AlertaEvento(DocumentoVersionID,AlertaReglaID,FechaObjetivo) es el candado primario de planificacion.\n- Antes de crear Sistema_Tareas o enviar notificacion, bloquear/releer el evento y verificar que TareaReferencia/NotificacionReferencia sigan NULL.\n- Un retry con referencia ya persistida no vuelve a entregar.\n- Si la entrega canonica retorna idempotency key, usar AlertaEventoID como correlacion de negocio sin crear otro motor de deduplicacion.\n\n## RBAC y seguridad\n- Endpoints administrativos permanecen bajo get_current_user + has_full_access.\n- La ejecucion automatica no debe depender de un usuario frontend ni bypass de RBAC; debe usar una identidad tecnica ya autorizada por la infraestructura canonica, si existe, y dejar auditoria.\n- Nunca exponer secretos/proveedores en respuestas API.\n\n## Scheduler\n- No crear scheduler propio dentro de Catalogo Ampliado.\n- La siguiente implementacion debe registrar/enganchar el planner/dispatcher en el scheduler/automatizacion canonico existente, despues de certificar su punto de extension exacto.\n\n## API futura minima\n- GET /catalogo-ampliado/empresas/{empresa_id}/alertas/eventos : consulta administrativa de eventos por empresa.\n- POST interno/servicio planner: no exponer como endpoint publico si el scheduler puede invocar servicio interno.\n- POST interno/servicio dispatcher: igual criterio; sin endpoint publico salvo necesidad operativa certificada.\n\n## Pruebas obligatorias para Gate de implementacion\n1. Planner idempotente: dos ejecuciones producen un solo evento.\n2. Documento/version no validado: no genera evento.\n3. Regla inactiva: no genera ni entrega.\n4. TAREA: crea exactamente una tarea canonica y persiste TareaReferencia.\n5. EMAIL/WHATSAPP/APP: pasan por core communications y generan evidencia canonica; no insercion paralela.\n6. Preferencia de usuario deshabilitada: fail-closed, no envio.\n7. Retry: no duplica tarea/notificacion.\n8. Error: Estado=ERROR y ErrorMensaje sanitizado.\n9. Cancelacion por regla/documento no vigente.\n10. RBAC de consulta administrativa.\n11. E2E real SQL con cleanup completo y residue=0.\n12. Production=false.\n\n## Criterio de salida de Gate 8B\nGate 8B queda certificado cuando este contrato se integra sin modificar codigo funcional, pasa tests de contratos existentes y quality/diff gate. El siguiente Gate sera implementacion controlada sobre este contrato; no DDL nuevo salvo que una auditoria adicional pruebe una carencia real.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_catalogo_ampliado_gate2_ddl_contract.py",
+        "backend/tests/test_catalogo_ampliado_backend_gate4.py",
+        "backend/tests/test_catalogo_ampliado_gate6_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "NO Production",
+    "NO DDL",
+    "NO DML outside worker's repository action",
+    "NO functional implementation in this gate",
+    "NO parallel task engine",
+    "NO parallel notification engine",
+    "NO parallel scheduler",
+    "NO Worker/Supervisor/watchdog modifications",
+    "Reuse SQL lineage certified by Gate8A"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
