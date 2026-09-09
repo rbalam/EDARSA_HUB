@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "RRR-GATE2B-FK-TYPE-PREFLIGHT-READONLY-V1-20260908",
+  "created_at_utc": "2026-09-09T01:49:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "52cd791f5b82389706d3c430c61102504ee03781",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "RRR GATE 2B: preflight READ_ONLY dirigido para validar tipos exactos, nullability, PK/unique y nombres canonicos de tablas/FK externas referenciadas o previstas por docs/RRR/sql/RRR_GATE2_MINIMUM_DDL_V1.sql. Verificar ClienteID, VentaID, EmpresaID, UnidadID, UsuarioID y contratos fisicos relacionados. No ejecutar DDL/DML ni modificar repositorio funcional o Produccion.",
+  "actions": [],
+  "acceptance": [
+    "actions=[]",
+    "READ_ONLY_SQL solamente",
+    "production_touched=false",
+    "tipos exactos de ClienteID, VentaID, EmpresaID, UnidadID, UsuarioID",
+    "nombres exactos de tablas canonicas que contienen esas claves",
+    "PK/unique/indexes relevantes",
+    "FK existentes desde ventas/cliente/unidad/usuario cuando existan",
+    "evidencia suficiente para contrastar el DDL propuesto sin ejecutar migracion"
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {"name":"rrr_fk_key_columns_exact","sql":"SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND c.name IN ('ClienteID','VentaID','EmpresaID','UnidadID','UsuarioID') ORDER BY c.name,t.name,c.column_id"},
+        {"name":"rrr_candidate_master_tables_exact","sql":"SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND t.name IN ('Cliente_Catalogo','Venta_Encabezado','Empresa_Catalogo','Empresas','Unidad_Catalogo','Unidades','Usuario_Catalogo') ORDER BY t.name,c.column_id"},
+        {"name":"rrr_pk_unique_for_external_keys","sql":"SELECT s.name AS schema_name,t.name AS table_name,i.name AS index_name,i.is_primary_key,i.is_unique,c.name AS column_name,ic.key_ordinal FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.indexes i ON i.object_id=t.object_id JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE s.name='dbo' AND c.name IN ('ClienteID','VentaID','EmpresaID','UnidadID','UsuarioID') AND i.is_hypothetical=0 ORDER BY t.name,i.is_primary_key DESC,i.is_unique DESC,i.name,ic.key_ordinal"},
+        {"name":"rrr_existing_fk_contracts","sql":"SELECT ps.name AS parent_schema,pt.name AS parent_table,pc.name AS parent_column,fk.name AS fk_name,rs.name AS referenced_schema,rt.name AS referenced_table,rc.name AS referenced_column FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.tables pt ON pt.object_id=fkc.parent_object_id JOIN sys.schemas ps ON ps.schema_id=pt.schema_id JOIN sys.columns pc ON pc.object_id=pt.object_id AND pc.column_id=fkc.parent_column_id JOIN sys.tables rt ON rt.object_id=fkc.referenced_object_id JOIN sys.schemas rs ON rs.schema_id=rt.schema_id JOIN sys.columns rc ON rc.object_id=rt.object_id AND rc.column_id=fkc.referenced_column_id WHERE pc.name IN ('ClienteID','VentaID','EmpresaID','UnidadID','UsuarioID') OR rc.name IN ('ClienteID','VentaID','EmpresaID','UnidadID','UsuarioID') ORDER BY pt.name,fk.name,pc.name"},
+        {"name":"rrr_exact_table_name_candidates_empresa_unidad","sql":"SELECT s.name AS schema_name,t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE s.name='dbo' AND (t.name LIKE '%Empresa%' OR t.name LIKE '%Unidad%' OR t.name LIKE '%Sucursal%') ORDER BY t.name"}
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
