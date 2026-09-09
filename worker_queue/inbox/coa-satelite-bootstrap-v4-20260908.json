@@ -1,0 +1,55 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-satelite-bootstrap-v4-20260908",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "75d196f702543e6b3806029eb6e98760b0cdb400",
+  "objective": "Completar el bootstrap frontend del satelite COA - Centro de Operaciones Administrativas dentro del grupo Satelites existente y clasificar /coa en el registro canonico de navegacion Enterprise. Crear pantalla inicial sin datos ficticios, registrar /coa, agregar el item de menu y registrar expectedPath /coa en enterpriseNavigationRegistry.json. No tocar backend, SQL ni Produccion. Validar diff y build frontend.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA",
+    "chat": "coa-bootstrap-v4-20260908"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "frontend/src/pages/satelites/COAHome.jsx",
+      "content": "const modules = [\n  { title: 'Expedientes', description: 'Seguimiento central de operaciones administrativas y su trazabilidad.' },\n  { title: 'Facturacion', description: 'Recepcion, validacion, timbrado, distribucion y seguimiento documental.' },\n  { title: 'Nominas', description: 'Control de relaciones de pago, fondeo, dispersion y comprobantes.' },\n  { title: 'Comisiones', description: 'Validacion de reglas administrativas configurables por empresa y operacion.' },\n  { title: 'Incidencias', description: 'Excepciones, diferencias, documentos faltantes y autorizaciones pendientes.' }\n];\n\nexport default function COAHome() {\n  return (\n    <div className=\"space-y-6 p-6\" data-testid=\"coa-home\">\n      <div>\n        <p className=\"text-sm font-medium text-muted-foreground\">Satelites / COA</p>\n        <h1 className=\"text-2xl font-semibold tracking-tight\">Centro de Operaciones Administrativas</h1>\n        <p className=\"mt-2 max-w-3xl text-sm text-muted-foreground\">\n          Satelite operativo para concentrar expedientes, documentos, validaciones y flujos administrativos.\n          Esta pantalla inicial no presenta datos simulados ni ejecuta movimientos financieros.\n        </p>\n      </div>\n      <div className=\"grid gap-4 md:grid-cols-2 xl:grid-cols-3\">\n        {modules.map((module) => (\n          <section key={module.title} className=\"rounded-lg border bg-card p-5 shadow-sm\">\n            <h2 className=\"font-semibold\">{module.title}</h2>\n            <p className=\"mt-2 text-sm text-muted-foreground\">{module.description}</p>\n          </section>\n        ))}\n      </div>\n      <section className=\"rounded-lg border border-dashed p-5\">\n        <h2 className=\"font-semibold\">Estado de implementacion</h2>\n        <p className=\"mt-2 text-sm text-muted-foreground\">\n          Bootstrap de navegacion. Las fuentes canonicas, RBAC, expedientes, reglas de comision, Gmail y WhatsApp se habilitaran en fases posteriores con validacion independiente.\n        </p>\n      </section>\n    </div>\n  );\n}\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/App.js",
+      "expected_count": 1,
+      "old": "import SuperCajaPage from '@/pages/satelites/SuperCajaPage';\nimport ComanderoPage from '@/pages/satelites/ComanderoPage';",
+      "new": "import SuperCajaPage from '@/pages/satelites/SuperCajaPage';\nimport ComanderoPage from '@/pages/satelites/ComanderoPage';\nimport COAHome from '@/pages/satelites/COAHome';"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/App.js",
+      "expected_count": 1,
+      "old": "              <Route path=\"super-caja\" element={<SuperCajaPage />} />\n              <Route path=\"comandero\" element={<ComanderoPage />} />",
+      "new": "              <Route path=\"super-caja\" element={<SuperCajaPage />} />\n              <Route path=\"comandero\" element={<ComanderoPage />} />\n              <Route path=\"coa\" element={<COAHome />} />"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/config/enterpriseMenuConfig.js",
+      "expected_count": 1,
+      "old": "      {\n        id: \"portal-inteligencia-comercial-satelite\",\n        label: \"Portal Inteligencia Comercial\",\n        path: \"/inteligencia-comercial\",\n        icon: \"BarChart3\",\n        section: \"Analítica Comercial\",\n        satellite: true,\n        keywords: [\"portal\", \"inteligencia comercial\", \"pic\", \"ventas\", \"analitica\"]\n      }",
+      "new": "      {\n        id: \"portal-inteligencia-comercial-satelite\",\n        label: \"Portal Inteligencia Comercial\",\n        path: \"/inteligencia-comercial\",\n        icon: \"BarChart3\",\n        section: \"Analítica Comercial\",\n        satellite: true,\n        keywords: [\"portal\", \"inteligencia comercial\", \"pic\", \"ventas\", \"analitica\"]\n      },\n      {\n        id: \"coa\",\n        label: \"COA - Operaciones Administrativas\",\n        path: \"/coa\",\n        icon: \"ClipboardList\",\n        section: \"Administracion\",\n        satellite: true,\n        keywords: [\"coa\", \"operaciones administrativas\", \"facturacion\", \"nominas\", \"comisiones\", \"expedientes\"]\n      }"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/config/enterpriseNavigationRegistry.json",
+      "expected_count": 1,
+      "old": "    \"finanzas.dashboard\": {",
+      "new": "    \"coa.dashboard\": {\n      \"groupId\": \"portales-satelites\",\n      \"sectionId\": \"aplicaciones-satelite\",\n      \"label\": \"COA - Operaciones Administrativas\",\n      \"expectedPath\": \"/coa\",\n      \"order\": 60,\n      \"status\": \"active\",\n      \"cluster\": \"COA\",\n      \"releasedAt\": \"2026-09-08\"\n    },\n    \"finanzas.dashboard\": {"
+    }
+  ],
+  "checks": [
+    { "type": "git_diff_check" },
+    { "type": "frontend_build", "directory": "frontend" }
+  ],
+  "human_summary_language": "es"
+}
