@@ -1,0 +1,28 @@
+{
+  "base_sha": "23b23ab73da041012b7bd6a2b69c81f46f47681e",
+  "blockers": [],
+  "candidate_sha": "49fec3d91d359cb436f7fdb2dd03b1dd26319d19",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-09T04:12:02Z",
+  "development_sha": "49fec3d91d359cb436f7fdb2dd03b1dd26319d19",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "docs/COA/COA_GATE3B_DDL_AUDIT.md",
+    "docs/COA/COA_GATE3B_MINIMAL_DDL.sql"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "coa-gate3b-r2-currency-canonical-v1-20260909",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T04:12:59Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-09T04:10:49Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
