@@ -1,0 +1,155 @@
+{
+  "base_sha": "70c512bc6098bc30048accd2ddab3239ce740136",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T23:48:01Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "servers-integrations-gate5d-postaudit-r2-readonly-20260909",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T23:48:04Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "database_user",
+              "original_login"
+            ],
+            "name": "gate5d_post_r2_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc"
+            ],
+            "name": "gate5d_post_r2_objects",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "dbo",
+                "Operativo_Notificaciones_Log",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_NotificacionesConfig",
+                "USER_TABLE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "queue_present",
+              "queue_columns",
+              "queue_indexes"
+            ],
+            "name": "gate5d_post_r2_queue_shape",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "config_rows",
+              "log_rows"
+            ],
+            "name": "gate5d_post_r2_existing_rows",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "6",
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "codigo",
+              "modulo",
+              "activo"
+            ],
+            "name": "gate5d_post_r2_permissions",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "codigo",
+              "total"
+            ],
+            "name": "gate5d_post_r2_superadmin_links",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total"
+            ],
+            "name": "gate5d_post_r2_comm_connections",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "toast_tables"
+            ],
+            "name": "gate5d_post_r2_toast",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T23:48:00Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
