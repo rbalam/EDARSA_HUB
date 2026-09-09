@@ -1,0 +1,82 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P3B-CANONICAL-UNIVERSE-NO-HARDCODE-20260908T2015Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "GATE 2 P3B: integrar el universo de sincronización certificado por P3A-R3 y retirar completamente STALE_THRESHOLDS hardcodeado. P3A-R3 certificó: Servidores_Conexiones como catálogo de servidores; Compras_Sync_Log y Comercial_SyncLog_v2 como fuentes con server_id/sync_type; dbo.Sync_Logs existe pero sólo tiene id,service,type,message,timestamp,operador y no puede mapearse canónicamente a servidor/proceso; no existe configuración SQL certificada de SLA/threshold del Sync Monitor. Por contrato de verdad: errores y warnings siguen siendo reales; procesos con telemetría pero sin SLA quedan SIN_SLA_THRESHOLD_CONFIGURADO; ausencia de telemetría queda SIN_TELEMETRIA; no se inventa STALE. Exponer metadata de cobertura de universo y calidad SLA. NO Mongo, NO LIVE, NO Production.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_monitor/service.py",
+      "old": "# Umbrales STALE por tipo de proceso (en minutos)\nSTALE_THRESHOLDS = {\n    \"VENTAS\": 30,\n    \"VENTAS_DIA\": 30,\n    \"INCREMENTAL\": 30,\n    \"INVENTARIOS\": 120,\n    \"EXISTENCIAS\": 120,\n    \"COMPRAS\": 360,\n    \"PEDIDOS\": 360,\n    \"ORDENES\": 360,\n    \"RECEPCIONES\": 360,\n    \"REQUISICIONES\": 360,\n    \"CATALOGOS\": 1440,\n    \"PRODUCTOS\": 1440,\n    \"ALMACENES\": 1440,\n    \"MOVIMIENTOS\": 120,\n    \"DEFAULT\": 360,\n}\n\n\ndef _get_stale_threshold(sync_type: str) -> int:\n    \"\"\"Obtiene el umbral STALE en minutos para un tipo de sync.\"\"\"\n    sync_upper = (sync_type or \"DEFAULT\").upper()\n    for key, value in STALE_THRESHOLDS.items():\n        if key in sync_upper:\n            return value\n    return STALE_THRESHOLDS[\"DEFAULT\"]\n\n\ndef _calculate_status(\n    last_sync: Optional[datetime],\n    original_status: str,\n    sync_type: str,\n    error_message: Optional[str] = None\n) -> str:\n    \"\"\"\n    Calcula el estado final del sync.\n    SUCCESS, WARNING, ERROR, STALE\n    \"\"\"\n    if error_message or (original_status and \"ERROR\" in original_status.upper()):\n        return \"ERROR\"\n    \n    if not last_sync:\n        return \"STALE\"\n    \n    threshold_minutes = _get_stale_threshold(sync_type)\n    cutoff = datetime.now() - timedelta(minutes=threshold_minutes)\n    \n    if last_sync < cutoff:\n        return \"STALE\"\n    \n    if original_status and \"WARNING\" in original_status.upper():\n        return \"WARNING\"\n    \n    return \"SUCCESS\"\n",
+      "new": "# P3A-R3 certificó que no existe una configuración SQL explícita de SLA/threshold\n# aplicable al Sync Monitor. No se permiten umbrales operativos inventados.\nSYNC_SLA_EVIDENCE = \"P3A_R3_NO_CANONICAL_SYNC_SLA_CONFIG_CERTIFIED\"\n\n\ndef _get_stale_threshold(sync_type: str) -> Optional[int]:\n    \"\"\"Devuelve None mientras no exista un SLA canónico certificado para el proceso.\"\"\"\n    return None\n\n\ndef _calculate_status(\n    last_sync: Optional[datetime],\n    original_status: str,\n    sync_type: str,\n    error_message: Optional[str] = None\n) -> str:\n    \"\"\"Calcula estado sin fabricar STALE cuando no hay SLA canónico.\"\"\"\n    if error_message or (original_status and \"ERROR\" in original_status.upper()):\n        return \"ERROR\"\n    if original_status and \"WARNING\" in original_status.upper():\n        return \"WARNING\"\n    if not last_sync:\n        return \"SIN_TELEMETRIA\"\n    threshold_minutes = _get_stale_threshold(sync_type)\n    if threshold_minutes is None:\n        return \"SIN_SLA_THRESHOLD_CONFIGURADO\"\n    cutoff = datetime.now() - timedelta(minutes=threshold_minutes)\n    if last_sync < cutoff:\n        return \"STALE\"\n    return \"SUCCESS\"\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_monitor/service.py",
+      "old": "        # 5. Últimos syncs generales (últimos 20)\n        cursor.execute(\"\"\"",
+      "new": "        # 5. Telemetría genérica Sync_Logs. P3A-R3 certificó que existe, pero\n        # no tiene server_id ni columnas de resultado cuantitativo; por ello se expone\n        # como actividad global NO asignable a procesos/servidores.\n        cursor.execute(\"\"\"\n            SELECT TOP 20 id, service, type, message, timestamp, operador\n            FROM Sync_Logs\n            ORDER BY timestamp DESC, id DESC\n        \"\"\")\n        sync_logs_genericos = cursor.fetchall()\n\n        # 6. Últimos syncs generales (últimos 20)\n        cursor.execute(\"\"\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_monitor/service.py",
+      "old": "            else:\n                srv_status = \"STALE\"\n                last_sync_all = None\n                total_records = 0\n                total_errors = 0",
+      "new": "            else:\n                # Servidor activo sin proceso correlacionable en las fuentes canónicas.\n                srv_status = \"SIN_TELEMETRIA\"\n                last_sync_all = None\n                total_records = 0\n                total_errors = 0",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_monitor/service.py",
+      "old": "        servidores_stale = len([s for s in servidores if s[\"status\"] == \"STALE\"])\n        \n        total_errores_24h",
+      "new": "        servidores_stale = len([s for s in servidores if s[\"status\"] == \"STALE\"])\n        servidores_sin_sla = len([s for s in servidores if s[\"status\"] == \"SIN_SLA_THRESHOLD_CONFIGURADO\"])\n        servidores_sin_telemetria = len([s for s in servidores if s[\"status\"] == \"SIN_TELEMETRIA\"])\n        \n        total_errores_24h",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_monitor/service.py",
+      "old": "            \"ultimos_syncs\": ultimos_syncs,\n            \"kpis\": {",
+      "new": "            \"ultimos_syncs\": ultimos_syncs,\n            \"sync_logs_genericos\": [\n                {\n                    \"id\": row.get(\"id\"),\n                    \"service\": _safe_str(row.get(\"service\")),\n                    \"type\": _safe_str(row.get(\"type\")),\n                    \"message\": _safe_str(row.get(\"message\")),\n                    \"timestamp\": _safe_datetime(row.get(\"timestamp\")).isoformat() if _safe_datetime(row.get(\"timestamp\")) else None,\n                    \"operador\": _safe_str(row.get(\"operador\")),\n                }\n                for row in sync_logs_genericos\n            ],\n            \"universo\": {\n                \"server_catalog\": \"dbo.Servidores_Conexiones\",\n                \"process_sources\": [\"dbo.Compras_Sync_Log\", \"dbo.Comercial_SyncLog_v2\"],\n                \"generic_telemetry_source\": \"dbo.Sync_Logs\",\n                \"generic_telemetry_scope\": \"GLOBAL_UNSCOPED_NO_SERVER_ID\",\n                \"sla_config_status\": \"SIN_SLA_THRESHOLD_CONFIGURADO\",\n                \"sla_evidence\": SYNC_SLA_EVIDENCE,\n            },\n            \"kpis\": {",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_monitor/service.py",
+      "old": "                \"servidores_stale\": servidores_stale,\n                \"total_errores_24h\": total_errores_24h,",
+      "new": "                \"servidores_stale\": servidores_stale,\n                \"servidores_sin_sla\": servidores_sin_sla,\n                \"servidores_sin_telemetria\": servidores_sin_telemetria,\n                \"total_errores_24h\": total_errores_24h,",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sync_monitor/service.py",
+      "old": "            \"ultimos_syncs\": [],\n            \"kpis\": {},",
+      "new": "            \"ultimos_syncs\": [],\n            \"sync_logs_genericos\": [],\n            \"universo\": {\n                \"server_catalog\": \"dbo.Servidores_Conexiones\",\n                \"process_sources\": [\"dbo.Compras_Sync_Log\", \"dbo.Comercial_SyncLog_v2\"],\n                \"generic_telemetry_source\": \"dbo.Sync_Logs\",\n                \"generic_telemetry_scope\": \"GLOBAL_UNSCOPED_NO_SERVER_ID\",\n                \"sla_config_status\": \"SIN_SLA_THRESHOLD_CONFIGURADO\",\n                \"sla_evidence\": SYNC_SLA_EVIDENCE,\n            },\n            \"kpis\": {},",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_sync_monitor_p3b_universe_threshold_contract.py",
+      "content": "from pathlib import Path\n\nSERVICE = (Path(__file__).resolve().parents[1] / 'modules' / 'sync_monitor' / 'service.py').read_text(encoding='utf-8')\n\n\ndef test_no_operational_stale_threshold_hardcodes_remain():\n    assert 'STALE_THRESHOLDS' not in SERVICE\n    for token in ['\"VENTAS\": 30', '\"INVENTARIOS\": 120', '\"COMPRAS\": 360', '\"CATALOGOS\": 1440']:\n        assert token not in SERVICE\n\n\ndef test_missing_canonical_sla_is_explicit_not_stale():\n    assert 'P3A_R3_NO_CANONICAL_SYNC_SLA_CONFIG_CERTIFIED' in SERVICE\n    assert 'return \"SIN_SLA_THRESHOLD_CONFIGURADO\"' in SERVICE\n    assert 'return \"SIN_TELEMETRIA\"' in SERVICE\n    assert 'threshold_minutes is None' in SERVICE\n\n\ndef test_certified_universe_sources_are_explicit():\n    assert '\"server_catalog\": \"dbo.Servidores_Conexiones\"' in SERVICE\n    assert '\"process_sources\": [\"dbo.Compras_Sync_Log\", \"dbo.Comercial_SyncLog_v2\"]' in SERVICE\n    assert '\"generic_telemetry_source\": \"dbo.Sync_Logs\"' in SERVICE\n    assert 'GLOBAL_UNSCOPED_NO_SERVER_ID' in SERVICE\n\n\ndef test_generic_sync_logs_not_merged_into_server_processes():\n    assert 'all_syncs = compras_syncs + comercial_syncs' in SERVICE\n    assert 'all_syncs = compras_syncs + comercial_syncs + sync_logs_genericos' not in SERVICE\n\n\ndef test_sync_logs_query_uses_certified_columns_only():\n    assert 'SELECT TOP 20 id, service, type, message, timestamp, operador' in SERVICE\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/sync_monitor/service.py", "backend/tests/test_sync_monitor_p3b_universe_threshold_contract.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_sync_monitor_p3b_universe_threshold_contract.py", "backend/tests/test_sync_monitor_rbac_contract.py", "backend/tests/test_sync_monitor_exact_error_kpi_contract.py"]}
+  ],
+  "constraints": [
+    "NO Production",
+    "NO Mongo",
+    "NO LIVE",
+    "NO DDL/DML",
+    "NO invented SLA or stale thresholds",
+    "Use only P3A-R3 certified Sync_Logs columns: id, service, type, message, timestamp, operador",
+    "Do not map Sync_Logs to server_id because P3A-R3 proved no server_id column",
+    "Preserve P0 strict RBAC and P1 exact error KPI",
+    "Do not modify Universal Worker structure"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "technical"
+}
