@@ -1,0 +1,40 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-mpro-global-final-audit-r1-20260909T0440Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Certificar en solo lectura el estado final global MPRO despues de completar secuencialmente 130QRO y ORIGEN full-history. Validar por sucursal 0021 y 0023 que COUNT, MIN y MAX de CENTRAL2020.dbo.Comanda_Corte coincidan exactamente con dbo.Finanzas_CortesCaja, que no existan duplicados por ServerID+FolioCorte, que ambas unidades tengan cobertura completa y que Production no sea tocada. No realizar mutaciones.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "mpro_global_source_target_by_branch",
+          "sql": "SELECT src.sucursal,src.total_source,src.min_source,src.max_source,tgt.total_target,tgt.min_target,tgt.max_target FROM (SELECT Sc_Cve_Sucursal AS sucursal,COUNT_BIG(*) AS total_source,MIN(Cc_Fecha) AS min_source,MAX(Cc_Fecha) AS max_source FROM CENTRAL2020.dbo.Comanda_Corte WHERE Sc_Cve_Sucursal IN ('0021','0023') AND (Es_Cve_Estado IS NULL OR Es_Cve_Estado<>'BAJA') GROUP BY Sc_Cve_Sucursal) src LEFT JOIN (SELECT SucursalOrigenID AS sucursal,COUNT_BIG(*) AS total_target,MIN(FechaCorte) AS min_target,MAX(FechaCorte) AS max_target FROM dbo.Finanzas_CortesCaja WHERE SistemaOrigen='MPRO' AND SucursalOrigenID IN ('0021','0023') GROUP BY SucursalOrigenID) tgt ON tgt.sucursal=src.sucursal ORDER BY src.sucursal;"
+        },
+        {
+          "name": "mpro_global_duplicate_identity_check",
+          "sql": "SELECT COUNT_BIG(*) AS duplicate_groups FROM (SELECT ServerID,FolioCorte,COUNT_BIG(*) AS c FROM dbo.Finanzas_CortesCaja WHERE SistemaOrigen='MPRO' GROUP BY ServerID,FolioCorte HAVING COUNT_BIG(*)>1) d;"
+        },
+        {
+          "name": "mpro_global_canonical_coverage",
+          "sql": "SELECT UnidadNegocioNombre,SucursalOrigenID,COUNT_BIG(*) AS total_rows,MIN(FechaCorte) AS min_fecha,MAX(FechaCorte) AS max_fecha,MAX(FechaSincronizacion) AS last_sync_at FROM dbo.Finanzas_CortesCaja WHERE SistemaOrigen='MPRO' AND SucursalOrigenID IN ('0021','0023') GROUP BY UnidadNegocioNombre,SucursalOrigenID ORDER BY SucursalOrigenID;"
+        },
+        {
+          "name": "mpro_global_totals",
+          "sql": "SELECT COUNT_BIG(*) AS total_cortes_mpro,COUNT(DISTINCT SucursalOrigenID) AS sucursales_mpro,MIN(FechaCorte) AS min_fecha_global,MAX(FechaCorte) AS max_fecha_global FROM dbo.Finanzas_CortesCaja WHERE SistemaOrigen='MPRO' AND SucursalOrigenID IN ('0021','0023');"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "MPRO global final audit"
+  },
+  "human_summary_language": "es"
+}
