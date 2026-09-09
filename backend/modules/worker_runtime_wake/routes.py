@@ -102,9 +102,9 @@ def _converge_development_if_safe() -> dict[str, str]:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker runtime worktree status unavailable")
     if dirty.stdout.strip():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="worker runtime convergence blocked: local worktree dirty")
-    ff = _runtime_git("merge", "--ff-only", f"origin/{DEV_BRANCH}", timeout=120)
+    ff = _runtime_git("reset", "--hard", f"origin/{DEV_BRANCH}", timeout=120)
     if ff.returncode != 0:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker runtime fast-forward failed")
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker runtime fast-forward reset failed")
     new_head = _runtime_git("rev-parse", "HEAD").stdout.strip().lower()
     if new_head != remote:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker runtime fast-forward verification failed")
