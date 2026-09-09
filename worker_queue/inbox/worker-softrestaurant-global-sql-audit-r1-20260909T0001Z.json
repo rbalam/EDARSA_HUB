@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-softrestaurant-global-sql-audit-r1-20260909T0001Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Cerrar Gate C de SoftRestaurant mediante auditoria SQL global estrictamente READ_ONLY despues de completar 130MID, CIENFUEGOS y ESTELAR. Validar presencia, cobertura temporal, volumen e idempotencia observable de los cortes canonicos y volumen del detalle de pagos. No ejecutar sincronizaciones, no modificar SQL, no shell, no tocar Production.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "softrestaurant_cortes_by_unit",
+          "sql": "SELECT UnidadNegocioID, UnidadNegocioNombre, COUNT_BIG(*) AS total_cortes, MIN(FechaCorte) AS fecha_min, MAX(FechaCorte) AS fecha_max, MAX(FechaSincronizacion) AS ultima_sync FROM dbo.Finanzas_CortesCaja WHERE SistemaOrigen = 'SOFTRESTAURANT' GROUP BY UnidadNegocioID, UnidadNegocioNombre ORDER BY UnidadNegocioNombre;"
+        },
+        {
+          "name": "softrestaurant_duplicate_identity_check",
+          "sql": "SELECT COUNT_BIG(*) AS duplicate_groups FROM (SELECT ServerID, FolioCorte FROM dbo.Finanzas_CortesCaja WHERE SistemaOrigen = 'SOFTRESTAURANT' GROUP BY ServerID, FolioCorte HAVING COUNT_BIG(*) > 1) d;"
+        },
+        {
+          "name": "softrestaurant_total_cortes",
+          "sql": "SELECT COUNT_BIG(*) AS total_cortes_softrestaurant FROM dbo.Finanzas_CortesCaja WHERE SistemaOrigen = 'SOFTRESTAURANT';"
+        },
+        {
+          "name": "detalle_pagos_total_rows",
+          "sql": "SELECT COUNT_BIG(*) AS total_detalle_pagos FROM dbo.Finanzas_CortesCaja_DetallePagos;"
+        },
+        {
+          "name": "canonical_tables_columns_snapshot",
+          "sql": "SELECT t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type FROM sys.tables t INNER JOIN sys.columns c ON c.object_id = t.object_id INNER JOIN sys.types ty ON ty.user_type_id = c.user_type_id WHERE SCHEMA_NAME(t.schema_id) = 'dbo' AND t.name IN ('Finanzas_CortesCaja','Finanzas_CortesCaja_DetallePagos') ORDER BY t.name, c.column_id;"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Final SoftRestaurant Gate C global SQL audit"
+  },
+  "human_summary_language": "es"
+}
