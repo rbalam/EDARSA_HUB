@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE6-E2E-WORKFLOW-R6-20260908",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "97a53f76ab9b5ded191a8f53e797a31d029c9e25",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir solo el install runtime de Gate6 E2E: evitar requirements completo que depende de emergentintegrations privado, instalar dependencias minimas necesarias, disparar R6 y preservar harness/cleanup. No Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/catalogo-ampliado-gate6-e2e.yml",
+      "old": "      - ops/e2e/requests/CATALOGO-AMPLIADO-GATE6-R5-20260908.execute",
+      "new": "      - ops/e2e/requests/CATALOGO-AMPLIADO-GATE6-R6-20260908.execute"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/catalogo-ampliado-gate6-e2e.yml",
+      "old": "        run: python -m pip install -r backend/requirements.txt",
+      "new": "        run: python -m pip install fastapi httpx pymssql pydantic python-dotenv email-validator bcrypt PyJWT pytest"
+    },
+    {
+      "type": "write_file",
+      "path": "ops/e2e/requests/CATALOGO-AMPLIADO-GATE6-R6-20260908.execute",
+      "content": "job=CATALOGO-AMPLIADO-GATE6-E2E-WORKFLOW-R6-20260908\ntarget=development\nproduction_allowed=false\ncleanup=required\n"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"},
+    {"type":"pytest","paths":["backend/tests/test_catalogo_ampliado_gate6_runtime.py","backend/tests/test_catalogo_ampliado_gate6_contract.py","backend/tests/test_catalogo_ampliado_backend_gate4.py","backend/tests/test_catalogo_ampliado_frontend_gate5_contract.py"]},
+    {"type":"frontend_build","directory":"frontend"}
+  ],
+  "constraints": ["NO Production","NO Mongo","no functional harness changes","cleanup residue zero required"],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
