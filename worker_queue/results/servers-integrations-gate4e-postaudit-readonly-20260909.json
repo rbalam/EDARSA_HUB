@@ -1,0 +1,449 @@
+{
+  "base_sha": "b048737f949d1acd8331e0b9e410bdbf74062621",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T16:00:27Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "servers-integrations-gate4e-postaudit-readonly-20260909",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T16:00:36Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "database_user",
+              "original_login"
+            ],
+            "name": "gate4e_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "table_name"
+            ],
+            "name": "gate4e_new_tables",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "dbo",
+                "Sistema_IdentificadoresExternos"
+              ],
+              [
+                "dbo",
+                "Sistema_Sync_Capacidades"
+              ],
+              [
+                "dbo",
+                "Sync_Control_Evidencias"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "object_name",
+              "column_name",
+              "data_type",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable"
+            ],
+            "name": "gate4e_target_columns",
+            "row_count_returned": 17,
+            "rows": [
+              [
+                "Servidores_ConexionEstado",
+                "FechaActualizacionUTC",
+                "datetime2",
+                7,
+                23,
+                3,
+                true
+              ],
+              [
+                "Servidores_ConexionEstado",
+                "LatenciaMs",
+                "int",
+                4,
+                10,
+                0,
+                true
+              ],
+              [
+                "Servidores_ConexionEstado",
+                "UltimaPruebaUTC",
+                "datetime2",
+                7,
+                23,
+                3,
+                true
+              ],
+              [
+                "Servidores_ConexionEstado",
+                "UltimoErrorCodigo",
+                "nvarchar",
+                160,
+                0,
+                0,
+                true
+              ],
+              [
+                "Servidores_ConexionEstado",
+                "UltimoErrorMensaje",
+                "nvarchar",
+                2000,
+                0,
+                0,
+                true
+              ],
+              [
+                "Servidores_ConexionEstado",
+                "UltimoErrorUTC",
+                "datetime2",
+                7,
+                23,
+                3,
+                true
+              ],
+              [
+                "Servidores_ConexionEstado",
+                "UltimoExitoUTC",
+                "datetime2",
+                7,
+                23,
+                3,
+                true
+              ],
+              [
+                "Servidores_ConexionEstado",
+                "UltimoSyncExitosoUTC",
+                "datetime2",
+                7,
+                23,
+                3,
+                true
+              ],
+              [
+                "Servidores_ConexionEstado",
+                "UltimoSyncUTC",
+                "datetime2",
+                7,
+                23,
+                3,
+                true
+              ],
+              [
+                "Sync_Control_Ejecuciones",
+                "CodigoSync",
+                "nvarchar",
+                200,
+                0,
+                0,
+                true
+              ],
+              [
+                "Sync_Control_Ejecuciones",
+                "ConexionID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                true
+              ],
+              [
+                "Sync_Control_Ejecuciones",
+                "FinishedAtUTC",
+                "datetime2",
+                7,
+                23,
+                3,
+                true
+              ],
+              [
+                "Sync_Control_Ejecuciones",
+                "IdempotencyKey",
+                "nvarchar",
+                400,
+                0,
+                0,
+                true
+              ],
+              [
+                "Sync_Control_Ejecuciones",
+                "StartedAtUTC",
+                "datetime2",
+                7,
+                23,
+                3,
+                true
+              ],
+              [
+                "Sync_Control_Ejecuciones",
+                "UnidadNegocioID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                true
+              ],
+              [
+                "Unidades_Negocio",
+                "locale_operativo",
+                "nvarchar",
+                40,
+                0,
+                0,
+                true
+              ],
+              [
+                "Unidades_Negocio",
+                "timezone_iana",
+                "nvarchar",
+                200,
+                0,
+                0,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "name",
+              "parent_table",
+              "referenced_table",
+              "is_disabled",
+              "is_not_trusted"
+            ],
+            "name": "gate4e_named_foreign_keys",
+            "row_count_returned": 10,
+            "rows": [
+              [
+                "FK_Sistema_IdentificadoresExternos_Conexion",
+                "Sistema_IdentificadoresExternos",
+                "Servidores_Conexiones",
+                false,
+                false
+              ],
+              [
+                "FK_Sistema_IdentificadoresExternos_Sistema",
+                "Sistema_IdentificadoresExternos",
+                "Sistema_Tipos",
+                false,
+                false
+              ],
+              [
+                "FK_Sistema_IdentificadoresExternos_Unidad",
+                "Sistema_IdentificadoresExternos",
+                "Unidades_Negocio",
+                false,
+                false
+              ],
+              [
+                "FK_Sistema_IdentificadoresExternos_Version",
+                "Sistema_IdentificadoresExternos",
+                "Sistema_VersionesSistemas",
+                false,
+                false
+              ],
+              [
+                "FK_Sistema_Sync_Capacidades_Capacidad",
+                "Sistema_Sync_Capacidades",
+                "Sistema_Capacidades",
+                false,
+                false
+              ],
+              [
+                "FK_Sistema_Sync_Capacidades_Sync",
+                "Sistema_Sync_Capacidades",
+                "Sistema_Sync_Catalogo",
+                false,
+                false
+              ],
+              [
+                "FK_Sync_Control_Ejecuciones_CodigoSync",
+                "Sync_Control_Ejecuciones",
+                "Sistema_Sync_Catalogo",
+                false,
+                false
+              ],
+              [
+                "FK_Sync_Control_Ejecuciones_Conexion",
+                "Sync_Control_Ejecuciones",
+                "Servidores_Conexiones",
+                false,
+                false
+              ],
+              [
+                "FK_Sync_Control_Ejecuciones_Unidad",
+                "Sync_Control_Ejecuciones",
+                "Unidades_Negocio",
+                false,
+                false
+              ],
+              [
+                "FK_Sync_Control_Evidencias_Ejecucion",
+                "Sync_Control_Evidencias",
+                "Sync_Control_Ejecuciones",
+                false,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "name",
+              "is_unique",
+              "has_filter",
+              "filter_definition"
+            ],
+            "name": "gate4e_named_indexes",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "Sistema_IdentificadoresExternos",
+                "IX_Sistema_IdentificadoresExternos_Conexion",
+                false,
+                false,
+                null
+              ],
+              [
+                "Sistema_IdentificadoresExternos",
+                "IX_Sistema_IdentificadoresExternos_UnidadSistema",
+                false,
+                false,
+                null
+              ],
+              [
+                "Sync_Control_Ejecuciones",
+                "IX_Sync_Control_Ejecuciones_Conexion_CodigoSync",
+                false,
+                false,
+                null
+              ],
+              [
+                "Sync_Control_Ejecuciones",
+                "UX_Sync_Control_Ejecuciones_IdempotencyKey",
+                true,
+                true,
+                "([IdempotencyKey] IS NOT NULL)"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "row_count"
+            ],
+            "name": "gate4e_new_table_rows",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "Sistema_IdentificadoresExternos",
+                "0"
+              ],
+              [
+                "Sistema_Sync_Capacidades",
+                "0"
+              ],
+              [
+                "Sync_Control_Evidencias",
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "name",
+              "type_desc"
+            ],
+            "name": "gate4e_base_objects_preserved",
+            "row_count_returned": 8,
+            "rows": [
+              [
+                "Servidores_Conexiones",
+                "USER_TABLE"
+              ],
+              [
+                "Servidores_ConexionEstado",
+                "USER_TABLE"
+              ],
+              [
+                "Sistema_Capacidades",
+                "USER_TABLE"
+              ],
+              [
+                "Sistema_Sync_Catalogo",
+                "USER_TABLE"
+              ],
+              [
+                "Sistema_Tipos",
+                "USER_TABLE"
+              ],
+              [
+                "Sistema_VersionesSistemas",
+                "USER_TABLE"
+              ],
+              [
+                "Sync_Control_Ejecuciones",
+                "USER_TABLE"
+              ],
+              [
+                "Unidades_Negocio",
+                "USER_TABLE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc"
+            ],
+            "name": "gate4e_no_toast_domain_objects",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T16:00:25Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
