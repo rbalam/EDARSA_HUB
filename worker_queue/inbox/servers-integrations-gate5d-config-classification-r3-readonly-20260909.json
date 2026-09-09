@@ -1,0 +1,21 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"servers-integrations-gate5d-config-classification-r3-readonly-20260909",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"7b58dc633e034ce5b1708775ab63a5e529900a62",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Gate 5D R3 READ_ONLY: clasificar las 6 filas de Sistema_NotificacionesConfig por ColeccionOrigen y claves JSON no sensibles para reconectar config/templates/providers sin leer secretos. Auditar tambien roles/perfiles existentes aptos para permisos Communications. Sin DDL/DML. Production prohibida.",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"gate5d_r3_identity","sql":"SELECT DB_NAME() database_name,SUSER_SNAME() login_name,USER_NAME() database_user"},
+    {"name":"gate5d_r3_config_collections","sql":"SELECT ColeccionOrigen,COUNT_BIG(*) total,SUM(CASE WHEN ISJSON(PayloadMongo)=1 THEN 1 ELSE 0 END) json_valid,SUM(CASE WHEN Activo=1 THEN 1 ELSE 0 END) active_rows FROM dbo.Sistema_NotificacionesConfig GROUP BY ColeccionOrigen ORDER BY ColeccionOrigen"},
+    {"name":"gate5d_r3_config_safe_shape","sql":"SELECT CONVERT(varchar(36),Id) Id,MongoId,ColeccionOrigen,Activo,MigradoDesdeMongo,CASE WHEN ISJSON(PayloadMongo)=1 THEN JSON_VALUE(PayloadMongo,'$.canal') END canal,CASE WHEN ISJSON(PayloadMongo)=1 THEN JSON_VALUE(PayloadMongo,'$.modulo') END modulo,CASE WHEN ISJSON(PayloadMongo)=1 THEN JSON_VALUE(PayloadMongo,'$.evento') END evento,CASE WHEN ISJSON(PayloadMongo)=1 THEN JSON_VALUE(PayloadMongo,'$.provider') END provider,CASE WHEN ISJSON(PayloadMongo)=1 THEN JSON_VALUE(PayloadMongo,'$.modo_envio') END modo_envio,CASE WHEN ISJSON(PayloadMongo)=1 THEN JSON_VALUE(PayloadMongo,'$.template_codigo') END template_codigo,CASE WHEN ISJSON(PayloadMongo)=1 THEN JSON_VALUE(PayloadMongo,'$.codigo') END codigo,CASE WHEN ISJSON(PayloadMongo)=1 THEN JSON_VALUE(PayloadMongo,'$.nombre') END nombre FROM dbo.Sistema_NotificacionesConfig ORDER BY ColeccionOrigen,MongoId"},
+    {"name":"gate5d_r3_rbac_roles","sql":"SELECT RolID,Codigo,Nombre,Activo FROM dbo.Sistema_RBAC_Roles ORDER BY RolID"},
+    {"name":"gate5d_r3_permission_schema","sql":"SELECT c.column_id,c.name column_name,t.name data_type,c.max_length,c.is_nullable FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Sistema_RBAC_Permisos') ORDER BY c.column_id"},
+    {"name":"gate5d_r3_role_permission_schema","sql":"SELECT c.column_id,c.name column_name,t.name data_type,c.max_length,c.is_nullable FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Sistema_RBAC_RolesPermisos') ORDER BY c.column_id"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
