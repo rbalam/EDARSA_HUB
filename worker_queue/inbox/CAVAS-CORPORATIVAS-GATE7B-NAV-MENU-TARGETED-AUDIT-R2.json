@@ -1,0 +1,46 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE7B-NAV-MENU-TARGETED-AUDIT-R2",
+  "created_at_utc": "2026-09-09T04:15:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "49fec3d91d359cb436f7fdb2dd03b1dd26319d19",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate 7B targeted audit R2: repeat the prior read-only navigation/menu audit with only the failed Sistema_ModulosPermisos query corrected. No INSERT, UPDATE, DELETE, DDL, seed, EXEC or Production.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "sistema_modulos_columns",
+          "sql": "SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Sistema_Modulos' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "sistema_modulos_menus_columns",
+          "sql": "SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Sistema_ModulosMenus' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "cava_modules_exact",
+          "sql": "SELECT * FROM dbo.Sistema_Modulos WHERE LOWER(ISNULL(Codigo,'')) LIKE '%cava%' OR LOWER(ISNULL(Nombre,'')) LIKE '%cava%' ORDER BY ModuloID"
+        },
+        {
+          "name": "cava_menu_rows_exact",
+          "sql": "SELECT mm.* FROM dbo.Sistema_ModulosMenus mm LEFT JOIN dbo.Sistema_Modulos m ON m.ModuloID=mm.ModuloID WHERE LOWER(ISNULL(mm.Codigo,'')) LIKE '%cava%' OR LOWER(ISNULL(mm.Nombre,'')) LIKE '%cava%' OR LOWER(ISNULL(mm.Ruta,'')) LIKE '%cava%' OR LOWER(ISNULL(m.Codigo,'')) LIKE '%cava%' OR LOWER(ISNULL(m.Nombre,'')) LIKE '%cava%' ORDER BY mm.ModuloID, mm.MenuPadreID, mm.Orden, mm.MenuID"
+        },
+        {
+          "name": "sistema_modulos_permissions_columns",
+          "sql": "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME IN ('Sistema_ModulosPermisos','Sistema_ModulosVisibilidad','Usuario_PermisosRolModulo','Sistema_RBAC_Permisos','Sistema_RBAC_RolesPermisos') ORDER BY TABLE_NAME, ORDINAL_POSITION"
+        },
+        {
+          "name": "cava_permissions_existing",
+          "sql": "SELECT TOP 200 * FROM dbo.Sistema_ModulosPermisos ORDER BY 1"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
