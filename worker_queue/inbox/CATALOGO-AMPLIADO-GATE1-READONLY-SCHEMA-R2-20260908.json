@@ -1,0 +1,48 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE1-READONLY-SCHEMA-R2-20260908",
+  "created_at_utc": "2026-09-08T23:59:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2e76f66103565405272dc571fa9dd9d9af999727",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate 1 R2 de Catalogo Ampliado / Gobierno Corporativo: auditar exclusivamente en SQL canonico el esquema real existente antes de integrar cualquier DDL o backend historico. Determinar que tablas, columnas y relaciones ya existen para empresas, personas, usuarios, clientes, proveedores, roles, documentos, tareas y notificaciones; detectar objetos Gobierno_* o equivalentes reutilizables; producir evidencia suficiente para disenar el DDL minimo sin duplicar catalogos ni fuentes de verdad. No modificar SQL, repositorio, Worker, Supervisor, watchdog ni Produccion.",
+  "acceptance": [
+    "READ_ONLY_SQL unicamente",
+    "production_touched=false",
+    "sin DDL/DML",
+    "auditar dbo.Sistema_Empresas y sus columnas/llaves",
+    "auditar objetos Gobierno_* existentes si los hay",
+    "identificar catalogos canonicos reutilizables de personas/usuarios/clientes/proveedores/contactos",
+    "identificar tablas canonicas de tareas/notificaciones reutilizables",
+    "listar columnas, PK/FK e indices de objetos relevantes",
+    "evidencia suficiente para decidir que partes del esquema historico 20260827_034 pueden reutilizarse, adaptarse o descartarse"
+  ],
+  "constraints": [
+    "no crear tablas ni columnas",
+    "no hardcodes de empresas, personas o unidades",
+    "no Mongo",
+    "no LIVE externo",
+    "no tocar infraestructura del Universal Worker",
+    "no tocar Produccion",
+    "usar exclusivamente readonly_sql_connection canonica"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {"name":"relevant_tables_inventory","sql":"SELECT s.name AS schema_name, t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE s.name='dbo' AND (t.name='Sistema_Empresas' OR t.name LIKE 'Gobierno[_]%' OR t.name LIKE '%Persona%' OR t.name LIKE '%Usuario%' OR t.name LIKE '%Cliente%' OR t.name LIKE '%Proveedor%' OR t.name LIKE '%Contacto%' OR t.name LIKE '%Documento%' OR t.name LIKE '%Tarea%' OR t.name LIKE '%Notificacion%') ORDER BY t.name"},
+        {"name":"relevant_columns","sql":"SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND (t.name='Sistema_Empresas' OR t.name LIKE 'Gobierno[_]%' OR t.name IN ('Tareas_Inventario','Operativo_Notificaciones_Log') OR t.name LIKE '%Persona%' OR t.name LIKE '%Usuario%' OR t.name LIKE '%Cliente%' OR t.name LIKE '%Proveedor%') ORDER BY t.name,c.column_id"},
+        {"name":"relevant_primary_unique_indexes","sql":"SELECT t.name AS table_name,i.name AS index_name,i.is_primary_key,i.is_unique,c.name AS column_name,ic.key_ordinal FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.indexes i ON i.object_id=t.object_id JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE s.name='dbo' AND (t.name='Sistema_Empresas' OR t.name LIKE 'Gobierno[_]%' OR t.name IN ('Tareas_Inventario','Operativo_Notificaciones_Log') OR t.name LIKE '%Persona%' OR t.name LIKE '%Usuario%' OR t.name LIKE '%Cliente%' OR t.name LIKE '%Proveedor%') AND i.is_hypothetical=0 ORDER BY t.name,i.name,ic.key_ordinal"},
+        {"name":"relevant_foreign_keys","sql":"SELECT OBJECT_NAME(fkc.parent_object_id) AS parent_table,pc.name AS parent_column,fk.name AS fk_name,OBJECT_NAME(fkc.referenced_object_id) AS referenced_table,rc.name AS referenced_column FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE OBJECT_NAME(fkc.parent_object_id)='Sistema_Empresas' OR OBJECT_NAME(fkc.parent_object_id) LIKE 'Gobierno[_]%' OR OBJECT_NAME(fkc.parent_object_id) IN ('Tareas_Inventario','Operativo_Notificaciones_Log') OR OBJECT_NAME(fkc.parent_object_id) LIKE '%Persona%' OR OBJECT_NAME(fkc.parent_object_id) LIKE '%Usuario%' OR OBJECT_NAME(fkc.parent_object_id) LIKE '%Cliente%' OR OBJECT_NAME(fkc.parent_object_id) LIKE '%Proveedor%' ORDER BY parent_table,fk_name,parent_column"},
+        {"name":"canonical_reuse_candidates","sql":"SELECT t.name AS table_name, SUM(CASE WHEN c.name IN ('PersonaID','UsuarioID','ClienteID','ProveedorID','EmpresaID','RFC','CURP','Email','Correo','Nombre','RazonSocial') THEN 1 ELSE 0 END) AS identity_signal_columns, COUNT(*) AS total_columns FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id WHERE s.name='dbo' AND (t.name LIKE '%Persona%' OR t.name LIKE '%Usuario%' OR t.name LIKE '%Cliente%' OR t.name LIKE '%Proveedor%' OR t.name LIKE '%Contacto%' OR t.name='Sistema_Empresas') GROUP BY t.name ORDER BY identity_signal_columns DESC,t.name"},
+        {"name":"task_notification_contract_columns","sql":"SELECT t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Tareas_Inventario','Operativo_Notificaciones_Log') ORDER BY t.name,c.column_id"}
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
