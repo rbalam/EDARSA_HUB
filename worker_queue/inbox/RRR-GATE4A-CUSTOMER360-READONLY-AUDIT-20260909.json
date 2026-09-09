@@ -1,0 +1,39 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"RRR-GATE4A-CUSTOMER360-READONLY-AUDIT-20260909",
+  "created_at_utc":"2026-09-09T06:06:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"RRR GATE 4A Customer 360: auditar exclusivamente en READ_ONLY las estructuras reales necesarias para construir una vista 360 del cliente sobre Cliente_Catalogo y el nucleo RRR ya creado. Identificar contratos reutilizables para identidad/contacto, ventas/visitas, ticket/promedio, productos/categorias, reseñas/postventa, RRR balance/score/rank, campañas/notificaciones, Cavas y LTV/valor. Producir evidencia para diseñar Customer 360 sin duplicar maestros ni crear tablas innecesarias.",
+  "actions":[],
+  "acceptance":[
+    "READ_ONLY_SQL solamente",
+    "actions=[]",
+    "production_touched=false",
+    "Cliente_Catalogo confirmado como raiz",
+    "contratos de ventas por ClienteID identificados",
+    "contratos de contacto/CRM identificados",
+    "contratos RRR actuales identificados",
+    "candidatos de reseñas/postventa identificados",
+    "Cavas interop identificada",
+    "objetos existentes Customer360/Cliente360 detectados si existen",
+    "evidencia suficiente para decidir VIEW / EXTEND / CREATE"
+  ],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"customer360_existing_objects","sql":"SELECT s.name schema_name,o.name object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND (o.name LIKE '%Customer%360%' OR o.name LIKE '%Cliente%360%' OR o.name LIKE '%Cliente%Resumen%' OR o.name LIKE '%Cliente%Perfil%' OR o.name LIKE '%Cliente%Vista%' OR o.name LIKE '%CRM%Cliente%') ORDER BY s.name,o.type_desc,o.name"},
+    {"name":"customer_root_columns","sql":"SELECT c.column_id,c.name column_name,ty.name data_type,c.max_length,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name='Cliente_Catalogo' ORDER BY c.column_id"},
+    {"name":"customer_contact_contracts","sql":"SELECT t.name table_name,c.name column_name,ty.name data_type,c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Cliente_Contactos','Cliente_Direcciones','Cliente_UsuariosPortal','CRM_Cuentas','CRM_Contactos') ORDER BY t.name,c.column_id"},
+    {"name":"customer_sales_contracts","sql":"SELECT t.name table_name,c.name column_name,ty.name data_type,c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Venta_Encabezado','Venta_Detalle','Venta_Pagos') AND (c.name IN ('VentaID','ClienteID','EmpresaID','UnidadNegocioID','FechaOperacion','Fecha','Total','Importe','Estado','Estatus','Folio') OR c.name LIKE '%Fecha%' OR c.name LIKE '%Total%' OR c.name LIKE '%Cliente%' OR c.name LIKE '%Unidad%') ORDER BY t.name,c.column_id"},
+    {"name":"rrr_customer360_contracts","sql":"SELECT t.name table_name,c.name column_name,ty.name data_type,c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('RRR_Eventos','RRR_LedgerMovimientos','RRR_ScoreHistorial','RRR_RankingHistorial','RRR_Beneficios') ORDER BY t.name,c.column_id"},
+    {"name":"customer_postventa_contracts","sql":"SELECT t.name table_name,c.name column_name,ty.name data_type,c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('CRM_PostventaEncuestas','CRM_PostventaTickets') ORDER BY t.name,c.column_id"},
+    {"name":"customer_cavas_contracts","sql":"SELECT t.name table_name,c.name column_name,ty.name data_type,c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE 'CavaSocios_%' OR t.name LIKE 'CavasCorporativas_%' ORDER BY t.name,c.column_id"},
+    {"name":"customer_notification_contracts","sql":"SELECT t.name table_name,c.name column_name,ty.name data_type,c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Operativo_Notificaciones_Log') ORDER BY t.name,c.column_id"},
+    {"name":"customer_fk_graph","sql":"SELECT pt.name parent_table,pc.name parent_column,fk.name fk_name,rt.name referenced_table,rc.name referenced_column FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.tables pt ON pt.object_id=fkc.parent_object_id JOIN sys.columns pc ON pc.object_id=pt.object_id AND pc.column_id=fkc.parent_column_id JOIN sys.tables rt ON rt.object_id=fkc.referenced_object_id JOIN sys.columns rc ON rc.object_id=rt.object_id AND rc.column_id=fkc.referenced_column_id WHERE pt.name IN ('Cliente_Contactos','Cliente_Direcciones','Cliente_UsuariosPortal','Venta_Encabezado','RRR_Eventos','RRR_LedgerMovimientos','RRR_ScoreHistorial','RRR_RankingHistorial','CRM_PostventaEncuestas','CRM_PostventaTickets') OR rt.name='Cliente_Catalogo' ORDER BY pt.name,fk.name,pc.name"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
