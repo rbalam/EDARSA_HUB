@@ -532,7 +532,7 @@ def marker_satisfied(marker: Path, public: dict[str, Any]) -> bool:
     # Todo resultado ya publicado es terminal para el publisher, salvo
     # promociones desde evidencia previa no certificada a una certificacion
     # terminal valida del mismo contrato.
-    if desired not in {"CERTIFIED", "CERTIFIED_OPERATIONAL"}:
+    if desired not in {"CERTIFIED", "CERTIFIED_OPERATIONAL", "CERTIFIED_READ_ONLY"}:
         return True
 
     return f"certification={desired}" in marker_text
