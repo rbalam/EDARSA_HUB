@@ -1,0 +1,29 @@
+{
+  "base_sha": "8c57d2cf52ef9a38c923d4d1ac8cf71eeb552a62",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-09T01:12:34Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/core/bos_direction_e2e_certification.py",
+    "backend/tests/test_bos_direction_e2e_gate7.py",
+    "docs/BOS/BOS_DIRECTION_E2E_GATE7.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-DIRECCION-E2E-INFORME-EJECUTIVO-GATE7-R2-20260908",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T01:12:49Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-09T01:12:32Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
