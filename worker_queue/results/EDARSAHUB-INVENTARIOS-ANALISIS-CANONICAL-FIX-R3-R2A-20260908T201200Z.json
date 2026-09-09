@@ -1,0 +1,28 @@
+{
+  "base_sha": "5299817adfbb9480dfdaab6f4a586c5ca8be42e4",
+  "blockers": [],
+  "candidate_sha": "d9da23bf4d7052c492e9f077438949dcbc2db3ec",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-09T02:30:48Z",
+  "development_sha": "d9da23bf4d7052c492e9f077438949dcbc2db3ec",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/configuracion/repositories/config_asignaciones_repository.py",
+    "backend/tests/test_inventory_analysis_warehouse_canonical_contract.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-CANONICAL-FIX-R3-R2A-20260908T201200Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T02:30:50Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-09T02:30:43Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
