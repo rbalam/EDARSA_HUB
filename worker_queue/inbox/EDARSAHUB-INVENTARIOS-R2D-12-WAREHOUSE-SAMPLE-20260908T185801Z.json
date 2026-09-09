@@ -1,0 +1,13 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-R2D-12-WAREHOUSE-SAMPLE-20260908T185801Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"R2D-12: muestra final aislada del catalogo canonico dbo.Inventario_Almacenes usando columnas ya certificadas. Solo lectura.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[{"name":"warehouse_sample","sql":"SELECT TOP (100) AlmacenID, EmpresaID, SucursalID, CodigoAlmacen, NombreAlmacen, TipoAlmacen, PermiteCompras, PermiteVentas, Activo, FechaAlta, FechaModificacion FROM dbo.Inventario_Almacenes ORDER BY SucursalID, CodigoAlmacen, AlmacenID"}]}],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
