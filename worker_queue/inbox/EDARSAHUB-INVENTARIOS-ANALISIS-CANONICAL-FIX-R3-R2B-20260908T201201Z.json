@@ -1,0 +1,113 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-CANONICAL-FIX-R3-R2B-20260908T201201Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Recuperacion R3-R2B frontend. Migrar exclusivamente el flujo Operaciones > Analisis de Reportes.js a selectedUnidad para almacenes e inventarios fisicos canonicos; retirar rutas legacy /servers/{server_id}/almacenes, /servers/{server_id}/inventarios y /compras/inventarios-fisicos/{filters.server_id}; preservar listas validas ante errores transitorios; limpiar estados solo cuando cambie la unidad canonica. No tocar backend ni Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "  // Track previous server to detect changes\n  const prevServerIdRef = useRef(filters.server_id);\n",
+      "new": "  // Track previous canonical business unit to detect scope changes\n  const prevUnidadRef = useRef(selectedUnidad);\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "      if (prevServerIdRef.current && prevServerIdRef.current !== filters.server_id) {\n",
+      "new": "      if (prevUnidadRef.current && prevUnidadRef.current !== selectedUnidad) {\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "      prevServerIdRef.current = filters.server_id;\n",
+      "new": "      prevUnidadRef.current = selectedUnidad;\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "  }, [filters.server_id, servers, filters.sucursal_id]);\n",
+      "new": "  }, [selectedUnidad, filters.server_id, servers, filters.sucursal_id]);\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "      const response = await api.get(`/servers/${filters.server_id}/almacenes`);\n      const rows = Array.isArray(response.data)\n        ? response.data\n        : Array.isArray(response.data?.data)\n          ? response.data.data\n          : [];\n",
+      "new": "      if (!selectedUnidad) return;\n      const response = await api.get(`/config-asignaciones/almacenes/${selectedUnidad}`);\n      const rows = Array.isArray(response.data?.data) ? response.data.data : [];\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "      logger.error('Error al cargar almacenes canónicos SoftRestaurant:', error);\n      setAlmacenes([]);\n",
+      "new": "      logger.error('Error al cargar almacenes canónicos SoftRestaurant:', error);\n      // Mantener el último catálogo válido ante un fallo transitorio.\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "  const loadAlmacenes = async () => {\n    try {\n      logger.log('[loadAlmacenes] Llamando API con sucursal_id:', filters.sucursal_id);\n      const response = await api.get(`/servers/${filters.server_id}/almacenes`, {\n        params: { sucursal_id: filters.sucursal_id }\n      });\n      logger.log('[loadAlmacenes] Respuesta:', response.data);\n      setAlmacenes(response.data);\n    } catch (error) {\n      logger.error('Error al cargar almacenes:', error);\n      setAlmacenes([]);\n    }\n  };\n",
+      "new": "  const loadAlmacenes = async () => {\n    if (!selectedUnidad) return;\n    try {\n      logger.log('[loadAlmacenes] Cargando catálogo canónico para unidad:', selectedUnidad);\n      const response = await api.get(`/config-asignaciones/almacenes/${selectedUnidad}`);\n      const rows = Array.isArray(response.data?.data) ? response.data.data : [];\n      const canonicos = rows\n        .filter(item => String(item?.id ?? item?.almacen_id ?? '').trim())\n        .map(item => {\n          const id = String(item.id ?? item.almacen_id).trim();\n          const nombre = String(item.nombre ?? item.almacen ?? id).trim();\n          return { ...item, id, almacen_id: id, nombre, almacen: nombre, label: nombre, value: nombre, source: 'EDARSAHUB_SQL' };\n        });\n      setAlmacenes(canonicos);\n    } catch (error) {\n      logger.error('Error al cargar almacenes canónicos:', error);\n      // Mantener el último catálogo válido ante un fallo transitorio.\n    }\n  };\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "      const response = await api.get(`/servers/${filters.server_id}/inventarios`, {\n",
+      "new": "      if (!selectedUnidad) return;\n      const response = await api.get(`/compras/inventarios-fisicos/${selectedUnidad}`, {\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "      logger.error('Error al cargar inventarios:', error);\n      setInventarios([]);\n",
+      "new": "      logger.error('Error al cargar inventarios:', error);\n      // Mantener la última lista válida ante un fallo transitorio.\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "          const response = await api.get(`/compras/inventarios-fisicos/${filters.server_id}`, { params });\n",
+      "new": "          const response = await api.get(`/compras/inventarios-fisicos/${selectedUnidad}`, { params });\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "        logger.error('Error cargando inventarios:', error);\n        setInventarios([]);\n",
+      "new": "        logger.error('Error cargando inventarios:', error);\n        // Mantener la última lista válida ante un fallo transitorio.\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "    if (filters.server_id && selectedAlmacenes.length > 0) {\n",
+      "new": "    if (selectedUnidad && selectedAlmacenes.length > 0) {\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "  }, [filters.server_id, filters.sucursal_id, selectedAlmacenes, selectedServer, filters.sucursal]);\n",
+      "new": "  }, [selectedUnidad, filters.sucursal_id, selectedAlmacenes, selectedServer, filters.sucursal]);\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_reportes_inventory_analysis_frontend_contract.py",
+      "content": "from pathlib import Path\n\n\ndef test_reportes_uses_canonical_unit_for_warehouses_and_physical_inventories():\n    source = (Path(__file__).resolve().parents[2] / 'frontend/src/pages/Reportes.js').read_text(encoding='utf-8')\n    assert '/config-asignaciones/almacenes/${selectedUnidad}' in source\n    assert '/compras/inventarios-fisicos/${selectedUnidad}' in source\n    assert '/servers/${filters.server_id}/almacenes' not in source\n    assert '/servers/${filters.server_id}/inventarios' not in source\n    assert '/compras/inventarios-fisicos/${filters.server_id}' not in source\n    assert 'const prevUnidadRef = useRef(selectedUnidad);' in source\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "pytest", "paths": ["backend/tests/test_reportes_inventory_analysis_frontend_contract.py"]},
+    {"type": "frontend_build", "directory": "frontend"}
+  ],
+  "requester": {"email": "ricardo@edarsa.com.mx", "source": "chatgpt-classic", "project": "EDARSAHUB BOS V1.0", "chat": "Inventarios Analisis R3 recovery"},
+  "human_summary_language": "es"
+}
