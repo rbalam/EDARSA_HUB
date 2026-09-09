@@ -128,6 +128,26 @@ def get_universal_infra_summary() -> Dict:
 
 
 def get_catalogs() -> Dict[str, List[Dict]]:
+    systems = _rows("""
+        SELECT SistemaTipoID, CodigoSistema, NombreSistema, Descripcion, Activo
+        FROM dbo.Sistema_Tipos
+        ORDER BY SistemaTipoID
+    """)
+    versions = _rows("""
+        SELECT
+            CONVERT(varchar(36), sistema_version_id) AS sistema_version_id,
+            tipo_sistema,
+            nombre_sistema,
+            version_sistema,
+            descripcion,
+            proveedor,
+            motor_base_datos,
+            es_version_default,
+            activo,
+            created_at
+        FROM dbo.Sistema_VersionesSistemas
+        ORDER BY tipo_sistema, version_sistema
+    """)
     capabilities = _rows("""
         SELECT
             SistemaCapacidadID,
@@ -168,6 +188,8 @@ def get_catalogs() -> Dict[str, List[Dict]]:
         ORDER BY CodigoSync, SistemaCapacidadID
     """)
     return {
+        "systems": systems,
+        "versions": versions,
         "capabilities": capabilities,
         "sync_catalog": syncs,
         "sync_capabilities": links,
