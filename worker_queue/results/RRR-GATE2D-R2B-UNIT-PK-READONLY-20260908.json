@@ -1,0 +1,213 @@
+{
+  "base_sha": "a71a5a21e36831114fe3de389b200db7ca56d889",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T02:16:04Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "RRR-GATE2D-R2B-UNIT-PK-READONLY-20260908",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T02:16:19Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "schema_name",
+              "table_name",
+              "index_name",
+              "is_primary_key",
+              "is_unique",
+              "column_name",
+              "key_ordinal"
+            ],
+            "name": "unit_pk_unique",
+            "row_count_returned": 18,
+            "rows": [
+              [
+                "dbo",
+                "Sistema_HorariosServicioUnidad",
+                "PK__Sistema___3213E83FE5EE48C8",
+                true,
+                true,
+                "id",
+                1
+              ],
+              [
+                "dbo",
+                "Sistema_HorariosServicioUnidad",
+                "UQ_Horario_Unidad_Dia",
+                false,
+                true,
+                "unidad_negocio_id",
+                1
+              ],
+              [
+                "dbo",
+                "Sistema_HorariosServicioUnidad",
+                "UQ_Horario_Unidad_Dia",
+                false,
+                true,
+                "dia_semana",
+                2
+              ],
+              [
+                "dbo",
+                "Sistema_Sucursales",
+                "PK__Sistema___6CB482819D69E291",
+                true,
+                true,
+                "SucursalID",
+                1
+              ],
+              [
+                "dbo",
+                "Sistema_SyncPOS_EstadoUnidad",
+                "PK__Sistema___E1540EF90922C343",
+                true,
+                true,
+                "EstadoUnidadID",
+                1
+              ],
+              [
+                "dbo",
+                "Sistema_SyncPOS_EstadoUnidad",
+                "UX_Sistema_SyncPOS_EstadoUnidad",
+                false,
+                true,
+                "UnidadNegocioID",
+                1
+              ],
+              [
+                "dbo",
+                "Sistema_TurnosOperativosUnidad",
+                "PK__Sistema___3213E83FE66D7F2F",
+                true,
+                true,
+                "id",
+                1
+              ],
+              [
+                "dbo",
+                "Sistema_TurnosOperativosUnidad",
+                "UK_TurnoOperativo_Unidad_Turno",
+                false,
+                true,
+                "unidad_negocio_id",
+                1
+              ],
+              [
+                "dbo",
+                "Sistema_TurnosOperativosUnidad",
+                "UK_TurnoOperativo_Unidad_Turno",
+                false,
+                true,
+                "turno_codigo",
+                2
+              ],
+              [
+                "dbo",
+                "Sistema_UnidadesNegocioPerfilDigital",
+                "PK__Sistema___E9401D4953164F3E",
+                true,
+                true,
+                "PerfilDigitalID",
+                1
+              ],
+              [
+                "dbo",
+                "Sync_KPI_Ventas_Unidades",
+                "PK__Sync_KPI__3213E83F7058331A",
+                true,
+                true,
+                "id",
+                1
+              ],
+              [
+                "dbo",
+                "Sync_KPI_Ventas_Unidades",
+                "IX_KPI_Mes_Anio",
+                false,
+                false,
+                "Mes",
+                1
+              ],
+              [
+                "dbo",
+                "Sync_KPI_Ventas_Unidades",
+                "IX_KPI_Mes_Anio",
+                false,
+                false,
+                "Anio",
+                2
+              ],
+              [
+                "dbo",
+                "Unidades_Negocio",
+                "PK__Unidades__3213E83FD5638C07",
+                true,
+                true,
+                "id",
+                1
+              ],
+              [
+                "dbo",
+                "Unidades_Negocio",
+                "UQ_Unidades_Server_Sucursal",
+                false,
+                true,
+                "server_id",
+                1
+              ],
+              [
+                "dbo",
+                "Unidades_Negocio",
+                "UQ_Unidades_Server_Sucursal",
+                false,
+                true,
+                "sucursal_origen_id",
+                2
+              ],
+              [
+                "dbo",
+                "Unidades_Negocio",
+                "IX_Unidades_Codigo",
+                false,
+                false,
+                "codigo",
+                1
+              ],
+              [
+                "dbo",
+                "Unidades_Negocio",
+                "IX_Unidades_ServerID",
+                false,
+                false,
+                "server_id",
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T02:16:03Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
