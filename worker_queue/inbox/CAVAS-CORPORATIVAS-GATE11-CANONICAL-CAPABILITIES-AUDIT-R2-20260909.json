@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE11-CANONICAL-CAPABILITIES-AUDIT-R2-20260909",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b048737f949d1acd8331e0b9e410bdbf74062621",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Retomar Gate 11 de Cavas Corporativas con un contrato determinista valido y estrictamente READ_ONLY_SQL. Auditar fisicamente el esquema canonico existente antes de disenar Gates 12-17: usuarios/RBAC/sesiones, clientes, CavaSocios/CavasCorporativas, mesas/comandas/meseros, inventario fisico/medicion/evidencia, notificaciones/tareas y huellas de integraciones SoftRestaurant/MPRO. Determinar capacidades reutilizables y ausencias solo a partir de metadatos SQL observados, sin DDL, DML, cambios de codigo ni Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate11_relevant_tables_inventory",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name FROM sys.tables t INNER JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name LIKE N'%Cava%' OR t.name LIKE N'%Cliente%' OR t.name LIKE N'%Usuario%' OR t.name LIKE N'%Rol%' OR t.name LIKE N'%Permiso%' OR t.name LIKE N'%Sesion%' OR t.name LIKE N'%PIN%' OR t.name LIKE N'%Mesa%' OR t.name LIKE N'%Comanda%' OR t.name LIKE N'%Mesero%' OR t.name LIKE N'%Inventario%' OR t.name LIKE N'%Botella%' OR t.name LIKE N'%Evidencia%' OR t.name LIKE N'%Foto%' OR t.name LIKE N'%Documento%' OR t.name LIKE N'%Notificacion%' OR t.name LIKE N'%Tarea%' OR t.name LIKE N'%SoftRestaurant%' OR t.name LIKE N'%MPRO%' ORDER BY s.name,t.name"
+        },
+        {
+          "name": "gate11_relevant_columns_inventory",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.is_nullable FROM sys.tables t INNER JOIN sys.schemas s ON s.schema_id=t.schema_id INNER JOIN sys.columns c ON c.object_id=t.object_id INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE N'%Cava%' OR t.name IN (N'Usuario_Catalogo',N'Cliente_Catalogo') OR t.name LIKE N'%Mesa%' OR t.name LIKE N'%Comanda%' OR t.name LIKE N'%Mesero%' OR t.name LIKE N'%Inventario%' OR t.name LIKE N'%Botella%' OR t.name LIKE N'%Evidencia%' OR t.name LIKE N'%Notificacion%' OR t.name LIKE N'%Tarea%' ORDER BY s.name,t.name,c.column_id"
+        },
+        {
+          "name": "gate11_capability_columns_by_semantics",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, c.name AS column_name, ty.name AS data_type, c.is_nullable FROM sys.tables t INNER JOIN sys.schemas s ON s.schema_id=t.schema_id INNER JOIN sys.columns c ON c.object_id=t.object_id INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.name LIKE N'%email%' OR c.name LIKE N'%correo%' OR c.name LIKE N'%celular%' OR c.name LIKE N'%telefono%' OR c.name LIKE N'%activo%' OR c.name LIKE N'%mesa%' OR c.name LIKE N'%mesero%' OR c.name LIKE N'%botella%' OR c.name LIKE N'%capacidad%' OR c.name LIKE N'%fraccion%' OR c.name LIKE N'%ml%' OR c.name LIKE N'%qr%' OR c.name LIKE N'%evidencia%' OR c.name LIKE N'%foto%' OR c.name LIKE N'%documento%' OR c.name LIKE N'%confidence%' OR c.name LIKE N'%confianza%' OR c.name LIKE N'%calibr%' OR c.name LIKE N'%peso%' OR c.name LIKE N'%nivel%' OR c.name LIKE N'%aforo%' OR c.name LIKE N'%hash%' OR c.name LIKE N'%pin%' ORDER BY s.name,t.name,c.column_id"
+        },
+        {
+          "name": "gate11_keys_and_indexes_relevant",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, kc.name AS pk_name, i.name AS index_name, i.is_unique FROM sys.tables t INNER JOIN sys.schemas s ON s.schema_id=t.schema_id LEFT JOIN sys.key_constraints kc ON kc.parent_object_id=t.object_id AND kc.type='PK' LEFT JOIN sys.indexes i ON i.object_id=t.object_id AND i.index_id>0 AND i.is_hypothetical=0 WHERE t.name LIKE N'%Cava%' OR t.name IN (N'Usuario_Catalogo',N'Cliente_Catalogo') OR t.name LIKE N'%Mesa%' OR t.name LIKE N'%Comanda%' OR t.name LIKE N'%Inventario%' ORDER BY s.name,t.name,i.index_id"
+        },
+        {
+          "name": "gate11_foreign_keys_relevant",
+          "sql": "SELECT OBJECT_SCHEMA_NAME(fk.parent_object_id) AS schema_name, OBJECT_NAME(fk.parent_object_id) AS parent_table, fk.name AS fk_name, OBJECT_NAME(fk.referenced_object_id) AS referenced_table FROM sys.foreign_keys fk WHERE OBJECT_NAME(fk.parent_object_id) LIKE N'%Cava%' OR OBJECT_NAME(fk.referenced_object_id) LIKE N'%Cava%' OR OBJECT_NAME(fk.parent_object_id) IN (N'Usuario_Catalogo',N'Cliente_Catalogo') OR OBJECT_NAME(fk.referenced_object_id) IN (N'Usuario_Catalogo',N'Cliente_Catalogo') ORDER BY parent_table,fk.name"
+        },
+        {
+          "name": "gate11_exact_canonical_object_presence",
+          "sql": "SELECT SUM(CASE WHEN t.name=N'Usuario_Catalogo' THEN 1 ELSE 0 END) AS Usuario_Catalogo_count, SUM(CASE WHEN t.name=N'Cliente_Catalogo' THEN 1 ELSE 0 END) AS Cliente_Catalogo_count, SUM(CASE WHEN t.name LIKE N'CavaSocios%' THEN 1 ELSE 0 END) AS CavaSocios_tables, SUM(CASE WHEN t.name LIKE N'CavasCorporativas%' THEN 1 ELSE 0 END) AS CavasCorporativas_tables FROM sys.tables t"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL ONLY",
+    "ACTIONS MUST REMAIN EMPTY",
+    "NO DDL/DML",
+    "NO Production",
+    "NO .env OR SECRETS",
+    "NO PII DATA READS; METADATA ONLY",
+    "NO Mongo",
+    "NO schema names invented beyond metadata discovery and exact canonical catalogs already established",
+    "Do not create tables, columns, endpoints, migrations or persistence",
+    "Do not duplicate Cliente_Catalogo, Usuario_Catalogo, RBAC, CavaSocios or CavasCorporativas",
+    "Cava capacity means maximum count of physical bottles, distinct from nominal bottle volume in ml",
+    "Cavas operational human unit is bottle fraction 1, 3/4, 1/2, 1/4, 0; physical ml is evidence and does not silently overwrite operational state",
+    "SoftRestaurant and MPRO must be treated as peer adapters feeding canonical contracts, never as direct dependencies of Cavas",
+    "Report only observed metadata; absence in these queries means NOT_DETERMINABLE or MISSING only when directly supported"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
