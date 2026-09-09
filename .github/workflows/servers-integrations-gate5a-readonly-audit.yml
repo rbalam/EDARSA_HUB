@@ -1,0 +1,74 @@
+name: Servers Integrations Gate 5A Readonly Audit
+
+on:
+  push:
+    branches: [Edarsahub_Desarrollo]
+    paths:
+      - '.github/workflows/servers-integrations-gate5a-readonly-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  gate5a-readonly:
+    runs-on: ubuntu-latest
+    environment: development
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install pymssql
+      - name: Resolve canonical Development SQL endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os,re
+          from pathlib import Path
+          text=Path('.github/workflows/coa-core-development-migration.yml').read_text(encoding='utf-8')
+          vals=[]
+          for key in ('EDARSAHUB_SQL_HOST','EDARSAHUB_SQL_PORT','EDARSAHUB_SQL_DATABASE'):
+              m=re.search(r'^\s*'+re.escape(key)+r':\s*[\'\"]?([^\'\"\n#]+)',text,re.M)
+              if not m: raise SystemExit('ENDPOINT_NOT_FOUND:'+key)
+              vals.append(f'{key}={m.group(1).strip()}')
+          with open(os.environ['GITHUB_ENV'],'a',encoding='utf-8') as f: f.write('\n'.join(vals)+'\n')
+          print('ENDPOINT=RESOLVED')
+          PY
+      - name: Gate 5A SQL adoption audit
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${EDARSAHUB_SQL_PASSWORD:-}"
+          python - <<'PY'
+          import json,os,pymssql
+          conn=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user='HRLectura',password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15)
+          cur=conn.cursor(as_dict=True)
+          out={}
+          def q(name,sql,params=()):
+              cur.execute(sql,params); rows=cur.fetchall() or []; out[name]=rows; return rows
+          q('identity',"SELECT DB_NAME() database_name,SUSER_SNAME() login_name,USER_NAME() database_user")
+          q('connections_inventory',"SELECT COALESCE(tipo_conexion,'(NULL)') tipo_conexion,COALESCE(system_type,'(NULL)') system_type,activo,COUNT_BIG(*) total FROM dbo.Servidores_Conexiones GROUP BY tipo_conexion,system_type,activo ORDER BY tipo_conexion,system_type,activo")
+          q('connection_health_rows',"SELECT COUNT_BIG(*) total_rows,SUM(CASE WHEN UltimaPruebaUTC IS NOT NULL THEN 1 ELSE 0 END) with_ultima_prueba_utc,SUM(CASE WHEN UltimoExitoUTC IS NOT NULL THEN 1 ELSE 0 END) with_ultimo_exito_utc,SUM(CASE WHEN UltimoErrorUTC IS NOT NULL THEN 1 ELSE 0 END) with_ultimo_error_utc,SUM(CASE WHEN UltimoSyncUTC IS NOT NULL THEN 1 ELSE 0 END) with_ultimo_sync_utc,SUM(CASE WHEN FechaActualizacionUTC IS NOT NULL THEN 1 ELSE 0 END) with_fecha_actualizacion_utc FROM dbo.Servidores_ConexionEstado")
+          q('sync_ledger_adoption',"SELECT COUNT_BIG(*) total_rows,SUM(CASE WHEN ConexionID IS NOT NULL THEN 1 ELSE 0 END) with_conexion_id,SUM(CASE WHEN UnidadNegocioID IS NOT NULL THEN 1 ELSE 0 END) with_unidad_id,SUM(CASE WHEN CodigoSync IS NOT NULL THEN 1 ELSE 0 END) with_codigo_sync,SUM(CASE WHEN StartedAtUTC IS NOT NULL THEN 1 ELSE 0 END) with_started_utc,SUM(CASE WHEN FinishedAtUTC IS NOT NULL THEN 1 ELSE 0 END) with_finished_utc,SUM(CASE WHEN IdempotencyKey IS NOT NULL THEN 1 ELSE 0 END) with_idempotency_key FROM dbo.Sync_Control_Ejecuciones")
+          q('universal_tables',"SELECT 'Sistema_Sync_Capacidades' table_name,COUNT_BIG(*) total FROM dbo.Sistema_Sync_Capacidades UNION ALL SELECT 'Sync_Control_Evidencias',COUNT_BIG(*) FROM dbo.Sync_Control_Evidencias UNION ALL SELECT 'Sistema_IdentificadoresExternos',COUNT_BIG(*) FROM dbo.Sistema_IdentificadoresExternos")
+          q('timezone_adoption',"SELECT COUNT_BIG(*) total_units,SUM(CASE WHEN NULLIF(LTRIM(RTRIM(timezone_iana)),'') IS NOT NULL THEN 1 ELSE 0 END) with_timezone_iana,SUM(CASE WHEN NULLIF(LTRIM(RTRIM(locale_operativo)),'') IS NOT NULL THEN 1 ELSE 0 END) with_locale_operativo FROM dbo.Unidades_Negocio")
+          q('communications_objects',"SELECT s.name schema_name,o.name object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name LIKE '%Notifica%' OR o.name LIKE '%Comunic%' OR o.name LIKE '%WhatsApp%' OR o.name LIKE '%Twilio%' ORDER BY o.name")
+          if cur.execute("SELECT OBJECT_ID('dbo.Operativo_Notificaciones_Log','U') AS oid") is None:
+              oid=cur.fetchone()['oid']
+              if oid: q('notification_logs',"SELECT COUNT_BIG(*) total FROM dbo.Operativo_Notificaciones_Log")
+              else: out['notification_logs']=[{'total':-1}]
+          q('rbac_permissions_columns',"SELECT c.name column_name,t.name data_type FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Sistema_RBAC_Permisos') ORDER BY c.column_id")
+          q('sync_catalog_columns',"SELECT c.name column_name,t.name data_type FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Sistema_Sync_Catalogo') ORDER BY c.column_id")
+          q('capabilities_columns',"SELECT c.name column_name,t.name data_type FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Sistema_Capacidades') ORDER BY c.column_id")
+          print('GATE5A_JSON='+json.dumps(out,default=str,ensure_ascii=False,sort_keys=True))
+          cur.close(); conn.close()
+          print('GATE5A_READONLY=PASS')
+          print('PRODUCTION_TOUCHED=NO')
+          PY
