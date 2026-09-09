@@ -1,5 +1,5 @@
 name: Universal Worker Wake Now
-# recovery trigger 2026-09-09T15:48Z gate4d intake
+# recovery trigger 2026-09-09T15:51Z gate4d-r3 intake
 
 on:
   push:
