@@ -1,0 +1,67 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE7A-REGRESSION-CERT-R4-20260908",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
+  "production_allowed": false,
+  "objective": "Gate 7A Catalogo Ampliado R4. Certificar regresion determinista y de corta duracion sobre el mismo SHA funcional ya certificado por Gate6. Reejecutar compilacion Python y contratos Gate2/Gate4/Gate5/Gate6, incluyendo contrato frontend de navegacion/superficies. No ejecutar frontend_build dentro del Worker porque Gate6 ya certifico yarn build exitoso sobre este mismo SHA y R3 demostro incompatibilidad operacional entre un check largo y la ventana health stale de 180s. No modificar Worker ni codigo funcional. Production=false.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/catalogo_ampliado/CATALOGO_AMPLIADO_GATE7A_REGRESSION_CERTIFICATION_R4.md",
+      "content": "# Catalogo Ampliado - Gate 7A Regression Certification R4\n\nBase SHA: c3ae8aaebe80b98005a6f0f7619912d39f0b8cca\n\nR4 is a deterministic short-running regression certification. Gate6 already produced successful canonical Yarn frontend build and real SQL E2E evidence on this exact SHA. Gate7A R4 therefore reexecutes Python compile plus Gate2/Gate4/Gate5/Gate6 contract/runtime tests and validates a clean deterministic diff. No functional code mutation. No Production.\n\nR3 timeout isolation: runtime health marks normal processing stale after 180 seconds while dispatcher checks may run up to 1800 seconds; R3 also lost terminal result across a Worker PID change. R4 avoids the long frontend_build check without changing Worker behavior.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/catalogo_ampliado/__init__.py",
+        "backend/modules/catalogo_ampliado/repository.py",
+        "backend/modules/catalogo_ampliado/routes.py",
+        "backend/modules/catalogo_ampliado/schemas.py",
+        "backend/tests/test_catalogo_ampliado_gate2_ddl_contract.py",
+        "backend/tests/test_catalogo_ampliado_backend_gate4.py",
+        "backend/tests/test_catalogo_ampliado_frontend_gate5_contract.py",
+        "backend/tests/test_catalogo_ampliado_gate6_runtime.py",
+        "backend/tests/test_catalogo_ampliado_gate6_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_catalogo_ampliado_gate2_ddl_contract.py",
+        "backend/tests/test_catalogo_ampliado_backend_gate4.py",
+        "backend/tests/test_catalogo_ampliado_frontend_gate5_contract.py",
+        "backend/tests/test_catalogo_ampliado_gate6_runtime.py",
+        "backend/tests/test_catalogo_ampliado_gate6_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "NO Production",
+    "NO Worker/Supervisor/watchdog modifications",
+    "NO functional code mutation",
+    "NO Mongo",
+    "NO hardcodes",
+    "SQL-first",
+    "Use canonical repository Python",
+    "Frontend build evidence must be inherited only from Gate6 success bound to identical base SHA c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
+    "Gate7A R4 passes only if py_compile PASS, pytest PASS, git_diff_check PASS and blockers empty"
+  ],
+  "expected_result": {
+    "status": "INTEGRATED",
+    "tests": "PASS",
+    "quality_gate": "PASS",
+    "blockers": [],
+    "percent_complete": 100,
+    "production_touched": false
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
