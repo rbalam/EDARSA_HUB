@@ -42,6 +42,7 @@ from decimal import Decimal
 from typing import Dict, List, Any, Optional, Tuple
 
 # Import del helper de ventana operativa
+from modules.integrations_runtime.sync_ledger import enrich_sync_start, mark_sync_finished
 from core.utils.operational_window import (
     get_operational_window,
     get_operational_window_legacy,
@@ -182,6 +183,7 @@ def _acquire_sync_lock_sync(run_id: str, pid: int) -> bool:
             SET
                 Status = 'TIMEOUT',
                 FinishedAtMexico = %s,
+                FinishedAtUTC = COALESCE(FinishedAtUTC, SYSUTCDATETIME()),
                 ErrorMessage = COALESCE(
                     ErrorMessage,
                     'Lock vencido antes de nueva ejecución'
@@ -263,6 +265,11 @@ def _acquire_sync_lock_sync(run_id: str, pid: int) -> bool:
             now_sql,
         ))
 
+        enrich_sync_start(
+            cursor,
+            sync_run_id=run_id,
+            sync_type=SYNC_TYPE_VENTAS_DIA,
+        )
         conn.commit()
 
         logger.info(
@@ -350,6 +357,7 @@ def _release_sync_lock_sync(
             run_id,
         ))
 
+        mark_sync_finished(cursor, run_id)
         conn.commit()
         logger.info(f"[LOCK] Liberado: {run_id}")
 

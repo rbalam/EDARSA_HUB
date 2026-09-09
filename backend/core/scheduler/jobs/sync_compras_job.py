@@ -134,6 +134,7 @@ def _acquire_sync_lock(run_id: str) -> bool:
             SET
                 Status = 'TIMEOUT',
                 FinishedAtMexico = %s,
+                FinishedAtUTC = COALESCE(FinishedAtUTC, SYSUTCDATETIME()),
                 ErrorMessage = COALESCE(
                     ErrorMessage,
                     'Lock vencido antes de nueva ejecución'
