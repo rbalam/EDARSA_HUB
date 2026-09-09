@@ -1,0 +1,43 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"CATALOGO-AMPLIADO-GATE4B-E2E-API-RBAC-READONLY-R1-20260908",
+  "created_at_utc":"2026-09-09T02:18:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"bc81a85df2b62e0da2ba701c695e31e22ee5bf7a",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "objective":"Gate 4B E2E/API-RBAC de Catalogo Ampliado. Certificar el backend integrado en bc81a85d contra el SQL real ya migrado, sin modificar datos: verificar tablas/columnas usadas por repository, configuracion fail-closed por empresa, FK tipadas de PersonaVinculo, columnas de auditoria UsuarioID INT, versionado/kardex/alertas, registro del router y contrato RBAC SQL dinamico. Esta auditoria aporta la evidencia faltante para cerrar Gate 4; no ejecutar DML ni tocar Produccion.",
+  "acceptance":[
+    "Gate4 base integrada bc81a85df2b62e0da2ba701c695e31e22ee5bf7a",
+    "pytest backend/tests/test_catalogo_ampliado_backend_gate4.py PASS",
+    "las 11 tablas Gobierno_* existen en SQL real",
+    "todas las columnas usadas por backend existen con tipos compatibles",
+    "Gobierno_PersonaVinculo tiene UsuarioID ClienteID ProveedorID ContactoClienteID ContactoProveedorID y no TipoEntidad/EntidadClave",
+    "UsuarioAltaID y UsuarioActualizacionID son INT y FK a Usuario_Catalogo.UsuarioID donde aplica",
+    "Gobierno_EmpresaConfiguracion tiene activacion fail-closed",
+    "Gobierno_DocumentoVersion soporta NumeroVersion SHA256 EstadoRevision vigencias y OCR",
+    "Gobierno_DocumentoMovimiento y Gobierno_AlertaRegla/Evento existen",
+    "router /api/catalogo-ampliado registrado en server.py",
+    "routes usan get_current_user + rbac_helper_sql.has_full_access sin hardcode de SUPERADMIN",
+    "sql_readonly_evidence presente",
+    "tests=PASS quality_gate=PASS blockers=[]",
+    "CERTIFIED_READ_ONLY percent_complete=100",
+    "production_touched=false"
+  ],
+  "constraints":["NO DDL","NO DML","NO Production","NO Mongo","NO cambios de repositorio","NO llamadas LIVE externas"],
+  "checks":[
+    {"type":"pytest","paths":["backend/tests/test_catalogo_ampliado_backend_gate4.py"]},
+    {"type":"sql_readonly_audit","queries":[
+      {"name":"gate4b_tables","sql":"SELECT t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE s.name='dbo' AND t.name IN ('Gobierno_EmpresaConfiguracion','Gobierno_Persona','Gobierno_PersonaVinculo','Gobierno_RolCorporativoCatalogo','Gobierno_PersonaEmpresaRol','Gobierno_TipoDocumento','Gobierno_Documento','Gobierno_DocumentoVersion','Gobierno_DocumentoMovimiento','Gobierno_AlertaRegla','Gobierno_AlertaEvento') ORDER BY t.name"},
+      {"name":"gate4b_backend_columns","sql":"SELECT t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Gobierno_EmpresaConfiguracion','Gobierno_Persona','Gobierno_PersonaVinculo','Gobierno_PersonaEmpresaRol','Gobierno_Documento','Gobierno_DocumentoVersion','Gobierno_DocumentoMovimiento','Gobierno_AlertaRegla','Gobierno_AlertaEvento') AND c.name IN ('EmpresaID','CatalogoLegalAmpliadoActivo','UsuarioActualizacionID','PersonaID','UsuarioID','ClienteID','ProveedorID','ContactoClienteID','ContactoProveedorID','UsuarioAltaID','RolCorporativoID','PersonaEmpresaRolID','TipoDocumentoID','DocumentoID','DocumentoVersionID','NumeroVersion','SHA256','FechaEmision','FechaVencimiento','FechaVencimientoFuente','OCRTexto','OCRMetadataJSON','OCRConfianza','EstadoRevision','TipoMovimiento','AlertaReglaID','DiasAntes','Canal','TareaReferencia','NotificacionReferencia') ORDER BY t.name,c.column_id"},
+      {"name":"gate4b_typed_link_no_legacy","sql":"SELECT c.name AS column_name FROM sys.columns c WHERE c.object_id=OBJECT_ID('dbo.Gobierno_PersonaVinculo') ORDER BY c.column_id"},
+      {"name":"gate4b_user_fk_audit","sql":"SELECT parent.name AS parent_table,pc.name AS parent_column,ref.name AS referenced_table,rc.name AS referenced_column FROM sys.foreign_key_columns fkc JOIN sys.tables parent ON parent.object_id=fkc.parent_object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.tables ref ON ref.object_id=fkc.referenced_object_id JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE parent.name LIKE 'Gobierno[_]%' AND pc.name IN ('UsuarioID','UsuarioAltaID','UsuarioActualizacionID','UsuarioObjetivoID','RevisadoPorUsuarioID') ORDER BY parent.name,pc.name"},
+      {"name":"gate4b_initial_domain_counts","sql":"SELECT 'Gobierno_EmpresaConfiguracion' table_name,COUNT_BIG(*) row_count FROM dbo.Gobierno_EmpresaConfiguracion UNION ALL SELECT 'Gobierno_Persona',COUNT_BIG(*) FROM dbo.Gobierno_Persona UNION ALL SELECT 'Gobierno_PersonaVinculo',COUNT_BIG(*) FROM dbo.Gobierno_PersonaVinculo UNION ALL SELECT 'Gobierno_Documento',COUNT_BIG(*) FROM dbo.Gobierno_Documento UNION ALL SELECT 'Gobierno_DocumentoVersion',COUNT_BIG(*) FROM dbo.Gobierno_DocumentoVersion UNION ALL SELECT 'Gobierno_DocumentoMovimiento',COUNT_BIG(*) FROM dbo.Gobierno_DocumentoMovimiento UNION ALL SELECT 'Gobierno_AlertaRegla',COUNT_BIG(*) FROM dbo.Gobierno_AlertaRegla UNION ALL SELECT 'Gobierno_AlertaEvento',COUNT_BIG(*) FROM dbo.Gobierno_AlertaEvento"}
+    ]}
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
