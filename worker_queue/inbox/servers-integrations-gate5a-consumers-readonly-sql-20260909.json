@@ -1,0 +1,27 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"servers-integrations-gate5a-consumers-readonly-sql-20260909",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"b048737f949d1acd8331e0b9e410bdbf74062621",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"GATE 5A SQL: medir adopcion real de la infraestructura universal Gate 4 antes de migrar consumidores/UI. Solo lectura. Medir conexiones por tipo/activo; cobertura y esquema de Servidores_ConexionEstado; poblacion de nuevos campos en Sync_Control_Ejecuciones; filas en Sistema_Sync_Capacidades, Sync_Control_Evidencias, Sistema_IdentificadoresExternos; catalogo sync/capacidades; persistencia de comunicaciones y RBAC relacionado. No leer secretos ni valores cifrados. Production prohibida.",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"gate5a_identity","sql":"SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user,ORIGINAL_LOGIN() AS original_login"},
+    {"name":"gate5a_connections_inventory","sql":"SELECT tipo_conexion,system_type,activo,COUNT_BIG(*) AS total FROM dbo.Servidores_Conexiones GROUP BY tipo_conexion,system_type,activo ORDER BY tipo_conexion,system_type,activo"},
+    {"name":"gate5a_connection_health_schema","sql":"SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Servidores_ConexionEstado') ORDER BY c.column_id"},
+    {"name":"gate5a_connection_health_rows","sql":"SELECT COUNT_BIG(*) AS total_rows, SUM(CASE WHEN UltimaPruebaUTC IS NOT NULL THEN 1 ELSE 0 END) AS with_ultima_prueba_utc, SUM(CASE WHEN UltimoExitoUTC IS NOT NULL THEN 1 ELSE 0 END) AS with_ultimo_exito_utc, SUM(CASE WHEN UltimoErrorUTC IS NOT NULL THEN 1 ELSE 0 END) AS with_ultimo_error_utc, SUM(CASE WHEN UltimoSyncUTC IS NOT NULL THEN 1 ELSE 0 END) AS with_ultimo_sync_utc, SUM(CASE WHEN FechaActualizacionUTC IS NOT NULL THEN 1 ELSE 0 END) AS with_fecha_actualizacion_utc FROM dbo.Servidores_ConexionEstado"},
+    {"name":"gate5a_sync_ledger_adoption","sql":"SELECT COUNT_BIG(*) AS total_rows, SUM(CASE WHEN ConexionID IS NOT NULL THEN 1 ELSE 0 END) AS with_conexion_id, SUM(CASE WHEN UnidadNegocioID IS NOT NULL THEN 1 ELSE 0 END) AS with_unidad_id, SUM(CASE WHEN CodigoSync IS NOT NULL THEN 1 ELSE 0 END) AS with_codigo_sync, SUM(CASE WHEN StartedAtUTC IS NOT NULL THEN 1 ELSE 0 END) AS with_started_utc, SUM(CASE WHEN FinishedAtUTC IS NOT NULL THEN 1 ELSE 0 END) AS with_finished_utc, SUM(CASE WHEN IdempotencyKey IS NOT NULL THEN 1 ELSE 0 END) AS with_idempotency_key FROM dbo.Sync_Control_Ejecuciones"},
+    {"name":"gate5a_universal_new_tables_rows","sql":"SELECT 'Sistema_Sync_Capacidades' AS table_name,COUNT_BIG(*) AS total FROM dbo.Sistema_Sync_Capacidades UNION ALL SELECT 'Sync_Control_Evidencias',COUNT_BIG(*) FROM dbo.Sync_Control_Evidencias UNION ALL SELECT 'Sistema_IdentificadoresExternos',COUNT_BIG(*) FROM dbo.Sistema_IdentificadoresExternos"},
+    {"name":"gate5a_sync_catalog_inventory","sql":"SELECT COUNT_BIG(*) AS total_syncs,SUM(CASE WHEN Activo=1 THEN 1 ELSE 0 END) AS active_syncs,SUM(CASE WHEN HandlerImplementado=1 THEN 1 ELSE 0 END) AS implemented_handlers,SUM(CASE WHEN PermiteResync=1 THEN 1 ELSE 0 END) AS allows_resync FROM dbo.Sistema_Sync_Catalogo"},
+    {"name":"gate5a_capabilities_inventory","sql":"SELECT COUNT_BIG(*) AS total_capabilities,SUM(CASE WHEN Activo=1 THEN 1 ELSE 0 END) AS active_capabilities FROM dbo.Sistema_Capacidades"},
+    {"name":"gate5a_communications_objects","sql":"SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name LIKE '%Notifica%' OR o.name LIKE '%Comunic%' OR o.name LIKE '%WhatsApp%' OR o.name LIKE '%Twilio%' ORDER BY o.name"},
+    {"name":"gate5a_notification_log_rows","sql":"SELECT CASE WHEN OBJECT_ID('dbo.Operativo_Notificaciones_Log','U') IS NULL THEN -1 ELSE (SELECT COUNT_BIG(*) FROM dbo.Operativo_Notificaciones_Log) END AS total_notification_logs"},
+    {"name":"gate5a_rbac_connection_communication_permissions","sql":"SELECT codigo,nombre,modulo,activo FROM dbo.Sistema_RBAC_Permisos WHERE codigo LIKE '%CONEX%' OR codigo LIKE '%SERVID%' OR codigo LIKE '%NOTIFIC%' OR codigo LIKE '%COMUNIC%' OR codigo LIKE '%INTEGR%' ORDER BY modulo,codigo"},
+    {"name":"gate5a_timezone_adoption","sql":"SELECT COUNT_BIG(*) AS total_units,SUM(CASE WHEN timezone_iana IS NOT NULL AND LTRIM(RTRIM(timezone_iana))<>'' THEN 1 ELSE 0 END) AS with_timezone_iana,SUM(CASE WHEN locale_operativo IS NOT NULL AND LTRIM(RTRIM(locale_operativo))<>'' THEN 1 ELSE 0 END) AS with_locale_operativo FROM dbo.Unidades_Negocio"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
