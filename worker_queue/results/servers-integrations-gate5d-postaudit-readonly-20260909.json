@@ -1,0 +1,25 @@
+{
+  "base_sha": "70c512bc6098bc30048accd2ddab3239ce740136",
+  "blockers": [
+    "check_failed:sql_readonly_audit"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-09T23:47:03Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "servers-integrations-gate5d-postaudit-readonly-20260909",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T23:47:15Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-09T23:47:02Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
