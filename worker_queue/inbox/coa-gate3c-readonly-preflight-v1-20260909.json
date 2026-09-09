@@ -1,0 +1,69 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate3c-readonly-preflight-v1-20260909",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "bc81a85df2b62e0da2ba701c695e31e22ee5bf7a",
+  "mode": "READ_ONLY_SQL",
+  "objective": "COA Gate 3C: ejecutar preflight SQL exclusivamente READ_ONLY sobre el DDL certificado en docs/COA/COA_GATE3B_MINIMAL_DDL.sql. Validar dependencias, colisiones de objetos/constraints/indexes, existencia y tipos de tablas/columnas referenciadas, y catalogos canonicos potenciales de moneda, estado, tipo de operacion, canal, dimension y operador. No ejecutar el DDL ni ningun DDL/DML/EXEC/SELECT INTO. No modificar repositorio, base ni Produccion. La comision sigue siendo configurable; 6.5% no es default ni constante.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA",
+    "chat": "coa-gate3c-readonly-preflight-v1-20260909"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "coa_target_object_collisions",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name IN ('COA_Expedientes','COA_ExpedienteEventos','COA_ExpedienteReferencias','COA_ReglasComision','COA_ReglasComisionCondiciones','COA_ExcepcionesRegla','COA_ComisionAplicada') ORDER BY s.name,o.name"
+        },
+        {
+          "name": "coa_constraint_name_collisions",
+          "sql": "SELECT o.name AS constraint_name,o.type_desc,OBJECT_SCHEMA_NAME(o.parent_object_id) AS parent_schema,OBJECT_NAME(o.parent_object_id) AS parent_table FROM sys.objects o WHERE o.name LIKE 'PK_COA_%' OR o.name LIKE 'FK_COA_%' OR o.name LIKE 'CK_COA_%' OR o.name LIKE 'UQ_COA_%' OR o.name LIKE 'DF_COA_%' ORDER BY o.name"
+        },
+        {
+          "name": "coa_index_name_collisions",
+          "sql": "SELECT OBJECT_SCHEMA_NAME(i.object_id) AS schema_name,OBJECT_NAME(i.object_id) AS table_name,i.name AS index_name FROM sys.indexes i WHERE i.name LIKE 'IX_COA_%' ORDER BY i.name"
+        },
+        {
+          "name": "coa_required_reference_columns",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID') OR (t.name='Cliente_Catalogo' AND c.name='ClienteID') OR (t.name='Proveedor_Catalogo' AND c.name='ProveedorID') OR (t.name='Compras_DocumentosFiscales' AND c.name='DocumentoFiscalID') OR (t.name='Finanzas_Pagos' AND c.name='PagoID') OR (t.name='Finanzas_CxP_DecisionesPago' AND c.name='DecisionPagoID') OR (t.name='RH_Nomina' AND c.name='NominaID') OR (t.name='RH_Nomina_Dispersion' AND c.name='DispersionNominaID') OR (t.name='RH_Nomina_Recibos' AND c.name='NominaReciboID') OR (t.name='RH_Colaboradores_Expediente' AND c.name='ColaboradorID') OR (t.name='CRM_Contratos' AND c.name='ContratoID') ORDER BY t.name,c.name"
+        },
+        {
+          "name": "coa_required_reference_pk_unique",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,i.name AS index_name,i.is_primary_key,i.is_unique FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.indexes i ON i.object_id=t.object_id AND (i.is_primary_key=1 OR i.is_unique=1) JOIN sys.index_columns ic ON ic.object_id=t.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE (t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID') OR (t.name='Cliente_Catalogo' AND c.name='ClienteID') OR (t.name='Proveedor_Catalogo' AND c.name='ProveedorID') OR (t.name='Compras_DocumentosFiscales' AND c.name='DocumentoFiscalID') OR (t.name='Finanzas_Pagos' AND c.name='PagoID') OR (t.name='Finanzas_CxP_DecisionesPago' AND c.name='DecisionPagoID') OR (t.name='RH_Nomina' AND c.name='NominaID') OR (t.name='RH_Nomina_Dispersion' AND c.name='DispersionNominaID') OR (t.name='RH_Nomina_Recibos' AND c.name='NominaReciboID') OR (t.name='RH_Colaboradores_Expediente' AND c.name='ColaboradorID') OR (t.name='CRM_Contratos' AND c.name='ContratoID') ORDER BY t.name,c.name,i.is_primary_key DESC"
+        },
+        {
+          "name": "coa_currency_catalog_candidates",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.type IN ('U','V') AND (o.name LIKE '%Moneda%' OR o.name LIKE '%Currency%' OR o.name LIKE '%Divisa%') ORDER BY s.name,o.name"
+        },
+        {
+          "name": "coa_currency_column_candidates",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.name LIKE '%Moneda%' OR c.name LIKE '%Currency%' OR c.name LIKE '%Divisa%' ORDER BY s.name,t.name,c.column_id"
+        },
+        {
+          "name": "coa_semantic_catalog_candidates",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.type IN ('U','V') AND (o.name LIKE '%Estado%' OR o.name LIKE '%Estatus%' OR o.name LIKE '%TipoOperacion%' OR o.name LIKE '%Operacion%' OR o.name LIKE '%Canal%' OR o.name LIKE '%Dimension%' OR o.name LIKE '%Operador%') ORDER BY s.name,o.name"
+        },
+        {
+          "name": "coa_semantic_column_candidates",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.name IN ('EstadoCodigo','EstatusCodigo','TipoOperacionCodigo','CanalCodigo','DimensionCodigo','OperadorCodigo','BaseCalculoCodigo','MonedaCodigo') OR c.name LIKE '%TipoOperacion%' OR c.name LIKE '%Canal%' OR c.name LIKE '%Dimension%' OR c.name LIKE '%Operador%' OR c.name LIKE '%BaseCalculo%' ORDER BY s.name,t.name,c.column_id"
+        },
+        {
+          "name": "coa_database_collation_and_compatibility",
+          "sql": "SELECT DB_NAME() AS database_name,DATABASEPROPERTYEX(DB_NAME(),'Collation') AS database_collation,compatibility_level FROM sys.databases WHERE name=DB_NAME()"
+        },
+        {
+          "name": "coa_identifier_length_preflight",
+          "sql": "SELECT name AS existing_long_object_name,LEN(name) AS name_length,type_desc FROM sys.objects WHERE LEN(name) > 110 ORDER BY LEN(name) DESC,name"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
