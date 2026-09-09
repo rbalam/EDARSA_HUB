@@ -84,7 +84,7 @@ class NotificationDispatcher:
         
         # 2. Intentar inicializar Twilio (credenciales desde env vars)
         try:
-            twilio_config = {
+            twilio_config = await self.repository.get_provider_config("whatsapp", "twilio") or {
                 "provider_type": "twilio",
                 "token_ref": "TWILIO_AUTH_TOKEN"
             }
@@ -101,14 +101,9 @@ class NotificationDispatcher:
         except Exception as e:
             logger.warning(f"No se pudo inicializar Twilio provider: {e}")
         
-        # 3. Cargar providers adicionales de BD (omitir si en modo stub)
-        if self._is_stub:
-            logger.info("[DISPATCHER] Modo SQL-only: omitiendo carga de providers desde MongoDB")
-            return
-        
+        # 3. Gate 5D: providers adicionales desde SQL canonico.
         try:
-            # SQL-FIRST P4B: providers legacy en Mongo neutralizados.
-            providers = []
+            providers = await self.repository.get_all_provider_configs(activo=True)
             
             for config in providers:
                 provider_name = config.get("provider")
