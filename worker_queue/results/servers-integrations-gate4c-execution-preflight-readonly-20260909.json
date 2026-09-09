@@ -1,0 +1,349 @@
+{
+  "base_sha": "1569b96887df1ffc5430713a2774e0cae1d9e53c",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T06:40:03Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "servers-integrations-gate4c-execution-preflight-readonly-20260909",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T06:40:19Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "database_user",
+              "original_login"
+            ],
+            "name": "gate4c_db_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc"
+            ],
+            "name": "gate4c_required_base_objects",
+            "row_count_returned": 8,
+            "rows": [
+              [
+                "dbo",
+                "Servidores_Conexiones",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Servidores_ConexionEstado",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_Capacidades",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_Sync_Catalogo",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_Tipos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_VersionesSistemas",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Sync_Control_Ejecuciones",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Unidades_Negocio",
+                "USER_TABLE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc"
+            ],
+            "name": "gate4c_new_tables_must_still_be_absent",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "object_name",
+              "column_name",
+              "data_type",
+              "max_length",
+              "is_nullable"
+            ],
+            "name": "gate4c_new_columns_must_still_be_absent",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "object_name",
+              "column_name",
+              "data_type",
+              "max_length",
+              "is_nullable"
+            ],
+            "name": "gate4c_reference_key_types",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "Servidores_Conexiones",
+                "id",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "Sistema_Capacidades",
+                "SistemaCapacidadID",
+                "int",
+                4,
+                false
+              ],
+              [
+                "Sistema_Sync_Catalogo",
+                "Codigo",
+                "nvarchar",
+                200,
+                false
+              ],
+              [
+                "Sistema_Tipos",
+                "SistemaTipoID",
+                "int",
+                4,
+                false
+              ],
+              [
+                "Sistema_VersionesSistemas",
+                "sistema_version_id",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "Sync_Control_Ejecuciones",
+                "SyncControlID",
+                "int",
+                4,
+                false
+              ],
+              [
+                "Unidades_Negocio",
+                "id",
+                "uniqueidentifier",
+                16,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "object_name",
+              "constraint_name",
+              "type_desc",
+              "key_ordinal",
+              "column_name"
+            ],
+            "name": "gate4c_reference_keys_unique",
+            "row_count_returned": 15,
+            "rows": [
+              [
+                "Servidores_Conexiones",
+                "PK__Servidor__3213E83FF4F5D577",
+                "PRIMARY_KEY_CONSTRAINT",
+                1,
+                "id"
+              ],
+              [
+                "Sistema_Capacidades",
+                "PK__Sistema___8071A91C95093B9D",
+                "PRIMARY_KEY_CONSTRAINT",
+                1,
+                "SistemaCapacidadID"
+              ],
+              [
+                "Sistema_Capacidades",
+                "UQ_SistemaCapacidades_TipoCapacidad",
+                "UNIQUE_CONSTRAINT",
+                1,
+                "SistemaTipoID"
+              ],
+              [
+                "Sistema_Capacidades",
+                "UQ_SistemaCapacidades_TipoCapacidad",
+                "UNIQUE_CONSTRAINT",
+                2,
+                "CodigoCapacidad"
+              ],
+              [
+                "Sistema_Sync_Catalogo",
+                "PK__Sistema___06370DAD0DC608B0",
+                "PRIMARY_KEY_CONSTRAINT",
+                1,
+                "Codigo"
+              ],
+              [
+                "Sistema_Tipos",
+                "PK__Sistema___7BA44B9F9A300B86",
+                "PRIMARY_KEY_CONSTRAINT",
+                1,
+                "SistemaTipoID"
+              ],
+              [
+                "Sistema_Tipos",
+                "UQ_Sistema_Tipos_Codigo",
+                "UNIQUE_CONSTRAINT",
+                1,
+                "CodigoSistema"
+              ],
+              [
+                "Sistema_VersionesSistemas",
+                "PK_Sistema_VersionesSistemas",
+                "PRIMARY_KEY_CONSTRAINT",
+                1,
+                "sistema_version_id"
+              ],
+              [
+                "Sistema_VersionesSistemas",
+                "UQ_Sistema_VersionesSistemas_tipo_version",
+                "UNIQUE_CONSTRAINT",
+                1,
+                "tipo_sistema"
+              ],
+              [
+                "Sistema_VersionesSistemas",
+                "UQ_Sistema_VersionesSistemas_tipo_version",
+                "UNIQUE_CONSTRAINT",
+                2,
+                "version_sistema"
+              ],
+              [
+                "Sync_Control_Ejecuciones",
+                "PK__Sync_Con__0DEB92E5064AB66F",
+                "PRIMARY_KEY_CONSTRAINT",
+                1,
+                "SyncControlID"
+              ],
+              [
+                "Sync_Control_Ejecuciones",
+                "UQ__Sync_Con__60C7B3FB482BDEB7",
+                "UNIQUE_CONSTRAINT",
+                1,
+                "SyncRunID"
+              ],
+              [
+                "Unidades_Negocio",
+                "PK__Unidades__3213E83FD5638C07",
+                "PRIMARY_KEY_CONSTRAINT",
+                1,
+                "id"
+              ],
+              [
+                "Unidades_Negocio",
+                "UQ_Unidades_Server_Sucursal",
+                "UNIQUE_CONSTRAINT",
+                1,
+                "server_id"
+              ],
+              [
+                "Unidades_Negocio",
+                "UQ_Unidades_Server_Sucursal",
+                "UNIQUE_CONSTRAINT",
+                2,
+                "sucursal_origen_id"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc"
+            ],
+            "name": "gate4c_constraint_name_collisions",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "index_name",
+              "is_unique",
+              "has_filter",
+              "filter_definition"
+            ],
+            "name": "gate4c_index_name_collisions_on_targets",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "parent_schema",
+              "parent_table",
+              "ref_table"
+            ],
+            "name": "gate4c_existing_target_fk_names",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T06:40:02Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
