@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate2a-sql-canonical-audit-v1-20260908",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "8c57d2cf52ef9a38c923d4d1ac8cf71eeb552a62",
+  "mode": "READ_ONLY_SQL",
+  "objective": "COA Gate 2A: auditar en SQL canónico real, exclusivamente en modo read-only, las entidades y relaciones reutilizables para expedientes administrativos, facturación, nóminas, pagos/comprobantes, documentos, proveedores, clientes, empresas, unidades, contratos/convenios, reglas configurables, comisiones y trazabilidad. La comisión NO es fija ni se debe hardcodear: 6.5% es solo una posible regla comercial vigente para ciertos casos. Determinar únicamente con evidencia de metadata qué estructuras se reutilizan, cuáles pueden extenderse y qué huecos reales existen. No ejecutar DDL/DML/EXEC/SELECT INTO, no tocar Producción y no consultar secretos ni credenciales.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA",
+    "chat": "coa-gate2a-sql-canonical-audit-v1-20260908"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "coa_candidate_objects",
+          "sql": "SELECT s.name AS schema_name, o.name AS object_name, o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.type IN ('U','V') AND (o.name LIKE '%Empresa%' OR o.name LIKE '%Unidad%' OR o.name LIKE '%Sucursal%' OR o.name LIKE '%Cliente%' OR o.name LIKE '%Proveedor%' OR o.name LIKE '%Persona%' OR o.name LIKE '%Usuario%' OR o.name LIKE '%Documento%' OR o.name LIKE '%Factura%' OR o.name LIKE '%Nomina%' OR o.name LIKE '%Pago%' OR o.name LIKE '%Comision%' OR o.name LIKE '%Regla%' OR o.name LIKE '%Contrato%' OR o.name LIKE '%Convenio%' OR o.name LIKE '%Expediente%' OR o.name LIKE '%Auditor%' OR o.name LIKE '%Tarea%' OR o.name LIKE '%Notificacion%' OR o.name LIKE '%Config%') ORDER BY s.name,o.name"
+        },
+        {
+          "name": "coa_candidate_columns",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.precision, c.scale, c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (t.name LIKE '%Empresa%' OR t.name LIKE '%Unidad%' OR t.name LIKE '%Sucursal%' OR t.name LIKE '%Cliente%' OR t.name LIKE '%Proveedor%' OR t.name LIKE '%Persona%' OR t.name LIKE '%Usuario%' OR t.name LIKE '%Documento%' OR t.name LIKE '%Factura%' OR t.name LIKE '%Nomina%' OR t.name LIKE '%Pago%' OR t.name LIKE '%Comision%' OR t.name LIKE '%Regla%' OR t.name LIKE '%Contrato%' OR t.name LIKE '%Convenio%' OR t.name LIKE '%Expediente%' OR t.name LIKE '%Auditor%' OR t.name LIKE '%Tarea%' OR t.name LIKE '%Notificacion%' OR t.name LIKE '%Config%') ORDER BY s.name,t.name,c.column_id"
+        },
+        {
+          "name": "coa_candidate_primary_keys",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, kc.name AS pk_name, c.name AS column_name, ic.key_ordinal FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.key_constraints kc ON kc.parent_object_id=t.object_id AND kc.type='PK' JOIN sys.index_columns ic ON ic.object_id=t.object_id AND ic.index_id=kc.unique_index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE (t.name LIKE '%Empresa%' OR t.name LIKE '%Unidad%' OR t.name LIKE '%Sucursal%' OR t.name LIKE '%Cliente%' OR t.name LIKE '%Proveedor%' OR t.name LIKE '%Persona%' OR t.name LIKE '%Usuario%' OR t.name LIKE '%Documento%' OR t.name LIKE '%Factura%' OR t.name LIKE '%Nomina%' OR t.name LIKE '%Pago%' OR t.name LIKE '%Comision%' OR t.name LIKE '%Regla%' OR t.name LIKE '%Contrato%' OR t.name LIKE '%Convenio%' OR t.name LIKE '%Expediente%' OR t.name LIKE '%Auditor%' OR t.name LIKE '%Tarea%' OR t.name LIKE '%Notificacion%' OR t.name LIKE '%Config%') ORDER BY s.name,t.name,ic.key_ordinal"
+        },
+        {
+          "name": "coa_candidate_foreign_keys",
+          "sql": "SELECT sch1.name AS parent_schema, t1.name AS parent_table, c1.name AS parent_column, fk.name AS fk_name, sch2.name AS referenced_schema, t2.name AS referenced_table, c2.name AS referenced_column FROM sys.foreign_key_columns fkc JOIN sys.foreign_keys fk ON fk.object_id=fkc.constraint_object_id JOIN sys.tables t1 ON t1.object_id=fkc.parent_object_id JOIN sys.schemas sch1 ON sch1.schema_id=t1.schema_id JOIN sys.columns c1 ON c1.object_id=t1.object_id AND c1.column_id=fkc.parent_column_id JOIN sys.tables t2 ON t2.object_id=fkc.referenced_object_id JOIN sys.schemas sch2 ON sch2.schema_id=t2.schema_id JOIN sys.columns c2 ON c2.object_id=t2.object_id AND c2.column_id=fkc.referenced_column_id WHERE (t1.name LIKE '%Empresa%' OR t1.name LIKE '%Unidad%' OR t1.name LIKE '%Sucursal%' OR t1.name LIKE '%Cliente%' OR t1.name LIKE '%Proveedor%' OR t1.name LIKE '%Persona%' OR t1.name LIKE '%Usuario%' OR t1.name LIKE '%Documento%' OR t1.name LIKE '%Factura%' OR t1.name LIKE '%Nomina%' OR t1.name LIKE '%Pago%' OR t1.name LIKE '%Comision%' OR t1.name LIKE '%Regla%' OR t1.name LIKE '%Contrato%' OR t1.name LIKE '%Convenio%' OR t1.name LIKE '%Expediente%' OR t1.name LIKE '%Auditor%' OR t1.name LIKE '%Tarea%' OR t1.name LIKE '%Notificacion%' OR t1.name LIKE '%Config%' OR t2.name LIKE '%Empresa%' OR t2.name LIKE '%Unidad%' OR t2.name LIKE '%Sucursal%' OR t2.name LIKE '%Cliente%' OR t2.name LIKE '%Proveedor%' OR t2.name LIKE '%Documento%' OR t2.name LIKE '%Factura%' OR t2.name LIKE '%Nomina%' OR t2.name LIKE '%Pago%' OR t2.name LIKE '%Comision%' OR t2.name LIKE '%Regla%' OR t2.name LIKE '%Contrato%' OR t2.name LIKE '%Convenio%' OR t2.name LIKE '%Expediente%') ORDER BY sch1.name,t1.name,fk.name"
+        },
+        {
+          "name": "coa_rule_like_columns_global",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, c.name AS column_name, ty.name AS data_type FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.name LIKE '%porcentaje%' OR c.name LIKE '%comision%' OR c.name LIKE '%vigencia%' OR c.name LIKE '%prioridad%' OR c.name LIKE '%regla%' OR c.name LIKE '%base_calculo%' OR c.name LIKE '%contrato%' OR c.name LIKE '%convenio%' OR c.name LIKE '%proveedor%' OR c.name LIKE '%cliente%' ORDER BY s.name,t.name,c.column_id"
+        },
+        {
+          "name": "coa_indexes_candidate_tables",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, i.name AS index_name, i.is_unique, i.is_primary_key, c.name AS column_name, ic.key_ordinal, ic.is_included_column FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.indexes i ON i.object_id=t.object_id AND i.index_id>0 JOIN sys.index_columns ic ON ic.object_id=t.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE (t.name LIKE '%Empresa%' OR t.name LIKE '%Unidad%' OR t.name LIKE '%Cliente%' OR t.name LIKE '%Proveedor%' OR t.name LIKE '%Documento%' OR t.name LIKE '%Factura%' OR t.name LIKE '%Nomina%' OR t.name LIKE '%Pago%' OR t.name LIKE '%Comision%' OR t.name LIKE '%Regla%' OR t.name LIKE '%Contrato%' OR t.name LIKE '%Convenio%' OR t.name LIKE '%Expediente%') ORDER BY s.name,t.name,i.name,ic.key_ordinal,c.column_id"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
