@@ -67,6 +67,9 @@ import { CavaSociosDashboard, SociosList, SocioDetail, SocioForm, InventarioCava
 // Cavas Corporativas B2B
 import CavasCorporativasDashboard from '@/pages/cavas-corporativas/CavasCorporativasDashboard';
 
+// Catalogo Ampliado / Gobierno Corporativo
+import CatalogoAmpliadoDashboard from '@/pages/catalogo-ampliado/CatalogoAmpliadoDashboard';
+
 // Costos y Márgenes (FASE 1C-3D)
 import CostosMargenes from '@/pages/comercial/CostosMargenes';
 import CatalogoEnriquecido from '@/pages/comercial/CatalogoEnriquecido';
@@ -184,6 +187,8 @@ function App() {
               <Route path="cava-socios/consumos" element={<ConsumosCava />} />
               {/* Cavas Corporativas B2B - reglas y RBAC permanecen en backend */}
               <Route path="cavas-corporativas" element={<CavasCorporativasDashboard />} />
+              {/* Catalogo Ampliado - frontend consume exclusivamente /api/catalogo-ampliado */}
+              <Route path="catalogo-ampliado" element={<CatalogoAmpliadoDashboard />} />
               <Route path="recursos-humanos" element={<RecursosHumanos />} />
               <Route path="importador-rh" element={<ImportadorRH />} />
               <Route path="reportes-bi" element={<ReportesBI />} />

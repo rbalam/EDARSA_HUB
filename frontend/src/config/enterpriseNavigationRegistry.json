@@ -1502,6 +1502,7 @@
     "tablajeria.plantillas"
   ],
   "routeExemptions": [
-    "/cavas-corporativas"
+    "/cavas-corporativas",
+    "/catalogo-ampliado"
   ]
 }
