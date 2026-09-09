@@ -91,18 +91,19 @@ BEGIN TRY
     IF COL_LENGTH('dbo.Sync_Control_Ejecuciones','IdempotencyKey') IS NULL
         ALTER TABLE dbo.Sync_Control_Ejecuciones ADD IdempotencyKey nvarchar(200) NULL;
 
+    /* DDL dinamico: evita binding anticipado de columnas agregadas en este batch. */
     IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name='FK_Sync_Control_Ejecuciones_Conexion')
-        ALTER TABLE dbo.Sync_Control_Ejecuciones WITH CHECK ADD CONSTRAINT FK_Sync_Control_Ejecuciones_Conexion FOREIGN KEY (ConexionID) REFERENCES dbo.Servidores_Conexiones(id);
+        EXEC(N'ALTER TABLE dbo.Sync_Control_Ejecuciones WITH CHECK ADD CONSTRAINT FK_Sync_Control_Ejecuciones_Conexion FOREIGN KEY (ConexionID) REFERENCES dbo.Servidores_Conexiones(id);');
     IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name='FK_Sync_Control_Ejecuciones_Unidad')
-        ALTER TABLE dbo.Sync_Control_Ejecuciones WITH CHECK ADD CONSTRAINT FK_Sync_Control_Ejecuciones_Unidad FOREIGN KEY (UnidadNegocioID) REFERENCES dbo.Unidades_Negocio(id);
+        EXEC(N'ALTER TABLE dbo.Sync_Control_Ejecuciones WITH CHECK ADD CONSTRAINT FK_Sync_Control_Ejecuciones_Unidad FOREIGN KEY (UnidadNegocioID) REFERENCES dbo.Unidades_Negocio(id);');
     IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name='FK_Sync_Control_Ejecuciones_CodigoSync')
-        ALTER TABLE dbo.Sync_Control_Ejecuciones WITH CHECK ADD CONSTRAINT FK_Sync_Control_Ejecuciones_CodigoSync FOREIGN KEY (CodigoSync) REFERENCES dbo.Sistema_Sync_Catalogo(Codigo);
+        EXEC(N'ALTER TABLE dbo.Sync_Control_Ejecuciones WITH CHECK ADD CONSTRAINT FK_Sync_Control_Ejecuciones_CodigoSync FOREIGN KEY (CodigoSync) REFERENCES dbo.Sistema_Sync_Catalogo(Codigo);');
 
     IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.Sync_Control_Ejecuciones') AND name='UX_Sync_Control_Ejecuciones_IdempotencyKey')
-        CREATE UNIQUE INDEX UX_Sync_Control_Ejecuciones_IdempotencyKey ON dbo.Sync_Control_Ejecuciones(IdempotencyKey) WHERE IdempotencyKey IS NOT NULL;
+        EXEC(N'CREATE UNIQUE INDEX UX_Sync_Control_Ejecuciones_IdempotencyKey ON dbo.Sync_Control_Ejecuciones(IdempotencyKey) WHERE IdempotencyKey IS NOT NULL;');
 
     IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.Sync_Control_Ejecuciones') AND name='IX_Sync_Control_Ejecuciones_Conexion_CodigoSync')
-        CREATE INDEX IX_Sync_Control_Ejecuciones_Conexion_CodigoSync ON dbo.Sync_Control_Ejecuciones(ConexionID, CodigoSync, StartedAtUTC DESC);
+        EXEC(N'CREATE INDEX IX_Sync_Control_Ejecuciones_Conexion_CodigoSync ON dbo.Sync_Control_Ejecuciones(ConexionID, CodigoSync, StartedAtUTC DESC);');
 
     /* ------------------------------------------------------------
        4. Evidencia por ejecucion
@@ -156,10 +157,10 @@ BEGIN TRY
     END;
 
     IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.Sistema_IdentificadoresExternos') AND name='IX_Sistema_IdentificadoresExternos_UnidadSistema')
-        CREATE INDEX IX_Sistema_IdentificadoresExternos_UnidadSistema ON dbo.Sistema_IdentificadoresExternos(UnidadNegocioID, SistemaTipoID, Activo);
+        EXEC(N'CREATE INDEX IX_Sistema_IdentificadoresExternos_UnidadSistema ON dbo.Sistema_IdentificadoresExternos(UnidadNegocioID, SistemaTipoID, Activo);');
 
     IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.Sistema_IdentificadoresExternos') AND name='IX_Sistema_IdentificadoresExternos_Conexion')
-        CREATE INDEX IX_Sistema_IdentificadoresExternos_Conexion ON dbo.Sistema_IdentificadoresExternos(ConexionID, SistemaTipoID, Activo);
+        EXEC(N'CREATE INDEX IX_Sistema_IdentificadoresExternos_Conexion ON dbo.Sistema_IdentificadoresExternos(ConexionID, SistemaTipoID, Activo);');
 
     /* ------------------------------------------------------------
        6. Health real de conexion
