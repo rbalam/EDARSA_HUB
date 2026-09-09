@@ -28,8 +28,9 @@ def test_dispatcher_uses_only_fixed_mpro_script():
 
 def test_mpro_script_is_canonical_idempotent_and_execute_gated():
     text = SCRIPT.read_text(encoding='utf-8')
-    assert "get_canonical_finance_sync_units('MANAGEMENTPRO')" in text
+    assert 'resolve_pos_runtime_context' in text
+    assert 'get_external_sql_connection' in text
     assert 'Comanda_Corte' in text
-    assert 'sincronizar_unidad_mpro' in text
+    assert 'sync_cortes_z_context' in text
     assert "parser.add_argument('--execute', action='store_true')" in text
     assert "result.get('estatus') != 'COMPLETADO'" in text
