@@ -6,7 +6,7 @@ health, catalogos y resumenes desde objetos SQL ya existentes.
 
 from __future__ import annotations
 
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List
 
 from core.sql_first.connection_factory import get_edarsahub_pymssql_connection
 
@@ -19,6 +19,10 @@ def _rows(sql: str, params: tuple = ()) -> List[Dict]:
         return cur.fetchall() or []
     finally:
         conn.close()
+
+
+def _id_key(value) -> str:
+    return str(value or "").strip().lower()
 
 
 def get_latest_health_map(connection_ids: Iterable[str]) -> Dict[str, Dict]:
@@ -66,7 +70,7 @@ def get_latest_health_map(connection_ids: Iterable[str]) -> Dict[str, Dict]:
         WHERE rn = 1
     """
     rows = _rows(sql, tuple(ids))
-    return {str(row["connection_id"]): row for row in rows if row.get("connection_id")}
+    return {_id_key(row["connection_id"]): row for row in rows if row.get("connection_id")}
 
 
 def get_connection_enrichment(connection_ids: Iterable[str]) -> Dict[str, Dict]:
@@ -85,7 +89,7 @@ def get_connection_enrichment(connection_ids: Iterable[str]) -> Dict[str, Dict]:
         WHERE CONVERT(varchar(36), id) IN ({placeholders})
     """
     rows = _rows(sql, tuple(ids))
-    return {str(row["connection_id"]): row for row in rows if row.get("connection_id")}
+    return {_id_key(row["connection_id"]): row for row in rows if row.get("connection_id")}
 
 
 def get_sync_summary() -> Dict:
