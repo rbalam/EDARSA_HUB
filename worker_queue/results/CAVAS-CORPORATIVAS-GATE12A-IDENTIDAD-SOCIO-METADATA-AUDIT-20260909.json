@@ -1,0 +1,626 @@
+{
+  "base_sha": "7b58dc633e034ce5b1708775ab63a5e529900a62",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T23:15:26Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CORPORATIVAS-GATE12A-IDENTIDAD-SOCIO-METADATA-AUDIT-20260909",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T23:15:37Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable",
+              "default_definition"
+            ],
+            "name": "gate12a_socios_columns",
+            "row_count_returned": 18,
+            "rows": [
+              [
+                1,
+                "SocioID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                false,
+                "(newid())"
+              ],
+              [
+                2,
+                "EmpresaID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                false,
+                null
+              ],
+              [
+                3,
+                "NumeroSocio",
+                "varchar",
+                50,
+                0,
+                0,
+                false,
+                null
+              ],
+              [
+                4,
+                "NombreCompleto",
+                "nvarchar",
+                400,
+                0,
+                0,
+                false,
+                null
+              ],
+              [
+                5,
+                "Email",
+                "varchar",
+                150,
+                0,
+                0,
+                true,
+                null
+              ],
+              [
+                6,
+                "Telefono",
+                "varchar",
+                50,
+                0,
+                0,
+                true,
+                null
+              ],
+              [
+                7,
+                "ClienteCRMID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                true,
+                null
+              ],
+              [
+                8,
+                "TipoMembresia",
+                "varchar",
+                50,
+                0,
+                0,
+                true,
+                "('ESTANDAR')"
+              ],
+              [
+                9,
+                "FechaAltaMembresia",
+                "date",
+                3,
+                10,
+                0,
+                true,
+                null
+              ],
+              [
+                10,
+                "FechaVencimientoMembresia",
+                "date",
+                3,
+                10,
+                0,
+                true,
+                null
+              ],
+              [
+                11,
+                "MaximoBotellas",
+                "int",
+                4,
+                10,
+                0,
+                true,
+                "((12))"
+              ],
+              [
+                12,
+                "Estatus",
+                "varchar",
+                30,
+                0,
+                0,
+                true,
+                "('ACTIVO')"
+              ],
+              [
+                13,
+                "Activo",
+                "bit",
+                1,
+                1,
+                0,
+                true,
+                "((1))"
+              ],
+              [
+                14,
+                "FechaCreacion",
+                "datetime2",
+                8,
+                27,
+                7,
+                true,
+                "(getutcdate())"
+              ],
+              [
+                15,
+                "UsuarioCreacionID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                true,
+                null
+              ],
+              [
+                16,
+                "FechaModificacion",
+                "datetime2",
+                8,
+                27,
+                7,
+                true,
+                null
+              ],
+              [
+                17,
+                "UsuarioModificacionID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                true,
+                null
+              ],
+              [
+                18,
+                "Observaciones",
+                "nvarchar",
+                1000,
+                0,
+                0,
+                true,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable"
+            ],
+            "name": "gate12a_cliente_columns_identity_contact",
+            "row_count_returned": 10,
+            "rows": [
+              [
+                1,
+                "ClienteID",
+                "int",
+                4,
+                10,
+                0,
+                false
+              ],
+              [
+                2,
+                "CodigoCliente",
+                "varchar",
+                20,
+                0,
+                0,
+                false
+              ],
+              [
+                3,
+                "RFC",
+                "varchar",
+                13,
+                0,
+                0,
+                false
+              ],
+              [
+                8,
+                "ClienteMaestroID",
+                "int",
+                4,
+                10,
+                0,
+                true
+              ],
+              [
+                9,
+                "GrupoClienteID",
+                "int",
+                4,
+                10,
+                0,
+                true
+              ],
+              [
+                16,
+                "EmailPrincipal",
+                "varchar",
+                150,
+                0,
+                0,
+                true
+              ],
+              [
+                17,
+                "TelefonoPrincipal",
+                "varchar",
+                25,
+                0,
+                0,
+                true
+              ],
+              [
+                19,
+                "CodigoPostalFiscal",
+                "varchar",
+                10,
+                0,
+                0,
+                true
+              ],
+              [
+                24,
+                "Activo",
+                "bit",
+                1,
+                1,
+                0,
+                false
+              ],
+              [
+                36,
+                "TamanoClienteID",
+                "int",
+                4,
+                10,
+                0,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_name",
+              "is_primary_key",
+              "is_unique",
+              "is_unique_constraint",
+              "key_ordinal",
+              "column_name",
+              "is_included_column"
+            ],
+            "name": "gate12a_socios_primary_unique_indexes",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "PK__CavaSoci__165D08DA1FE212A2",
+                true,
+                true,
+                false,
+                1,
+                "SocioID",
+                false
+              ],
+              [
+                "UQ_CavaSocios_NumeroSocio",
+                false,
+                true,
+                true,
+                1,
+                "EmpresaID",
+                false
+              ],
+              [
+                "UQ_CavaSocios_NumeroSocio",
+                false,
+                true,
+                true,
+                2,
+                "NumeroSocio",
+                false
+              ],
+              [
+                "IX_CavaSocios_Socios_Empresa",
+                false,
+                false,
+                false,
+                1,
+                "EmpresaID",
+                false
+              ],
+              [
+                "IX_CavaSocios_Socios_ClienteCRM",
+                false,
+                false,
+                false,
+                1,
+                "ClienteCRMID",
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_name",
+              "is_primary_key",
+              "is_unique",
+              "is_unique_constraint",
+              "key_ordinal",
+              "column_name",
+              "is_included_column"
+            ],
+            "name": "gate12a_cliente_primary_unique_indexes",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                "PK_Cliente_Catalogo",
+                true,
+                true,
+                false,
+                1,
+                "ClienteID",
+                false
+              ],
+              [
+                "UQ_Cliente_Catalogo_RFC",
+                false,
+                true,
+                true,
+                1,
+                "RFC",
+                false
+              ],
+              [
+                "UQ_Cliente_Catalogo_CodigoCliente",
+                false,
+                true,
+                true,
+                1,
+                "CodigoCliente",
+                false
+              ],
+              [
+                "IX_Cliente_Catalogo_RazonSocial",
+                false,
+                false,
+                false,
+                1,
+                "RazonSocial",
+                false
+              ],
+              [
+                "IX_Cliente_Catalogo_ClienteMaestroID",
+                false,
+                false,
+                false,
+                1,
+                "ClienteMaestroID",
+                false
+              ],
+              [
+                "IX_Cliente_Catalogo_GrupoClienteID",
+                false,
+                false,
+                false,
+                1,
+                "GrupoClienteID",
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "parent_schema",
+              "parent_table",
+              "parent_column",
+              "referenced_schema",
+              "referenced_table",
+              "referenced_column",
+              "delete_referential_action_desc",
+              "update_referential_action_desc",
+              "is_disabled",
+              "is_not_trusted"
+            ],
+            "name": "gate12a_foreign_keys_touching_socios",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "FK_CavaSocios_Botellas_Socio",
+                "dbo",
+                "CavaSocios_Botellas",
+                "SocioID",
+                "dbo",
+                "CavaSocios_Socios",
+                "SocioID",
+                "NO_ACTION",
+                "NO_ACTION",
+                false,
+                false
+              ],
+              [
+                "FK_CavaSocios_Cargos_Socio",
+                "dbo",
+                "CavaSocios_Cargos",
+                "SocioID",
+                "dbo",
+                "CavaSocios_Socios",
+                "SocioID",
+                "NO_ACTION",
+                "NO_ACTION",
+                false,
+                false
+              ],
+              [
+                "FK_CavaSocios_Movimientos_Socio",
+                "dbo",
+                "CavaSocios_Movimientos",
+                "SocioID",
+                "dbo",
+                "CavaSocios_Socios",
+                "SocioID",
+                "NO_ACTION",
+                "NO_ACTION",
+                false,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "socio_column",
+              "cliente_column",
+              "is_disabled",
+              "is_not_trusted"
+            ],
+            "name": "gate12a_direct_fk_socios_cliente",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "socio_column",
+              "socio_type",
+              "socio_max_length",
+              "socio_nullable",
+              "cliente_column",
+              "cliente_type",
+              "cliente_max_length",
+              "cliente_nullable"
+            ],
+            "name": "gate12a_identity_contact_overlap",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "Email",
+                "varchar",
+                150,
+                true,
+                "EmailPrincipal",
+                "varchar",
+                150,
+                true
+              ],
+              [
+                "Telefono",
+                "varchar",
+                50,
+                true,
+                "TelefonoPrincipal",
+                "varchar",
+                25,
+                true
+              ],
+              [
+                "Activo",
+                "bit",
+                1,
+                true,
+                "Activo",
+                "bit",
+                1,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "referencing_schema",
+              "referencing_object",
+              "referencing_type"
+            ],
+            "name": "gate12a_objects_depending_on_socios",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "child_schema",
+              "child_table",
+              "fk_name"
+            ],
+            "name": "gate12a_socios_fk_children",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "dbo",
+                "CavaSocios_Botellas",
+                "FK_CavaSocios_Botellas_Socio"
+              ],
+              [
+                "dbo",
+                "CavaSocios_Cargos",
+                "FK_CavaSocios_Cargos_Socio"
+              ],
+              [
+                "dbo",
+                "CavaSocios_Movimientos",
+                "FK_CavaSocios_Movimientos_Socio"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T23:15:24Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
