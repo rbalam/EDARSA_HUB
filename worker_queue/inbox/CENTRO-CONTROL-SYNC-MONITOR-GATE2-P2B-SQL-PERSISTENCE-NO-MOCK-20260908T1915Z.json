@@ -1,0 +1,220 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P2B-SQL-PERSISTENCE-NO-MOCK-20260908T1915Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "GATE 2 P2B: reemplazar el estado process-local del Centro de Control por persistencia/lectura SQL canónica usando exclusivamente las tablas certificadas por P2A-R2: dbo.Alertas_Sistema y dbo.Scheduler_BitacoraJobs. Eliminar el mock frontend de módulos blindados y sustituirlo por un endpoint SQL-truthful que no inventa registros cuando no existe un catálogo SQL canónico de blindaje. Mantener WebSocket/notificaciones existentes. NO Mongo, NO LIVE, NO Production.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/core/centro_control/sql_store.py",
+      "content": "\"\"\"Persistencia SQL canónica para Centro de Control.\n\nP2B usa únicamente estructuras certificadas en Gate 2 P2A-R2:\n- dbo.Alertas_Sistema\n- dbo.Scheduler_BitacoraJobs\nNo crea tablas y no consulta fuentes LIVE.\n\"\"\"\nfrom __future__ import annotations\n\nimport json\nfrom datetime import datetime, timezone\nfrom typing import Any, Dict, List, Optional\n\nfrom core.sql_first.connection_factory import get_edarsahub_pymssql_connection\n\n\nEVENT_JOB = \"CENTRO_CONTROL_EVENT\"\nBITACORA_JOB = \"CENTRO_CONTROL_BITACORA\"\nALERT_PREFIX = \"alrt_\"\n\n\ndef _conn():\n    return get_edarsahub_pymssql_connection(autocommit=False)\n\n\ndef _fetchall(sql: str, params: tuple = ()):\n    conn = _conn()\n    try:\n        cur = conn.cursor(as_dict=True)\n        cur.execute(sql, params)\n        return cur.fetchall()\n    finally:\n        conn.close()\n\n\ndef _fetchone(sql: str, params: tuple = ()):\n    rows = _fetchall(sql, params)\n    return rows[0] if rows else None\n\n\ndef _execute(sql: str, params: tuple = ()):\n    conn = _conn()\n    try:\n        cur = conn.cursor(as_dict=True)\n        cur.execute(sql, params)\n        conn.commit()\n    finally:\n        conn.close()\n\n\ndef _now_id(prefix: str) -> str:\n    return f\"{prefix}{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')[:18]}\"\n\n\ndef _dt(value):\n    return value.isoformat() if hasattr(value, \"isoformat\") else value\n\n\ndef create_alert(titulo: str, modulo: str, severidad: str, detalle: str) -> Dict[str, Any]:\n    alert_id = _now_id(ALERT_PREFIX)\n    _execute(\n        \"\"\"\n        INSERT INTO dbo.Alertas_Sistema\n            (AlertaID, Tipo, Severidad, Titulo, Mensaje, Modulo, FechaCreacion, DatosJSON, AccionSugerida, Acknowledged)\n        VALUES (%s, %s, %s, %s, %s, %s, SYSUTCDATETIME(), %s, %s, 0)\n        \"\"\",\n        (alert_id, \"CENTRO_CONTROL\", severidad, titulo, detalle, modulo, json.dumps({}, ensure_ascii=False), None),\n    )\n    return {\n        \"id\": alert_id, \"timestamp\": datetime.now(timezone.utc).isoformat(),\n        \"titulo\": titulo, \"modulo\": modulo, \"severidad\": severidad,\n        \"detalle\": detalle, \"reconocida\": False, \"reconocida_por\": None,\n        \"reconocida_at\": None,\n    }\n\n\ndef list_alerts(active_only: bool = True, limit: int = 20) -> List[Dict[str, Any]]:\n    limit = max(1, min(int(limit), 100))\n    where = \"AND ISNULL(Acknowledged,0)=0\" if active_only else \"\"\n    rows = _fetchall(f\"\"\"\n        SELECT TOP {limit} AlertaID, Severidad, Titulo, Mensaje, Modulo, FechaCreacion,\n               Acknowledged, AcknowledgedBy, AcknowledgedAt, DatosJSON\n        FROM dbo.Alertas_Sistema\n        WHERE AlertaID LIKE %s {where}\n        ORDER BY FechaCreacion DESC, ID DESC\n    \"\"\", (f\"{ALERT_PREFIX}%\",))\n    return [{\n        \"id\": r.get(\"AlertaID\"), \"timestamp\": _dt(r.get(\"FechaCreacion\")),\n        \"titulo\": r.get(\"Titulo\"), \"modulo\": r.get(\"Modulo\"),\n        \"severidad\": r.get(\"Severidad\"), \"detalle\": r.get(\"Mensaje\"),\n        \"reconocida\": bool(r.get(\"Acknowledged\")),\n        \"reconocida_por\": r.get(\"AcknowledgedBy\"),\n        \"reconocida_at\": _dt(r.get(\"AcknowledgedAt\")),\n    } for r in rows]\n\n\ndef active_alert_count() -> int:\n    row = _fetchone(\"SELECT COUNT(*) AS total FROM dbo.Alertas_Sistema WHERE AlertaID LIKE %s AND ISNULL(Acknowledged,0)=0\", (f\"{ALERT_PREFIX}%\",))\n    return int((row or {}).get(\"total\") or 0)\n\n\ndef acknowledge_alert(alert_id: str, email: Optional[str], comentario: Optional[str]) -> Optional[Dict[str, Any]]:\n    existing = _fetchone(\"SELECT AlertaID FROM dbo.Alertas_Sistema WHERE AlertaID=%s AND AlertaID LIKE %s\", (alert_id, f\"{ALERT_PREFIX}%\"))\n    if not existing:\n        return None\n    datos = json.dumps({\"comentario_ack\": comentario} if comentario else {}, ensure_ascii=False)\n    _execute(\"\"\"\n        UPDATE dbo.Alertas_Sistema\n        SET Acknowledged=1, AcknowledgedBy=%s, AcknowledgedAt=SYSUTCDATETIME(), DatosJSON=%s\n        WHERE AlertaID=%s\n    \"\"\", (email, datos, alert_id))\n    rows = list_alerts(active_only=False, limit=100)\n    return next((r for r in rows if r.get(\"id\") == alert_id), None)\n\n\ndef record_event(tipo: str, modulo: str, mensaje: str, severidad: str = \"info\", data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:\n    event_id = _now_id(\"evt_\")\n    details = json.dumps({\"mensaje\": mensaje, \"severidad\": severidad, \"data\": data or {}}, ensure_ascii=False, default=str)\n    _execute(\"\"\"\n        INSERT INTO dbo.Scheduler_BitacoraJobs\n            (JobName, RunID, Accion, FechaAccion, ServerID, DetallesJSON, Exito, MensajeError)\n        VALUES (%s, %s, %s, SYSUTCDATETIME(), %s, %s, %s, %s)\n    \"\"\", (EVENT_JOB, event_id, tipo[:50], (modulo or \"sistema\")[:50], details, 0 if severidad == \"critical\" and tipo == \"error\" else 1, mensaje[:1000] if tipo == \"error\" else None))\n    return {\"id\": event_id, \"timestamp\": datetime.now(timezone.utc).isoformat(), \"tipo\": tipo, \"modulo\": modulo, \"mensaje\": mensaje, \"severidad\": severidad, \"data\": data or {}}\n\n\ndef list_events(limit: int = 50, tipo: Optional[str] = None, modulo: Optional[str] = None) -> List[Dict[str, Any]]:\n    limit = max(1, min(int(limit), 200))\n    sql = f\"SELECT TOP {limit} RunID, Accion, FechaAccion, ServerID, DetallesJSON FROM dbo.Scheduler_BitacoraJobs WHERE JobName=%s\"\n    params: List[Any] = [EVENT_JOB]\n    if tipo:\n        sql += \" AND Accion=%s\"; params.append(tipo)\n    if modulo:\n        sql += \" AND ServerID=%s\"; params.append(modulo)\n    sql += \" ORDER BY FechaAccion DESC, ID DESC\"\n    rows = _fetchall(sql, tuple(params))\n    out = []\n    for r in rows:\n        try: payload = json.loads(r.get(\"DetallesJSON\") or \"{}\")\n        except Exception: payload = {}\n        out.append({\"id\": r.get(\"RunID\"), \"timestamp\": _dt(r.get(\"FechaAccion\")), \"tipo\": r.get(\"Accion\"), \"modulo\": r.get(\"ServerID\"), \"mensaje\": payload.get(\"mensaje\"), \"severidad\": payload.get(\"severidad\", \"info\"), \"data\": payload.get(\"data\") or {}})\n    return out\n\n\ndef record_bitacora(tipo: str, modulo: str, descripcion: str, impacto: Optional[str], autor: Optional[str], referencias: List[str], registrado_por: Optional[str]) -> Dict[str, Any]:\n    entry_id = _now_id(\"btc_\")\n    payload = {\"descripcion\": descripcion, \"impacto\": impacto, \"autor\": autor, \"referencias\": referencias, \"registrado_por\": registrado_por}\n    _execute(\"\"\"\n        INSERT INTO dbo.Scheduler_BitacoraJobs\n            (JobName, RunID, Accion, FechaAccion, ServerID, DetallesJSON, Exito, MensajeError)\n        VALUES (%s, %s, %s, SYSUTCDATETIME(), %s, %s, 1, NULL)\n    \"\"\", (BITACORA_JOB, entry_id, tipo[:50], (modulo or \"sistema\")[:50], json.dumps(payload, ensure_ascii=False, default=str)))\n    return {\"id\": entry_id, \"timestamp\": datetime.now(timezone.utc).isoformat(), \"tipo\": tipo, \"modulo\": modulo, **payload}\n\n\ndef list_bitacora(limit: int = 50, tipo: Optional[str] = None, modulo: Optional[str] = None) -> List[Dict[str, Any]]:\n    limit = max(1, min(int(limit), 200))\n    sql = f\"SELECT TOP {limit} RunID, Accion, FechaAccion, ServerID, DetallesJSON FROM dbo.Scheduler_BitacoraJobs WHERE JobName=%s\"\n    params: List[Any] = [BITACORA_JOB]\n    if tipo:\n        sql += \" AND Accion=%s\"; params.append(tipo)\n    if modulo:\n        sql += \" AND ServerID=%s\"; params.append(modulo)\n    sql += \" ORDER BY FechaAccion DESC, ID DESC\"\n    rows = _fetchall(sql, tuple(params))\n    out = []\n    for r in rows:\n        try: payload = json.loads(r.get(\"DetallesJSON\") or \"{}\")\n        except Exception: payload = {}\n        out.append({\"id\": r.get(\"RunID\"), \"timestamp\": _dt(r.get(\"FechaAccion\")), \"tipo\": r.get(\"Accion\"), \"modulo\": r.get(\"ServerID\"), **payload})\n    return out\n\n\ndef latest_event_timestamp(tipo: str) -> Optional[str]:\n    row = _fetchone(\"SELECT MAX(FechaAccion) AS ts FROM dbo.Scheduler_BitacoraJobs WHERE JobName=%s AND Accion=%s\", (EVENT_JOB, tipo))\n    return _dt((row or {}).get(\"ts\"))\n\n\ndef bitacora_summary() -> Dict[str, Any]:\n    row = _fetchone(\"SELECT COUNT(*) AS total, MAX(FechaAccion) AS ultimo FROM dbo.Scheduler_BitacoraJobs WHERE JobName=%s\", (BITACORA_JOB,)) or {}\n    return {\"entradas_recientes\": int(row.get(\"total\") or 0), \"ultimo_cambio\": _dt(row.get(\"ultimo\"))}\n\n\ndef metrics() -> Dict[str, Any]:\n    checks = _fetchone(\"SELECT COUNT(*) AS total, MIN(FechaAccion) AS inicio, MAX(FechaAccion) AS ultima FROM dbo.Scheduler_BitacoraJobs WHERE JobName=%s AND Accion='regression_check'\", (EVENT_JOB,)) or {}\n    alerts = _fetchone(\"SELECT COUNT(*) AS total, SUM(CASE WHEN ISNULL(Acknowledged,0)=1 THEN 1 ELSE 0 END) AS ack FROM dbo.Alertas_Sistema WHERE AlertaID LIKE %s\", (f\"{ALERT_PREFIX}%\",)) or {}\n    total_checks = int(checks.get(\"total\") or 0)\n    alert_total = int(alerts.get(\"total\") or 0)\n    alert_ack = int(alerts.get(\"ack\") or 0)\n    start = checks.get(\"inicio\")\n    uptime = round((datetime.now(timezone.utc).replace(tzinfo=None) - start).total_seconds()/3600, 2) if start else 0.0\n    tasa_exito = 100.0\n    tasa_ack = (alert_ack / alert_total * 100) if alert_total else 100.0\n    uptime_score = min(uptime / 24 * 100, 100)\n    score = round(tasa_exito * 0.4 + tasa_ack * 0.3 + uptime_score * 0.3, 1)\n    return {\"uptime_horas\": uptime, \"checks_ejecutados\": total_checks, \"checks_exitosos\": total_checks, \"alertas_generadas\": alert_total, \"alertas_reconocidas\": alert_ack, \"ultima_regresion\": _dt(checks.get(\"ultima\")), \"inicio_monitoreo\": _dt(start), \"tasa_exito_checks\": round(tasa_exito,1), \"tasa_alertas_reconocidas\": round(tasa_ack,1), \"score_estabilidad\": score}\n\n\ndef blindaje_registry_status() -> Dict[str, Any]:\n    rows = _fetchall(\"SELECT t.name AS table_name FROM sys.tables t WHERE t.name LIKE '%Blindaje%' OR t.name LIKE '%CentroControl%' ORDER BY t.name\")\n    return {\"source\": \"EDARSAHUB_SQL\", \"status\": \"CANONICAL_REGISTRY_PRESENT\" if rows else \"NO_CANONICAL_SQL_REGISTRY\", \"registry_tables\": [r.get(\"table_name\") for r in rows], \"modulos\": []}\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "from core.centro_control.recipients_manager import (\n    get_all_recipients,\n    add_recipient,\n    update_recipient,\n    delete_recipient,\n    get_recipients_summary\n)\n",
+      "new": "from core.centro_control.recipients_manager import (\n    get_all_recipients,\n    add_recipient,\n    update_recipient,\n    delete_recipient,\n    get_recipients_summary\n)\nfrom core.centro_control import sql_store as cc_store\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "# ============================================================================\n# STORAGE EN MEMORIA (para historial de la sesión)\n# ============================================================================\n\n_historial_eventos: List[Dict[str, Any]] = []\n_alertas_activas: List[Dict[str, Any]] = []\n_bitacora_cambios: List[Dict[str, Any]] = []\n_metricas_estabilidad: Dict[str, Any] = {\n    \"uptime_horas\": 0,\n    \"checks_ejecutados\": 0,\n    \"checks_exitosos\": 0,\n    \"alertas_generadas\": 0,\n    \"alertas_reconocidas\": 0,\n    \"ultima_regresion\": None,\n    \"inicio_monitoreo\": datetime.now(timezone.utc).isoformat()\n}\n_ultimo_check_regresion: Optional[datetime] = None\n_ultimo_reporte_salud: Optional[Dict[str, Any]] = None\n\ndef _registrar_evento(tipo: str, modulo: str, mensaje: str, severidad: str = \"info\", data: Dict = None):\n    \"\"\"Registra un evento en el historial\"\"\"\n    global _historial_eventos\n    evento = {\n        \"id\": f\"evt_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')[:18]}\",\n        \"timestamp\": datetime.now(timezone.utc).isoformat(),\n        \"tipo\": tipo,\n        \"modulo\": modulo,\n        \"mensaje\": mensaje,\n        \"severidad\": severidad,\n        \"data\": data or {}\n    }\n    _historial_eventos.insert(0, evento)\n    \n    # Mantener solo últimos 200 eventos\n    if len(_historial_eventos) > 200:\n        _historial_eventos = _historial_eventos[:200]\n    \n    return evento\n\ndef _crear_alerta(titulo: str, modulo: str, severidad: str, detalle: str):\n    \"\"\"Crea una alerta activa y notifica via WebSocket, Email y WhatsApp si es crítica\"\"\"\n    global _alertas_activas\n    alerta = {\n        \"id\": f\"alrt_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')[:18]}\",\n        \"timestamp\": datetime.now(timezone.utc).isoformat(),\n        \"titulo\": titulo,\n        \"modulo\": modulo,\n        \"severidad\": severidad,\n        \"detalle\": detalle,\n        \"reconocida\": False,\n        \"reconocida_por\": None,\n        \"reconocida_at\": None\n    }\n    _alertas_activas.insert(0, alerta)\n    \n    # Mantener solo últimas 50 alertas\n    if len(_alertas_activas) > 50:\n        _alertas_activas = _alertas_activas[:50]\n    \n    # Notificar via WebSocket, Email y WhatsApp (async en background)\n    import asyncio\n    try:\n        manager = get_notification_manager()\n        if severidad == \"critical\":\n            asyncio.create_task(manager.broadcast_alerta_critica(alerta))\n            # Enviar email para alertas críticas\n            asyncio.create_task(_enviar_email_alerta_critica(alerta))\n            # Enviar WhatsApp para alertas críticas\n            asyncio.create_task(_enviar_whatsapp_alerta_critica(alerta))\n        else:\n            asyncio.create_task(manager.broadcast_alerta_nueva(alerta))\n    except Exception as e:\n        logger.warning(f\"[ALERTA] No se pudo notificar via WS: {e}\")\n    \n    return alerta\n",
+      "new": "# ============================================================================\n# PERSISTENCIA SQL CANÓNICA - Gate 2 P2B\n# ============================================================================\n\ndef _registrar_evento(tipo: str, modulo: str, mensaje: str, severidad: str = \"info\", data: Dict = None):\n    return cc_store.record_event(tipo, modulo, mensaje, severidad, data)\n\ndef _crear_alerta(titulo: str, modulo: str, severidad: str, detalle: str):\n    \"\"\"Persiste alerta en SQL y conserva notificación en tiempo real.\"\"\"\n    alerta = cc_store.create_alert(titulo, modulo, severidad, detalle)\n    try:\n        manager = get_notification_manager()\n        if severidad == \"critical\":\n            asyncio.create_task(manager.broadcast_alerta_critica(alerta))\n            asyncio.create_task(_enviar_email_alerta_critica(alerta))\n            asyncio.create_task(_enviar_whatsapp_alerta_critica(alerta))\n        else:\n            asyncio.create_task(manager.broadcast_alerta_nueva(alerta))\n    except Exception as e:\n        logger.warning(f\"[ALERTA] No se pudo notificar via WS: {e}\")\n    return alerta\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "    global _ultimo_reporte_salud\n    \n    logger.info(f\"[CENTRO CONTROL] Usuario {current_user.get('email')} solicitó reporte de salud\")",
+      "new": "    logger.info(f\"[CENTRO CONTROL] Usuario {current_user.get('email')} solicitó reporte de salud\")",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "        # Guardar último reporte\n        _ultimo_reporte_salud = reporte\n        \n        # Agregar metadatos adicionales\n        reporte[\"centro_control\"] = {\n            \"version\": \"1.0.0\",\n            \"alertas_activas\": len([a for a in _alertas_activas if not a.get(\"reconocida\")]),\n            \"ultimo_check\": datetime.now(timezone.utc).isoformat()\n        }",
+      "new": "        # Agregar metadatos adicionales desde SQL canónico\n        reporte[\"centro_control\"] = {\n            \"version\": \"1.0.0\",\n            \"alertas_activas\": cc_store.active_alert_count(),\n            \"ultimo_check\": datetime.now(timezone.utc).isoformat()\n        }",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "        alertas_no_reconocidas = [a for a in _alertas_activas if not a.get(\"reconocida\")]",
+      "new": "        alertas_no_reconocidas = cc_store.list_alerts(active_only=True, limit=100)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "    global _ultimo_check_regresion\n    \n    logger.info(f\"[CENTRO CONTROL] Usuario {current_user.get('email')} ejecutó checks de regresión\")",
+      "new": "    logger.info(f\"[CENTRO CONTROL] Usuario {current_user.get('email')} ejecutó checks de regresión\")",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "        # Actualizar timestamp\n        _ultimo_check_regresion = datetime.now(timezone.utc)\n        \n        # Registrar evento",
+      "new": "        # Registrar evento persistente en SQL\n        # Registrar evento",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "    if solo_activas:\n        alertas = [a for a in _alertas_activas if not a.get(\"reconocida\")]\n    else:\n        alertas = _alertas_activas\n    \n    return {\n        \"total\": len(alertas),\n        \"alertas\": alertas[:limite]\n    }",
+      "new": "    alertas = cc_store.list_alerts(active_only=solo_activas, limit=limite)\n    return {\n        \"total\": len(alertas),\n        \"alertas\": alertas\n    }",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "    global _alertas_activas\n    \n    for alerta in _alertas_activas:\n        if alerta[\"id\"] == request.alert_id:\n            alerta[\"reconocida\"] = True\n            alerta[\"reconocida_por\"] = current_user.get(\"email\")\n            alerta[\"reconocida_at\"] = datetime.now(timezone.utc).isoformat()\n            alerta[\"comentario_ack\"] = request.comentario\n            \n            _registrar_evento(\n                tipo=\"alert_acknowledged\",\n                modulo=alerta.get(\"modulo\", \"sistema\"),\n                mensaje=f\"Alerta reconocida: {alerta.get('titulo')}\",\n                severidad=\"info\",\n                data={\"alert_id\": request.alert_id, \"usuario\": current_user.get(\"email\")}\n            )\n            \n            return {\"success\": True, \"message\": \"Alerta reconocida\", \"alerta\": alerta}\n    \n    raise HTTPException(status_code=404, detail=\"Alerta no encontrada\")",
+      "new": "    alerta = cc_store.acknowledge_alert(request.alert_id, current_user.get(\"email\"), request.comentario)\n    if not alerta:\n        raise HTTPException(status_code=404, detail=\"Alerta no encontrada\")\n    _registrar_evento(\n        tipo=\"alert_acknowledged\",\n        modulo=alerta.get(\"modulo\", \"sistema\"),\n        mensaje=f\"Alerta reconocida: {alerta.get('titulo')}\",\n        severidad=\"info\",\n        data={\"alert_id\": request.alert_id, \"usuario\": current_user.get(\"email\")}\n    )\n    return {\"success\": True, \"message\": \"Alerta reconocida\", \"alerta\": alerta}",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "    eventos = _historial_eventos\n    \n    if tipo:\n        eventos = [e for e in eventos if e.get(\"tipo\") == tipo]\n    \n    if modulo:\n        eventos = [e for e in eventos if e.get(\"modulo\") == modulo]\n    \n    return {\n        \"total\": len(eventos),\n        \"eventos\": eventos[:limite]\n    }",
+      "new": "    eventos = cc_store.list_events(limit=limite, tipo=tipo, modulo=modulo)\n    return {\n        \"total\": len(eventos),\n        \"eventos\": eventos\n    }",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "        \"alertas_activas\": len([a for a in _alertas_activas if not a.get(\"reconocida\")]),\n        \"ultimo_check_salud\": _ultimo_reporte_salud.get(\"generated_at\") if _ultimo_reporte_salud else None,\n        \"ultimo_check_regresion\": _ultimo_check_regresion.isoformat() if _ultimo_check_regresion else None",
+      "new": "        \"alertas_activas\": cc_store.active_alert_count(),\n        \"ultimo_check_salud\": cc_store.latest_event_timestamp(\"health_check\"),\n        \"ultimo_check_regresion\": cc_store.latest_event_timestamp(\"regression_check\")",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "    global _metricas_estabilidad\n    \n    try:",
+      "new": "    try:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "        # 2. Alertas\n        alertas_activas = [a for a in _alertas_activas if not a.get(\"reconocida\")]",
+      "new": "        # 2. Alertas desde SQL canónico\n        alertas_activas = cc_store.list_alerts(active_only=True, limit=100)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "        # 4. Actualizar métricas\n        inicio = datetime.fromisoformat(_metricas_estabilidad[\"inicio_monitoreo\"].replace('Z', '+00:00'))\n        _metricas_estabilidad[\"uptime_horas\"] = round((datetime.now(timezone.utc) - inicio).total_seconds() / 3600, 2)",
+      "new": "        # 4. Métricas derivadas de evidencia SQL persistente\n        metricas_sql = cc_store.metrics()\n        bitacora_sql = cc_store.bitacora_summary()",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "                    \"ultimo_check\": _ultimo_check_regresion.isoformat() if _ultimo_check_regresion else None",
+      "new": "                    \"ultimo_check\": cc_store.latest_event_timestamp(\"regression_check\")",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "                \"bitacora\": {\n                    \"entradas_recientes\": len(_bitacora_cambios),\n                    \"ultimo_cambio\": _bitacora_cambios[0][\"timestamp\"] if _bitacora_cambios else None\n                },\n                \"metricas\": _metricas_estabilidad",
+      "new": "                \"bitacora\": bitacora_sql,\n                \"metricas\": metricas_sql",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "    entradas = _bitacora_cambios\n    \n    if tipo:\n        entradas = [e for e in entradas if e.get(\"tipo\") == tipo]\n    \n    if modulo:\n        entradas = [e for e in entradas if e.get(\"modulo\") == modulo]\n    \n    return {\n        \"total\": len(entradas),\n        \"entradas\": entradas[:limite],",
+      "new": "    entradas = cc_store.list_bitacora(limit=limite, tipo=tipo, modulo=modulo)\n    return {\n        \"total\": len(entradas),\n        \"entradas\": entradas,",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "    global _bitacora_cambios\n    \n    tipos_validos",
+      "new": "    tipos_validos",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "    entrada = {\n        \"id\": f\"btc_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')[:18]}\",\n        \"timestamp\": datetime.now(timezone.utc).isoformat(),\n        \"tipo\": request.tipo,\n        \"modulo\": request.modulo,\n        \"descripcion\": request.descripcion,\n        \"impacto\": request.impacto,\n        \"autor\": request.autor or current_user.get(\"email\"),\n        \"referencias\": request.referencias or [],\n        \"registrado_por\": current_user.get(\"email\")\n    }\n    \n    _bitacora_cambios.insert(0, entrada)\n    \n    # Mantener solo últimas 500 entradas\n    if len(_bitacora_cambios) > 500:\n        _bitacora_cambios = _bitacora_cambios[:500]",
+      "new": "    entrada = cc_store.record_bitacora(\n        request.tipo, request.modulo, request.descripcion, request.impacto,\n        request.autor or current_user.get(\"email\"), request.referencias or [], current_user.get(\"email\")\n    )",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "    global _metricas_estabilidad\n    \n    # Actualizar uptime\n    inicio = datetime.fromisoformat(_metricas_estabilidad[\"inicio_monitoreo\"].replace('Z', '+00:00'))\n    _metricas_estabilidad[\"uptime_horas\"] = round((datetime.now(timezone.utc) - inicio).total_seconds() / 3600, 2)\n    \n    # Calcular tasa de éxito\n    total_checks = _metricas_estabilidad[\"checks_ejecutados\"]\n    exitosos = _metricas_estabilidad[\"checks_exitosos\"]\n    tasa_exito = (exitosos / total_checks * 100) if total_checks > 0 else 100.0\n    \n    # Calcular score de estabilidad (0-100)\n    # Factores: tasa de éxito (40%), alertas reconocidas (30%), uptime (30%)\n    alertas_gen = _metricas_estabilidad[\"alertas_generadas\"]\n    alertas_ack = _metricas_estabilidad[\"alertas_reconocidas\"]\n    tasa_ack = (alertas_ack / alertas_gen * 100) if alertas_gen > 0 else 100.0\n    \n    uptime_score = min(_metricas_estabilidad[\"uptime_horas\"] / 24 * 100, 100)  # Max 100 después de 24h\n    \n    score_estabilidad = round(\n        (tasa_exito * 0.4) + \n        (tasa_ack * 0.3) + \n        (uptime_score * 0.3),\n        1\n    )\n    \n    return {\n        \"timestamp\": datetime.now(timezone.utc).isoformat(),\n        \"metricas\": {\n            **_metricas_estabilidad,\n            \"tasa_exito_checks\": round(tasa_exito, 1),\n            \"tasa_alertas_reconocidas\": round(tasa_ack, 1),\n            \"score_estabilidad\": score_estabilidad\n        },\n        \"interpretacion\": {\n            \"score_estabilidad\": \"excelente\" if score_estabilidad >= 90 else (\n                \"bueno\" if score_estabilidad >= 70 else (\n                    \"regular\" if score_estabilidad >= 50 else \"crítico\"\n                )\n            ),\n            \"recomendaciones\": []\n        }\n    }",
+      "new": "    metricas_sql = cc_store.metrics()\n    score_estabilidad = metricas_sql.get(\"score_estabilidad\", 0)\n    return {\n        \"timestamp\": datetime.now(timezone.utc).isoformat(),\n        \"metricas\": metricas_sql,\n        \"interpretacion\": {\n            \"score_estabilidad\": \"excelente\" if score_estabilidad >= 90 else (\n                \"bueno\" if score_estabilidad >= 70 else (\n                    \"regular\" if score_estabilidad >= 50 else \"crítico\"\n                )\n            ),\n            \"recomendaciones\": []\n        }\n    }",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/centro_control/routes.py",
+      "old": "# ============================================================================\n# ENDPOINTS: WEBSOCKET PARA NOTIFICACIONES EN TIEMPO REAL\n# ============================================================================",
+      "new": "# ============================================================================\n# ENDPOINTS: BLINDAJE - VERDAD SQL, SIN MOCK\n# ============================================================================\n\n@router.get(\"/blindaje/modulos\")\nasync def obtener_modulos_blindados(current_user: Dict = Depends(get_current_user)):\n    \"\"\"No inventa módulos: reporta el estado real del registro SQL de blindaje.\"\"\"\n    return cc_store.blindaje_registry_status()\n\n# ============================================================================\n# ENDPOINTS: WEBSOCKET PARA NOTIFICACIONES EN TIEMPO REAL\n# ============================================================================",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/CentroControl.jsx",
+      "old": "  const [notificacionesConfig, setNotificacionesConfig] = useState(null);",
+      "new": "  const [notificacionesConfig, setNotificacionesConfig] = useState(null);\n  const [modulosBlindados, setModulosBlindados] = useState([]);\n  const [blindajeStatus, setBlindajeStatus] = useState(null);",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/CentroControl.jsx",
+      "old": "  const fetchNotificacionesConfig = useCallback(async () => {\n    try {\n      const response = await api.get('/notificaciones/config');\n      setNotificacionesConfig(response.data);\n    } catch (err) {\n      logger.error('Error cargando config de notificaciones:', err);\n    }\n  }, []);",
+      "new": "  const fetchNotificacionesConfig = useCallback(async () => {\n    try {\n      const response = await api.get('/notificaciones/config');\n      setNotificacionesConfig(response.data);\n    } catch (err) {\n      logger.error('Error cargando config de notificaciones:', err);\n    }\n  }, []);\n\n  const fetchBlindaje = useCallback(async () => {\n    try {\n      const response = await api.get('/centro-control/blindaje/modulos');\n      setModulosBlindados(response.data.modulos || []);\n      setBlindajeStatus(response.data.status || null);\n    } catch (err) {\n      logger.error('Error cargando blindaje:', err);\n      setModulosBlindados([]);\n      setBlindajeStatus('ERROR');\n    }\n  }, []);",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/CentroControl.jsx",
+      "old": "    if (activeTab === 'notificaciones') {\n      fetchDestinatarios();\n      fetchNotificacionesConfig();\n    }",
+      "new": "    if (activeTab === 'notificaciones') {\n      fetchDestinatarios();\n      fetchNotificacionesConfig();\n    }\n    if (activeTab === 'blindaje') {\n      fetchBlindaje();\n    }",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/CentroControl.jsx",
+      "old": "  // ============================================================================\n  // MOCK DATA PARA ENDPOINTS FALTANTES\n  // ============================================================================\n  \n  /**\n   * MOCK: Módulos blindados\n   * TODO: Crear endpoint GET /api/centro-control/blindaje/modulos\n   */\n  const modulosBlindados = [\n    { id: 'tablero_ejecutivo', nombre: 'Tablero Ejecutivo', fecha_cierre: '2026-04-19', documento: 'CIERRE_Y_BLINDAJE_TABLERO_EJECUTIVO.md' },\n    { id: 'auditoria_compras', nombre: 'Auditoría de Compras', fecha_cierre: '2026-04-19', documento: 'CIERRE_Y_BLINDAJE_AUDITORIA_COMPRAS.md' },\n    { id: 'operaciones_analisis', nombre: 'Operaciones / Análisis', fecha_cierre: '2026-04-19', documento: 'CIERRE_Y_BLINDAJE_OPERACIONES_ANALISIS.md' }\n  ];\n\n  /**\n   * MOCK: Cambios recientes\n   * TODO: Crear endpoint GET /api/centro-control/cambios\n   */",
+      "new": "  // Cambios recientes se derivan de la bitácora SQL ya cargada.",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/CentroControl.jsx",
+      "old": "            <CardContent className=\"space-y-4\">\n              {modulosBlindados.map((modulo, idx) => (",
+      "new": "            <CardContent className=\"space-y-4\">\n              {modulosBlindados.length === 0 && (\n                <EstadoVacio\n                  icon={Lock}\n                  titulo=\"Sin catálogo SQL canónico de blindaje\"\n                  descripcion={blindajeStatus === 'NO_CANONICAL_SQL_REGISTRY' ? 'No se muestran datos simulados. Falta registrar el catálogo canónico en SQL.' : 'No hay módulos de blindaje disponibles.'}\n                />\n              )}\n              {modulosBlindados.map((modulo, idx) => (",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_centro_control_p2b_sql_persistence_contract.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[1]\nROUTES = (ROOT / 'core' / 'centro_control' / 'routes.py').read_text(encoding='utf-8')\nSTORE = (ROOT / 'core' / 'centro_control' / 'sql_store.py').read_text(encoding='utf-8')\nFRONT = (ROOT.parent / 'frontend' / 'src' / 'pages' / 'CentroControl.jsx').read_text(encoding='utf-8')\n\n\ndef test_no_process_local_centro_control_state_remains():\n    for token in ['_historial_eventos: List', '_alertas_activas: List', '_bitacora_cambios: List', '_metricas_estabilidad: Dict']:\n        assert token not in ROUTES\n\n\ndef test_certified_sql_tables_are_the_only_persistence_tables():\n    assert 'dbo.Alertas_Sistema' in STORE\n    assert 'dbo.Scheduler_BitacoraJobs' in STORE\n    assert 'CREATE TABLE' not in STORE.upper()\n    assert 'MONGO' not in STORE.upper()\n\n\ndef test_routes_use_sql_store_and_blindaje_truth_endpoint():\n    assert 'from core.centro_control import sql_store as cc_store' in ROUTES\n    assert '@router.get(\"/blindaje/modulos\")' in ROUTES\n    assert 'cc_store.list_alerts' in ROUTES\n    assert 'cc_store.list_events' in ROUTES\n    assert 'cc_store.list_bitacora' in ROUTES\n    assert 'cc_store.metrics()' in ROUTES\n\n\ndef test_frontend_mock_blindaje_removed():\n    assert \"const modulosBlindados = [\" not in FRONT\n    assert \"api.get('/centro-control/blindaje/modulos')\" in FRONT\n    assert 'Sin catálogo SQL canónico de blindaje' in FRONT\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/core/centro_control/sql_store.py", "backend/core/centro_control/routes.py", "backend/tests/test_centro_control_p2b_sql_persistence_contract.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_centro_control_p2b_sql_persistence_contract.py", "backend/tests/test_sync_monitor_rbac_contract.py", "backend/tests/test_sync_monitor_exact_error_kpi_contract.py"]},
+    {"type": "frontend_build", "directory": "frontend"}
+  ],
+  "constraints": [
+    "NO Production",
+    "NO Mongo",
+    "NO LIVE source connections",
+    "NO DDL or new SQL tables",
+    "Use only dbo.Alertas_Sistema and dbo.Scheduler_BitacoraJobs for persistence because those structures are certified by P2A-R2",
+    "Do not fabricate blindaje rows when no canonical SQL registry exists",
+    "Preserve WebSocket/email/WhatsApp notification flow",
+    "Do not modify Universal Worker structure"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "technical"
+}
