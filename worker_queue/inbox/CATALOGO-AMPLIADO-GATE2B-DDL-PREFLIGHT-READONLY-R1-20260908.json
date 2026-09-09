@@ -1,0 +1,42 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE2B-DDL-PREFLIGHT-READONLY-R1-20260908",
+  "created_at_utc": "2026-09-09T01:57:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4880b88f86c63b7998559591b299ff1fbddd7b85",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "objective": "Gate 2B preflight READ_ONLY para la migracion backend/database/migrations/20260908_catalogo_ampliado_gobierno_core.sql, blob SHA 0178fca34652b41a6e641125d078822055c83483. Confirmar inmediatamente antes de ejecucion que ninguna de las 11 tablas Gobierno_* existe, que los seis maestros canonicos y las columnas objetivo/FK tienen tipos compatibles, y que no existen conflictos de nombres de constraints o indices definidos por el DDL. No ejecutar DDL/DML y no tocar Produccion.",
+  "acceptance": [
+    "READ_ONLY_SQL solamente",
+    "production_touched=false",
+    "las 11 tablas Gobierno_* objetivo tienen object_id NULL",
+    "Sistema_Empresas.EmpresaID existe y es INT",
+    "Usuario_Catalogo.UsuarioID existe y es INT",
+    "Cliente_Catalogo.ClienteID existe y es INT",
+    "Proveedor_Catalogo.ProveedorID existe y es INT",
+    "Cliente_Contactos.ContactoClienteID existe y es INT",
+    "Proveedor_Contactos.ContactoID existe y es INT",
+    "los nombres de constraints e indices del DDL no existen previamente en otros objetos",
+    "sql_readonly_evidence presente",
+    "CERTIFIED_READ_ONLY y percent_complete=100"
+  ],
+  "constraints": ["NO DDL","NO DML","NO Production","NO Mongo","NO cambios de repositorio","usar conexion canonica readonly"],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {"name":"gobierno_target_tables_absent","sql":"SELECT v.TableName, OBJECT_ID('dbo.'+v.TableName,'U') AS object_id FROM (VALUES ('Gobierno_EmpresaConfiguracion'),('Gobierno_Persona'),('Gobierno_PersonaVinculo'),('Gobierno_RolCorporativoCatalogo'),('Gobierno_PersonaEmpresaRol'),('Gobierno_TipoDocumento'),('Gobierno_Documento'),('Gobierno_DocumentoVersion'),('Gobierno_DocumentoMovimiento'),('Gobierno_AlertaRegla'),('Gobierno_AlertaEvento')) v(TableName) ORDER BY v.TableName"},
+        {"name":"canonical_fk_columns_exact","sql":"SELECT t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND ((t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID') OR (t.name='Cliente_Catalogo' AND c.name='ClienteID') OR (t.name='Proveedor_Catalogo' AND c.name='ProveedorID') OR (t.name='Cliente_Contactos' AND c.name='ContactoClienteID') OR (t.name='Proveedor_Contactos' AND c.name='ContactoID')) ORDER BY t.name,c.name"},
+        {"name":"canonical_fk_columns_unique_or_pk","sql":"SELECT t.name AS table_name,c.name AS column_name,i.name AS index_name,i.is_primary_key,i.is_unique,ic.key_ordinal FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.indexes i ON i.object_id=t.object_id JOIN sys.index_columns ic ON ic.object_id=t.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE s.name='dbo' AND i.is_hypothetical=0 AND ((t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID') OR (t.name='Cliente_Catalogo' AND c.name='ClienteID') OR (t.name='Proveedor_Catalogo' AND c.name='ProveedorID') OR (t.name='Cliente_Contactos' AND c.name='ContactoClienteID') OR (t.name='Proveedor_Contactos' AND c.name='ContactoID')) ORDER BY t.name,i.is_primary_key DESC,i.is_unique DESC,i.name"},
+        {"name":"ddl_constraint_name_conflicts","sql":"SELECT o.name AS object_name,o.type_desc,OBJECT_SCHEMA_NAME(o.parent_object_id) AS parent_schema,OBJECT_NAME(o.parent_object_id) AS parent_object FROM sys.objects o WHERE o.name IN ('PK_Gobierno_EmpresaConfiguracion','FK_GobEmpCfg_Empresa','FK_GobEmpCfg_Usuario','CK_GobEmpCfg_Dias','PK_Gobierno_Persona','UQ_GobPersona_UUID','FK_GobPersona_UsuarioActualizacion','PK_Gobierno_PersonaVinculo','FK_GobPV_Persona','FK_GobPV_Usuario','FK_GobPV_Cliente','FK_GobPV_Proveedor','FK_GobPV_ContactoCliente','FK_GobPV_ContactoProveedor','FK_GobPV_UsuarioAlta','CK_GobPV_UnDestino','PK_Gobierno_RolCorporativoCatalogo','UQ_GobRol_Codigo','PK_Gobierno_PersonaEmpresaRol','FK_GobPER_Persona','FK_GobPER_Empresa','FK_GobPER_Rol','FK_GobPER_UsuarioAlta','CK_GobPER_Pct','CK_GobPER_Vigencia','PK_Gobierno_TipoDocumento','UQ_GobTipoDoc_Codigo','CK_GobTipoDoc_Prop','CK_GobTipoDoc_Sens','PK_Gobierno_Documento','UQ_GobDoc_UUID','FK_GobDoc_Tipo','FK_GobDoc_Persona','FK_GobDoc_Empresa','FK_GobDoc_Rel','FK_GobDoc_UsuarioAlta','CK_GobDoc_Prop','CK_GobDoc_Estado','PK_Gobierno_DocumentoVersion','FK_GobDocVer_Doc','FK_GobDocVer_Revisor','FK_GobDocVer_UsuarioAlta','UQ_GobDocVer_Num','UQ_GobDocVer_Hash','CK_GobDocVer_Num','CK_GobDocVer_Revision','CK_GobDocVer_Fuente','CK_GobDocVer_Fechas','CK_GobDocVer_OCR','PK_Gobierno_DocumentoMovimiento','FK_GobMov_Doc','FK_GobMov_Ver','FK_GobMov_Usuario','PK_Gobierno_AlertaRegla','FK_GobAR_Emp','FK_GobAR_Tipo','FK_GobAR_UsuarioObjetivo','FK_GobAR_UsuarioAlta','CK_GobAR_Dias','CK_GobAR_Canal','PK_Gobierno_AlertaEvento','FK_GobAE_Ver','FK_GobAE_Regla','UQ_GobAE_Idem','CK_GobAE_Est') ORDER BY o.name"},
+        {"name":"ddl_index_name_conflicts","sql":"SELECT i.name AS index_name,OBJECT_SCHEMA_NAME(i.object_id) AS schema_name,OBJECT_NAME(i.object_id) AS table_name FROM sys.indexes i WHERE i.name IN ('UX_GobPersona_RFC','UX_GobPersona_CURP','UX_GobPV_Usuario','UX_GobPV_Cliente','UX_GobPV_Proveedor','UX_GobPV_ContactoCliente','UX_GobPV_ContactoProveedor','IX_GobPER_EmpresaRol','IX_GobPER_Persona','IX_GobDoc_Empresa','IX_GobDoc_Persona','IX_GobDocVer_Vencimiento','IX_GobMov_DocFecha','IX_GobAR_EmpTipo','IX_GobAE_Programada') ORDER BY i.name"}
+      ]
+    }
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
