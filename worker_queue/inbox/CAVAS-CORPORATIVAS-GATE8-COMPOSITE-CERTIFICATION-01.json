@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE8-COMPOSITE-CERTIFICATION-01",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2f532f2649921dcdf391665df966245b86206631",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Emitir certificacion compuesta formal de Gate 8 de Cavas Corporativas sin repetir trabajo ni modificar logica funcional. Consolidar evidencia terminal ya cerrada de UX frontend, E2E integracion, SQL fisico y RBAC fisico en un dossier canonico, y certificar solo esa atestacion documental en Development. Produccion prohibida.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/CAVAS/CAVAS_CORPORATIVAS_GATE8_COMPOSITE_CERTIFICATION.md",
+      "content": "# Cavas Corporativas - Gate 8 Composite Certification\n\nEste gate no ejecuta ni repite trabajo funcional. Consolida evidencia terminal ya cerrada.\n\n## Evidencias fuente\n\n1. UX Frontend\n- Job: `CAVAS-CORPORATIVAS-GATE6-FRONTEND-UX-R2-20260908`\n- Terminal esperado/ya observado: `CERTIFIED`, `100%`, `quality_gate=PASS`, `tests=PASS`, `production_touched=false`.\n\n2. E2E Integration\n- Job: `CAVAS-CORPORATIVAS-GATE6-E2E-INTEGRATION-R2-20260908`\n- Terminal esperado/ya observado: `CERTIFIED`, `100%`, `quality_gate=PASS`, `tests=PASS`, `production_touched=false`.\n\n3. SQL Physical Recertification\n- Job: `CAVAS-CORPORATIVAS-GATE8-SQL-RECERT-R2`\n- Terminal esperado/ya observado: `CERTIFIED_READ_ONLY`, `100%`, `quality_gate=PASS`, `tests=PASS`, `production_touched=false`.\n\n4. RBAC Physical Recertification\n- Job: `CAVAS-CORPORATIVAS-GATE8-RBAC-PHYSICAL-RECERT-R3`\n- Terminal esperado/ya observado: `CERTIFIED_READ_ONLY`, `100%`, `quality_gate=PASS`, `tests=PASS`, `production_touched=false`.\n- Permisos fisicos confirmados: `cava_socios.ver` y `cava_socios.consumos.crear`.\n\n## Decision Gate 8\n\nLa cobertura compuesta UX + E2E + SQL + RBAC queda declarada completa si las cuatro evidencias fuente permanecen terminales y certificadas. Este dossier no altera codigo, rutas, servicios, SQL, RBAC ni frontend.\n\n## Restricciones\n- Sin cambios funcionales.\n- Sin DDL/DML.\n- Sin Produccion.\n- Sin nuevas fuentes o RBAC paralelo.\n- La unica mutacion de este gate es este dossier de certificacion.\n"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"}
+  ],
+  "constraints": [
+    "NO functional logic changes",
+    "NO SQL DDL/DML",
+    "NO Production",
+    "NO repeated UX/E2E/SQL/RBAC execution",
+    "Only persist composite certification dossier",
+    "Certification target: CERTIFIED + 100% + PASS + production_touched=false"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
