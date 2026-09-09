@@ -1,0 +1,58 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"CATALOGO-AMPLIADO-GATE7A-REGRESSION-CERT-R3-20260908",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
+  "production_allowed":false,
+  "objective":"Gate 7A Catalogo Ampliado. Certificar regresion completa posterior a Gate6 usando exclusivamente archivos reales del modulo. No modificar codigo funcional. Persistir dossier R3 y ejecutar py_compile, contratos Gate2/Gate4/Gate5/Gate6, runtime Gate6, frontend build canonico y git diff gate. Fallar cerrado ante cualquier regresion. Production=false.",
+  "actions":[
+    {
+      "type":"write_file",
+      "path":"docs/catalogo_ampliado/CATALOGO_AMPLIADO_GATE7A_REGRESSION_CERTIFICATION_R3.md",
+      "content":"# Catalogo Ampliado - Gate 7A Regression Certification R3\n\nScope: regression-only certification after Gate 6 using existing canonical module files.\n\nRequired gates: Python compile, Gate2 DDL contract, backend Gate4 contract, frontend Gate5 contract, Gate6 runtime/contract, canonical frontend build/navigation, clean deterministic diff.\n\nNo functional code mutation. No Production. Any failed check blocks certification.\n"
+    }
+  ],
+  "checks":[
+    {
+      "type":"py_compile",
+      "paths":[
+        "backend/modules/catalogo_ampliado/__init__.py",
+        "backend/modules/catalogo_ampliado/repository.py",
+        "backend/modules/catalogo_ampliado/routes.py",
+        "backend/modules/catalogo_ampliado/schemas.py",
+        "backend/tests/test_catalogo_ampliado_gate2_ddl_contract.py",
+        "backend/tests/test_catalogo_ampliado_backend_gate4.py",
+        "backend/tests/test_catalogo_ampliado_frontend_gate5_contract.py",
+        "backend/tests/test_catalogo_ampliado_gate6_runtime.py",
+        "backend/tests/test_catalogo_ampliado_gate6_contract.py",
+        "backend/tests/test_catalogo_ampliado_gate6_e2e_real.py"
+      ]
+    },
+    {
+      "type":"pytest",
+      "paths":[
+        "backend/tests/test_catalogo_ampliado_gate2_ddl_contract.py",
+        "backend/tests/test_catalogo_ampliado_backend_gate4.py",
+        "backend/tests/test_catalogo_ampliado_frontend_gate5_contract.py",
+        "backend/tests/test_catalogo_ampliado_gate6_runtime.py",
+        "backend/tests/test_catalogo_ampliado_gate6_contract.py"
+      ]
+    },
+    {"type":"frontend_build","directory":"frontend"},
+    {"type":"git_diff_check"}
+  ],
+  "constraints":[
+    "NO Production",
+    "NO functional code mutation",
+    "NO Mongo",
+    "NO hardcodes",
+    "SQL-first",
+    "Use canonical repository Python and frontend package manager",
+    "Gate6 real SQL E2E is already separately certified and is not rerun in regression-only Gate7A",
+    "PASS only if every check passes and blockers is empty"
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
