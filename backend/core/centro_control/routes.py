@@ -53,6 +53,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSock
 from pydantic import BaseModel
 
 from core.security import get_current_user
+from core.rbac.middleware import require_explicit_permission
 from core.health_checker import (
     get_system_health,
     create_health_summary,
@@ -355,7 +356,7 @@ async def _enviar_whatsapp_alerta_critica(alerta: Dict[str, Any]):
 # ============================================================================
 
 @router.get("/salud")
-async def obtener_salud_sistema(current_user: Dict = Depends(get_current_user)):
+async def obtener_salud_sistema(current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))):
     """
     Obtiene el reporte completo de salud del sistema.
     
@@ -401,7 +402,7 @@ async def obtener_salud_sistema(current_user: Dict = Depends(get_current_user)):
 
 
 @router.get("/salud/resumen")
-async def obtener_resumen_ejecutivo(current_user: Dict = Depends(get_current_user)):
+async def obtener_resumen_ejecutivo(current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))):
     """
     Obtiene un resumen ejecutivo de salud para el dashboard.
     
@@ -435,7 +436,7 @@ async def obtener_resumen_ejecutivo(current_user: Dict = Depends(get_current_use
 @router.post("/regresiones")
 async def ejecutar_checks_regresion(
     request: RegressionCheckRequest = None,
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))
 ):
     """
     Ejecuta los checks de regresión para todos los módulos o los especificados.
@@ -505,7 +506,7 @@ async def ejecutar_checks_regresion(
 @router.get("/regresiones/{modulo}")
 async def obtener_regresiones_modulo(
     modulo: str,
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))
 ):
     """
     Ejecuta checks de regresión para un módulo específico.
@@ -541,7 +542,7 @@ async def obtener_regresiones_modulo(
 # ============================================================================
 
 @router.get("/fuentes")
-async def obtener_estado_fuentes(current_user: Dict = Depends(get_current_user)):
+async def obtener_estado_fuentes(current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))):
     """
     Obtiene el estado de todas las fuentes de datos configuradas.
     
@@ -587,7 +588,7 @@ async def obtener_estado_fuentes(current_user: Dict = Depends(get_current_user))
 async def obtener_alertas(
     solo_activas: bool = Query(True, description="Solo alertas no reconocidas"),
     limite: int = Query(20, ge=1, le=100),
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))
 ):
     """
     Obtiene las alertas del sistema.
@@ -607,7 +608,7 @@ async def obtener_alertas(
 @router.post("/alertas/acknowledge")
 async def reconocer_alerta(
     request: AlertAcknowledgeRequest,
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))
 ):
     """
     Reconoce (acknowledge) una alerta para indicar que fue revisada.
@@ -633,7 +634,7 @@ async def obtener_historial(
     limite: int = Query(50, ge=1, le=200),
     tipo: Optional[str] = Query(None, description="Filtrar por tipo de evento"),
     modulo: Optional[str] = Query(None, description="Filtrar por módulo"),
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))
 ):
     """
     Obtiene el historial de eventos del Centro de Control.
@@ -656,7 +657,7 @@ async def obtener_historial(
 # ============================================================================
 
 @router.get("/matriz-resolucion")
-async def obtener_matriz_resolucion(current_user: Dict = Depends(get_current_user)):
+async def obtener_matriz_resolucion(current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))):
     """
     Obtiene la matriz de resolución de conexiones.
     
@@ -709,7 +710,7 @@ async def ping_centro_control():
 # ============================================================================
 
 @router.get("/estado")
-async def obtener_estado_general(current_user: Dict = Depends(get_current_user)):
+async def obtener_estado_general(current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))):
     """
     Obtiene el estado general consolidado del CENTRO DE CONTROL EDARSA.
     
@@ -780,7 +781,7 @@ async def obtener_estado_general(current_user: Dict = Depends(get_current_user))
 # ============================================================================
 
 @router.get("/jobs")
-async def obtener_estado_jobs(current_user: Dict = Depends(get_current_user)):
+async def obtener_estado_jobs(current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))):
     """
     Obtiene el estado de jobs y automatizaciones del sistema.
     
@@ -873,7 +874,7 @@ async def obtener_estado_jobs(current_user: Dict = Depends(get_current_user)):
 @router.post("/jobs")
 async def crear_scheduler_job(
     payload: SchedulerJobCreateRequest,
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))
 ):
     """Crea/actualiza un job SQL-first visible desde Centro de Control."""
     try:
@@ -989,7 +990,7 @@ async def crear_scheduler_job(
 async def ejecutar_scheduler_job_manual(
     job_id: str,
     payload: SchedulerJobRunRequest = SchedulerJobRunRequest(),
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))
 ):
     """Ejecuta manualmente un job permitido desde Centro de Control."""
     try:
@@ -1084,7 +1085,7 @@ async def obtener_bitacora(
     limite: int = Query(50, ge=1, le=200),
     tipo: Optional[str] = Query(None, description="Filtrar por tipo: cambio_codigo, deploy, config, incidente, hotfix"),
     modulo: Optional[str] = Query(None, description="Filtrar por módulo"),
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))
 ):
     """
     Obtiene la bitácora de cambios del sistema.
@@ -1107,7 +1108,7 @@ async def obtener_bitacora(
 @router.post("/bitacora")
 async def registrar_cambio_bitacora(
     request: BitacoraEntryRequest,
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))
 ):
     """
     Registra un cambio en la bitácora del sistema.
@@ -1147,7 +1148,7 @@ async def registrar_cambio_bitacora(
 # ============================================================================
 
 @router.get("/metricas")
-async def obtener_metricas_estabilidad(current_user: Dict = Depends(get_current_user)):
+async def obtener_metricas_estabilidad(current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))):
     """
     Obtiene métricas de estabilidad del sistema.
     
@@ -1183,7 +1184,7 @@ async def obtener_metricas_estabilidad(current_user: Dict = Depends(get_current_
 # ============================================================================
 
 @router.get("/blindaje/modulos")
-async def obtener_modulos_blindados(current_user: Dict = Depends(get_current_user)):
+async def obtener_modulos_blindados(current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))):
     """No inventa módulos: reporta el estado real del registro SQL de blindaje."""
     return cc_store.blindaje_registry_status()
 
@@ -1242,7 +1243,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 @router.get("/ws/status")
-async def websocket_status(current_user: Dict = Depends(get_current_user)):
+async def websocket_status(current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))):
     """
     Obtiene el estado del sistema de notificaciones WebSocket.
     """
@@ -1253,7 +1254,7 @@ async def websocket_status(current_user: Dict = Depends(get_current_user)):
 @router.post("/notificar/alerta-critica")
 async def notificar_alerta_critica(
     alerta: Dict[str, Any],
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))
 ):
     """
     Envía una notificación de alerta crítica a todos los clientes conectados.
@@ -1269,7 +1270,7 @@ async def notificar_alerta_critica(
 
 
 @router.post("/notificar/test")
-async def notificar_test(current_user: Dict = Depends(get_current_user)):
+async def notificar_test(current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))):
     """
     Envía una notificación de prueba a todos los clientes conectados.
     """
@@ -1302,7 +1303,7 @@ async def notificar_test(current_user: Dict = Depends(get_current_user)):
 # ============================================================================
 
 @router.get("/email/config")
-async def obtener_config_email(current_user: Dict = Depends(get_current_user)):
+async def obtener_config_email(current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))):
     """
     Obtiene el estado de configuración del servicio de notificaciones por email.
     """
@@ -1315,7 +1316,7 @@ async def obtener_config_email(current_user: Dict = Depends(get_current_user)):
 @router.post("/email/test")
 async def enviar_email_prueba(
     recipient: Optional[str] = None,
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))
 ):
     """
     Envía un email de prueba para verificar la configuración SMTP.
@@ -1336,7 +1337,7 @@ async def enviar_email_prueba(
 @router.post("/email/alerta-critica")
 async def enviar_alerta_critica_email(
     alerta: Dict[str, Any],
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))
 ):
     """
     Envía una alerta crítica por email a todos los destinatarios configurados.
@@ -1373,7 +1374,7 @@ async def enviar_alerta_critica_email(
 # ============================================================================
 
 @router.get("/whatsapp/config")
-async def obtener_config_whatsapp(current_user: Dict = Depends(get_current_user)):
+async def obtener_config_whatsapp(current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))):
     """
     Obtiene el estado de configuración del servicio de notificaciones por WhatsApp.
     """
@@ -1386,7 +1387,7 @@ async def obtener_config_whatsapp(current_user: Dict = Depends(get_current_user)
 @router.post("/whatsapp/test")
 async def enviar_whatsapp_prueba(
     recipient: Optional[str] = None,
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))
 ):
     """
     Envía un mensaje WhatsApp de prueba para verificar la configuración de Twilio.
@@ -1410,7 +1411,7 @@ async def enviar_whatsapp_prueba(
 @router.post("/whatsapp/alerta-critica")
 async def enviar_alerta_critica_whatsapp(
     alerta: Dict[str, Any],
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))
 ):
     """
     Envía una alerta crítica por WhatsApp a todos los destinatarios configurados.
@@ -1443,7 +1444,7 @@ async def enviar_alerta_critica_whatsapp(
 
 
 @router.get("/notificaciones/config")
-async def obtener_config_notificaciones(current_user: Dict = Depends(get_current_user)):
+async def obtener_config_notificaciones(current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))):
     """
     Obtiene el estado de configuración de TODOS los servicios de notificaciones:
     - Email (SMTP EDARSA)
@@ -1487,7 +1488,7 @@ async def obtener_config_notificaciones(current_user: Dict = Depends(get_current
 async def listar_destinatarios(
     tipo: Optional[str] = Query(None, description="Filtrar por tipo: email o whatsapp"),
     solo_activos: bool = Query(False, description="Solo mostrar destinatarios activos"),
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))
 ):
     """
     Lista todos los destinatarios de alertas configurados.
@@ -1507,7 +1508,7 @@ async def listar_destinatarios(
 
 
 @router.get("/destinatarios/resumen")
-async def resumen_destinatarios(current_user: Dict = Depends(get_current_user)):
+async def resumen_destinatarios(current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))):
     """
     Obtiene un resumen de los destinatarios configurados por tipo.
     """
@@ -1521,7 +1522,7 @@ async def resumen_destinatarios(current_user: Dict = Depends(get_current_user)):
 @router.post("/destinatarios")
 async def crear_destinatario(
     request: RecipientCreateRequest,
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))
 ):
     """
     Agrega un nuevo destinatario de alertas.
@@ -1556,7 +1557,7 @@ async def crear_destinatario(
 async def actualizar_destinatario(
     recipient_id: str,
     request: RecipientUpdateRequest,
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))
 ):
     """
     Actualiza un destinatario existente.
@@ -1586,7 +1587,7 @@ async def actualizar_destinatario(
 @router.delete("/destinatarios/{recipient_id}")
 async def eliminar_destinatario(
     recipient_id: str,
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(require_explicit_permission("CENTRO_CONTROL_VER"))
 ):
     """
     Elimina un destinatario de alertas.
