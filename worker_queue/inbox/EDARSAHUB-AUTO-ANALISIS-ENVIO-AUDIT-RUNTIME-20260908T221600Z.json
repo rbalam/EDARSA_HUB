@@ -1,0 +1,13 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-AUTO-ANALISIS-ENVIO-AUDIT-RUNTIME-20260908T221600Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Auditar en solo lectura evidencia real de ejecuciones y envios automaticos de analisis de inventarios. Revisar ultimas ejecuciones, ultimos envios y folios procesados para determinar si el scheduler, generacion y entrega estan funcionando. Sin cambios, sin POS LIVE, sin Mongo, sin DDL/DML ni Produccion.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[{"name":"latest_automation_runs","sql":"SELECT TOP (50) * FROM dbo.automatizacion_inventarios_ejecuciones ORDER BY fecha_inicio DESC"},{"name":"latest_automation_sends","sql":"SELECT TOP (100) * FROM dbo.automatizacion_inventarios_envios ORDER BY created_at DESC"},{"name":"latest_processed_folios","sql":"SELECT TOP (100) * FROM dbo.automatizacion_inventarios_folios_procesados ORDER BY created_at DESC"}]}],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0","chat":"Validacion envios automaticos analisis inventarios"},
+  "human_summary_language":"es"
+}
