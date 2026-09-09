@@ -1,0 +1,35 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate4b-r4-reuse-configured-sql-access-v1-20260909",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "5b3c1e5ffa5e83623e054bcd0b1b36ccc1c05ddb",
+  "objective": "COA Gate 4B R4: reutilizar el acceso SQL ya configurado y ya usado por migraciones Development existentes: usuario HRLectura + secret EDARSAHUB_SQL_PASSWORD. Mantener validacion explicita de identidad y permisos CREATE TABLE/ALTER dbo antes de ejecutar. Re-disparar el workflow actualizando solo RERUN=4. No modificar DDL ni rollback. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA",
+    "chat": "coa-gate4b-r4-reuse-configured-sql-access-v1-20260909"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/coa-core-development-migration.yml",
+      "expected_count": 1,
+      "old": "      - name: Resolve writer and verify DDL permission\n        env:\n          MIGRATION_USER: ${{ secrets.EDARSAHUB_SQL_MIGRATION_USER }}\n          MIGRATION_PASSWORD: ${{ secrets.EDARSAHUB_SQL_MIGRATION_PASSWORD }}\n        shell: bash\n        run: |\n          set -euo pipefail\n          test -n \"${MIGRATION_USER:-}\"\n          test -n \"${MIGRATION_PASSWORD:-}\"\n          echo \"EDARSAHUB_SQL_USER=${MIGRATION_USER}\" >> \"$GITHUB_ENV\"\n          echo \"EDARSAHUB_SQL_PASSWORD=${MIGRATION_PASSWORD}\" >> \"$GITHUB_ENV\"\n          python - <<'PY' | tee evidence/writer-permissions.txt\n          import os,pymssql\n          conn=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['MIGRATION_USER'],password=os.environ['MIGRATION_PASSWORD'],timeout=60,login_timeout=15)\n          cur=conn.cursor(as_dict=True)\n          cur.execute(\"SELECT COALESCE(HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE TABLE'),0) can_create, COALESCE(HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER'),0) can_alter_schema\")\n          row=cur.fetchone(); print(row)\n          cur.close(); conn.close()\n          if int(row['can_create'])!=1 or int(row['can_alter_schema'])!=1: raise SystemExit('COA_DDL_PERMISSION_NOT_CONFIRMED')\n          PY",
+      "new": "      - name: Resolve configured SQL access and verify DDL permission\n        env:\n          EDARSAHUB_SQL_USER: HRLectura\n          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}\n        shell: bash\n        run: |\n          set -euo pipefail\n          test -n \"${EDARSAHUB_SQL_PASSWORD:-}\"\n          echo \"EDARSAHUB_SQL_USER=HRLectura\" >> \"$GITHUB_ENV\"\n          echo \"EDARSAHUB_SQL_PASSWORD=${EDARSAHUB_SQL_PASSWORD}\" >> \"$GITHUB_ENV\"\n          python - <<'PY' | tee evidence/writer-permissions.txt\n          import os,pymssql\n          conn=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15)\n          cur=conn.cursor(as_dict=True)\n          cur.execute(\"SELECT DB_NAME() database_name,SUSER_SNAME() login_name,COALESCE(HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE TABLE'),0) can_create,COALESCE(HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER'),0) can_alter_schema\")\n          row=cur.fetchone(); print(row)\n          cur.close(); conn.close()\n          if row['database_name']!='EDARSAHUB' or row['login_name']!='HRLectura': raise SystemExit('COA_DDL_IDENTITY_MISMATCH')\n          if int(row['can_create'])!=1 or int(row['can_alter_schema'])!=1: raise SystemExit('COA_DDL_PERMISSION_NOT_CONFIRMED')\n          PY"
+    },
+    {
+      "type": "replace_text",
+      "path": "ops/migrations/requests/COA-CORE-20260909.execute",
+      "expected_count": 1,
+      "old": "COA_CORE_DEVELOPMENT_MIGRATION\nGATE=4B\nSOURCE_GATE4A_SHA=59f52d06942148f0c9fb2f499e598ebcd563247c\nRERUN=3\nPRODUCTION=false\n",
+      "new": "COA_CORE_DEVELOPMENT_MIGRATION\nGATE=4B\nSOURCE_GATE4A_SHA=59f52d06942148f0c9fb2f499e598ebcd563247c\nRERUN=4\nSQL_ACCESS=EXISTING_CONFIGURED\nPRODUCTION=false\n"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
