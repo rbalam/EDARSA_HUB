@@ -1,0 +1,32 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE8-UX-FUNCTIONAL-CERTIFICATION-01",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Certificar formalmente Gate 8 UX funcional de Cavas Corporativas reutilizando la implementacion ya integrada y certificada en CAVAS-CORPORATIVAS-GATE6-FRONTEND-UX-R2-20260908. Validar frontend, rutas backend, RBAC y flujo evaluar/aplicar sin cambiar logica funcional ni tocar Produccion.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/CAVAS/CAVAS_CORPORATIVAS_GATE8_UX_FUNCTIONAL_CERTIFICATION.md",
+      "content": "# Cavas Corporativas - Gate 8 UX Functional Certification\n\nCertificacion formal de la UX funcional ya integrada.\n\n## Alcance\n- Pantalla CavasCorporativasDashboard.\n- Ruta frontend /cavas-corporativas.\n- Consumo backend /cavas/corporativas/evaluar y /cavas/corporativas/aplicar.\n- Contexto de unidad via useAccessContext.\n- RBAC backend autoritativo.\n- Estados de respuesta y errores cubiertos por tests de routes.\n- Sin fuentes paralelas, sin mocks productivos, sin Produccion.\n\n## Evidencia previa reutilizada\nCAVAS-CORPORATIVAS-GATE6-FRONTEND-UX-R2-20260908: CERTIFIED, 100%, PASS.\n\nLa certificacion de este Gate 8 requiere build frontend PASS y tests backend corporativos PASS.\n"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"},
+    {"type":"py_compile","paths":["backend/modules/cavas_corporativas/routes.py","backend/modules/cavas_corporativas/service.py","backend/modules/cavas_corporativas/repository.py","backend/modules/cavas_corporativas/domain.py"]},
+    {"type":"pytest","paths":["backend/tests/test_cavas_corporativas_routes.py","backend/tests/test_cavas_corporativas_service.py","backend/tests/test_cavas_corporativas_repository.py","backend/tests/test_cavas_corporativas_domain.py"]},
+    {"type":"frontend_build","directory":"frontend"}
+  ],
+  "constraints": [
+    "NO Production",
+    "NO new functional logic",
+    "NO parallel routes/services",
+    "NO RBAC bypass",
+    "Frontend consumes canonical backend only"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
