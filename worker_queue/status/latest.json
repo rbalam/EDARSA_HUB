@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "ba11768eaa287511523880e8009da4475279bc55",
-  "generated_at_utc": "2026-09-09T01:38:59Z",
+  "generated_at_utc": "2026-09-09T01:41:16Z",
   "history": {
     "done_total_local": 216,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 327,
-    "results_total_local": 489
+    "rejected_total_local": 328,
+    "results_total_local": 490
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1626,
+      "age_seconds": 1763,
       "job_id": "production-postdeploy-smoke-v1-20260908",
       "reasons": [
         "INVALID_TARGET_BRANCH",
@@ -24,259 +24,253 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2909,
+      "age_seconds": 3046,
       "job_id": "BOS-DIRECCION-E2E-INFORME-EJECUTIVO-GATE7-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1584,
+      "age_seconds": 1721,
       "job_id": "BOS-DIRECCION-E2E-INFORME-EJECUTIVO-GATE7-R2-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 664,
+      "age_seconds": 801,
       "job_id": "BOS-DIRECCION-E2E-INFORME-EJECUTIVO-GATE7-R3-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2569,
+      "age_seconds": 2706,
       "job_id": "CATALOGO-AMPLIADO-GATE1-READONLY-SCHEMA-R4-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3368,
+      "age_seconds": 4,
+      "job_id": "CATALOGO-AMPLIADO-GATE2-DDL-DESIGN-CERT-R1-20260908",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3505,
       "job_id": "CAVAS-BOS-V1-CANONICAL-AUDIT-03",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 332,
+      "age_seconds": 469,
       "job_id": "CAVAS-BOS-V1-CANONICAL-AUDIT-04",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3501,
-      "job_id": "CAVAS-CORPORATIVAS-GATE4-SQL-REPOSITORY-SERVICE-01",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 391,
+      "age_seconds": 528,
       "job_id": "CAVAS-CORPORATIVAS-GATE5-API-RBAC-E2E-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2310,
+      "age_seconds": 2447,
       "job_id": "CAVAS-CORPORATIVAS-GATE5-RBAC-CONTRACT-AUDIT-01",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1201,
+      "age_seconds": 1338,
       "job_id": "CAVAS-CORPORATIVAS-GATE5-RBAC-CONTRACT-AUDIT-R2-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3252,
+      "age_seconds": 3389,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P2A-PERSISTENCE-PREFLIGHT-20260908T1810Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1655,
+      "age_seconds": 1792,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P2A-R2-PERSISTENCE-PREFLIGHT-20260908T1909Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 296,
+      "age_seconds": 433,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P2B-R2-METRICS-BLINDAJE-TRUTH-20260908T1928Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 868,
+      "age_seconds": 1005,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P2B-SQL-PERSISTENCE-NO-MOCK-20260908T1915Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3473,
-      "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-CANONICAL-SOURCE-CERT-R2C-20260908T175300Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 83,
+      "age_seconds": 220,
       "job_id": "EDARSAHUB-INVENTARIOS-R2D-01-OBJECTS-20260908T185500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 64,
+      "age_seconds": 201,
       "job_id": "EDARSAHUB-INVENTARIOS-R2D-02-INVENTORY-COLUMNS-20260908T185501Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 57,
+      "age_seconds": 194,
       "job_id": "EDARSAHUB-INVENTARIOS-R2D-03-WAREHOUSE-COLUMNS-20260908T185502Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 45,
+      "age_seconds": 182,
       "job_id": "EDARSAHUB-INVENTARIOS-R2D-04-UNIDADES-COLUMNS-20260908T185503Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 602,
+      "age_seconds": 739,
       "job_id": "RRR-GATE1-DOSSIER-CERT-R3-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3245,
+      "age_seconds": 3382,
       "job_id": "RRR-GATE1-READONLY-AUDIT-V1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1459,
+      "age_seconds": 1596,
       "job_id": "RRR-GATE1-READONLY-EVIDENCE-R2-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1794,
+      "age_seconds": 1931,
       "job_id": "WORKER-READONLY-PUBLISHER-R9-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3122,
+      "age_seconds": 3259,
       "job_id": "WORKER-SQL-READONLY-EVIDENCE-PRESERVE-R8-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 809,
+      "age_seconds": 946,
       "job_id": "coa-gate2a-sql-canonical-audit-v1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 624,
+      "age_seconds": 761,
       "job_id": "coa-gate2b-targeted-canonical-audit-v1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 156,
+      "age_seconds": 293,
       "job_id": "coa-gate2c-canonical-model-dossier-v1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2743,
+      "age_seconds": 2880,
       "job_id": "coa-satelite-bootstrap-v4-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1810,
+      "age_seconds": 1947,
       "job_id": "coa-satelite-bootstrap-v5-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2897,
+      "age_seconds": 3034,
       "job_id": "cxp-v15-pytest-isolate-authorizer-r1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2888,
+      "age_seconds": 3025,
       "job_id": "cxp-v15-pytest-isolate-canonical-auth-r1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2880,
+      "age_seconds": 3017,
       "job_id": "cxp-v15-pytest-isolate-dashboard-r1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2708,
+      "age_seconds": 2845,
       "job_id": "cxp-v15-pytest-isolate-request-contract-r1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2635,
+      "age_seconds": 2772,
       "job_id": "cxp-v15-request-test1-isolate-r1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2594,
+      "age_seconds": 2731,
       "job_id": "cxp-v15-request-test2-isolate-r1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2448,
+      "age_seconds": 2585,
       "job_id": "cxp-v16-render-order-isolate-r1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2562,
+      "age_seconds": 2699,
       "job_id": "finanzas-decision-pago-authoritative-v16-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2390,
+      "age_seconds": 2528,
       "job_id": "finanzas-decision-pago-authoritative-v17-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2293,
+      "age_seconds": 2430,
       "job_id": "finanzas-decision-pago-authoritative-v18-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1787,
+      "age_seconds": 1924,
       "job_id": "finanzas-decision-pago-authoritative-v18r2-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2917,
+      "age_seconds": 3054,
       "job_id": "production-release-gate-v1-20260908",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3082,
+      "age_seconds": 3219,
       "job_id": "worker-mpro-130qro-origen-readonly-audit-r2-20260909T0045Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 94,
+      "age_seconds": 231,
       "job_id": "worker-mpro-direct-source-probe-r1-20260909T0056Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -289,15 +283,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 43,
+  "queue_result_ready_recent": 42,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-09T01:38:54Z",
-    "last_receive_utc": "2026-09-09T01:38:54Z",
-    "last_terminal_utc": "2026-09-09T01:38:13Z",
-    "pid": "29281"
+    "last_cycle_utc": "2026-09-09T01:41:15Z",
+    "last_receive_utc": "2026-09-09T01:41:10Z",
+    "last_terminal_utc": "2026-09-09T01:41:11Z",
+    "pid": "952"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
