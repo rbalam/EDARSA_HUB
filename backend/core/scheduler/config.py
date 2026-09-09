@@ -142,6 +142,12 @@ class SchedulerConfig(BaseModel):
         # Resumen Diario Ejecutivo de Excepciones (correo matutino)
         resumen_diario_exc_cron = os.environ.get("SCHEDULER_RESUMEN_DIARIO_EXC_CRON", "0 8 * * *")  # 08:00 diario
         resumen_diario_exc_enabled = os.environ.get("SCHEDULER_RESUMEN_DIARIO_EXC_ENABLED", "true").lower() == "true"
+
+        # BOS Direccion: snapshot vivo recurrente (default cada hora)
+        bos_direction_status_interval = int(os.environ.get("SCHEDULER_BOS_DIRECTION_STATUS_INTERVAL_SECONDS", "3600"))
+        bos_direction_status_enabled = os.environ.get("SCHEDULER_BOS_DIRECTION_STATUS_ENABLED", "true").lower() == "true"
+        if bos_direction_status_interval < 60:
+            raise ValueError("SCHEDULER_BOS_DIRECTION_STATUS_INTERVAL_SECONDS must be >= 60")
         
         jobs = {
             "sla_processor": JobConfig(
@@ -373,6 +379,19 @@ class SchedulerConfig(BaseModel):
                 interval_seconds=86400,
                 batch_size=1000,
                 timeout_seconds=300
+            ),
+            # BOS Direccion: status vivo basado en evidencia certificada
+            "bos_direction_status": JobConfig(
+                job_id="bos_direction_status",
+                job_name="BOS Direccion - Status Vivo",
+                description="Genera snapshot BOS de Direccion, historico inmutable y latest desde evidencia certificada.",
+                enabled=bos_direction_status_enabled,
+                interval_seconds=bos_direction_status_interval,
+                batch_size=1,
+                timeout_seconds=300,
+                max_instances=1,
+                coalesce=True,
+                misfire_grace_time=300
             )
         }
         

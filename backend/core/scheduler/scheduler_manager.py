@@ -57,6 +57,7 @@ from .jobs.sync_compras_job import (
 from .jobs.alertas_excepciones_job import execute_alertas_excepciones_notifier
 # Resumen Diario Ejecutivo de Excepciones (correo matutino)
 from .jobs.resumen_diario_excepciones_job import execute_resumen_diario_excepciones
+from .jobs.bos_direction_status_job import execute_bos_direction_status
 
 from .persistent_state_repository import SchedulerPersistentStateRepository
 logger = logging.getLogger(__name__)
@@ -1130,6 +1131,51 @@ class SchedulerManager:
         finally:
             await lock.release()
 
+    async def _run_bos_direction_status_job(self):
+        """Publica el status vivo BOS de Direccion mediante el ciclo certificado."""
+        job_config = self.config.jobs.get("bos_direction_status")
+        if not job_config or not job_config.enabled:
+            logger.debug("[BOS_DIRECTION_STATUS] Deshabilitado por configuración")
+            return
+
+        lock_manager = get_lock_manager(self.db)
+        lock = lock_manager.get_lock("bos_direction_status")
+        if not await lock.acquire(timeout_seconds=job_config.timeout_seconds):
+            logger.warning("[BOS_DIRECTION_STATUS] Lock ocupado - ejecución en progreso")
+            return
+
+        job_logger = get_job_logger()
+        log_entry = await job_logger.start_execution("bos_direction_status")
+        try:
+            result = await asyncio.to_thread(execute_bos_direction_status)
+            snapshot = result["snapshot"]
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status="success",
+                processed_count=int(snapshot.get("total_gates") or 0),
+                success_count=int(snapshot.get("certified_gates") or 0),
+                message=(
+                    f"Avance BOS: {snapshot.get('percent_complete', 0)}%, "
+                    f"certified={snapshot.get('certified', False)}"
+                ),
+                extra_metadata={
+                    "generated_at_utc": snapshot.get("generated_at_utc"),
+                    "history_file": result.get("history_file"),
+                    "latest_file": result.get("latest_file"),
+                },
+            )
+            logger.info("[BOS_DIRECTION_STATUS] Snapshot publicado: %s", result.get("latest_file"))
+        except Exception as e:
+            logger.error("[BOS_DIRECTION_STATUS] Error: %s", e)
+            await job_logger.finish_execution(
+                log_entry=log_entry,
+                status="failed",
+                error_detail="Error interno del servidor",
+            )
+            raise
+        finally:
+            await lock.release()
+
     def register_jobs(self):
         """Registra todos los jobs configurados."""
         if self._scheduler is None:
@@ -1652,6 +1698,28 @@ class SchedulerManager:
             )
             self._jobs["resumen_diario_excepciones"] = resumen_diario_config
             logger.info(f"Job RESUMEN_DIARIO_EXC registrado: cron={resumen_diario_config.cron_expression}")
+
+        # ========================================
+        # BOS Direccion: Status vivo recurrente
+        # ========================================
+        bos_direction_config = self.config.jobs.get("bos_direction_status")
+        if bos_direction_config and bos_direction_config.enabled:
+            trigger = IntervalTrigger(seconds=bos_direction_config.interval_seconds)
+            self._scheduler.add_job(
+                self._run_bos_direction_status_job,
+                trigger=trigger,
+                id="bos_direction_status",
+                name="BOS Direccion - Status Vivo",
+                replace_existing=True,
+                max_instances=bos_direction_config.max_instances,
+                coalesce=bos_direction_config.coalesce,
+                misfire_grace_time=bos_direction_config.misfire_grace_time,
+            )
+            self._jobs["bos_direction_status"] = bos_direction_config
+            logger.info(
+                "Job BOS_DIRECTION_STATUS registrado: intervalo=%ss",
+                bos_direction_config.interval_seconds,
+            )
     
     async def start(self):
         """Inicia el scheduler."""
