@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE6-E2E-WORKFLOW-R4-20260908",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "255284eea568ec63e5b6b87c902854e89b7c1c0a",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir exclusivamente la compilacion del workflow Gate6 E2E moviendo runner.temp al step runtime, disparar un nuevo run con marker R4 e imprimir evidence.json para certificar cleanup residue=0. No alterar el harness funcional ni Produccion.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": ".github/workflows/catalogo-ampliado-gate6-e2e.yml",
+      "content": "name: Catalogo Ampliado Gate6 E2E Development\non:\n  push:\n    branches: [Edarsahub_Desarrollo]\n    paths:\n      - ops/e2e/requests/CATALOGO-AMPLIADO-GATE6-R4-20260908.execute\npermissions:\n  contents: read\njobs:\n  e2e:\n    runs-on: ubuntu-latest\n    environment: development\n    timeout-minutes: 30\n    env:\n      EDARSAHUB_SQL_HOST: 54.39.104.176\n      EDARSAHUB_SQL_PORT: 1433\n      EDARSAHUB_SQL_DATABASE: EDARSAHUB\n      EDARSAHUB_SQL_USER: HRLectura\n      EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}\n      JWT_SECRET: gate6-${{ github.run_id }}-${{ github.sha }}\n      ENV: development\n      CATALOGO_GATE6_REAL: 1\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-python@v5\n        with:\n          python-version: '3.11'\n      - uses: actions/setup-node@v4\n        with:\n          node-version: '20'\n      - name: Install backend runtime\n        run: python -m pip install -r backend/requirements.txt\n      - name: Navigation and frontend build\n        run: npm ci --prefix frontend && npm run build --prefix frontend && grep -q 'path=\"catalogo-ampliado\"' frontend/src/App.js && grep -q 'CatalogoAmpliadoDashboard' frontend/src/App.js\n      - name: Real API SQL E2E\n        env:\n          PYTHONPATH: ${{ github.workspace }}/backend\n          GATE6_EVIDENCE_FILE: ${{ runner.temp }}/gate6/evidence.json\n        run: mkdir -p $RUNNER_TEMP/gate6 && python -m pytest -q backend/tests/test_catalogo_ampliado_gate6_e2e_real.py\n      - name: Evidence summary\n        if: always()\n        run: test -f $RUNNER_TEMP/gate6/evidence.json && cat $RUNNER_TEMP/gate6/evidence.json || true\n      - name: Manifest\n        if: always()\n        run: mkdir -p $RUNNER_TEMP/gate6 && printf '%s\\n' run=$GITHUB_RUN_ID commit=$GITHUB_SHA production_touched=false > $RUNNER_TEMP/gate6/manifest.txt\n      - uses: actions/upload-artifact@v4\n        if: always()\n        with:\n          name: catalogo-ampliado-gate6-${{ github.run_id }}\n          path: ${{ runner.temp }}/gate6\n          if-no-files-found: error\n          retention-days: 30\n"
+    },
+    {
+      "type": "write_file",
+      "path": "ops/e2e/requests/CATALOGO-AMPLIADO-GATE6-R4-20260908.execute",
+      "content": "job=CATALOGO-AMPLIADO-GATE6-E2E-WORKFLOW-R4-20260908\ntarget=development\nproduction_allowed=false\ncleanup=required\n"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"},
+    {"type":"pytest","paths":["backend/tests/test_catalogo_ampliado_gate6_runtime.py","backend/tests/test_catalogo_ampliado_gate6_contract.py","backend/tests/test_catalogo_ampliado_backend_gate4.py","backend/tests/test_catalogo_ampliado_frontend_gate5_contract.py"]},
+    {"type":"frontend_build","directory":"frontend"}
+  ],
+  "constraints": ["NO Production","NO Mongo","no functional harness changes","cleanup residue zero required"],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
