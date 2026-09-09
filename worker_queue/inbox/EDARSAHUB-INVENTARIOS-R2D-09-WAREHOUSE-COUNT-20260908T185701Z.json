@@ -1,0 +1,13 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-R2D-09-WAREHOUSE-COUNT-20260908T185701Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"R2D-09: conteo aislado del catalogo canonico dbo.Inventario_Almacenes. Una sola sentencia SELECT, solo lectura.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[{"name":"warehouse_count","sql":"SELECT COUNT_BIG(*) AS total_rows FROM dbo.Inventario_Almacenes"}]}],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
