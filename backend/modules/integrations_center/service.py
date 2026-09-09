@@ -20,7 +20,6 @@ from api.admin_core_connections import (
 )
 from core.rbac_helper_sql import es_superadmin
 from core.server_registry import filter_servers_by_user_permissions, list_servers
-from modules.api_connections.repository import list_api_connections
 
 from . import repository
 
@@ -132,7 +131,10 @@ async def list_connections(
     )
     items.extend(_normalize_connection(server, "server_registry") for server in servers)
 
-    # API_LOCAL: CRUD existente; aplicamos el mismo filtro de alcance del registry.
+    # API_LOCAL: import lazy evita un ciclo de carga entre el paquete existente
+    # api_connections y la fachada que se monta sobre su router raiz.
+    from modules.api_connections.repository import list_api_connections
+
     api_rows = await list_api_connections(include_inactive=include_inactive)
     api_rows = filter_servers_by_user_permissions(api_rows, current_user)
     items.extend(_normalize_connection(row, "api_connections") for row in api_rows)
