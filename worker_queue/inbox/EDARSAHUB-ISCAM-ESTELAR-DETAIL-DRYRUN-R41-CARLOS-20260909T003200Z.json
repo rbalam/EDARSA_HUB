@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-ESTELAR-DETAIL-DRYRUN-R41-CARLOS-20260909T003200Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e95fbe17f39fd202bc9500f2ea7b0020ec6205aa",
+  "production_allowed": false,
+  "objective": "Validar en DRY RUN el detalle ISCAM de ESTELAR del 2026-09-05 al 2026-09-07 inclusive usando el extractor vigente posterior a R40C, que selecciona tickets SoftRestaurant por fecha calendario de turnos.apertura y cheques.cancelado=0. No escribir datos. Publicar por dia ventas/tickets/pax POS vs Runtime y bloquear si no concilia. No tocar Produccion.",
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "actions": [],
+  "units": ["ESTELAR"],
+  "fecha_inicio": "2026-09-05",
+  "fecha_fin": "2026-09-08",
+  "dry_run": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "estelar_runtime_sep5_7",
+          "sql": "SELECT CAST(fecha_operacion AS date) AS fecha_operacion, CAST(ventas_total AS decimal(18,2)) AS ventas_total, CAST(tickets_total AS int) AS tickets_total, CAST(pax_total AS int) AS pax_total, sync_run_id FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion>='2026-09-05' AND fecha_operacion<'2026-09-08' ORDER BY fecha_operacion;"
+        },
+        {
+          "name": "estelar_detail_sep5_7",
+          "sql": "SELECT CAST(fecha_operacion AS date) AS fecha_operacion, CAST(SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN ISNULL(importe_neto,0) ELSE 0 END) AS decimal(18,2)) AS ventas_detalle, COUNT(DISTINCT CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN numero_ticket END) AS tickets_detalle, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 THEN ISNULL(pax,0) ELSE 0 END) AS pax_detalle FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion>='2026-09-05' AND fecha_operacion<'2026-09-08' AND ISNULL(activo,1)=1 GROUP BY CAST(fecha_operacion AS date) ORDER BY fecha_operacion;"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
