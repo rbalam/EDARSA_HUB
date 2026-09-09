@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
-  "generated_at_utc": "2026-09-09T07:39:05Z",
+  "generated_at_utc": "2026-09-09T07:40:16Z",
   "history": {
     "done_total_local": 318,
     "pending_total_local": 0,
@@ -13,26 +13,14 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3545,
-      "job_id": "CATALOGO-AMPLIADO-GATE8D-SCHEDULER-CANONICAL-INTEGRATION-R1-20260909",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2902,
+      "age_seconds": 2974,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-R2-E2E-RBAC-32-DEPS-20260909T0038Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2912,
+      "age_seconds": 2984,
       "job_id": "RRR-GATE4D-CUSTOMER360-VIEWS-EXECUTION-20260909",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3541,
-      "job_id": "servers-integrations-gate4c-execution-preflight-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -44,13 +32,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-09T07:39:02Z",
-    "last_receive_utc": "2026-09-09T07:39:03Z",
+    "last_cycle_utc": "2026-09-09T07:40:14Z",
+    "last_receive_utc": "2026-09-09T07:40:15Z",
     "last_terminal_utc": "2026-09-09T06:50:42Z",
     "pid": "1370"
   },
