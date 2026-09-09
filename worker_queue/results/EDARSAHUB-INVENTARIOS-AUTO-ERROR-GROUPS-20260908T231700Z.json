@@ -1,0 +1,92 @@
+{
+  "base_sha": "116ded1e6b4fb0f7c2449bb9d26a81fdc24c3441",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T05:44:58Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-INVENTARIOS-AUTO-ERROR-GROUPS-20260908T231700Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T05:44:58Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "error_mensaje",
+              "cantidad",
+              "ultimo_intento"
+            ],
+            "name": "error_groups",
+            "row_count_returned": 9,
+            "rows": [
+              [
+                "No se encontró folio inicial del período",
+                "102",
+                "2026-09-08T21:35:30.033000"
+              ],
+              [
+                "403: No tiene acceso a este servidor",
+                "54",
+                "2026-09-08T23:43:00.900000"
+              ],
+              [
+                "(20009, b'DB-Lib error message 20009, severity 9:\\nUnable to connect: Adaptive Server is unavailable or does not exist (54.39.104.176)\\nNet-Lib error during Connection timed out (110)\\nDB-Lib error message 20009, severity 9:\\nUnable to connect: Adaptive Server is unavailable or does not exist (54.39.104.176)\\nNet-Lib error during Connection timed out (110)\\n')",
+                "7",
+                "2026-09-08T17:57:29.820000"
+              ],
+              [
+                "(20002, b'DB-Lib error message 20009, severity 9:\\nUnable to connect: Adaptive Server is unavailable or does not exist (54.39.104.176)\\nNet-Lib error during Connection timed out (110)\\nDB-Lib error message 20009, severity 9:\\nUnable to connect: Adaptive Server is unavailable or does not exist (54.39.104.176)\\nNet-Lib error during Connection timed out (110)\\n')",
+                "1",
+                "2026-08-13T03:30:53.893000"
+              ],
+              [
+                "503: {'code': 'INVENTORY_ANALYSIS_CANONICAL_PENDING', 'message': 'Análisis de inventario MPRO pendiente de fuente canónica EDARSAHUB. Por regla NO-LIVE no se consulta POS en vivo.', 'source': 'EDARSAHUB_SQL_CANONICAL'}",
+                "1",
+                "2026-08-11T16:51:00.337000"
+              ],
+              [
+                "500: Error generando análisis canónico SoftRestaurant.",
+                "1",
+                "2026-07-31T18:45:32.810000"
+              ],
+              [
+                "404: {'code': 'INVENTORY_PHYSICAL_DETAIL_MISSING', 'message': 'No hay detalle canónico para los folios seleccionados. Ejecuta/resincroniza inventarios físicos y vuelve a generar el reporte.', 'folios': ['257', '268'], 'source': 'dbo.Compras_Inventarios_Fisicos_Detalle_Sync'}",
+                "1",
+                "2026-08-11T16:51:13.777000"
+              ],
+              [
+                "404: {'code': 'INVENTORY_PHYSICAL_DETAIL_MISSING', 'message': 'No hay detalle canónico para los folios seleccionados. Ejecuta/resincroniza inventarios físicos y vuelve a generar el reporte.', 'folios': ['254', '266'], 'source': 'dbo.Compras_Inventarios_Fisicos_Detalle_Sync'}",
+                "1",
+                "2026-08-10T22:23:00.320000"
+              ],
+              [
+                "404: {'code': 'INVENTORY_PHYSICAL_DETAIL_MISSING', 'message': 'No hay detalle canónico para los folios seleccionados. Ejecuta/resincroniza inventarios físicos y vuelve a generar el reporte.', 'folios': ['251', '257'], 'source': 'dbo.Compras_Inventarios_Fisicos_Detalle_Sync'}",
+                "1",
+                "2026-08-10T19:55:10.783000"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T05:44:56Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
