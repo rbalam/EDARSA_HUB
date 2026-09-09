@@ -1,0 +1,35 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE6-E2E-WORKFLOW-R7-20260908",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "97a53f76ab9b5ded191a8f53e797a31d029c9e25",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Integrar solo la correccion de runtime install del workflow Gate6 y nuevo marker R7. El E2E de Actions ejecutara frontend build y ciclo real con cleanup; no repetir frontend_build dentro del Worker. No Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/catalogo-ampliado-gate6-e2e.yml",
+      "old": "      - ops/e2e/requests/CATALOGO-AMPLIADO-GATE6-R5-20260908.execute",
+      "new": "      - ops/e2e/requests/CATALOGO-AMPLIADO-GATE6-R7-20260908.execute"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/catalogo-ampliado-gate6-e2e.yml",
+      "old": "        run: python -m pip install -r backend/requirements.txt",
+      "new": "        run: python -m pip install fastapi httpx pymssql pydantic python-dotenv email-validator bcrypt PyJWT pytest"
+    },
+    {
+      "type": "write_file",
+      "path": "ops/e2e/requests/CATALOGO-AMPLIADO-GATE6-R7-20260908.execute",
+      "content": "job=CATALOGO-AMPLIADO-GATE6-E2E-WORKFLOW-R7-20260908\ntarget=development\nproduction_allowed=false\ncleanup=required\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "constraints": ["NO Production","NO Mongo","no functional harness changes","real Actions build/E2E/cleanup remains mandatory"],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
