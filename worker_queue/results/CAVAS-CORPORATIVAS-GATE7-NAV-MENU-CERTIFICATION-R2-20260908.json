@@ -1,0 +1,108 @@
+{
+  "base_sha": "c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T05:15:55Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CORPORATIVAS-GATE7-NAV-MENU-CERTIFICATION-R2-20260908",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T05:15:57Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "MenuID",
+              "ModuloID",
+              "MenuPadreID",
+              "Codigo",
+              "Nombre",
+              "Ruta",
+              "Orden",
+              "RequierePermiso",
+              "Activo"
+            ],
+            "name": "cavas_corporativas_canonical_menu",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1078,
+                7,
+                null,
+                "cava.corporativas",
+                "Cavas Corporativas",
+                "/cavas-corporativas",
+                3,
+                "cava_socios",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ModuloID",
+              "ModuloCodigo",
+              "ModuloNombre",
+              "ModuloActivo",
+              "MenuID",
+              "MenuCodigo",
+              "Ruta",
+              "RequierePermiso",
+              "MenuActivo"
+            ],
+            "name": "cavas_corporativas_menu_module_binding",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                7,
+                "CAVA_SOCIOS",
+                "Cava de Socios",
+                true,
+                1078,
+                "cava.corporativas",
+                "/cavas-corporativas",
+                "cava_socios",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "code_count",
+              "route_count"
+            ],
+            "name": "cavas_corporativas_menu_collision_count",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1,
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T05:15:54Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
