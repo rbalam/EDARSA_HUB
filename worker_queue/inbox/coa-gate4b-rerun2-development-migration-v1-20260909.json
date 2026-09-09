@@ -1,0 +1,27 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate4b-rerun2-development-migration-v1-20260909",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "116ded1e6b4fb0f7c2449bb9d26a81fdc24c3441",
+  "objective": "COA Gate 4B rerun 2: re-disparar exclusivamente el workflow COA Core Development Migration actualizando solo el trigger existente ops/migrations/requests/COA-CORE-20260909.execute. No modificar workflow, DDL, rollback ni otros archivos. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA",
+    "chat": "coa-gate4b-rerun2-development-migration-v1-20260909"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "ops/migrations/requests/COA-CORE-20260909.execute",
+      "old": "COA_CORE_DEVELOPMENT_MIGRATION\nGATE=4B\nSOURCE_GATE4A_SHA=59f52d06942148f0c9fb2f499e598ebcd563247c\nPRODUCTION=false\n",
+      "new": "COA_CORE_DEVELOPMENT_MIGRATION\nGATE=4B\nSOURCE_GATE4A_SHA=59f52d06942148f0c9fb2f499e598ebcd563247c\nRERUN=2\nPRODUCTION=false\n"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
