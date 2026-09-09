@@ -549,7 +549,29 @@ async def test_api_connection_health(api_id: str = None, url: str = None, api_ke
         result = {"success": False, "error": "Sin conexión"}
     except Exception as e:
         result = {"success": False, "error": str(e)}
-    
+
+    # Gate 5C: solo una prueba asociada a ConexionID canonico persiste health.
+    # Las pruebas ad-hoc por URL siguen siendo efimeras y no fabrican identidad.
+    if api_id:
+        try:
+            from modules.integrations_runtime.health import persist_connection_health
+            persist_connection_health(
+                api_id,
+                success=bool(result.get("success")),
+                latency_ms=result.get("response_time_ms"),
+                error_code=None if result.get("success") else (
+                    f"HTTP_{result.get('status_code')}" if result.get("status_code") else "API_CONNECTION_ERROR"
+                ),
+                error_message=None if result.get("success") else result.get("error"),
+            )
+            result["health_persisted"] = True
+        except Exception as health_exc:
+            logging.error(
+                "[API_CONNECTIONS][HEALTH] No se pudo persistir health: %s",
+                type(health_exc).__name__,
+            )
+            result["health_persisted"] = False
+
     return result
 
 

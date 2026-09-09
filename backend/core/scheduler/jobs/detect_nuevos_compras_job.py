@@ -30,6 +30,7 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional
 from zoneinfo import ZoneInfo
 
+from modules.integrations_runtime.sync_ledger import enrich_sync_start, mark_sync_finished
 from modules.compras.eventos_compras import (
     get_detector,
     get_event_dispatcher,
@@ -101,6 +102,11 @@ def _acquire_detect_lock(run_id: str) -> bool:
                 RegistrosActualizados, RegistrosError, Status, StartedAtMexico, CreatedAt
             ) VALUES (%s,%s,%s,%s,0,0,0,0,0,0,0,'IN_PROGRESS',%s,%s)
         """, (run_id, SYNC_TYPE, today, today, now_mx.replace(tzinfo=None), now_mx.replace(tzinfo=None)))
+        enrich_sync_start(
+            cursor,
+            sync_run_id=run_id,
+            sync_type=SYNC_TYPE,
+        )
         conn.commit()
         conn.close()
         return True
@@ -131,6 +137,7 @@ def _release_detect_lock(run_id: str, status: str, detected: int, eventos: int):
                 RegistrosProcesados=%s, RegistrosInsertados=%s
             WHERE SyncRunID=%s
         """, (status, now_mx.replace(tzinfo=None), duration, detected, eventos, run_id))
+        mark_sync_finished(cursor, run_id)
         conn.commit()
         conn.close()
     except Exception as e:
