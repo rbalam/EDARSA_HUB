@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE5-RBAC-CONTRACT-AUDIT-R2-20260908",
+  "created_at_utc": "2026-09-09T01:10:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "8c57d2cf52ef9a38c923d4d1ac8cf71eeb552a62",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Reauditar el contrato RBAC canonico para Cavas Corporativas usando exclusivamente columnas confirmadas por el middleware RBAC vigente.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "rbac_schema_columns",
+          "sql": "SELECT TABLE_NAME, COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME IN ('Usuario_Modulos','Usuario_Acciones','Usuario_Roles','Usuario_PermisosRolModulo') ORDER BY TABLE_NAME, ORDINAL_POSITION"
+        },
+        {
+          "name": "rbac_modulos_cavas_corporativo",
+          "sql": "SELECT TOP 200 CodigoModulo, Activo FROM dbo.Usuario_Modulos WHERE LOWER(CodigoModulo) LIKE '%cava%' OR LOWER(CodigoModulo) LIKE '%corpor%' ORDER BY CodigoModulo"
+        },
+        {
+          "name": "rbac_acciones_activas",
+          "sql": "SELECT TOP 200 CodigoAccion, Activo FROM dbo.Usuario_Acciones WHERE Activo=1 ORDER BY CodigoAccion"
+        },
+        {
+          "name": "rbac_permisos_relacionados",
+          "sql": "SELECT TOP 200 m.CodigoModulo, a.CodigoAccion, r.CodigoRol, prm.Permitido, prm.Activo FROM dbo.Usuario_PermisosRolModulo prm INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID INNER JOIN dbo.Usuario_Roles r ON r.RolID=prm.RolID WHERE (LOWER(m.CodigoModulo) LIKE '%cava%' OR LOWER(m.CodigoModulo) LIKE '%corpor%') AND prm.Activo=1 ORDER BY m.CodigoModulo,a.CodigoAccion,r.CodigoRol"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
