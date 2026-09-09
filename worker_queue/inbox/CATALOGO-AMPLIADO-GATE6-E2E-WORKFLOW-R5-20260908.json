@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE6-E2E-WORKFLOW-R5-20260908",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "255284eea568ec63e5b6b87c902854e89b7c1c0a",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir compilacion del workflow Gate6 con reemplazos unicos: mover runner.temp de job env a step env, imprimir evidence.json, disparar marker R5. Mantener harness E2E y Produccion intactos.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/catalogo-ampliado-gate6-e2e.yml",
+      "old": "      - ops/e2e/requests/CATALOGO-AMPLIADO-GATE6-R3-20260908.execute",
+      "new": "      - ops/e2e/requests/CATALOGO-AMPLIADO-GATE6-R5-20260908.execute"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/catalogo-ampliado-gate6-e2e.yml",
+      "old": "      CATALOGO_GATE6_REAL: 1\n      GATE6_EVIDENCE_FILE: ${{ runner.temp }}/gate6/evidence.json",
+      "new": "      CATALOGO_GATE6_REAL: 1"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/catalogo-ampliado-gate6-e2e.yml",
+      "old": "        env:\n          PYTHONPATH: ${{ github.workspace }}/backend\n        run: mkdir -p $RUNNER_TEMP/gate6 && python -m pytest -q backend/tests/test_catalogo_ampliado_gate6_e2e_real.py\n      - name: Manifest",
+      "new": "        env:\n          PYTHONPATH: ${{ github.workspace }}/backend\n          GATE6_EVIDENCE_FILE: ${{ runner.temp }}/gate6/evidence.json\n        run: mkdir -p $RUNNER_TEMP/gate6 && python -m pytest -q backend/tests/test_catalogo_ampliado_gate6_e2e_real.py\n      - name: Evidence summary\n        if: always()\n        run: test -f $RUNNER_TEMP/gate6/evidence.json && cat $RUNNER_TEMP/gate6/evidence.json || true\n      - name: Manifest"
+    },
+    {
+      "type": "write_file",
+      "path": "ops/e2e/requests/CATALOGO-AMPLIADO-GATE6-R5-20260908.execute",
+      "content": "job=CATALOGO-AMPLIADO-GATE6-E2E-WORKFLOW-R5-20260908\ntarget=development\nproduction_allowed=false\ncleanup=required\n"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"},
+    {"type":"pytest","paths":["backend/tests/test_catalogo_ampliado_gate6_runtime.py","backend/tests/test_catalogo_ampliado_gate6_contract.py","backend/tests/test_catalogo_ampliado_backend_gate4.py","backend/tests/test_catalogo_ampliado_frontend_gate5_contract.py"]},
+    {"type":"frontend_build","directory":"frontend"}
+  ],
+  "constraints": ["NO Production","NO Mongo","no functional harness changes","cleanup residue zero required"],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
