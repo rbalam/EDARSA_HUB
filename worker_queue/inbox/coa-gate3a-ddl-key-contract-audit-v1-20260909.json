@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate3a-ddl-key-contract-audit-v1-20260909",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "ba11768eaa287511523880e8009da4475279bc55",
+  "mode": "READ_ONLY_SQL",
+  "objective": "COA Gate 3A: obtener contrato exacto de tipos de llaves, PK/FK, defaults y convenciones de auditoria necesarias para generar posteriormente el DDL minimo COA sin adivinar tipos ni alterar objetos canonicos. Basarse en el dossier docs/COA/COA_GATE2_CANONICAL_MODEL_DOSSIER.md. No ejecutar DDL/DML/EXEC/SELECT INTO. No hardcodear comisiones: 6.5% es solo una posible regla comercial y nunca un default. Produccion=false.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA",
+    "chat": "coa-gate3a-ddl-key-contract-audit-v1-20260909"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "coa_canonical_key_types",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID') OR (t.name='Cliente_Catalogo' AND c.name='ClienteID') OR (t.name='Proveedor_Catalogo' AND c.name='ProveedorID') OR (t.name='Compras_DocumentosFiscales' AND c.name='DocumentoFiscalID') OR (t.name='Finanzas_Pagos' AND c.name='PagoID') OR (t.name='Finanzas_CxP_DecisionesPago' AND c.name='DecisionPagoID') OR (t.name='RH_Nomina' AND c.name='NominaID') OR (t.name='RH_Nomina_Dispersion' AND c.name='DispersionNominaID') OR (t.name='RH_Nomina_Recibos' AND c.name='NominaReciboID') OR (t.name='RH_Colaboradores_Expediente' AND c.name='ColaboradorID') OR (t.name='CRM_Contratos' AND c.name='ContratoID') ORDER BY t.name,c.column_id"
+        },
+        {
+          "name": "coa_canonical_pk_constraints",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,kc.name AS pk_name,c.name AS column_name,ty.name AS data_type,ic.key_ordinal FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.key_constraints kc ON kc.parent_object_id=t.object_id AND kc.type='PK' JOIN sys.index_columns ic ON ic.object_id=t.object_id AND ic.index_id=kc.unique_index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Sistema_Empresas','Unidades_Negocio','Usuario_Catalogo','Cliente_Catalogo','Proveedor_Catalogo','Compras_DocumentosFiscales','Finanzas_Pagos','Finanzas_CxP_DecisionesPago','RH_Nomina','RH_Nomina_Dispersion','RH_Nomina_Recibos','RH_Colaboradores_Expediente','CRM_Contratos') ORDER BY t.name,ic.key_ordinal"
+        },
+        {
+          "name": "coa_audit_column_patterns",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,dc.definition AS default_definition FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=t.object_id AND dc.parent_column_id=c.column_id WHERE t.name IN ('Finanzas_CxP_DecisionesPago','Compras_DocumentosFiscales','CRM_Contratos','Proveedor_Documentos','Usuario_EmpresasAsignacion') AND (c.name LIKE '%Fecha%' OR c.name LIKE '%Creacion%' OR c.name LIKE '%Modificacion%' OR c.name LIKE '%Usuario%' OR c.name LIKE '%Activo%' OR c.name LIKE '%Estatus%' OR c.name LIKE '%Estado%' OR c.name LIKE '%Hash%') ORDER BY t.name,c.column_id"
+        },
+        {
+          "name": "coa_candidate_id_generation_patterns",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.is_identity,dc.definition AS default_definition FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=t.object_id AND dc.parent_column_id=c.column_id WHERE t.name IN ('Finanzas_CxP_DecisionesPago','Compras_DocumentosFiscales','CRM_Contratos','Proveedor_Documentos','Usuario_EmpresasAsignacion','Comercial_CostosMargenesConfiguracion','Comercial_ReglasPrecio') AND c.column_id=1 ORDER BY t.name"
+        },
+        {
+          "name": "coa_status_catalog_patterns",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Finanzas_EstatusPago','CRM_Cat_EstatusContrato','RH_Cat_EstatusPeriodoNomina') ORDER BY t.name,c.column_id"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
