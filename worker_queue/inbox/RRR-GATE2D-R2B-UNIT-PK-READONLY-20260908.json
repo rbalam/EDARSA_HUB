@@ -1,0 +1,16 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"RRR-GATE2D-R2B-UNIT-PK-READONLY-20260908",
+  "created_at_utc":"2026-09-09T02:14:30Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"a71a5a21e36831114fe3de389b200db7ca56d889",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Aislar PK/UNIQUE de candidatos canonicos de unidad/sucursal para RRR.",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[{"name":"unit_pk_unique","sql":"SELECT s.name AS schema_name,t.name AS table_name,i.name AS index_name,i.is_primary_key,i.is_unique,c.name AS column_name,ic.key_ordinal FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.indexes i ON i.object_id=t.object_id JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE s.name='dbo' AND t.name IN ('Sistema_Sucursales','Unidades_Negocio','Sistema_TurnosOperativosUnidad','Sistema_HorariosServicioUnidad','Sistema_SyncPOS_EstadoUnidad','Sync_KPI_Ventas_Unidades','Sistema_UnidadesNegocioPerfilDigital') AND i.is_hypothetical=0 ORDER BY t.name,i.is_primary_key DESC,i.is_unique DESC,i.name,ic.key_ordinal"}]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
