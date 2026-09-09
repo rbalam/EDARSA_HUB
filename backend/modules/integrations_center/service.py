@@ -35,6 +35,10 @@ _SECRET_KEYS = {
 }
 
 
+def _id_key(value) -> str:
+    return str(value or "").strip().lower()
+
+
 def _bool(value, default: bool = False) -> bool:
     if value is None:
         return default
@@ -147,11 +151,12 @@ async def list_connections(
             for row in core_rows
         )
 
-    # Evitar duplicados si algun adapter legado retorna el mismo ID.
+    # Evitar duplicados si algun adapter legado retorna el mismo UUID con distinta caja.
     deduped: Dict[str, Dict] = {}
     for item in items:
-        if item.get("id"):
-            deduped[item["id"]] = item
+        key = _id_key(item.get("id"))
+        if key:
+            deduped[key] = item
     items = list(deduped.values())
 
     ids = [item["id"] for item in items]
@@ -159,11 +164,12 @@ async def list_connections(
     enrichment = repository.get_connection_enrichment(ids)
 
     for item in items:
-        extra = enrichment.get(item["id"], {})
+        lookup_key = _id_key(item.get("id"))
+        extra = enrichment.get(lookup_key, {})
         if not item.get("sistema_version_id"):
             item["sistema_version_id"] = extra.get("sistema_version_id")
         item["empresa_id"] = extra.get("EmpresaID") or extra.get("empresa_id")
-        _attach_health(item, health_map.get(item["id"]))
+        _attach_health(item, health_map.get(lookup_key))
 
     if connection_type:
         wanted = connection_type.strip().upper()
@@ -179,8 +185,9 @@ async def list_connections(
 
 
 async def get_connection_detail(current_user: Dict, connection_id: str) -> Optional[Dict]:
+    wanted = _id_key(connection_id)
     items = await list_connections(current_user, include_inactive=True)
-    return next((item for item in items if item.get("id") == str(connection_id)), None)
+    return next((item for item in items if _id_key(item.get("id")) == wanted), None)
 
 
 async def get_overview(current_user: Dict) -> Dict:
