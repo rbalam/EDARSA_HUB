@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
-  "generated_at_utc": "2026-09-09T23:15:06Z",
+  "generated_at_utc": "2026-09-09T23:16:22Z",
   "history": {
-    "done_total_local": 337,
+    "done_total_local": 338,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 377,
-    "results_total_local": 646
+    "rejected_total_local": 378,
+    "results_total_local": 647
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3313,
+      "age_seconds": 3389,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-R4-RBAC-DETERMINISTIC-OFFLINE-20260909T2000Z",
       "reasons": [
         "INVALID_TARGET_REPO",
@@ -23,79 +23,94 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3107,
+      "age_seconds": 35,
+      "job_id": "coa-gate5a-facturacion-cfdi-emitidos-readonly-v1-20260909",
+      "reasons": [
+        "CHECK_1_QUERIES_REQUIRED"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 55,
+      "job_id": "CAVAS-CORPORATIVAS-GATE12A-IDENTIDAD-SOCIO-METADATA-AUDIT-20260909",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3183,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-R4-DETERMINISTIC-RBAC-32-DEPS-20260909T2148Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3092,
+      "age_seconds": 3168,
       "job_id": "EDARSAHUB-SOFTRESTAURANT-RESTORE-APERTURA-CONTRACT-R43B-CARLOS-20260909T194000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3088,
+      "age_seconds": 3164,
       "job_id": "RRR-GATE4D-R1-ROLLBACK-ABSENCE-READONLY-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3074,
+      "age_seconds": 3150,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5B-R4-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3071,
+      "age_seconds": 3147,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5B-R5-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2491,
+      "age_seconds": 2567,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5C-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 424,
+      "age_seconds": 499,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5C-R2-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1532,
+      "age_seconds": 1608,
       "job_id": "servers-integrations-gate5c-formal-certification-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1990,
+      "age_seconds": 2066,
       "job_id": "servers-integrations-gate5c-health-ledger-r1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1845,
+      "age_seconds": 1921,
       "job_id": "servers-integrations-gate5c-ledger-r2-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1748,
+      "age_seconds": 1823,
       "job_id": "servers-integrations-gate5c-ledger-r3-timeout-utc-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1686,
+      "age_seconds": 1761,
       "job_id": "servers-integrations-gate5c-postaudit-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2329,
+      "age_seconds": 2405,
       "job_id": "servers-integrations-gate5c-preflight-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
@@ -107,15 +122,15 @@
   "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 13,
+  "queue_rejected_recent": 2,
+  "queue_result_ready_recent": 14,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-09T23:15:06Z",
-    "last_receive_utc": "2026-09-09T23:15:00Z",
-    "last_terminal_utc": "2026-09-09T23:08:02Z",
+    "last_cycle_utc": "2026-09-09T23:16:19Z",
+    "last_receive_utc": "2026-09-09T23:16:20Z",
+    "last_terminal_utc": "2026-09-09T23:15:26Z",
     "pid": "161541"
   },
   "schema": "edarsahub.worker-health.v3",
