@@ -1,0 +1,27 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate4b-rerun3-development-migration-v1-20260909",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "87e2a9f9c34bb4c88481229b692c07c0bd9722cf",
+  "objective": "COA Gate 4B rerun 3: re-disparar exclusivamente el workflow COA Core Development Migration actualizando solo el trigger existente ops/migrations/requests/COA-CORE-20260909.execute despues de que el usuario confirmo que los secrets writer separados ya fueron configurados en environment development. No modificar workflow, DDL, rollback ni otros archivos. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA",
+    "chat": "coa-gate4b-rerun3-development-migration-v1-20260909"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "ops/migrations/requests/COA-CORE-20260909.execute",
+      "old": "COA_CORE_DEVELOPMENT_MIGRATION\nGATE=4B\nSOURCE_GATE4A_SHA=59f52d06942148f0c9fb2f499e598ebcd563247c\nRERUN=2\nPRODUCTION=false\n",
+      "new": "COA_CORE_DEVELOPMENT_MIGRATION\nGATE=4B\nSOURCE_GATE4A_SHA=59f52d06942148f0c9fb2f499e598ebcd563247c\nRERUN=3\nPRODUCTION=false\n"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
