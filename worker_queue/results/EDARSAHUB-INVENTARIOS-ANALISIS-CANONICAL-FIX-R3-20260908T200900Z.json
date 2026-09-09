@@ -1,0 +1,23 @@
+{
+  "base_sha": "c5d0693856f8a72941e9eb20eb8a198888d0d36c",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:GIT_FAILED:branch agent/worker/EDARSAHUB-INVENTARIOS-ANALISIS-CANONICAL-FIX-R3-20260908T200900Z c5d0693856f8a72941e9eb20eb8a198888d0d36c:fatal: a branch named 'agent/worker/EDARSAHUB-INVENTARIOS-ANALISIS-CANONICAL-FIX-R3-20260908T200900Z' already exists\n"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-09T04:04:59Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-INVENTARIOS-ANALISIS-CANONICAL-FIX-R3-20260908T200900Z",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T04:06:28Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-09T04:04:57Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
