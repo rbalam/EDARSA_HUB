@@ -1,0 +1,63 @@
+{
+  "job_id": "CAVAS-CORPORATIVAS-GATE11-CANONICAL-CAPABILITIES-AUDIT-20260909",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "5b3c1e5ffa5e83623e054bcd0b1b36ccc1c05ddb",
+  "mode": "READ_ONLY_SQL",
+  "production_allowed": false,
+  "objective": "Auditar la realidad fisica y canonica necesaria para ampliar Cavas V1.0 antes de disenar persistencia o implementar Gates 12-17.",
+  "scope": [
+    "Auditar SQL y codigo existente para usuarios, RBAC, sesiones, PIN/reautenticacion y usuarios activos/inactivos.",
+    "Auditar capacidades canonicas de mesas, comandas, meseros y unidades que Cavas pueda consumir sin depender directamente de un POS.",
+    "Auditar adapters/sync y contratos existentes de SoftRestaurant y MPRO en igualdad de condiciones, incluyendo identidad de usuarios, estado activo, meseros, mesas y eventos operativos disponibles.",
+    "Auditar identidad canonica Cliente_Catalogo y campos/capacidades existentes para email y celular, sin crear Entidad_Catalogo ni duplicar clientes.",
+    "Auditar almacenamiento de evidencias/fotos/documentos, integridad/hash/referencia segura y capacidades de notificaciones/tareas existentes.",
+    "Auditar cualquier desarrollo, tabla, ruta, contrato o modulo ya existente de inventario fisico de botellas, medicion visual, aforo, pesaje, calibracion, geometria, nivel de liquido, ml, confidence score o evidencia fotografica.",
+    "Auditar el modelo fisico CavaSocios existente y cualquier contrato de botella individual/QR/kardex/movimientos que pueda reutilizarse.",
+    "Confirmar que CapacidadTotalBotellas/limites equivalentes significan numero maximo de botellas fisicas de una cava y distinguirlo de capacidad nominal de botella en ml.",
+    "Determinar reuse vs missing capability con evidencia, sin inventar tablas ni columnas.",
+    "Emitir recomendaciones para Gates 12-17 basadas exclusivamente en evidencia fisica/documental confirmada."
+  ],
+  "frozen_business_contracts": {
+    "cava_capacity": "La capacidad de una cava es el numero maximo de botellas fisicas que puede contener. Una botella a 1/4 sigue ocupando un espacio de botella.",
+    "cavas_human_inventory_unit": "En Cavas la unidad operacional humana principal es fraccion de botella: 1, 3/4, 1/2, 1/4, 0/vacia. El socio no debe tener que calcular ml.",
+    "ml_equivalence": "Cada fraccion conserva equivalencia tecnica en ml segun capacidad nominal, pero ml no sustituye la representacion operacional de Cavas.",
+    "physical_measurement": "Un motor de inventario fisico puede observar ml con vision calibrada, aforo, peso u otro metodo. En Cavas esa observacion es evidencia y puede proponer una fraccion; no debe sobrescribir silenciosamente el estado operacional.",
+    "bar_vs_cavas": "Barra puede operar inventario fisico en ml; Cavas opera en fracciones. Ambos pueden consumir el mismo motor canonico de medicion sin compartir semantica operacional.",
+    "incremental_consumption": "Los consumos son incrementales entre estados: 1->3/4 consume 1/4; 3/4->1/2 consume 1/4; 1/2->1/4 consume 1/4; 1/4->0 consume 1/4.",
+    "measurement_traceability": "Conservar por separado fraccion operacional, ml equivalentes nominales, ml fisicos observados, confianza, metodo, evidencia y correccion humana.",
+    "sharing": "Compartir una botella no transfiere propiedad. owner permanece inmutable; autorizacion del socio se instrumentara mediante PIN temporal parametrizable en Gate 13.",
+    "portal": "Portal Socio Cava es solo consulta; email o celular resuelven la misma identidad canonica.",
+    "pos_independence": "Cavas nunca depende especificamente de SoftRestaurant ni MPRO; ambos alimentan contratos canonicos mediante adapters."
+  },
+  "constraints": [
+    "READ ONLY: no DDL, no DML, no migrations, no writes SQL.",
+    "No tocar produccion.",
+    "No .env, secretos, conexiones principales ni credenciales.",
+    "No Mongo nuevo.",
+    "No hardcodes funcionales.",
+    "No crear tablas, columnas, endpoints o persistencia durante este Gate.",
+    "No duplicar clientes, productos, usuarios, RBAC, evidencias, notificaciones, filtros, conexiones ni helpers.",
+    "Backend manda; frontend no decide seguridad.",
+    "Usar sys.tables/sys.columns/sys.indexes/sys.foreign_keys y consultas de metadatos cuando el esquema exacto no este documentado; no adivinar nombres de columnas.",
+    "Sanitizar toda evidencia: nunca publicar secretos, hashes de credenciales, PINs, passwords, tokens o PII innecesaria."
+  ],
+  "required_evidence": [
+    "Development HEAD/base SHA observado.",
+    "Listado de objetos SQL relevantes con columnas/PK/FK/indexes cuando aplique.",
+    "Rutas/modulos/servicios/repositorios existentes relevantes con paths y contratos observados.",
+    "SoftRestaurant: capacidades reales reutilizables y gaps.",
+    "MPRO: capacidades reales reutilizables y gaps.",
+    "Inventario fisico/vision/calibracion: evidencia de existencia o ausencia, sin inferir.",
+    "Matriz REUSE / EXTEND / MISSING / NOT_DETERMINABLE para cada capacidad.",
+    "Riesgos de colision/duplicacion con CavaSocios legacy.",
+    "Recomendacion concreta de alcance para Gates 12-17."
+  ],
+  "acceptance": {
+    "terminal_status": ["READ_ONLY_COMPLETE", "CERTIFIED_READ_ONLY"],
+    "quality_gate": "PASS",
+    "percent_complete": 100,
+    "sql_readonly_evidence_required": true,
+    "no_unverified_schema_claims": true,
+    "production": false
+  }
+}
