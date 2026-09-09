@@ -1,5 +1,6 @@
 from modules.integrations_center.routes import router
 from modules.integrations_center.service import _attach_health, _normalize_connection
+from modules.api_connections import api_universal_test_router
 
 
 def test_gate5b_router_is_read_only():
@@ -11,6 +12,14 @@ def test_gate5b_router_is_read_only():
     assert "/integrations-center/communications" in paths
     for route in router.routes:
         assert set(route.methods or ()) <= {"GET"}
+
+
+def test_gate5b_facade_is_mounted_on_existing_root_api_router():
+    paths = {route.path for route in api_universal_test_router.routes}
+    assert "/integrations-center/overview" in paths
+    assert "/integrations-center/connections" in paths
+    assert "/integrations-center/catalogs" in paths
+    assert "/integrations-center/communications" in paths
 
 
 def test_gate5b_never_projects_secret_values():
