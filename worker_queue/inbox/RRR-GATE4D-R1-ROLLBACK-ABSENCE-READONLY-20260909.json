@@ -1,0 +1,28 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"RRR-GATE4D-R1-ROLLBACK-ABSENCE-READONLY-20260909",
+  "created_at_utc":"2026-09-09T19:13:30Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"235b61a73a3e4f7ec728368736fff3ff793b3ed1",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"RRR Gate 4D R1: confirmar mediante una nueva conexión READ_ONLY que el rollback del workflow fallido 34320915502 dejó ausentes las cuatro vistas Customer 360. No modificar SQL, repositorio ni Produccion.",
+  "actions":[],
+  "acceptance":[
+    "READ_ONLY_SQL solamente",
+    "actions=[]",
+    "production_touched=false",
+    "0 de 4 vistas objetivo presentes",
+    "database_name=EDARSAHUB",
+    "login_name=HRLectura",
+    "CERTIFIED_READ_ONLY + PASS + 100%"
+  ],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"customer360_views_absent_after_rollback","sql":"SELECT s.name schema_name,o.name object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE s.name='dbo' AND o.name IN ('vw_RRR_ClienteActividadComercial','vw_RRR_ClienteScoreActual','vw_RRR_ClienteRankingActual','vw_RRR_Customer360') ORDER BY o.name"},
+    {"name":"rollback_audit_identity","sql":"SELECT DB_NAME() database_name,SUSER_SNAME() login_name,USER_NAME() user_name"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
