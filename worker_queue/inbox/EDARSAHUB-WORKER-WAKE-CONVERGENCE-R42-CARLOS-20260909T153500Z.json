@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-WAKE-CONVERGENCE-R42-CARLOS-20260909T153500Z",
+  "created_at_utc": "2026-09-09T15:35:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "27c225dfb42b8bdaafcea53af8be9bcb7ea56eb2",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir exclusivamente la convergencia del endpoint interno /internal/worker/wake. El endpoint ya valida que el runtime este en Edarsahub_Desarrollo, que el HEAD local sea ancestro del remoto y que el worktree este limpio. En ese contexto, sustituir git merge --ff-only origin/Edarsahub_Desarrollo por git reset --hard origin/Edarsahub_Desarrollo para evitar el 503 'worker runtime fast-forward failed' observado aun cuando la relacion es fast-forward segura. Mantener todas las validaciones previas y no tocar logica de negocio, ventas, ISCAM ni Produccion.",
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "expected_count": 1,
+      "old": "    ff = _runtime_git(\"merge\", \"--ff-only\", f\"origin/{DEV_BRANCH}\", timeout=120)\n    if ff.returncode != 0:\n        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=\"worker runtime fast-forward failed\")",
+      "new": "    ff = _runtime_git(\"reset\", \"--hard\", f\"origin/{DEV_BRANCH}\", timeout=120)\n    if ff.returncode != 0:\n        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=\"worker runtime fast-forward reset failed\")"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_runtime_wake_convergence_r42.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nROUTE = ROOT / 'backend' / 'modules' / 'worker_runtime_wake' / 'routes.py'\n\n\ndef test_wake_convergence_uses_safe_reset_after_ancestor_and_clean_checks():\n    text = ROUTE.read_text(encoding='utf-8')\n    fn = text.split('def _converge_development_if_safe()', 1)[1].split('def _current_worker_code_tree', 1)[0]\n    assert 'merge-base' in fn\n    assert '--is-ancestor' in fn\n    assert 'status' in fn and '--porcelain=v1' in fn\n    assert '_runtime_git(\"reset\", \"--hard\", f\"origin/{DEV_BRANCH}\"' in fn\n    assert '_runtime_git(\"merge\", \"--ff-only\"' not in fn\n\n\ndef test_wake_contract_still_forbids_production_touch():\n    text = ROUTE.read_text(encoding='utf-8')\n    assert 'production_touched' in text\n    assert 'Production is never touched' in text\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/worker_runtime_wake/routes.py", "backend/tests/test_worker_runtime_wake_convergence_r42.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_worker_runtime_wake_convergence_r42.py"]}
+  ]
+}
