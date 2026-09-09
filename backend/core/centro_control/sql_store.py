@@ -189,13 +189,32 @@ def metrics() -> Dict[str, Any]:
     alert_ack = int(alerts.get("ack") or 0)
     start = checks.get("inicio")
     uptime = round((datetime.now(timezone.utc).replace(tzinfo=None) - start).total_seconds()/3600, 2) if start else 0.0
-    tasa_exito = 100.0
-    tasa_ack = (alert_ack / alert_total * 100) if alert_total else 100.0
-    uptime_score = min(uptime / 24 * 100, 100)
-    score = round(tasa_exito * 0.4 + tasa_ack * 0.3 + uptime_score * 0.3, 1)
-    return {"uptime_horas": uptime, "checks_ejecutados": total_checks, "checks_exitosos": total_checks, "alertas_generadas": alert_total, "alertas_reconocidas": alert_ack, "ultima_regresion": _dt(checks.get("ultima")), "inicio_monitoreo": _dt(start), "tasa_exito_checks": round(tasa_exito,1), "tasa_alertas_reconocidas": round(tasa_ack,1), "score_estabilidad": score}
+    # P2B-R2: Scheduler_BitacoraJobs certifica que hubo una ejecución, pero no
+    # contiene el resultado granular necesario para afirmar cuántos checks pasaron.
+    # Por contrato de verdad, esos KPIs quedan NULL hasta tener evidencia canónica.
+    tasa_ack = (alert_ack / alert_total * 100) if alert_total else None
+    return {
+        "uptime_horas": uptime,
+        "checks_ejecutados": total_checks,
+        "checks_exitosos": None,
+        "alertas_generadas": alert_total,
+        "alertas_reconocidas": alert_ack,
+        "ultima_regresion": _dt(checks.get("ultima")),
+        "inicio_monitoreo": _dt(start),
+        "tasa_exito_checks": None,
+        "tasa_alertas_reconocidas": round(tasa_ack, 1) if tasa_ack is not None else None,
+        "score_estabilidad": None,
+        "metricas_calidad": "INSUFFICIENT_CANONICAL_CHECK_RESULT_EVIDENCE",
+    }
 
 
 def blindaje_registry_status() -> Dict[str, Any]:
-    rows = _fetchall("SELECT t.name AS table_name FROM sys.tables t WHERE t.name LIKE '%Blindaje%' OR t.name LIKE '%CentroControl%' ORDER BY t.name")
-    return {"source": "EDARSAHUB_SQL", "status": "CANONICAL_REGISTRY_PRESENT" if rows else "NO_CANONICAL_SQL_REGISTRY", "registry_tables": [r.get("table_name") for r in rows], "modulos": []}
+    # P2A-R2 no certificó una tabla exacta que sea el registro canónico de blindaje.
+    # Un nombre parecido no constituye evidencia. No usar LIKE/sys.tables para inferirlo.
+    return {
+        "source": "EDARSAHUB_SQL",
+        "status": "NO_CANONICAL_SQL_REGISTRY",
+        "registry_tables": [],
+        "registry_evidence": "P2A_R2_NO_EXPLICIT_REGISTRY_CERTIFIED",
+        "modulos": [],
+    }

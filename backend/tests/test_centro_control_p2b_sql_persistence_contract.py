@@ -31,3 +31,21 @@ def test_frontend_mock_blindaje_removed():
     assert "const modulosBlindados = [" not in FRONT
     assert "api.get('/centro-control/blindaje/modulos')" in FRONT
     assert 'Sin catálogo SQL canónico de blindaje' in FRONT
+
+
+def test_metrics_do_not_fabricate_check_success_or_score():
+    assert 'tasa_exito = 100.0' not in STORE
+    assert '"checks_exitosos": total_checks' not in STORE
+    assert '"checks_exitosos": None' in STORE
+    assert '"tasa_exito_checks": None' in STORE
+    assert '"score_estabilidad": None' in STORE
+    assert 'INSUFFICIENT_CANONICAL_CHECK_RESULT_EVIDENCE' in STORE
+    assert 'sin_evidencia_canonica_suficiente' in ROUTES
+
+
+def test_blindaje_requires_explicit_registry_evidence():
+    assert "LIKE '%Blindaje%'" not in STORE
+    assert "LIKE '%CentroControl%'" not in STORE
+    assert '"status": "NO_CANONICAL_SQL_REGISTRY"' in STORE
+    assert '"registry_tables": []' in STORE
+    assert 'P2A_R2_NO_EXPLICIT_REGISTRY_CERTIFIED' in STORE

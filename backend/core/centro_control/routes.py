@@ -1159,16 +1159,20 @@ async def obtener_metricas_estabilidad(current_user: Dict = Depends(get_current_
     - Score de estabilidad
     """
     metricas_sql = cc_store.metrics()
-    score_estabilidad = metricas_sql.get("score_estabilidad", 0)
+    score_estabilidad = metricas_sql.get("score_estabilidad")
+    if score_estabilidad is None:
+        interpretacion_score = "sin_evidencia_canonica_suficiente"
+    else:
+        interpretacion_score = "excelente" if score_estabilidad >= 90 else (
+            "bueno" if score_estabilidad >= 70 else (
+                "regular" if score_estabilidad >= 50 else "crítico"
+            )
+        )
     return {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "metricas": metricas_sql,
         "interpretacion": {
-            "score_estabilidad": "excelente" if score_estabilidad >= 90 else (
-                "bueno" if score_estabilidad >= 70 else (
-                    "regular" if score_estabilidad >= 50 else "crítico"
-                )
-            ),
+            "score_estabilidad": interpretacion_score,
             "recomendaciones": []
         }
     }
