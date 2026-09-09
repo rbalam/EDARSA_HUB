@@ -1,23 +1,608 @@
 {
   "base_sha": "499189c7fe3f241662a3c370343681c6f9fca85b",
   "blockers": [],
-  "certification": "NOT_CERTIFIED",
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
   "completed_at_utc": "2026-09-07T17:50:10Z",
   "executor": "chatgpt-deterministic",
   "files_changed": [],
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "ISCAM-SOFTRESTAURANT-GATE2C-R2-ROOTCAUSE-MULTIUNIT-20260907T1752Z",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-09-07T17:50:17Z",
+  "published_at_utc": "2026-09-09T01:12:21Z",
   "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
   "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "connection_id",
+              "nombre",
+              "system_type",
+              "sucursales",
+              "activo",
+              "visible_en_operaciones",
+              "fecha_ultima_sincronizacion",
+              "source_status",
+              "ultimo_error_sync"
+            ],
+            "name": "gate2c_r2_softrestaurant_connections",
+            "row_count_returned": 8,
+            "rows": [
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "130° MERIDA",
+                "SOFTRESTAURANT_PRO",
+                "[]",
+                true,
+                true,
+                null,
+                null,
+                null
+              ],
+              [
+                "FA707E51-2C41-47C5-872C-0A911FBF90F0",
+                "BENDITA AGUITA",
+                "SoftRestaurant",
+                null,
+                false,
+                true,
+                null,
+                null,
+                null
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "CIENFUEGOS",
+                "SOFTRESTAURANT_PRO",
+                "[]",
+                true,
+                true,
+                null,
+                null,
+                null
+              ],
+              [
+                "31D62F39-632B-4684-B735-256BD9293A8F",
+                "CIENFUEGOS NOMINPAQ",
+                "SOFTRESTAURANT_PRO",
+                "{}",
+                true,
+                false,
+                null,
+                null,
+                null
+              ],
+              [
+                "6D859026-710A-4920-9A44-6DA98FABC690",
+                "CIENFUEGOS TABLAJERIA",
+                "SOFTRESTAURANT_PRO",
+                "[]",
+                true,
+                false,
+                null,
+                null,
+                null
+              ],
+              [
+                "2BEAD18C-73C9-4D86-AF92-2355940274F7",
+                "GARIBALDI",
+                "SOFTRESTAURANT_PRO",
+                "{}",
+                true,
+                true,
+                null,
+                null,
+                null
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "LA ESTELAR",
+                "SOFTRESTAURANT_PRO",
+                "[]",
+                true,
+                true,
+                null,
+                null,
+                null
+              ],
+              [
+                "D8425038-5E57-42D9-8F3A-62E287888874",
+                "PRUEBAS SOFTRESTAURANT",
+                "SOFTRESTAURANT_PRO",
+                "[]",
+                false,
+                false,
+                null,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocio",
+              "pagos",
+              "tickets",
+              "fecha_min",
+              "fecha_max",
+              "importe",
+              "propina"
+            ],
+            "name": "gate2c_r2_softrestaurant_payment_units_freshness",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130MID",
+                29330,
+                26883,
+                "2024-06-01T13:49:03",
+                "2026-06-10T16:08:11",
+                "116552431.00",
+                "11887516.7600"
+              ],
+              [
+                "CIENFUEGOS",
+                40500,
+                33660,
+                "2024-06-01T12:11:23",
+                "2026-06-09T12:57:15",
+                "133912173.27",
+                "12442886.9000"
+              ],
+              [
+                "ESTELAR",
+                22932,
+                17877,
+                "2025-06-27T11:44:07",
+                "2026-06-09T11:44:44",
+                "29472008.47",
+                "2283655.6800"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocioID",
+              "UnidadNegocioNombre",
+              "SistemaOrigen",
+              "cortes",
+              "fecha_min",
+              "fecha_max",
+              "total_venta"
+            ],
+            "name": "gate2c_r2_softrestaurant_cortes_units_freshness",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "19e076fb-c6de-4ea5-84ab-1caa9e86082c",
+                "130° MERIDA",
+                "SoftRestaurant",
+                758,
+                "2024-05-11 14:38:48.0000000",
+                "2026-08-05 16:13:38.0000000",
+                "132004991.60"
+              ],
+              [
+                "b06ee652-0370-4267-b0a8-da6fc39b590a",
+                "CIENFUEGOS",
+                "SoftRestaurant",
+                892,
+                "2024-05-11 13:04:40.0000000",
+                "2026-08-05 12:59:12.0000000",
+                "227924893.28"
+              ],
+              [
+                "dfb86008-1b81-472a-9e50-8a0821dec4b2",
+                "LA ESTELAR",
+                "SoftRestaurant",
+                349,
+                "2025-06-14 05:24:25.0000000",
+                "2026-08-06 12:59:52.0000000",
+                "30989770.46"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fuente_original",
+              "lineas",
+              "tickets",
+              "fecha_min",
+              "fecha_max",
+              "importe"
+            ],
+            "name": "gate2c_r2_sales_sep2026_by_source",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                "SOFTRESTAURANT",
+                717,
+                59,
+                "2026-09-01",
+                "2026-09-03",
+                "306320.0013"
+              ],
+              [
+                "130QRO",
+                "MPRO",
+                2341,
+                175,
+                "2026-09-01",
+                "2026-09-06",
+                "971775.0000"
+              ],
+              [
+                "CIENFUEGOS",
+                "SOFTRESTAURANT",
+                1559,
+                136,
+                "2026-09-01",
+                "2026-09-06",
+                "536209.0022"
+              ],
+              [
+                "ESTELAR",
+                "SOFTRESTAURANT",
+                467,
+                61,
+                "2026-09-01",
+                "2026-09-03",
+                "101220.0000"
+              ],
+              [
+                "ORIGEN",
+                "MPRO",
+                2358,
+                214,
+                "2026-09-01",
+                "2026-09-06",
+                "492562.4620"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocioID",
+              "UnidadNegocioNombre",
+              "cortes",
+              "total_venta",
+              "fecha_min",
+              "fecha_max"
+            ],
+            "name": "gate2c_r2_cortes_sep2026_soft",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocio",
+              "pagos",
+              "tickets",
+              "importe",
+              "propina",
+              "fecha_min",
+              "fecha_max"
+            ],
+            "name": "gate2c_r2_detalle_pagos_sep2026_soft",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "periodo",
+              "UnidadNegocio",
+              "pagos",
+              "tickets"
+            ],
+            "name": "gate2c_r2_soft_payment_monthly_freshness",
+            "row_count_returned": 18,
+            "rows": [
+              [
+                "2026-06",
+                "130MID",
+                255,
+                235
+              ],
+              [
+                "2026-06",
+                "CIENFUEGOS",
+                383,
+                312
+              ],
+              [
+                "2026-06",
+                "ESTELAR",
+                628,
+                500
+              ],
+              [
+                "2026-05",
+                "130MID",
+                988,
+                895
+              ],
+              [
+                "2026-05",
+                "CIENFUEGOS",
+                1454,
+                1214
+              ],
+              [
+                "2026-05",
+                "ESTELAR",
+                2460,
+                1881
+              ],
+              [
+                "2026-04",
+                "130MID",
+                981,
+                914
+              ],
+              [
+                "2026-04",
+                "CIENFUEGOS",
+                1255,
+                1049
+              ],
+              [
+                "2026-04",
+                "ESTELAR",
+                2203,
+                1686
+              ],
+              [
+                "2026-03",
+                "130MID",
+                1152,
+                1068
+              ],
+              [
+                "2026-03",
+                "CIENFUEGOS",
+                1392,
+                1151
+              ],
+              [
+                "2026-03",
+                "ESTELAR",
+                2221,
+                1703
+              ],
+              [
+                "2026-02",
+                "130MID",
+                1182,
+                1106
+              ],
+              [
+                "2026-02",
+                "CIENFUEGOS",
+                1537,
+                1278
+              ],
+              [
+                "2026-02",
+                "ESTELAR",
+                2306,
+                1804
+              ],
+              [
+                "2026-01",
+                "130MID",
+                1349,
+                1236
+              ],
+              [
+                "2026-01",
+                "CIENFUEGOS",
+                1554,
+                1284
+              ],
+              [
+                "2026-01",
+                "ESTELAR",
+                2544,
+                2006
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "periodo",
+              "UnidadNegocioID",
+              "UnidadNegocioNombre",
+              "cortes"
+            ],
+            "name": "gate2c_r2_soft_cortes_monthly_freshness",
+            "row_count_returned": 21,
+            "rows": [
+              [
+                "2026-08",
+                "19e076fb-c6de-4ea5-84ab-1caa9e86082c",
+                "130° MERIDA",
+                2
+              ],
+              [
+                "2026-08",
+                "b06ee652-0370-4267-b0a8-da6fc39b590a",
+                "CIENFUEGOS",
+                3
+              ],
+              [
+                "2026-08",
+                "dfb86008-1b81-472a-9e50-8a0821dec4b2",
+                "LA ESTELAR",
+                3
+              ],
+              [
+                "2026-06",
+                "19e076fb-c6de-4ea5-84ab-1caa9e86082c",
+                "130° MERIDA",
+                17
+              ],
+              [
+                "2026-06",
+                "b06ee652-0370-4267-b0a8-da6fc39b590a",
+                "CIENFUEGOS",
+                16
+              ],
+              [
+                "2026-06",
+                "dfb86008-1b81-472a-9e50-8a0821dec4b2",
+                "LA ESTELAR",
+                17
+              ],
+              [
+                "2026-05",
+                "19e076fb-c6de-4ea5-84ab-1caa9e86082c",
+                "130° MERIDA",
+                18
+              ],
+              [
+                "2026-05",
+                "b06ee652-0370-4267-b0a8-da6fc39b590a",
+                "CIENFUEGOS",
+                19
+              ],
+              [
+                "2026-05",
+                "dfb86008-1b81-472a-9e50-8a0821dec4b2",
+                "LA ESTELAR",
+                17
+              ],
+              [
+                "2026-04",
+                "19e076fb-c6de-4ea5-84ab-1caa9e86082c",
+                "130° MERIDA",
+                30
+              ],
+              [
+                "2026-04",
+                "b06ee652-0370-4267-b0a8-da6fc39b590a",
+                "CIENFUEGOS",
+                34
+              ],
+              [
+                "2026-04",
+                "dfb86008-1b81-472a-9e50-8a0821dec4b2",
+                "LA ESTELAR",
+                31
+              ],
+              [
+                "2026-03",
+                "19e076fb-c6de-4ea5-84ab-1caa9e86082c",
+                "130° MERIDA",
+                33
+              ],
+              [
+                "2026-03",
+                "b06ee652-0370-4267-b0a8-da6fc39b590a",
+                "CIENFUEGOS",
+                36
+              ],
+              [
+                "2026-03",
+                "dfb86008-1b81-472a-9e50-8a0821dec4b2",
+                "LA ESTELAR",
+                32
+              ],
+              [
+                "2026-02",
+                "19e076fb-c6de-4ea5-84ab-1caa9e86082c",
+                "130° MERIDA",
+                29
+              ],
+              [
+                "2026-02",
+                "b06ee652-0370-4267-b0a8-da6fc39b590a",
+                "CIENFUEGOS",
+                31
+              ],
+              [
+                "2026-02",
+                "dfb86008-1b81-472a-9e50-8a0821dec4b2",
+                "LA ESTELAR",
+                30
+              ],
+              [
+                "2026-01",
+                "19e076fb-c6de-4ea5-84ab-1caa9e86082c",
+                "130° MERIDA",
+                30
+              ],
+              [
+                "2026-01",
+                "b06ee652-0370-4267-b0a8-da6fc39b590a",
+                "CIENFUEGOS",
+                35
+              ],
+              [
+                "2026-01",
+                "dfb86008-1b81-472a-9e50-8a0821dec4b2",
+                "LA ESTELAR",
+                30
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "ventas_tickets",
+              "matched_payment_tickets",
+              "unmatched_payment_tickets"
+            ],
+            "name": "gate2c_r2_ticket_match_soft_sep2026",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "130MID",
+                59,
+                0,
+                59
+              ],
+              [
+                "CIENFUEGOS",
+                136,
+                0,
+                136
+              ],
+              [
+                "ESTELAR",
+                61,
+                0,
+                61
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
   "started_at_utc": "2026-09-07T17:50:09Z",
   "status": "READ_ONLY_COMPLETE",
   "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
   "tests": "PASS",
-  "work_completion": "NOT_CERTIFIED"
+  "work_completion": "COMPLETE"
 }
