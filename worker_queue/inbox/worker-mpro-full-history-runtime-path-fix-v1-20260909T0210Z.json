@@ -1,0 +1,65 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-mpro-full-history-runtime-path-fix-v1-20260909T0210Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Corregir exclusivamente el script de capability MPRO full-history para usar el runtime POS canonico ya existente: resolve_pos_runtime_context + get_external_sql_connection + sync_cortes_z_context. El job 130QRO R1 fallo rc=1 porque el script reutilizo sync_cortes_mpro.get_mpro_connection, que actualmente devuelve get_sql_connection y no la conexion externa MPRO. No modificar Worker/Supervisor/watchdog ni contratos del modo MPRO_FULL_HISTORY_RESYNC. Mantener una sola unidad, discovery MIN/MAX directo en Comanda_Corte, ventanas mensuales, idempotencia, fail-closed, no secretos y --execute obligatorio para escritura.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/resync_mpro_full_history.py",
+      "old": "from modules.finanzas.canonical_sync_units import get_canonical_finance_sync_units\nfrom modules.finanzas.sync_cortes_mpro import get_unidad_info_mpro, get_mpro_connection, sincronizar_unidad_mpro",
+      "new": "from core.connections.pos_runtime_resolver import resolve_pos_runtime_context\nfrom core.sql_first.connection_factory import get_external_sql_connection\nfrom modules.finanzas.cortes_z_runtime_sync import sync_cortes_z_context"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/resync_mpro_full_history.py",
+      "old": "def _resolve_unit(code: str):\n    wanted = code.strip().upper()\n    rows = get_canonical_finance_sync_units('MANAGEMENTPRO')\n    matches = [r for r in rows if str(r.get('unidad_negocio_codigo') or '').strip().upper() == wanted]\n    if len(matches) != 1:\n        raise RuntimeError(f'FAIL_CLOSED:MPRO_UNIT_NOT_UNIQUE:{wanted}')\n    return matches[0]\n\n\ndef _origin_bounds(unit):\n    info = get_unidad_info_mpro(unit['unidad_negocio_nombre'])\n    if not info:\n        raise RuntimeError('FAIL_CLOSED:MPRO_CONNECTION_NOT_FOUND')\n    conn = get_mpro_connection(info)\n    try:\n        cur = conn.cursor(as_dict=True)\n        cur.execute(\"\"\"\n            SELECT MIN(Cc_Fecha) AS min_fecha, MAX(Cc_Fecha) AS max_fecha, COUNT_BIG(*) AS total_rows\n            FROM Comanda_Corte\n            WHERE Sc_Cve_Sucursal = %s\n              AND (Es_Cve_Estado IS NULL OR Es_Cve_Estado <> 'BAJA')\n        \"\"\", (unit['sucursal_origen_id'],))\n        row = cur.fetchone() or {}\n        return row.get('min_fecha'), row.get('max_fecha'), int(row.get('total_rows') or 0)\n    finally:\n        conn.close()",
+      "new": "def _resolve_unit(code: str):\n    return resolve_pos_runtime_context(\n        code.strip().upper(),\n        expected_system_types=['MANAGEMENTPRO'],\n    )\n\n\ndef _origin_bounds(context):\n    if not context.sucursal_origen_id:\n        raise RuntimeError(f'FAIL_CLOSED:MPRO_BRANCH_MISSING:{context.unidad_codigo}')\n    conn = get_external_sql_connection(context.external_connection_config(as_dict=True))\n    try:\n        cur = conn.cursor(as_dict=True)\n        cur.execute(\"\"\"\n            SELECT MIN(Cc_Fecha) AS min_fecha, MAX(Cc_Fecha) AS max_fecha, COUNT_BIG(*) AS total_rows\n            FROM Comanda_Corte\n            WHERE Sc_Cve_Sucursal = %s\n              AND (Es_Cve_Estado IS NULL OR Es_Cve_Estado <> 'BAJA')\n        \"\"\", (context.sucursal_origen_id,))\n        row = cur.fetchone() or {}\n        return row.get('min_fecha'), row.get('max_fecha'), int(row.get('total_rows') or 0)\n    finally:\n        conn.close()"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/resync_mpro_full_history.py",
+      "old": "    unit = _resolve_unit(args.unit)\n    min_fecha, max_fecha, total_rows = _origin_bounds(unit)\n    print(json.dumps({'event':'origin_bounds','unidad':unit['unidad_negocio_codigo'],'sucursal':unit['sucursal_origen_id'],'min_fecha':min_fecha.isoformat() if min_fecha else None,'max_fecha':max_fecha.isoformat() if max_fecha else None,'total_rows':total_rows}, ensure_ascii=False))",
+      "new": "    context = _resolve_unit(args.unit)\n    min_fecha, max_fecha, total_rows = _origin_bounds(context)\n    print(json.dumps({'event':'origin_bounds','unidad':context.unidad_codigo,'sucursal':context.sucursal_origen_id,'min_fecha':min_fecha.isoformat() if min_fecha else None,'max_fecha':max_fecha.isoformat() if max_fecha else None,'total_rows':total_rows}, ensure_ascii=False))"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/resync_mpro_full_history.py",
+      "old": "        print(json.dumps({'event':'summary','unidad':unit['unidad_negocio_codigo'],'status':'DRY_RUN','windows':0,'origin_rows':total_rows}, ensure_ascii=False))",
+      "new": "        print(json.dumps({'event':'summary','unidad':context.unidad_codigo,'status':'DRY_RUN','windows':0,'origin_rows':total_rows}, ensure_ascii=False))"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/resync_mpro_full_history.py",
+      "old": "        result = sincronizar_unidad_mpro(unit['unidad_negocio_nombre'], fecha_desde=fi, fecha_hasta=ff)\n        windows += 1",
+      "new": "        result = sync_cortes_z_context(\n            context,\n            fecha_desde=fi,\n            fecha_hasta=ff,\n            tipo_ejecucion='FULL_HISTORY_BACKFILL',\n        )\n        windows += 1"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/resync_mpro_full_history.py",
+      "old": "        safe = {'event':'window','unidad':unit['unidad_negocio_codigo'],'fi':fi.isoformat(),'ff':ff.isoformat(),'estatus':result.get('estatus'),'stats':stats}",
+      "new": "        safe = {'event':'window','unidad':context.unidad_codigo,'fi':fi.isoformat(),'ff':ff.isoformat(),'estatus':result.get('estatus'),'stats':stats}"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/resync_mpro_full_history.py",
+      "old": "    print(json.dumps({'event':'summary','unidad':unit['unidad_negocio_codigo'],'status':status,'windows':windows,'origin_rows':total_rows,'stats':totals,'error_count':len(errors)}, ensure_ascii=False, default=str))",
+      "new": "    print(json.dumps({'event':'summary','unidad':context.unidad_codigo,'status':status,'windows':windows,'origin_rows':total_rows,'stats':totals,'error_count':len(errors)}, ensure_ascii=False, default=str))"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_mpro_full_history_capability_contract.py",
+      "old": "    assert \"get_canonical_finance_sync_units('MANAGEMENTPRO')\" in text\n    assert 'Comanda_Corte' in text\n    assert 'sincronizar_unidad_mpro' in text",
+      "new": "    assert 'resolve_pos_runtime_context' in text\n    assert 'get_external_sql_connection' in text\n    assert 'Comanda_Corte' in text\n    assert 'sync_cortes_z_context' in text"
+    }
+  ],
+  "checks": [
+    {"type":"py_compile","paths":["backend/scripts/resync_mpro_full_history.py"]},
+    {"type":"pytest","paths":["backend/tests/test_worker_mpro_full_history_capability_contract.py"]},
+    {"type":"git_diff_check"}
+  ],
+  "requester": {"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0","chat":"MPRO full-history runtime connection fix after 130QRO R1 rc1"},
+  "human_summary_language": "es"
+}
