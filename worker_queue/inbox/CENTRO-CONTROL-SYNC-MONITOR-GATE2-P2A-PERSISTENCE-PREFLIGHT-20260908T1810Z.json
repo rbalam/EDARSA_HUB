@@ -1,0 +1,57 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P2A-PERSISTENCE-PREFLIGHT-20260908T1810Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "GATE 2 P2A: preflight SQL canónico para sustituir el estado process-local del Centro de Control y eliminar mocks sin inventar tablas ni columnas. Descubrir exclusivamente con metadata real si ya existen tablas reutilizables para alertas, bitácora, historial/eventos, métricas/estabilidad y blindaje/configuración. NO DDL, NO DML, NO Mongo, NO LIVE, NO Production. La salida debe permitir construir el P2B determinista de persistencia y eliminación de mocks.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "cc_persistence_candidate_tables",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name LIKE '%Centro%Control%' OR t.name LIKE '%CentroControl%' OR t.name LIKE '%Alerta%' OR t.name LIKE '%Bitacora%' OR t.name LIKE '%Historial%' OR t.name LIKE '%Evento%' OR t.name LIKE '%Metrica%' OR t.name LIKE '%Estabilidad%' OR t.name LIKE '%Blindaje%' ORDER BY s.name,t.name"
+        },
+        {
+          "name": "cc_persistence_candidate_columns",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE '%Centro%Control%' OR t.name LIKE '%CentroControl%' OR t.name LIKE '%Alerta%' OR t.name LIKE '%Bitacora%' OR t.name LIKE '%Historial%' OR t.name LIKE '%Evento%' OR t.name LIKE '%Metrica%' OR t.name LIKE '%Estabilidad%' OR t.name LIKE '%Blindaje%' ORDER BY s.name,t.name,c.column_id"
+        },
+        {
+          "name": "cc_persistence_candidate_rowcounts",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, SUM(CASE WHEN p.index_id IN (0,1) THEN p.rows ELSE 0 END) AS approx_rows FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id LEFT JOIN sys.partitions p ON p.object_id=t.object_id WHERE t.name LIKE '%Centro%Control%' OR t.name LIKE '%CentroControl%' OR t.name LIKE '%Alerta%' OR t.name LIKE '%Bitacora%' OR t.name LIKE '%Historial%' OR t.name LIKE '%Evento%' OR t.name LIKE '%Metrica%' OR t.name LIKE '%Estabilidad%' OR t.name LIKE '%Blindaje%' GROUP BY s.name,t.name ORDER BY s.name,t.name"
+        },
+        {
+          "name": "cc_existing_audit_and_scheduler_tables",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name IN ('Scheduler_BitacoraJobs','Sistema_RBAC_Bitacora','Usuario_RBAC_Bitacora','Sys_Scheduler_Jobs','Sys_Scheduler_JobConfig') OR t.name LIKE '%RBAC%Bitacora%' ORDER BY s.name,t.name"
+        },
+        {
+          "name": "cc_existing_audit_and_scheduler_columns",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Scheduler_BitacoraJobs','Sistema_RBAC_Bitacora','Usuario_RBAC_Bitacora','Sys_Scheduler_Jobs','Sys_Scheduler_JobConfig') OR t.name LIKE '%RBAC%Bitacora%' ORDER BY s.name,t.name,c.column_id"
+        },
+        {
+          "name": "cc_module_rbac_contract",
+          "sql": "SELECT m.ModuloID,m.CodigoModulo,m.Nombre,a.AccionID,a.CodigoAccion FROM dbo.Usuario_Modulos m CROSS JOIN dbo.Usuario_Acciones a WHERE LOWER(m.CodigoModulo)='centro_control' AND UPPER(a.CodigoAccion) IN ('VER','ADMIN','GESTIONAR','EJECUTAR','CONFIGURAR') ORDER BY a.CodigoAccion"
+        },
+        {
+          "name": "cc_sync_monitor_rbac_contract",
+          "sql": "SELECT m.ModuloID,m.CodigoModulo,m.Nombre,a.AccionID,a.CodigoAccion FROM dbo.Usuario_Modulos m CROSS JOIN dbo.Usuario_Acciones a WHERE LOWER(m.CodigoModulo)='sync_monitor' AND UPPER(a.CodigoAccion)='VER'"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "NO DDL",
+    "NO DML",
+    "NO Production",
+    "NO Mongo",
+    "NO LIVE",
+    "NO Worker structure changes",
+    "Do not invent persistence tables or columns",
+    "P2B must be based only on this preflight plus repository evidence"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "technical"
+}
