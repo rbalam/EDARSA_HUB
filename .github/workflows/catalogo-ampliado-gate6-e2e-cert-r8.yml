@@ -3,7 +3,7 @@ on:
   push:
     branches: [Edarsahub_Desarrollo]
     paths:
-      - ops/e2e/requests/CATALOGO-AMPLIADO-GATE6-R8-20260908.execute
+      - ops/e2e/requests/CATALOGO-AMPLIADO-GATE6-R9-20260908.execute
 permissions:
   contents: read
 jobs:
@@ -31,7 +31,7 @@ jobs:
       - name: Install Gate6 runtime
         run: python -m pip install fastapi httpx pymssql pydantic python-dotenv email-validator bcrypt PyJWT pytest
       - name: Navigation and frontend build
-        run: npm ci --prefix frontend && npm run build --prefix frontend && grep -q 'path="catalogo-ampliado"' frontend/src/App.js && grep -q 'CatalogoAmpliadoDashboard' frontend/src/App.js
+        run: cd frontend && yarn build && grep -q 'path="catalogo-ampliado"' src/App.js && grep -q 'CatalogoAmpliadoDashboard' src/App.js
       - name: Real API SQL E2E
         env:
           PYTHONPATH: ${{ github.workspace }}/backend
