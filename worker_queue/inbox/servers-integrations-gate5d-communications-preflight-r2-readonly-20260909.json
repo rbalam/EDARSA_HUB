@@ -1,0 +1,22 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"servers-integrations-gate5d-communications-preflight-r2-readonly-20260909",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"7b58dc633e034ce5b1708775ab63a5e529900a62",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Gate 5D preflight R2 READ_ONLY: obtener esquema exacto y existencia de los objetos canonicos Communications antes de tocar codigo. Solo metadata SQL segura. No secretos. Sin DDL/DML. Production prohibida.",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"gate5d_r2_identity","sql":"SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user,ORIGINAL_LOGIN() AS original_login"},
+    {"name":"gate5d_r2_exact_objects","sql":"SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name IN ('Sistema_NotificacionesConfig','Operativo_Notificaciones_Queue','Operativo_Notificaciones_Log') ORDER BY o.name"},
+    {"name":"gate5d_r2_exact_columns","sql":"SELECT OBJECT_NAME(c.object_id) AS table_name,c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable,dc.definition AS default_definition FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id WHERE c.object_id IN (OBJECT_ID('dbo.Sistema_NotificacionesConfig'),OBJECT_ID('dbo.Operativo_Notificaciones_Queue'),OBJECT_ID('dbo.Operativo_Notificaciones_Log')) ORDER BY OBJECT_NAME(c.object_id),c.column_id"},
+    {"name":"gate5d_r2_keys_indexes","sql":"SELECT OBJECT_NAME(i.object_id) AS table_name,i.name AS index_name,i.is_unique,i.is_primary_key,c.name AS column_name,ic.key_ordinal FROM sys.indexes i JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id IN (OBJECT_ID('dbo.Sistema_NotificacionesConfig'),OBJECT_ID('dbo.Operativo_Notificaciones_Queue'),OBJECT_ID('dbo.Operativo_Notificaciones_Log')) AND i.index_id>0 ORDER BY table_name,index_name,ic.key_ordinal"},
+    {"name":"gate5d_r2_row_counts","sql":"SELECT t.name AS table_name,SUM(p.rows) AS total_rows FROM sys.tables t JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE t.name IN ('Sistema_NotificacionesConfig','Operativo_Notificaciones_Queue','Operativo_Notificaciones_Log') GROUP BY t.name ORDER BY t.name"},
+    {"name":"gate5d_r2_comm_connections_metadata","sql":"SELECT COUNT_BIG(*) AS total_connections,SUM(CASE WHEN UPPER(ISNULL(system_type,'')) LIKE '%TWILIO%' OR UPPER(ISNULL(system_type,'')) LIKE '%WHATS%' OR UPPER(ISNULL(system_type,'')) LIKE '%SMTP%' OR UPPER(ISNULL(system_type,'')) LIKE '%EMAIL%' OR UPPER(ISNULL(nombre,'')) LIKE '%TWILIO%' OR UPPER(ISNULL(nombre,'')) LIKE '%WHATS%' OR UPPER(ISNULL(nombre,'')) LIKE '%SMTP%' OR UPPER(ISNULL(nombre,'')) LIKE '%EMAIL%' THEN 1 ELSE 0 END) AS communication_candidates FROM dbo.Servidores_Conexiones"},
+    {"name":"gate5d_r2_rbac","sql":"SELECT codigo,nombre,modulo,activo FROM dbo.Sistema_RBAC_Permisos WHERE codigo LIKE '%NOTIFIC%' OR codigo LIKE '%COMUNIC%' OR codigo LIKE '%MENSAJ%' OR codigo LIKE '%TWILIO%' OR codigo LIKE '%WHATS%' ORDER BY codigo"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
