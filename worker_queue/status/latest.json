@@ -1,11 +1,11 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "0a0da79613ee72268b73ce9e8956d99c2110dc9f",
-  "generated_at_utc": "2026-09-09T23:44:48Z",
+  "generated_at_utc": "2026-09-09T23:46:01Z",
   "history": {
     "done_total_local": 341,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 384,
     "results_total_local": 656
   },
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1741,
+      "age_seconds": 1815,
       "job_id": "coa-gate5a-facturacion-cfdi-emitidos-readonly-v1-20260909",
       "reasons": [
         "CHECK_1_QUERIES_REQUIRED"
@@ -22,104 +22,104 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1761,
+      "age_seconds": 1835,
       "job_id": "CAVAS-CORPORATIVAS-GATE12A-IDENTIDAD-SOCIO-METADATA-AUDIT-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1565,
+      "age_seconds": 1639,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-E2E-HTTP-RBAC-NOTIFICATIONS-20260909T2301Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2205,
+      "age_seconds": 2279,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5C-R2-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1535,
+      "age_seconds": 1609,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5D-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 962,
+      "age_seconds": 1036,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5D-R2-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3314,
+      "age_seconds": 3388,
       "job_id": "servers-integrations-gate5c-formal-certification-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3529,
-      "job_id": "servers-integrations-gate5c-ledger-r3-timeout-utc-20260909",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3467,
+      "age_seconds": 3541,
       "job_id": "servers-integrations-gate5c-postaudit-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1012,
+      "age_seconds": 1086,
       "job_id": "servers-integrations-gate5d-communications-preflight-r2-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1105,
+      "age_seconds": 1179,
       "job_id": "servers-integrations-gate5d-communications-preflight-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 716,
+      "age_seconds": 790,
       "job_id": "servers-integrations-gate5d-communications-runtime-r1-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 567,
+      "age_seconds": 641,
       "job_id": "servers-integrations-gate5d-communications-runtime-r2-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 950,
+      "age_seconds": 1024,
       "job_id": "servers-integrations-gate5d-config-classification-r3-readonly-20260909",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 66,
+      "age_seconds": 140,
       "job_id": "servers-integrations-gate5d-generic-admin-api-r3-20260909",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1,
+      "job_id": "servers-integrations-gate5d-generic-admin-api-r4-20260909",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 14,
-  "queue_running": 0,
+  "queue_result_ready_recent": 13,
+  "queue_running": 1,
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "servers-integrations-gate5d-generic-admin-api-r4-20260909",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-09T23:44:46Z",
-    "last_receive_utc": "2026-09-09T23:44:47Z",
+    "last_cycle_utc": "2026-09-09T23:45:58Z",
+    "last_receive_utc": "2026-09-09T23:46:00Z",
     "last_terminal_utc": "2026-09-09T23:43:41Z",
     "pid": "161541"
   },
