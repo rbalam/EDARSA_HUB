@@ -1,0 +1,922 @@
+{
+  "base_sha": "c55eea9e8faa44342295ac786da31f77c28f5654",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-09T02:05:40Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P3A-R3-UNIVERSE-THRESHOLDS-MINIMAL-20260908T1956Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T02:06:36Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "server_id",
+              "nombre",
+              "system_type",
+              "tipo_conexion",
+              "activo"
+            ],
+            "name": "p3r3_01_servers",
+            "row_count_returned": 26,
+            "rows": [
+              [
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "130° MERIDA",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                true
+              ],
+              [
+                "72F6E9A7-8EA2-4EB2-802E-4EE31753435E",
+                "130° QRO LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                true
+              ],
+              [
+                "B597D88A-AB37-4B4E-897B-EFE68C9B3732",
+                "API ManagmentPro",
+                "MPRO",
+                "API_LOCAL",
+                true
+              ],
+              [
+                "FA707E51-2C41-47C5-872C-0A911FBF90F0",
+                "BENDITA AGUITA",
+                "SoftRestaurant",
+                "DATA_SOURCE",
+                false
+              ],
+              [
+                "874021EC-918C-4F9F-AF35-7AE948B35DE0",
+                "BENDITA AGUITA",
+                "MPRO",
+                "DATA_SOURCE",
+                false
+              ],
+              [
+                "54F13BF8-C970-4294-9436-C2AFCDAB83C4",
+                "BENDITA AGUITA",
+                "MPRO",
+                "DATA_SOURCE",
+                false
+              ],
+              [
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                "CHAPUR BACKOFFICE",
+                "ENTERPRISE",
+                "API_LOCAL",
+                true
+              ],
+              [
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "CHAPUR NORTE",
+                "ENTERPRISE",
+                "API_LOCAL",
+                true
+              ],
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "CIENFUEGOS",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                true
+              ],
+              [
+                "31D62F39-632B-4684-B735-256BD9293A8F",
+                "CIENFUEGOS NOMINPAQ",
+                "SOFTRESTAURANT_PRO",
+                "API_LOCAL",
+                true
+              ],
+              [
+                "6D859026-710A-4920-9A44-6DA98FABC690",
+                "CIENFUEGOS TABLAJERIA",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                true
+              ],
+              [
+                "BEA40259-35F1-4693-BDA2-D2D10E13E56A",
+                "EDARSA HUB",
+                "Otro",
+                "CORE",
+                false
+              ],
+              [
+                "F8A9049A-96E8-4210-84AE-595FFA2822FA",
+                "EDARSA HUB",
+                "EDARSA_HUB",
+                "CORE",
+                true
+              ],
+              [
+                "2BEAD18C-73C9-4D86-AF92-2355940274F7",
+                "GARIBALDI",
+                "SOFTRESTAURANT_PRO",
+                "API_LOCAL",
+                true
+              ],
+              [
+                "B5175237-5E57-41F3-AB6D-B5AE2F5E780B",
+                "HR2020 ESCRITURA",
+                "MPRO",
+                "DATA_SOURCE",
+                false
+              ],
+              [
+                "1792AA66-5DA7-4B66-82FC-8F690988648F",
+                "INEGI - API Indicadores",
+                "INEGI",
+                "DATA_SOURCE",
+                false
+              ],
+              [
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "LA ESTELAR",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                true
+              ],
+              [
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "ManagmentPro",
+                "MPRO",
+                "DATA_SOURCE",
+                true
+              ],
+              [
+                "D1D8C70F-C3D0-4407-AE50-F09E8E5992EE",
+                "MPRO TABLAJERIA",
+                "MPRO",
+                "DATA_SOURCE",
+                true
+              ],
+              [
+                "817A0AA8-6170-4738-A8F6-A72AC36BA0DF",
+                "ORIGEN LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                true
+              ],
+              [
+                "D8425038-5E57-42D9-8F3A-62E287888874",
+                "PRUEBAS SOFTRESTAURANT",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                false
+              ],
+              [
+                "DC44C86B-8F1F-4B44-9704-6CEA89297C69",
+                "TEST API LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                false
+              ],
+              [
+                "EE896463-DAC4-439A-A5EC-8D4CC183E4FA",
+                "TEST_COMMIT_1785357429",
+                "MPRO",
+                "API_LOCAL",
+                false
+              ],
+              [
+                "90A62591-65CF-439F-AE8E-D505B50FCC07",
+                "TEST_ENCRYPTED_PASSWORD_UPDATED",
+                "MPRO",
+                "DATA_SOURCE",
+                false
+              ],
+              [
+                "7452D373-7350-4193-B819-E36FFA800724",
+                "TEST_RBAC_ADMIN_CHECK",
+                "MPRO",
+                "DATA_SOURCE",
+                false
+              ],
+              [
+                "3F6FFBDF-1288-423D-AA42-3878B48E5022",
+                "TEST_SQL_FIRST_TEMP_UPDATED",
+                "MANAGEMENTPRO",
+                "DATA_SOURCE",
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "server_id",
+              "sync_type",
+              "runs",
+              "last_sync"
+            ],
+            "name": "p3r3_02_compras_types",
+            "row_count_returned": 68,
+            "rows": [
+              [
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "ALMACENES",
+                4352,
+                "2026-09-08T19:21:32.487000"
+              ],
+              [
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "EXISTENCIAS",
+                4354,
+                "2026-09-08T19:21:33.640000"
+              ],
+              [
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "INVENTARIOS",
+                4435,
+                "2026-09-08T19:19:51.557000"
+              ],
+              [
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "MOVIMIENTOS",
+                4252,
+                "2026-09-08T19:32:43.507000"
+              ],
+              [
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "ORDENES",
+                4315,
+                "2026-09-08T19:32:44.710000"
+              ],
+              [
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "PEDIDOS",
+                4314,
+                "2026-09-08T19:32:44.067000"
+              ],
+              [
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "RECEPCIONES",
+                4314,
+                "2026-09-08T19:32:45.283000"
+              ],
+              [
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "REQUISICIONES",
+                4364,
+                "2026-09-08T19:21:30.563000"
+              ],
+              [
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "ALMACENES",
+                2403,
+                "2026-09-08T20:03:19.807000"
+              ],
+              [
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "EXISTENCIAS",
+                2407,
+                "2026-09-08T20:03:20.217000"
+              ],
+              [
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "INVENTARIOS",
+                2415,
+                "2026-09-08T20:03:16.617000"
+              ],
+              [
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "MOVIMIENTOS",
+                2357,
+                "2026-09-08T20:04:26.070000"
+              ],
+              [
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "ORDENES",
+                2307,
+                "2026-09-08T20:05:03.207000"
+              ],
+              [
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "PEDIDOS",
+                2333,
+                "2026-09-08T20:04:45.263000"
+              ],
+              [
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "RECEPCIONES",
+                2285,
+                "2026-09-08T20:05:21.880000"
+              ],
+              [
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "REQUISICIONES",
+                2415,
+                "2026-09-08T20:03:18.770000"
+              ],
+              [
+                "6d859026-710a-4920-9a44-6da98fabc690",
+                "ALMACENES",
+                217,
+                "2026-07-03T00:14:14.830000"
+              ],
+              [
+                "6d859026-710a-4920-9a44-6da98fabc690",
+                "EXISTENCIAS",
+                217,
+                "2026-07-03T00:14:31.183000"
+              ],
+              [
+                "6d859026-710a-4920-9a44-6da98fabc690",
+                "INVENTARIOS",
+                226,
+                "2026-07-03T00:13:58.210000"
+              ],
+              [
+                "6d859026-710a-4920-9a44-6da98fabc690",
+                "MOVIMIENTOS",
+                217,
+                "2026-07-03T00:14:31.467000"
+              ],
+              [
+                "6d859026-710a-4920-9a44-6da98fabc690",
+                "ORDENES",
+                214,
+                "2026-07-03T00:15:04.147000"
+              ],
+              [
+                "6d859026-710a-4920-9a44-6da98fabc690",
+                "PEDIDOS",
+                215,
+                "2026-07-03T00:14:47.790000"
+              ],
+              [
+                "6d859026-710a-4920-9a44-6da98fabc690",
+                "RECEPCIONES",
+                213,
+                "2026-07-03T00:15:20.487000"
+              ],
+              [
+                "6d859026-710a-4920-9a44-6da98fabc690",
+                "REQUISICIONES",
+                224,
+                "2026-07-03T00:14:14.547000"
+              ],
+              [
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "ALMACENES",
+                2501,
+                "2026-09-08T19:59:39.127000"
+              ],
+              [
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "BACKFILL_COMPRAS",
+                1,
+                "2026-06-04T23:54:50"
+              ],
+              [
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "BACKFILL_INVENTARIOS",
+                1,
+                "2026-06-04T23:54:02.963000"
+              ],
+              [
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "BACKFILL_VENTAS",
+                1,
+                "2026-06-04T23:30:55.190000"
+              ],
+              [
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "BACKFILL_VENTAS_REAL",
+                1,
+                "2026-06-04T23:55:07.247000"
+              ],
+              [
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "EXISTENCIAS",
+                2500,
+                "2026-09-08T19:59:39.500000"
+              ],
+              [
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "INVENTARIOS",
+                2516,
+                "2026-09-08T19:59:34.843000"
+              ],
+              [
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "MOVIMIENTOS",
+                2445,
+                "2026-09-08T20:02:26.377000"
+              ],
+              [
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "ORDENES",
+                2443,
+                "2026-09-08T20:02:50.627000"
+              ],
+              [
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "PEDIDOS",
+                2454,
+                "2026-09-08T20:02:32.550000"
+              ],
+              [
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "RECEPCIONES",
+                2427,
+                "2026-09-08T20:03:09.143000"
+              ],
+              [
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "REQUISICIONES",
+                2511,
+                "2026-09-08T19:59:37.200000"
+              ],
+              [
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "ALMACENES",
+                2156,
+                "2026-09-08T19:32:53.583000"
+              ],
+              [
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "EXISTENCIAS",
+                2157,
+                "2026-09-08T19:32:53.950000"
+              ],
+              [
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "INVENTARIOS",
+                2160,
+                "2026-09-08T19:32:50.747000"
+              ],
+              [
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "MOVIMIENTOS",
+                2142,
+                "2026-09-08T19:34:56.080000"
+              ],
+              [
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "ORDENES",
+                2152,
+                "2026-09-08T19:35:28.490000"
+              ],
+              [
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "PEDIDOS",
+                2154,
+                "2026-09-08T19:35:13.847000"
+              ],
+              [
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "RECEPCIONES",
+                2152,
+                "2026-09-08T19:35:41.743000"
+              ],
+              [
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "REQUISICIONES",
+                2161,
+                "2026-09-08T19:32:52.697000"
+              ],
+              [
+                "b5175237-5e57-41f3-ab6d-b5ae2f5e780b",
+                "ALMACENES",
+                162,
+                "2026-07-02T23:44:00.443000"
+              ],
+              [
+                "b5175237-5e57-41f3-ab6d-b5ae2f5e780b",
+                "EXISTENCIAS",
+                162,
+                "2026-07-02T23:44:00.997000"
+              ],
+              [
+                "b5175237-5e57-41f3-ab6d-b5ae2f5e780b",
+                "INVENTARIOS",
+                166,
+                "2026-07-02T23:43:59.773000"
+              ],
+              [
+                "b5175237-5e57-41f3-ab6d-b5ae2f5e780b",
+                "MOVIMIENTOS",
+                162,
+                "2026-07-02T23:44:01.287000"
+              ],
+              [
+                "b5175237-5e57-41f3-ab6d-b5ae2f5e780b",
+                "ORDENES",
+                162,
+                "2026-07-02T23:44:02.417000"
+              ],
+              [
+                "b5175237-5e57-41f3-ab6d-b5ae2f5e780b",
+                "PEDIDOS",
+                162,
+                "2026-07-02T23:44:01.830000"
+              ],
+              [
+                "b5175237-5e57-41f3-ab6d-b5ae2f5e780b",
+                "RECEPCIONES",
+                162,
+                "2026-07-02T23:44:02.977000"
+              ],
+              [
+                "b5175237-5e57-41f3-ab6d-b5ae2f5e780b",
+                "REQUISICIONES",
+                166,
+                "2026-07-02T23:44:00.113000"
+              ],
+              [
+                "d1d8c70f-c3d0-4407-ae50-f09e8e5992ee",
+                "ALMACENES",
+                160,
+                "2026-07-02T23:47:53.490000"
+              ],
+              [
+                "d1d8c70f-c3d0-4407-ae50-f09e8e5992ee",
+                "EXISTENCIAS",
+                160,
+                "2026-07-02T23:47:54.063000"
+              ],
+              [
+                "d1d8c70f-c3d0-4407-ae50-f09e8e5992ee",
+                "INVENTARIOS",
+                164,
+                "2026-07-02T23:47:52.643000"
+              ],
+              [
+                "d1d8c70f-c3d0-4407-ae50-f09e8e5992ee",
+                "MOVIMIENTOS",
+                160,
+                "2026-07-02T23:47:54.343000"
+              ],
+              [
+                "d1d8c70f-c3d0-4407-ae50-f09e8e5992ee",
+                "ORDENES",
+                160,
+                "2026-07-02T23:47:55.473000"
+              ],
+              [
+                "d1d8c70f-c3d0-4407-ae50-f09e8e5992ee",
+                "PEDIDOS",
+                160,
+                "2026-07-02T23:47:54.887000"
+              ],
+              [
+                "d1d8c70f-c3d0-4407-ae50-f09e8e5992ee",
+                "RECEPCIONES",
+                160,
+                "2026-07-02T23:47:56.047000"
+              ],
+              [
+                "d1d8c70f-c3d0-4407-ae50-f09e8e5992ee",
+                "REQUISICIONES",
+                164,
+                "2026-07-02T23:47:53.183000"
+              ],
+              [
+                "d8425038-5e57-42d9-8f3a-62e287888874",
+                "ALMACENES",
+                223,
+                "2026-07-03T00:13:39.293000"
+              ],
+              [
+                "d8425038-5e57-42d9-8f3a-62e287888874",
+                "EXISTENCIAS",
+                223,
+                "2026-07-03T00:13:39.823000"
+              ],
+              [
+                "d8425038-5e57-42d9-8f3a-62e287888874",
+                "INVENTARIOS",
+                231,
+                "2026-07-03T00:13:38.483000"
+              ],
+              [
+                "d8425038-5e57-42d9-8f3a-62e287888874",
+                "MOVIMIENTOS",
+                223,
+                "2026-07-03T00:13:40.250000"
+              ],
+              [
+                "d8425038-5e57-42d9-8f3a-62e287888874",
+                "ORDENES",
+                223,
+                "2026-07-03T00:13:41.317000"
+              ],
+              [
+                "d8425038-5e57-42d9-8f3a-62e287888874",
+                "PEDIDOS",
+                223,
+                "2026-07-03T00:13:40.780000"
+              ],
+              [
+                "d8425038-5e57-42d9-8f3a-62e287888874",
+                "RECEPCIONES",
+                223,
+                "2026-07-03T00:13:41.840000"
+              ],
+              [
+                "d8425038-5e57-42d9-8f3a-62e287888874",
+                "REQUISICIONES",
+                231,
+                "2026-07-03T00:13:38.997000"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "server_id",
+              "sync_type",
+              "runs",
+              "last_sync"
+            ],
+            "name": "p3r3_03_comercial_types",
+            "row_count_returned": 15,
+            "rows": [
+              [
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "HISTORICAL",
+                4,
+                "2026-05-01 17:19:22.0742091"
+              ],
+              [
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "INCREMENTAL",
+                29516,
+                "2026-09-09 01:59:29.5920628"
+              ],
+              [
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "VENTAS_DIA",
+                9510,
+                "2026-09-08 18:12:28.7652522"
+              ],
+              [
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "HISTORICAL",
+                2,
+                "2026-05-01 17:19:18.5882040"
+              ],
+              [
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "INCREMENTAL",
+                14852,
+                "2026-09-09 01:59:28.9691781"
+              ],
+              [
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "VENTAS_DIA",
+                12655,
+                "2026-09-09 02:03:22.4156361"
+              ],
+              [
+                "72f6e9a7-8ea2-4eb2-802e-4ee31753435e",
+                "VENTAS_DIA",
+                8019,
+                "2026-09-09 02:03:26.8257638"
+              ],
+              [
+                "817a0aa8-6170-4738-a8f6-a72ac36ba0df",
+                "VENTAS_DIA",
+                7740,
+                "2026-09-09 02:03:28.6034084"
+              ],
+              [
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "HISTORICAL",
+                2,
+                "2026-05-01 17:19:19.8695019"
+              ],
+              [
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "INCREMENTAL",
+                14838,
+                "2026-09-09 01:59:28.6734073"
+              ],
+              [
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "VENTAS_DIA",
+                12676,
+                "2026-09-09 02:03:20.3601955"
+              ],
+              [
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "HISTORICAL",
+                2,
+                "2026-05-01 17:29:45.3564055"
+              ],
+              [
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "INCREMENTAL",
+                14814,
+                "2026-09-09 01:59:29.1912749"
+              ],
+              [
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "VENTAS_DIA",
+                12624,
+                "2026-09-09 02:03:24.5758776"
+              ],
+              [
+                "MULTIPLE",
+                "HISTORICAL",
+                6,
+                "2026-05-01 17:54:58.7537088"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_exists"
+            ],
+            "name": "p3r3_04_sync_logs_exists",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type"
+            ],
+            "name": "p3r3_05_sync_logs_columns",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                1,
+                "id",
+                "int"
+              ],
+              [
+                2,
+                "service",
+                "nvarchar"
+              ],
+              [
+                3,
+                "type",
+                "nvarchar"
+              ],
+              [
+                4,
+                "message",
+                "nvarchar"
+              ],
+              [
+                5,
+                "timestamp",
+                "datetime"
+              ],
+              [
+                6,
+                "operador",
+                "nvarchar"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "table_name"
+            ],
+            "name": "p3r3_06_threshold_named_tables",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "dbo",
+                "Comercial_AlertasUmbralesSeveridad"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "table_name",
+              "column_name",
+              "data_type"
+            ],
+            "name": "p3r3_07_threshold_named_columns",
+            "row_count_returned": 14,
+            "rows": [
+              [
+                "dbo",
+                "ActivoFijo_PlanesMantenimiento",
+                "FrecuenciaDias",
+                "int"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_PlanesMantenimiento",
+                "FrecuenciaValorMedidor",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "automatizacion_inventarios_config",
+                "intervalo_minutos",
+                "int"
+              ],
+              [
+                "dbo",
+                "Comercial_AlertasMargenDestinatarios",
+                "FrecuenciaMaximaDiaria",
+                "int"
+              ],
+              [
+                "dbo",
+                "Comercial_AlertasUmbralesSeveridad",
+                "UmbralID",
+                "uniqueidentifier"
+              ],
+              [
+                "dbo",
+                "Compras_DocumentosFiscales",
+                "ImpuestoTrasladado",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "CRM_Config_PipelineEtapas",
+                "DiasMaxSLA",
+                "int"
+              ],
+              [
+                "dbo",
+                "CRM_Config_PipelineEtapas",
+                "DiasSLAMaximo",
+                "int"
+              ],
+              [
+                "dbo",
+                "Economia_Series",
+                "FrecuenciaCodigo",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Operativo_AuditoriasProgramadas",
+                "Frecuencia",
+                "varchar"
+              ],
+              [
+                "dbo",
+                "Operativo_ResponsabilidadEconomica",
+                "UmbralMinimo",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "Sistema_SyncPOS_Config",
+                "FrecuenciaMinutos",
+                "int"
+              ],
+              [
+                "dbo",
+                "Tareas_Inventario",
+                "EstadoSLA",
+                "varchar"
+              ],
+              [
+                "dbo",
+                "Tareas_Inventario",
+                "FechaActualizacionSLA",
+                "datetime2"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-09T02:05:39Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
