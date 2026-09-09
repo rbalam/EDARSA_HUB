@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE8-RBAC-PHYSICAL-RECERT-R3",
+  "created_at_utc": "2026-09-09T05:15:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c3ae8aaebe80b98005a6f0f7619912d39f0b8cca",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Cerrar exclusivamente la discrepancia RBAC de Gate 8 contra la ruta fisica real usada por require_explicit_permission_dual: Usuario_PermisosRolModulo + Usuario_Modulos + Usuario_Acciones. Verificar existencia efectiva de los permisos cava_socios.VER y cava_socios.consumos.CREAR sin modificar codigo, datos, desarrollo ni Production.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate8_rbac_physical_exact_permissions",
+          "sql": "SELECT LOWER(CONCAT(m.CodigoModulo,'.',a.CodigoAccion)) AS Permiso, m.ModuloID, m.CodigoModulo, m.NombreModulo, a.AccionID, a.CodigoAccion, a.NombreAccion, COUNT_BIG(*) AS GrantsActivos FROM dbo.Usuario_PermisosRolModulo prm INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID WHERE ISNULL(prm.Activo,1)=1 AND ISNULL(prm.Permitido,1)=1 AND ISNULL(m.Activo,1)=1 AND ISNULL(a.Activo,1)=1 AND LOWER(CONCAT(m.CodigoModulo,'.',a.CodigoAccion)) IN ('cava_socios.ver','cava_socios.consumos.crear') GROUP BY m.ModuloID,m.CodigoModulo,m.NombreModulo,a.AccionID,a.CodigoAccion,a.NombreAccion ORDER BY Permiso"
+        },
+        {
+          "name": "gate8_rbac_physical_permission_count",
+          "sql": "SELECT COUNT(DISTINCT LOWER(CONCAT(m.CodigoModulo,'.',a.CodigoAccion))) AS PermisosExactosPresentes FROM dbo.Usuario_PermisosRolModulo prm INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID WHERE ISNULL(prm.Activo,1)=1 AND ISNULL(prm.Permitido,1)=1 AND ISNULL(m.Activo,1)=1 AND ISNULL(a.Activo,1)=1 AND LOWER(CONCAT(m.CodigoModulo,'.',a.CodigoAccion)) IN ('cava_socios.ver','cava_socios.consumos.crear')"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
