@@ -1,0 +1,91 @@
+name: RRR Gate 4 Customer360 Views Development
+
+on:
+  push:
+    branches: [Edarsahub_Desarrollo]
+    paths: [ops/migrations/requests/RRR-GATE4-CUSTOMER360-VIEWS-20260909.execute]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rrr-gate4-customer360-views-development
+  cancel-in-progress: false
+
+jobs:
+  migrate-development:
+    runs-on: ubuntu-latest
+    environment: development
+    timeout-minutes: 20
+    env:
+      EDARSAHUB_SQL_HOST: '54.39.104.176'
+      EDARSAHUB_SQL_PORT: '1433'
+      EDARSAHUB_SQL_DATABASE: 'EDARSAHUB'
+      MIGRATION_SCRIPT: docs/RRR/sql/RRR_GATE4_CUSTOMER360_VIEWS_V1.sql
+      EXPECTED_BLOB_SHA: '47d377a5a4d5ac37ae6f846c0b233f1ade399ef7'
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: '${{ github.sha }}'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install SQL runtime
+        run: python -m pip install pymssql pydantic python-dotenv email-validator
+      - name: Immutable blob and no-DML preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF}" = 'refs/heads/Edarsahub_Desarrollo'
+          test "$(git hash-object "${MIGRATION_SCRIPT}")" = "${EXPECTED_BLOB_SHA}"
+          ! grep -Eiq '^[[:space:]]*(INSERT[[:space:]]+INTO|UPDATE[[:space:]]|DELETE[[:space:]]+FROM|MERGE[[:space:]]|TRUNCATE[[:space:]])' "${MIGRATION_SCRIPT}"
+      - name: Immediate SQL preflight
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          python - <<'PY' | tee "$RUNNER_TEMP/rrr_gate4_preflight.json"
+          import json,os,pymssql
+          views=['vw_RRR_ClienteActividadComercial','vw_RRR_ClienteScoreActual','vw_RRR_ClienteRankingActual','vw_RRR_Customer360']
+          c=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15)
+          q=c.cursor(as_dict=True); p=','.join(['%s']*len(views)); q.execute(f"SELECT o.name FROM sys.objects o WHERE o.schema_id=SCHEMA_ID('dbo') AND o.name IN ({p})",tuple(views)); existing=[r['name'] for r in q.fetchall()]; q.execute("SELECT COALESCE(HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE VIEW'),0) can_create_view,COALESCE(HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER'),0) can_alter_dbo"); perms=q.fetchone(); print(json.dumps({'existing_views':existing,'permissions':perms},sort_keys=True)); q.close(); c.close()
+          if existing: raise SystemExit('TARGET_VIEW_ALREADY_EXISTS')
+          if int(perms['can_create_view'])!=1 or int(perms['can_alter_dbo'])!=1: raise SystemExit('VIEW_PERMISSION_MISSING')
+          PY
+      - name: Execute certified views
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+          EDARSAHUB_ALLOW_MIGRATIONS: 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE/backend" python backend/tools/edarsahub_sql_runner.py --mode migrate --script "${MIGRATION_SCRIPT}" | tee "$RUNNER_TEMP/rrr_gate4_migrate.txt"
+      - name: Post-view certification
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          python - <<'PY' | tee "$RUNNER_TEMP/rrr_gate4_postcheck.json"
+          import json,os,pymssql
+          views=['vw_RRR_ClienteActividadComercial','vw_RRR_ClienteScoreActual','vw_RRR_ClienteRankingActual','vw_RRR_Customer360']
+          c=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15); q=c.cursor(as_dict=True); p=','.join(['%s']*len(views)); q.execute(f"SELECT o.name FROM sys.views o WHERE o.schema_id=SCHEMA_ID('dbo') AND o.name IN ({p}) ORDER BY o.name",tuple(views)); got=[r['name'] for r in q.fetchall()]; q.execute('SELECT ClienteID,COUNT_BIG(*) n FROM dbo.vw_RRR_Customer360 GROUP BY ClienteID HAVING COUNT_BIG(*)>1'); duplicates=q.fetchall(); q.execute('SELECT COUNT_BIG(*) n FROM dbo.vw_RRR_Customer360'); customer360_rows=int(q.fetchone()['n']); q.execute('SELECT COUNT_BIG(*) n FROM dbo.Cliente_Catalogo'); client_rows=int(q.fetchone()['n']); payload={'views':got,'duplicates':duplicates,'customer360_rows':customer360_rows,'client_rows':client_rows,'blob':os.environ['EXPECTED_BLOB_SHA'],'production_touched':False}; print(json.dumps(payload,default=str,sort_keys=True)); q.close(); c.close()
+          if set(got)!=set(views): raise SystemExit('MISSING_VIEWS')
+          if duplicates: raise SystemExit('CUSTOMER360_DUPLICATES')
+          if customer360_rows!=client_rows: raise SystemExit('CUSTOMER360_CARDINALITY_MISMATCH')
+          PY
+      - name: Evidence
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/rrr-gate4-evidence"
+          cp "$RUNNER_TEMP/rrr_gate4_preflight.json" "$RUNNER_TEMP/rrr-gate4-evidence/preflight.json" 2>/dev/null || true
+          cp "$RUNNER_TEMP/rrr_gate4_migrate.txt" "$RUNNER_TEMP/rrr-gate4-evidence/migrate.txt" 2>/dev/null || true
+          cp "$RUNNER_TEMP/rrr_gate4_postcheck.json" "$RUNNER_TEMP/rrr-gate4-evidence/postcheck.json" 2>/dev/null || true
+          printf '%s\n' "run=${GITHUB_RUN_ID}" "commit=${GITHUB_SHA}" "blob=${EXPECTED_BLOB_SHA}" > "$RUNNER_TEMP/rrr-gate4-evidence/manifest.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rrr-gate4-customer360-views-${{ github.run_id }}
+          path: ${{ runner.temp }}/rrr-gate4-evidence
+          if-no-files-found: error
+          retention-days: 30
