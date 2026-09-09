@@ -1,0 +1,48 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-readonly-result-publisher-hardening-r7-20260908",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2e76f66103565405272dc571fa9dd9d9af999727",
+  "production_allowed": false,
+  "mode": "DETERMINISTIC_PATCH",
+  "objective": "Cerrar exclusivamente la publicacion/certificacion de evidencia READ_ONLY_SQL. El dispatcher scope-aware y el modo READ_ONLY_SQL ya existen en Desarrollo; no modificarlos. Publicar solo evidencia SQL estructurada y sanitizada, certificar READ_ONLY_COMPLETE como CERTIFIED_READ_ONLY cuando PASS, y mantener intacta la certificacion de jobs INTEGRATED/OPERATIONAL. No tocar Produccion ni schema SQL.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "expected_count": 1,
+      "old": "def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:\n    source_sha = result.get(\"development_sha\")\n\n    pending = {\n        \"certified\": False,\n        \"certification\": \"PENDING_AUDIT_EVIDENCE\",\n        \"work_completion\": \"PENDING_CERTIFICATION\",\n        \"percent_complete\": 95,\n    }\n\n    if result.get(\"status\") == \"OPERATIONAL_COMPLETE\":",
+      "new": "SENSITIVE_COLUMN_TOKENS = (\n    \"secret\", \"password\", \"passwd\", \"token\", \"credential\",\n    \"credencial\", \"encrypted\", \"cifrad\", \"api_key\", \"apikey\",\n    \"private_key\", \"access_key\",\n)\n\n\ndef _sensitive_column(name: Any) -> bool:\n    normalized = str(name or \"\").strip().lower()\n    return any(token in normalized for token in SENSITIVE_COLUMN_TOKENS)\n\n\ndef sanitize_readonly_evidence(result: dict[str, Any]) -> dict[str, Any] | None:\n    checks = result.get(\"checks\") or []\n    sanitized_checks = []\n    for check in checks:\n        if not isinstance(check, dict) or check.get(\"type\") != \"sql_readonly_audit\":\n            continue\n        payload = check.get(\"sql_evidence\")\n        if not isinstance(payload, dict):\n            raw = check.get(\"output\")\n            if isinstance(raw, str):\n                try:\n                    candidate = json.loads(raw.strip())\n                except (json.JSONDecodeError, TypeError):\n                    candidate = None\n                if isinstance(candidate, dict):\n                    payload = candidate\n        if not isinstance(payload, dict) or payload.get(\"status\") != \"PASS\":\n            continue\n        entries = []\n        for entry in payload.get(\"evidence\") or []:\n            if not isinstance(entry, dict):\n                continue\n            columns = [str(value) for value in (entry.get(\"columns\") or [])]\n            rows = []\n            for row in entry.get(\"rows\") or []:\n                if not isinstance(row, list):\n                    continue\n                rows.append([\n                    \"[REDACTED]\" if index < len(columns) and _sensitive_column(columns[index]) else value\n                    for index, value in enumerate(row)\n                ])\n            entries.append({\n                \"name\": entry.get(\"name\"),\n                \"columns\": columns,\n                \"rows\": rows,\n                \"row_count_returned\": entry.get(\"row_count_returned\"),\n                \"truncated\": entry.get(\"truncated\"),\n            })\n        sanitized_checks.append({\n            \"status\": \"PASS\",\n            \"mode\": payload.get(\"mode\"),\n            \"connection\": payload.get(\"connection\"),\n            \"evidence\": entries,\n        })\n    return {\"checks\": sanitized_checks} if sanitized_checks else None\n\n\ndef certification_evidence(result: dict[str, Any]) -> dict[str, Any]:\n    source_sha = result.get(\"development_sha\")\n\n    pending = {\n        \"certified\": False,\n        \"certification\": \"PENDING_AUDIT_EVIDENCE\",\n        \"work_completion\": \"PENDING_CERTIFICATION\",\n        \"percent_complete\": 95,\n    }\n\n    if result.get(\"status\") == \"READ_ONLY_COMPLETE\":\n        readonly_evidence = sanitize_readonly_evidence(result)\n        if (\n            str(result.get(\"tests\", \"\")).upper() == \"PASS\"\n            and str(result.get(\"quality_gate\", \"\")).upper() == \"PASS\"\n            and result.get(\"production_touched\") is False\n            and not (result.get(\"blockers\") or [])\n            and readonly_evidence is not None\n        ):\n            return {\n                \"certified\": True,\n                \"certification\": \"CERTIFIED_READ_ONLY\",\n                \"work_completion\": \"COMPLETE\",\n                \"percent_complete\": 100,\n                \"certification_basis\": \"READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE\",\n            }\n        return {\n            **pending,\n            \"certification\": \"NOT_CERTIFIED\",\n            \"work_completion\": \"NOT_CERTIFIED\",\n            \"percent_complete\": min(int(result.get(\"percent_complete\") or 0), 95),\n        }\n\n    if result.get(\"status\") == \"OPERATIONAL_COMPLETE\":"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "expected_count": 1,
+      "old": "    evidence = certification_evidence(result)\n\n    public[\"certification\"] = evidence[\"certification\"]",
+      "new": "    readonly_evidence = sanitize_readonly_evidence(result)\n    if readonly_evidence is not None:\n        public[\"sql_readonly_evidence\"] = readonly_evidence\n\n    evidence = certification_evidence(result)\n\n    public[\"certification\"] = evidence[\"certification\"]"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_readonly_result_publisher.py",
+      "content": "from __future__ import annotations\n\nimport importlib.util\nimport json\nfrom pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\n\ndef _publisher():\n    spec = importlib.util.spec_from_file_location(\"worker_result_publisher_readonly\", ROOT / \"tools/mirror_sync/universal_job_result_publisher.py\")\n    assert spec and spec.loader\n    module = importlib.util.module_from_spec(spec)\n    spec.loader.exec_module(module)\n    return module\n\ndef _result():\n    return {\n        \"status\": \"READ_ONLY_COMPLETE\",\n        \"tests\": \"PASS\",\n        \"quality_gate\": \"PASS\",\n        \"production_touched\": False,\n        \"blockers\": [],\n        \"percent_complete\": 100,\n        \"checks\": [{\n            \"type\": \"sql_readonly_audit\",\n            \"status\": \"PASS\",\n            \"sql_evidence\": {\n                \"status\": \"PASS\",\n                \"mode\": \"READ_ONLY_SQL\",\n                \"connection\": \"readonly_sql_connection:default\",\n                \"evidence\": [{\n                    \"name\": \"metadata\",\n                    \"columns\": [\"table_name\", \"password_hash\"],\n                    \"rows\": [[\"Cliente_Catalogo\", \"must-not-publish\"]],\n                    \"row_count_returned\": 1,\n                    \"truncated\": False\n                }]\n            }\n        }]\n    }\n\ndef test_readonly_complete_certifies_with_structured_evidence():\n    publisher = _publisher()\n    evidence = publisher.certification_evidence(_result())\n    assert evidence[\"certification\"] == \"CERTIFIED_READ_ONLY\"\n    assert evidence[\"percent_complete\"] == 100\n\ndef test_sensitive_sql_values_are_redacted():\n    publisher = _publisher()\n    public = publisher.sanitize(_result())\n    assert public[\"certification\"] == \"CERTIFIED_READ_ONLY\"\n    row = public[\"sql_readonly_evidence\"][\"checks\"][0][\"evidence\"][0][\"rows\"][0]\n    assert row == [\"Cliente_Catalogo\", \"[REDACTED]\"]\n    assert \"must-not-publish\" not in json.dumps(public)\n\ndef test_readonly_without_evidence_is_not_certified():\n    publisher = _publisher()\n    result = _result()\n    result[\"checks\"] = []\n    assert publisher.certification_evidence(result)[\"certification\"] == \"NOT_CERTIFIED\"\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["tools/mirror_sync/universal_job_result_publisher.py", "backend/tests/test_worker_readonly_result_publisher.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_worker_readonly_result_publisher.py"]}
+  ],
+  "constraints": [
+    "NO Production",
+    "NO SQL schema changes",
+    "NO dispatcher modification",
+    "NO server.py",
+    "NO Supervisor/watchdog changes",
+    "NO arbitrary raw executor output publication",
+    "Publish only structured sql_readonly_audit evidence",
+    "Redact sensitive-looking column values",
+    "Preserve existing INTEGRATED and OPERATIONAL certification paths"
+  ],
+  "human_summary_language": "es"
+}
