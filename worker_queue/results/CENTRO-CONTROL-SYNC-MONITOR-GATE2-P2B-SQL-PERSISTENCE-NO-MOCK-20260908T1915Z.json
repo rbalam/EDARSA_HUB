@@ -1,0 +1,30 @@
+{
+  "base_sha": "8c57d2cf52ef9a38c923d4d1ac8cf71eeb552a62",
+  "blockers": [],
+  "candidate_sha": "8af51e20ccf558bc8bd6c40bce68543cb8f8103a",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-09T01:24:30Z",
+  "development_sha": "8af51e20ccf558bc8bd6c40bce68543cb8f8103a",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/core/centro_control/routes.py",
+    "backend/core/centro_control/sql_store.py",
+    "backend/tests/test_centro_control_p2b_sql_persistence_contract.py",
+    "frontend/src/pages/CentroControl.jsx"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P2B-SQL-PERSISTENCE-NO-MOCK-20260908T1915Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-09T01:24:35Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-09T01:22:29Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
