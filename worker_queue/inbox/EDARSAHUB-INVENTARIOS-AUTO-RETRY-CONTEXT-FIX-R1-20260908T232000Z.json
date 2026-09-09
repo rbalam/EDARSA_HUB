@@ -1,0 +1,35 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-AUTO-RETRY-CONTEXT-FIX-R1-20260908T232000Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Corregir el bug canónico de reintentos del InventariosDetectorJob: get_inventarios_pendientes_reintento ya devuelve DetallesJSON, pero _procesar_reintentos descarta folio_inicial/fecha_inicial/metadata y en el siguiente intento genera artificialmente 'No se encontró folio inicial del período'. Rehidratar de DetallesJSON sin duplicar arquitectura, mantener SQL-first/NO-LIVE, no activar email y agregar regresión. También impedir que registros EN_PROCESO obsoletos queden eternamente bloqueados: solo diseñar recuperación segura mediante helper testeado, sin ejecutar UPDATE masivo ni tocar Producción.",
+  "mode":"CODE_CHANGE",
+  "actions":[
+    {
+      "type":"replace_text",
+      "path":"backend/core/scheduler/jobs/inventarios_detector_job.py",
+      "old":"            registro_compat = {\n                'clave': {\n                    'sistema_origen': registro.get('SistemaOrigen'),\n                    'server_id': registro.get('ServerID'),\n                    'sucursal_id': registro.get('SucursalID'),\n                    'almacen_id': registro.get('AlmacenID'),\n                    'folio_inventario': registro.get('FolioInventario')\n                }\n            }",
+      "new":"            import json\n\n            detalles_raw = registro.get('DetallesJSON')\n            detalles = {}\n            if isinstance(detalles_raw, dict):\n                detalles = detalles_raw\n            elif detalles_raw:\n                try:\n                    detalles = json.loads(detalles_raw) or {}\n                except (TypeError, ValueError, json.JSONDecodeError):\n                    logger.warning(\n                        \"[INVENTARIOS_DETECTOR] DetallesJSON inválido en reintento folio=%s\",\n                        registro.get('FolioInventario'),\n                    )\n\n            registro_compat = {\n                'clave': {\n                    'sistema_origen': registro.get('SistemaOrigen'),\n                    'server_id': registro.get('ServerID'),\n                    'sucursal_id': registro.get('SucursalID'),\n                    'almacen_id': registro.get('AlmacenID'),\n                    'folio_inventario': registro.get('FolioInventario')\n                },\n                'server_name': detalles.get('server_name'),\n                'almacen_nombre': detalles.get('almacen_nombre', ''),\n                'folio_inicial': detalles.get('folio_inicial'),\n                'fecha_inicial': detalles.get('fecha_inicial'),\n                'fecha_inventario': detalles.get('fecha_inventario'),\n                'metadata': detalles.get('metadata', {}),\n                'intentos': registro.get('Intentos', 1),\n            }"
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/core/scheduler/jobs/inventarios_detector_job.py",
+      "old":"                detalles={\n                    \"server_name\": inv.server_name,\n                    \"almacen_nombre\": inv.almacen_nombre,\n                    \"folio_inicial\": inv.folio_inicial\n                }",
+      "new":"                detalles={\n                    \"server_name\": inv.server_name,\n                    \"almacen_nombre\": inv.almacen_nombre,\n                    \"folio_inicial\": inv.folio_inicial,\n                    \"fecha_inicial\": inv.fecha_inicial,\n                    \"fecha_inventario\": inv.fecha_inventario,\n                    \"metadata\": inv.metadata,\n                }"
+    },
+    {
+      "type":"write_file",
+      "path":"backend/tests/test_inventarios_detector_retry_context.py",
+      "content":"import json\nfrom pathlib import Path\n\n\ndef test_retry_rehydrates_canonical_inventory_context():\n    text = Path('backend/core/scheduler/jobs/inventarios_detector_job.py').read_text(encoding='utf-8')\n    assert \"detalles_raw = registro.get('DetallesJSON')\" in text\n    assert \"'folio_inicial': detalles.get('folio_inicial')\" in text\n    assert \"'fecha_inicial': detalles.get('fecha_inicial')\" in text\n    assert \"'fecha_inventario': detalles.get('fecha_inventario')\" in text\n    assert \"'metadata': detalles.get('metadata', {})\" in text\n\n\ndef test_new_tracking_persists_retry_context():\n    text = Path('backend/core/scheduler/jobs/inventarios_detector_job.py').read_text(encoding='utf-8')\n    assert '\"fecha_inicial\": inv.fecha_inicial' in text\n    assert '\"fecha_inventario\": inv.fecha_inventario' in text\n    assert '\"metadata\": inv.metadata' in text\n\n\ndef test_email_not_enabled_by_retry_fix():\n    text = Path('backend/core/scheduler/jobs/inventarios_detector_job.py').read_text(encoding='utf-8')\n    assert 'SCHEDULER_INVENTARIOS_EMAIL_ENABLED' in text\n    assert 'os.environ.get(\"SCHEDULER_INVENTARIOS_EMAIL_ENABLED\", \"false\")' in text\n"
+    }
+  ],
+  "checks":[
+    {"type":"py_compile","paths":["backend/core/scheduler/jobs/inventarios_detector_job.py","backend/tests/test_inventarios_detector_retry_context.py"]},
+    {"type":"pytest","paths":["backend/tests/test_inventarios_detector_retry_context.py"]},
+    {"type":"git_diff_check"}
+  ],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
