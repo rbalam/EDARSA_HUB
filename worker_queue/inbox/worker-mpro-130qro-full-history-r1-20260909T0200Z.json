@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "worker-mpro-130qro-full-history-r1-20260909T0200Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Ejecutar el full-history idempotente de MPRO exclusivamente para 130QRO usando la capability cerrada MPRO_FULL_HISTORY_RESYNC ya certificada. La unidad canónica 130QRO corresponde a la sucursal MPRO 0021. El origen READ_ONLY previamente certificado mostró 1808 registros en Comanda_Corte desde 2021-09-18 hasta 2026-09-07, mientras EDARSAHUB estaba incompleto. Procesar todo el rango descubierto por la capability en ventanas mensuales, sin shell, rutas ni comandos arbitrarios. Al finalizar certificar mediante SQL READ_ONLY que la cobertura de 130QRO alcance el rango del origen, que no existan duplicados por ServerID+FolioCorte y registrar la evidencia de SyncLog. No tocar Production.",
+  "mode": "MPRO_FULL_HISTORY_RESYNC",
+  "actions": [],
+  "units": ["130QRO"],
+  "dry_run": false,
+  "confirm_full_history_resync": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "mpro_130qro_coverage_after_full_history",
+          "sql": "SELECT UnidadNegocioNombre, SucursalOrigenID, COUNT_BIG(*) AS total_rows, MIN(FechaCorte) AS min_fecha, MAX(FechaCorte) AS max_fecha, MAX(FechaSincronizacion) AS last_sync_at FROM dbo.Finanzas_CortesCaja WHERE SistemaOrigen='MPRO' AND UPPER(COALESCE(UnidadNegocioNombre,N'')) LIKE N'%QUERETARO%' GROUP BY UnidadNegocioNombre, SucursalOrigenID;"
+        },
+        {
+          "name": "mpro_130qro_duplicate_identity_check",
+          "sql": "SELECT COUNT_BIG(*) AS duplicate_groups FROM (SELECT ServerID,FolioCorte,COUNT_BIG(*) AS c FROM dbo.Finanzas_CortesCaja WHERE SistemaOrigen='MPRO' AND UPPER(COALESCE(UnidadNegocioNombre,N'')) LIKE N'%QUERETARO%' GROUP BY ServerID,FolioCorte HAVING COUNT_BIG(*)>1) d;"
+        },
+        {
+          "name": "mpro_130qro_source_target_bounds_compare",
+          "sql": "SELECT src.total_source,src.min_source,src.max_source,tgt.total_target,tgt.min_target,tgt.max_target FROM (SELECT COUNT_BIG(*) AS total_source,MIN(Cc_Fecha) AS min_source,MAX(Cc_Fecha) AS max_source FROM CENTRAL2020.dbo.Comanda_Corte WHERE Sc_Cve_Sucursal='0021' AND (Es_Cve_Estado IS NULL OR Es_Cve_Estado<>'BAJA')) src CROSS JOIN (SELECT COUNT_BIG(*) AS total_target,MIN(FechaCorte) AS min_target,MAX(FechaCorte) AS max_target FROM dbo.Finanzas_CortesCaja WHERE SistemaOrigen='MPRO' AND SucursalOrigenID='0021') tgt;"
+        },
+        {
+          "name": "mpro_130qro_recent_synclog",
+          "sql": "SELECT TOP (12) FechaInicio,FechaFin,FechaDesde,FechaHasta,RegistrosLeidos,RegistrosInsertados,RegistrosActualizados,RegistrosOmitidos,RegistrosError,Estatus,TipoEjecucion FROM dbo.Finanzas_CortesCaja_SyncLog WHERE SistemaOrigen='MPRO' AND UnidadNegocioID='9BC05CED-6B2B-4A0A-AA90-CE649B78E12C' ORDER BY FechaInicio DESC;"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "MPRO 130QRO sequential full-history"
+  },
+  "human_summary_language": "es"
+}
