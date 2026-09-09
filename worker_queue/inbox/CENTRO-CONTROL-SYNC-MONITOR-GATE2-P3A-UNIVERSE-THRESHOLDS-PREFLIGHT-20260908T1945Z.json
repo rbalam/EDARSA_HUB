@@ -1,0 +1,67 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P3A-UNIVERSE-THRESHOLDS-PREFLIGHT-20260908T1945Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "GATE 2 P3A: certificar el universo real del Sync Monitor y localizar una fuente SQL canónica de thresholds/SLAs antes de eliminar STALE_THRESHOLDS hardcodeado. Determinar servidores activos, tipos de sincronización observados por servidor, fuentes de logs disponibles, configuración/scheduler relacionada con sync, y cualquier tabla/columna explícita de threshold, stale, SLA, frecuencia, intervalo o timeout. NO DDL/DML, NO Mongo, NO LIVE, NO Production. No inferir thresholds por nombres parciales sin evidencia de columnas/filas.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "sync_active_servers_universe",
+          "sql": "SELECT CAST(id AS VARCHAR(100)) AS server_id,nombre,system_type,tipo_conexion,activo,fecha_ultima_sincronizacion,source_status,ultimo_error_sync FROM dbo.Servidores_Conexiones WHERE ISNULL(activo,1)=1 ORDER BY nombre"
+        },
+        {
+          "name": "sync_types_compras_by_server",
+          "sql": "SELECT server_id,sync_type,COUNT(*) AS runs,MAX(sync_end) AS last_sync,MAX(CASE WHEN status='OK' THEN sync_end END) AS last_success FROM dbo.Compras_Sync_Log GROUP BY server_id,sync_type ORDER BY server_id,sync_type"
+        },
+        {
+          "name": "sync_types_comercial_by_server",
+          "sql": "SELECT server_id,run_type AS sync_type,COUNT(*) AS runs,MAX(run_timestamp) AS last_sync,MAX(CASE WHEN status='SUCCESS' THEN run_timestamp END) AS last_success FROM dbo.Comercial_SyncLog_v2 GROUP BY server_id,run_type ORDER BY server_id,run_type"
+        },
+        {
+          "name": "sync_logs_generic_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.columns c JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Sync_Logs') ORDER BY c.column_id"
+        },
+        {
+          "name": "sync_logs_generic_sample",
+          "sql": "SELECT TOP 50 * FROM dbo.Sync_Logs ORDER BY 1 DESC"
+        },
+        {
+          "name": "threshold_config_candidate_tables",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name LIKE '%Threshold%' OR t.name LIKE '%Umbral%' OR t.name LIKE '%SLA%' OR t.name LIKE '%Frecuencia%' OR t.name LIKE '%Intervalo%' OR t.name LIKE '%Timeout%' OR t.name LIKE '%Sync%Config%' OR t.name LIKE '%Scheduler%Config%' ORDER BY s.name,t.name"
+        },
+        {
+          "name": "threshold_config_candidate_columns",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE '%Threshold%' OR t.name LIKE '%Umbral%' OR t.name LIKE '%SLA%' OR t.name LIKE '%Frecuencia%' OR t.name LIKE '%Intervalo%' OR t.name LIKE '%Timeout%' OR t.name LIKE '%Sync%Config%' OR t.name LIKE '%Scheduler%Config%' OR c.name LIKE '%Threshold%' OR c.name LIKE '%Umbral%' OR c.name LIKE '%SLA%' OR c.name LIKE '%Frecuencia%' OR c.name LIKE '%Intervalo%' OR c.name LIKE '%Timeout%' ORDER BY s.name,t.name,c.column_id"
+        },
+        {
+          "name": "scheduler_sync_jobs",
+          "sql": "SELECT j.JobID,j.JobName,j.CronExpression,j.JobType,j.Status,j.LastRunDate,c.Modulo,c.Handler,c.ModoEjecucion,c.TimeoutSegundos,c.ReintentosMaximos,c.PermiteEjecucionManual FROM dbo.Sys_Scheduler_Jobs j LEFT JOIN dbo.Sys_Scheduler_JobConfig c ON c.JobID=j.JobID WHERE UPPER(ISNULL(j.JobName,'')) LIKE '%SYNC%' OR UPPER(ISNULL(j.JobType,'')) LIKE '%SYNC%' OR UPPER(ISNULL(c.Modulo,'')) LIKE '%SYNC%' OR UPPER(ISNULL(c.Handler,'')) LIKE '%SYNC%' ORDER BY j.JobName"
+        },
+        {
+          "name": "turnos_operativos_rows",
+          "sql": "SELECT * FROM dbo.Sistema_TurnosOperativosUnidad ORDER BY 1"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL ONLY",
+    "NO DDL",
+    "NO DML",
+    "NO Production",
+    "NO Mongo",
+    "NO LIVE source connections",
+    "NO threshold invention",
+    "NO universe invention",
+    "Preserve exact SQL evidence for P3B",
+    "Do not modify Universal Worker structure"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "technical"
+}
