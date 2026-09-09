@@ -10,8 +10,16 @@ def test_gate5b_router_is_read_only():
     assert "/integrations-center/connections/{connection_id}" in paths
     assert "/integrations-center/catalogs" in paths
     assert "/integrations-center/communications" in paths
+    gate5b_paths = {
+        "/integrations-center/overview",
+        "/integrations-center/connections",
+        "/integrations-center/connections/{connection_id}",
+        "/integrations-center/catalogs",
+        "/integrations-center/communications",
+    }
     for route in router.routes:
-        assert set(route.methods or ()) <= {"GET"}
+        if route.path in gate5b_paths:
+            assert set(route.methods or ()) <= {"GET"}
 
 
 def test_gate5b_facade_is_mounted_on_existing_root_api_router():

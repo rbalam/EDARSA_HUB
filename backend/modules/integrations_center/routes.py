@@ -14,10 +14,12 @@ from core.rbac.middleware import require_permission
 from core.security import get_current_user
 
 from . import service
+from .communications_routes import router as communications_router
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/integrations-center", tags=["Centro de Comunicaciones y Conexiones"])
+router.include_router(communications_router)
 
 
 def _meta() -> Dict:
