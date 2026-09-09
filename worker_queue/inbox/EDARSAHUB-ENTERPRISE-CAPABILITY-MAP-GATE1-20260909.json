@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "EDARSAHUB-ENTERPRISE-CAPABILITY-MAP-GATE1-20260909",
+  "created_at_utc": "2026-09-09T19:09:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Realizar una auditoría COMPLETA y estrictamente READ-ONLY del repositorio EDARSA_HUB en la rama Edarsahub_Desarrollo para generar el primer Enterprise Capability Map con evidencia del código. Auditar backend (módulos, servicios, routers, modelos, schemas, utilidades), frontend (módulos, páginas, componentes, layouts, navegación, menús), SQL referenciado/canónico (tablas, vistas, procedimientos, funciones, catálogos), APIs (endpoints, métodos, autenticación, permisos), RBAC (roles, permisos, jerarquías, autorizaciones), Scheduler (jobs, cron, workers, colas), dashboards (KPIs, widgets, filtros, origen de datos), conectores (SoftRestaurant, MPRO, NetPay, APIs externas y otros), IA (servicios IA, prompts, agentes, automatizaciones), Workflow (motores, aprobaciones, tareas, estados), catálogos canónicos (reutilización, duplicados, tablas maestras) y eventos (implementación actual, eventos implícitos, scheduler, listeners). Para cada capacidad encontrada reportar Capability_ID, Nombre, Descripción, Dominio, Estado, Backend, Frontend, Tablas SQL, Views SQL, APIs relacionadas, Permisos, Workflow, Scheduler, KPIs, Dashboards, Conectores, IA, Automatización, Dependencias, Nivel de reutilización, Candidato a Enterprise Core SI/NO y Observaciones. Generar: 1) Resumen Ejecutivo, 2) Mapa de Capacidades, 3) Capacidades duplicadas, 4) Capacidades reutilizables, 5) Capacidades exclusivas, 6) Riesgos arquitectónicos, 7) Violaciones a las Máximas, 8) Quick Wins, 9) Recomendaciones de migración al Enterprise Core. No proponer cambios de implementación, no generar código ni patches; únicamente inventariar y clasificar con evidencia verificable del repositorio. Finalizar con CAPABILITY_MAP_STATUS: PASS/PARTIAL/FAIL, CONFIDENCE: 0-100% y MODIFICATIONS: 0.",
+  "acceptance": [
+    "La auditoría cubre backend, frontend, SQL referenciado/canónico, APIs, RBAC, Scheduler, dashboards, conectores, IA, Workflow, catálogos canónicos y eventos.",
+    "Cada capacidad encontrada incluye todos los campos solicitados y evidencia concreta de archivos/rutas/símbolos o referencias SQL.",
+    "El informe diferencia claramente capacidades reutilizables, exclusivas y posibles duplicidades sin inferir más allá de la evidencia.",
+    "Se identifican riesgos arquitectónicos y violaciones a las máximas solo con evidencia verificable.",
+    "No se modifica ningún archivo de Edarsahub_Desarrollo, no se altera SQL, no se ejecuta LIVE y no se genera ningún patch.",
+    "La salida final incluye CAPABILITY_MAP_STATUS, CONFIDENCE y MODIFICATIONS=0.",
+    "El resultado queda escrito en worker_queue/results/EDARSAHUB-ENTERPRISE-CAPABILITY-MAP-GATE1-20260909.json con resumen humano en español y, si el worker genera un informe Markdown como evidencia, debe referenciar su ubicación sin modificar la rama de desarrollo."
+  ],
+  "constraints": [
+    "SOLO LECTURA sobre Edarsahub_Desarrollo.",
+    "NO modificar archivos de código, configuración o documentación en Edarsahub_Desarrollo.",
+    "NO crear commits ni ramas de desarrollo.",
+    "NO alterar base de datos ni ejecutar DDL/DML.",
+    "NO ejecutar procesos LIVE ni conectarse operativamente a SoftRestaurant, MPRO u otros orígenes LIVE.",
+    "NO usar MongoDB como fuente, caché ni destino.",
+    "NO cambiar arquitectura.",
+    "NO generar código ni patches.",
+    "NO inferir: utilizar únicamente evidencia del código, metadatos del repo y referencias SQL verificables.",
+    "NO exponer secretos, credenciales, tokens, passwords ni cadenas de conexión sensibles; redactar cualquier hallazgo sensible.",
+    "Respetar SQL Server y catálogos canónicos existentes como fuentes de referencia arquitectónica.",
+    "No tocar Edarsahub_Produccion.",
+    "No considerar la rama worker/requests como fuente de código; solo como transporte de la orden y resultados."
+  ],
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
