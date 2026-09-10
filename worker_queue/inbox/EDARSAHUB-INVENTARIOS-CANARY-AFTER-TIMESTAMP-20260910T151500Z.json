@@ -1,0 +1,23 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-CANARY-AFTER-TIMESTAMP-20260910T151500Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Auditar en solo lectura si la ejecución canaria del 10 de septiembre de 2026 dejó registros con FechaUltimoIntento posterior a 15:19:44. Sin cambios, sin secretos, sin Producción.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {
+          "name":"rows_after_canary",
+          "sql":"SELECT ID, FechaUltimoIntento, Estado, ErrorMensaje FROM dbo.Scheduler_InventariosProcesados WHERE FechaUltimoIntento >= '2026-09-10T15:19:44' ORDER BY FechaUltimoIntento DESC"
+        }
+      ]
+    }
+  ],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
