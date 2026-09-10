@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CXP-GATE3C-C-SOFTRESTAURANT-PAYMENT-LINEAGE-READONLY-20260910",
+  "created_at_utc": "2026-09-10T22:25:30Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "698e2375de2106fb8375df52bd1dc9fb12faac86",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "GATE 3C-C CxP SoftRestaurant. Obtener lineage runtime READ ONLY para CIENFUEGOS, ESTELAR y 130MID: definicion/dependencias de AC_vwSaldoCxp y vwSaldoCxp, tablas base CxP, objetos de pagos/abonos/proveedores/polizas, triggers, relaciones y campos de referencia/documento candidatos para idempotencia, y efectos contables. No ejecutar procedimientos ni modificar datos, schema, codigo o Production.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": ["CIENFUEGOS", "ESTELAR", "130MID"],
+      "system_types": ["SOFTRESTAURANT"],
+      "queries": [
+        {
+          "name": "gate3cc_runtime_identity",
+          "sql": "SELECT @@SERVERNAME AS server_name, DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS database_user"
+        },
+        {
+          "name": "gate3cc_cxp_views",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,o.type_desc,o.create_date,o.modify_date FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name IN (N'AC_vwSaldoCxp',N'vwSaldoCxp') ORDER BY o.name"
+        },
+        {
+          "name": "gate3cc_cxp_view_definitions",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,o.type_desc,sm.definition FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id=o.schema_id LEFT JOIN sys.sql_modules sm ON sm.object_id=o.object_id WHERE o.name IN (N'AC_vwSaldoCxp',N'vwSaldoCxp') ORDER BY o.name"
+        },
+        {
+          "name": "gate3cc_cxp_view_dependencies",
+          "sql": "SELECT OBJECT_SCHEMA_NAME(d.referencing_id) AS referencing_schema,OBJECT_NAME(d.referencing_id) AS referencing_object,d.referenced_schema_name,d.referenced_entity_name,d.referenced_database_name,d.referenced_server_name FROM sys.sql_expression_dependencies d WHERE OBJECT_NAME(d.referencing_id) IN (N'AC_vwSaldoCxp',N'vwSaldoCxp') ORDER BY referencing_object,d.referenced_entity_name"
+        },
+        {
+          "name": "gate3cc_candidate_objects",
+          "sql": "SELECT TOP 300 s.name AS schema_name,o.name AS object_name,o.type_desc,o.create_date,o.modify_date FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name LIKE N'%Cxp%' OR o.name LIKE N'%Cuenta%Pagar%' OR o.name LIKE N'%Pago%' OR o.name LIKE N'%Abono%' OR o.name LIKE N'%Proveedor%' OR o.name LIKE N'%Poliza%' OR o.name LIKE N'%Egreso%' ORDER BY o.type_desc,s.name,o.name"
+        },
+        {
+          "name": "gate3cc_candidate_columns",
+          "sql": "SELECT TOP 500 s.name AS schema_name,o.name AS object_name,o.type_desc,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id=o.schema_id INNER JOIN sys.columns c ON c.object_id=o.object_id INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE o.type IN ('U','V') AND (o.name LIKE N'%Cxp%' OR o.name LIKE N'%Cuenta%Pagar%' OR o.name LIKE N'%Pago%' OR o.name LIKE N'%Abono%' OR o.name LIKE N'%Proveedor%' OR o.name LIKE N'%Poliza%' OR o.name LIKE N'%Egreso%') AND (c.name LIKE N'%Folio%' OR c.name LIKE N'%Documento%' OR c.name LIKE N'%Referencia%' OR c.name LIKE N'%Pago%' OR c.name LIKE N'%Abono%' OR c.name LIKE N'%Cuenta%' OR c.name LIKE N'%Proveedor%' OR c.name LIKE N'%Poliza%' OR c.name LIKE N'%Importe%' OR c.name LIKE N'%Saldo%' OR c.name LIKE N'%Estado%' OR c.name LIKE N'%Fecha%') ORDER BY s.name,o.name,c.column_id"
+        },
+        {
+          "name": "gate3cc_foreign_keys",
+          "sql": "SELECT TOP 300 schp.name AS parent_schema,tp.name AS parent_table,cp.name AS parent_column,fk.name AS fk_name,schr.name AS referenced_schema,tr.name AS referenced_table,cr.name AS referenced_column,fk.delete_referential_action_desc,fk.update_referential_action_desc FROM sys.foreign_keys fk INNER JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id INNER JOIN sys.tables tp ON tp.object_id=fkc.parent_object_id INNER JOIN sys.schemas schp ON schp.schema_id=tp.schema_id INNER JOIN sys.columns cp ON cp.object_id=tp.object_id AND cp.column_id=fkc.parent_column_id INNER JOIN sys.tables tr ON tr.object_id=fkc.referenced_object_id INNER JOIN sys.schemas schr ON schr.schema_id=tr.schema_id INNER JOIN sys.columns cr ON cr.object_id=tr.object_id AND cr.column_id=fkc.referenced_column_id WHERE tp.name LIKE N'%Cxp%' OR tr.name LIKE N'%Cxp%' OR tp.name LIKE N'%Pago%' OR tr.name LIKE N'%Pago%' OR tp.name LIKE N'%Abono%' OR tr.name LIKE N'%Abono%' OR tp.name LIKE N'%Poliza%' OR tr.name LIKE N'%Poliza%' ORDER BY schp.name,tp.name,fk.name"
+        },
+        {
+          "name": "gate3cc_triggers",
+          "sql": "SELECT TOP 200 OBJECT_SCHEMA_NAME(t.parent_id) AS parent_schema,OBJECT_NAME(t.parent_id) AS parent_object,t.name AS trigger_name,t.is_disabled,t.is_instead_of_trigger FROM sys.triggers t WHERE OBJECT_NAME(t.parent_id) LIKE N'%Cxp%' OR OBJECT_NAME(t.parent_id) LIKE N'%Pago%' OR OBJECT_NAME(t.parent_id) LIKE N'%Abono%' OR OBJECT_NAME(t.parent_id) LIKE N'%Poliza%' ORDER BY parent_schema,parent_object,t.name"
+        },
+        {
+          "name": "gate3cc_trigger_definitions",
+          "sql": "SELECT TOP 100 OBJECT_SCHEMA_NAME(t.parent_id) AS parent_schema,OBJECT_NAME(t.parent_id) AS parent_object,t.name AS trigger_name,sm.definition FROM sys.triggers t LEFT JOIN sys.sql_modules sm ON sm.object_id=t.object_id WHERE OBJECT_NAME(t.parent_id) LIKE N'%Cxp%' OR OBJECT_NAME(t.parent_id) LIKE N'%Pago%' OR OBJECT_NAME(t.parent_id) LIKE N'%Abono%' OR OBJECT_NAME(t.parent_id) LIKE N'%Poliza%' ORDER BY parent_schema,parent_object,t.name"
+        },
+        {
+          "name": "gate3cc_module_references",
+          "sql": "SELECT TOP 200 s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.sql_modules sm INNER JOIN sys.objects o ON o.object_id=sm.object_id INNER JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE sm.definition LIKE N'%AC_vwSaldoCxp%' OR sm.definition LIKE N'%vwSaldoCxp%' OR sm.definition LIKE N'%Cxp%' OR sm.definition LIKE N'%Pago%' OR sm.definition LIKE N'%Abono%' OR sm.definition LIKE N'%Poliza%' ORDER BY o.type_desc,s.name,o.name"
+        },
+        {
+          "name": "gate3cc_relevant_module_definitions",
+          "sql": "SELECT TOP 100 s.name AS schema_name,o.name AS object_name,o.type_desc,sm.definition FROM sys.sql_modules sm INNER JOIN sys.objects o ON o.object_id=sm.object_id INNER JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE ((sm.definition LIKE N'%Cxp%' OR sm.definition LIKE N'%Cuenta%Pagar%') AND (sm.definition LIKE N'%Pago%' OR sm.definition LIKE N'%Abono%' OR sm.definition LIKE N'%Poliza%' OR sm.definition LIKE N'%Egreso%')) ORDER BY o.type_desc,s.name,o.name"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ ONLY SQL ONLY",
+    "actions must remain empty",
+    "NO INSERT UPDATE DELETE MERGE EXEC EXECUTE DDL SELECT INTO OR MULTI-STATEMENT SQL",
+    "NO procedure execution",
+    "NO Production",
+    "NO code or file mutation",
+    "NO direct host database username or password supplied by job",
+    "Connections only through PosRuntimeResolver and get_external_sql_connection",
+    "Do not output business transaction rows or PII; metadata and module definitions only",
+    "Do not infer idempotency support unless runtime evidence proves it"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
