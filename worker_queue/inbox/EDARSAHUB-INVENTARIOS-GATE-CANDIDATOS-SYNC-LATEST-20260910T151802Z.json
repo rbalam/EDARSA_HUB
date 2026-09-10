@@ -1,0 +1,13 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-GATE-CANDIDATOS-SYNC-LATEST-20260910T151802Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Auditar las filas más recientes de la fuente canónica Compras_Inventarios_Fisicos_Sync usadas por InventariosDetectorJob para detectar candidatos nuevos. Solo lectura.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[{"name":"sync_latest_rows","sql":"SELECT TOP (30) server_id, sucursal_id, almacen_id, folio, fecha, sync_status FROM dbo.Compras_Inventarios_Fisicos_Sync WHERE sync_status IN ('ACTIVE','REPLACED') ORDER BY fecha DESC"}]}],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
