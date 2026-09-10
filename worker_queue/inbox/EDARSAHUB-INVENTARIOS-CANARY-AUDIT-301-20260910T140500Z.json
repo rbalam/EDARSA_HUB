@@ -1,0 +1,13 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-CANARY-AUDIT-301-20260910T140500Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Auditar en solo lectura el estado exacto del registro ID 301 en Scheduler_InventariosProcesados después del canario manual. Sin cambios, sin secretos, sin Producción.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[{"name":"row_301","sql":"SELECT ID, Sistema, ServerID, SucursalID, AlmacenID, FolioInventario, Estado, Intentos, FechaDeteccion, FechaUltimoIntento, FechaProcesamiento, ErrorMensaje, WorkflowID FROM dbo.Scheduler_InventariosProcesados WHERE ID = 301"}]}],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
