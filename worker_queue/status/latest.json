@@ -1,17 +1,24 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "dd74ce1f0d71e443ba38332dfff5fd59a1380469",
-  "generated_at_utc": "2026-09-10T02:52:57Z",
+  "generated_at_utc": "2026-09-10T02:54:13Z",
   "history": {
     "done_total_local": 345,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 385,
-    "results_total_local": 661
+    "rejected_total_local": 386,
+    "results_total_local": 662
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [],
+  "jobs": [
+    {
+      "age_seconds": 21,
+      "job_id": "CATALOGO-AMPLIADO-GATE8E-EXTERNAL-DELIVERY-READINESS-R1-20260909",
+      "reason": null,
+      "state": "RESULT_READY"
+    }
+  ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -19,14 +26,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 0,
+  "queue_result_ready_recent": 1,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-10T02:52:53Z",
-    "last_receive_utc": "2026-09-10T02:52:54Z",
-    "last_terminal_utc": "2026-09-10T00:40:10Z",
+    "last_cycle_utc": "2026-09-10T02:54:11Z",
+    "last_receive_utc": "2026-09-10T02:54:12Z",
+    "last_terminal_utc": "2026-09-10T02:53:52Z",
     "pid": "139"
   },
   "schema": "edarsahub.worker-health.v3",
