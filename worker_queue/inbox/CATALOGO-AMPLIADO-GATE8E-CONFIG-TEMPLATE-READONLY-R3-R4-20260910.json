@@ -1,0 +1,48 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE8E-CONFIG-TEMPLATE-READONLY-R3-R4-20260910",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9d0916d01613f39f1f6f77384769dfc7abf0286e",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate 8E R3-R4 quirurgico. El RESULT R3-R3 solo publico check_failed:sql_readonly_audit y no conservo la excepcion SQL interna. Para eliminar la familia de fallo sin adivinar, auditar la existencia de config/provider/template reutilizable para Catalogo Ampliado usando exclusivamente columnas fisicas de dbo.Sistema_NotificacionesConfig y busqueda textual sanitizada con LIKE; prohibido JSON_VALUE, ISJSON, OPENJSON o parseo JSON. No devolver PayloadMongo, secretos, destinatarios ni texto de templates. Sin DML/DDL, sin envios, sin Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "readonly_identity",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user,ORIGINAL_LOGIN() AS original_login"
+        },
+        {
+          "name": "notification_config_collection_counts",
+          "sql": "SELECT ColeccionOrigen,Activo,COUNT_BIG(*) AS cantidad FROM dbo.Sistema_NotificacionesConfig GROUP BY ColeccionOrigen,Activo ORDER BY ColeccionOrigen,Activo"
+        },
+        {
+          "name": "catalogo_ampliado_candidate_flags",
+          "sql": "SELECT Id,ColeccionOrigen,Activo,LEN(PayloadMongo) AS payload_length,CASE WHEN LOWER(PayloadMongo) LIKE '%catalogo_ampliado%' OR LOWER(PayloadMongo) LIKE '%catalogo ampliado%' THEN 1 ELSE 0 END AS menciona_catalogo_ampliado,CASE WHEN LOWER(PayloadMongo) LIKE '%vencim%' THEN 1 ELSE 0 END AS menciona_vencimiento,CASE WHEN LOWER(PayloadMongo) LIKE '%email%' THEN 1 ELSE 0 END AS menciona_email,CASE WHEN LOWER(PayloadMongo) LIKE '%whatsapp%' THEN 1 ELSE 0 END AS menciona_whatsapp,CASE WHEN LOWER(PayloadMongo) LIKE '%template%' THEN 1 ELSE 0 END AS menciona_template,CASE WHEN LOWER(PayloadMongo) LIKE '%provider%' OR LOWER(PayloadMongo) LIKE '%twilio%' OR LOWER(PayloadMongo) LIKE '%smtp%' THEN 1 ELSE 0 END AS menciona_provider FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND (LOWER(PayloadMongo) LIKE '%catalogo_ampliado%' OR LOWER(PayloadMongo) LIKE '%catalogo ampliado%' OR LOWER(PayloadMongo) LIKE '%vencim%') ORDER BY ColeccionOrigen,Id"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL only",
+    "NO Production",
+    "NO DML",
+    "NO DDL",
+    "NO external delivery",
+    "NO secrets",
+    "NO recipient values",
+    "NO PayloadMongo output",
+    "NO template text output",
+    "NO JSON_VALUE",
+    "NO ISJSON",
+    "NO OPENJSON",
+    "Use only physical columns and sanitized boolean flags"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
