@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "71e0ae810dea98c721b19d09143cb16c01f691ec",
-  "generated_at_utc": "2026-09-10T23:34:50Z",
+  "generated_at_utc": "2026-09-10T23:36:02Z",
   "history": {
     "done_total_local": 374,
     "pending_total_local": 0,
@@ -13,13 +13,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3307,
+      "age_seconds": 3379,
       "job_id": "CXP-GATE3C-B-MPRO-PAYMENT-LINEAGE-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3284,
+      "age_seconds": 3356,
       "job_id": "CXP-GATE3C-C-SOFTRESTAURANT-PAYMENT-LINEAGE-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
@@ -37,8 +37,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-10T23:34:27Z",
-    "last_receive_utc": "2026-09-10T23:34:22Z",
+    "last_cycle_utc": "2026-09-10T23:36:01Z",
+    "last_receive_utc": "2026-09-10T23:36:01Z",
     "last_terminal_utc": "2026-09-10T22:40:06Z",
     "pid": "287"
   },
