@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "b57c9efe7979eff2a3ec2152510ce0ec02cfa759",
-  "generated_at_utc": "2026-09-10T20:55:57Z",
+  "generated_at_utc": "2026-09-10T20:57:10Z",
   "history": {
     "done_total_local": 359,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 399,
-    "results_total_local": 686
+    "rejected_total_local": 400,
+    "results_total_local": 687
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1136,
+      "age_seconds": 1209,
       "job_id": "CATALOGO-AMPLIADO-GATE8F-EXTERNAL-DELIVERY-CANONICAL-INTEGRATION-R1-20260910",
       "reasons": [
         "INVALID_SCHEMA",
@@ -23,7 +23,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2874,
+      "age_seconds": 2947,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5E-R2-DETERMINISTIC-20260910",
       "reasons": [
         "SUMMARY_LANGUAGE_MUST_BE_ES"
@@ -32,85 +32,91 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2421,
+      "age_seconds": 2494,
       "job_id": "CATALOGO-AMPLIADO-GATE8E-CONFIG-TEMPLATE-READONLY-R3-R4-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 247,
+      "age_seconds": 320,
       "job_id": "CAVAS-CORPORATIVAS-GATE12E-BOS-PERSONA-LINK-IMPLEMENTATION-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1123,
+      "age_seconds": 1195,
       "job_id": "CAVAS-CORPORATIVAS-GATE12E-SOCIO-CLIENTE-DETERMINISTIC-MATCH-AUDIT-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2816,
+      "age_seconds": 2889,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-AUDIT-301-20260910T140500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2799,
+      "age_seconds": 2872,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-AUDIT-COUNTS-20260910T140502Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2806,
+      "age_seconds": 2879,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-AUDIT-LATEST-20260910T140501Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1491,
+      "age_seconds": 1564,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-RECENT-ERRORS-20260910T140700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1132,
+      "age_seconds": 60,
+      "job_id": "RRR-GATE4D-R3-CUSTOMER360-DIAGNOSTICO-READONLY-20260910",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1205,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5E-LIVE-CANARY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1666,
+      "age_seconds": 1739,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5E-R3-DETERMINISTIC-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2067,
+      "age_seconds": 2140,
       "job_id": "WORKER-POS-READONLY-AUDIT-CAPABILITY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 876,
+      "age_seconds": 949,
       "job_id": "coa-gate5a-r2-facturacion-cfdi-emitidos-readonly-v1-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1780,
+      "age_seconds": 1853,
       "job_id": "worker-orchestrator-foundation-gate1-r1-20260910T2020Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1089,
+      "age_seconds": 1162,
       "job_id": "worker-orchestrator-foundation-gate1-r2-20260910T2035Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 227,
+      "age_seconds": 300,
       "job_id": "worker-orchestrator-foundation-gate1-r3-20260910T2048Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -123,14 +129,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 2,
-  "queue_result_ready_recent": 14,
+  "queue_result_ready_recent": 15,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-10T20:55:55Z",
-    "last_receive_utc": "2026-09-10T20:55:56Z",
-    "last_terminal_utc": "2026-09-10T20:52:10Z",
+    "last_cycle_utc": "2026-09-10T20:57:09Z",
+    "last_receive_utc": "2026-09-10T20:57:10Z",
+    "last_terminal_utc": "2026-09-10T20:56:10Z",
     "pid": "1131"
   },
   "schema": "edarsahub.worker-health.v3",
