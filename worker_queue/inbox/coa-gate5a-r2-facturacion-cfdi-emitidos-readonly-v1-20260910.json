@@ -1,0 +1,53 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate5a-r2-facturacion-cfdi-emitidos-readonly-v1-20260910",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "78016221668cbd045b645095a8f17147f4b0d14e",
+  "mode": "READ_ONLY_SQL",
+  "objective": "COA Gate 5A-R2 Facturacion: identificar con evidencia SQL canonica la fuente de verdad para facturas/CFDI emitidos a clientes (sentido venta/ingreso), su PK, relaciones con Cliente/Empresa/Unidad, UUID/timbrado/estatus/cancelacion y determinar si COA_ExpedienteReferencias debe apuntar a un objeto distinto de Compras_DocumentosFiscales. Solo metadata/esquema y conteos tecnicos; no exponer datos fiscales de clientes. No DDL/DML. No Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA",
+    "chat": "coa-gate5a-r2-facturacion-cfdi-emitidos-readonly-v1-20260910"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "candidate_invoice_tables",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name LIKE '%Factura%' OR t.name LIKE '%Factur%' OR t.name LIKE '%CFDI%' OR t.name LIKE '%Fiscal%' OR t.name LIKE '%Timbr%' OR t.name LIKE '%Comprobante%' ORDER BY s.name,t.name"
+        },
+        {
+          "name": "candidate_invoice_columns",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (t.name LIKE '%Factura%' OR t.name LIKE '%Factur%' OR t.name LIKE '%CFDI%' OR t.name LIKE '%Fiscal%' OR t.name LIKE '%Timbr%' OR t.name LIKE '%Comprobante%' OR c.name LIKE '%UUID%' OR c.name LIKE '%Timbr%' OR c.name LIKE '%Factura%' OR c.name LIKE '%CFDI%') ORDER BY s.name,t.name,c.column_id"
+        },
+        {
+          "name": "invoice_candidates_keys",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,kc.name AS constraint_name,kc.type_desc,c.name AS column_name,ic.key_ordinal FROM sys.key_constraints kc JOIN sys.tables t ON t.object_id=kc.parent_object_id JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.index_columns ic ON ic.object_id=t.object_id AND ic.index_id=kc.unique_index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE t.name LIKE '%Factura%' OR t.name LIKE '%Factur%' OR t.name LIKE '%CFDI%' OR t.name LIKE '%Fiscal%' OR t.name LIKE '%Timbr%' OR t.name LIKE '%Comprobante%' ORDER BY s.name,t.name,kc.name,ic.key_ordinal"
+        },
+        {
+          "name": "invoice_candidates_foreign_keys",
+          "sql": "SELECT ps.name AS parent_schema,pt.name AS parent_table,pc.name AS parent_column,fk.name AS fk_name,rs.name AS ref_schema,rt.name AS ref_table,rc.name AS ref_column FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.tables pt ON pt.object_id=fkc.parent_object_id JOIN sys.schemas ps ON ps.schema_id=pt.schema_id JOIN sys.columns pc ON pc.object_id=pt.object_id AND pc.column_id=fkc.parent_column_id JOIN sys.tables rt ON rt.object_id=fkc.referenced_object_id JOIN sys.schemas rs ON rs.schema_id=rt.schema_id JOIN sys.columns rc ON rc.object_id=rt.object_id AND rc.column_id=fkc.referenced_column_id WHERE pt.name LIKE '%Factura%' OR pt.name LIKE '%Factur%' OR pt.name LIKE '%CFDI%' OR pt.name LIKE '%Fiscal%' OR pt.name LIKE '%Timbr%' OR pt.name LIKE '%Comprobante%' OR rt.name LIKE '%Factura%' OR rt.name LIKE '%Factur%' OR rt.name LIKE '%CFDI%' OR rt.name LIKE '%Fiscal%' ORDER BY ps.name,pt.name,fk.name"
+        },
+        {
+          "name": "sales_customer_fiscal_signals",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,SUM(CASE WHEN c.name IN ('ClienteID','EmpresaID','UnidadNegocioID','UUID','Estatus','EstatusCFDI','FechaTimbrado','FechaCancelacion','Total','RFC') THEN 1 ELSE 0 END) AS signal_columns FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id GROUP BY s.name,t.name HAVING SUM(CASE WHEN c.name IN ('ClienteID','EmpresaID','UnidadNegocioID','UUID','Estatus','EstatusCFDI','FechaTimbrado','FechaCancelacion','Total','RFC') THEN 1 ELSE 0 END) >= 3 ORDER BY signal_columns DESC,s.name,t.name"
+        },
+        {
+          "name": "coa_reference_current_contract",
+          "sql": "SELECT c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.columns c JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') ORDER BY c.column_id"
+        },
+        {
+          "name": "coa_reference_fk_contract",
+          "sql": "SELECT fk.name AS fk_name,pc.name AS parent_column,rt.name AS referenced_table,rc.name AS referenced_column FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.tables rt ON rt.object_id=fkc.referenced_object_id JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fkc.parent_object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') ORDER BY fk.name"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
