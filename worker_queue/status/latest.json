@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "b57c9efe7979eff2a3ec2152510ce0ec02cfa759",
-  "generated_at_utc": "2026-09-10T20:53:24Z",
+  "generated_at_utc": "2026-09-10T20:54:42Z",
   "history": {
     "done_total_local": 359,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 984,
+      "age_seconds": 1061,
       "job_id": "CATALOGO-AMPLIADO-GATE8F-EXTERNAL-DELIVERY-CANONICAL-INTEGRATION-R1-20260910",
       "reasons": [
         "INVALID_SCHEMA",
@@ -23,7 +23,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2722,
+      "age_seconds": 2799,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5E-R2-DETERMINISTIC-20260910",
       "reasons": [
         "SUMMARY_LANGUAGE_MUST_BE_ES"
@@ -32,85 +32,85 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2269,
+      "age_seconds": 2346,
       "job_id": "CATALOGO-AMPLIADO-GATE8E-CONFIG-TEMPLATE-READONLY-R3-R4-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 94,
+      "age_seconds": 171,
       "job_id": "CAVAS-CORPORATIVAS-GATE12E-BOS-PERSONA-LINK-IMPLEMENTATION-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 970,
+      "age_seconds": 1047,
       "job_id": "CAVAS-CORPORATIVAS-GATE12E-SOCIO-CLIENTE-DETERMINISTIC-MATCH-AUDIT-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2663,
+      "age_seconds": 2741,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-AUDIT-301-20260910T140500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2646,
+      "age_seconds": 2724,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-AUDIT-COUNTS-20260910T140502Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2654,
+      "age_seconds": 2731,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-AUDIT-LATEST-20260910T140501Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1338,
+      "age_seconds": 1416,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-RECENT-ERRORS-20260910T140700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 979,
+      "age_seconds": 1057,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5E-LIVE-CANARY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1514,
+      "age_seconds": 1591,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5E-R3-DETERMINISTIC-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1914,
+      "age_seconds": 1992,
       "job_id": "WORKER-POS-READONLY-AUDIT-CAPABILITY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 723,
+      "age_seconds": 801,
       "job_id": "coa-gate5a-r2-facturacion-cfdi-emitidos-readonly-v1-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1627,
+      "age_seconds": 1705,
       "job_id": "worker-orchestrator-foundation-gate1-r1-20260910T2020Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 936,
+      "age_seconds": 1014,
       "job_id": "worker-orchestrator-foundation-gate1-r2-20260910T2035Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 74,
+      "age_seconds": 152,
       "job_id": "worker-orchestrator-foundation-gate1-r3-20260910T2048Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -128,8 +128,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-10T20:53:21Z",
-    "last_receive_utc": "2026-09-10T20:53:22Z",
+    "last_cycle_utc": "2026-09-10T20:54:42Z",
+    "last_receive_utc": "2026-09-10T20:54:37Z",
     "last_terminal_utc": "2026-09-10T20:52:10Z",
     "pid": "1131"
   },
