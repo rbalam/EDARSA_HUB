@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "71e0ae810dea98c721b19d09143cb16c01f691ec",
-  "generated_at_utc": "2026-09-10T22:58:51Z",
+  "generated_at_utc": "2026-09-10T23:00:04Z",
   "history": {
     "done_total_local": 374,
     "pending_total_local": 0,
@@ -13,61 +13,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1885,
+      "age_seconds": 1957,
       "job_id": "CAVAS-CORPORATIVAS-GATE12G-CERT-BOS-SOCIO-PERSONA-LINK-R2-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1822,
+      "age_seconds": 1895,
       "job_id": "CAVAS-CORPORATIVAS-GATE12H1-PERSONAID-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1856,
+      "age_seconds": 1928,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-R2-DISCOVER-HTTP-RBAC-20260910T2156Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1148,
+      "age_seconds": 1220,
       "job_id": "CXP-GATE3C-B-MPRO-PAYMENT-LINEAGE-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1125,
+      "age_seconds": 1197,
       "job_id": "CXP-GATE3C-C-SOFTRESTAURANT-PAYMENT-LINEAGE-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1849,
+      "age_seconds": 1921,
       "job_id": "EDARSAHUB-INVENTARIOS-GATE-CANDIDATOS-SYNC-CROSS-20260910T155500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1845,
+      "age_seconds": 1917,
       "job_id": "RRR-GATE4D-R3-R1-CUSTOMER360-MINIMAL-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3551,
-      "job_id": "coa-gate5c-cfdi-emitidos-minimal-design-v1-20260910",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1840,
+      "age_seconds": 1912,
       "job_id": "coa-gate5d-cfdi-emitidos-readonly-preflight-v1-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1826,
+      "age_seconds": 1898,
       "job_id": "worker-orchestrator-reconciliation-gate2-r1-20260910T2202Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -80,13 +74,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 10,
+  "queue_result_ready_recent": 9,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-10T22:58:47Z",
-    "last_receive_utc": "2026-09-10T22:58:48Z",
+    "last_cycle_utc": "2026-09-10T22:59:59Z",
+    "last_receive_utc": "2026-09-10T23:00:00Z",
     "last_terminal_utc": "2026-09-10T22:40:06Z",
     "pid": "1229"
   },
