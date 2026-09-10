@@ -1,0 +1,126 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE8F-EXTERNAL-DELIVERY-CANONICAL-INTEGRATION-R2-20260910",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b57c9efe7979eff2a3ec2152510ce0ec02cfa759",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Gate 8F R2 determinista. Habilitar en Desarrollo la integracion canonica de alertas externas de Catalogo Ampliado para EMAIL y WHATSAPP usando Sistema_NotificacionesConfig, Operativo_Notificaciones_Queue, Operativo_Notificaciones_Log, NotificationRepository SQL y NotificationDispatcher existentes. APP/PUSH permanece fail-closed. No crear motor paralelo, no tocar Produccion, no editar .env y no almacenar secretos.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/database/migrations/20260910_003_catalogo_ampliado_notifications_config.sql",
+      "content": "SET NOCOUNT ON;\nSET XACT_ABORT ON;\nBEGIN TRY\n BEGIN TRANSACTION;\n DECLARE @now datetime2(3)=SYSUTCDATETIME();\n\n IF NOT EXISTS (SELECT 1 FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ColeccionOrigen='notification_provider_config' AND PayloadMongo LIKE '%\"canal\":\"email\"%' AND PayloadMongo LIKE '%\"provider\":\"smtp\"%')\n INSERT INTO dbo.Sistema_NotificacionesConfig(Id,MongoId,ColeccionOrigen,PayloadMongo,MigradoDesdeMongo,Activo,FechaMigracion,FechaCreacion)\n VALUES(NEWID(),'sqlfirst:provider:catalogo-ampliado-email-smtp','notification_provider_config','{\"id\":\"catalogo-ampliado-email-smtp\",\"canal\":\"email\",\"provider\":\"smtp\",\"activo\":true,\"token_ref\":\"EMAIL_PASSWORD\",\"metadata\":{\"source\":\"catalogo_ampliado_gate8f\"}}',0,1,@now,@now);\n\n IF NOT EXISTS (SELECT 1 FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ColeccionOrigen='notification_provider_config' AND PayloadMongo LIKE '%\"canal\":\"whatsapp\"%' AND PayloadMongo LIKE '%\"provider\":\"twilio\"%')\n INSERT INTO dbo.Sistema_NotificacionesConfig(Id,MongoId,ColeccionOrigen,PayloadMongo,MigradoDesdeMongo,Activo,FechaMigracion,FechaCreacion)\n VALUES(NEWID(),'sqlfirst:provider:catalogo-ampliado-whatsapp-twilio','notification_provider_config','{\"id\":\"catalogo-ampliado-whatsapp-twilio\",\"canal\":\"whatsapp\",\"provider\":\"twilio\",\"activo\":true,\"token_ref\":\"TWILIO_AUTH_TOKEN\",\"metadata\":{\"source\":\"catalogo_ampliado_gate8f\"}}',0,1,@now,@now);\n\n IF NOT EXISTS (SELECT 1 FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ColeccionOrigen='notification_templates' AND PayloadMongo LIKE '%\"canal\":\"email\"%' AND PayloadMongo LIKE '%\"codigo\":\"catalogo_ampliado_documento_vencimiento\"%')\n INSERT INTO dbo.Sistema_NotificacionesConfig(Id,MongoId,ColeccionOrigen,PayloadMongo,MigradoDesdeMongo,Activo,FechaMigracion,FechaCreacion)\n VALUES(NEWID(),'sqlfirst:template:catalogo-ampliado-email-vencimiento','notification_templates','{\"id\":\"catalogo-ampliado-email-vencimiento\",\"canal\":\"email\",\"codigo\":\"catalogo_ampliado_documento_vencimiento\",\"nombre\":\"Documento por vencer\",\"activo\":true,\"idioma\":\"es\",\"template_texto\":\"EDARSA HUB: El documento {{titulo}} vence el {{fecha_objetivo}}. Ingresa al sistema para revisarlo.\",\"variables\":[\"titulo\",\"fecha_objetivo\"],\"version\":1}',0,1,@now,@now);\n\n IF NOT EXISTS (SELECT 1 FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ColeccionOrigen='notification_templates' AND PayloadMongo LIKE '%\"canal\":\"whatsapp\"%' AND PayloadMongo LIKE '%\"codigo\":\"catalogo_ampliado_documento_vencimiento\"%')\n INSERT INTO dbo.Sistema_NotificacionesConfig(Id,MongoId,ColeccionOrigen,PayloadMongo,MigradoDesdeMongo,Activo,FechaMigracion,FechaCreacion)\n VALUES(NEWID(),'sqlfirst:template:catalogo-ampliado-whatsapp-vencimiento','notification_templates','{\"id\":\"catalogo-ampliado-whatsapp-vencimiento\",\"canal\":\"whatsapp\",\"codigo\":\"catalogo_ampliado_documento_vencimiento\",\"nombre\":\"Documento por vencer\",\"activo\":true,\"idioma\":\"es\",\"template_texto\":\"EDARSA HUB: El documento {{titulo}} vence el {{fecha_objetivo}}. Ingresa al sistema para revisarlo.\",\"variables\":[\"titulo\",\"fecha_objetivo\"],\"version\":1}',0,1,@now,@now);\n\n IF NOT EXISTS (SELECT 1 FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ColeccionOrigen='notification_config' AND PayloadMongo LIKE '%\"modulo\":\"catalogo_ampliado\"%' AND PayloadMongo LIKE '%\"canal\":\"email\"%' AND PayloadMongo LIKE '%\"evento\":\"DOCUMENTO_VENCIMIENTO\"%')\n INSERT INTO dbo.Sistema_NotificacionesConfig(Id,MongoId,ColeccionOrigen,PayloadMongo,MigradoDesdeMongo,Activo,FechaMigracion,FechaCreacion)\n VALUES(NEWID(),'sqlfirst:config:catalogo-ampliado-email-vencimiento','notification_config','{\"id\":\"catalogo-ampliado-email-vencimiento\",\"canal\":\"email\",\"modulo\":\"catalogo_ampliado\",\"evento\":\"DOCUMENTO_VENCIMIENTO\",\"activo\":true,\"provider\":\"smtp\",\"modo_envio\":\"real\",\"template_codigo\":\"catalogo_ampliado_documento_vencimiento\",\"permite_reintentos\":true,\"max_reintentos\":3,\"ventana_duplicidad_minutos\":1440}',0,1,@now,@now);\n\n IF NOT EXISTS (SELECT 1 FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ColeccionOrigen='notification_config' AND PayloadMongo LIKE '%\"modulo\":\"catalogo_ampliado\"%' AND PayloadMongo LIKE '%\"canal\":\"whatsapp\"%' AND PayloadMongo LIKE '%\"evento\":\"DOCUMENTO_VENCIMIENTO\"%')\n INSERT INTO dbo.Sistema_NotificacionesConfig(Id,MongoId,ColeccionOrigen,PayloadMongo,MigradoDesdeMongo,Activo,FechaMigracion,FechaCreacion)\n VALUES(NEWID(),'sqlfirst:config:catalogo-ampliado-whatsapp-vencimiento','notification_config','{\"id\":\"catalogo-ampliado-whatsapp-vencimiento\",\"canal\":\"whatsapp\",\"modulo\":\"catalogo_ampliado\",\"evento\":\"DOCUMENTO_VENCIMIENTO\",\"activo\":true,\"provider\":\"twilio\",\"modo_envio\":\"real\",\"template_codigo\":\"catalogo_ampliado_documento_vencimiento\",\"permite_reintentos\":true,\"max_reintentos\":3,\"ventana_duplicidad_minutos\":1440}',0,1,@now,@now);\n\n COMMIT TRANSACTION;\nEND TRY\nBEGIN CATCH\n IF @@TRANCOUNT>0 ROLLBACK TRANSACTION;\n THROW;\nEND CATCH;\n"
+    },
+    {
+      "type": "write_file",
+      "path": "ops/migrations/requests/CATALOGO-AMPLIADO-GATE8F-20260910.execute",
+      "content": "GATE=8F\nTARGET=DEVELOPMENT\nMIGRATION=20260910_003_catalogo_ampliado_notifications_config.sql\nCHANNEL=DEDICATED_MIGRATION_WRITER\nPRODUCTION_ALLOWED=false\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/modules/catalogo_ampliado/external_delivery.py",
+      "content": "\"\"\"Adapter de Catalogo Ampliado hacia Communications canonico SQL-first.\"\"\"\nfrom __future__ import annotations\n\nimport asyncio\nimport uuid\n\nfrom core.sql_first.db import fetch_one_dict, sql_connection\nfrom core.communications.notifications.repository import NotificationRepository\n\nTEMPLATE_CODE = 'catalogo_ampliado_documento_vencimiento'\nEVENT_CODE = 'DOCUMENTO_VENCIMIENTO'\nMODULE = 'catalogo_ampliado'\n\n\ndef _queue_id(evento_id: int, canal: str, usuario_id: int) -> str:\n    return str(uuid.uuid5(uuid.NAMESPACE_URL, f'edarsahub:{MODULE}:{evento_id}:{canal.lower()}:{usuario_id}'))\n\n\ndef _target(usuario_id: int):\n    return fetch_one_dict(\"\"\"\n        SELECT TOP 1 u.UsuarioID,u.Email,u.Celular,u.Activo,\n               COALESCE(pc.RecibeEmailNotificaciones,1) RecibeEmailNotificaciones,\n               COALESCE(pc.RecibeWhatsAppNotificaciones,0) RecibeWhatsAppNotificaciones\n        FROM dbo.Usuario_Catalogo u\n        LEFT JOIN dbo.Usuario_PortalConfiguracion pc ON pc.UsuarioID=u.UsuarioID\n        WHERE u.UsuarioID=%s\n    \"\"\", [usuario_id])\n\n\ndef _queue_exists(queue_id: str) -> bool:\n    return fetch_one_dict(\"SELECT ID FROM dbo.Operativo_Notificaciones_Queue WHERE ID=%s\", [queue_id]) is not None\n\n\ndef _mark_generated(evento_id: int, queue_id: str) -> None:\n    with sql_connection() as conn:\n        cur=conn.cursor()\n        cur.execute(\"UPDATE dbo.Gobierno_AlertaEvento SET NotificacionReferencia=%s,Estado='GENERADA',ErrorMensaje=NULL WHERE AlertaEventoID=%s AND Estado IN('PENDIENTE','GENERADA')\", [queue_id,evento_id])\n        conn.commit()\n\n\ndef dispatch_external_alert(evento: dict) -> dict:\n    canal=str(evento.get('Canal') or '').upper()\n    evento_id=int(evento['AlertaEventoID'])\n    if canal == 'APP':\n        return {'alerta_evento_id':evento_id,'canal':canal,'status':'BLOCKED_NO_CANONICAL_PUSH_PROVIDER'}\n    if canal not in {'EMAIL','WHATSAPP'}:\n        return {'alerta_evento_id':evento_id,'canal':canal,'status':'BLOCKED_UNSUPPORTED_CHANNEL'}\n    usuario_id=evento.get('UsuarioObjetivoID')\n    if not usuario_id:\n        return {'alerta_evento_id':evento_id,'canal':canal,'status':'BLOCKED_NO_TARGET_USER'}\n    target=_target(int(usuario_id))\n    if not target or not bool(target.get('Activo')):\n        return {'alerta_evento_id':evento_id,'canal':canal,'status':'BLOCKED_TARGET_INACTIVE_OR_MISSING'}\n    if canal == 'EMAIL':\n        if not bool(target.get('RecibeEmailNotificaciones')):\n            return {'alerta_evento_id':evento_id,'canal':canal,'status':'BLOCKED_USER_PREFERENCE'}\n        recipient=(target.get('Email') or '').strip()\n        dest={'user_id':str(usuario_id),'email':recipient,'tipo':'usuario_objetivo'}\n    else:\n        if not bool(target.get('RecibeWhatsAppNotificaciones')):\n            return {'alerta_evento_id':evento_id,'canal':canal,'status':'BLOCKED_USER_PREFERENCE'}\n        recipient=(target.get('Celular') or '').strip()\n        dest={'user_id':str(usuario_id),'telefono':recipient,'tipo':'usuario_objetivo'}\n    if not recipient:\n        return {'alerta_evento_id':evento_id,'canal':canal,'status':'BLOCKED_MISSING_CONTACT'}\n    qid=_queue_id(evento_id,canal,int(usuario_id))\n    if not _queue_exists(qid):\n        repo=NotificationRepository(None)\n        item={\n            'id':qid,'canal':canal.lower(),'modulo':MODULE,'evento_negocio':EVENT_CODE,\n            'referencia_id':str(evento_id),'prioridad':3,'destinatarios':[dest],\n            'template_codigo':TEMPLATE_CODE,\n            'payload':{'titulo':str(evento.get('Titulo') or 'Documento'),'fecha_objetivo':str(evento.get('FechaObjetivo') or '')},\n            'estado':'pendiente','intentos':0\n        }\n        asyncio.run(repo.enqueue(item))\n    _mark_generated(evento_id,qid)\n    return {'alerta_evento_id':evento_id,'canal':canal,'status':'GENERADA','reference':qid}\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/catalogo_ampliado/alert_service.py",
+      "old": "from . import repository as repo\n\nEXTERNAL_CHANNELS = {\"EMAIL\", \"WHATSAPP\", \"APP\"}\n",
+      "new": "from . import repository as repo\nfrom .external_delivery import dispatch_external_alert\n\nEXTERNAL_CHANNELS = {\"EMAIL\", \"WHATSAPP\", \"APP\"}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/catalogo_ampliado/alert_service.py",
+      "old": "        if canal in EXTERNAL_CHANNELS:\n            resultados.append({\"alerta_evento_id\": evento_id, \"canal\": canal, \"status\": \"BLOCKED_EXTERNAL_DELIVERY_NOT_AUTHORIZED\"})\n            continue\n",
+      "new": "        if canal in EXTERNAL_CHANNELS:\n            resultados.append(dispatch_external_alert(evento))\n            continue\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/communications/dispatcher/dispatcher.py",
+      "old": "from ..providers.twilio_provider import TwilioWhatsAppProvider\n",
+      "new": "from ..providers.twilio_provider import TwilioWhatsAppProvider\nfrom ..providers.email_smtp_provider import EmailSMTPProvider\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/communications/dispatcher/dispatcher.py",
+      "old": "        provider = self.get_provider(provider_name)\n        if not provider:\n            provider = self._providers.get(\"mock\")\n        \n        # Renderizar template\n",
+      "new": "        provider = self.get_provider(provider_name)\n        if not provider:\n            if str(modo_envio).lower() == \"real\":\n                logger.error(\"Provider real no disponible para canal=%s provider=%s\", canal, provider_name)\n                return {\"all_sent\": False, \"should_retry\": True, \"error_code\": \"REAL_PROVIDER_UNAVAILABLE\"}\n            provider = self._providers.get(\"mock\")\n        \n        # Renderizar template\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/communications/dispatcher/dispatcher.py",
+      "old": "        for dest in destinatarios:\n            telefono = dest.get(\"telefono\")\n            user_id = dest.get(\"user_id\")\n            \n            if not telefono:\n                logger.warning(f\"Destinatario sin teléfono: {user_id}\")\n",
+      "new": "        for dest in destinatarios:\n            recipient = dest.get(\"email\") if str(canal).lower() == \"email\" else dest.get(\"telefono\")\n            user_id = dest.get(\"user_id\")\n            \n            if not recipient:\n                logger.warning(\"Destinatario sin contacto para canal=%s user=%s\", canal, user_id)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/communications/dispatcher/dispatcher.py",
+      "old": "                evento=evento,\n                referencia_id=item.get(\"referencia_id\"),\n                workflow_id=item.get(\"workflow_id\"),\n                destinatario=telefono,\n",
+      "new": "                evento=evento,\n                referencia_id=item.get(\"referencia_id\"),\n                workflow_id=item.get(\"workflow_id\"),\n                destinatario=recipient,\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/communications/dispatcher/dispatcher.py",
+      "old": "                    destinatario=telefono,\n",
+      "new": "                    destinatario=recipient,\n",
+      "expected_count": 3
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/communications/dispatcher/dispatcher.py",
+      "old": "                    recipient=telefono,\n",
+      "new": "                    recipient=recipient,\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_catalogo_ampliado_gate8f_external_delivery.py",
+      "content": "from modules.catalogo_ampliado import external_delivery as ext\n\n\ndef test_app_is_fail_closed():\n    out=ext.dispatch_external_alert({'AlertaEventoID':1,'Canal':'APP'})\n    assert out['status']=='BLOCKED_NO_CANONICAL_PUSH_PROVIDER'\n\n\ndef test_missing_target_is_fail_closed():\n    out=ext.dispatch_external_alert({'AlertaEventoID':1,'Canal':'EMAIL','UsuarioObjetivoID':None})\n    assert out['status']=='BLOCKED_NO_TARGET_USER'\n\n\ndef test_email_respects_preference(monkeypatch):\n    monkeypatch.setattr(ext,'_target',lambda _:{'Activo':True,'Email':'a@example.com','Celular':'999','RecibeEmailNotificaciones':False,'RecibeWhatsAppNotificaciones':True})\n    out=ext.dispatch_external_alert({'AlertaEventoID':2,'Canal':'EMAIL','UsuarioObjetivoID':10})\n    assert out['status']=='BLOCKED_USER_PREFERENCE'\n\n\ndef test_whatsapp_respects_preference(monkeypatch):\n    monkeypatch.setattr(ext,'_target',lambda _:{'Activo':True,'Email':'a@example.com','Celular':'999','RecibeEmailNotificaciones':True,'RecibeWhatsAppNotificaciones':False})\n    out=ext.dispatch_external_alert({'AlertaEventoID':3,'Canal':'WHATSAPP','UsuarioObjetivoID':10})\n    assert out['status']=='BLOCKED_USER_PREFERENCE'\n\n\ndef test_email_enqueue_is_idempotent(monkeypatch):\n    monkeypatch.setattr(ext,'_target',lambda _:{'Activo':True,'Email':'a@example.com','Celular':'999','RecibeEmailNotificaciones':True,'RecibeWhatsAppNotificaciones':True})\n    monkeypatch.setattr(ext,'_queue_exists',lambda _:True)\n    marked=[]\n    monkeypatch.setattr(ext,'_mark_generated',lambda event_id,qid:marked.append((event_id,qid)))\n    out=ext.dispatch_external_alert({'AlertaEventoID':4,'Canal':'EMAIL','UsuarioObjetivoID':10,'Titulo':'X','FechaObjetivo':'2026-09-30'})\n    assert out['status']=='GENERADA'\n    assert out['reference']==ext._queue_id(4,'EMAIL',10)\n    assert marked==[(4,out['reference'])]\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/catalogo_ampliado/external_delivery.py",
+        "backend/modules/catalogo_ampliado/alert_service.py",
+        "backend/core/communications/dispatcher/dispatcher.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_catalogo_ampliado_gate8f_external_delivery.py",
+        "backend/tests/test_catalogo_ampliado_gate8c_alerts.py",
+        "backend/tests/test_catalogo_ampliado_gate8d_scheduler.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "Only Edarsahub_Desarrollo",
+    "Production false",
+    "No external canary in this job",
+    "No .env edits or secrets",
+    "No Mongo runtime",
+    "No new notification engine, queue, log or scheduler",
+    "APP/PUSH must remain fail-closed",
+    "No hardcoded real recipients",
+    "EMAIL must use Email and WHATSAPP must use Celular",
+    "No fallback to mock when modo_envio is real",
+    "Migration must be executed only through existing DEDICATED_MIGRATION_WRITER in Development",
+    "Do not claim operational readiness until migration writer and read-only SQL evidence pass"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
