@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "1679a1882ede4156ff93a80d0b4e25b698330d8a",
-  "generated_at_utc": "2026-09-10T20:24:58Z",
+  "generated_at_utc": "2026-09-10T20:26:11Z",
   "history": {
     "done_total_local": 353,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1015,
+      "age_seconds": 1088,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5E-R2-DETERMINISTIC-20260910",
       "reasons": [
         "SUMMARY_LANGUAGE_MUST_BE_ES"
@@ -22,49 +22,49 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3393,
+      "age_seconds": 3466,
       "job_id": "CATALOGO-AMPLIADO-GATE8E-CONFIG-TEMPLATE-READONLY-R3-R3-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 562,
+      "age_seconds": 635,
       "job_id": "CATALOGO-AMPLIADO-GATE8E-CONFIG-TEMPLATE-READONLY-R3-R4-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2246,
+      "age_seconds": 2319,
       "job_id": "CAVAS-CORPORATIVAS-GATE12D-BOS-SOCIO-CANONICAL-LINK-AUDIT-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3443,
+      "age_seconds": 3517,
       "job_id": "CXP-GATE3C-A-EDARSAHUB-FINANZAS-PAGOS-RUNTIME-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 956,
+      "age_seconds": 1030,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-AUDIT-301-20260910T140500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 939,
+      "age_seconds": 1012,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-AUDIT-COUNTS-20260910T140502Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 947,
+      "age_seconds": 1020,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-AUDIT-LATEST-20260910T140501Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 208,
+      "age_seconds": 281,
       "job_id": "WORKER-POS-READONLY-AUDIT-CAPABILITY-20260910",
       "reason": null,
       "state": "RESULT_READY"
@@ -82,8 +82,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-10T20:24:57Z",
-    "last_receive_utc": "2026-09-10T20:24:57Z",
+    "last_cycle_utc": "2026-09-10T20:26:09Z",
+    "last_receive_utc": "2026-09-10T20:25:14Z",
     "last_terminal_utc": "2026-09-10T20:21:29Z",
     "pid": "282"
   },
