@@ -1,0 +1,77 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate5d-cfdi-emitidos-readonly-preflight-v1-20260910",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "698e2375de2106fb8375df52bd1dc9fb12faac86",
+  "mode": "READ_ONLY_SQL",
+  "objective": "COA Gate 5D: preflight READ_ONLY del diseno Gate 5C para CFDI emitidos. Validar antes de cualquier migracion fisica: (1) ausencia de colisiones para dbo.Fiscal_DocumentosEmitidosEstatus y dbo.Fiscal_DocumentosEmitidos; (2) ausencia de colisiones de PK/UQ/FK/CK/DF/IX/UX propuestos; (3) tipos exactos, nulabilidad y PK/UQ referenciable de Sistema_Empresas.EmpresaID, Unidades_Negocio.id, Cliente_Catalogo.ClienteID, Venta_Encabezado.VentaID, Proveedor_Monedas.MonedaID y Usuario_Catalogo.UsuarioID; (4) contrato actual completo de COA_ExpedienteReferencias, incluyendo columnas, FKs, indices y definicion real de CK_COA_ExpedienteReferencias_UnSoloDestino; (5) confirmar que VentaID y DocumentoFiscalEmitidoID no existen ya en COA_ExpedienteReferencias; (6) confirmar tipos/longitudes relevantes de Venta_Encabezado para Serie, Folio, NumeroFactura, UUIDFactura, ClienteID, Total y cualquier EmpresaID/UnidadNegocioID existente; (7) revisar patrones exactos de Compras_DocumentosFiscales para UUID, importes, XML/PDF, estatus y auditoria solamente como referencia estructural, sin reutilizarla como fuente de salida; (8) detectar cualquier objeto fiscal emitido equivalente creado desde Gate 5B que haga innecesario el nuevo dominio. Solo metadata, definiciones de constraints y conteos tecnicos; no datos fiscales de clientes. No DDL/DML/EXEC/SELECT INTO. No Produccion. Si todo es compatible, reportar READY_FOR_MIGRATION_DESIGN; si hay conflicto, listar blockers exactos y no promover migracion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA",
+    "chat": "coa-gate5d-cfdi-emitidos-readonly-preflight-v1-20260910"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate5d_object_collisions",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name IN ('Fiscal_DocumentosEmitidosEstatus','Fiscal_DocumentosEmitidos') ORDER BY s.name,o.name"
+        },
+        {
+          "name": "gate5d_constraint_index_collisions",
+          "sql": "SELECT 'OBJECT' AS item_type,s.name AS schema_name,o.name AS item_name,o.type_desc,OBJECT_NAME(o.parent_object_id) AS parent_table FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name IN ('PK_Fiscal_DocumentosEmitidosEstatus','UQ_Fiscal_DocumentosEmitidosEstatus_Codigo','PK_Fiscal_DocumentosEmitidos','FK_Fiscal_DocumentosEmitidos_Empresa','FK_Fiscal_DocumentosEmitidos_Unidad','FK_Fiscal_DocumentosEmitidos_Cliente','FK_Fiscal_DocumentosEmitidos_Venta','FK_Fiscal_DocumentosEmitidos_Estatus','FK_Fiscal_DocumentosEmitidos_Moneda','FK_Fiscal_DocumentosEmitidos_CreadoPor','FK_Fiscal_DocumentosEmitidos_ModificadoPor','CK_Fiscal_DocumentosEmitidos_Fechas','CK_Fiscal_DocumentosEmitidos_Total','DF_Fiscal_DocumentosEmitidosEstatus_EsFinal','DF_Fiscal_DocumentosEmitidosEstatus_Activo','DF_Fiscal_DocumentosEmitidos_FechaAlta','DF_Fiscal_DocumentosEmitidos_Activo','FK_COA_ExpedienteReferencias_Venta','FK_COA_ExpedienteReferencias_DocumentoFiscalEmitido') UNION ALL SELECT 'INDEX',s.name,i.name,'INDEX',t.name FROM sys.indexes i JOIN sys.tables t ON t.object_id=i.object_id JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE i.name IN ('UX_Fiscal_DocumentosEmitidos_UUID','IX_Fiscal_DocumentosEmitidos_Cliente_Fecha','IX_Fiscal_DocumentosEmitidos_Empresa_Estatus','IX_Fiscal_DocumentosEmitidos_Unidad','IX_Fiscal_DocumentosEmitidos_Venta') ORDER BY item_type,item_name"
+        },
+        {
+          "name": "gate5d_reference_column_contracts",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Cliente_Catalogo' AND c.name='ClienteID') OR (t.name='Venta_Encabezado' AND c.name='VentaID') OR (t.name='Proveedor_Monedas' AND c.name='MonedaID') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID') ORDER BY t.name,c.name"
+        },
+        {
+          "name": "gate5d_reference_pk_unique",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,i.name AS index_name,i.is_primary_key,i.is_unique,ic.key_ordinal FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.indexes i ON i.object_id=t.object_id AND (i.is_primary_key=1 OR i.is_unique=1) JOIN sys.index_columns ic ON ic.object_id=t.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE (((t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Cliente_Catalogo' AND c.name='ClienteID') OR (t.name='Venta_Encabezado' AND c.name='VentaID') OR (t.name='Proveedor_Monedas' AND c.name='MonedaID') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID')) AND ic.key_ordinal=1) ORDER BY t.name,c.name,i.is_primary_key DESC"
+        },
+        {
+          "name": "gate5d_coa_reference_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.columns c JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') ORDER BY c.column_id"
+        },
+        {
+          "name": "gate5d_coa_reference_fks",
+          "sql": "SELECT fk.name AS fk_name,pc.name AS parent_column,rs.name AS ref_schema,rt.name AS ref_table,rc.name AS ref_column FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.tables rt ON rt.object_id=fkc.referenced_object_id JOIN sys.schemas rs ON rs.schema_id=rt.schema_id JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fkc.parent_object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') ORDER BY fk.name"
+        },
+        {
+          "name": "gate5d_coa_reference_indexes",
+          "sql": "SELECT i.name AS index_name,i.is_unique,i.has_filter,i.filter_definition,c.name AS column_name,ic.key_ordinal,ic.is_included_column FROM sys.indexes i JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND i.name IS NOT NULL ORDER BY i.name,ic.key_ordinal,ic.index_column_id"
+        },
+        {
+          "name": "gate5d_coa_single_destination_check",
+          "sql": "SELECT cc.name AS constraint_name,cc.definition FROM sys.check_constraints cc WHERE cc.parent_object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND cc.name='CK_COA_ExpedienteReferencias_UnSoloDestino'"
+        },
+        {
+          "name": "gate5d_coa_new_columns_collision",
+          "sql": "SELECT c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.columns c JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND c.name IN ('VentaID','DocumentoFiscalEmitidoID') ORDER BY c.name"
+        },
+        {
+          "name": "gate5d_venta_fiscal_contract",
+          "sql": "SELECT c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.columns c JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Venta_Encabezado') AND c.name IN ('VentaID','Serie','Folio','ClienteID','EmpresaID','UnidadNegocioID','Total','NumeroFactura','UUIDFactura') ORDER BY c.column_id"
+        },
+        {
+          "name": "gate5d_compras_fiscal_reference_pattern",
+          "sql": "SELECT c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.columns c JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Compras_DocumentosFiscales') AND c.name IN ('DocumentoFiscalID','EstatusDocumentoFiscalID','UUID','TipoComprobante','Serie','Folio','FechaEmision','RFCEmisor','RFCReceptor','Moneda','TipoCambio','Subtotal','Descuento','ImpuestoTrasladado','ImpuestoRetenido','Total','MetodoPago','FormaPago','UsoCFDI','VersionCFDI','EstatusSAT','FechaConsultaSAT','RutaXML','RutaPDF','NombreArchivoXML','NombreArchivoPDF','HashXML','HashPDF','OrigenDocumento','Observaciones','Activo','CreatedAt','UpdatedAt','CreatedBy') ORDER BY c.column_id"
+        },
+        {
+          "name": "gate5d_new_equivalent_fiscal_objects",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,SUM(CASE WHEN c.name IN ('ClienteID','VentaID','UUID','FolioFiscal','RFCReceptor','FechaTimbrado','EstatusSAT','FechaCancelacion','RutaXML','RutaPDF','EmpresaID','UnidadNegocioID','Total') THEN 1 ELSE 0 END) AS signal_count FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id WHERE t.name NOT LIKE 'Compras_%' GROUP BY s.name,t.name HAVING SUM(CASE WHEN c.name IN ('ClienteID','VentaID','UUID','FolioFiscal','RFCReceptor','FechaTimbrado','EstatusSAT','FechaCancelacion','RutaXML','RutaPDF','EmpresaID','UnidadNegocioID','Total') THEN 1 ELSE 0 END) >= 6 ORDER BY signal_count DESC,s.name,t.name"
+        },
+        {
+          "name": "gate5d_database_contract",
+          "sql": "SELECT DB_NAME() AS database_name,DATABASEPROPERTYEX(DB_NAME(),'Collation') AS database_collation,compatibility_level FROM sys.databases WHERE name=DB_NAME()"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
