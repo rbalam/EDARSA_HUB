@@ -1,0 +1,389 @@
+{
+  "base_sha": "9d0916d01613f39f1f6f77384769dfc7abf0286e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-10T19:27:34Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CXP-GATE3C-A-EDARSAHUB-FINANZAS-PAGOS-RUNTIME-READONLY-20260910",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-10T19:27:43Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "server_name",
+              "database_name",
+              "login_name",
+              "database_user"
+            ],
+            "name": "gate3ca_runtime_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "ns559627",
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc",
+              "create_date",
+              "modify_date"
+            ],
+            "name": "gate3ca_finanzas_pagos_object",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "dbo",
+                "Finanzas_Pagos",
+                "USER_TABLE",
+                "2026-04-12T21:07:05.130000",
+                "2026-09-09T08:39:19.803000"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable",
+              "is_identity",
+              "is_computed",
+              "default_constraint",
+              "default_definition"
+            ],
+            "name": "gate3ca_finanzas_pagos_columns",
+            "row_count_returned": 10,
+            "rows": [
+              [
+                1,
+                "PagoID",
+                "bigint",
+                8,
+                19,
+                0,
+                false,
+                true,
+                0,
+                null,
+                null
+              ],
+              [
+                2,
+                "CuentaPorPagarID",
+                "bigint",
+                8,
+                19,
+                0,
+                false,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                3,
+                "FechaPago",
+                "date",
+                3,
+                10,
+                0,
+                false,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                4,
+                "MontoPagado",
+                "decimal",
+                9,
+                18,
+                2,
+                false,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                5,
+                "FormaPagoID",
+                "int",
+                4,
+                10,
+                0,
+                true,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                6,
+                "CuentaBancariaID",
+                "int",
+                4,
+                10,
+                0,
+                true,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                7,
+                "NumeroReferencia",
+                "varchar",
+                50,
+                0,
+                0,
+                true,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                8,
+                "Observaciones",
+                "varchar",
+                500,
+                0,
+                0,
+                true,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                9,
+                "Activo",
+                "bit",
+                1,
+                1,
+                0,
+                false,
+                false,
+                0,
+                "DF__Finanzas___Activ__49D9D0A7",
+                "((1))"
+              ],
+              [
+                10,
+                "FechaAlta",
+                "datetime2",
+                8,
+                27,
+                7,
+                false,
+                false,
+                0,
+                "DF__Finanzas___Fecha__4ACDF4E0",
+                "(getdate())"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "constraint_name",
+              "constraint_type",
+              "index_name",
+              "is_unique",
+              "key_ordinal",
+              "column_name"
+            ],
+            "name": "gate3ca_finanzas_pagos_key_constraints",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "PK__Finanzas__F00B61581914A9DE",
+                "PRIMARY_KEY_CONSTRAINT",
+                "PK__Finanzas__F00B61581914A9DE",
+                true,
+                1,
+                "PagoID"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "constraint_name",
+              "is_disabled",
+              "is_not_trusted",
+              "definition"
+            ],
+            "name": "gate3ca_finanzas_pagos_check_constraints",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "parent_column",
+              "referenced_schema",
+              "referenced_table",
+              "referenced_column",
+              "delete_referential_action_desc",
+              "update_referential_action_desc",
+              "is_disabled",
+              "is_not_trusted"
+            ],
+            "name": "gate3ca_finanzas_pagos_fk_outgoing",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "parent_schema",
+              "parent_table",
+              "parent_column",
+              "finanzas_pagos_column",
+              "is_disabled",
+              "is_not_trusted"
+            ],
+            "name": "gate3ca_finanzas_pagos_fk_incoming",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "FK_COA_ExpedienteReferencias_Pago",
+                "dbo",
+                "COA_ExpedienteReferencias",
+                "PagoID",
+                "PagoID",
+                false,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_id",
+              "index_name",
+              "type_desc",
+              "is_unique",
+              "is_primary_key",
+              "is_unique_constraint",
+              "is_disabled",
+              "has_filter",
+              "filter_definition",
+              "key_ordinal",
+              "is_included_column",
+              "column_name"
+            ],
+            "name": "gate3ca_finanzas_pagos_indexes",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1,
+                "PK__Finanzas__F00B61581914A9DE",
+                "CLUSTERED",
+                true,
+                true,
+                false,
+                false,
+                false,
+                null,
+                1,
+                false,
+                "PagoID"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "trigger_name",
+              "is_disabled",
+              "is_instead_of_trigger",
+              "definition"
+            ],
+            "name": "gate3ca_finanzas_pagos_triggers",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_registros"
+            ],
+            "name": "gate3ca_finanzas_pagos_row_count",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "referencing_schema",
+              "referencing_object",
+              "referencing_type",
+              "referenced_schema_name",
+              "referenced_entity_name",
+              "referenced_database_name",
+              "referenced_server_name"
+            ],
+            "name": "gate3ca_finanzas_pagos_sql_dependencies",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc",
+              "definition"
+            ],
+            "name": "gate3ca_finanzas_pagos_module_references",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-10T19:27:27Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
