@@ -1,0 +1,48 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE8E-CONFIG-TEMPLATE-READONLY-R3-R2-20260910",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d02a411ec42a90ef1d79ddfa4bec7b0bbc8ff2b5",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Retry corregido del Gate 8E R3. Auditar metadata no secreta de dbo.Sistema_NotificacionesConfig para determinar si existen config/provider/template canonicos reutilizables para Catalogo Ampliado EMAIL/WHATSAPP. La consulta debe tolerar filas legacy cuyo PayloadMongo no sea JSON valido usando ISJSON antes de JSON_VALUE. No exponer secretos, destinatarios ni template_texto. Sin DML/DDL, sin envios, sin Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "readonly_identity",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user,ORIGINAL_LOGIN() AS original_login"
+        },
+        {
+          "name": "notification_config_json_health",
+          "sql": "SELECT Activo,CASE WHEN ISJSON(PayloadMongo)=1 THEN 1 ELSE 0 END AS EsJsonValido,COUNT_BIG(*) AS cantidad FROM dbo.Sistema_NotificacionesConfig GROUP BY Activo,CASE WHEN ISJSON(PayloadMongo)=1 THEN 1 ELSE 0 END ORDER BY Activo,EsJsonValido"
+        },
+        {
+          "name": "notification_metadata_sanitized",
+          "sql": "SELECT Id,ColeccionOrigen,Activo,JSON_VALUE(PayloadMongo,'$.id') AS payload_id,JSON_VALUE(PayloadMongo,'$.canal') AS canal,JSON_VALUE(PayloadMongo,'$.modulo') AS modulo,JSON_VALUE(PayloadMongo,'$.evento') AS evento,JSON_VALUE(PayloadMongo,'$.provider') AS provider,JSON_VALUE(PayloadMongo,'$.modo_envio') AS modo_envio,JSON_VALUE(PayloadMongo,'$.template_codigo') AS template_codigo,JSON_VALUE(PayloadMongo,'$.codigo') AS codigo,CASE WHEN JSON_VALUE(PayloadMongo,'$.template_texto') IS NULL THEN 0 ELSE 1 END AS tiene_template_texto FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ISJSON(PayloadMongo)=1 ORDER BY ColeccionOrigen,Id"
+        },
+        {
+          "name": "catalogo_ampliado_config_candidates",
+          "sql": "SELECT Id,ColeccionOrigen,Activo,JSON_VALUE(PayloadMongo,'$.canal') AS canal,JSON_VALUE(PayloadMongo,'$.modulo') AS modulo,JSON_VALUE(PayloadMongo,'$.evento') AS evento,JSON_VALUE(PayloadMongo,'$.provider') AS provider,JSON_VALUE(PayloadMongo,'$.modo_envio') AS modo_envio,JSON_VALUE(PayloadMongo,'$.template_codigo') AS template_codigo,JSON_VALUE(PayloadMongo,'$.codigo') AS codigo,CASE WHEN JSON_VALUE(PayloadMongo,'$.template_texto') IS NULL THEN 0 ELSE 1 END AS tiene_template_texto FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ISJSON(PayloadMongo)=1 AND (LOWER(ISNULL(JSON_VALUE(PayloadMongo,'$.modulo'),'')) IN ('catalogo_ampliado','catalogo ampliado') OR LOWER(ISNULL(JSON_VALUE(PayloadMongo,'$.evento'),'')) LIKE '%vencim%' OR LOWER(ISNULL(JSON_VALUE(PayloadMongo,'$.codigo'),'')) LIKE '%vencim%' OR LOWER(ISNULL(JSON_VALUE(PayloadMongo,'$.codigo'),'')) LIKE '%catalog%') ORDER BY ColeccionOrigen,Id"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL only",
+    "NO Production",
+    "NO DML",
+    "NO DDL",
+    "NO external delivery",
+    "NO secrets",
+    "NO recipient values",
+    "Do not return template_texto content, only whether it exists",
+    "Legacy invalid JSON rows must not fail the audit"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
