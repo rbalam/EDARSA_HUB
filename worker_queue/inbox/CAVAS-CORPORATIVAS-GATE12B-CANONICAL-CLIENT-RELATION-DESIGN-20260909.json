@@ -1,0 +1,77 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE12B-CANONICAL-CLIENT-RELATION-DESIGN-20260909",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "dd74ce1f0d71e443ba38332dfff5fd59a1380469",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Gate 12B de Cavas Corporativas, exclusivamente de diseno controlado. Producir un dossier tecnico que defina la migracion no destructiva desde el enlace legacy CavaSocios_Socios.ClienteCRMID (uniqueidentifier) hacia la identidad canonica dbo.Cliente_Catalogo.ClienteID (int), sin ejecutar DDL/DML ni cambiar codigo funcional. El diseno debe preservar SocioID y las FK actuales de Botellas, Cargos y Movimientos; mantener Email/Telefono/NombreCompleto/ClienteCRMID durante la transicion; justificar cualquier futura columna nueva solo si la auditoria confirma que no existe una columna canonica reutilizable; prohibir casts inseguros entre GUID e int; definir backfill por crosswalk verificable o conciliacion explicita; y establecer criterios de corte, rollback y certificacion para un posterior Gate 12C de implementacion.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/CAVAS/CAVAS_CORPORATIVAS_GATE12B_CANONICAL_CLIENT_RELATION_DESIGN.md",
+      "content": "# Cavas Corporativas - Gate 12B - Diseno de relacion canonica Cliente <-> Socio\n\n## Estado\nDOCUMENTO DE DISENO CONTROLADO. NO IMPLEMENTA DDL, DML NI CAMBIOS FUNCIONALES.\n\n## Evidencia base obligatoria\nGate 12A certifico que CavaSocios_Socios usa SocioID uniqueidentifier como PK; contiene ClienteCRMID uniqueidentifier nullable e indice IX_CavaSocios_Socios_ClienteCRM; Cliente_Catalogo usa ClienteID int como PK; no existe FK directa entre ambas tablas; Email/Telefono/Activo se solapan con EmailPrincipal/TelefonoPrincipal/Activo; y Botellas, Cargos y Movimientos dependen de CavaSocios_Socios.SocioID.\n\n## Decision arquitectonica\n1. Cliente_Catalogo permanece como unica identidad maestra de cliente.\n2. CavaSocios_Socios permanece como extension de membresia Cava y conserva SocioID como PK.\n3. ClienteCRMID es legado y NO se debe convertir/castear a ClienteID: uniqueidentifier e int son dominios incompatibles.\n4. Si la auditoria de este Gate confirma que no existe en CavaSocios_Socios otra columna int reutilizable ni una FK canonica existente, el Gate 12C podra agregar una unica columna nullable ClienteID int a CavaSocios_Socios con FK a Cliente_Catalogo(ClienteID). Esa columna sera la relacion canonica nueva.\n5. ClienteCRMID, NombreCompleto, Email y Telefono se conservan durante la transicion. No se eliminan ni renombran en Gate 12C.\n6. Botellas, Cargos y Movimientos siguen apuntando a SocioID. No deben migrarse a ClienteID porque representan operaciones de membresia Cava, no identidad maestra.\n\n## Estrategia de poblacion\n- Prohibido inferir ClienteID por casting, truncado, hash o coincidencia parcial.\n- El backfill de ClienteID solo puede usar un crosswalk fisico y verificable entre ClienteCRMID y Cliente_Catalogo, si este Gate identifica uno.\n- Si no existe crosswalk determinista, los registros quedan ClienteID NULL y pasan a conciliacion controlada posterior; no se inventan correspondencias por nombre/email/telefono sin un Gate especifico de matching y reglas aprobadas.\n- Antes de imponer NOT NULL o unicidad se requiere cobertura 100% de socios que deban estar ligados a cliente y cero conflictos.\n\n## Lectura durante transicion\n- Identidad canónica: si ClienteID no es NULL, resolver nombre/contacto/activo desde Cliente_Catalogo.\n- Campos legacy de CavaSocios_Socios quedan solo como compatibilidad y evidencia historica durante la transicion.\n- No usar ClienteCRMID como fuente maestra una vez exista ClienteID validado.\n- No modificar semantica de Activo/Estatus de membresia: Cliente_Catalogo.Activo representa estado del cliente; CavaSocios_Socios.Activo/Estatus representa membresia Cava.\n\n## Escritura durante transicion\n- Altas nuevas de socio deben requerir/obtener ClienteID canonico cuando Gate 12C lo implemente.\n- Email/Telefono/NombreCompleto no deben convertirse en una segunda fuente maestra; cualquier compatibilidad temporal debe ser explicitamente derivada o mantenida sin autoridad funcional.\n- No dual-write silencioso sin pruebas y contrato explicito.\n\n## Dependencias preservadas\nCavaSocios_Botellas.SocioID -> CavaSocios_Socios.SocioID\nCavaSocios_Cargos.SocioID -> CavaSocios_Socios.SocioID\nCavaSocios_Movimientos.SocioID -> CavaSocios_Socios.SocioID\nEstas relaciones no cambian en Gate 12C.\n\n## Gate 12C futuro - orden de implementacion permitido\nA. Preflight de esquema y datos.\nB. Si y solo si no existe relacion reutilizable: ADD ClienteID int NULL.\nC. Crear indice para ClienteID si el plan de ejecucion lo justifica.\nD. Crear FK ClienteID -> Cliente_Catalogo(ClienteID), inicialmente manteniendo nullable.\nE. Backfill exclusivamente con crosswalk certificado.\nF. Validar cobertura, duplicidades y orfandad.\nG. Cambiar repositorio/servicio para resolver identidad desde ClienteID sin tocar SocioID de operaciones.\nH. Mantener ClienteCRMID/NombreCompleto/Email/Telefono; su deprecacion/eliminacion queda fuera de Gate 12C.\nI. E2E y rollback.\n\n## Rollback\nComo ClienteID se introduce nullable y las FK operativas permanecen sobre SocioID, un rollback funcional puede dejar de consumir ClienteID sin perder Botellas, Cargos o Movimientos. Cualquier DDL de rollback se definira y probara en Gate 12C; este Gate no lo ejecuta.\n\n## Criterios para autorizar Gate 12C\n- Confirmacion fisica de que no existe una columna ClienteID int reutilizable en CavaSocios_Socios.\n- Determinacion de existencia/ausencia de crosswalk ClienteCRMID -> ClienteID.\n- Cero propuesta de cast GUID->int.\n- Plan de backfill determinista o estado explicito NO_DETERMINABLE para filas sin mapeo.\n- Preservacion de las tres FK operativas por SocioID.\n- Email/Telefono/NombreCompleto/ClienteCRMID permanecen fisicamente.\n- Produccion no tocada.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate12b_socios_all_columns_reuse_check",
+          "sql": "SELECT c.column_id, c.name AS column_name, ty.name AS data_type, c.is_nullable FROM sys.columns c INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') ORDER BY c.column_id"
+        },
+        {
+          "name": "gate12b_cliente_catalogo_guid_or_crosswalk_columns",
+          "sql": "SELECT c.column_id, c.name AS column_name, ty.name AS data_type, c.is_nullable FROM sys.columns c INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID(N'dbo.Cliente_Catalogo') AND (ty.name=N'uniqueidentifier' OR c.name LIKE N'%CRM%' OR c.name LIKE N'%GUID%' OR c.name LIKE N'%UUID%' OR c.name LIKE N'%Origen%') ORDER BY c.column_id"
+        },
+        {
+          "name": "gate12b_database_client_crm_columns",
+          "sql": "SELECT OBJECT_SCHEMA_NAME(c.object_id) AS schema_name, OBJECT_NAME(c.object_id) AS table_name, c.name AS column_name, ty.name AS data_type FROM sys.columns c INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.name LIKE N'%ClienteCRM%' OR c.name LIKE N'%CRMCliente%' OR c.name LIKE N'%ClienteGUID%' OR c.name LIKE N'%ClienteUUID%' ORDER BY schema_name,table_name,c.column_id"
+        },
+        {
+          "name": "gate12b_candidate_crosswalk_tables",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, SUM(CASE WHEN ty.name=N'uniqueidentifier' AND (c.name LIKE N'%Cliente%' OR c.name LIKE N'%CRM%') THEN 1 ELSE 0 END) AS guid_client_cols, SUM(CASE WHEN ty.name=N'int' AND c.name LIKE N'%Cliente%' THEN 1 ELSE 0 END) AS int_client_cols FROM sys.tables t INNER JOIN sys.schemas s ON s.schema_id=t.schema_id INNER JOIN sys.columns c ON c.object_id=t.object_id INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id GROUP BY s.name,t.name HAVING SUM(CASE WHEN ty.name=N'uniqueidentifier' AND (c.name LIKE N'%Cliente%' OR c.name LIKE N'%CRM%') THEN 1 ELSE 0 END)>0 AND SUM(CASE WHEN ty.name=N'int' AND c.name LIKE N'%Cliente%' THEN 1 ELSE 0 END)>0 ORDER BY s.name,t.name"
+        },
+        {
+          "name": "gate12b_socios_population_aggregate",
+          "sql": "SELECT COUNT_BIG(*) AS total_socios, SUM(CASE WHEN ClienteCRMID IS NULL THEN 1 ELSE 0 END) AS clientecrmid_null, SUM(CASE WHEN ClienteCRMID IS NOT NULL THEN 1 ELSE 0 END) AS clientecrmid_present, COUNT_BIG(DISTINCT ClienteCRMID) AS clientecrmid_distinct_nonnull FROM dbo.CavaSocios_Socios"
+        },
+        {
+          "name": "gate12b_socios_duplicate_legacy_identifier_count",
+          "sql": "SELECT COUNT_BIG(*) AS duplicated_clientecrmid_groups FROM (SELECT ClienteCRMID FROM dbo.CavaSocios_Socios WHERE ClienteCRMID IS NOT NULL GROUP BY ClienteCRMID HAVING COUNT_BIG(*)>1) d"
+        },
+        {
+          "name": "gate12b_direct_fk_recheck",
+          "sql": "SELECT fk.name AS fk_name, pc.name AS socio_column, rc.name AS cliente_column FROM sys.foreign_keys fk INNER JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id INNER JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id INNER JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fk.parent_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND fk.referenced_object_id=OBJECT_ID(N'dbo.Cliente_Catalogo') ORDER BY fk.name"
+        },
+        {
+          "name": "gate12b_children_fk_preservation",
+          "sql": "SELECT OBJECT_NAME(fk.parent_object_id) AS child_table, pc.name AS child_column, rc.name AS socio_column, fk.name AS fk_name FROM sys.foreign_keys fk INNER JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id INNER JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id INNER JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fk.referenced_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') ORDER BY child_table,fk.name"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "DESIGN ONLY: the only repository mutation allowed is the Gate 12B markdown dossier",
+    "NO SQL DDL/DML",
+    "NO functional code changes",
+    "NO Production",
+    "NO .env OR SECRETS",
+    "NO PII output; aggregate counts and metadata only",
+    "NO Mongo",
+    "Do not remove or rename ClienteCRMID, NombreCompleto, Email or Telefono",
+    "Do not modify SocioID or the existing Botellas/Cargos/Movimientos foreign keys",
+    "Do not create Entidad_Catalogo or any parallel customer catalog",
+    "Cliente_Catalogo is the canonical customer identity",
+    "A future ClienteID column is allowed in the design only if the readonly evidence confirms no reusable int canonical link already exists",
+    "Never cast or derive uniqueidentifier ClienteCRMID into int ClienteID",
+    "If no deterministic crosswalk exists, mark mapping as NOT_DETERMINABLE and require controlled reconciliation rather than guessing"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
