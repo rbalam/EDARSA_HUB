@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "aaf9980248524734b3783721f10f53e662dc4552",
-  "generated_at_utc": "2026-09-10T21:55:37Z",
+  "generated_at_utc": "2026-09-10T21:56:54Z",
   "history": {
     "done_total_local": 365,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 946,
+      "age_seconds": 1023,
       "job_id": "CAVAS-CORPORATIVAS-GATE12G-CERT-BOS-SOCIO-PERSONA-LINK-R1-20260910",
       "reasons": [
         "READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED"
@@ -22,67 +22,61 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2329,
+      "age_seconds": 2406,
       "job_id": "CATALOGO-AMPLIADO-GATE8F-EXTERNAL-DELIVERY-CANONICAL-INTEGRATION-R2-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 916,
+      "age_seconds": 994,
       "job_id": "CATALOGO-AMPLIADO-GATE8F-EXTERNAL-DELIVERY-CANONICAL-INTEGRATION-R3-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2820,
+      "age_seconds": 2898,
       "job_id": "CAVAS-CORPORATIVAS-GATE12G-BOS-SOCIO-PERSONA-LINK-MIGRATION-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2290,
+      "age_seconds": 2367,
       "job_id": "CAVAS-CORPORATIVAS-GATE12G-BOS-SOCIO-PERSONA-LINK-MIGRATION-R2-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 562,
+      "age_seconds": 639,
       "job_id": "CAVAS-CORPORATIVAS-GATE12H-POSTAUDIT-BOS-PERSONA-LINK-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2170,
+      "age_seconds": 2248,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-AFTER-TIMESTAMP-20260910T151500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 373,
+      "age_seconds": 450,
       "job_id": "EDARSAHUB-INVENTARIOS-GATE-CANDIDATOS-ERROR-INTENTOS-20260910T151801Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 386,
+      "age_seconds": 463,
       "job_id": "EDARSAHUB-INVENTARIOS-GATE-CANDIDATOS-RETRY-ELIGIBLES-20260910T151800Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 361,
+      "age_seconds": 438,
       "job_id": "EDARSAHUB-INVENTARIOS-GATE-CANDIDATOS-SYNC-LATEST-20260910T151802Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3567,
-      "job_id": "RRR-GATE4D-R3-CUSTOMER360-DIAGNOSTICO-READONLY-20260910",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2153,
+      "age_seconds": 2230,
       "job_id": "coa-gate5b-ventas-comercial-erp-cfdi-emitidos-readonly-v1-20260910",
       "reason": null,
       "state": "RESULT_READY"
@@ -95,13 +89,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 11,
+  "queue_result_ready_recent": 10,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-10T21:55:37Z",
-    "last_receive_utc": "2026-09-10T21:55:32Z",
+    "last_cycle_utc": "2026-09-10T21:56:51Z",
+    "last_receive_utc": "2026-09-10T21:56:52Z",
     "last_terminal_utc": "2026-09-10T21:49:36Z",
     "pid": "285"
   },
