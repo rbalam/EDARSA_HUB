@@ -1,0 +1,7 @@
+job=RRR-GATE4D-R2-CUSTOMER360-V2-EXECUTION-20260909
+target_branch=Edarsahub_Desarrollo
+production_allowed=false
+script=docs/RRR/sql/RRR_GATE4_CUSTOMER360_VIEWS_V2.sql
+rollback_cert=RRR-GATE4D-R1-ROLLBACK-ABSENCE-READONLY-20260909
+rollback_certification=CERTIFIED_READ_ONLY
+rollback_percent=100
