@@ -1,0 +1,57 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate5b-ventas-comercial-erp-cfdi-emitidos-readonly-v1-20260910",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "78016221668cbd045b645095a8f17147f4b0d14e",
+  "mode": "READ_ONLY_SQL",
+  "objective": "COA Gate 5B: auditoria dirigida exclusivamente READ_ONLY sobre Ventas, Comercial, Clientes, CxC, Ingresos, Pedidos y estructuras ERP/sync para identificar una fuente canonica reutilizable de CFDI emitidos a clientes. Buscar objetos aunque no tengan Factura/CFDI en el nombre, usando senales de ClienteID, VentaID/PedidoID/DocumentoID, UUID/FolioFiscal, RFCReceptor, Serie/Folio, FechaEmision/FechaTimbrado, EstatusSAT/Cancelacion, XML/PDF y relaciones a Empresa/Unidad. Determinar si existe objeto canonico de salida, su PK/unique key y FKs; si no existe, dejar evidencia suficiente para justificar diseno posterior de una fuente canonica nueva. No leer datos fiscales de clientes, solo metadata/esquema, llaves y conteos tecnicos. No DDL/DML/EXEC. No Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA",
+    "chat": "coa-gate5b-ventas-comercial-erp-cfdi-emitidos-readonly-v1-20260910"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "sales_commercial_erp_domain_tables",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name LIKE '%Venta%' OR t.name LIKE '%Comercial%' OR t.name LIKE '%Cliente%' OR t.name LIKE '%Pedido%' OR t.name LIKE '%Ingreso%' OR t.name LIKE '%CxC%' OR t.name LIKE '%Cobran%' OR t.name LIKE '%ERP%' OR t.name LIKE '%Documento%' OR t.name LIKE '%Ticket%' OR t.name LIKE '%Remision%' ORDER BY s.name,t.name"
+        },
+        {
+          "name": "sales_fiscal_signal_tables",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,SUM(CASE WHEN c.name IN ('ClienteID','VentaID','PedidoID','DocumentoID','UUID','FolioFiscal','RFCReceptor','Serie','Folio','FechaEmision','FechaTimbrado','EstatusSAT','FechaCancelacion','RutaXML','RutaPDF','XML','PDF','EmpresaID','UnidadNegocioID','Total') THEN 1 ELSE 0 END) AS signal_count FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id GROUP BY s.name,t.name HAVING SUM(CASE WHEN c.name IN ('ClienteID','VentaID','PedidoID','DocumentoID','UUID','FolioFiscal','RFCReceptor','Serie','Folio','FechaEmision','FechaTimbrado','EstatusSAT','FechaCancelacion','RutaXML','RutaPDF','XML','PDF','EmpresaID','UnidadNegocioID','Total') THEN 1 ELSE 0 END) >= 3 ORDER BY signal_count DESC,s.name,t.name"
+        },
+        {
+          "name": "sales_domain_fiscal_columns",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (t.name LIKE '%Venta%' OR t.name LIKE '%Comercial%' OR t.name LIKE '%Cliente%' OR t.name LIKE '%Pedido%' OR t.name LIKE '%Ingreso%' OR t.name LIKE '%CxC%' OR t.name LIKE '%Cobran%' OR t.name LIKE '%ERP%' OR t.name LIKE '%Documento%' OR t.name LIKE '%Ticket%' OR t.name LIKE '%Remision%') AND (c.name LIKE '%UUID%' OR c.name LIKE '%Fiscal%' OR c.name LIKE '%CFDI%' OR c.name LIKE '%Factura%' OR c.name LIKE '%Timbr%' OR c.name LIKE '%SAT%' OR c.name LIKE '%XML%' OR c.name LIKE '%PDF%' OR c.name IN ('ClienteID','VentaID','PedidoID','DocumentoID','EmpresaID','UnidadNegocioID','Serie','Folio','RFCReceptor','FechaEmision','FechaCancelacion','Total')) ORDER BY s.name,t.name,c.column_id"
+        },
+        {
+          "name": "fiscal_signal_candidate_keys",
+          "sql": "WITH candidates AS (SELECT t.object_id FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id GROUP BY t.object_id HAVING SUM(CASE WHEN c.name IN ('ClienteID','VentaID','PedidoID','DocumentoID','UUID','FolioFiscal','RFCReceptor','Serie','Folio','FechaEmision','FechaTimbrado','EstatusSAT','FechaCancelacion','RutaXML','RutaPDF','XML','PDF','EmpresaID','UnidadNegocioID','Total') THEN 1 ELSE 0 END) >= 3) SELECT s.name AS schema_name,t.name AS table_name,kc.name AS constraint_name,kc.type_desc,c.name AS column_name,ic.key_ordinal FROM candidates x JOIN sys.tables t ON t.object_id=x.object_id JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.key_constraints kc ON kc.parent_object_id=t.object_id JOIN sys.index_columns ic ON ic.object_id=t.object_id AND ic.index_id=kc.unique_index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id ORDER BY s.name,t.name,kc.name,ic.key_ordinal"
+        },
+        {
+          "name": "fiscal_signal_candidate_foreign_keys",
+          "sql": "WITH candidates AS (SELECT t.object_id FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id GROUP BY t.object_id HAVING SUM(CASE WHEN c.name IN ('ClienteID','VentaID','PedidoID','DocumentoID','UUID','FolioFiscal','RFCReceptor','Serie','Folio','FechaEmision','FechaTimbrado','EstatusSAT','FechaCancelacion','RutaXML','RutaPDF','XML','PDF','EmpresaID','UnidadNegocioID','Total') THEN 1 ELSE 0 END) >= 3) SELECT ps.name AS parent_schema,pt.name AS parent_table,pc.name AS parent_column,fk.name AS fk_name,rs.name AS ref_schema,rt.name AS ref_table,rc.name AS ref_column FROM candidates x JOIN sys.foreign_keys fk ON fk.parent_object_id=x.object_id JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.tables pt ON pt.object_id=fkc.parent_object_id JOIN sys.schemas ps ON ps.schema_id=pt.schema_id JOIN sys.columns pc ON pc.object_id=pt.object_id AND pc.column_id=fkc.parent_column_id JOIN sys.tables rt ON rt.object_id=fkc.referenced_object_id JOIN sys.schemas rs ON rs.schema_id=rt.schema_id JOIN sys.columns rc ON rc.object_id=rt.object_id AND rc.column_id=fkc.referenced_column_id ORDER BY ps.name,pt.name,fk.name"
+        },
+        {
+          "name": "sales_fiscal_views",
+          "sql": "SELECT s.name AS schema_name,v.name AS view_name FROM sys.views v JOIN sys.schemas s ON s.schema_id=v.schema_id WHERE v.name LIKE '%Venta%' OR v.name LIKE '%Comercial%' OR v.name LIKE '%Cliente%' OR v.name LIKE '%Pedido%' OR v.name LIKE '%Factura%' OR v.name LIKE '%CFDI%' OR v.name LIKE '%Fiscal%' OR v.name LIKE '%Cobran%' OR v.name LIKE '%Ingreso%' ORDER BY s.name,v.name"
+        },
+        {
+          "name": "modules_referencing_sales_fiscal_signals",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.sql_modules m JOIN sys.objects o ON o.object_id=m.object_id JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE (m.definition LIKE '%UUID%' OR m.definition LIKE '%FolioFiscal%' OR m.definition LIKE '%CFDI%' OR m.definition LIKE '%FechaTimbrado%' OR m.definition LIKE '%RFCReceptor%') AND (m.definition LIKE '%ClienteID%' OR m.definition LIKE '%VentaID%' OR m.definition LIKE '%PedidoID%') ORDER BY s.name,o.name"
+        },
+        {
+          "name": "coa_document_reference_contract",
+          "sql": "SELECT fk.name AS fk_name,pc.name AS parent_column,rs.name AS ref_schema,rt.name AS ref_table,rc.name AS ref_column FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.tables rt ON rt.object_id=fkc.referenced_object_id JOIN sys.schemas rs ON rs.schema_id=rt.schema_id JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fkc.parent_object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') ORDER BY fk.name"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
