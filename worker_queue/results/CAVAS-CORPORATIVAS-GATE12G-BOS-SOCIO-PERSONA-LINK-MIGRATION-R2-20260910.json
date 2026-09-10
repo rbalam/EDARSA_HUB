@@ -1,0 +1,110 @@
+{
+  "base_sha": "b57c9efe7979eff2a3ec2152510ce0ec02cfa759",
+  "blockers": [],
+  "candidate_sha": "aaf9980248524734b3783721f10f53e662dc4552",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-10T21:17:27Z",
+  "development_sha": "aaf9980248524734b3783721f10f53e662dc4552",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/database/migrations/20260910_cavas_socios_persona_link.sql",
+    "backend/database/validation/20260910_cavas_socios_persona_link_validation.sql"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CORPORATIVAS-GATE12G-BOS-SOCIO-PERSONA-LINK-MIGRATION-R2-20260910",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-10T21:17:31Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "persona_columns"
+            ],
+            "name": "gate12g_preflight_personaid_absent",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_name",
+              "data_type"
+            ],
+            "name": "gate12g_preflight_persona_pk",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "PersonaID",
+                "bigint"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "parent_column",
+              "referenced_table",
+              "referenced_column"
+            ],
+            "name": "gate12g_preflight_existing_identity_fk",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "child_table",
+              "child_column",
+              "socio_column",
+              "fk_name"
+            ],
+            "name": "gate12g_preflight_children_preserved",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "CavaSocios_Botellas",
+                "SocioID",
+                "SocioID",
+                "FK_CavaSocios_Botellas_Socio"
+              ],
+              [
+                "CavaSocios_Cargos",
+                "SocioID",
+                "SocioID",
+                "FK_CavaSocios_Cargos_Socio"
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "SocioID",
+                "SocioID",
+                "FK_CavaSocios_Movimientos_Socio"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-10T21:17:21Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
