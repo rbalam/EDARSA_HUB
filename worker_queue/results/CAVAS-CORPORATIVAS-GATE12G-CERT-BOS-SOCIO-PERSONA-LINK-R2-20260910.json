@@ -1,0 +1,135 @@
+{
+  "base_sha": "698e2375de2106fb8375df52bd1dc9fb12faac86",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-10T22:27:26Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CORPORATIVAS-GATE12G-CERT-BOS-SOCIO-PERSONA-LINK-R2-20260910",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-10T22:28:29Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "personaid_columns"
+            ],
+            "name": "gate12g_cert_personaid_current_state",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_name",
+              "data_type",
+              "key_ordinal"
+            ],
+            "name": "gate12g_cert_persona_pk",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "PersonaID",
+                "bigint",
+                1
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "parent_column",
+              "referenced_table",
+              "referenced_column"
+            ],
+            "name": "gate12g_cert_existing_cava_persona_fk",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_name",
+              "column_name",
+              "key_ordinal",
+              "is_unique",
+              "has_filter",
+              "filter_definition"
+            ],
+            "name": "gate12g_cert_existing_persona_index_conflicts",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "child_table",
+              "child_column",
+              "referenced_column",
+              "fk_name"
+            ],
+            "name": "gate12g_cert_children_socios_fk",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "CavaSocios_Botellas",
+                "SocioID",
+                "SocioID",
+                "FK_CavaSocios_Botellas_Socio"
+              ],
+              [
+                "CavaSocios_Cargos",
+                "SocioID",
+                "SocioID",
+                "FK_CavaSocios_Cargos_Socio"
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "SocioID",
+                "SocioID",
+                "FK_CavaSocios_Movimientos_Socio"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_socios"
+            ],
+            "name": "gate12g_cert_socios_population",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-10T22:27:23Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
