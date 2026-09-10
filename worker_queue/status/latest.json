@@ -1,19 +1,25 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "9d0916d01613f39f1f6f77384769dfc7abf0286e",
-  "generated_at_utc": "2026-09-10T19:28:03Z",
+  "generated_at_utc": "2026-09-10T19:29:16Z",
   "history": {
     "done_total_local": 349,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 391,
-    "results_total_local": 670
+    "rejected_total_local": 392,
+    "results_total_local": 671
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 29,
+      "age_seconds": 52,
+      "job_id": "CATALOGO-AMPLIADO-GATE8E-CONFIG-TEMPLATE-READONLY-R3-R3-20260910",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 102,
       "job_id": "CXP-GATE3C-A-EDARSAHUB-FINANZAS-PAGOS-RUNTIME-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
@@ -26,14 +32,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-10T19:27:59Z",
-    "last_receive_utc": "2026-09-10T19:27:59Z",
-    "last_terminal_utc": "2026-09-10T19:27:34Z",
+    "last_cycle_utc": "2026-09-10T19:29:11Z",
+    "last_receive_utc": "2026-09-10T19:29:12Z",
+    "last_terminal_utc": "2026-09-10T19:28:24Z",
     "pid": "284"
   },
   "schema": "edarsahub.worker-health.v3",
