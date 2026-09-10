@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "78016221668cbd045b645095a8f17147f4b0d14e",
-  "generated_at_utc": "2026-09-10T20:41:54Z",
+  "generated_at_utc": "2026-09-10T20:43:07Z",
   "history": {
     "done_total_local": 357,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 294,
+      "age_seconds": 367,
       "job_id": "CATALOGO-AMPLIADO-GATE8F-EXTERNAL-DELIVERY-CANONICAL-INTEGRATION-R1-20260910",
       "reasons": [
         "INVALID_SCHEMA",
@@ -23,7 +23,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2032,
+      "age_seconds": 2105,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5E-R2-DETERMINISTIC-20260910",
       "reasons": [
         "SUMMARY_LANGUAGE_MUST_BE_ES"
@@ -32,79 +32,79 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1579,
+      "age_seconds": 1652,
       "job_id": "CATALOGO-AMPLIADO-GATE8E-CONFIG-TEMPLATE-READONLY-R3-R4-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3263,
+      "age_seconds": 3336,
       "job_id": "CAVAS-CORPORATIVAS-GATE12D-BOS-SOCIO-CANONICAL-LINK-AUDIT-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 280,
+      "age_seconds": 353,
       "job_id": "CAVAS-CORPORATIVAS-GATE12E-SOCIO-CLIENTE-DETERMINISTIC-MATCH-AUDIT-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1973,
+      "age_seconds": 2046,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-AUDIT-301-20260910T140500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1956,
+      "age_seconds": 2029,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-AUDIT-COUNTS-20260910T140502Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1964,
+      "age_seconds": 2037,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-AUDIT-LATEST-20260910T140501Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 648,
+      "age_seconds": 721,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-RECENT-ERRORS-20260910T140700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 289,
+      "age_seconds": 362,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5E-LIVE-CANARY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 823,
+      "age_seconds": 896,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5E-R3-DETERMINISTIC-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1224,
+      "age_seconds": 1297,
       "job_id": "WORKER-POS-READONLY-AUDIT-CAPABILITY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 33,
+      "age_seconds": 106,
       "job_id": "coa-gate5a-r2-facturacion-cfdi-emitidos-readonly-v1-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 937,
+      "age_seconds": 1010,
       "job_id": "worker-orchestrator-foundation-gate1-r1-20260910T2020Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 246,
+      "age_seconds": 319,
       "job_id": "worker-orchestrator-foundation-gate1-r2-20260910T2035Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -122,8 +122,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-10T20:41:50Z",
-    "last_receive_utc": "2026-09-10T20:41:51Z",
+    "last_cycle_utc": "2026-09-10T20:43:04Z",
+    "last_receive_utc": "2026-09-10T20:43:05Z",
     "last_terminal_utc": "2026-09-10T20:41:21Z",
     "pid": "282"
   },
