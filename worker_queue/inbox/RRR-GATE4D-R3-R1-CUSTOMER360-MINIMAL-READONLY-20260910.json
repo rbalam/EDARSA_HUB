@@ -1,0 +1,44 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"RRR-GATE4D-R3-R1-CUSTOMER360-MINIMAL-READONLY-20260910",
+  "created_at_utc":"2026-09-10T21:20:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"aaf9980248524734b3783721f10f53e662dc4552",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"RRR GATE 4D R3-R1: diagnostico minimo READ_ONLY para aislar el fallo del auditor anterior. Ejecutar solo tres SELECT simples y separados: identidad, conteo de vistas presentes y nombres exactos presentes. Sin IF, sin SELECT TOP(0), sin sys.sql_modules, sin DDL/DML, sin cambios de repositorio ni Produccion.",
+  "actions":[],
+  "acceptance":[
+    "READ_ONLY_SQL solamente",
+    "actions=[]",
+    "production_touched=false",
+    "database_name=EDARSAHUB",
+    "login_name=HRLectura",
+    "user_name=HRLectura",
+    "reportar present_count exacto sobre 4",
+    "reportar nombres exactos de vistas presentes"
+  ],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {
+          "name":"customer360_r3r1_identity",
+          "sql":"SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS user_name"
+        },
+        {
+          "name":"customer360_r3r1_presence_count",
+          "sql":"SELECT COUNT_BIG(*) AS present_count FROM sys.views v JOIN sys.schemas s ON s.schema_id = v.schema_id WHERE s.name = 'dbo' AND v.name IN ('vw_RRR_ClienteActividadComercial','vw_RRR_ClienteScoreActual','vw_RRR_ClienteRankingActual','vw_RRR_Customer360')"
+        },
+        {
+          "name":"customer360_r3r1_present_names",
+          "sql":"SELECT v.name AS view_name FROM sys.views v JOIN sys.schemas s ON s.schema_id = v.schema_id WHERE s.name = 'dbo' AND v.name IN ('vw_RRR_ClienteActividadComercial','vw_RRR_ClienteScoreActual','vw_RRR_ClienteRankingActual','vw_RRR_Customer360') ORDER BY v.name"
+        }
+      ]
+    }
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
