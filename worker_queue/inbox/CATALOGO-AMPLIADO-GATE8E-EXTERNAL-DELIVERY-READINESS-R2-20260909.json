@@ -1,0 +1,73 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE8E-EXTERNAL-DELIVERY-READINESS-R2-20260909",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "dd74ce1f0d71e443ba38332dfff5fd59a1380469",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate 8E R2. Repetir la auditoria de readiness para entregas externas sin asumir columnas de contacto o estado. Certificar objetos/columnas reales de Usuario_Catalogo, vw_Usuario_RolesContexto_Efectivo, Usuario_PortalConfiguracion, Sistema_NotificacionesConfig y Operativo_Notificaciones_Log; identificar claves y capacidades para EMAIL/WHATSAPP/APP. No leer secretos ni valores de contacto. No DML/DDL, no envios, no Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "readonly_identity",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user,ORIGINAL_LOGIN() AS original_login"
+        },
+        {
+          "name": "canonical_objects",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name IN ('Usuario_Catalogo','vw_Usuario_RolesContexto_Efectivo','Usuario_PortalConfiguracion','Sistema_NotificacionesConfig','Operativo_Notificaciones_Log') ORDER BY o.name"
+        },
+        {
+          "name": "canonical_columns",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable,c.is_identity,dc.definition AS default_definition FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id JOIN sys.columns c ON c.object_id=o.object_id JOIN sys.types t ON t.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=o.object_id AND dc.parent_column_id=c.column_id WHERE o.name IN ('Usuario_Catalogo','vw_Usuario_RolesContexto_Efectivo','Usuario_PortalConfiguracion','Sistema_NotificacionesConfig','Operativo_Notificaciones_Log') ORDER BY o.name,c.column_id"
+        },
+        {
+          "name": "canonical_indexes",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,i.name AS index_name,i.is_unique,i.is_primary_key,ic.key_ordinal,c.name AS column_name FROM sys.indexes i JOIN sys.objects o ON o.object_id=i.object_id JOIN sys.schemas s ON s.schema_id=o.schema_id JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE o.name IN ('Usuario_Catalogo','Usuario_PortalConfiguracion','Sistema_NotificacionesConfig','Operativo_Notificaciones_Log') AND i.index_id>0 ORDER BY o.name,i.name,ic.key_ordinal,ic.index_column_id"
+        },
+        {
+          "name": "contact_capability_columns",
+          "sql": "SELECT o.name AS object_name,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable FROM sys.objects o JOIN sys.columns c ON c.object_id=o.object_id JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE o.name IN ('Usuario_Catalogo','vw_Usuario_RolesContexto_Efectivo') AND (c.name LIKE '%Email%' OR c.name LIKE '%Correo%' OR c.name LIKE '%Celular%' OR c.name LIKE '%Telefono%' OR c.name LIKE '%Phone%' OR c.name LIKE '%UsuarioID%') ORDER BY o.name,c.column_id"
+        },
+        {
+          "name": "preference_capability_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Usuario_PortalConfiguracion') AND (c.name LIKE '%Usuario%' OR c.name LIKE '%Email%' OR c.name LIKE '%Whats%' OR c.name LIKE '%Push%' OR c.name LIKE '%Notific%') ORDER BY c.column_id"
+        },
+        {
+          "name": "notification_config_capability_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Sistema_NotificacionesConfig') ORDER BY c.column_id"
+        },
+        {
+          "name": "notification_log_capability_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Operativo_Notificaciones_Log') ORDER BY c.column_id"
+        },
+        {
+          "name": "push_infrastructure_discovery",
+          "sql": "SELECT TOP (200) s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND (o.name LIKE '%Push%' OR o.name LIKE '%Device%' OR o.name LIKE '%Dispositivo%' OR o.name LIKE '%AppNotific%' OR o.name LIKE '%Firebase%' OR o.name LIKE '%FCM%') ORDER BY o.name"
+        },
+        {
+          "name": "row_counts_without_payload",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,SUM(CASE WHEN p.index_id IN (0,1) THEN p.rows ELSE 0 END) AS row_count FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id LEFT JOIN sys.partitions p ON p.object_id=o.object_id WHERE o.name IN ('Usuario_Catalogo','Usuario_PortalConfiguracion','Sistema_NotificacionesConfig','Operativo_Notificaciones_Log') GROUP BY s.name,o.name ORDER BY o.name"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL only",
+    "NO Production",
+    "NO DML",
+    "NO DDL",
+    "NO external delivery during audit",
+    "NO secret values",
+    "NO contact values",
+    "SQL-first",
+    "No assumptions about contact/log column names",
+    "Reuse canonical infrastructure only"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
