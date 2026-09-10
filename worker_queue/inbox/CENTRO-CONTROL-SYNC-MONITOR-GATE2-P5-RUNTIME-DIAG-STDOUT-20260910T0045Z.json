@@ -1,0 +1,37 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-DIAG-STDOUT-20260910T0045Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Diagnostico runtime minimo: leer exclusivamente el resultado local del Worker para el job P5 runtime E2E fallido y persistir evidencia sanitizada del stdout de sus checks para identificar si el fallo fue configuracion TEST_BASE_URL, credenciales de prueba, conectividad/backend, RBAC CENTRO_CONTROL_VER/sync_monitor_VER o endpoint especifico. No ejecutar de nuevo el E2E, no tocar codigo funcional, no tocar Worker, no tocar Produccion.",
+  "actions":[
+    {
+      "type":"write_file",
+      "path":"backend/tests/test_p5_runtime_local_result_diagnostic.py",
+      "content":"import json\nimport re\nfrom pathlib import Path\n\nTARGET = 'CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-E2E-HTTP-RBAC-NOTIFICATIONS-20260909T2301Z'\nSTATE = Path('/app/.git/universal-worker-queue')\nOUT = Path('tests/p5_runtime_local_result_diagnostic_evidence.json')\n\ndef _redact(text):\n    value = str(text or '')\n    value = re.sub(r'(?i)Bearer\\s+[A-Za-z0-9._~+/=-]+', 'Bearer [REDACTED]', value)\n    value = re.sub(r'(?i)(password|passwd|token|secret|authorization)([\\s\\\"\':=]+)([^\\s,}\\]\\\"]+)', r'\\1\\2[REDACTED]', value)\n    return value\n\ndef _load(path):\n    return json.loads(path.read_text(encoding='utf-8'))\n\ndef test_capture_failed_runtime_e2e_stdout():\n    candidates = []\n    for bucket in ('results', 'done', 'rejected', 'processing', 'pending'):\n        path = STATE / bucket / f'{TARGET}.json'\n        if path.is_file():\n            payload = _load(path)\n            checks = []\n            for check in payload.get('checks') or []:\n                checks.append({\n                    'type': check.get('type'),\n                    'status': check.get('status'),\n                    'returncode': check.get('returncode'),\n                    'output': _redact(check.get('output'))[-12000:],\n                })\n            candidates.append({\n                'bucket': bucket,\n                'job_id': payload.get('job_id'),\n                'status': payload.get('status'),\n                'blockers': payload.get('blockers'),\n                'checks': checks,\n            })\n    assert candidates, 'LOCAL_RESULT_NOT_FOUND'\n    combined = '\\n'.join(c.get('output','') for item in candidates for c in item.get('checks', []))\n    classification = {\n        'test_base_url_missing': 'RUNTIME_E2E_CONFIG_MISSING: TEST_BASE_URL/REACT_APP_BACKEND_URL' in combined,\n        'test_credentials_missing': 'RUNTIME_E2E_CONFIG_MISSING: TEST_ADMIN_EMAIL/TEST_ADMIN_PASSWORD' in combined,\n        'login_failed': 'RUNTIME_LOGIN_FAILED' in combined,\n        'backend_connectivity_failure': any(x in combined for x in ['ConnectionError', 'Connection refused', 'ConnectTimeout', 'ReadTimeout', 'NameResolutionError']),\n        'centro_rbac_or_runtime_failed': 'CENTRO_RBAC_OR_RUNTIME_FAILED' in combined,\n        'sync_rbac_or_runtime_failed': 'SYNC_RBAC_OR_RUNTIME_FAILED' in combined,\n        'specific_centro_endpoint_failed': 'CENTRO_ENDPOINT_FAILED' in combined,\n        'notification_config_failed': 'NOTIFICATION_CONFIG_FAILED' in combined,\n    }\n    OUT.write_text(json.dumps({\n        'schema':'edarsahub.p5-runtime-local-diagnostic.v1',\n        'target_job':TARGET,\n        'production_touched':False,\n        'classification':classification,\n        'local_results':candidates,\n    }, ensure_ascii=False, indent=2) + '\\n', encoding='utf-8')\n    assert any(c.get('type') == 'pytest' and c.get('status') == 'FAIL' for item in candidates for c in item.get('checks', [])), 'FAILED_PYTEST_OUTPUT_NOT_FOUND'\n"
+    },
+    {
+      "type":"write_file",
+      "path":"backend/tests/p5_runtime_local_result_diagnostic_evidence.json",
+      "content":"{}\n"
+    }
+  ],
+  "checks":[
+    {"type":"git_diff_check"},
+    {"type":"py_compile","paths":["backend/tests/test_p5_runtime_local_result_diagnostic.py"]},
+    {"type":"pytest","paths":["backend/tests/test_p5_runtime_local_result_diagnostic.py"]}
+  ],
+  "constraints":[
+    "NO Production",
+    "NO functional code changes",
+    "NO Worker code changes",
+    "NO SQL queries or writes",
+    "NO external HTTP calls",
+    "NO E2E rerun",
+    "NO credentials/tokens/secrets in evidence; redact if present",
+    "Only backend/tests/test_p5_runtime_local_result_diagnostic.py and backend/tests/p5_runtime_local_result_diagnostic_evidence.json may change"
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"technical"
+}
