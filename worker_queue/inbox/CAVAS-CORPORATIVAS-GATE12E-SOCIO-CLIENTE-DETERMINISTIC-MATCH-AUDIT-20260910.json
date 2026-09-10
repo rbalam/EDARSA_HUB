@@ -1,0 +1,48 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE12E-SOCIO-CLIENTE-DETERMINISTIC-MATCH-AUDIT-20260910",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "78016221668cbd045b645095a8f17147f4b0d14e",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate 12E. Determinar mediante conteos agregados y sin exponer PII si los socios actuales de CavaSocios_Socios pueden vincularse de forma determinista con Cliente_Catalogo usando Email/EmailPrincipal y Telefono/TelefonoPrincipal. No crear columnas, FKs, tablas puente ni migraciones. Clasificar la capacidad de matching como DETERMINISTIC_MATCH, AMBIGUOUS, UNMATCHED o NOT_DETERMINABLE.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate12e_email_match_aggregate",
+          "sql": "\nWITH S AS (\n    SELECT SocioID,\n           LOWER(LTRIM(RTRIM(Email))) AS EmailNorm\n    FROM dbo.CavaSocios_Socios\n),\nM AS (\n    SELECT S.SocioID,\n           COUNT(DISTINCT C.ClienteID) AS Matches\n    FROM S\n    LEFT JOIN dbo.Cliente_Catalogo C\n      ON S.EmailNorm IS NOT NULL\n     AND S.EmailNorm <> ''\n     AND LOWER(LTRIM(RTRIM(C.EmailPrincipal))) = S.EmailNorm\n    GROUP BY S.SocioID\n)\nSELECT\n    COUNT_BIG(*) AS total_socios,\n    SUM(CASE WHEN Matches=1 THEN 1 ELSE 0 END) AS unique_match,\n    SUM(CASE WHEN Matches>1 THEN 1 ELSE 0 END) AS ambiguous,\n    SUM(CASE WHEN Matches=0 THEN 1 ELSE 0 END) AS unmatched\nFROM M\n"
+        },
+        {
+          "name": "gate12e_phone_match_aggregate",
+          "sql": "\nWITH S AS (\n    SELECT SocioID,\n           REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(\n             LTRIM(RTRIM(Telefono)),\n             ' ',''),'-',''),'(',''),')',''),'+','') AS PhoneNorm\n    FROM dbo.CavaSocios_Socios\n),\nM AS (\n    SELECT S.SocioID,\n           COUNT(DISTINCT C.ClienteID) AS Matches\n    FROM S\n    LEFT JOIN dbo.Cliente_Catalogo C\n      ON S.PhoneNorm IS NOT NULL\n     AND S.PhoneNorm <> ''\n     AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(\n           LTRIM(RTRIM(C.TelefonoPrincipal)),\n           ' ',''),'-',''),'(',''),')',''),'+','') = S.PhoneNorm\n    GROUP BY S.SocioID\n)\nSELECT\n    COUNT_BIG(*) AS total_socios,\n    SUM(CASE WHEN Matches=1 THEN 1 ELSE 0 END) AS unique_match,\n    SUM(CASE WHEN Matches>1 THEN 1 ELSE 0 END) AS ambiguous,\n    SUM(CASE WHEN Matches=0 THEN 1 ELSE 0 END) AS unmatched\nFROM M\n"
+        },
+        {
+          "name": "gate12e_email_phone_same_client_aggregate",
+          "sql": "\nWITH M AS (\n    SELECT S.SocioID,\n           COUNT(DISTINCT C.ClienteID) AS Matches\n    FROM dbo.CavaSocios_Socios S\n    LEFT JOIN dbo.Cliente_Catalogo C\n      ON S.Email IS NOT NULL\n     AND S.Telefono IS NOT NULL\n     AND LOWER(LTRIM(RTRIM(C.EmailPrincipal)))\n         = LOWER(LTRIM(RTRIM(S.Email)))\n     AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(\n           LTRIM(RTRIM(C.TelefonoPrincipal)),\n           ' ',''),'-',''),'(',''),')',''),'+','')\n         = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(\n           LTRIM(RTRIM(S.Telefono)),\n           ' ',''),'-',''),'(',''),')',''),'+','')\n    GROUP BY S.SocioID\n)\nSELECT\n    COUNT_BIG(*) AS total_socios,\n    SUM(CASE WHEN Matches=1 THEN 1 ELSE 0 END) AS deterministic,\n    SUM(CASE WHEN Matches>1 THEN 1 ELSE 0 END) AS ambiguous,\n    SUM(CASE WHEN Matches=0 THEN 1 ELSE 0 END) AS unmatched\nFROM M\n"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL ONLY",
+    "ACTIONS MUST REMAIN EMPTY",
+    "HRLectura only",
+    "NO DDL OR DML",
+    "NO Production",
+    "NO Mongo",
+    "NO PII output",
+    "Only aggregate counts",
+    "Do not return names, emails, phones, RFCs, GUIDs or ClienteIDs",
+    "Cliente_Catalogo remains canonical",
+    "CavaSocios_Socios remains membership extension",
+    "Preserve SocioID",
+    "Do not create ClienteID, PersonaID, VinculoID, FK or bridge table",
+    "No approximate or partial matching",
+    "If deterministic linkage is not proven return NOT_DETERMINABLE"
+  ],
+  "human_summary_language": "es"
+}
