@@ -2,8 +2,11 @@
   "base_sha": "b57c9efe7979eff2a3ec2152510ce0ec02cfa759",
   "blockers": [],
   "candidate_sha": "aaf9980248524734b3783721f10f53e662dc4552",
-  "certification": "PENDING_AUDIT_EVIDENCE",
+  "certification": "CERTIFIED",
+  "certification_basis": "SHA_BOUND_ATTESTATION_PLUS_DESCENDANT_CONVERGENCE",
+  "certified_source_sha": "aaf9980248524734b3783721f10f53e662dc4552",
   "completed_at_utc": "2026-09-10T21:17:27Z",
+  "converged_head": "aaf9980248524734b3783721f10f53e662dc4552",
   "development_sha": "aaf9980248524734b3783721f10f53e662dc4552",
   "executor": "chatgpt-deterministic",
   "files_changed": [
@@ -13,9 +16,9 @@
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "CAVAS-CORPORATIVAS-GATE12G-BOS-SOCIO-PERSONA-LINK-MIGRATION-R2-20260910",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-09-10T21:17:31Z",
+  "published_at_utc": "2026-09-10T21:18:13Z",
   "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
@@ -106,5 +109,5 @@
   "status": "INTEGRATED",
   "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
   "tests": "PASS",
-  "work_completion": "PENDING_CERTIFICATION"
+  "work_completion": "COMPLETE"
 }
