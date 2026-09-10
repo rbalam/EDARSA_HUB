@@ -1,0 +1,13 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-CANARY-AUDIT-COUNTS-20260910T140502Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Auditar en solo lectura los conteos por Estado de Scheduler_InventariosProcesados y sus fechas máximas después del canario manual. Sin cambios, sin secretos, sin Producción.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[{"name":"state_counts","sql":"SELECT Estado, COUNT_BIG(*) AS total, MAX(FechaUltimoIntento) AS ultima_fecha_intento, MAX(FechaProcesamiento) AS ultima_fecha_procesamiento FROM dbo.Scheduler_InventariosProcesados GROUP BY Estado ORDER BY Estado"}]}],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
