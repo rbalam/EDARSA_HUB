@@ -1,0 +1,23 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-GATE-CANDIDATOS-SYNC-CROSS-20260910T155500Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Cruzar en solo lectura los inventarios físicos sincronizados más recientes contra Scheduler_InventariosProcesados usando la misma clave material que construye InventariosDetectorJob, para identificar si son nuevos o ya existen. Sin cambios ni Producción.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {
+          "name":"sync_tracking_cross",
+          "sql":"SELECT TOP (40) s.server_id, s.sucursal_id, s.unidad_negocio_codigo, s.almacen_id, s.folio, s.fecha, s.system_type, p.ID, p.Estado, p.Intentos FROM dbo.Compras_Inventarios_Fisicos_Sync s LEFT JOIN dbo.Scheduler_InventariosProcesados p ON LOWER(p.ServerID) = LOWER(s.server_id) AND p.AlmacenID = s.almacen_id AND p.FolioInventario = s.folio AND p.SucursalID = COALESCE(NULLIF(s.sucursal_id,''), NULLIF(s.sucursal,''), NULLIF(s.unidad_negocio_codigo,'')) WHERE s.sync_status IN ('ACTIVE','REPLACED') ORDER BY s.fecha DESC"
+        }
+      ]
+    }
+  ],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
