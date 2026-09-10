@@ -1,0 +1,58 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "WORKER-POS-READONLY-AUDIT-CAPABILITY-20260910",
+  "created_at_utc": "2026-09-10T20:20:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9d0916d01613f39f1f6f77384769dfc7abf0286e",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Habilitar capacidad minima y segura de auditoria SQL READ ONLY contra fuentes POS externas reutilizando exclusivamente PosRuntimeResolver + get_external_sql_connection. Mantener el mismo check sql_readonly_audit y el mismo modo READ_ONLY_SQL; agregar selector source=POS con units y system_types allow-listed. No aceptar host, database, username, password, command ni path desde el job. No implementar writers ni modificar logica financiera.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/sql_readonly_audit.py",
+      "expected_count": 1,
+      "old": "def execute_queries(queries: list[dict[str, Any]], max_rows: int = 200) -> dict[str, Any]:\n    from core.sql_first.db import readonly_sql_connection\n    evidence = []\n    with readonly_sql_connection('default') as conn:\n        for item in queries:\n            name = str(item.get('name') or '').strip()\n            sql = validate_readonly_sql(str(item.get('sql') or ''))\n            cur = conn.cursor()\n            cur.execute(sql)\n            columns = [d[0] for d in (cur.description or [])]\n            rows = cur.fetchmany(max_rows + 1) if cur.description else []\n            truncated = len(rows) > max_rows\n            rows = rows[:max_rows]\n            evidence.append({\n                'name': name,\n                'columns': columns,\n                'rows': [[_json_value(v) for v in row] for row in rows],\n                'row_count_returned': len(rows),\n                'truncated': truncated,\n            })\n        try:\n            conn.rollback()\n        except Exception:\n            pass\n    return {'status': 'PASS', 'mode': 'READ_ONLY_SQL', 'connection': 'readonly_sql_connection:default', 'evidence': evidence}\n",
+      "new": "ALLOWED_POS_SYSTEM_TYPES = {'MPRO', 'SOFTRESTAURANT'}\nUNIT_CODE_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$')\n\ndef _query_evidence(conn, queries: list[dict[str, Any]], max_rows: int, *, target: dict[str, Any] | None = None) -> list[dict[str, Any]]:\n    evidence = []\n    for item in queries:\n        name = str(item.get('name') or '').strip()\n        sql = validate_readonly_sql(str(item.get('sql') or ''))\n        cur = conn.cursor()\n        cur.execute(sql)\n        columns = [d[0] for d in (cur.description or [])]\n        rows = cur.fetchmany(max_rows + 1) if cur.description else []\n        truncated = len(rows) > max_rows\n        rows = rows[:max_rows]\n        row = {\n            'name': name,\n            'columns': columns,\n            'rows': [[_json_value(v) for v in result_row] for result_row in rows],\n            'row_count_returned': len(rows),\n            'truncated': truncated,\n        }\n        if target:\n            row['target'] = target\n        evidence.append(row)\n    return evidence\n\ndef execute_queries(queries: list[dict[str, Any]], max_rows: int = 200, *, source: str = 'EDARSAHUB', units: list[str] | None = None, system_types: list[str] | None = None) -> dict[str, Any]:\n    source_name = str(source or 'EDARSAHUB').strip().upper()\n    unit_codes = [str(value).strip().upper() for value in (units or [])]\n    requested_types = [str(value).strip().upper() for value in (system_types or [])]\n\n    if source_name == 'EDARSAHUB':\n        if unit_codes or requested_types:\n            raise ValueError('EDARSAHUB_SOURCE_DOES_NOT_ACCEPT_POS_SELECTORS')\n        from core.sql_first.db import readonly_sql_connection\n        with readonly_sql_connection('default') as conn:\n            evidence = _query_evidence(conn, queries, max_rows)\n            try:\n                conn.rollback()\n            except Exception:\n                pass\n        return {'status': 'PASS', 'mode': 'READ_ONLY_SQL', 'connection': 'readonly_sql_connection:default', 'evidence': evidence}\n\n    if source_name != 'POS':\n        raise ValueError('INVALID_READONLY_SOURCE')\n    if not unit_codes or any(not UNIT_CODE_RE.fullmatch(code) for code in unit_codes):\n        raise ValueError('POS_UNITS_REQUIRED_OR_INVALID')\n    if not requested_types or any(value not in ALLOWED_POS_SYSTEM_TYPES for value in requested_types):\n        raise ValueError('POS_SYSTEM_TYPES_REQUIRED_OR_INVALID')\n\n    from core.connections.pos_runtime_resolver import list_pos_runtime_contexts\n    from core.sql_first.connection_factory import get_external_sql_connection\n\n    contexts = list_pos_runtime_contexts(system_types=requested_types)\n    evidence = []\n    targets = []\n    for code in unit_codes:\n        matches = [context for context in contexts if context.unidad_codigo.upper() == code]\n        if len(matches) != 1:\n            raise ValueError(f'POS_UNIT_NOT_UNIQUELY_RESOLVED:{code}')\n        context = matches[0]\n        target = {\n            'unidad_codigo': context.unidad_codigo,\n            'system_type': context.system_type,\n            'server_id': context.server_id,\n            'database': context.database,\n        }\n        conn = get_external_sql_connection(context.external_connection_config(as_dict=False))\n        try:\n            evidence.extend(_query_evidence(conn, queries, max_rows, target=target))\n            try:\n                conn.rollback()\n            except Exception:\n                pass\n        finally:\n            conn.close()\n        targets.append(target)\n\n    return {\n        'status': 'PASS',\n        'mode': 'READ_ONLY_SQL',\n        'connection': 'PosRuntimeResolver+get_external_sql_connection',\n        'targets': targets,\n        'evidence': evidence,\n    }\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/sql_readonly_audit.py",
+      "expected_count": 1,
+      "old": "    parser.add_argument('--queries-json', required=True)\n    parser.add_argument('--max-rows', type=int, default=200)\n    args = parser.parse_args()\n    try:\n        queries = json.loads(args.queries_json)\n        if not isinstance(queries, list) or not queries:\n            raise ValueError('QUERIES_REQUIRED')\n        for item in queries:\n            if not isinstance(item, dict) or not str(item.get('name') or '').strip():\n                raise ValueError('QUERY_NAME_REQUIRED')\n        result = execute_queries(queries, max_rows=max(1, min(args.max_rows, 500)))\n",
+      "new": "    parser.add_argument('--queries-json', required=True)\n    parser.add_argument('--max-rows', type=int, default=200)\n    parser.add_argument('--source', choices=['EDARSAHUB', 'POS'], default='EDARSAHUB')\n    parser.add_argument('--units-json', default='[]')\n    parser.add_argument('--system-types-json', default='[]')\n    args = parser.parse_args()\n    try:\n        queries = json.loads(args.queries_json)\n        units = json.loads(args.units_json)\n        system_types = json.loads(args.system_types_json)\n        if not isinstance(queries, list) or not queries:\n            raise ValueError('QUERIES_REQUIRED')\n        if not isinstance(units, list) or not isinstance(system_types, list):\n            raise ValueError('POS_SELECTORS_MUST_BE_LISTS')\n        for item in queries:\n            if not isinstance(item, dict) or not str(item.get('name') or '').strip():\n                raise ValueError('QUERY_NAME_REQUIRED')\n        result = execute_queries(\n            queries,\n            max_rows=max(1, min(args.max_rows, 500)),\n            source=args.source,\n            units=units,\n            system_types=system_types,\n        )\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "        cmd = [PYTHON_BIN, str(helper), \"--queries-json\", json.dumps(check.get(\"queries\") or [], ensure_ascii=False)]\n        cwd = worktree\n        env_extra = {**load_backend_runtime_env(), \"PYTHONPATH\": str(backend)}\n",
+      "new": "        cmd = [PYTHON_BIN, str(helper), \"--queries-json\", json.dumps(check.get(\"queries\") or [], ensure_ascii=False)]\n        source = str(check.get(\"source\") or \"EDARSAHUB\").strip().upper()\n        cmd.extend([\"--source\", source])\n        if check.get(\"units\") is not None:\n            cmd.extend([\"--units-json\", json.dumps(check.get(\"units\"), ensure_ascii=False)])\n        if check.get(\"system_types\") is not None:\n            cmd.extend([\"--system-types-json\", json.dumps(check.get(\"system_types\"), ensure_ascii=False)])\n        cwd = worktree\n        env_extra = {**load_backend_runtime_env(), \"PYTHONPATH\": str(backend)}\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_pos_sql_readonly_audit.py",
+      "content": "from __future__ import annotations\n\nimport importlib.util\nfrom pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nHELPER = ROOT / 'tools' / 'mirror_sync' / 'sql_readonly_audit.py'\nDISPATCHER = ROOT / 'tools' / 'mirror_sync' / 'universal_job_dispatcher.py'\n\ndef load_helper():\n    spec = importlib.util.spec_from_file_location('worker_pos_sql_readonly_audit', HELPER)\n    module = importlib.util.module_from_spec(spec)\n    assert spec and spec.loader\n    spec.loader.exec_module(module)\n    return module\n\ndef test_pos_readonly_reuses_canonical_resolver_and_connection_factory():\n    text = HELPER.read_text(encoding='utf-8')\n    assert 'list_pos_runtime_contexts' in text\n    assert 'get_external_sql_connection' in text\n    assert 'PosRuntimeResolver+get_external_sql_connection' in text\n    assert \"choices=['EDARSAHUB', 'POS']\" in text\n\ndef test_pos_readonly_has_no_job_supplied_connection_or_shell_contract():\n    text = HELPER.read_text(encoding='utf-8')\n    dispatcher = DISPATCHER.read_text(encoding='utf-8')\n    for option in ('--host', '--database', '--username', '--password', '--command', '--path'):\n        assert option not in text\n    assert 'shell=True' not in dispatcher\n    assert '--units-json' in dispatcher\n    assert '--system-types-json' in dispatcher\n\ndef test_pos_readonly_rejects_mutation_sql_before_connection():\n    helper = load_helper()\n    for sql in ('UPDATE x SET a=1', 'DELETE FROM x', 'EXEC sp_who', 'SELECT * INTO x FROM y'):\n        try:\n            helper.validate_readonly_sql(sql)\n        except ValueError:\n            pass\n        else:\n            raise AssertionError(sql)\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["tools/mirror_sync/sql_readonly_audit.py", "tools/mirror_sync/universal_job_dispatcher.py", "backend/tests/test_worker_pos_sql_readonly_audit.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_worker_sql_readonly_audit.py", "backend/tests/test_worker_pos_sql_readonly_audit.py"]}
+  ],
+  "constraints": [
+    "No Payment Executor writer implementation",
+    "No SQL DML or DDL",
+    "No Production",
+    "No .env changes",
+    "No new credential store",
+    "POS connection must come only from PosRuntimeResolver",
+    "External connection must use get_external_sql_connection",
+    "Job cannot supply host database username password command or filesystem path",
+    "Only SELECT/WITH queries pass the existing readonly SQL validator",
+    "Keep existing EDARSAHUB READ_ONLY_SQL behavior backward compatible"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
