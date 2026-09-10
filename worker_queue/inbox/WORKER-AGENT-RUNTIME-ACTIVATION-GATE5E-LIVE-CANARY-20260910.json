@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5E-LIVE-CANARY-20260910",
+  "created_at_utc": "2026-09-10T20:31:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "78016221668cbd045b645095a8f17147f4b0d14e",
+  "production_allowed": false,
+  "objective": "Gate exclusivo del canario live de Runtime Activation. Ejecutar una busqueda PUBLIC/R1 real mediante el servicio certificado execute_external_research, usando Docker real, la imagen canonica de infra/agent-reach/versions.lock y egress publico controlado. Debe demostrar end-to-end requester authorization -> policy -> runtime activation -> Agent Reach public search executor -> red publica, con exactamente una llamada externa, timeout <=30s, output <=65536 bytes y production_touched=false. No ampliar permisos, no URL/command/header/cookie/token/env/mount arbitrario, no SQL writes, no schema changes, no MongoDB, no OmniRoute, no Worker/Supervisor/watchdog y no Produccion.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_agent_reach_live_network_canary.py",
+      "content": "from pathlib import Path\nimport shutil\n\nfrom core.agent_capability_policy import BudgetRequest, DataClassification, PolicyContext, PolicyRequest, RiskLevel\nfrom core.agent_external_research_service import execute_external_research\n\n\ndef test_live_public_network_canary():\n    docker = shutil.which('docker')\n    assert docker, 'DOCKER_COMMAND_NOT_AVAILABLE'\n    lock = Path('infra/agent-reach/versions.lock')\n    assert lock.exists(), 'AGENT_REACH_VERSIONS_LOCK_NOT_FOUND'\n\n    caps = frozenset({'EXTERNAL_RESEARCH'})\n    scopes = frozenset({'external:web'})\n    ctx = PolicyContext(\n        user_allowed_capabilities=caps,\n        agent_allowed_capabilities=caps,\n        environment_allowed_capabilities=caps,\n        policy_allowed_capabilities=caps,\n        user_allowed_scopes=scopes,\n        agent_allowed_scopes=scopes,\n        environment_allowed_scopes=scopes,\n        policy_allowed_scopes=scopes,\n        budget_limits={\n            'runtime_seconds': 60,\n            'files_changed': 0,\n            'lines_changed': 0,\n            'external_calls': 1,\n            'sql_rows': 0,\n            'inference_cost_usd': 0.0,\n        },\n    )\n    req = PolicyRequest(\n        capabilities=caps,\n        scopes=scopes,\n        risk=RiskLevel.R1,\n        data_classification=DataClassification.PUBLIC,\n        budgets=BudgetRequest(external_calls=1),\n        external_egress=True,\n        production_allowed=False,\n        privilege_expansion=False,\n        procedure='agent-reach-external-research',\n    )\n\n    out = execute_external_research(\n        {'allowed': True},\n        'OpenAI official website',\n        req,\n        ctx,\n        lock,\n        timeout_seconds=30,\n        docker_binary=docker,\n    )\n\n    assert out.evidence.allowed is True\n    assert out.evidence.production_touched is False\n    assert out.evidence.external_calls_budget == 1\n    assert out.evidence.procedure == 'agent-reach-external-research'\n    assert out.evidence.effective_scopes == ('external:web',)\n    assert out.result is not None, out.evidence.reason\n    assert out.result.success is True, out.evidence.reason\n    assert out.evidence.returncode == 0\n    assert 0 < out.evidence.stdout_bytes <= 65536\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/tests/test_agent_reach_live_network_canary.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_agent_reach_live_network_canary.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
