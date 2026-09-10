@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE12D-BOS-SOCIO-CANONICAL-LINK-AUDIT-20260910",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9d0916d01613f39f1f6f77384769dfc7abf0286e",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar si Gobierno_Persona y Gobierno_PersonaVinculo pueden reutilizarse como camino canonico Socio Cava -> Cliente_Catalogo antes de crear cualquier columna, FK, tabla puente o migracion nueva.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate12d_persona_vinculo_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_vinculos, SUM(CASE WHEN ClienteID IS NOT NULL THEN 1 ELSE 0 END) AS con_cliente, COUNT_BIG(DISTINCT PersonaID) AS personas_distintas FROM dbo.Gobierno_PersonaVinculo"
+        },
+        {
+          "name": "gate12d_socios_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_socios, SUM(CASE WHEN ClienteCRMID IS NULL THEN 1 ELSE 0 END) AS clientecrmid_null, SUM(CASE WHEN ClienteCRMID IS NOT NULL THEN 1 ELSE 0 END) AS clientecrmid_present FROM dbo.CavaSocios_Socios"
+        },
+        {
+          "name": "gate12d_cava_link_columns",
+          "sql": "SELECT OBJECT_NAME(c.object_id) AS table_name, c.name AS column_name, ty.name AS data_type FROM sys.columns c JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (OBJECT_NAME(c.object_id) LIKE N'%Cava%' OR OBJECT_NAME(c.object_id) LIKE N'%Socio%') AND (c.name LIKE N'%PersonaID%' OR c.name LIKE N'%ClienteID%' OR c.name LIKE N'%VinculoID%') ORDER BY table_name,c.column_id"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL ONLY",
+    "ACTIONS MUST REMAIN EMPTY",
+    "NO DDL OR DML",
+    "NO Production",
+    "NO Mongo",
+    "NO PII output",
+    "HRLectura only",
+    "Cliente_Catalogo remains canonical",
+    "CavaSocios_Socios remains membership extension",
+    "Do not create ClienteID, PersonaID, VinculoID or bridge tables",
+    "If linkage is not deterministic, return NOT_DETERMINABLE"
+  ],
+  "human_summary_language": "es"
+}
