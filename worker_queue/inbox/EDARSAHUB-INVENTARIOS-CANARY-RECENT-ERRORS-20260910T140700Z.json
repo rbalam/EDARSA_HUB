@@ -1,0 +1,23 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-CANARY-RECENT-ERRORS-20260910T140700Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Auditar en solo lectura los errores más recientes de Scheduler_InventariosProcesados para identificar exactamente qué dejó la ejecución canaria del 10 de septiembre de 2026. Sin cambios, sin secretos, sin Producción.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {
+          "name":"recent_errors_simple",
+          "sql":"SELECT TOP (20) ID, Estado, Intentos, ErrorMensaje FROM dbo.Scheduler_InventariosProcesados WHERE Estado = 'ERROR' ORDER BY FechaUltimoIntento DESC, ID DESC"
+        }
+      ]
+    }
+  ],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
