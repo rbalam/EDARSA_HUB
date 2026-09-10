@@ -1,0 +1,33 @@
+{
+  "base_sha": "aaf9980248524734b3783721f10f53e662dc4552",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-10T21:40:20Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/core/communications/dispatcher/dispatcher.py",
+    "backend/database/migrations/20260910_003_catalogo_ampliado_notifications_config.sql",
+    "backend/modules/catalogo_ampliado/alert_service.py",
+    "backend/modules/catalogo_ampliado/external_delivery.py",
+    "backend/tests/test_catalogo_ampliado_gate8c_alerts.py",
+    "backend/tests/test_catalogo_ampliado_gate8f_external_delivery.py",
+    "ops/migrations/requests/CATALOGO-AMPLIADO-GATE8F-20260910.execute"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CATALOGO-AMPLIADO-GATE8F-EXTERNAL-DELIVERY-CANONICAL-INTEGRATION-R3-20260910",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-10T21:40:37Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-10T21:40:15Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
