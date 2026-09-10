@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "aaf9980248524734b3783721f10f53e662dc4552",
-  "generated_at_utc": "2026-09-10T21:49:19Z",
+  "generated_at_utc": "2026-09-10T21:50:34Z",
   "history": {
-    "done_total_local": 363,
+    "done_total_local": 365,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 405,
-    "results_total_local": 695
+    "results_total_local": 697
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 568,
+      "age_seconds": 643,
       "job_id": "CAVAS-CORPORATIVAS-GATE12G-CERT-BOS-SOCIO-PERSONA-LINK-R1-20260910",
       "reasons": [
         "READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED"
@@ -22,67 +22,79 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1951,
+      "age_seconds": 2026,
       "job_id": "CATALOGO-AMPLIADO-GATE8F-EXTERNAL-DELIVERY-CANONICAL-INTEGRATION-R2-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 538,
+      "age_seconds": 613,
       "job_id": "CATALOGO-AMPLIADO-GATE8F-EXTERNAL-DELIVERY-CANONICAL-INTEGRATION-R3-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3449,
+      "age_seconds": 3523,
       "job_id": "CAVAS-CORPORATIVAS-GATE12E-BOS-PERSONA-LINK-IMPLEMENTATION-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2442,
+      "age_seconds": 2517,
       "job_id": "CAVAS-CORPORATIVAS-GATE12G-BOS-SOCIO-PERSONA-LINK-MIGRATION-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1912,
+      "age_seconds": 1986,
       "job_id": "CAVAS-CORPORATIVAS-GATE12G-BOS-SOCIO-PERSONA-LINK-MIGRATION-R2-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 184,
+      "age_seconds": 259,
       "job_id": "CAVAS-CORPORATIVAS-GATE12H-POSTAUDIT-BOS-PERSONA-LINK-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1792,
+      "age_seconds": 1867,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-AFTER-TIMESTAMP-20260910T151500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 8,
+      "age_seconds": 70,
+      "job_id": "EDARSAHUB-INVENTARIOS-GATE-CANDIDATOS-ERROR-INTENTOS-20260910T151801Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 82,
       "job_id": "EDARSAHUB-INVENTARIOS-GATE-CANDIDATOS-RETRY-ELIGIBLES-20260910T151800Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3189,
+      "age_seconds": 58,
+      "job_id": "EDARSAHUB-INVENTARIOS-GATE-CANDIDATOS-SYNC-LATEST-20260910T151802Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3264,
       "job_id": "RRR-GATE4D-R3-CUSTOMER360-DIAGNOSTICO-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1775,
+      "age_seconds": 1850,
       "job_id": "coa-gate5b-ventas-comercial-erp-cfdi-emitidos-readonly-v1-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3429,
+      "age_seconds": 3504,
       "job_id": "worker-orchestrator-foundation-gate1-r3-20260910T2048Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -95,14 +107,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 11,
+  "queue_result_ready_recent": 13,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-10T21:49:14Z",
-    "last_receive_utc": "2026-09-10T21:49:15Z",
-    "last_terminal_utc": "2026-09-10T21:49:11Z",
+    "last_cycle_utc": "2026-09-10T21:50:30Z",
+    "last_receive_utc": "2026-09-10T21:50:31Z",
+    "last_terminal_utc": "2026-09-10T21:49:36Z",
     "pid": "285"
   },
   "schema": "edarsahub.worker-health.v3",
