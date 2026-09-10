@@ -1,0 +1,68 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE8E-EXTERNAL-DELIVERY-READINESS-R1-20260909",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3769de5a07956612293de48d2ec893b4b6b91055",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate 8E. Con autorizacion explicita del usuario para entregas externas reales, auditar SQL real antes de habilitarlas. Cerrar origen canonico exacto de email/telefono por UsuarioObjetivoID, preferencias por canal, configuracion de notificaciones y columnas de log. No leer secretos ni valores sensibles completos. No DML/DDL, no envios, no Produccion. Esta auditoria prepara el Gate de implementacion real de EMAIL/WHATSAPP y determina si APP tiene infraestructura canonica suficiente o debe permanecer fail-closed.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "readonly_identity",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user,ORIGINAL_LOGIN() AS original_login"
+        },
+        {
+          "name": "recipient_preference_objects",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name IN ('Usuario_Catalogo','Usuario_PortalConfiguracion','Sistema_NotificacionesConfig','Operativo_Notificaciones_Log') ORDER BY o.name"
+        },
+        {
+          "name": "recipient_preference_columns",
+          "sql": "SELECT o.name AS object_name,c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable FROM sys.objects o JOIN sys.columns c ON c.object_id=o.object_id JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE o.name IN ('Usuario_Catalogo','Usuario_PortalConfiguracion','Sistema_NotificacionesConfig','Operativo_Notificaciones_Log') ORDER BY o.name,c.column_id"
+        },
+        {
+          "name": "usuario_contact_shape",
+          "sql": "SELECT TOP 20 UsuarioID,CASE WHEN Email IS NULL OR LTRIM(RTRIM(Email))='' THEN 0 ELSE 1 END AS TieneEmail,CASE WHEN Celular IS NULL OR LTRIM(RTRIM(Celular))='' THEN 0 ELSE 1 END AS TieneCelular,CASE WHEN Telefono IS NULL OR LTRIM(RTRIM(Telefono))='' THEN 0 ELSE 1 END AS TieneTelefono,Activo FROM dbo.Usuario_Catalogo ORDER BY UsuarioID"
+        },
+        {
+          "name": "portal_preferences_distribution",
+          "sql": "SELECT RecibeEmailNotificaciones,RecibeWhatsAppNotificaciones,RecibePushNotificaciones,COUNT_BIG(*) AS cantidad FROM dbo.Usuario_PortalConfiguracion GROUP BY RecibeEmailNotificaciones,RecibeWhatsAppNotificaciones,RecibePushNotificaciones ORDER BY 1,2,3"
+        },
+        {
+          "name": "portal_preference_key_candidates",
+          "sql": "SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Usuario_PortalConfiguracion') AND (c.name LIKE '%Usuario%' OR c.name LIKE '%User%' OR c.name LIKE '%ID%') ORDER BY c.column_id"
+        },
+        {
+          "name": "notification_config_rows_sanitized",
+          "sql": "SELECT TOP 100 * FROM dbo.Sistema_NotificacionesConfig"
+        },
+        {
+          "name": "notification_log_shape_counts",
+          "sql": "SELECT Canal,Estado,COUNT_BIG(*) AS cantidad FROM dbo.Operativo_Notificaciones_Log GROUP BY Canal,Estado ORDER BY Canal,Estado"
+        },
+        {
+          "name": "app_push_objects_discovery",
+          "sql": "SELECT TOP 200 s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND (o.name LIKE '%Push%' OR o.name LIKE '%AppNotific%' OR o.name LIKE '%Device%' OR o.name LIKE '%Dispositivo%' OR o.name LIKE '%Token%Push%') ORDER BY o.name"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL only",
+    "NO Production",
+    "NO DML",
+    "NO DDL",
+    "NO external delivery during audit",
+    "NO secret values",
+    "Do not expose full emails or phone numbers in evidence",
+    "SQL-first",
+    "Reuse canonical user/preferences/config/log infrastructure"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
