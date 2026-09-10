@@ -1,26 +1,32 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "d02a411ec42a90ef1d79ddfa4bec7b0bbc8ff2b5",
-  "generated_at_utc": "2026-09-10T15:36:40Z",
+  "generated_at_utc": "2026-09-10T15:37:53Z",
   "history": {
     "done_total_local": 347,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 390,
-    "results_total_local": 667
+    "rejected_total_local": 391,
+    "results_total_local": 668
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 301,
+      "age_seconds": 374,
       "job_id": "CATALOGO-AMPLIADO-GATE8E-CONFIG-TEMPLATE-READONLY-R3-R2-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 504,
+      "age_seconds": 577,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-POSTAUDIT-20260910T092100Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 0,
+      "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5E-OPERATIONAL-CLOSURE-20260910",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -32,14 +38,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-10T15:36:40Z",
-    "last_receive_utc": "2026-09-10T15:36:40Z",
-    "last_terminal_utc": "2026-09-10T15:31:39Z",
+    "last_cycle_utc": "2026-09-10T15:37:52Z",
+    "last_receive_utc": "2026-09-10T15:37:53Z",
+    "last_terminal_utc": "2026-09-10T15:37:53Z",
     "pid": "286"
   },
   "schema": "edarsahub.worker-health.v3",
