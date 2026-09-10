@@ -1,0 +1,13 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-GATE-CANDIDATOS-RETRY-ELIGIBLES-20260910T151800Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Demostrar cuántos registros ERROR cumplen exactamente la condición canónica de reintento automático Estado='ERROR' AND Intentos<3 usada por InventariosDetectorJob. Solo lectura.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[{"name":"retry_eligible_count","sql":"SELECT COUNT_BIG(*) AS TotalElegibles FROM dbo.Scheduler_InventariosProcesados WHERE Estado = 'ERROR' AND Intentos < 3"}]}],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
