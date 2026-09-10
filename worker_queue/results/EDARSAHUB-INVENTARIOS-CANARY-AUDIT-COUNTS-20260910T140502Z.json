@@ -1,0 +1,66 @@
+{
+  "base_sha": "9d0916d01613f39f1f6f77384769dfc7abf0286e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-10T20:09:18Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-INVENTARIOS-CANARY-AUDIT-COUNTS-20260910T140502Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-10T20:09:45Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "Estado",
+              "total",
+              "ultima_fecha_intento",
+              "ultima_fecha_procesamiento"
+            ],
+            "name": "state_counts",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "COMPLETADO",
+                "43",
+                "2026-08-12T16:23:30.620000",
+                "2026-08-12T16:23:37.280000"
+              ],
+              [
+                "EN_PROCESO",
+                "1",
+                "2026-09-01T17:07:50.563000",
+                null
+              ],
+              [
+                "ERROR",
+                "169",
+                "2026-09-10T03:06:50.920000",
+                "2026-08-12T16:22:59.050000"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-10T20:09:15Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
