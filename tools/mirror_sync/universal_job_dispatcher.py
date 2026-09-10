@@ -321,6 +321,12 @@ def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:
         if not backend.is_dir():
             backend = ROOT / "backend"
         cmd = [PYTHON_BIN, str(helper), "--queries-json", json.dumps(check.get("queries") or [], ensure_ascii=False)]
+        source = str(check.get("source") or "EDARSAHUB").strip().upper()
+        cmd.extend(["--source", source])
+        if check.get("units") is not None:
+            cmd.extend(["--units-json", json.dumps(check.get("units"), ensure_ascii=False)])
+        if check.get("system_types") is not None:
+            cmd.extend(["--system-types-json", json.dumps(check.get("system_types"), ensure_ascii=False)])
         cwd = worktree
         env_extra = {**load_backend_runtime_env(), "PYTHONPATH": str(backend)}
     elif kind == "frontend_build":
