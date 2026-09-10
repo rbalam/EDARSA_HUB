@@ -1,0 +1,79 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CXP-GATE3C-A-EDARSAHUB-FINANZAS-PAGOS-RUNTIME-READONLY-20260910",
+  "created_at_utc": "2026-09-10T15:38:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d02a411ec42a90ef1d79ddfa4bec7b0bbc8ff2b5",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "GATE 3C-A CxP. Obtener evidencia runtime exacta y estrictamente READ ONLY de dbo.Finanzas_Pagos en EDARSAHUB antes de implementar Payment Executor. Auditar existencia, identidad de conexion, esquema, tipos, PK/UQ/CHECK, foreign keys entrantes y salientes, indices, triggers, row count, dependencias y modulos SQL que referencian Finanzas_Pagos. No modificar datos, schema, codigo, conexiones, credenciales ni Production.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate3ca_runtime_identity",
+          "sql": "SELECT @@SERVERNAME AS server_name, DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS database_user"
+        },
+        {
+          "name": "gate3ca_finanzas_pagos_object",
+          "sql": "SELECT s.name AS schema_name, o.name AS object_name, o.type_desc, o.create_date, o.modify_date FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.object_id=OBJECT_ID(N'dbo.Finanzas_Pagos')"
+        },
+        {
+          "name": "gate3ca_finanzas_pagos_columns",
+          "sql": "SELECT c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.precision, c.scale, c.is_nullable, c.is_identity, COLUMNPROPERTY(c.object_id,c.name,'IsComputed') AS is_computed, dc.name AS default_constraint, dc.definition AS default_definition FROM sys.columns c INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id WHERE c.object_id=OBJECT_ID(N'dbo.Finanzas_Pagos') ORDER BY c.column_id"
+        },
+        {
+          "name": "gate3ca_finanzas_pagos_key_constraints",
+          "sql": "SELECT kc.name AS constraint_name, kc.type_desc AS constraint_type, i.name AS index_name, i.is_unique, ic.key_ordinal, c.name AS column_name FROM sys.key_constraints kc INNER JOIN sys.indexes i ON i.object_id=kc.parent_object_id AND i.index_id=kc.unique_index_id INNER JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id INNER JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE kc.parent_object_id=OBJECT_ID(N'dbo.Finanzas_Pagos') ORDER BY kc.name, ic.key_ordinal"
+        },
+        {
+          "name": "gate3ca_finanzas_pagos_check_constraints",
+          "sql": "SELECT cc.name AS constraint_name, cc.is_disabled, cc.is_not_trusted, cc.definition FROM sys.check_constraints cc WHERE cc.parent_object_id=OBJECT_ID(N'dbo.Finanzas_Pagos') ORDER BY cc.name"
+        },
+        {
+          "name": "gate3ca_finanzas_pagos_fk_outgoing",
+          "sql": "SELECT fk.name AS fk_name, pc.name AS parent_column, OBJECT_SCHEMA_NAME(fk.referenced_object_id) AS referenced_schema, OBJECT_NAME(fk.referenced_object_id) AS referenced_table, rc.name AS referenced_column, fk.delete_referential_action_desc, fk.update_referential_action_desc, fk.is_disabled, fk.is_not_trusted FROM sys.foreign_keys fk INNER JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id INNER JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id INNER JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fk.parent_object_id=OBJECT_ID(N'dbo.Finanzas_Pagos') ORDER BY fk.name, fkc.constraint_column_id"
+        },
+        {
+          "name": "gate3ca_finanzas_pagos_fk_incoming",
+          "sql": "SELECT fk.name AS fk_name, OBJECT_SCHEMA_NAME(fk.parent_object_id) AS parent_schema, OBJECT_NAME(fk.parent_object_id) AS parent_table, pc.name AS parent_column, rc.name AS finanzas_pagos_column, fk.is_disabled, fk.is_not_trusted FROM sys.foreign_keys fk INNER JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id INNER JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id INNER JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fk.referenced_object_id=OBJECT_ID(N'dbo.Finanzas_Pagos') ORDER BY parent_schema, parent_table, fk.name"
+        },
+        {
+          "name": "gate3ca_finanzas_pagos_indexes",
+          "sql": "SELECT i.index_id, i.name AS index_name, i.type_desc, i.is_unique, i.is_primary_key, i.is_unique_constraint, i.is_disabled, i.has_filter, i.filter_definition, ic.key_ordinal, ic.is_included_column, c.name AS column_name FROM sys.indexes i LEFT JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id LEFT JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.Finanzas_Pagos') ORDER BY i.index_id, ic.key_ordinal, ic.index_column_id"
+        },
+        {
+          "name": "gate3ca_finanzas_pagos_triggers",
+          "sql": "SELECT tr.name AS trigger_name, tr.is_disabled, tr.is_instead_of_trigger, sm.definition FROM sys.triggers tr LEFT JOIN sys.sql_modules sm ON sm.object_id=tr.object_id WHERE tr.parent_id=OBJECT_ID(N'dbo.Finanzas_Pagos') ORDER BY tr.name"
+        },
+        {
+          "name": "gate3ca_finanzas_pagos_row_count",
+          "sql": "SELECT COUNT_BIG(*) AS total_registros FROM dbo.Finanzas_Pagos"
+        },
+        {
+          "name": "gate3ca_finanzas_pagos_sql_dependencies",
+          "sql": "SELECT OBJECT_SCHEMA_NAME(d.referencing_id) AS referencing_schema, OBJECT_NAME(d.referencing_id) AS referencing_object, o.type_desc AS referencing_type, d.referenced_schema_name, d.referenced_entity_name, d.referenced_database_name, d.referenced_server_name FROM sys.sql_expression_dependencies d LEFT JOIN sys.objects o ON o.object_id=d.referencing_id WHERE d.referenced_entity_name=N'Finanzas_Pagos' OR d.referencing_id=OBJECT_ID(N'dbo.Finanzas_Pagos') ORDER BY referencing_schema, referencing_object, d.referenced_entity_name"
+        },
+        {
+          "name": "gate3ca_finanzas_pagos_module_references",
+          "sql": "SELECT s.name AS schema_name, o.name AS object_name, o.type_desc, sm.definition FROM sys.sql_modules sm INNER JOIN sys.objects o ON o.object_id=sm.object_id INNER JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE sm.definition LIKE N'%Finanzas_Pagos%' ORDER BY s.name, o.name"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ ONLY SQL ONLY",
+    "actions must remain empty",
+    "NO INSERT UPDATE DELETE MERGE EXEC EXECUTE DDL SELECT INTO OR MULTI-STATEMENT SQL",
+    "NO code or file mutations in Edarsahub_Desarrollo",
+    "NO Production",
+    "NO .env or credential changes",
+    "Do not expose secrets",
+    "Do not infer missing runtime evidence"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
