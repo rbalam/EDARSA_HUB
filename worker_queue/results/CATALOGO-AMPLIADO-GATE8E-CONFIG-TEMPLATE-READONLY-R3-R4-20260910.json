@@ -1,0 +1,89 @@
+{
+  "base_sha": "9d0916d01613f39f1f6f77384769dfc7abf0286e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-10T20:15:35Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CATALOGO-AMPLIADO-GATE8E-CONFIG-TEMPLATE-READONLY-R3-R4-20260910",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-10T20:15:43Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "database_user",
+              "original_login"
+            ],
+            "name": "readonly_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ColeccionOrigen",
+              "Activo",
+              "cantidad"
+            ],
+            "name": "notification_config_collection_counts",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "notification_config",
+                true,
+                "6"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "Id",
+              "ColeccionOrigen",
+              "Activo",
+              "payload_length",
+              "menciona_catalogo_ampliado",
+              "menciona_vencimiento",
+              "menciona_email",
+              "menciona_whatsapp",
+              "menciona_template",
+              "menciona_provider"
+            ],
+            "name": "catalogo_ampliado_candidate_flags",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-10T20:15:33Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
