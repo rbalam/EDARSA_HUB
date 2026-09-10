@@ -1,0 +1,90 @@
+{
+  "base_sha": "d26efa0fb90894242171a6fb44bd74c27289d6e8",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-10T00:40:10Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SCHEDULER-ADMIN-USERS-READONLY-20260909T172900Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-10T00:40:21Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "UsuarioID",
+              "Email",
+              "Nombre",
+              "rol"
+            ],
+            "name": "scheduler_admin_users",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                1,
+                "admin@edarsa.com",
+                "Admin",
+                "SuperAdministrador"
+              ],
+              [
+                11,
+                "carlos@alpuntoycoma.mx",
+                "Carlos",
+                "Dirección"
+              ],
+              [
+                3,
+                "carlosruz@edarsa.com.mx",
+                "Carlos",
+                "SuperAdministrador"
+              ],
+              [
+                12,
+                "eduardo@alpuntoycoma.mx",
+                "Eduardo",
+                "Administrador"
+              ],
+              [
+                22,
+                "qa.superadmin@edarsa.com",
+                "QA",
+                "SuperAdministrador"
+              ],
+              [
+                37,
+                "qa9882@e.mx",
+                "QA",
+                "SuperAdministrador"
+              ],
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                "Ricardo",
+                "SuperAdministrador"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-10T00:40:08Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
