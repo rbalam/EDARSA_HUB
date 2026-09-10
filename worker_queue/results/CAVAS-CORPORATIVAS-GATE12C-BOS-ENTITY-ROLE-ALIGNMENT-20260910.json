@@ -1,0 +1,524 @@
+{
+  "base_sha": "d02a411ec42a90ef1d79ddfa4bec7b0bbc8ff2b5",
+  "blockers": [],
+  "candidate_sha": "9d0916d01613f39f1f6f77384769dfc7abf0286e",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-10T15:39:30Z",
+  "development_sha": "9d0916d01613f39f1f6f77384769dfc7abf0286e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "docs/CAVAS/CAVAS_CORPORATIVAS_GATE12C_BOS_ENTITY_ROLE_ALIGNMENT.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CORPORATIVAS-GATE12C-BOS-ENTITY-ROLE-ALIGNMENT-20260910",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-10T15:39:43Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "schema_name",
+              "table_name"
+            ],
+            "name": "gate12c_bos_core_tables_presence",
+            "row_count_returned": 8,
+            "rows": [
+              [
+                "dbo",
+                "CavaSocios_Socios"
+              ],
+              [
+                "dbo",
+                "Cliente_Catalogo"
+              ],
+              [
+                "dbo",
+                "Gobierno_Persona"
+              ],
+              [
+                "dbo",
+                "Gobierno_PersonaEmpresaRol"
+              ],
+              [
+                "dbo",
+                "Gobierno_PersonaVinculo"
+              ],
+              [
+                "dbo",
+                "Gobierno_RolCorporativoCatalogo"
+              ],
+              [
+                "dbo",
+                "Proveedor_Catalogo"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "is_nullable"
+            ],
+            "name": "gate12c_gobierno_persona_columns",
+            "row_count_returned": 13,
+            "rows": [
+              [
+                1,
+                "PersonaID",
+                "bigint",
+                false
+              ],
+              [
+                2,
+                "PublicUUID",
+                "uniqueidentifier",
+                false
+              ],
+              [
+                3,
+                "Nombre",
+                "nvarchar",
+                false
+              ],
+              [
+                4,
+                "ApellidoPaterno",
+                "nvarchar",
+                true
+              ],
+              [
+                5,
+                "ApellidoMaterno",
+                "nvarchar",
+                true
+              ],
+              [
+                6,
+                "RFC",
+                "varchar",
+                true
+              ],
+              [
+                7,
+                "CURP",
+                "varchar",
+                true
+              ],
+              [
+                8,
+                "FechaNacimiento",
+                "date",
+                true
+              ],
+              [
+                9,
+                "Nacionalidad",
+                "nvarchar",
+                true
+              ],
+              [
+                10,
+                "Activo",
+                "bit",
+                false
+              ],
+              [
+                11,
+                "FechaAlta",
+                "datetime2",
+                false
+              ],
+              [
+                12,
+                "FechaActualizacion",
+                "datetime2",
+                true
+              ],
+              [
+                13,
+                "UsuarioActualizacionID",
+                "int",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "is_nullable"
+            ],
+            "name": "gate12c_persona_vinculo_columns",
+            "row_count_returned": 11,
+            "rows": [
+              [
+                1,
+                "VinculoID",
+                "bigint",
+                false
+              ],
+              [
+                2,
+                "PersonaID",
+                "bigint",
+                false
+              ],
+              [
+                3,
+                "UsuarioID",
+                "int",
+                true
+              ],
+              [
+                4,
+                "ClienteID",
+                "int",
+                true
+              ],
+              [
+                5,
+                "ProveedorID",
+                "int",
+                true
+              ],
+              [
+                6,
+                "ContactoClienteID",
+                "int",
+                true
+              ],
+              [
+                7,
+                "ContactoProveedorID",
+                "int",
+                true
+              ],
+              [
+                8,
+                "EsPrincipal",
+                "bit",
+                false
+              ],
+              [
+                9,
+                "Activo",
+                "bit",
+                false
+              ],
+              [
+                10,
+                "FechaAlta",
+                "datetime2",
+                false
+              ],
+              [
+                11,
+                "UsuarioAltaID",
+                "int",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "parent_column",
+              "referenced_table",
+              "referenced_column"
+            ],
+            "name": "gate12c_persona_vinculo_foreign_keys",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "FK_GobPV_Cliente",
+                "ClienteID",
+                "Cliente_Catalogo",
+                "ClienteID"
+              ],
+              [
+                "FK_GobPV_ContactoCliente",
+                "ContactoClienteID",
+                "Cliente_Contactos",
+                "ContactoClienteID"
+              ],
+              [
+                "FK_GobPV_ContactoProveedor",
+                "ContactoProveedorID",
+                "Proveedor_Contactos",
+                "ContactoID"
+              ],
+              [
+                "FK_GobPV_Persona",
+                "PersonaID",
+                "Gobierno_Persona",
+                "PersonaID"
+              ],
+              [
+                "FK_GobPV_Proveedor",
+                "ProveedorID",
+                "Proveedor_Catalogo",
+                "ProveedorID"
+              ],
+              [
+                "FK_GobPV_Usuario",
+                "UsuarioID",
+                "Usuario_Catalogo",
+                "UsuarioID"
+              ],
+              [
+                "FK_GobPV_UsuarioAlta",
+                "UsuarioAltaID",
+                "Usuario_Catalogo",
+                "UsuarioID"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "column_id",
+              "column_name",
+              "data_type",
+              "is_nullable"
+            ],
+            "name": "gate12c_roles_catalog_schema",
+            "row_count_returned": 19,
+            "rows": [
+              [
+                "Gobierno_PersonaEmpresaRol",
+                1,
+                "PersonaEmpresaRolID",
+                "bigint",
+                false
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol",
+                2,
+                "PersonaID",
+                "bigint",
+                false
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol",
+                3,
+                "EmpresaID",
+                "int",
+                false
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol",
+                4,
+                "RolCorporativoID",
+                "int",
+                false
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol",
+                5,
+                "CargoDetalle",
+                "nvarchar",
+                true
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol",
+                6,
+                "ParticipacionPct",
+                "decimal",
+                true
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol",
+                7,
+                "Facultades",
+                "nvarchar",
+                true
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol",
+                8,
+                "VigenteDesde",
+                "date",
+                true
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol",
+                9,
+                "VigenteHasta",
+                "date",
+                true
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol",
+                10,
+                "Activo",
+                "bit",
+                false
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol",
+                11,
+                "FechaAlta",
+                "datetime2",
+                false
+              ],
+              [
+                "Gobierno_PersonaEmpresaRol",
+                12,
+                "UsuarioAltaID",
+                "int",
+                true
+              ],
+              [
+                "Gobierno_RolCorporativoCatalogo",
+                1,
+                "RolCorporativoID",
+                "int",
+                false
+              ],
+              [
+                "Gobierno_RolCorporativoCatalogo",
+                2,
+                "Codigo",
+                "varchar",
+                false
+              ],
+              [
+                "Gobierno_RolCorporativoCatalogo",
+                3,
+                "Nombre",
+                "nvarchar",
+                false
+              ],
+              [
+                "Gobierno_RolCorporativoCatalogo",
+                4,
+                "RequiereParticipacion",
+                "bit",
+                false
+              ],
+              [
+                "Gobierno_RolCorporativoCatalogo",
+                5,
+                "RequiereFacultades",
+                "bit",
+                false
+              ],
+              [
+                "Gobierno_RolCorporativoCatalogo",
+                6,
+                "Activo",
+                "bit",
+                false
+              ],
+              [
+                "Gobierno_RolCorporativoCatalogo",
+                7,
+                "FechaAlta",
+                "datetime2",
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "Codigo",
+              "Nombre",
+              "Activo"
+            ],
+            "name": "gate12c_role_codes_non_pii",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "is_nullable"
+            ],
+            "name": "gate12c_cava_socios_identity_link_columns",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                7,
+                "ClienteCRMID",
+                "uniqueidentifier",
+                true
+              ],
+              [
+                15,
+                "UsuarioCreacionID",
+                "uniqueidentifier",
+                true
+              ],
+              [
+                17,
+                "UsuarioModificacionID",
+                "uniqueidentifier",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "socio_column",
+              "referenced_table",
+              "referenced_column"
+            ],
+            "name": "gate12c_cava_socios_identity_foreign_keys",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_socios",
+              "clientecrmid_null",
+              "clientecrmid_present"
+            ],
+            "name": "gate12c_socios_population_aggregate_only",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2",
+                2,
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-10T15:39:24Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
