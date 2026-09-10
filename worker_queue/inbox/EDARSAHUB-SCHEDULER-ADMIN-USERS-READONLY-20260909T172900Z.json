@@ -1,0 +1,23 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-SCHEDULER-ADMIN-USERS-READONLY-20260909T172900Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Listar usuarios internos activos con permiso SQL explícito SCHEDULER_ADMIN. Solo lectura, sin secretos ni Producción.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {
+          "name":"scheduler_admin_users",
+          "sql":"SELECT DISTINCT TOP (50) u.UsuarioID, u.Email, u.Nombre, r.NombreRol AS rol FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID = u.UsuarioID AND ura.Activo = 1 INNER JOIN dbo.Usuario_Roles r ON r.RolID = ura.RolID AND r.Activo = 1 INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID = r.RolID AND prm.Activo = 1 AND prm.Permitido = 1 INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID = prm.ModuloID AND m.Activo = 1 INNER JOIN dbo.Usuario_Acciones a ON a.AccionID = prm.AccionID AND a.Activo = 1 WHERE u.Activo = 1 AND (UPPER(CONCAT(m.CodigoModulo, '_', a.CodigoAccion)) = 'SCHEDULER_ADMIN' OR LOWER(CONCAT(m.CodigoModulo, '.', a.CodigoAccion)) = 'scheduler.admin') ORDER BY u.Email"
+        }
+      ]
+    }
+  ],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
