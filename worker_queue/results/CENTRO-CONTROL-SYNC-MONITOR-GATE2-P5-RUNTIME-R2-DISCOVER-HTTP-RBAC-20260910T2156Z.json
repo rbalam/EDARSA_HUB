@@ -1,0 +1,27 @@
+{
+  "base_sha": "698e2375de2106fb8375df52bd1dc9fb12faac86",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-10T22:27:55Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_control_sync_p5_runtime_e2e_r2.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-R2-DISCOVER-HTTP-RBAC-20260910T2156Z",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-10T22:29:06Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-10T22:27:29Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
