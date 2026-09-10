@@ -1,0 +1,66 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"RRR-GATE4D-R3-CUSTOMER360-DIAGNOSTICO-READONLY-20260910",
+  "created_at_utc":"2026-09-10T20:41:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"78016221668cbd045b645095a8f17147f4b0d14e",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"RRR GATE 4D-R3: diagnostico controlado de solo lectura posterior al workflow fallido 34422179209. Determinar exactamente cuantas de las 4 vistas Customer360 existen (0/4,1/4,2/4,3/4,4/4), cuales existen, su definicion registrada y si cada una puede consultarse con TOP 0. No ejecutar DDL ni DML. No modificar repositorio ni Produccion.",
+  "actions":[],
+  "acceptance":[
+    "READ_ONLY_SQL solamente",
+    "actions=[]",
+    "production_touched=false",
+    "reportar conteo exacto de vistas presentes sobre 4",
+    "reportar nombres exactos de vistas presentes",
+    "reportar definicion SQL almacenada de cualquier vista presente",
+    "validar SELECT TOP (0) de cualquier vista presente",
+    "database_name=EDARSAHUB",
+    "login_name=HRLectura",
+    "user_name=HRLectura"
+  ],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {
+          "name":"customer360_r3_identity",
+          "sql":"SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS user_name"
+        },
+        {
+          "name":"customer360_r3_presence_count",
+          "sql":"SELECT COUNT_BIG(*) AS present_count, CAST(4 AS int) AS expected_count FROM sys.views v JOIN sys.schemas s ON s.schema_id=v.schema_id WHERE s.name='dbo' AND v.name IN ('vw_RRR_ClienteActividadComercial','vw_RRR_ClienteScoreActual','vw_RRR_ClienteRankingActual','vw_RRR_Customer360')"
+        },
+        {
+          "name":"customer360_r3_present_views",
+          "sql":"SELECT s.name AS schema_name,v.name AS view_name,v.object_id,v.create_date,v.modify_date FROM sys.views v JOIN sys.schemas s ON s.schema_id=v.schema_id WHERE s.name='dbo' AND v.name IN ('vw_RRR_ClienteActividadComercial','vw_RRR_ClienteScoreActual','vw_RRR_ClienteRankingActual','vw_RRR_Customer360') ORDER BY v.name"
+        },
+        {
+          "name":"customer360_r3_view_definitions",
+          "sql":"SELECT s.name AS schema_name,v.name AS view_name,m.definition FROM sys.views v JOIN sys.schemas s ON s.schema_id=v.schema_id LEFT JOIN sys.sql_modules m ON m.object_id=v.object_id WHERE s.name='dbo' AND v.name IN ('vw_RRR_ClienteActividadComercial','vw_RRR_ClienteScoreActual','vw_RRR_ClienteRankingActual','vw_RRR_Customer360') ORDER BY v.name"
+        },
+        {
+          "name":"customer360_r3_activity_queryable",
+          "sql":"IF OBJECT_ID('dbo.vw_RRR_ClienteActividadComercial','V') IS NOT NULL SELECT TOP (0) * FROM dbo.vw_RRR_ClienteActividadComercial ELSE SELECT CAST('ABSENT' AS varchar(20)) AS status"
+        },
+        {
+          "name":"customer360_r3_score_queryable",
+          "sql":"IF OBJECT_ID('dbo.vw_RRR_ClienteScoreActual','V') IS NOT NULL SELECT TOP (0) * FROM dbo.vw_RRR_ClienteScoreActual ELSE SELECT CAST('ABSENT' AS varchar(20)) AS status"
+        },
+        {
+          "name":"customer360_r3_rank_queryable",
+          "sql":"IF OBJECT_ID('dbo.vw_RRR_ClienteRankingActual','V') IS NOT NULL SELECT TOP (0) * FROM dbo.vw_RRR_ClienteRankingActual ELSE SELECT CAST('ABSENT' AS varchar(20)) AS status"
+        },
+        {
+          "name":"customer360_r3_customer360_queryable",
+          "sql":"IF OBJECT_ID('dbo.vw_RRR_Customer360','V') IS NOT NULL SELECT TOP (0) * FROM dbo.vw_RRR_Customer360 ELSE SELECT CAST('ABSENT' AS varchar(20)) AS status"
+        }
+      ]
+    }
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
