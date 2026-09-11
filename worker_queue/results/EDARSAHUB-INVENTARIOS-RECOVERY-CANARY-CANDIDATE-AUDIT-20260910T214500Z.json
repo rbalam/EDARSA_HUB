@@ -1,0 +1,91 @@
+{
+  "base_sha": "f3a58cf86da57c86eae6f5801d4bfcf3094b55e2",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-11T03:49:50Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-INVENTARIOS-RECOVERY-CANARY-CANDIDATE-AUDIT-20260910T214500Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-11T03:50:12Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "ID",
+              "SistemaOrigen",
+              "ServerID",
+              "SucursalID",
+              "AlmacenID",
+              "FolioInventario",
+              "Estado",
+              "Intentos",
+              "ErrorMensaje",
+              "DetallesJSON"
+            ],
+            "name": "candidate_373_context",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                373,
+                "SOFTRESTAURANT",
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "130MID",
+                "3",
+                "3913",
+                "ERROR",
+                3,
+                "No se encontró folio inicial del período",
+                "{\"server_name\": \"130\\u00b0 MERIDA\", \"almacen_nombre\": \"PRODUCCION\", \"folio_inicial\": \"3905\"}"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "server_id",
+              "sucursal_id",
+              "unidad_negocio_codigo",
+              "almacen_id",
+              "folio",
+              "fecha",
+              "sync_status"
+            ],
+            "name": "candidate_373_sync_match",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "",
+                "130MID",
+                "3",
+                "3913",
+                "2026-09-08T13:49:35",
+                "REPLACED"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-11T03:49:47Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
