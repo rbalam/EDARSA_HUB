@@ -1,0 +1,56 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE8G-NOTIFICATIONS-MIGRATION-READONLY-20260910",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "24fda580c6c2045947ef88a997d5b4f7742d9bba",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Comprobar en SQL READ ONLY si el DEDICATED_MIGRATION_WRITER materializo en Desarrollo la migracion 20260910_003_catalogo_ampliado_notifications_config.sql. Certificar existencia exacta de provider configs, templates y module configs de Catalogo Ampliado para EMAIL/WHATSAPP antes de cualquier canary externo.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "identity_guard",
+          "sql": "SELECT DB_NAME() AS DbName,SUSER_SNAME() AS LoginName,USER_NAME() AS UserName"
+        },
+        {
+          "name": "catalogo_ampliado_provider_configs",
+          "sql": "SELECT Id,MongoId,ColeccionOrigen,Activo,JSON_VALUE(PayloadMongo,'$.canal') AS Canal,JSON_VALUE(PayloadMongo,'$.provider') AS Provider,JSON_VALUE(PayloadMongo,'$.token_ref') AS TokenRef FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ColeccionOrigen='notification_provider_config' AND ((JSON_VALUE(PayloadMongo,'$.canal')='email' AND JSON_VALUE(PayloadMongo,'$.provider')='smtp') OR (JSON_VALUE(PayloadMongo,'$.canal')='whatsapp' AND JSON_VALUE(PayloadMongo,'$.provider')='twilio')) ORDER BY Canal,Provider"
+        },
+        {
+          "name": "catalogo_ampliado_templates",
+          "sql": "SELECT Id,MongoId,ColeccionOrigen,Activo,JSON_VALUE(PayloadMongo,'$.canal') AS Canal,JSON_VALUE(PayloadMongo,'$.codigo') AS Codigo,JSON_VALUE(PayloadMongo,'$.version') AS Version FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ColeccionOrigen='notification_templates' AND JSON_VALUE(PayloadMongo,'$.codigo')='catalogo_ampliado_documento_vencimiento' AND JSON_VALUE(PayloadMongo,'$.canal') IN ('email','whatsapp') ORDER BY Canal"
+        },
+        {
+          "name": "catalogo_ampliado_module_configs",
+          "sql": "SELECT Id,MongoId,ColeccionOrigen,Activo,JSON_VALUE(PayloadMongo,'$.canal') AS Canal,JSON_VALUE(PayloadMongo,'$.modulo') AS Modulo,JSON_VALUE(PayloadMongo,'$.evento') AS Evento,JSON_VALUE(PayloadMongo,'$.provider') AS Provider,JSON_VALUE(PayloadMongo,'$.modo_envio') AS ModoEnvio,JSON_VALUE(PayloadMongo,'$.template_codigo') AS TemplateCodigo,JSON_VALUE(PayloadMongo,'$.max_reintentos') AS MaxReintentos FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ColeccionOrigen='notification_config' AND JSON_VALUE(PayloadMongo,'$.modulo')='catalogo_ampliado' AND JSON_VALUE(PayloadMongo,'$.evento')='DOCUMENTO_VENCIMIENTO' AND JSON_VALUE(PayloadMongo,'$.canal') IN ('email','whatsapp') ORDER BY Canal"
+        },
+        {
+          "name": "catalogo_ampliado_exact_counts",
+          "sql": "SELECT SUM(CASE WHEN ColeccionOrigen='notification_provider_config' AND ((JSON_VALUE(PayloadMongo,'$.canal')='email' AND JSON_VALUE(PayloadMongo,'$.provider')='smtp') OR (JSON_VALUE(PayloadMongo,'$.canal')='whatsapp' AND JSON_VALUE(PayloadMongo,'$.provider')='twilio')) THEN 1 ELSE 0 END) AS ProviderRows,SUM(CASE WHEN ColeccionOrigen='notification_templates' AND JSON_VALUE(PayloadMongo,'$.codigo')='catalogo_ampliado_documento_vencimiento' AND JSON_VALUE(PayloadMongo,'$.canal') IN ('email','whatsapp') THEN 1 ELSE 0 END) AS TemplateRows,SUM(CASE WHEN ColeccionOrigen='notification_config' AND JSON_VALUE(PayloadMongo,'$.modulo')='catalogo_ampliado' AND JSON_VALUE(PayloadMongo,'$.evento')='DOCUMENTO_VENCIMIENTO' AND JSON_VALUE(PayloadMongo,'$.canal') IN ('email','whatsapp') THEN 1 ELSE 0 END) AS ModuleConfigRows FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ ONLY only",
+    "DB_NAME must equal EDARSAHUB",
+    "SUSER_SNAME must equal HRLectura",
+    "USER_NAME must equal HRLectura",
+    "Expected minimum canonical materialization: 2 provider rows, 2 template rows, 2 module config rows",
+    "EMAIL module config must be smtp real",
+    "WHATSAPP module config must be twilio real",
+    "TemplateCodigo must be catalogo_ampliado_documento_vencimiento",
+    "No DDL",
+    "No DML",
+    "No external sends",
+    "No Production",
+    "production_touched must remain false"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
