@@ -1,0 +1,50 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE12H2-POSTAUDIT-PERSONA-LINK-READONLY-20260910",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4a4468af772c22b939b61755bbc3d183c64f7e9d",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "objective": "Post-audit fisico READ_ONLY posterior a la migracion BOS de Cavas. Certificar exclusivamente: existencia de dbo.CavaSocios_Socios.PersonaID, tipo BIGINT y nullability, exactamente una FK PersonaID -> dbo.Gobierno_Persona(PersonaID), existencia de indice sobre PersonaID, preservacion de las tres FK operativas Botellas/Cargos/Movimientos por SocioID, y que los 2 socios actuales permanezcan PersonaID NULL. No ejecutar DDL/DML y no crear otra migracion.",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate12h2_personaid_column",
+          "sql": "SELECT c.name AS column_name,t.name AS data_type,c.is_nullable FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND c.name=N'PersonaID'"
+        },
+        {
+          "name": "gate12h2_personaid_fk",
+          "sql": "SELECT fk.name AS fk_name,pc.name AS parent_column,OBJECT_SCHEMA_NAME(fk.referenced_object_id) AS referenced_schema,OBJECT_NAME(fk.referenced_object_id) AS referenced_table,rc.name AS referenced_column,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fk.parent_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND pc.name=N'PersonaID' ORDER BY fk.name"
+        },
+        {
+          "name": "gate12h2_personaid_index",
+          "sql": "SELECT DISTINCT i.name AS index_name,i.is_unique,i.is_disabled FROM sys.indexes i JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND c.name=N'PersonaID' AND i.is_hypothetical=0 ORDER BY i.name"
+        },
+        {
+          "name": "gate12h2_operational_children",
+          "sql": "SELECT OBJECT_NAME(fk.parent_object_id) AS child_table,pc.name AS child_column,OBJECT_NAME(fk.referenced_object_id) AS parent_table,rc.name AS parent_column,fk.name AS fk_name,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fk.referenced_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND OBJECT_NAME(fk.parent_object_id) IN (N'CavaSocios_Botellas',N'CavaSocios_Cargos',N'CavaSocios_Movimientos') ORDER BY child_table,fk.name"
+        },
+        {
+          "name": "gate12h2_socios_personaid_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_socios,SUM(CASE WHEN PersonaID IS NULL THEN 1 ELSE 0 END) AS personaid_null,SUM(CASE WHEN PersonaID IS NOT NULL THEN 1 ELSE 0 END) AS personaid_present FROM dbo.CavaSocios_Socios"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL only",
+    "NO DDL",
+    "NO DML",
+    "NO repository mutation",
+    "NO Production",
+    "NO secrets or PII",
+    "Do not create another migration",
+    "Certify only physical SQL evidence"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
