@@ -1,0 +1,81 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CXP-GATE3D-B-R1-MPRO-PHYSICAL-WRITE-CONTRACT-READONLY-20260911",
+  "created_at_utc": "2026-09-11T06:12:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "fbb193c02b4b798d676b4a7bb96b4c58733338ef",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Recovery quirurgico GATE 3D-B-R1 MPRO. Certificar solo el contrato fisico observable de dbo.Pago_CXP y sus hijas en ORIGEN y 130QRO: columnas, nullability, identity/computed/defaults, PK/UQ/indexes, FKs, metadata de Pc_ID, triggers y patrones agregados basicos. No descubrir side effects todavia. No implementar ni probar writer.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": ["ORIGEN", "130QRO"],
+      "system_types": ["MPRO"],
+      "queries": [
+        {
+          "name": "r1_runtime_identity",
+          "sql": "SELECT @@SERVERNAME AS server_name,DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user"
+        },
+        {
+          "name": "r1_pago_cxp_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity,COLUMNPROPERTY(c.object_id,c.name,'IsComputed') AS is_computed,dc.definition AS default_definition FROM sys.columns c INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id WHERE c.object_id=OBJECT_ID(N'dbo.Pago_CXP') ORDER BY c.column_id"
+        },
+        {
+          "name": "r1_pago_cxp_indexes",
+          "sql": "SELECT i.index_id,i.name AS index_name,i.type_desc,i.is_unique,i.is_primary_key,i.is_unique_constraint,ic.key_ordinal,ic.is_included_column,c.name AS column_name FROM sys.indexes i LEFT JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id LEFT JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.Pago_CXP') ORDER BY i.index_id,ic.index_column_id"
+        },
+        {
+          "name": "r1_pago_cxp_foreign_keys",
+          "sql": "SELECT fk.name AS fk_name,OBJECT_SCHEMA_NAME(fk.parent_object_id) AS parent_schema,OBJECT_NAME(fk.parent_object_id) AS parent_table,pc.name AS parent_column,OBJECT_SCHEMA_NAME(fk.referenced_object_id) AS referenced_schema,OBJECT_NAME(fk.referenced_object_id) AS referenced_table,rc.name AS referenced_column FROM sys.foreign_keys fk INNER JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id INNER JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id INNER JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fk.parent_object_id=OBJECT_ID(N'dbo.Pago_CXP') OR fk.referenced_object_id=OBJECT_ID(N'dbo.Pago_CXP') ORDER BY parent_schema,parent_table,fk.name,fkc.constraint_column_id"
+        },
+        {
+          "name": "r1_pc_id_metadata",
+          "sql": "SELECT c.name AS column_name,c.is_identity,COLUMNPROPERTY(c.object_id,c.name,'IsComputed') AS is_computed,dc.definition AS default_definition,ic.seed_value,ic.increment_value FROM sys.columns c LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id LEFT JOIN sys.identity_columns ic ON ic.object_id=c.object_id AND ic.column_id=c.column_id WHERE c.object_id=OBJECT_ID(N'dbo.Pago_CXP') AND c.name=N'Pc_ID'"
+        },
+        {
+          "name": "r1_pago_cxp_triggers",
+          "sql": "SELECT t.name AS trigger_name,t.is_disabled,t.is_instead_of_trigger FROM sys.triggers t WHERE t.parent_id=OBJECT_ID(N'dbo.Pago_CXP') ORDER BY t.name"
+        },
+        {
+          "name": "r1_child_columns",
+          "sql": "SELECT OBJECT_NAME(c.object_id) AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity,dc.definition AS default_definition FROM sys.columns c INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id WHERE c.object_id IN (OBJECT_ID(N'dbo.Pago_Cxp_Comprobante'),OBJECT_ID(N'dbo.Pago_CXP_Impuesto')) ORDER BY table_name,c.column_id"
+        },
+        {
+          "name": "r1_child_indexes",
+          "sql": "SELECT OBJECT_NAME(i.object_id) AS table_name,i.index_id,i.name AS index_name,i.is_unique,i.is_primary_key,i.is_unique_constraint,ic.key_ordinal,c.name AS column_name FROM sys.indexes i LEFT JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id LEFT JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id IN (OBJECT_ID(N'dbo.Pago_Cxp_Comprobante'),OBJECT_ID(N'dbo.Pago_CXP_Impuesto')) ORDER BY table_name,i.index_id,ic.index_column_id"
+        },
+        {
+          "name": "r1_existing_shape",
+          "sql": "SELECT COUNT_BIG(*) AS total_pagos,COUNT_BIG(DISTINCT Cxp_Folio) AS folios_cxp_distintos,COUNT_BIG(DISTINCT Pc_ID) AS pc_id_distintos,SUM(CASE WHEN Pc_ID IS NULL THEN 1 ELSE 0 END) AS pc_id_nulls,SUM(CASE WHEN Cxp_Folio IS NULL THEN 1 ELSE 0 END) AS cxp_folio_nulls FROM dbo.Pago_CXP"
+        },
+        {
+          "name": "r1_comprobante_shape",
+          "sql": "SELECT COUNT_BIG(*) AS total_comprobantes,COUNT_BIG(DISTINCT Cxp_Folio) AS folios_cxp_distintos,COUNT_BIG(DISTINCT Pc_ID) AS pc_id_distintos FROM dbo.Pago_Cxp_Comprobante"
+        },
+        {
+          "name": "r1_impuesto_shape",
+          "sql": "SELECT COUNT_BIG(*) AS total_impuestos,COUNT_BIG(DISTINCT Cxp_Folio) AS folios_cxp_distintos,COUNT_BIG(DISTINCT Pc_ID) AS pc_id_distintos FROM dbo.Pago_CXP_Impuesto"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ ONLY SQL ONLY",
+    "actions must remain empty",
+    "NO INSERT UPDATE DELETE MERGE EXEC EXECUTE DDL SELECT INTO OR MULTI-STATEMENT SQL",
+    "NO procedure execution",
+    "NO individual payment rows or provider data",
+    "Only metadata and aggregates",
+    "NO Production",
+    "NO code or file mutation",
+    "Connections only through PosRuntimeResolver and get_external_sql_connection",
+    "Do not infer side effects, accounting behavior, mandatory child rows or idempotency beyond returned evidence",
+    "Payment Executor writer remains 0 percent"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
