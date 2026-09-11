@@ -1,0 +1,70 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-FORMAS-DETALLEPAGOS-R64-CARLOS-20260911T230000Z",
+  "created_at_utc": "2026-09-11T23:00:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e6a6feb891f719734f67246f3882534f744afcd4",
+  "production_allowed": false,
+  "objective": "Corregir exclusivamente ISCAM Formas de Pago para que los importes provengan de dbo.Finanzas_CortesCaja_DetallePagos ya conciliada/certificada, manteniendo la estructura por apertura/corte. dbo.Finanzas_CortesCaja se usa solo como metadato de FolioCorte/CajaNombre, nunca para TotalVenta/Efectivo/Tarjetas. No modificar Sync_Sales, Ventas por Periodo, Resumen de Cuentas, Comandas, Pagos por Ticket, datos SQL ni Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "expected_count": 1,
+      "old": "# ============================================================================\n# 4) VENTAS POR FORMAS DE PAGO  (REUTILIZA dbo.Finanzas_CortesCaja)\n# ============================================================================\n@iscam_router.get(\"/formas-pago\")",
+      "new": "def _formas_pago_desde_detalle(unidad, nombre, d, h, group_by, limit, export_all):\n    \"\"\"ISCAM Formas de Pago desde detalle conciliado por ticket.\n\n    Los importes salen exclusivamente de Finanzas_CortesCaja_DetallePagos.\n    Finanzas_CortesCaja se consulta solo para recuperar folio/caja del corte\n    mediante la misma FechaApertura/FechaHora; sus importes no participan.\n    \"\"\"\n    forma = \"UPPER(ISNULL(FormaPago,''))\"\n    cash = f\"({forma} LIKE '%EFECTIVO%' OR {forma} LIKE '%DOLAR%')\"\n    amex = f\"({forma} LIKE '%AMEX%')\"\n    card = f\"(({forma} LIKE '%CREDITO%' OR {forma} LIKE '%DEBITO%' OR {forma} LIKE '%CLIP%' OR {forma} LIKE '%INTERNACIONAL%') AND {forma} NOT LIKE '%AMEX%')\"\n    intl = f\"({forma} LIKE '%INTERNACIONAL%')\"\n    vales = f\"({forma} LIKE '%VALE%')\"\n    known = f\"({cash} OR {amex} OR {card} OR {vales})\"\n\n    if group_by in ('anio', 'mes', 'dia'):\n        pexpr = _period_sql('FechaHora', group_by)\n        rows = _q(\n            f\"\"\"\n            SELECT {pexpr} AS periodo,\n                   COUNT(DISTINCT FechaHora) AS cortes,\n                   SUM(ISNULL(Importe,0)) AS total,\n                   SUM(CASE WHEN {cash} THEN ISNULL(Importe,0) ELSE 0 END) AS efectivo,\n                   SUM(CASE WHEN {card} THEN ISNULL(Importe,0) ELSE 0 END) AS tarjeta,\n                   SUM(CASE WHEN {amex} THEN ISNULL(Importe,0) ELSE 0 END) AS amex,\n                   SUM(CASE WHEN {intl} THEN ISNULL(Importe,0) ELSE 0 END) AS internacional,\n                   SUM(CASE WHEN {vales} THEN ISNULL(Importe,0) ELSE 0 END) AS vales,\n                   SUM(CASE WHEN NOT {known} THEN ISNULL(Importe,0) ELSE 0 END) AS otros,\n                   SUM(ISNULL(Propina,0)) AS propina,\n                   CAST(0 AS decimal(18,2)) AS comision\n            FROM dbo.Finanzas_CortesCaja_DetallePagos\n            WHERE UnidadNegocio = %s AND ISNULL(Activo,1)=1\n              AND FechaHora >= %s AND FechaHora < %s\n            GROUP BY {pexpr}\n            ORDER BY periodo DESC\n            \"\"\",\n            (unidad, d, h),\n        )\n        keys = ('total','efectivo','tarjeta','amex','internacional','vales','otros','propina','comision')\n        agrupado = [{\n            'periodo': r['periodo'], 'cortes': int(r['cortes'] or 0),\n            **{k: round(_f(r.get(k)), 2) for k in keys},\n        } for r in rows]\n        tot = {k: round(sum(a[k] for a in agrupado), 2) for k in keys}\n        return {\n            'success': True,\n            'source': 'Finanzas_CortesCaja_DetallePagos (canonica, conciliada por apertura)',\n            'unidad': unidad, 'unidad_nombre': nombre, 'desde': d, 'hasta': h,\n            'group_by': group_by, 'totales': tot, 'agrupado': agrupado,\n        }\n\n    rows = _q(\n        f\"\"\"\n        WITH pagos AS (\n            SELECT FechaHora,\n                   SUM(ISNULL(Importe,0)) AS total,\n                   SUM(CASE WHEN {cash} THEN ISNULL(Importe,0) ELSE 0 END) AS efectivo,\n                   SUM(CASE WHEN {card} THEN ISNULL(Importe,0) ELSE 0 END) AS tarjeta,\n                   SUM(CASE WHEN {amex} THEN ISNULL(Importe,0) ELSE 0 END) AS amex,\n                   SUM(CASE WHEN {intl} THEN ISNULL(Importe,0) ELSE 0 END) AS internacional,\n                   SUM(CASE WHEN {vales} THEN ISNULL(Importe,0) ELSE 0 END) AS vales,\n                   SUM(CASE WHEN NOT {known} THEN ISNULL(Importe,0) ELSE 0 END) AS otros,\n                   SUM(ISNULL(Propina,0)) AS propina\n            FROM dbo.Finanzas_CortesCaja_DetallePagos\n            WHERE UnidadNegocio = %s AND ISNULL(Activo,1)=1\n              AND FechaHora >= %s AND FechaHora < %s\n            GROUP BY FechaHora\n        )\n        SELECT COALESCE(meta.FolioCorte, CONVERT(varchar(19), p.FechaHora, 120)) AS folio,\n               p.FechaHora AS fecha, COALESCE(meta.CajaNombre, 'PAGOS') AS caja,\n               p.total, p.efectivo, p.tarjeta, p.amex, p.internacional,\n               p.vales, p.otros, p.propina, CAST(0 AS decimal(18,2)) AS comision\n        FROM pagos p\n        OUTER APPLY (\n            SELECT TOP (1) c.FolioCorte, c.CajaNombre\n            FROM dbo.Finanzas_CortesCaja c\n            WHERE c.UnidadNegocioNombre = %s AND ISNULL(c.Activo,1)=1\n              AND c.FechaApertura = p.FechaHora\n            ORDER BY c.FolioCorte\n        ) meta\n        ORDER BY p.FechaHora DESC\n        \"\"\",\n        (unidad, d, h, nombre),\n    )\n    if not export_all:\n        rows = rows[:limit]\n    cortes = [{\n        'folio': r['folio'], 'fecha': _iso(r['fecha']), 'caja': r['caja'],\n        'total': round(_f(r.get('total')), 2),\n        'efectivo': round(_f(r.get('efectivo')), 2),\n        'tarjeta_debito': round(_f(r.get('tarjeta')), 2),\n        'tarjeta_credito': 0.0,\n        'tarjeta': round(_f(r.get('tarjeta')), 2),\n        'amex': round(_f(r.get('amex')), 2),\n        'internacional': round(_f(r.get('internacional')), 2),\n        'vales': round(_f(r.get('vales')), 2),\n        'otros': round(_f(r.get('otros')), 2),\n        'propina': round(_f(r.get('propina')), 2),\n        'comision': 0.0,\n    } for r in rows]\n    keys = ('total','efectivo','tarjeta','amex','internacional','vales','otros','propina','comision')\n    tot = {k: round(sum(_f(r.get(k)) for r in cortes), 2) for k in keys}\n    return {\n        'success': True,\n        'source': 'Finanzas_CortesCaja_DetallePagos (canonica, conciliada por apertura)',\n        'unidad': unidad, 'unidad_nombre': nombre, 'desde': d, 'hasta': h,\n        'export_all': export_all, 'limited': not export_all,\n        'limit': None if export_all else limit, 'totales': tot, 'cortes': cortes,\n    }\n\n\n# ============================================================================\n# 4) VENTAS POR FORMAS DE PAGO  (IMPORTES DESDE DetallePagos; corte solo metadata)\n# ============================================================================\n@iscam_router.get(\"/formas-pago\")"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "expected_count": 1,
+      "old": "    if not nombre:\n        raise HTTPException(status_code=404, detail=f\"No se pudo resolver la unidad '{unidad}'\")\n    d, h = _rango_fechas(desde, hasta)\n    if group_by in (\"anio\", \"mes\", \"dia\"):\n",
+      "new": "    if not nombre:\n        raise HTTPException(status_code=404, detail=f\"No se pudo resolver la unidad '{unidad}'\")\n    d, h = _rango_fechas(desde, hasta)\n    return _formas_pago_desde_detalle(unidad, nombre, d, h, group_by, limit, export_all)\n    if group_by in (\"anio\", \"mes\", \"dia\"):\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_formas_detallepagos_r64.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nROUTES = ROOT / 'backend' / 'modules' / 'inteligencia_comercial' / 'iscam_routes.py'\n\n\ndef _text():\n    return ROUTES.read_text(encoding='utf-8')\n\n\ndef _helper():\n    text = _text()\n    return text.split('def _formas_pago_desde_detalle', 1)[1].split('# ============================================================================\\n# 4) VENTAS POR FORMAS DE PAGO', 1)[0]\n\n\ndef test_formas_uses_certified_payment_detail_for_amounts():\n    block = _helper()\n    assert 'dbo.Finanzas_CortesCaja_DetallePagos' in block\n    assert 'SUM(ISNULL(Importe,0)) AS total' in block\n    assert 'SUM(ISNULL(Propina,0)) AS propina' in block\n    assert 'TotalVenta' not in block\n    assert 'TotalEfectivo' not in block\n    assert 'TotalTarjetaDebito' not in block\n    assert 'TotalTarjetaCredito' not in block\n\n\ndef test_formas_keeps_cortes_table_only_as_metadata():\n    block = _helper()\n    assert 'FROM dbo.Finanzas_CortesCaja c' in block\n    assert 'c.FolioCorte' in block\n    assert 'c.CajaNombre' in block\n    assert 'c.FechaApertura = p.FechaHora' in block\n\n\ndef test_formas_maps_known_payment_families_and_falls_back_to_otros():\n    block = _helper()\n    for token in ('%EFECTIVO%', '%DOLAR%', '%CREDITO%', '%DEBITO%', '%CLIP%', '%INTERNACIONAL%', '%AMEX%', '%VALE%'):\n        assert token in block\n    assert 'CASE WHEN NOT' in block\n\n\ndef test_route_returns_new_helper_before_legacy_body():\n    text = _text()\n    route = text.split('async def ventas_formas_pago', 1)[1].split('@iscam_router.get(\"/formas-pago/por-ticket\")', 1)[0]\n    assert 'return _formas_pago_desde_detalle(unidad, nombre, d, h, group_by, limit, export_all)' in route\n\n\ndef test_formas_change_does_not_touch_sync_sales_or_product_detail():\n    block = _helper()\n    assert 'dbo.Sync_Sales' not in block\n    assert 'Comercial_Inteligencia_VentasDetalleProducto' not in block\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/inteligencia_comercial/iscam_routes.py",
+        "backend/tests/test_iscam_formas_detallepagos_r64.py",
+        "backend/tests/test_iscam_cuentas_comandas_locked_r50.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_formas_detallepagos_r64.py",
+        "backend/tests/test_iscam_cuentas_comandas_locked_r50.py",
+        "backend/tests/test_iscam_soft_payment_fx_r54.py",
+        "backend/tests/test_iscam_payments_only_resync_r56.py"
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_aug26_formas_r64_control",
+          "sql": "SELECT CAST(SUM(ISNULL(Importe,0)) AS decimal(18,2)) AS total, CAST(SUM(CASE WHEN UPPER(ISNULL(FormaPago,'')) LIKE '%EFECTIVO%' OR UPPER(ISNULL(FormaPago,'')) LIKE '%DOLAR%' THEN ISNULL(Importe,0) ELSE 0 END) AS decimal(18,2)) AS efectivo, CAST(SUM(CASE WHEN (UPPER(ISNULL(FormaPago,'')) LIKE '%CREDITO%' OR UPPER(ISNULL(FormaPago,'')) LIKE '%DEBITO%' OR UPPER(ISNULL(FormaPago,'')) LIKE '%CLIP%' OR UPPER(ISNULL(FormaPago,'')) LIKE '%INTERNACIONAL%') AND UPPER(ISNULL(FormaPago,'')) NOT LIKE '%AMEX%' THEN ISNULL(Importe,0) ELSE 0 END) AS decimal(18,2)) AS tarjeta, CAST(SUM(CASE WHEN UPPER(ISNULL(FormaPago,'')) LIKE '%AMEX%' THEN ISNULL(Importe,0) ELSE 0 END) AS decimal(18,2)) AS amex, CAST(SUM(CASE WHEN UPPER(ISNULL(FormaPago,'')) LIKE '%INTERNACIONAL%' THEN ISNULL(Importe,0) ELSE 0 END) AS decimal(18,2)) AS internacional, CAST(SUM(CASE WHEN NOT ((UPPER(ISNULL(FormaPago,'')) LIKE '%EFECTIVO%' OR UPPER(ISNULL(FormaPago,'')) LIKE '%DOLAR%') OR UPPER(ISNULL(FormaPago,'')) LIKE '%AMEX%' OR ((UPPER(ISNULL(FormaPago,'')) LIKE '%CREDITO%' OR UPPER(ISNULL(FormaPago,'')) LIKE '%DEBITO%' OR UPPER(ISNULL(FormaPago,'')) LIKE '%CLIP%' OR UPPER(ISNULL(FormaPago,'')) LIKE '%INTERNACIONAL%') AND UPPER(ISNULL(FormaPago,'')) NOT LIKE '%AMEX%') OR UPPER(ISNULL(FormaPago,'')) LIKE '%VALE%') THEN ISNULL(Importe,0) ELSE 0 END) AS decimal(18,2)) AS otros, CAST(SUM(ISNULL(Propina,0)) AS decimal(18,2)) AS propina FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE UnidadNegocio='CIENFUEGOS' AND FechaHora>='2026-08-01' AND FechaHora<'2026-09-01' AND ISNULL(Activo,1)=1"
+        }
+      ]
+    },
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
