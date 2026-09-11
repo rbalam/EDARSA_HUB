@@ -1,0 +1,140 @@
+{
+  "base_sha": "e6a6feb891f719734f67246f3882534f744afcd4",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-09-11T22:30:53Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-PAYMENTS-RESYNC-R61-CARLOS-20260911T222500Z",
+  "operation": "ISCAM_PAYMENTS_ONLY_RESYNC",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-11T22:31:01Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "filas_pago",
+              "tickets_con_pago",
+              "pagos_total",
+              "propina_total",
+              "diferencia_vs_ejecutivo"
+            ],
+            "name": "cienfuegos_aug26_payments_summary",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1166,
+                989,
+                "3959563.00",
+                "369594.86",
+                "0.00"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "folio",
+              "total_pago",
+              "propina",
+              "filas_pago"
+            ],
+            "name": "cienfuegos_aug26_gap_tickets_after_resync",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "104124",
+                "3565.00",
+                "0.00",
+                2
+              ],
+              [
+                "104623",
+                "470.00",
+                "0.00",
+                2
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "folio",
+              "FormaPagoCodigo",
+              "FormaPago",
+              "importe_mxn",
+              "propina_mxn"
+            ],
+            "name": "cienfuegos_aug26_usd_payment_rows_after_resync",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "104124",
+                "03",
+                "03 DOLARES USA",
+                "640.00",
+                "0.00"
+              ],
+              [
+                "104623",
+                "03",
+                "03 DOLARES USA",
+                "160.00",
+                "0.00"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "HashOrigen",
+              "duplicados"
+            ],
+            "name": "cienfuegos_aug26_duplicate_hash_check",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "pagos_total",
+              "pagos_total_ok"
+            ],
+            "name": "cienfuegos_aug26_expected_amount_gate",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "3959563.00",
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-11T22:30:47Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker resincronizo exclusivamente Pagos por Ticket para una unidad y rango autorizados y certifico el resultado con SQL de solo lectura. No modifico Sync_Sales, Cuentas, Comandas, Cortes ni Produccion.",
+  "tests": "PASS",
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "work_completion": "COMPLETE"
+}
