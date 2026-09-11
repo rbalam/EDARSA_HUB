@@ -1,0 +1,42 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate5g-r2-cfdi-development-workflow-recovery-v1-20260911",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "472bb4d01a2536e536566f006aab5b8422ee55e2",
+  "objective": "COA Gate 5G-R2: diagnosticar y corregir exclusivamente el workflow .github/workflows/coa-core-development-migration.yml para recuperar la ejecucion controlada CFDI Emitidos despues del run 34558380816 fallido sin artifact. No tocar backend/database/migrations/20260910_coa_cfdi_emitidos.sql ni su rollback. Evidencia: el commit 4a4468af772c22b939b61755bbc3d183c64f7e9d si incluyo el trigger CFDI, pero el workflow resolvia el tipo de migracion con git diff-tree sobre actions/checkout shallow y creaba evidence/ despues de esa resolucion; por tanto un fallo temprano podia dejar cero artifact. Corregir de forma quirurgica: checkout con fetch-depth suficiente; resolver cambios usando github.event.before..github.sha; crear evidence/ desde el paso de resolucion y guardar diagnostico de before/head/changed paths; mantener soporte CORE y CFDI; modificar el trigger CFDI existente para producir un nuevo push y disparar el mismo workflow. Mantener preflight HRLectura, verificacion EDARSAHUB/HRLectura y permisos DDL, migracion transaccional, postcheck, rollback automatico y artifact always. No tocar Produccion. No certificar ejecucion fisica en este Worker job: solo integrar recovery y trigger R2; la certificacion fisica requiere revisar run, steps y artifact posteriores.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA",
+    "chat": "coa-gate5g-r2-cfdi-development-workflow-recovery-v1-20260911"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/coa-core-development-migration.yml",
+      "expected_count": 1,
+      "old": "        with:\n          ref: ${{ github.sha }}",
+      "new": "        with:\n          ref: ${{ github.sha }}\n          fetch-depth: 2"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/coa-core-development-migration.yml",
+      "expected_count": 1,
+      "old": "      - name: Resolve canonical migration contract\n        shell: bash\n        run: |\n          set -euo pipefail\n          CHANGED=\"$(git diff-tree --no-commit-id --name-only -r \"${GITHUB_SHA}\")\"\n          if echo \"${CHANGED}\" | grep -qx 'ops/migrations/requests/COA-CFDI-EMITIDOS-20260910.execute'; then",
+      "new": "      - name: Resolve canonical migration contract\n        shell: bash\n        run: |\n          set -euo pipefail\n          mkdir -p evidence\n          BEFORE='${{ github.event.before }}'\n          HEAD='${{ github.sha }}'\n          {\n            echo \"before=${BEFORE}\"\n            echo \"head=${HEAD}\"\n          } | tee evidence/trigger-resolution.txt\n          if [ -n \"${BEFORE}\" ] && [ \"${BEFORE}\" != '0000000000000000000000000000000000000000' ]; then\n            CHANGED=\"$(git diff --name-only \"${BEFORE}\" \"${HEAD}\")\"\n          else\n            CHANGED=\"$(git diff-tree --no-commit-id --name-only -r \"${HEAD}\")\"\n          fi\n          printf '%s\\n' \"${CHANGED}\" | tee -a evidence/trigger-resolution.txt\n          if echo \"${CHANGED}\" | grep -qx 'ops/migrations/requests/COA-CFDI-EMITIDOS-20260910.execute'; then"
+    },
+    {
+      "type": "replace_text",
+      "path": "ops/migrations/requests/COA-CFDI-EMITIDOS-20260910.execute",
+      "expected_count": 1,
+      "old": "GATE=5G\nMIGRATION_KIND=CFDI_EMITIDOS\nSOURCE_GATE5E_SHA=0c32b93cee5d4ef54c4845850b6fedc937a63cb3\nSOURCE_GATE5F_RESULT=coa-gate5f-cfdi-emitidos-readonly-preflight-v1-20260910\nPRODUCTION=false",
+      "new": "GATE=5G-R2\nMIGRATION_KIND=CFDI_EMITIDOS\nSOURCE_GATE5E_SHA=0c32b93cee5d4ef54c4845850b6fedc937a63cb3\nSOURCE_GATE5F_RESULT=coa-gate5f-cfdi-emitidos-readonly-preflight-v1-20260910\nRECOVERY_REASON=SHALLOW_TRIGGER_RESOLUTION_HARDENING\nPRODUCTION=false"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
