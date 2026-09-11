@@ -1,0 +1,101 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-SOFT-DISCOUNTS-NO-PRORATE-R48-CARLOS-20260911T183000Z",
+  "created_at_utc": "2026-09-11T18:30:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "45254e855b90ca68fbd560761020e2245edb803e",
+  "production_allowed": false,
+  "objective": "Corregir la semantica monetaria del detalle ISCAM SoftRestaurant SIN PRORRATEAR el total del cheque entre productos. Mantener el universo folio-first ya restaurado por R46. Cada producto debe conservar su importe real calculado desde cheqdet.cantidad * cheqdet.precio y su descuento propio de linea. Los descuentos globales/cortesias del cheque deben convertirse en ajustes separados del ticket, nunca repartirse sobre productos. La suma producto neto + ajustes conocidos debe conciliar exactamente con cheques.total; cualquier diferencia no explicada > 0.05 debe bloquear la sincronizacion. No tocar MPRO ni Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "expected_count": 1,
+      "old": "        prop_col = \"propina\" if _table_has_col(conn, \"cheques\", \"propina\") else None\n        desc_col = None\n        for candidate in [\"totaldescuentoycortesia\", \"descuento\"]:\n            if _table_has_col(conn, \"cheques\", candidate):\n                desc_col = candidate\n                break\n\n        prop_expr = f\"ISNULL(ch.{prop_col}, 0)\" if prop_col else \"CAST(0 AS decimal(18,4))\"\n        desc_expr = f\"ISNULL(ch.{desc_col}, 0)\" if desc_col else \"CAST(0 AS decimal(18,4))\"\n",
+      "new": "        prop_col = \"propina\" if _table_has_col(conn, \"cheques\", \"propina\") else None\n        line_desc_col = \"descuento\" if _table_has_col(conn, \"cheqdet\", \"descuento\") else None\n        total_desc_col = None\n        for candidate in [\"totaldescuentos\", \"totaldescuentoycortesia\"]:\n            if _table_has_col(conn, \"cheques\", candidate):\n                total_desc_col = candidate\n                break\n        cortesia_col = \"totalcortesias\" if (total_desc_col == \"totaldescuentos\" and _table_has_col(conn, \"cheques\", \"totalcortesias\")) else None\n\n        prop_expr = f\"ISNULL(ch.{prop_col}, 0)\" if prop_col else \"CAST(0 AS decimal(18,4))\"\n        line_desc_expr = f\"ISNULL(dc.{line_desc_col}, 0)\" if line_desc_col else \"CAST(0 AS decimal(18,4))\"\n        total_desc_expr = f\"ISNULL(ch.{total_desc_col}, 0)\" if total_desc_col else \"CAST(0 AS decimal(18,4))\"\n        cortesia_expr = f\"ISNULL(ch.{cortesia_col}, 0)\" if cortesia_col else \"CAST(0 AS decimal(18,4))\"\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "expected_count": 1,
+      "old": "                {prop_expr} AS propina_ticket,\n                {desc_expr} AS descuento_ticket\n",
+      "new": "                {prop_expr} AS propina_ticket,\n                {total_desc_expr} AS descuento_total_ticket,\n                {cortesia_expr} AS cortesia_ticket\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "expected_count": 2,
+      "old": "                h.descuento_ticket,\n",
+      "new": "                h.descuento_total_ticket,\n                h.cortesia_ticket,\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "expected_count": 1,
+      "old": "                SUM(CAST(ISNULL(dc.cantidad, 0) * ISNULL(dc.precio, 0) AS decimal(18,4))) AS importe_bruto\n",
+      "new": "                SUM(CAST(ISNULL(dc.cantidad, 0) * ISNULL(dc.precio, 0) AS decimal(18,4))) AS importe_bruto,\n                SUM(CAST((ISNULL(dc.cantidad, 0) * ISNULL(dc.precio, 0)) * ({line_desc_expr} / 100.0) AS decimal(18,4))) AS descuento_linea,\n                MIN(CAST({line_desc_expr} AS decimal(18,4))) AS descuento_linea_pct_min,\n                MAX(CAST({line_desc_expr} AS decimal(18,4))) AS descuento_linea_pct_max\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "expected_count": 1,
+      "old": "        ),\n        t AS (\n            SELECT folio, SUM(importe_bruto) AS bruto_ticket\n            FROM l\n            GROUP BY folio\n        )\n        SELECT\n",
+      "new": "        )\n        SELECT\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "expected_count": 1,
+      "old": "            l.propina_ticket,\n            l.descuento_ticket,\n            l.producto_codigo_fuente,\n            l.producto_nombre,\n            l.cantidad,\n            l.precio_unitario,\n            l.importe_bruto,\n            CASE\n                WHEN ISNULL(t.bruto_ticket, 0) <> 0\n                THEN CAST(l.importe_bruto * l.importe_neto_ticket / t.bruto_ticket AS decimal(18,4))\n                ELSE CAST(0 AS decimal(18,4))\n            END AS importe_neto\n        FROM l\n        INNER JOIN t ON t.folio = l.folio\n",
+      "new": "            l.propina_ticket,\n            l.descuento_total_ticket,\n            l.cortesia_ticket,\n            l.producto_codigo_fuente,\n            l.producto_nombre,\n            l.cantidad,\n            l.precio_unitario,\n            l.importe_bruto,\n            l.descuento_linea,\n            l.descuento_linea_pct_min,\n            l.descuento_linea_pct_max,\n            CAST(l.importe_bruto - l.descuento_linea AS decimal(18,4)) AS importe_neto\n        FROM l\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "expected_count": 1,
+      "old": "        rows = cur.fetchall() or []\n        for r in rows:\n            r[\"sistema_origen\"] = \"SOFTRESTAURANT\"\n        return rows\n    finally:\n        conn.close()\n\n\n\ndef _mpro_operational_datetime_range(\n",
+      "new": "        rows = cur.fetchall() or []\n        for r in rows:\n            r[\"sistema_origen\"] = \"SOFTRESTAURANT\"\n        return _reconciliar_soft_descuentos_y_ajustes(rows)\n    finally:\n        conn.close()\n\n\nSOFT_AJUSTE_DESCUENTO_GLOBAL = \"__ISCAM_AJUSTE_DESCUENTO_GLOBAL__\"\nSOFT_AJUSTE_CORTESIA = \"__ISCAM_AJUSTE_CORTESIA__\"\n\n\ndef _soft_adjustment_row(template: Dict[str, Any], codigo: str, nombre: str, importe: Decimal) -> Dict[str, Any]:\n    row = dict(template)\n    row[\"producto_codigo_fuente\"] = codigo\n    row[\"producto_nombre\"] = nombre\n    row[\"cantidad\"] = Decimal(\"0\")\n    row[\"precio_unitario\"] = Decimal(\"0\")\n    row[\"importe_bruto\"] = Decimal(\"0\")\n    row[\"descuento_linea\"] = importe\n    row[\"descuento_linea_pct_min\"] = Decimal(\"0\")\n    row[\"descuento_linea_pct_max\"] = Decimal(\"0\")\n    row[\"importe_neto\"] = -importe\n    return row\n\n\ndef _reconciliar_soft_descuentos_y_ajustes(src_rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:\n    \"\"\"Conserva productos reales y representa ajustes del cheque por separado.\n\n    Nunca modifica el importe de un producto para forzar el total del encabezado.\n    El descuento de producto se calcula desde cheqdet.descuento como porcentaje,\n    coherente con el contrato SoftRestaurant. Los ajustes globales se agregan como\n    conceptos separados. Si queda una diferencia desconocida, falla cerrado.\n    \"\"\"\n    grouped: Dict[str, List[Dict[str, Any]]] = defaultdict(list)\n    for raw in src_rows:\n        row = dict(raw)\n        key = _s(row.get(\"id_transaccion\"))\n        if not key:\n            raise RuntimeError(\"SoftRestaurant: fila sin id_transaccion\")\n        grouped[key].append(row)\n\n    out: List[Dict[str, Any]] = []\n    for ticket_key, items in grouped.items():\n        header_totals = {_d(r.get(\"importe_neto_ticket\")) for r in items}\n        total_discounts = {_d(r.get(\"descuento_total_ticket\")) for r in items}\n        courtesy_totals = {_d(r.get(\"cortesia_ticket\")) for r in items}\n        if len(header_totals) != 1 or len(total_discounts) != 1 or len(courtesy_totals) != 1:\n            raise RuntimeError(f\"SoftRestaurant: encabezado inconsistente en ticket {ticket_key}\")\n\n        for row in items:\n            pct_min = _d(row.get(\"descuento_linea_pct_min\"))\n            pct_max = _d(row.get(\"descuento_linea_pct_max\"))\n            if pct_min < 0 or pct_max > 100:\n                raise RuntimeError(f\"SoftRestaurant: descuento de linea fuera de 0..100 en ticket {ticket_key}\")\n\n        header_total = next(iter(header_totals))\n        total_discount = next(iter(total_discounts))\n        courtesy_total = next(iter(courtesy_totals))\n        line_discount = sum((_d(r.get(\"descuento_linea\")) for r in items), Decimal(\"0\"))\n        product_net = sum((_d(r.get(\"importe_neto\")) for r in items), Decimal(\"0\"))\n\n        if total_discount + TOLERANCIA_VENTAS < line_discount:\n            raise RuntimeError(\n                f\"SoftRestaurant: descuento de lineas excede totaldescuentos en ticket {ticket_key}; \"\n                f\"lineas={line_discount}; totaldescuentos={total_discount}\"\n            )\n\n        global_discount = total_discount - line_discount\n        if abs(global_discount) <= TOLERANCIA_VENTAS:\n            global_discount = Decimal(\"0\")\n        if global_discount < 0:\n            raise RuntimeError(f\"SoftRestaurant: descuento global negativo en ticket {ticket_key}\")\n        if courtesy_total < 0:\n            raise RuntimeError(f\"SoftRestaurant: cortesia negativa en ticket {ticket_key}\")\n\n        reconciled = product_net - global_discount - courtesy_total\n        delta = header_total - reconciled\n        if abs(delta) > TOLERANCIA_VENTAS:\n            raise RuntimeError(\n                f\"SoftRestaurant: diferencia no explicada en ticket {ticket_key}; \"\n                f\"productos_neto={product_net}; descuento_global={global_discount}; \"\n                f\"cortesias={courtesy_total}; encabezado={header_total}; delta={delta}\"\n            )\n\n        out.extend(items)\n        template = items[0]\n        if global_discount > 0:\n            out.append(_soft_adjustment_row(\n                template, SOFT_AJUSTE_DESCUENTO_GLOBAL, \"DESCUENTO GLOBAL DEL CHEQUE\", global_discount\n            ))\n        if courtesy_total > 0:\n            out.append(_soft_adjustment_row(\n                template, SOFT_AJUSTE_CORTESIA, \"CORTESIA / AJUSTE DEL CHEQUE\", courtesy_total\n            ))\n\n    return out\n\n\ndef _mpro_operational_datetime_range(\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "expected_count": 1,
+      "old": "    ventas_por_ticket = sum((v[\"venta\"] for v in tickets.values()), Decimal(\"0\"))\n    pax = sum(v[\"pax\"] for v in tickets.values())\n    tickets_total = len(tickets)\n\n    ventas_runtime = runtime[\"ventas\"]\n    tickets_runtime = runtime[\"tickets\"]\n    pax_runtime = runtime[\"pax\"]\n\n    ok = (\n        _money_eq(ventas_por_ticket, ventas_runtime)\n        and _int_eq(tickets_total, tickets_runtime)\n        and _int_eq(pax, pax_runtime)\n    )\n\n    return {\n        \"ok\": ok,\n        \"ventas_runtime\": ventas_runtime,\n        \"ventas_por_ticket\": ventas_por_ticket,\n        \"delta_ventas\": ventas_por_ticket - ventas_runtime,\n        \"tickets_runtime\": tickets_runtime,\n        \"tickets_por_ticket\": tickets_total,\n        \"delta_tickets\": tickets_total - tickets_runtime,\n        \"pax_runtime\": pax_runtime,\n        \"pax_por_ticket\": pax,\n        \"delta_pax\": pax - pax_runtime,\n        \"lineas_producto\": len(src_rows),\n    }\n",
+      "new": "    ventas_por_ticket = sum((v[\"venta\"] for v in tickets.values()), Decimal(\"0\"))\n    pax = sum(v[\"pax\"] for v in tickets.values())\n    tickets_total = len(tickets)\n\n    detalle_por_ticket: Dict[str, Decimal] = defaultdict(lambda: Decimal(\"0\"))\n    for r in src_rows:\n        es_kpi_raw = _s(_first(r, [\"es_kpi_valido\"], 1)).upper()\n        if es_kpi_raw in {\"0\", \"FALSE\", \"NO\", \"NONE\", \"\"}:\n            continue\n        detalle_por_ticket[_s(r.get(\"id_transaccion\"))] += _d(r.get(\"importe_neto\"))\n\n    tickets_no_conciliados = []\n    for ticket_key, header in tickets.items():\n        detalle = detalle_por_ticket.get(ticket_key, Decimal(\"0\"))\n        if not _money_eq(detalle, header[\"venta\"]):\n            tickets_no_conciliados.append({\n                \"id_transaccion\": ticket_key,\n                \"encabezado\": header[\"venta\"],\n                \"detalle\": detalle,\n                \"delta\": detalle - header[\"venta\"],\n            })\n\n    ventas_detalle = sum(detalle_por_ticket.values(), Decimal(\"0\"))\n    ventas_runtime = runtime[\"ventas\"]\n    tickets_runtime = runtime[\"tickets\"]\n    pax_runtime = runtime[\"pax\"]\n\n    ok = (\n        _money_eq(ventas_por_ticket, ventas_runtime)\n        and _money_eq(ventas_detalle, ventas_runtime)\n        and not tickets_no_conciliados\n        and _int_eq(tickets_total, tickets_runtime)\n        and _int_eq(pax, pax_runtime)\n    )\n\n    return {\n        \"ok\": ok,\n        \"ventas_runtime\": ventas_runtime,\n        \"ventas_por_ticket\": ventas_por_ticket,\n        \"ventas_detalle\": ventas_detalle,\n        \"delta_ventas\": ventas_por_ticket - ventas_runtime,\n        \"delta_detalle\": ventas_detalle - ventas_runtime,\n        \"tickets_runtime\": tickets_runtime,\n        \"tickets_por_ticket\": tickets_total,\n        \"delta_tickets\": tickets_total - tickets_runtime,\n        \"pax_runtime\": pax_runtime,\n        \"pax_por_ticket\": pax,\n        \"delta_pax\": pax - pax_runtime,\n        \"tickets_no_conciliados\": tickets_no_conciliados[:20],\n        \"lineas_producto_y_ajustes\": len(src_rows),\n    }\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_soft_discount_adjustments_r48.py",
+      "content": "from decimal import Decimal\n\nimport pytest\n\nfrom scripts.poblar_ventas_detalle_producto_canonico import (\n    SOFT_AJUSTE_CORTESIA,\n    SOFT_AJUSTE_DESCUENTO_GLOBAL,\n    _reconciliar_soft_descuentos_y_ajustes,\n)\n\n\ndef row(ticket, bruto, descuento_linea, header, total_descuentos, cortesia=0):\n    return {\n        'id_transaccion': ticket,\n        'numero_ticket': ticket,\n        'importe_bruto': Decimal(str(bruto)),\n        'descuento_linea': Decimal(str(descuento_linea)),\n        'descuento_linea_pct_min': Decimal('0'),\n        'descuento_linea_pct_max': Decimal('20'),\n        'importe_neto': Decimal(str(bruto)) - Decimal(str(descuento_linea)),\n        'importe_neto_ticket': Decimal(str(header)),\n        'descuento_total_ticket': Decimal(str(total_descuentos)),\n        'cortesia_ticket': Decimal(str(cortesia)),\n        'producto_codigo_fuente': 'P1',\n        'producto_nombre': 'Producto',\n        'cantidad': Decimal('1'),\n        'precio_unitario': Decimal(str(bruto)),\n    }\n\n\ndef test_global_discount_is_separate_not_prorated_into_products():\n    rows = [row('T1', 100, 10, 170, 30), row('T1', 100, 0, 170, 30)]\n    out = _reconciliar_soft_descuentos_y_ajustes(rows)\n    products = [r for r in out if not str(r['producto_codigo_fuente']).startswith('__ISCAM_AJUSTE_')]\n    adjustments = [r for r in out if str(r['producto_codigo_fuente']).startswith('__ISCAM_AJUSTE_')]\n    assert [r['importe_neto'] for r in products] == [Decimal('90'), Decimal('100')]\n    assert len(adjustments) == 1\n    assert adjustments[0]['producto_codigo_fuente'] == SOFT_AJUSTE_DESCUENTO_GLOBAL\n    assert adjustments[0]['importe_neto'] == Decimal('-20')\n    assert sum(r['importe_neto'] for r in out) == Decimal('170')\n\n\ndef test_courtesy_is_separate_ticket_adjustment():\n    out = _reconciliar_soft_descuentos_y_ajustes([row('T2', 100, 0, 80, 10, 10)])\n    codes = {r['producto_codigo_fuente'] for r in out}\n    assert SOFT_AJUSTE_DESCUENTO_GLOBAL in codes\n    assert SOFT_AJUSTE_CORTESIA in codes\n    assert sum(r['importe_neto'] for r in out) == Decimal('80')\n\n\ndef test_unexplained_difference_fails_closed_instead_of_prorating():\n    with pytest.raises(RuntimeError, match='diferencia no explicada'):\n        _reconciliar_soft_descuentos_y_ajustes([row('T3', 100, 0, 85, 10, 0)])\n\n\ndef test_invalid_line_discount_percentage_fails_closed():\n    bad = row('T4', 100, 0, 100, 0)\n    bad['descuento_linea_pct_max'] = Decimal('110')\n    with pytest.raises(RuntimeError, match='fuera de 0..100'):\n        _reconciliar_soft_descuentos_y_ajustes([bad])\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+        "backend/tests/test_iscam_soft_discount_adjustments_r48.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_soft_discount_adjustments_r48.py",
+        "backend/tests/test_iscam_soft_folio_first_contract_r46.py",
+        "backend/tests/test_softrestaurant_canonical_window_join_r40.py",
+        "backend/tests/test_iscam_soft_detail_window_parity_r35.py"
+      ]
+    },
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
