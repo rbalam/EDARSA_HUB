@@ -33,12 +33,25 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
+          fetch-depth: 2
 
       - name: Resolve canonical migration contract
         shell: bash
         run: |
           set -euo pipefail
-          CHANGED="$(git diff-tree --no-commit-id --name-only -r "${GITHUB_SHA}")"
+          mkdir -p evidence
+          BEFORE='${{ github.event.before }}'
+          HEAD='${{ github.sha }}'
+          {
+            echo "before=${BEFORE}"
+            echo "head=${HEAD}"
+          } | tee evidence/trigger-resolution.txt
+          if [ -n "${BEFORE}" ] && [ "${BEFORE}" != '0000000000000000000000000000000000000000' ]; then
+            CHANGED="$(git diff --name-only "${BEFORE}" "${HEAD}")"
+          else
+            CHANGED="$(git diff-tree --no-commit-id --name-only -r "${HEAD}")"
+          fi
+          printf '%s\n' "${CHANGED}" | tee -a evidence/trigger-resolution.txt
           if echo "${CHANGED}" | grep -qx 'ops/migrations/requests/COA-CFDI-EMITIDOS-20260910.execute'; then
             echo 'MIGRATION_KIND=CFDI_EMITIDOS' >> "$GITHUB_ENV"
             echo 'MIGRATION_SCRIPT=backend/database/migrations/20260910_coa_cfdi_emitidos.sql' >> "$GITHUB_ENV"
