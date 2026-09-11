@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "45254e855b90ca68fbd560761020e2245edb803e",
-  "generated_at_utc": "2026-09-11T18:38:43Z",
+  "generated_at_utc": "2026-09-11T18:39:54Z",
   "history": {
     "done_total_local": 421,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2155,
+      "age_seconds": 2227,
       "job_id": "EDARSAHUB-ISCAM-ESTELAR-TICKET-PARITY-R45-CARLOS-20260911T170600Z",
       "reasons": [
         "INVALID_SCHEMA",
@@ -23,25 +23,25 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2151,
+      "age_seconds": 2222,
       "job_id": "BOS-GLOBALIZATION-MASTERDATA-GATE0B-SQL-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2113,
+      "age_seconds": 2185,
       "job_id": "EDARSAHUB-ISCAM-ESTELAR-APERTURA-DRYRUN-R44-CARLOS-20260911T155600Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1080,
+      "age_seconds": 1152,
       "job_id": "EDARSAHUB-ISCAM-ESTELAR-LINE-DISCOUNT-AUDIT-R47-CARLOS-20260911T182000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1377,
+      "age_seconds": 1449,
       "job_id": "EDARSAHUB-ISCAM-SOFT-FOLIO-FIRST-ROLLBACK-R46-CARLOS-20260911T181200Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -59,8 +59,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T18:38:40Z",
-    "last_receive_utc": "2026-09-11T18:38:41Z",
+    "last_cycle_utc": "2026-09-11T18:39:52Z",
+    "last_receive_utc": "2026-09-11T18:39:53Z",
     "last_terminal_utc": "2026-09-11T18:20:42Z",
     "pid": "290"
   },
