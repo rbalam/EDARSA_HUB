@@ -1,0 +1,23 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"servers-integrations-gate5d-hub-escritura-readonly-20260911",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"fbb193c02b4b798d676b4a7bb96b4c58733338ef",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Gate quirurgico 5D paso 1. Auditar exclusivamente en solo lectura el principal dbo.HUB_Escritura para determinar si sirve como migration writer controlado de Development. Revisar existencia, roles fijos, permisos explicitos de database/schema/objetos necesarios para CREATE TABLE, ALTER dbo, INSERT/UPDATE en Sistema_RBAC_Permisos y INSERT en Sistema_RBAC_RolesPermisos. No autenticar como HUB_Escritura, no leer secretos, no cambiar permisos, no DDL/DML, no tocar Production.",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"hub_escritura_principal","sql":"SELECT name,type_desc,authentication_type_desc,default_schema_name,is_fixed_role FROM sys.database_principals WHERE name='HUB_Escritura'"},
+    {"name":"hub_escritura_roles","sql":"SELECT member_principal.name AS member_name,role_principal.name AS role_name,role_principal.is_fixed_role FROM sys.database_role_members drm JOIN sys.database_principals role_principal ON role_principal.principal_id=drm.role_principal_id JOIN sys.database_principals member_principal ON member_principal.principal_id=drm.member_principal_id WHERE member_principal.name='HUB_Escritura' ORDER BY role_principal.name"},
+    {"name":"hub_escritura_database_permissions","sql":"SELECT pr.name AS principal_name,pe.state_desc,pe.permission_name,pe.class_desc FROM sys.database_permissions pe JOIN sys.database_principals pr ON pr.principal_id=pe.grantee_principal_id WHERE pr.name='HUB_Escritura' AND pe.class=0 ORDER BY pe.state_desc,pe.permission_name"},
+    {"name":"hub_escritura_schema_object_permissions","sql":"SELECT pr.name AS principal_name,pe.state_desc,pe.permission_name,pe.class_desc,CASE WHEN pe.class=3 THEN SCHEMA_NAME(pe.major_id) WHEN pe.class=1 THEN OBJECT_SCHEMA_NAME(pe.major_id) END AS schema_name,CASE WHEN pe.class=1 THEN OBJECT_NAME(pe.major_id) END AS object_name FROM sys.database_permissions pe JOIN sys.database_principals pr ON pr.principal_id=pe.grantee_principal_id WHERE pr.name='HUB_Escritura' AND pe.class IN (1,3) ORDER BY pe.class_desc,schema_name,object_name,pe.permission_name"},
+    {"name":"hub_escritura_role_permissions","sql":"SELECT role_principal.name AS role_name,pe.state_desc,pe.permission_name,pe.class_desc,CASE WHEN pe.class=3 THEN SCHEMA_NAME(pe.major_id) WHEN pe.class=1 THEN OBJECT_SCHEMA_NAME(pe.major_id) END AS schema_name,CASE WHEN pe.class=1 THEN OBJECT_NAME(pe.major_id) END AS object_name FROM sys.database_role_members drm JOIN sys.database_principals role_principal ON role_principal.principal_id=drm.role_principal_id JOIN sys.database_principals member_principal ON member_principal.principal_id=drm.member_principal_id LEFT JOIN sys.database_permissions pe ON pe.grantee_principal_id=role_principal.principal_id WHERE member_principal.name='HUB_Escritura' ORDER BY role_principal.name,pe.class_desc,schema_name,object_name,pe.permission_name"},
+    {"name":"required_target_objects_present","sql":"SELECT o.name AS object_name,o.type_desc FROM sys.objects o WHERE o.name IN ('Sistema_RBAC_Permisos','Sistema_RBAC_Roles','Sistema_RBAC_RolesPermisos','Sistema_NotificacionesConfig','Operativo_Notificaciones_Log') ORDER BY o.name"},
+    {"name":"communications_queue_current_state","sql":"SELECT CASE WHEN OBJECT_ID('dbo.Operativo_Notificaciones_Queue','U') IS NULL THEN 0 ELSE 1 END AS queue_present,(SELECT COUNT(*) FROM sys.columns WHERE object_id=OBJECT_ID('dbo.Operativo_Notificaciones_Queue')) AS queue_columns,(SELECT COUNT(*) FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.Operativo_Notificaciones_Queue') AND name IN ('IX_Operativo_Notificaciones_Queue_Pendientes','IX_Operativo_Notificaciones_Queue_Lock')) AS queue_indexes"},
+    {"name":"notifications_rbac_current_state","sql":"SELECT COUNT(*) AS permissions_present FROM dbo.Sistema_RBAC_Permisos WHERE codigo IN ('NOTIFICACIONES_VER','NOTIFICACIONES_CONFIGURAR','NOTIFICACIONES_ENVIAR')"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
