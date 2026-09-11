@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "e6a6feb891f719734f67246f3882534f744afcd4",
-  "generated_at_utc": "2026-09-11T23:00:54Z",
+  "generated_at_utc": "2026-09-11T23:02:07Z",
   "history": {
     "done_total_local": 433,
     "pending_total_local": 0,
@@ -13,31 +13,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1346,
+      "age_seconds": 1420,
       "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-FORMAS-DIAG-R62-CARLOS-20260911T223500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 216,
+      "age_seconds": 289,
       "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-FORMAS-MAP-R63-CARLOS-20260911T224500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1800,
+      "age_seconds": 1873,
       "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-PAYMENTS-RESYNC-R61-CARLOS-20260911T222500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2672,
+      "age_seconds": 2745,
       "job_id": "EDARSAHUB-ISCAM-PAYMENTS-ONLY-BRIDGE-R59-CARLOS-20260911T222000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2329,
+      "age_seconds": 2403,
       "job_id": "EDARSAHUB-ISCAM-PAYMENTS-ONLY-BRIDGE-R60-CARLOS-20260911T223000Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -55,8 +55,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T23:00:51Z",
-    "last_receive_utc": "2026-09-11T23:00:52Z",
+    "last_cycle_utc": "2026-09-11T23:02:04Z",
+    "last_receive_utc": "2026-09-11T23:02:05Z",
     "last_terminal_utc": "2026-09-11T22:57:17Z",
     "pid": "1027"
   },
