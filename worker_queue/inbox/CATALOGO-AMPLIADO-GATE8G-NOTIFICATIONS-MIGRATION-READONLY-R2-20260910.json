@@ -1,0 +1,62 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE8G-NOTIFICATIONS-MIGRATION-READONLY-R2-20260910",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4a4468af772c22b939b61755bbc3d183c64f7e9d",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate 8G R2. Comprobar en SQL READ ONLY, usando el patron ya certificado de Gate8E, si el DEDICATED_MIGRATION_WRITER materializo la configuracion de 20260910_003_catalogo_ampliado_notifications_config.sql. Confirmar identidad EDARSAHUB/HRLectura y existencia activa de las 2 configuraciones provider, 2 templates y 2 configuraciones de modulo para EMAIL/WHATSAPP de Catalogo Ampliado. No devolver PayloadMongo, secretos, destinatarios ni texto de templates. Sin JSON_VALUE/ISJSON/OPENJSON.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "readonly_identity",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user,ORIGINAL_LOGIN() AS original_login"
+        },
+        {
+          "name": "catalogo_ampliado_provider_flags",
+          "sql": "SELECT Id,ColeccionOrigen,Activo,CASE WHEN LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"email\\\"%' THEN 'EMAIL' WHEN LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"whatsapp\\\"%' THEN 'WHATSAPP' ELSE 'OTHER' END AS canal_flag,CASE WHEN LOWER(PayloadMongo) LIKE '%\\\"provider\\\":\\\"smtp\\\"%' THEN 'SMTP' WHEN LOWER(PayloadMongo) LIKE '%\\\"provider\\\":\\\"twilio\\\"%' THEN 'TWILIO' ELSE 'OTHER' END AS provider_flag FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ColeccionOrigen='notification_provider_config' AND ((LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"email\\\"%' AND LOWER(PayloadMongo) LIKE '%\\\"provider\\\":\\\"smtp\\\"%') OR (LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"whatsapp\\\"%' AND LOWER(PayloadMongo) LIKE '%\\\"provider\\\":\\\"twilio\\\"%')) ORDER BY canal_flag,Id"
+        },
+        {
+          "name": "catalogo_ampliado_template_flags",
+          "sql": "SELECT Id,ColeccionOrigen,Activo,CASE WHEN LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"email\\\"%' THEN 'EMAIL' WHEN LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"whatsapp\\\"%' THEN 'WHATSAPP' ELSE 'OTHER' END AS canal_flag,CASE WHEN LOWER(PayloadMongo) LIKE '%catalogo_ampliado_documento_vencimiento%' THEN 1 ELSE 0 END AS expected_template_code FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ColeccionOrigen='notification_templates' AND LOWER(PayloadMongo) LIKE '%catalogo_ampliado_documento_vencimiento%' AND (LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"email\\\"%' OR LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"whatsapp\\\"%') ORDER BY canal_flag,Id"
+        },
+        {
+          "name": "catalogo_ampliado_module_config_flags",
+          "sql": "SELECT Id,ColeccionOrigen,Activo,CASE WHEN LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"email\\\"%' THEN 'EMAIL' WHEN LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"whatsapp\\\"%' THEN 'WHATSAPP' ELSE 'OTHER' END AS canal_flag,CASE WHEN LOWER(PayloadMongo) LIKE '%\\\"provider\\\":\\\"smtp\\\"%' THEN 'SMTP' WHEN LOWER(PayloadMongo) LIKE '%\\\"provider\\\":\\\"twilio\\\"%' THEN 'TWILIO' ELSE 'OTHER' END AS provider_flag,CASE WHEN LOWER(PayloadMongo) LIKE '%\\\"modo_envio\\\":\\\"real\\\"%' THEN 1 ELSE 0 END AS real_mode,CASE WHEN LOWER(PayloadMongo) LIKE '%catalogo_ampliado_documento_vencimiento%' THEN 1 ELSE 0 END AS expected_template_code FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ColeccionOrigen='notification_config' AND LOWER(PayloadMongo) LIKE '%catalogo_ampliado%' AND LOWER(PayloadMongo) LIKE '%documento_vencimiento%' AND (LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"email\\\"%' OR LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"whatsapp\\\"%') ORDER BY canal_flag,Id"
+        },
+        {
+          "name": "catalogo_ampliado_materialization_counts",
+          "sql": "SELECT SUM(CASE WHEN ColeccionOrigen='notification_provider_config' AND ((LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"email\\\"%' AND LOWER(PayloadMongo) LIKE '%\\\"provider\\\":\\\"smtp\\\"%') OR (LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"whatsapp\\\"%' AND LOWER(PayloadMongo) LIKE '%\\\"provider\\\":\\\"twilio\\\"%')) THEN 1 ELSE 0 END) AS provider_rows,SUM(CASE WHEN ColeccionOrigen='notification_templates' AND LOWER(PayloadMongo) LIKE '%catalogo_ampliado_documento_vencimiento%' AND (LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"email\\\"%' OR LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"whatsapp\\\"%') THEN 1 ELSE 0 END) AS template_rows,SUM(CASE WHEN ColeccionOrigen='notification_config' AND LOWER(PayloadMongo) LIKE '%catalogo_ampliado%' AND LOWER(PayloadMongo) LIKE '%documento_vencimiento%' AND LOWER(PayloadMongo) LIKE '%\\\"modo_envio\\\":\\\"real\\\"%' AND (LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"email\\\"%' OR LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"whatsapp\\\"%') THEN 1 ELSE 0 END) AS module_config_rows FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL only",
+    "DB_NAME must equal EDARSAHUB",
+    "SUSER_SNAME must equal HRLectura",
+    "USER_NAME must equal HRLectura",
+    "Expected materialization: provider_rows >= 2, template_rows >= 2, module_config_rows >= 2",
+    "EMAIL must resolve SMTP and real mode",
+    "WHATSAPP must resolve TWILIO and real mode",
+    "Expected template code catalogo_ampliado_documento_vencimiento",
+    "NO JSON_VALUE",
+    "NO ISJSON",
+    "NO OPENJSON",
+    "NO PayloadMongo output",
+    "NO template text output",
+    "NO recipient values",
+    "NO DML",
+    "NO DDL",
+    "NO external sends",
+    "NO Production",
+    "production_touched must remain false"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
