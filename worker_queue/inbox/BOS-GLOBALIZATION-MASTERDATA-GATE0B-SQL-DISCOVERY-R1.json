@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-GLOBALIZATION-MASTERDATA-GATE0B-SQL-DISCOVERY-R1",
+  "created_at_utc": "2026-09-11T07:45:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate 0B READ ONLY SQL: inventariar evidencia AS-IS en EDARSAHUB SQL para paises, monedas, tipos de cambio, idiomas/locales, zonas horarias, unidades de medida, conversiones de unidades, calendarios, horarios operativos, formatos, impuestos, direcciones, identificadores fiscales e identificadores bancarios. No crear ni alterar objetos ni datos. El resultado se usara junto con Gate 0A Repository Discovery para clasificar CANONICAL/DUPLICATE/DOMAIN-SPECIFIC/MISSING/LEGACY.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "globalization_masterdata_objects",
+          "sql": "WITH terms(capability, term) AS (SELECT * FROM (VALUES ('COUNTRIES','pais'),('COUNTRIES','country'),('COUNTRIES','nacion'),('CURRENCIES','moneda'),('CURRENCIES','currency'),('FX_EXCHANGE_RATES','tipo_cambio'),('FX_EXCHANGE_RATES','exchange'),('FX_EXCHANGE_RATES','fx'),('LANGUAGES_LOCALES','idioma'),('LANGUAGES_LOCALES','language'),('LANGUAGES_LOCALES','locale'),('TIME_ZONES','timezone'),('TIME_ZONES','zona_horaria'),('UNITS_OF_MEASURE','unidad_medida'),('UNITS_OF_MEASURE','uom'),('UNITS_OF_MEASURE','presentacion'),('UNIT_CONVERSIONS','conversion'),('UNIT_CONVERSIONS','equivalencia'),('CALENDARS','calendario'),('CALENDARS','calendar'),('CALENDARS','feriado'),('CALENDARS','holiday'),('OPERATING_HOURS','horario'),('OPERATING_HOURS','opening'),('OPERATING_HOURS','business_hours'),('FORMATS','formato'),('FORMATS','format'),('TAXES','impuesto'),('TAXES','iva'),('TAXES','vat'),('TAXES','isr'),('ADDRESSES','direccion'),('ADDRESSES','address'),('ADDRESSES','postal'),('FISCAL_IDENTIFIERS','rfc'),('FISCAL_IDENTIFIERS','tax_id'),('FISCAL_IDENTIFIERS','vat_id'),('FISCAL_IDENTIFIERS','ein'),('FISCAL_IDENTIFIERS','nif'),('BANK_IDENTIFIERS','clabe'),('BANK_IDENTIFIERS','iban'),('BANK_IDENTIFIERS','swift'),('BANK_IDENTIFIERS','bic'),('BANK_IDENTIFIERS','aba'),('BANK_IDENTIFIERS','routing')) v(capability, term)) SELECT DISTINCT t.capability, s.name AS schema_name, o.name AS object_name, o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id CROSS JOIN terms t WHERE o.is_ms_shipped=0 AND LOWER(o.name) LIKE '%' + LOWER(t.term) + '%' ORDER BY t.capability, s.name, o.name;"
+        },
+        {
+          "name": "globalization_masterdata_columns",
+          "sql": "WITH terms(capability, term) AS (SELECT * FROM (VALUES ('COUNTRIES','pais'),('COUNTRIES','country'),('COUNTRIES','codigo_pais'),('CURRENCIES','moneda'),('CURRENCIES','currency'),('CURRENCIES','codigo_moneda'),('FX_EXCHANGE_RATES','tipo_cambio'),('FX_EXCHANGE_RATES','exchange_rate'),('LANGUAGES_LOCALES','idioma'),('LANGUAGES_LOCALES','language'),('LANGUAGES_LOCALES','locale'),('TIME_ZONES','timezone'),('TIME_ZONES','zona_horaria'),('UNITS_OF_MEASURE','unidad_medida'),('UNITS_OF_MEASURE','uom'),('UNITS_OF_MEASURE','presentacion'),('UNIT_CONVERSIONS','factor_conversion'),('UNIT_CONVERSIONS','equivalencia'),('CALENDARS','calendario'),('CALENDARS','feriado'),('CALENDARS','holiday'),('OPERATING_HOURS','horario'),('OPERATING_HOURS','apertura'),('OPERATING_HOURS','cierre'),('FORMATS','formato'),('TAXES','impuesto'),('TAXES','iva'),('TAXES','isr'),('ADDRESSES','direccion'),('ADDRESSES','postal'),('ADDRESSES','estado'),('ADDRESSES','municipio'),('FISCAL_IDENTIFIERS','rfc'),('FISCAL_IDENTIFIERS','tax'),('BANK_IDENTIFIERS','clabe'),('BANK_IDENTIFIERS','iban'),('BANK_IDENTIFIERS','swift'),('BANK_IDENTIFIERS','bic'),('BANK_IDENTIFIERS','routing')) v(capability, term)) SELECT DISTINCT t.capability, s.name AS schema_name, o.name AS object_name, c.name AS column_name, ty.name AS data_type, c.max_length, c.precision, c.scale, c.is_nullable FROM sys.columns c JOIN sys.objects o ON o.object_id=c.object_id JOIN sys.schemas s ON s.schema_id=o.schema_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id CROSS JOIN terms t WHERE o.is_ms_shipped=0 AND LOWER(c.name) LIKE '%' + LOWER(t.term) + '%' ORDER BY t.capability, s.name, o.name, c.column_id;"
+        },
+        {
+          "name": "globalization_masterdata_foreign_keys",
+          "sql": "SELECT sch1.name AS parent_schema, t1.name AS parent_table, c1.name AS parent_column, fk.name AS fk_name, sch2.name AS referenced_schema, t2.name AS referenced_table, c2.name AS referenced_column FROM sys.foreign_key_columns fkc JOIN sys.foreign_keys fk ON fk.object_id=fkc.constraint_object_id JOIN sys.tables t1 ON t1.object_id=fkc.parent_object_id JOIN sys.schemas sch1 ON sch1.schema_id=t1.schema_id JOIN sys.columns c1 ON c1.object_id=fkc.parent_object_id AND c1.column_id=fkc.parent_column_id JOIN sys.tables t2 ON t2.object_id=fkc.referenced_object_id JOIN sys.schemas sch2 ON sch2.schema_id=t2.schema_id JOIN sys.columns c2 ON c2.object_id=fkc.referenced_object_id AND c2.column_id=fkc.referenced_column_id WHERE LOWER(t1.name) LIKE '%pais%' OR LOWER(t1.name) LIKE '%moneda%' OR LOWER(t1.name) LIKE '%unidad%' OR LOWER(t1.name) LIKE '%impuesto%' OR LOWER(t1.name) LIKE '%direccion%' OR LOWER(t1.name) LIKE '%banco%' OR LOWER(t2.name) LIKE '%pais%' OR LOWER(t2.name) LIKE '%moneda%' OR LOWER(t2.name) LIKE '%unidad%' OR LOWER(t2.name) LIKE '%impuesto%' OR LOWER(t2.name) LIKE '%direccion%' OR LOWER(t2.name) LIKE '%banco%' ORDER BY parent_schema,parent_table,fk_name;"
+        },
+        {
+          "name": "globalization_masterdata_indexes",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,i.name AS index_name,i.is_unique,i.is_primary_key,STRING_AGG(c.name, ',') WITHIN GROUP (ORDER BY ic.key_ordinal) AS indexed_columns FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.indexes i ON i.object_id=t.object_id AND i.index_id>0 JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE LOWER(t.name) LIKE '%pais%' OR LOWER(t.name) LIKE '%moneda%' OR LOWER(t.name) LIKE '%cambio%' OR LOWER(t.name) LIKE '%unidad%' OR LOWER(t.name) LIKE '%calend%' OR LOWER(t.name) LIKE '%horario%' OR LOWER(t.name) LIKE '%impuesto%' OR LOWER(t.name) LIKE '%direccion%' OR LOWER(t.name) LIKE '%banco%' GROUP BY s.name,t.name,i.name,i.is_unique,i.is_primary_key ORDER BY s.name,t.name,i.name;"
+        },
+        {
+          "name": "globalization_masterdata_sql_modules",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.sql_modules m JOIN sys.objects o ON o.object_id=m.object_id JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND (LOWER(m.definition) LIKE '%timezone%' OR LOWER(m.definition) LIKE '%zona_horaria%' OR LOWER(m.definition) LIKE '%america/mexico_city%' OR LOWER(m.definition) LIKE '%moneda%' OR LOWER(m.definition) LIKE '%tipo_cambio%' OR LOWER(m.definition) LIKE '%unidad_medida%' OR LOWER(m.definition) LIKE '%factor_conversion%' OR LOWER(m.definition) LIKE '%rfc%' OR LOWER(m.definition) LIKE '%clabe%' OR LOWER(m.definition) LIKE '%iban%' OR LOWER(m.definition) LIKE '%swift%') ORDER BY s.name,o.name;"
+        },
+        {
+          "name": "globalization_masterdata_table_row_counts",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,SUM(p.rows) AS approximate_rows FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE LOWER(t.name) LIKE '%pais%' OR LOWER(t.name) LIKE '%moneda%' OR LOWER(t.name) LIKE '%cambio%' OR LOWER(t.name) LIKE '%idioma%' OR LOWER(t.name) LIKE '%locale%' OR LOWER(t.name) LIKE '%timezone%' OR LOWER(t.name) LIKE '%unidad%' OR LOWER(t.name) LIKE '%calend%' OR LOWER(t.name) LIKE '%horario%' OR LOWER(t.name) LIKE '%formato%' OR LOWER(t.name) LIKE '%impuesto%' OR LOWER(t.name) LIKE '%direccion%' OR LOWER(t.name) LIKE '%fiscal%' OR LOWER(t.name) LIKE '%banco%' GROUP BY s.name,t.name ORDER BY s.name,t.name;"
+        }
+      ]
+    }
+  ]
+}
