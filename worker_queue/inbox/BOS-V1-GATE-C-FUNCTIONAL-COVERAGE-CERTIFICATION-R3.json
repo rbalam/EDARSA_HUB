@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-C-FUNCTIONAL-COVERAGE-CERTIFICATION-R3",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Gate C R3 quirurgico, evidence-only. Corregir exclusivamente el harness de certificacion roto en R2. Recuperar una prueba pytest real y ejecutable que construya la matriz de los 7 dominios usando corpus existente de backend/docs y resultados terminales certificados del Universal Worker. No modificar funcionalidad de ningun dominio. Para cada dominio calcular repository_ok, terminal_jobid_ok, terminal_evidence_ok, matched_token y matched_job_id; clasificar como PASS, TEST_FALSE_NEGATIVE o REAL_MISSING_EVIDENCE. El criterio substring sobre job_id no puede ser la unica evidencia terminal si el contenido estructurado de un resultado certificado demuestra el dominio. Fallar cerrado solo ante REAL_MISSING_EVIDENCE. Emitir la matriz completa en stdout de pytest y missing[] exacto. No tocar Produccion, SQL, Mongo, Universal Worker, Supervisor ni watchdog. No fabricar jobs para satisfacer nombres.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_bos_v1_gate_c_functional_coverage_certification.py",
+      "content": "from pathlib import Path\nimport json\nimport os\n\nROOT = Path(__file__).resolve().parents[2]\nPROGRAM = (ROOT / 'docs/BOS/PROGRAMA_ESTRATEGICO_BOS_EDARSAHUB_DIRECCION.md').read_text(encoding='utf-8', errors='ignore').lower()\n\nGROUPS = {\n    'comercial': ['comercial', 'ventas'],\n    'costos_margenes': ['costos', 'margen'],\n    'finanzas_tesoreria': ['finanzas', 'tesoreria', 'cxp', 'pago'],\n    'inventarios': ['inventario', 'almacen'],\n    'clientes_crm': ['cliente', 'crm'],\n    'operaciones': ['operacion', 'operaciones'],\n    'administracion': ['administracion', 'admin'],\n}\n\n\ndef repository_corpus():\n    parts = []\n    for base in (ROOT / 'backend', ROOT / 'docs'):\n        if not base.exists():\n            continue\n        for p in base.rglob('*'):\n            if not p.is_file() or p.suffix.lower() not in {'.py', '.md', '.json'}:\n                continue\n            if p.name == 'test_bos_v1_gate_c_functional_coverage_certification.py':\n                continue\n            try:\n                parts.append(p.read_text(encoding='utf-8', errors='ignore').lower())\n            except Exception:\n                pass\n    return '\\n'.join(parts)\n\n\ndef certified_results():\n    edarsahub_root = Path(str(os.environ.get('EDARSAHUB_ROOT') or '/app'))\n    runtime = edarsahub_root / '.git/universal-worker-queue/results'\n    rows = []\n    if not runtime.is_dir():\n        return rows\n    for p in runtime.glob('*.json'):\n        try:\n            raw = p.read_text(encoding='utf-8', errors='ignore')\n            d = json.loads(raw)\n        except Exception:\n            continue\n        if d.get('certification') not in {'CERTIFIED', 'CERTIFIED_READ_ONLY'}:\n            continue\n        if d.get('percent_complete') != 100:\n            continue\n        if d.get('production_touched', False):\n            continue\n        jid = str(d.get('job_id', '')).lower()\n        evidence_text = json.dumps(d, ensure_ascii=False, sort_keys=True).lower()\n        rows.append({'job_id': jid, 'evidence_text': evidence_text, 'path': str(p)})\n    return rows\n\n\ndef build_matrix():\n    text = repository_corpus()\n    results = certified_results()\n    matrix = {}\n    for name, tokens in GROUPS.items():\n        repository_ok = any(t in text for t in tokens)\n        jobid_matches = [(r['job_id'], t) for r in results for t in tokens if t in r['job_id']]\n        evidence_matches = [(r['job_id'], t) for r in results for t in tokens if t in r['evidence_text']]\n        terminal_jobid_ok = bool(jobid_matches)\n        terminal_evidence_ok = bool(evidence_matches)\n        matched = jobid_matches[0] if jobid_matches else (evidence_matches[0] if evidence_matches else ('', ''))\n        if repository_ok and terminal_evidence_ok:\n            classification = 'PASS' if terminal_jobid_ok else 'TEST_FALSE_NEGATIVE'\n        else:\n            classification = 'REAL_MISSING_EVIDENCE'\n        matrix[name] = {\n            'repository_ok': repository_ok,\n            'terminal_jobid_ok': terminal_jobid_ok,\n            'terminal_evidence_ok': terminal_evidence_ok,\n            'matched_token': matched[1],\n            'matched_job_id': matched[0],\n            'classification': classification,\n        }\n    return matrix\n\n\ndef test_gate_c_existing_coverage_is_complete():\n    assert 'gate c - cobertura funcional' in PROGRAM, 'GATE_C_PROGRAM_MARKER_MISSING'\n    matrix = build_matrix()\n    print('GATE_C_MATRIX=' + json.dumps(matrix, ensure_ascii=False, sort_keys=True))\n    false_negatives = [name for name, row in matrix.items() if row['classification'] == 'TEST_FALSE_NEGATIVE']\n    missing = [name for name, row in matrix.items() if row['classification'] == 'REAL_MISSING_EVIDENCE']\n    print('GATE_C_TEST_FALSE_NEGATIVES=' + json.dumps(false_negatives, ensure_ascii=False))\n    print('GATE_C_MISSING=' + json.dumps(missing, ensure_ascii=False))\n    assert not missing, 'GATE_C_MISSING_EVIDENCE:' + ','.join(missing)\n"
+    },
+    {
+      "type": "write_file",
+      "path": "docs/BOS/certifications/BOS_V1_GATE_C_FUNCTIONAL_COVERAGE_CERTIFICATION.md",
+      "content": "# BOS V1 Gate C - Functional Coverage Certification R3\n\n## Alcance\nCertificacion evidence-only. R3 corrige exclusivamente el harness roto por R2; no implementa ni corrige dominios funcionales.\n\n## Matriz obligatoria\n- comercial: comercial | ventas\n- costos_margenes: costos | margen\n- finanzas_tesoreria: finanzas | tesoreria | cxp | pago\n- inventarios: inventario | almacen\n- clientes_crm: cliente | crm\n- operaciones: operacion | operaciones\n- administracion: administracion | admin\n\n## Regla de evidencia\nCada dominio requiere evidencia en el corpus del repositorio y en al menos un resultado terminal elegible del Universal Worker. Son elegibles solo resultados con certification CERTIFIED o CERTIFIED_READ_ONLY, percent_complete=100 y production_touched=false.\n\nEl nombre job_id se conserva como trazabilidad, pero no se acepta como unica representacion semantica de evidencia. Si un token no aparece en job_id pero si aparece en el contenido estructurado de un resultado terminal elegible, el caso se clasifica TEST_FALSE_NEGATIVE respecto al criterio anterior. Si no existe evidencia terminal elegible ni evidencia de repositorio, o falta cualquiera de ambas condiciones, se clasifica REAL_MISSING_EVIDENCE y el Gate falla cerrado.\n\n## Restricciones\nNo Produccion. No SQL. No Mongo. No cambios al Universal Worker, Supervisor o watchdog. No jobs artificiales para satisfacer nombres. No cambios funcionales fuera de esta prueba y este dossier.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/tests/test_bos_v1_gate_c_functional_coverage_certification.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_bos_v1_gate_c_functional_coverage_certification.py"
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
