@@ -1,0 +1,136 @@
+{
+  "base_sha": "e2dea704daf1ca7d1ac485bad3ffdf78870fac54",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-11T05:34:28Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CATALOGO-AMPLIADO-GATE8G-SQL-POSTCHECK-READONLY-R1-20260910",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-11T05:36:47Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "user_name"
+            ],
+            "name": "sql_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "provider_count"
+            ],
+            "name": "provider_count",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "MongoId",
+              "ColeccionOrigen",
+              "canal",
+              "provider",
+              "Activo"
+            ],
+            "name": "provider_rows",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "template_count"
+            ],
+            "name": "template_count",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "MongoId",
+              "ColeccionOrigen",
+              "canal",
+              "codigo",
+              "Activo"
+            ],
+            "name": "template_rows",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "config_count"
+            ],
+            "name": "config_count",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "MongoId",
+              "ColeccionOrigen",
+              "canal",
+              "modulo",
+              "evento",
+              "provider",
+              "modo_envio",
+              "template_codigo",
+              "max_reintentos",
+              "ventana_duplicidad_minutos",
+              "Activo"
+            ],
+            "name": "config_rows",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-11T05:34:24Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
