@@ -1,0 +1,5 @@
+Wake recovery marker only.
+Target existing immutable request: BOS-AGENT-HARNESS-AH10-E2E-SIMULATION-V1-R2-20260911
+Reason: prior Worker Requests Wake run 34571469751 failed before runner assignment (runner_id=0, steps=[]).
+This marker is not a Worker job and must not be interpreted as a new gate/request.
+Production remains forbidden.
