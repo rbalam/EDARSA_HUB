@@ -1,0 +1,305 @@
+{
+  "base_sha": "fbb193c02b4b798d676b4a7bb96b4c58733338ef",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-11T06:18:04Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-IDENTITY-AUDIT-READONLY-20260911T0003Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-11T06:18:18Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "UsuarioID",
+              "Email",
+              "Username",
+              "Activo",
+              "TienePasswordHash",
+              "CodigoRol",
+              "NombreRol",
+              "EsPrincipal",
+              "RolAsignacionActiva"
+            ],
+            "name": "rbac_test_identity_candidates",
+            "row_count_returned": 8,
+            "rows": [
+              [
+                33,
+                "sectest_notif@edarsatest.com",
+                "sectest_notif@edarsatest.com",
+                true,
+                "[REDACTED]",
+                "USUARIO",
+                "Usuario",
+                true,
+                true
+              ],
+              [
+                15,
+                "prueba.rbacg@edarsa.com.mx",
+                "prueba.rbacg",
+                false,
+                "[REDACTED]",
+                "USUARIO",
+                "Usuario",
+                true,
+                false
+              ],
+              [
+                18,
+                "superadmin@test.com",
+                "superadmin@test.com",
+                false,
+                "[REDACTED]",
+                "SUPERADMIN",
+                "SuperAdministrador",
+                true,
+                true
+              ],
+              [
+                19,
+                "superadmin2@test.com",
+                "superadmin2@test.com",
+                false,
+                "[REDACTED]",
+                "SUPERADMIN",
+                "SuperAdministrador",
+                true,
+                true
+              ],
+              [
+                21,
+                "test_propinas@edarsa.com",
+                "test_propinas@edarsa.com",
+                false,
+                "[REDACTED]",
+                "USUARIO",
+                "Usuario",
+                true,
+                false
+              ],
+              [
+                17,
+                "test_rbac_val@test.com",
+                "test_rbac_val@test.com",
+                false,
+                "[REDACTED]",
+                "USUARIO",
+                "Usuario",
+                true,
+                false
+              ],
+              [
+                16,
+                "test_validacion@test.com",
+                "test_validacion@test.com",
+                false,
+                "[REDACTED]",
+                "USUARIO",
+                "Usuario",
+                true,
+                false
+              ],
+              [
+                20,
+                "usuario_test_portal@test.com",
+                "usuario_test_portal@test.com",
+                false,
+                "[REDACTED]",
+                "USUARIO",
+                "Usuario",
+                true,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "Email",
+              "Username",
+              "Activo",
+              "TienePasswordHash",
+              "CodigoRol",
+              "NombreRol",
+              "EsPrincipal",
+              "RolAsignacionActiva"
+            ],
+            "name": "active_admin_like_candidates_without_secret_material",
+            "row_count_returned": 11,
+            "rows": [
+              [
+                1,
+                "admin@edarsa.com",
+                "admin@edarsa.com",
+                true,
+                "[REDACTED]",
+                "SUPERADMIN",
+                "SuperAdministrador",
+                true,
+                true
+              ],
+              [
+                1,
+                "admin@edarsa.com",
+                "admin@edarsa.com",
+                true,
+                "[REDACTED]",
+                "SUPERADMIN",
+                "SuperAdministrador",
+                false,
+                false
+              ],
+              [
+                1,
+                "admin@edarsa.com",
+                "admin@edarsa.com",
+                true,
+                "[REDACTED]",
+                "SUPERADMIN",
+                "SuperAdministrador",
+                false,
+                false
+              ],
+              [
+                11,
+                "carlos@alpuntoycoma.mx",
+                "carlos@alpuntoycoma.mx",
+                true,
+                "[REDACTED]",
+                "ADMIN",
+                "Administrador",
+                false,
+                false
+              ],
+              [
+                3,
+                "carlosruz@edarsa.com.mx",
+                "carlosruz@edarsa.com.mx",
+                true,
+                "[REDACTED]",
+                "SUPERADMIN",
+                "SuperAdministrador",
+                true,
+                true
+              ],
+              [
+                3,
+                "carlosruz@edarsa.com.mx",
+                "carlosruz@edarsa.com.mx",
+                true,
+                "[REDACTED]",
+                "ADMIN",
+                "Administrador",
+                false,
+                false
+              ],
+              [
+                12,
+                "eduardo@alpuntoycoma.mx",
+                "eduardo@alpuntoycoma.mx",
+                true,
+                "[REDACTED]",
+                "ADMIN",
+                "Administrador",
+                true,
+                true
+              ],
+              [
+                22,
+                "qa.superadmin@edarsa.com",
+                "qa.superadmin",
+                true,
+                "[REDACTED]",
+                "SUPERADMIN",
+                "SuperAdministrador",
+                true,
+                true
+              ],
+              [
+                37,
+                "qa9882@e.mx",
+                "qa9882@e.mx",
+                true,
+                "[REDACTED]",
+                "SUPERADMIN",
+                "SuperAdministrador",
+                true,
+                true
+              ],
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                "ricardo@edarsa.com.mx",
+                true,
+                "[REDACTED]",
+                "SUPERADMIN",
+                "SuperAdministrador",
+                true,
+                true
+              ],
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                "ricardo@edarsa.com.mx",
+                true,
+                "[REDACTED]",
+                "SUPERADMIN",
+                "SuperAdministrador",
+                false,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "CodigoRol",
+              "NombreRol",
+              "UsuariosCandidatos",
+              "AsignacionesUsuarioActivo"
+            ],
+            "name": "rbac_test_role_summary",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "SUPERADMIN",
+                "SuperAdministrador",
+                2,
+                0
+              ],
+              [
+                "USUARIO",
+                "Usuario",
+                6,
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-11T06:18:03Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
