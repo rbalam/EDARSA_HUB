@@ -1,0 +1,50 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-PAYMENTS-RESYNC-R58-CARLOS-20260911T221000Z",
+  "created_at_utc": "2026-09-11T22:10:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "720c03eded1b76a69d28dcce2462409a164a569e",
+  "production_allowed": false,
+  "mode": "ISCAM_PAYMENTS_ONLY_RESYNC",
+  "units": ["CIENFUEGOS"],
+  "fecha_inicio": "2026-08-01",
+  "fecha_fin": "2026-09-01",
+  "dry_run": false,
+  "confirm_payments_only_resync": true,
+  "actions": [],
+  "objective": "Resincronizar exclusivamente Finanzas_CortesCaja_DetallePagos de CIENFUEGOS para agosto 2026 usando la extracción SoftRestaurant R54 que convierte pagos con el tipo de cambio histórico de chequespagos. No modificar Sync_Sales, Resumen de Cuentas, Comandas de Venta, Ventas por Periodo, Formas de Pago (Corte), MPRO ni Produccion. Certificar que Pagos por Ticket concilie con $3,959,563.00 y que folios 104124 y 104623 queden en $3,565.00 y $470.00 respectivamente.",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_aug26_payments_certification",
+          "sql": "SELECT COUNT(*) AS filas_pago, COUNT(DISTINCT NumeroTicket) AS tickets_con_pago, CAST(ISNULL(SUM(Importe),0) AS decimal(18,2)) AS pagos_total, CAST(ISNULL(SUM(Propina),0) AS decimal(18,2)) AS propina_total FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE UnidadNegocio='CIENFUEGOS' AND FechaHora>='2026-08-01' AND FechaHora<'2026-09-01' AND ISNULL(Activo,1)=1"
+        },
+        {
+          "name": "cienfuegos_aug26_gap_tickets_after_resync",
+          "sql": "SELECT NumeroTicket AS folio, CAST(SUM(ISNULL(Importe,0)) AS decimal(18,2)) AS total_pago, COUNT(*) AS filas_pago FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE UnidadNegocio='CIENFUEGOS' AND NumeroTicket IN ('104124','104623') AND FechaHora>='2026-08-01' AND FechaHora<'2026-09-01' AND ISNULL(Activo,1)=1 GROUP BY NumeroTicket ORDER BY NumeroTicket"
+        },
+        {
+          "name": "cienfuegos_aug26_payment_vs_sales_reference",
+          "sql": "WITH ventas AS (SELECT COUNT(DISTINCT numero_ticket) AS tickets_venta, CAST(ISNULL(SUM(importe_neto),0) AS decimal(18,2)) AS venta_total FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion>='2026-08-01' AND fecha_operacion<'2026-09-01' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1), pagos AS (SELECT COUNT(DISTINCT NumeroTicket) AS tickets_pago, CAST(ISNULL(SUM(Importe),0) AS decimal(18,2)) AS pagos_total FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE UnidadNegocio='CIENFUEGOS' AND FechaHora>='2026-08-01' AND FechaHora<'2026-09-01' AND ISNULL(Activo,1)=1) SELECT v.tickets_venta, v.venta_total, p.tickets_pago, p.pagos_total, CAST(v.venta_total-p.pagos_total AS decimal(18,2)) AS diferencia FROM ventas v CROSS JOIN pagos p"
+        },
+        {
+          "name": "cienfuegos_aug26_expected_totals_gate",
+          "sql": "SELECT CASE WHEN ABS(CAST(ISNULL(SUM(Importe),0) AS decimal(18,2))-CAST(3959563.00 AS decimal(18,2)))<=0.05 THEN 1 ELSE 0 END AS pagos_total_ok, CASE WHEN COUNT(DISTINCT NumeroTicket)=1027 THEN 1 ELSE 0 END AS tickets_ok FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE UnidadNegocio='CIENFUEGOS' AND FechaHora>='2026-08-01' AND FechaHora<'2026-09-01' AND ISNULL(Activo,1)=1"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
