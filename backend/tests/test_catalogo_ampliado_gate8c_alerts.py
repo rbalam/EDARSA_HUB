@@ -17,7 +17,7 @@ def test_planner_is_sql_idempotent_and_uses_existing_event_unique_shape():
     assert 'FechaObjetivo=v.FechaVencimiento' in t
 
 
-def test_dispatcher_reuses_sistema_tareas_and_has_no_external_live_send():
+def test_dispatcher_reuses_sistema_tareas_and_delegates_external_delivery():
     r=REPO.read_text(encoding='utf-8')
     s=SERVICE.read_text(encoding='utf-8')
     assert 'INSERT INTO dbo.Sistema_Tareas' in r
@@ -25,7 +25,7 @@ def test_dispatcher_reuses_sistema_tareas_and_has_no_external_live_send():
     assert "EntidadTipo='GOBIERNO_ALERTA_EVENTO'" in r
     assert 'NotificationDispatcher' not in s
     assert 'send_message' not in s
-    assert 'BLOCKED_EXTERNAL_DELIVERY_NOT_AUTHORIZED' in s
+    assert 'dispatch_external_alert' in s
 
 
 def test_no_parallel_schema_or_scheduler_and_admin_events_route_is_rbac_guarded():
@@ -37,7 +37,7 @@ def test_no_parallel_schema_or_scheduler_and_admin_events_route_is_rbac_guarded(
     assert 'Depends(_gobierno_admin)' in routes
 
 
-def test_service_dispatches_task_once_and_blocks_external(monkeypatch):
+def test_service_dispatches_task_and_delegates_external(monkeypatch):
     from modules.catalogo_ampliado import alert_service
     class DummyRepo:
         def list_due_alert_events(self, limit):
@@ -51,7 +51,8 @@ def test_service_dispatches_task_once_and_blocks_external(monkeypatch):
             assert event_id==1
             return {'TareaSistemaID':99}
     monkeypatch.setattr(alert_service,'repo',DummyRepo())
+    monkeypatch.setattr(alert_service,'dispatch_external_alert',lambda e:{'alerta_evento_id':e['AlertaEventoID'],'canal':e['Canal'],'status':'DELEGATED'})
     out=alert_service.despachar_alertas()
     assert out['processed']==4
     assert out['items'][0]['reference']=='99'
-    assert all(x['status']=='BLOCKED_EXTERNAL_DELIVERY_NOT_AUTHORIZED' for x in out['items'][1:])
+    assert all(x['status']=='DELEGATED' for x in out['items'][1:])

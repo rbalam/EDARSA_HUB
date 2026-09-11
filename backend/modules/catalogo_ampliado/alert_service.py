@@ -6,6 +6,7 @@ que un gate posterior autorice la capa canonica de entrega externa.
 """
 
 from . import repository as repo
+from .external_delivery import dispatch_external_alert
 
 EXTERNAL_CHANNELS = {"EMAIL", "WHATSAPP", "APP"}
 
@@ -27,7 +28,7 @@ def despachar_alertas(limit: int = 50) -> dict:
             resultados.append({"alerta_evento_id": evento_id, "canal": canal, "status": "GENERADA", "reference": str(tarea.get("TareaSistemaID"))})
             continue
         if canal in EXTERNAL_CHANNELS:
-            resultados.append({"alerta_evento_id": evento_id, "canal": canal, "status": "BLOCKED_EXTERNAL_DELIVERY_NOT_AUTHORIZED"})
+            resultados.append(dispatch_external_alert(evento))
             continue
         resultados.append({"alerta_evento_id": evento_id, "canal": canal, "status": "BLOCKED_UNSUPPORTED_CHANNEL"})
     return {"processed": len(resultados), "items": resultados}

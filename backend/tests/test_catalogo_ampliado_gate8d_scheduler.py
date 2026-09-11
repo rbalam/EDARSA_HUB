@@ -20,12 +20,12 @@ def test_uses_canonical_scheduler_and_config():
     assert 'get_lock_manager' in man and 'get_job_logger' in man
 
 
-def test_scheduler_calls_gate8c_service_and_external_stays_fail_closed():
+def test_scheduler_calls_catalogo_service_and_external_delivery_is_delegated():
     job=JOB.read_text(encoding='utf-8')
     svc=SERVICE.read_text(encoding='utf-8')
     assert 'alert_service.planificar_alertas' in job
     assert 'alert_service.despachar_alertas' in job
-    assert 'BLOCKED_EXTERNAL_DELIVERY_NOT_AUTHORIZED' in svc
+    assert 'dispatch_external_alert' in svc
     assert 'send_message' not in svc
 
 
