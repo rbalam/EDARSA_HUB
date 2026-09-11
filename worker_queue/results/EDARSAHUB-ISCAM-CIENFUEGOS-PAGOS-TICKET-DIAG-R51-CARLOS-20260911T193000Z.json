@@ -1,0 +1,153 @@
+{
+  "base_sha": "e54411678270f72e1ef340478076161ed30d6277",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-11T19:36:55Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-PAGOS-TICKET-DIAG-R51-CARLOS-20260911T193000Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-11T19:37:05Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "tickets_venta",
+              "venta_total",
+              "tickets_con_pago",
+              "pagos_total",
+              "propina_total",
+              "diferencia"
+            ],
+            "name": "cienfuegos_aug26_sales_vs_ticket_payments_totals",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1027,
+                "3959563.0257",
+                989,
+                "3958813.0000",
+                "369594.8600",
+                "750.0257"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "folio",
+              "fecha_operacion",
+              "primera_fecha_pago",
+              "ultima_fecha_pago",
+              "total_ticket",
+              "total_pago",
+              "propina",
+              "cantidad_pagos",
+              "diferencia"
+            ],
+            "name": "cienfuegos_aug26_ticket_level_differences",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "104124",
+                "2026-08-04",
+                "2026-08-04T13:04:16",
+                "2026-08-04T13:04:16",
+                "3565.0000",
+                "2965.0000",
+                "0.0000",
+                2,
+                "600.0000"
+              ],
+              [
+                "104623",
+                "2026-08-18",
+                "2026-08-18T12:55:30",
+                "2026-08-18T12:55:30",
+                "470.0000",
+                "320.0000",
+                "0.0000",
+                2,
+                "150.0000"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "folio",
+              "fecha_operacion",
+              "total_ticket",
+              "total_pago_mes",
+              "total_pago_amplio",
+              "primera_fecha_pago",
+              "ultima_fecha_pago",
+              "diferencia_mes",
+              "diferencia_amplia"
+            ],
+            "name": "cienfuegos_aug26_sales_tickets_with_payments_outside_month",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "104124",
+                "2026-08-04",
+                "3565.0000",
+                "2965.0000",
+                "2965.0000",
+                "2026-08-04T13:04:16",
+                "2026-08-04T13:04:16",
+                "600.0000",
+                "600.0000"
+              ],
+              [
+                "104623",
+                "2026-08-18",
+                "470.0000",
+                "320.0000",
+                "320.0000",
+                "2026-08-18T12:55:30",
+                "2026-08-18T12:55:30",
+                "150.0000",
+                "150.0000"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "NumeroTicket",
+              "FormaPagoCodigo",
+              "Referencia",
+              "Importe",
+              "repeticiones",
+              "primera_fecha",
+              "ultima_fecha"
+            ],
+            "name": "cienfuegos_aug26_payment_duplicates",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-11T19:36:54Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
