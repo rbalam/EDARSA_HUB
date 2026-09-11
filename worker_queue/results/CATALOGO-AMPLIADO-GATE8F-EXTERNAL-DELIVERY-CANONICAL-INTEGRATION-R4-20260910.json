@@ -2,8 +2,11 @@
   "base_sha": "0c32b93cee5d4ef54c4845850b6fedc937a63cb3",
   "blockers": [],
   "candidate_sha": "24fda580c6c2045947ef88a997d5b4f7742d9bba",
-  "certification": "PENDING_AUDIT_EVIDENCE",
+  "certification": "CERTIFIED",
+  "certification_basis": "SHA_BOUND_ATTESTATION_PLUS_DESCENDANT_CONVERGENCE",
+  "certified_source_sha": "24fda580c6c2045947ef88a997d5b4f7742d9bba",
   "completed_at_utc": "2026-09-11T00:31:49Z",
+  "converged_head": "24fda580c6c2045947ef88a997d5b4f7742d9bba",
   "development_sha": "24fda580c6c2045947ef88a997d5b4f7742d9bba",
   "executor": "chatgpt-deterministic",
   "files_changed": [
@@ -19,9 +22,9 @@
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "CATALOGO-AMPLIADO-GATE8F-EXTERNAL-DELIVERY-CANONICAL-INTEGRATION-R4-20260910",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-09-11T00:32:00Z",
+  "published_at_utc": "2026-09-11T00:32:59Z",
   "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
@@ -30,5 +33,5 @@
   "status": "INTEGRATED",
   "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
   "tests": "PASS",
-  "work_completion": "PENDING_CERTIFICATION"
+  "work_completion": "COMPLETE"
 }
