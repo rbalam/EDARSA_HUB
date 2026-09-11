@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-PAGOS-TICKET-DIAG-R51-CARLOS-20260911T193000Z",
+  "created_at_utc": "2026-09-11T19:30:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e54411678270f72e1ef340478076161ed30d6277",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Diagnosticar exclusivamente la diferencia de $750.00 del reporte ISCAM Pagos por Ticket de CIENFUEGOS agosto 2026 contra el baseline certificado de Resumen de Cuentas/Ventas por Periodo ($3,959,563.00, 1,027 tickets). No modificar Cuentas, Comandas, codigo, datos ni Produccion. Identificar folios faltantes, pagos parciales, duplicados o pagos cuya FechaHora cae fuera de agosto aunque el ticket pertenezca a agosto.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_aug26_sales_vs_ticket_payments_totals",
+          "sql": "WITH ventas AS (SELECT numero_ticket, SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) AS total_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion>='2026-08-01' AND fecha_operacion<'2026-09-01' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY numero_ticket), pagos AS (SELECT NumeroTicket, SUM(CAST(ISNULL(Importe,0) AS decimal(18,4))) AS total_pago, SUM(CAST(ISNULL(Propina,0) AS decimal(18,4))) AS propina, COUNT(*) AS pagos FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE UnidadNegocio='CIENFUEGOS' AND FechaHora>='2026-08-01' AND FechaHora<'2026-09-01' AND ISNULL(Activo,1)=1 GROUP BY NumeroTicket) SELECT (SELECT COUNT(*) FROM ventas) AS tickets_venta, (SELECT SUM(total_ticket) FROM ventas) AS venta_total, (SELECT COUNT(*) FROM pagos) AS tickets_con_pago, (SELECT SUM(total_pago) FROM pagos) AS pagos_total, (SELECT SUM(propina) FROM pagos) AS propina_total, (SELECT SUM(total_ticket) FROM ventas)-(SELECT SUM(total_pago) FROM pagos) AS diferencia"
+        },
+        {
+          "name": "cienfuegos_aug26_ticket_level_differences",
+          "sql": "WITH ventas AS (SELECT numero_ticket, MIN(fecha_operacion) AS fecha_operacion, SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) AS total_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion>='2026-08-01' AND fecha_operacion<'2026-09-01' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY numero_ticket), pagos AS (SELECT NumeroTicket, MIN(FechaHora) AS primera_fecha_pago, MAX(FechaHora) AS ultima_fecha_pago, SUM(CAST(ISNULL(Importe,0) AS decimal(18,4))) AS total_pago, SUM(CAST(ISNULL(Propina,0) AS decimal(18,4))) AS propina, COUNT(*) AS cantidad_pagos FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE UnidadNegocio='CIENFUEGOS' AND FechaHora>='2026-08-01' AND FechaHora<'2026-09-01' AND ISNULL(Activo,1)=1 GROUP BY NumeroTicket) SELECT TOP 100 COALESCE(v.numero_ticket,p.NumeroTicket) AS folio, v.fecha_operacion, p.primera_fecha_pago, p.ultima_fecha_pago, v.total_ticket, p.total_pago, p.propina, p.cantidad_pagos, CAST(ISNULL(v.total_ticket,0)-ISNULL(p.total_pago,0) AS decimal(18,4)) AS diferencia FROM ventas v FULL OUTER JOIN pagos p ON p.NumeroTicket=v.numero_ticket WHERE ABS(ISNULL(v.total_ticket,0)-ISNULL(p.total_pago,0))>0.05 ORDER BY ABS(ISNULL(v.total_ticket,0)-ISNULL(p.total_pago,0)) DESC, folio"
+        },
+        {
+          "name": "cienfuegos_aug26_sales_tickets_with_payments_outside_month",
+          "sql": "WITH ventas AS (SELECT numero_ticket, MIN(fecha_operacion) AS fecha_operacion, SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) AS total_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion>='2026-08-01' AND fecha_operacion<'2026-09-01' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY numero_ticket), pagos_mes AS (SELECT NumeroTicket, SUM(CAST(ISNULL(Importe,0) AS decimal(18,4))) AS total_pago_mes FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE UnidadNegocio='CIENFUEGOS' AND FechaHora>='2026-08-01' AND FechaHora<'2026-09-01' AND ISNULL(Activo,1)=1 GROUP BY NumeroTicket), pagos_amplio AS (SELECT NumeroTicket, MIN(FechaHora) AS primera_fecha_pago, MAX(FechaHora) AS ultima_fecha_pago, SUM(CAST(ISNULL(Importe,0) AS decimal(18,4))) AS total_pago_amplio FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE UnidadNegocio='CIENFUEGOS' AND FechaHora>='2026-07-30' AND FechaHora<'2026-09-03' AND ISNULL(Activo,1)=1 GROUP BY NumeroTicket) SELECT TOP 100 v.numero_ticket AS folio, v.fecha_operacion, v.total_ticket, ISNULL(pm.total_pago_mes,0) AS total_pago_mes, ISNULL(pa.total_pago_amplio,0) AS total_pago_amplio, pa.primera_fecha_pago, pa.ultima_fecha_pago, CAST(v.total_ticket-ISNULL(pm.total_pago_mes,0) AS decimal(18,4)) AS diferencia_mes, CAST(v.total_ticket-ISNULL(pa.total_pago_amplio,0) AS decimal(18,4)) AS diferencia_amplia FROM ventas v LEFT JOIN pagos_mes pm ON pm.NumeroTicket=v.numero_ticket LEFT JOIN pagos_amplio pa ON pa.NumeroTicket=v.numero_ticket WHERE ABS(v.total_ticket-ISNULL(pm.total_pago_mes,0))>0.05 ORDER BY ABS(v.total_ticket-ISNULL(pm.total_pago_mes,0)) DESC, v.numero_ticket"
+        },
+        {
+          "name": "cienfuegos_aug26_payment_duplicates",
+          "sql": "SELECT NumeroTicket, FormaPagoCodigo, ISNULL(Referencia,'') AS Referencia, CAST(Importe AS decimal(18,4)) AS Importe, COUNT(*) AS repeticiones, MIN(FechaHora) AS primera_fecha, MAX(FechaHora) AS ultima_fecha FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE UnidadNegocio='CIENFUEGOS' AND FechaHora>='2026-08-01' AND FechaHora<'2026-09-01' AND ISNULL(Activo,1)=1 GROUP BY NumeroTicket, FormaPagoCodigo, ISNULL(Referencia,''), CAST(Importe AS decimal(18,4)) HAVING COUNT(*)>1 ORDER BY repeticiones DESC, NumeroTicket"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
