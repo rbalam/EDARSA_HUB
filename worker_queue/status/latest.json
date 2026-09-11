@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "6454269c094f3dff05aff130bd99598a0321196d",
-  "generated_at_utc": "2026-09-11T05:40:14Z",
+  "generated_at_utc": "2026-09-11T05:41:38Z",
   "history": {
     "done_total_local": 399,
     "pending_total_local": 0,
@@ -13,61 +13,61 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 374,
+      "age_seconds": 457,
       "job_id": "BOS-AGENT-HARNESS-AH5-EVIDENCE-PROVENANCE-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2609,
+      "age_seconds": 2692,
       "job_id": "CATALOGO-AMPLIADO-GATE8G-MIGRATION-WRITER-RECOVERY-R1-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 356,
+      "age_seconds": 439,
       "job_id": "CATALOGO-AMPLIADO-GATE8G-MIGRATION-WRITER-RETRIGGER-R2-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 353,
+      "age_seconds": 436,
       "job_id": "CATALOGO-AMPLIADO-GATE8G-MIGRATION-WRITER-RETRIGGER-R3-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 346,
+      "age_seconds": 429,
       "job_id": "CATALOGO-AMPLIADO-GATE8G-SQL-POSTCHECK-READONLY-R1-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 340,
+      "age_seconds": 424,
       "job_id": "CAVAS-CORPORATIVAS-GATE12H3-FINAL-POSTAUDIT-PERSONA-LINK-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 326,
+      "age_seconds": 409,
       "job_id": "CAVAS-CORPORATIVAS-GATE12I-BOS-SOCIO-PERSONA-CONTROLLED-MIGRATION-EXECUTION-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3310,
+      "age_seconds": 3394,
       "job_id": "EDARSAHUB-INVENTARIOS-RECOVERY-CANARY-CONTEXT-COMPLETE-20260910T215000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3347,
+      "age_seconds": 3430,
       "job_id": "servers-integrations-gate5d-sql-security-readonly-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3314,
+      "age_seconds": 3397,
       "job_id": "worker-orchestrator-sql-migration-gate5-r1-20260911T0435Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -85,8 +85,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T05:40:14Z",
-    "last_receive_utc": "2026-09-11T05:40:09Z",
+    "last_cycle_utc": "2026-09-11T05:41:36Z",
+    "last_receive_utc": "2026-09-11T05:41:37Z",
     "last_terminal_utc": "2026-09-11T05:34:48Z",
     "pid": "1088"
   },
