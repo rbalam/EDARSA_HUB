@@ -1,0 +1,28 @@
+{
+  "base_sha": "de53545b2f1db2591dc43387828e3db7c0b7a7d6",
+  "blockers": [],
+  "candidate_sha": "e54411678270f72e1ef340478076161ed30d6277",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-11T19:29:11Z",
+  "development_sha": "e54411678270f72e1ef340478076161ed30d6277",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_iscam_cuentas_comandas_locked_r50.py",
+    "docs/iscam/BASELINE_R49_CUENTAS_COMANDAS_LOCK_20260911.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-FREEZE-CUENTAS-COMANDAS-R50-CARLOS-20260911T192500Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-11T19:29:25Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-11T19:29:05Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
