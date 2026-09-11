@@ -1,93 +1,93 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "c41fde53dd134e59e6f8aa70c59dd3f9f7cdc3e9",
-  "generated_at_utc": "2026-09-11T07:24:50Z",
+  "development_sha": "c0c5ff92e351d4a351a5602afb903ce59d1f7a08",
+  "generated_at_utc": "2026-09-11T07:26:12Z",
   "history": {
-    "done_total_local": 417,
+    "done_total_local": 418,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 417,
-    "results_total_local": 760
+    "results_total_local": 761
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2491,
+      "age_seconds": 2573,
       "job_id": "ARBITROA-BOS-GATE-A1-SQL-DISCOVERY-READONLY-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 9,
+      "age_seconds": 91,
       "job_id": "ARBITROA-BOS-GATE-A2-REPOSITORY-CONTRACT-DISCOVERY-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2766,
+      "age_seconds": 2848,
       "job_id": "BOS-AGENT-HARNESS-AH10-E2E-SIMULATION-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2977,
+      "age_seconds": 73,
+      "job_id": "BOS-AGENT-HARNESS-AH10-E2E-SIMULATION-V1-R2-20260911",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3059,
       "job_id": "CAVAS-G12-CANARY-01-PERSONAID-EXISTS-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2955,
+      "age_seconds": 3037,
       "job_id": "CAVAS-G12-CANARY-02-PERSONAID-TYPE-NULL-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2944,
+      "age_seconds": 3026,
       "job_id": "CAVAS-G12-CANARY-03-PERSONAID-FK-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2932,
+      "age_seconds": 3014,
       "job_id": "CAVAS-G12-CANARY-04-PERSONAID-INDEX-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2920,
+      "age_seconds": 3003,
       "job_id": "CAVAS-G12-CANARY-05-CHILD-FKS-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2909,
+      "age_seconds": 2991,
       "job_id": "CAVAS-G12-CANARY-06-PERSONAID-POPULATION-20260911",
       "reason": null,
       "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 19,
-      "job_id": "BOS-AGENT-HARNESS-AH10-E2E-SIMULATION-V1-R2-20260911",
-      "reason": null,
-      "state": "RUNNING"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 9,
-  "queue_running": 1,
+  "queue_result_ready_recent": 10,
+  "queue_running": 0,
   "runtime": {
-    "current_job_id": "BOS-AGENT-HARNESS-AH10-E2E-SIMULATION-V1-R2-20260911",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T07:24:48Z",
-    "last_receive_utc": "2026-09-11T07:24:50Z",
-    "last_terminal_utc": "2026-09-11T07:24:41Z",
+    "last_cycle_utc": "2026-09-11T07:26:09Z",
+    "last_receive_utc": "2026-09-11T07:26:10Z",
+    "last_terminal_utc": "2026-09-11T07:24:58Z",
     "pid": "286"
   },
   "schema": "edarsahub.worker-health.v3",
