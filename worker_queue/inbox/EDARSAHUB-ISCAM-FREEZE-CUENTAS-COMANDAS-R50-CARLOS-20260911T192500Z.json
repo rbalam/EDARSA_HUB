@@ -1,0 +1,46 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-FREEZE-CUENTAS-COMANDAS-R50-CARLOS-20260911T192500Z",
+  "created_at_utc": "2026-09-11T19:25:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "de53545b2f1db2591dc43387828e3db7c0b7a7d6",
+  "production_allowed": false,
+  "objective": "Fijar y proteger el punto certificado por Carlos Ruz en R49 para los reportes ISCAM Resumen de Cuentas y Comandas de Venta. NO modificar ninguna logica funcional ni frontend actual de esos reportes. Crear solamente documentacion de baseline y pruebas de regresion que comparan las regiones protegidas contra el commit certificado de53545b2f1db2591dc43387828e3db7c0b7a7d6. Las futuras correcciones de Formas de Pago y Pagos por Ticket deben preservar exactamente estas regiones salvo autorizacion explicita para levantar el lock.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/iscam/BASELINE_R49_CUENTAS_COMANDAS_LOCK_20260911.md",
+      "content": "# ISCAM - Baseline certificado de Cuentas y Comandas\n\nFecha de certificacion: 2026-09-11\nCertificado por: Carlos Ruz / Auditoria EDARSA\nCommit funcional certificado: `de53545b2f1db2591dc43387828e3db7c0b7a7d6`\nBranch de resguardo: `baseline/iscam-cuentas-comandas-r49-20260911`\n\n## Alcance congelado\n\nLos siguientes reportes se consideran correctos y no deben ser alterados por trabajos posteriores destinados a corregir otros reportes ISCAM:\n\n- Resumen de Cuentas\n- Comandas de Venta\n\nLas correcciones posteriores de `Formas de Pago (Corte)` y `Pagos por Ticket` deben ser quirurgicas y no cambiar el contrato, consultas, filtros, agregaciones, drill-downs ni presentacion funcional de Cuentas y Comandas.\n\n## Baseline de control - CIENFUEGOS agosto 2026\n\nExportaciones certificadas por el usuario el 2026-09-11:\n\n- Resumen de Cuentas: 1,027 folios unicos, 2,899 personas, importe $3,959,563.00.\n- Comandas de Venta: 11,922 lineas de detalle y 1,027 folios unicos.\n- Reporte Ejecutivo/Ventas por Periodo: $3,959,563.00, 1,027 cheques y 2,899 clientes.\n\n## Reportes pendientes de conciliacion\n\n- Pagos por Ticket: pendiente. Export de control $3,958,813.00; diferencia contra venta $750.00.\n- Formas de Pago (Corte): pendiente. Export de control $4,407,464.95; diferencia contra venta $447,901.95.\n\n## Regla de cambio\n\nCualquier trabajo posterior que necesite tocar una region protegida por `test_iscam_cuentas_comandas_locked_r50.py` debe detenerse y requerir una autorizacion explicita que indique que el baseline R49 deja de ser valido. No se debe levantar el lock solo para hacer pasar una correccion de otro reporte.\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_cuentas_comandas_locked_r50.py",
+      "content": "from __future__ import annotations\n\nimport ast\nimport subprocess\nfrom pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nBASELINE_SHA = 'de53545b2f1db2591dc43387828e3db7c0b7a7d6'\nROUTES_REL = 'backend/modules/inteligencia_comercial/iscam_routes.py'\nFRONT_REL = 'frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx'\n\n\ndef _current(rel: str) -> str:\n    return (ROOT / rel).read_text(encoding='utf-8')\n\n\ndef _baseline(rel: str) -> str:\n    result = subprocess.run(\n        ['git', 'show', f'{BASELINE_SHA}:{rel}'],\n        cwd=ROOT,\n        text=True,\n        stdout=subprocess.PIPE,\n        stderr=subprocess.PIPE,\n        check=False,\n    )\n    assert result.returncode == 0, result.stderr\n    return result.stdout\n\n\ndef _python_function(text: str, name: str) -> str:\n    tree = ast.parse(text)\n    lines = text.splitlines(keepends=True)\n    for node in ast.walk(tree):\n        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == name:\n            return ''.join(lines[node.lineno - 1:node.end_lineno])\n    raise AssertionError(f'Funcion no encontrada: {name}')\n\n\ndef _between(text: str, start: str, end: str) -> str:\n    assert start in text, f'Marcador inicial no encontrado: {start}'\n    assert end in text, f'Marcador final no encontrado: {end}'\n    return text.split(start, 1)[1].split(end, 1)[0]\n\n\ndef test_backend_cuentas_y_comandas_permanecen_iguales_al_baseline_r49():\n    current = _current(ROUTES_REL)\n    baseline = _baseline(ROUTES_REL)\n    for name in ('resumen_cuentas', 'cuenta_detalle', 'comandas_venta'):\n        assert _python_function(current, name) == _python_function(baseline, name), (\n            f'LOCK_R50: {name} cambio respecto al baseline certificado R49. '\n            'Las correcciones de otros reportes ISCAM no pueden modificar esta funcion.'\n        )\n\n\ndef test_frontend_descriptores_cuentas_y_comandas_permanecen_iguales():\n    current = _current(FRONT_REL)\n    baseline = _baseline(FRONT_REL)\n    current_cuentas = _between(current, \"if (sub === 'cuentas') {\", \"if (sub === 'comandas') {\")\n    baseline_cuentas = _between(baseline, \"if (sub === 'cuentas') {\", \"if (sub === 'comandas') {\")\n    current_comandas = _between(current, \"if (sub === 'comandas') {\", \"if (sub === 'pagos-ticket') {\")\n    baseline_comandas = _between(baseline, \"if (sub === 'comandas') {\", \"if (sub === 'pagos-ticket') {\")\n    assert current_cuentas == baseline_cuentas, 'LOCK_R50: descriptor frontend de Cuentas fue modificado'\n    assert current_comandas == baseline_comandas, 'LOCK_R50: descriptor frontend de Comandas fue modificado'\n\n\ndef test_frontend_tablas_cuentas_y_comandas_permanecen_iguales():\n    current = _current(FRONT_REL)\n    baseline = _baseline(FRONT_REL)\n    current_cuentas = _between(current, 'function TablaCuentas', 'function TablaComandas')\n    baseline_cuentas = _between(baseline, 'function TablaCuentas', 'function TablaComandas')\n    current_comandas = _between(current, 'function TablaComandas', 'function TablaFormas')\n    baseline_comandas = _between(baseline, 'function TablaComandas', 'function TablaFormas')\n    assert current_cuentas == baseline_cuentas, 'LOCK_R50: TablaCuentas fue modificada'\n    assert current_comandas == baseline_comandas, 'LOCK_R50: TablaComandas fue modificada'\n\n\ndef test_frontend_drill_de_cuenta_permanece_igual():\n    current = _current(FRONT_REL)\n    baseline = _baseline(FRONT_REL)\n    current_drill = _between(current, 'const drillCuenta = async', 'const drillTiposServicio = async')\n    baseline_drill = _between(baseline, 'const drillCuenta = async', 'const drillTiposServicio = async')\n    assert current_drill == baseline_drill, 'LOCK_R50: drillCuenta fue modificado'\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/tests/test_iscam_cuentas_comandas_locked_r50.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_cuentas_comandas_locked_r50.py"
+      ]
+    },
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
