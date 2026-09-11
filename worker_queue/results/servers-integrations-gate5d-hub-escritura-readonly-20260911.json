@@ -1,0 +1,242 @@
+{
+  "base_sha": "fbb193c02b4b798d676b4a7bb96b4c58733338ef",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-11T06:13:18Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "servers-integrations-gate5d-hub-escritura-readonly-20260911",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-11T06:13:39Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "name",
+              "type_desc",
+              "authentication_type_desc",
+              "default_schema_name",
+              "is_fixed_role"
+            ],
+            "name": "hub_escritura_principal",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "HUB_Escritura",
+                "SQL_USER",
+                "INSTANCE",
+                "dbo",
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "member_name",
+              "role_name",
+              "is_fixed_role"
+            ],
+            "name": "hub_escritura_roles",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "HUB_Escritura",
+                "db_accessadmin",
+                true
+              ],
+              [
+                "HUB_Escritura",
+                "db_datawriter",
+                true
+              ],
+              [
+                "HUB_Escritura",
+                "db_ddladmin",
+                true
+              ],
+              [
+                "HUB_Escritura",
+                "db_owner",
+                true
+              ],
+              [
+                "HUB_Escritura",
+                "db_securityadmin",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "principal_name",
+              "state_desc",
+              "permission_name",
+              "class_desc"
+            ],
+            "name": "hub_escritura_database_permissions",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "HUB_Escritura",
+                "GRANT",
+                "CONNECT",
+                "DATABASE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "principal_name",
+              "state_desc",
+              "permission_name",
+              "class_desc",
+              "schema_name",
+              "object_name"
+            ],
+            "name": "hub_escritura_schema_object_permissions",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "role_name",
+              "state_desc",
+              "permission_name",
+              "class_desc",
+              "schema_name",
+              "object_name"
+            ],
+            "name": "hub_escritura_role_permissions",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "db_accessadmin",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "db_datawriter",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "db_ddladmin",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "db_owner",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "db_securityadmin",
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "object_name",
+              "type_desc"
+            ],
+            "name": "required_target_objects_present",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "Operativo_Notificaciones_Log",
+                "USER_TABLE"
+              ],
+              [
+                "Sistema_NotificacionesConfig",
+                "USER_TABLE"
+              ],
+              [
+                "Sistema_RBAC_Permisos",
+                "USER_TABLE"
+              ],
+              [
+                "Sistema_RBAC_Roles",
+                "USER_TABLE"
+              ],
+              [
+                "Sistema_RBAC_RolesPermisos",
+                "USER_TABLE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "queue_present",
+              "queue_columns",
+              "queue_indexes"
+            ],
+            "name": "communications_queue_current_state",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "permissions_present"
+            ],
+            "name": "notifications_rbac_current_state",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-11T06:13:16Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
