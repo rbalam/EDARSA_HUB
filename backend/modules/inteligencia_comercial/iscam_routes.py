@@ -631,8 +631,119 @@ async def comandas_venta(unidad: str = Query(...), desde: Optional[str] = None, 
                           "precio": round(_f(r["precio"]), 2), "importe": round(_f(r["importe"]), 2)} for r in rows]}
 
 
+def _formas_pago_desde_detalle(unidad, nombre, d, h, group_by, limit, export_all):
+    """ISCAM Formas de Pago desde detalle conciliado por ticket.
+
+    Los importes salen exclusivamente de Finanzas_CortesCaja_DetallePagos.
+    Finanzas_CortesCaja se consulta solo para recuperar folio/caja del corte
+    mediante la misma FechaApertura/FechaHora; sus importes no participan.
+    """
+    forma = "UPPER(ISNULL(FormaPago,''))"
+    cash = f"({forma} LIKE '%EFECTIVO%' OR {forma} LIKE '%DOLAR%')"
+    amex = f"({forma} LIKE '%AMEX%')"
+    card = f"(({forma} LIKE '%CREDITO%' OR {forma} LIKE '%DEBITO%' OR {forma} LIKE '%CLIP%' OR {forma} LIKE '%INTERNACIONAL%') AND {forma} NOT LIKE '%AMEX%')"
+    intl = f"({forma} LIKE '%INTERNACIONAL%')"
+    vales = f"({forma} LIKE '%VALE%')"
+    known = f"({cash} OR {amex} OR {card} OR {vales})"
+
+    if group_by in ('anio', 'mes', 'dia'):
+        pexpr = _period_sql('FechaHora', group_by)
+        rows = _q(
+            f"""
+            SELECT {pexpr} AS periodo,
+                   COUNT(DISTINCT FechaHora) AS cortes,
+                   SUM(ISNULL(Importe,0)) AS total,
+                   SUM(CASE WHEN {cash} THEN ISNULL(Importe,0) ELSE 0 END) AS efectivo,
+                   SUM(CASE WHEN {card} THEN ISNULL(Importe,0) ELSE 0 END) AS tarjeta,
+                   SUM(CASE WHEN {amex} THEN ISNULL(Importe,0) ELSE 0 END) AS amex,
+                   SUM(CASE WHEN {intl} THEN ISNULL(Importe,0) ELSE 0 END) AS internacional,
+                   SUM(CASE WHEN {vales} THEN ISNULL(Importe,0) ELSE 0 END) AS vales,
+                   SUM(CASE WHEN NOT {known} THEN ISNULL(Importe,0) ELSE 0 END) AS otros,
+                   SUM(ISNULL(Propina,0)) AS propina,
+                   CAST(0 AS decimal(18,2)) AS comision
+            FROM dbo.Finanzas_CortesCaja_DetallePagos
+            WHERE UnidadNegocio = %s AND ISNULL(Activo,1)=1
+              AND FechaHora >= %s AND FechaHora < %s
+            GROUP BY {pexpr}
+            ORDER BY periodo DESC
+            """,
+            (unidad, d, h),
+        )
+        keys = ('total','efectivo','tarjeta','amex','internacional','vales','otros','propina','comision')
+        agrupado = [{
+            'periodo': r['periodo'], 'cortes': int(r['cortes'] or 0),
+            **{k: round(_f(r.get(k)), 2) for k in keys},
+        } for r in rows]
+        tot = {k: round(sum(a[k] for a in agrupado), 2) for k in keys}
+        return {
+            'success': True,
+            'source': 'Finanzas_CortesCaja_DetallePagos (canonica, conciliada por apertura)',
+            'unidad': unidad, 'unidad_nombre': nombre, 'desde': d, 'hasta': h,
+            'group_by': group_by, 'totales': tot, 'agrupado': agrupado,
+        }
+
+    rows = _q(
+        f"""
+        WITH pagos AS (
+            SELECT FechaHora,
+                   SUM(ISNULL(Importe,0)) AS total,
+                   SUM(CASE WHEN {cash} THEN ISNULL(Importe,0) ELSE 0 END) AS efectivo,
+                   SUM(CASE WHEN {card} THEN ISNULL(Importe,0) ELSE 0 END) AS tarjeta,
+                   SUM(CASE WHEN {amex} THEN ISNULL(Importe,0) ELSE 0 END) AS amex,
+                   SUM(CASE WHEN {intl} THEN ISNULL(Importe,0) ELSE 0 END) AS internacional,
+                   SUM(CASE WHEN {vales} THEN ISNULL(Importe,0) ELSE 0 END) AS vales,
+                   SUM(CASE WHEN NOT {known} THEN ISNULL(Importe,0) ELSE 0 END) AS otros,
+                   SUM(ISNULL(Propina,0)) AS propina
+            FROM dbo.Finanzas_CortesCaja_DetallePagos
+            WHERE UnidadNegocio = %s AND ISNULL(Activo,1)=1
+              AND FechaHora >= %s AND FechaHora < %s
+            GROUP BY FechaHora
+        )
+        SELECT COALESCE(meta.FolioCorte, CONVERT(varchar(19), p.FechaHora, 120)) AS folio,
+               p.FechaHora AS fecha, COALESCE(meta.CajaNombre, 'PAGOS') AS caja,
+               p.total, p.efectivo, p.tarjeta, p.amex, p.internacional,
+               p.vales, p.otros, p.propina, CAST(0 AS decimal(18,2)) AS comision
+        FROM pagos p
+        OUTER APPLY (
+            SELECT TOP (1) c.FolioCorte, c.CajaNombre
+            FROM dbo.Finanzas_CortesCaja c
+            WHERE c.UnidadNegocioNombre = %s AND ISNULL(c.Activo,1)=1
+              AND c.FechaApertura = p.FechaHora
+            ORDER BY c.FolioCorte
+        ) meta
+        ORDER BY p.FechaHora DESC
+        """,
+        (unidad, d, h, nombre),
+    )
+    if not export_all:
+        rows = rows[:limit]
+    cortes = [{
+        'folio': r['folio'], 'fecha': _iso(r['fecha']), 'caja': r['caja'],
+        'total': round(_f(r.get('total')), 2),
+        'efectivo': round(_f(r.get('efectivo')), 2),
+        'tarjeta_debito': round(_f(r.get('tarjeta')), 2),
+        'tarjeta_credito': 0.0,
+        'tarjeta': round(_f(r.get('tarjeta')), 2),
+        'amex': round(_f(r.get('amex')), 2),
+        'internacional': round(_f(r.get('internacional')), 2),
+        'vales': round(_f(r.get('vales')), 2),
+        'otros': round(_f(r.get('otros')), 2),
+        'propina': round(_f(r.get('propina')), 2),
+        'comision': 0.0,
+    } for r in rows]
+    keys = ('total','efectivo','tarjeta','amex','internacional','vales','otros','propina','comision')
+    tot = {k: round(sum(_f(r.get(k)) for r in cortes), 2) for k in keys}
+    return {
+        'success': True,
+        'source': 'Finanzas_CortesCaja_DetallePagos (canonica, conciliada por apertura)',
+        'unidad': unidad, 'unidad_nombre': nombre, 'desde': d, 'hasta': h,
+        'export_all': export_all, 'limited': not export_all,
+        'limit': None if export_all else limit, 'totales': tot, 'cortes': cortes,
+    }
+
+
 # ============================================================================
-# 4) VENTAS POR FORMAS DE PAGO  (REUTILIZA dbo.Finanzas_CortesCaja)
+# 4) VENTAS POR FORMAS DE PAGO  (IMPORTES DESDE DetallePagos; corte solo metadata)
 # ============================================================================
 @iscam_router.get("/formas-pago")
 async def ventas_formas_pago(unidad: str = Query(...), desde: Optional[str] = None, hasta: Optional[str] = None,
@@ -642,6 +753,7 @@ async def ventas_formas_pago(unidad: str = Query(...), desde: Optional[str] = No
     if not nombre:
         raise HTTPException(status_code=404, detail=f"No se pudo resolver la unidad '{unidad}'")
     d, h = _rango_fechas(desde, hasta)
+    return _formas_pago_desde_detalle(unidad, nombre, d, h, group_by, limit, export_all)
     if group_by in ("anio", "mes", "dia"):
         pexpr = _period_sql("FechaApertura", group_by)
         rows = _q(
