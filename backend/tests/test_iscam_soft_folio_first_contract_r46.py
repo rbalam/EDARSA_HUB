@@ -37,7 +37,9 @@ def test_detail_is_folio_first_from_valid_headers():
     assert 'idempresa' not in block
 
 
-def test_detail_prorates_lines_back_to_ticket_header_total():
+def test_detail_keeps_real_product_amount_and_separates_cheque_adjustment():
     detail = DETAIL.read_text(encoding='utf-8')
     block = detail.split('def _extract_soft(', 1)[1].split('def _mpro_operational_datetime_range', 1)[0]
-    assert 'l.importe_bruto * l.importe_neto_ticket / t.bruto_ticket' in block
+    assert 'l.importe_bruto * l.importe_neto_ticket / t.bruto_ticket' not in block
+    assert 'CAST(l.importe_bruto AS decimal(18,4)) AS importe_neto' in block
+    assert 'SOFT_AJUSTE_CHEQUE' in block

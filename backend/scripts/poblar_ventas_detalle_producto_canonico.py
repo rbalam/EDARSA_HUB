@@ -803,11 +803,7 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             l.cantidad,
             l.precio_unitario,
             l.importe_bruto,
-            CASE
-                WHEN ISNULL(t.bruto_ticket, 0) <> 0
-                THEN CAST(l.importe_bruto * l.importe_neto_ticket / t.bruto_ticket AS decimal(18,4))
-                ELSE CAST(0 AS decimal(18,4))
-            END AS importe_neto
+            CAST(l.importe_bruto AS decimal(18,4)) AS importe_neto
         FROM l
         INNER JOIN t ON t.folio = l.folio
         ORDER BY l.folio, l.producto_codigo_fuente
@@ -817,10 +813,63 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
         rows = cur.fetchall() or []
         for r in rows:
             r["sistema_origen"] = "SOFTRESTAURANT"
-        return rows
+        return _soft_add_ticket_adjustments(rows)
     finally:
         conn.close()
 
+
+SOFT_AJUSTE_CHEQUE = "__ISCAM_AJUSTE_CHEQUE__"
+
+
+def _soft_add_ticket_adjustments(src_rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Conserva productos reales y registra descuentos/cortesias como ajuste separado.
+
+    No distribuye el total del encabezado entre productos. El importe del producto
+    permanece cantidad * precio. La diferencia contra cheques.total solo se acepta
+    como ajuste cuando el propio cheque informa descuento/cortesia.
+    """
+    grouped: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    for raw in src_rows:
+        row = dict(raw)
+        key = _s(row.get("id_transaccion"))
+        if not key:
+            raise RuntimeError("SoftRestaurant: fila sin id_transaccion")
+        grouped[key].append(row)
+
+    out: List[Dict[str, Any]] = []
+    for ticket_key, items in grouped.items():
+        header_values = {_d(row.get("importe_neto_ticket")) for row in items}
+        discount_values = {_d(row.get("descuento_ticket")) for row in items}
+        if len(header_values) != 1 or len(discount_values) != 1:
+            raise RuntimeError(f"SoftRestaurant: encabezado inconsistente en ticket {ticket_key}")
+
+        header_total = next(iter(header_values))
+        discount_indicator = next(iter(discount_values))
+        product_total = sum((_d(row.get("importe_neto")) for row in items), Decimal("0"))
+        delta = header_total - product_total
+
+        out.extend(items)
+        if abs(delta) <= TOLERANCIA_VENTAS:
+            continue
+
+        if delta < 0 and discount_indicator > 0:
+            adjustment = dict(items[0])
+            adjustment["producto_codigo_fuente"] = SOFT_AJUSTE_CHEQUE
+            adjustment["producto_nombre"] = "AJUSTE DEL CHEQUE (DESCUENTO / CORTESIA NO ASIGNADO A PRODUCTO)"
+            adjustment["cantidad"] = Decimal("0")
+            adjustment["precio_unitario"] = Decimal("0")
+            adjustment["importe_bruto"] = Decimal("0")
+            adjustment["importe_neto"] = delta
+            out.append(adjustment)
+            continue
+
+        raise RuntimeError(
+            f"SoftRestaurant: diferencia no explicada en ticket {ticket_key}; "
+            f"productos={product_total}; encabezado={header_total}; delta={delta}; "
+            f"indicador_descuento_cortesia={discount_indicator}"
+        )
+
+    return out
 
 
 def _mpro_operational_datetime_range(
@@ -1187,6 +1236,7 @@ def _materialize_rows(cfg: Dict[str, Any], dia: date, src_rows: List[Dict[str, A
 
 def _validate(src_rows: List[Dict[str, Any]], runtime: Dict[str, Any]) -> Dict[str, Any]:
     tickets: Dict[str, Dict[str, Any]] = {}
+    detalle_por_ticket: Dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
 
     for r in src_rows:
         es_kpi_raw = _s(_first(r, ["es_kpi_valido"], 1)).upper()
@@ -1199,10 +1249,22 @@ def _validate(src_rows: List[Dict[str, Any]], runtime: Dict[str, Any]) -> Dict[s
                 "venta": _d(r.get("importe_neto_ticket")),
                 "pax": int(_d(r.get("pax_ticket"))),
             }
+        detalle_por_ticket[k] += _d(r.get("importe_neto"))
 
     ventas_por_ticket = sum((v["venta"] for v in tickets.values()), Decimal("0"))
+    ventas_detalle = sum(detalle_por_ticket.values(), Decimal("0"))
     pax = sum(v["pax"] for v in tickets.values())
     tickets_total = len(tickets)
+    diferencias = []
+    for key, ticket in tickets.items():
+        detalle = detalle_por_ticket.get(key, Decimal("0"))
+        if not _money_eq(detalle, ticket["venta"]):
+            diferencias.append({
+                "id_transaccion": key,
+                "encabezado": ticket["venta"],
+                "detalle": detalle,
+                "delta": detalle - ticket["venta"],
+            })
 
     ventas_runtime = runtime["ventas"]
     tickets_runtime = runtime["tickets"]
@@ -1210,6 +1272,8 @@ def _validate(src_rows: List[Dict[str, Any]], runtime: Dict[str, Any]) -> Dict[s
 
     ok = (
         _money_eq(ventas_por_ticket, ventas_runtime)
+        and _money_eq(ventas_detalle, ventas_runtime)
+        and not diferencias
         and _int_eq(tickets_total, tickets_runtime)
         and _int_eq(pax, pax_runtime)
     )
@@ -1218,14 +1282,17 @@ def _validate(src_rows: List[Dict[str, Any]], runtime: Dict[str, Any]) -> Dict[s
         "ok": ok,
         "ventas_runtime": ventas_runtime,
         "ventas_por_ticket": ventas_por_ticket,
+        "ventas_detalle": ventas_detalle,
         "delta_ventas": ventas_por_ticket - ventas_runtime,
+        "delta_detalle": ventas_detalle - ventas_runtime,
         "tickets_runtime": tickets_runtime,
         "tickets_por_ticket": tickets_total,
         "delta_tickets": tickets_total - tickets_runtime,
         "pax_runtime": pax_runtime,
         "pax_por_ticket": pax,
         "delta_pax": pax - pax_runtime,
-        "lineas_producto": len(src_rows),
+        "tickets_no_conciliados": diferencias[:20],
+        "lineas_producto_y_ajustes": len(src_rows),
     }
 
 

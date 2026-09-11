@@ -396,16 +396,35 @@ async def ventas_periodos_productos(unidad: str = Query(...), periodo: str = Que
         FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
         WHERE unidad_negocio_id = %s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
           AND {pexpr} = %s
+          AND producto_codigo_fuente NOT LIKE '__ISCAM_AJUSTE_%'
         GROUP BY producto_codigo_fuente
         ORDER BY importe DESC
         """,
         (str(unidad_pk), periodo),
     )
+    resumen_rows = _q(
+        f"""
+        SELECT
+            SUM(CASE WHEN producto_codigo_fuente NOT LIKE '__ISCAM_AJUSTE_%' THEN ISNULL(importe_neto,0) ELSE 0 END) AS venta_productos,
+            SUM(CASE WHEN producto_codigo_fuente LIKE '__ISCAM_AJUSTE_%' THEN ISNULL(importe_neto,0) ELSE 0 END) AS ajustes_cheque,
+            SUM(ISNULL(importe_neto,0)) AS venta_neta
+        FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
+        WHERE unidad_negocio_id = %s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
+          AND {pexpr} = %s
+        """,
+        (str(unidad_pk), periodo),
+    )
+    resumen = resumen_rows[0] if resumen_rows else {}
     return {"success": True, "source": "Comercial_Inteligencia_VentasDetalleProducto",
             "unidad": unidad, "periodo": periodo,
             "productos": [{"codigo": r["codigo"], "producto": r["producto"],
                            "cantidad": _f(r["cantidad"]), "importe": round(_f(r["importe"]), 2),
-                           "tickets": int(r["tickets"] or 0)} for r in rows]}
+                           "tickets": int(r["tickets"] or 0)} for r in rows],
+            "resumen_conciliacion": {
+                "venta_productos": round(_f(resumen.get("venta_productos")), 2),
+                "ajustes_cheque": round(_f(resumen.get("ajustes_cheque")), 2),
+                "venta_neta": round(_f(resumen.get("venta_neta")), 2),
+            }}
 
 
 @iscam_router.get("/ventas-periodos/tickets")
@@ -425,7 +444,9 @@ async def ventas_periodos_tickets(unidad: str = Query(...), periodo: str = Query
         ),
         tickets AS (
             SELECT id_transaccion, numero_ticket, MIN(fecha_hora) AS fecha,
-                   SUM(ISNULL(importe_neto,0)) AS importe_ticket, MAX(ISNULL(pax,0)) AS personas
+                   SUM(ISNULL(importe_neto,0)) AS importe_ticket,
+                   SUM(CASE WHEN producto_codigo_fuente LIKE '__ISCAM_AJUSTE_%' THEN ISNULL(importe_neto,0) ELSE 0 END) AS ajustes_cheque,
+                   MAX(ISNULL(pax,0)) AS personas
             FROM base
             GROUP BY id_transaccion, numero_ticket
         ),
@@ -436,7 +457,7 @@ async def ventas_periodos_tickets(unidad: str = Query(...), periodo: str = Query
             WHERE producto_codigo_fuente = %s
             GROUP BY id_transaccion, numero_ticket
         )
-        SELECT t.numero_ticket AS folio, t.fecha, t.importe_ticket, t.personas,
+        SELECT t.numero_ticket AS folio, t.fecha, t.importe_ticket, t.ajustes_cheque, t.personas,
                p.cantidad, p.importe_producto
         FROM tickets t
         INNER JOIN producto_ticket p ON p.id_transaccion=t.id_transaccion AND p.numero_ticket=t.numero_ticket
@@ -447,7 +468,9 @@ async def ventas_periodos_tickets(unidad: str = Query(...), periodo: str = Query
     return {"success": True, "source": "Comercial_Inteligencia_VentasDetalleProducto",
             "tickets": [{
         "folio": r["folio"], "fecha": _iso(r["fecha"]),
-        "importe_ticket": round(_f(r["importe_ticket"]), 2), "personas": int(r["personas"] or 0),
+        "importe_ticket": round(_f(r["importe_ticket"]), 2),
+        "ajustes_cheque": round(_f(r["ajustes_cheque"]), 2),
+        "personas": int(r["personas"] or 0),
         "cantidad": _f(r["cantidad"]), "importe_producto": round(_f(r["importe_producto"]), 2)} for r in rows]}
 
 
@@ -523,14 +546,35 @@ async def cuenta_detalle(unidad: str = Query(...), folio: str = Query(...)):
                SUM(ISNULL(importe_neto,0)) AS importe
         FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
         WHERE unidad_negocio_id=%s AND numero_ticket=%s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
+          AND producto_codigo_fuente NOT LIKE '__ISCAM_AJUSTE_%'
         GROUP BY producto_codigo_fuente
         ORDER BY importe DESC
         """,
         (str(unidad_pk), folio),
     )
+    ajustes_rows = _q(
+        """
+        SELECT producto_codigo_fuente AS codigo, MAX(producto_nombre) AS concepto, SUM(ISNULL(importe_neto,0)) AS importe
+        FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
+        WHERE unidad_negocio_id=%s AND numero_ticket=%s AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
+          AND producto_codigo_fuente LIKE '__ISCAM_AJUSTE_%'
+        GROUP BY producto_codigo_fuente
+        """,
+        (str(unidad_pk), folio),
+    )
+    venta_productos = sum((_f(r["importe"]) for r in rows), 0.0)
+    ajustes_cheque = sum((_f(r["importe"]) for r in ajustes_rows), 0.0)
+    total_ticket = venta_productos + ajustes_cheque
     return {"success": True, "folio": folio,
             "productos": [{"codigo": r["codigo"], "producto": r["producto"], "cantidad": _f(r["cantidad"]),
-                           "precio": round(_f(r["precio"]), 2), "importe": round(_f(r["importe"]), 2)} for r in rows]}
+                           "precio": round(_f(r["precio"]), 2), "importe": round(_f(r["importe"]), 2)} for r in rows],
+            "ajustes": [{"codigo": r["codigo"], "concepto": r["concepto"], "importe": round(_f(r["importe"]), 2)} for r in ajustes_rows],
+            "resumen_conciliacion": {
+                "venta_productos": round(venta_productos, 2),
+                "ajustes_cheque": round(ajustes_cheque, 2),
+                "total_ticket": round(total_ticket, 2),
+                "diferencia": 0.0,
+            }}
 
 
 # ============================================================================
