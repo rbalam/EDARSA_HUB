@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-PAGOS-TICKET-SOURCE-R52-CARLOS-20260911T194000Z",
+  "created_at_utc": "2026-09-11T19:40:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e54411678270f72e1ef340478076161ed30d6277",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Diagnosticar en el POS SoftRestaurant de CIENFUEGOS los dos unicos tickets responsables de la diferencia de Pagos por Ticket de agosto 2026 detectados por R51: folio 104124 diferencia 600 y folio 104623 diferencia 150. Determinar si el faltante corresponde a forma de pago omitida, descuento/cortesia, pago parcial u otro concepto del cheque. No modificar Cuentas, Comandas, codigo, datos ni Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": ["CIENFUEGOS"],
+      "system_types": ["SOFTRESTAURANT"],
+      "queries": [
+        {
+          "name": "cienfuegos_gap_tickets_headers",
+          "sql": "SELECT ch.folio, t.apertura, t.cierre, ch.cancelado, CAST(ISNULL(ch.subtotal,0) AS decimal(18,4)) AS subtotal, CAST(ISNULL(ch.totaldescuentos,0) AS decimal(18,4)) AS totaldescuentos, CAST(ISNULL(ch.totalcortesias,0) AS decimal(18,4)) AS totalcortesias, CAST(ISNULL(ch.totalimpuesto1,0) AS decimal(18,4)) AS iva, CAST(ISNULL(ch.total,0) AS decimal(18,4)) AS total, CAST(ISNULL(ch.propina,0) AS decimal(18,4)) AS propina, ch.nopersonas FROM cheques ch INNER JOIN turnos t ON t.idturno=ch.idturno WHERE ch.folio IN ('104124','104623') ORDER BY ch.folio"
+        },
+        {
+          "name": "cienfuegos_gap_tickets_payment_rows",
+          "sql": "SELECT cp.folio, cp.idformadepago, fp.descripcion AS forma_pago, fp.tipo AS tipo_forma, CAST(ISNULL(cp.importe,0) AS decimal(18,4)) AS importe, CAST(ISNULL(cp.propina,0) AS decimal(18,4)) AS propina, cp.referencia FROM chequespagos cp LEFT JOIN formasdepago fp ON fp.idformadepago=cp.idformadepago WHERE cp.folio IN ('104124','104623') ORDER BY cp.folio, cp.idformadepago, cp.importe"
+        },
+        {
+          "name": "cienfuegos_gap_tickets_payment_reconciliation",
+          "sql": "SELECT ch.folio, CAST(ISNULL(ch.total,0) AS decimal(18,4)) AS total_cheque, CAST(ISNULL(ch.totaldescuentos,0) AS decimal(18,4)) AS descuentos, CAST(ISNULL(ch.totalcortesias,0) AS decimal(18,4)) AS cortesias, CAST(ISNULL(ch.propina,0) AS decimal(18,4)) AS propina_cheque, CAST(ISNULL(SUM(cp.importe),0) AS decimal(18,4)) AS suma_pagos, CAST(ISNULL(SUM(cp.propina),0) AS decimal(18,4)) AS propina_pagos, CAST(ISNULL(ch.total,0)-ISNULL(SUM(cp.importe),0) AS decimal(18,4)) AS diferencia_pago_vs_total FROM cheques ch LEFT JOIN chequespagos cp ON cp.folio=ch.folio WHERE ch.folio IN ('104124','104623') GROUP BY ch.folio,ch.total,ch.totaldescuentos,ch.totalcortesias,ch.propina ORDER BY ch.folio"
+        },
+        {
+          "name": "cienfuegos_payment_related_schema",
+          "sql": "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE (TABLE_NAME='chequespagos' OR TABLE_NAME='cheques' OR TABLE_NAME='formasdepago') AND (COLUMN_NAME LIKE '%pago%' OR COLUMN_NAME LIKE '%importe%' OR COLUMN_NAME LIKE '%total%' OR COLUMN_NAME LIKE '%descu%' OR COLUMN_NAME LIKE '%cortesia%' OR COLUMN_NAME LIKE '%propina%' OR COLUMN_NAME LIKE '%forma%' OR COLUMN_NAME LIKE '%refer%') ORDER BY TABLE_NAME, ORDINAL_POSITION"
+        },
+        {
+          "name": "cienfuegos_payment_tables_candidates",
+          "sql": "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' AND (TABLE_NAME LIKE '%pago%' OR TABLE_NAME LIKE '%cobro%' OR TABLE_NAME LIKE '%credito%' OR TABLE_NAME LIKE '%cuenta%') ORDER BY TABLE_NAME"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
