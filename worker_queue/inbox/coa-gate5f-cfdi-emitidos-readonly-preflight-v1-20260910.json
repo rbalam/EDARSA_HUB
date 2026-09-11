@@ -1,0 +1,65 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate5f-cfdi-emitidos-readonly-preflight-v1-20260910",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "24fda580c6c2045947ef88a997d5b4f7742d9bba",
+  "mode": "READ_ONLY_SQL",
+  "objective": "COA Gate 5F: preflight final READ_ONLY previo a cualquier ejecucion fisica de backend/database/migrations/20260910_coa_cfdi_emitidos.sql y su rollback. Confirmar que el estado SQL sigue compatible con el diseno certificado Gate 5E: no existen las dos tablas fiscales propuestas, no existen VentaID ni DocumentoFiscalEmitidoID en COA_ExpedienteReferencias, no existen FKs/indices nuevos, el CHECK original de un solo destino sigue presente y valido, no hay filas de COA_ExpedienteReferencias que violen la expresion original, las PK/tipos de referencias canonicas no cambiaron, no aparecio un objeto fiscal emitido equivalente, y no hay drift que invalide la migracion. No ejecutar DDL/DML/EXEC/SELECT INTO. No Produccion. Si todo pasa, reportar READY_FOR_EXECUTION_PREFLIGHT; si algo cambia, listar blockers exactos y no autorizar ejecucion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA",
+    "chat": "coa-gate5f-cfdi-emitidos-readonly-preflight-v1-20260910"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate5f_target_object_collisions",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name IN ('Fiscal_DocumentosEmitidosEstatus','Fiscal_DocumentosEmitidos','FK_COA_ExpedienteReferencias_Venta','FK_COA_ExpedienteReferencias_DocumentoFiscalEmitido') ORDER BY s.name,o.name"
+        },
+        {
+          "name": "gate5f_target_column_collisions",
+          "sql": "SELECT c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.columns c JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND c.name IN ('VentaID','DocumentoFiscalEmitidoID') ORDER BY c.name"
+        },
+        {
+          "name": "gate5f_target_index_collisions",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,i.name AS index_name FROM sys.indexes i JOIN sys.tables t ON t.object_id=i.object_id JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE i.name IN ('UX_Fiscal_DocumentosEmitidos_UUID','IX_Fiscal_DocumentosEmitidos_Cliente_Fecha','IX_Fiscal_DocumentosEmitidos_Empresa_Estatus','IX_Fiscal_DocumentosEmitidos_Unidad','IX_Fiscal_DocumentosEmitidos_Venta','IX_COA_ExpedienteReferencias_Venta','IX_COA_ExpedienteReferencias_DocumentoFiscalEmitido') ORDER BY i.name"
+        },
+        {
+          "name": "gate5f_original_check_contract",
+          "sql": "SELECT cc.name AS constraint_name,cc.is_disabled,cc.is_not_trusted,cc.definition FROM sys.check_constraints cc WHERE cc.parent_object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND cc.name='CK_COA_ExpedienteReferencias_UnSoloDestino'"
+        },
+        {
+          "name": "gate5f_original_check_violations",
+          "sql": "SELECT COUNT_BIG(*) AS violating_rows FROM dbo.COA_ExpedienteReferencias WHERE ((CASE WHEN ClienteID IS NULL THEN 0 ELSE 1 END)+(CASE WHEN ProveedorID IS NULL THEN 0 ELSE 1 END)+(CASE WHEN DocumentoFiscalID IS NULL THEN 0 ELSE 1 END)+(CASE WHEN PagoID IS NULL THEN 0 ELSE 1 END)+(CASE WHEN DecisionPagoID IS NULL THEN 0 ELSE 1 END)+(CASE WHEN NominaID IS NULL THEN 0 ELSE 1 END)+(CASE WHEN DispersionNominaID IS NULL THEN 0 ELSE 1 END)+(CASE WHEN NominaReciboID IS NULL THEN 0 ELSE 1 END)+(CASE WHEN ColaboradorID IS NULL THEN 0 ELSE 1 END)+(CASE WHEN ContratoID IS NULL THEN 0 ELSE 1 END)) <> 1"
+        },
+        {
+          "name": "gate5f_reference_types",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Cliente_Catalogo' AND c.name='ClienteID') OR (t.name='Venta_Encabezado' AND c.name='VentaID') OR (t.name='Proveedor_Monedas' AND c.name='MonedaID') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID') ORDER BY t.name,c.name"
+        },
+        {
+          "name": "gate5f_reference_keys",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,i.name AS index_name,i.is_primary_key,i.is_unique,ic.key_ordinal FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.indexes i ON i.object_id=t.object_id AND (i.is_primary_key=1 OR i.is_unique=1) JOIN sys.index_columns ic ON ic.object_id=t.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE (((t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Cliente_Catalogo' AND c.name='ClienteID') OR (t.name='Venta_Encabezado' AND c.name='VentaID') OR (t.name='Proveedor_Monedas' AND c.name='MonedaID') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID')) AND ic.key_ordinal=1) ORDER BY t.name,c.name,i.is_primary_key DESC"
+        },
+        {
+          "name": "gate5f_coa_reference_row_count",
+          "sql": "SELECT COUNT_BIG(*) AS coa_reference_rows FROM dbo.COA_ExpedienteReferencias"
+        },
+        {
+          "name": "gate5f_equivalent_fiscal_objects",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,SUM(CASE WHEN c.name IN ('ClienteID','VentaID','UUID','FolioFiscal','RFCReceptor','FechaTimbrado','EstatusSAT','FechaCancelacion','RutaXML','RutaPDF','EmpresaID','UnidadNegocioID','Total') THEN 1 ELSE 0 END) AS signal_count FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id WHERE t.name NOT LIKE 'Compras_%' GROUP BY s.name,t.name HAVING SUM(CASE WHEN c.name IN ('ClienteID','VentaID','UUID','FolioFiscal','RFCReceptor','FechaTimbrado','EstatusSAT','FechaCancelacion','RutaXML','RutaPDF','EmpresaID','UnidadNegocioID','Total') THEN 1 ELSE 0 END) >= 6 ORDER BY signal_count DESC,s.name,t.name"
+        },
+        {
+          "name": "gate5f_database_identity",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
