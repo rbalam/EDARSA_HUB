@@ -1,0 +1,69 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-PAYMENTS-ONLY-BRIDGE-R59-CARLOS-20260911T222000Z",
+  "created_at_utc": "2026-09-11T22:20:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "720c03eded1b76a69d28dcce2462409a164a569e",
+  "production_allowed": false,
+  "objective": "Corregir el rechazo de R58 agregando al universal_job_bridge el mismo modo cerrado ISCAM_PAYMENTS_ONLY_RESYNC que R57 ya agregó al dispatcher. El bridge debe aceptar exactamente una unidad, fechas válidas, actions vacías, confirmación explícita para escritura y sólo checks sql_readonly_audit. No tocar lógica ISCAM de Cuentas, Comandas, Ventas, Formas de Pago ni Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "expected_count": 1,
+      "old": "SOFTRESTAURANT_FULL_HISTORY_MODE = \"SOFTRESTAURANT_FULL_HISTORY_RESYNC\"\nMPRO_FULL_HISTORY_MODE = \"MPRO_FULL_HISTORY_RESYNC\"\nISCAM_DETAIL_BACKFILL_MODE = \"ISCAM_DETAIL_BACKFILL\"\n",
+      "new": "SOFTRESTAURANT_FULL_HISTORY_MODE = \"SOFTRESTAURANT_FULL_HISTORY_RESYNC\"\nMPRO_FULL_HISTORY_MODE = \"MPRO_FULL_HISTORY_RESYNC\"\nISCAM_DETAIL_BACKFILL_MODE = \"ISCAM_DETAIL_BACKFILL\"\nISCAM_PAYMENTS_ONLY_RESYNC_MODE = \"ISCAM_PAYMENTS_ONLY_RESYNC\"\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "expected_count": 1,
+      "old": "    elif mode == MPRO_FULL_HISTORY_MODE:\n",
+      "new": "    elif mode == ISCAM_PAYMENTS_ONLY_RESYNC_MODE:\n        if actions not in (None, []):\n            errors.append(\"ISCAM_PAYMENTS_ONLY_ACTIONS_FORBIDDEN\")\n        units = job.get(\"units\", [])\n        if not isinstance(units, list) or len(units) != 1 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):\n            errors.append(\"ISCAM_PAYMENTS_ONLY_EXACTLY_ONE_UNIT_REQUIRED\")\n        if not isinstance(job.get(\"fecha_inicio\"), str) or not DATE_RE.fullmatch(job.get(\"fecha_inicio\", \"\")):\n            errors.append(\"ISCAM_PAYMENTS_ONLY_FECHA_INICIO_INVALID\")\n        if not isinstance(job.get(\"fecha_fin\"), str) or not DATE_RE.fullmatch(job.get(\"fecha_fin\", \"\")):\n            errors.append(\"ISCAM_PAYMENTS_ONLY_FECHA_FIN_INVALID\")\n        dry_run = job.get(\"dry_run\", True)\n        if not isinstance(dry_run, bool):\n            errors.append(\"ISCAM_PAYMENTS_ONLY_DRY_RUN_INVALID\")\n        if dry_run is False and job.get(\"confirm_payments_only_resync\") is not True:\n            errors.append(\"ISCAM_PAYMENTS_ONLY_CONFIRMATION_REQUIRED\")\n    elif mode == MPRO_FULL_HISTORY_MODE:\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "expected_count": 1,
+      "old": "    elif mode == MPRO_FULL_HISTORY_MODE:\n        if not isinstance(checks, list) or not checks:\n            errors.append(\"MPRO_RESYNC_AUDIT_REQUIRED\")\n",
+      "new": "    elif mode == ISCAM_PAYMENTS_ONLY_RESYNC_MODE:\n        if not isinstance(checks, list) or not checks:\n            errors.append(\"ISCAM_PAYMENTS_ONLY_AUDIT_REQUIRED\")\n        elif any(not isinstance(c, dict) or c.get(\"type\") != \"sql_readonly_audit\" for c in checks):\n            errors.append(\"ISCAM_PAYMENTS_ONLY_ONLY_SQL_AUDIT_ALLOWED\")\n    elif mode == MPRO_FULL_HISTORY_MODE:\n        if not isinstance(checks, list) or not checks:\n            errors.append(\"MPRO_RESYNC_AUDIT_REQUIRED\")\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_payments_only_bridge_r59.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nBRIDGE = ROOT / 'tools' / 'mirror_sync' / 'universal_job_bridge.py'\n\n\ndef _text():\n    return BRIDGE.read_text(encoding='utf-8')\n\n\ndef test_bridge_knows_payments_only_mode():\n    text = _text()\n    assert 'ISCAM_PAYMENTS_ONLY_RESYNC_MODE = \"ISCAM_PAYMENTS_ONLY_RESYNC\"' in text\n    assert 'elif mode == ISCAM_PAYMENTS_ONLY_RESYNC_MODE:' in text\n\n\ndef test_bridge_payments_only_contract_is_closed():\n    text = _text()\n    assert 'ISCAM_PAYMENTS_ONLY_ACTIONS_FORBIDDEN' in text\n    assert 'ISCAM_PAYMENTS_ONLY_EXACTLY_ONE_UNIT_REQUIRED' in text\n    assert 'ISCAM_PAYMENTS_ONLY_FECHA_INICIO_INVALID' in text\n    assert 'ISCAM_PAYMENTS_ONLY_FECHA_FIN_INVALID' in text\n    assert 'ISCAM_PAYMENTS_ONLY_CONFIRMATION_REQUIRED' in text\n    assert 'ISCAM_PAYMENTS_ONLY_AUDIT_REQUIRED' in text\n    assert 'ISCAM_PAYMENTS_ONLY_ONLY_SQL_AUDIT_ALLOWED' in text\n\n\ndef test_r58_shape_would_not_require_mutation_actions():\n    text = _text()\n    payments_pos = text.index('elif mode == ISCAM_PAYMENTS_ONLY_RESYNC_MODE:')\n    mpro_pos = text.index('elif mode == MPRO_FULL_HISTORY_MODE:', payments_pos)\n    block = text[payments_pos:mpro_pos]\n    assert 'actions not in (None, [])' in block\n    assert 'ACTIONS_REQUIRED' not in block\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "backend/tests/test_iscam_payments_only_bridge_r59.py",
+        "backend/tests/test_iscam_payments_only_worker_mode_r57.py",
+        "backend/tests/test_iscam_cuentas_comandas_locked_r50.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_payments_only_bridge_r59.py",
+        "backend/tests/test_iscam_payments_only_worker_mode_r57.py",
+        "backend/tests/test_iscam_payments_only_resync_r56.py",
+        "backend/tests/test_iscam_soft_payment_fx_r54.py",
+        "backend/tests/test_iscam_cuentas_comandas_locked_r50.py"
+      ]
+    },
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
