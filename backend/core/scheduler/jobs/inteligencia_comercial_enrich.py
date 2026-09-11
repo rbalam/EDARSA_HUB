@@ -96,7 +96,16 @@ def _extract_softrestaurant(cfg, fi, ff):
             SELECT CONVERT(VARCHAR(64), cp.folio) AS folio,
                    CONVERT(VARCHAR(40), cp.idformadepago) AS codigo,
                    fp.descripcion AS forma,
-                   cp.importe AS importe, cp.propina AS propina,
+                   CAST(
+                       ISNULL(cp.importe, 0)
+                       * COALESCE(NULLIF(cp.tipodecambio, 0), NULLIF(fp.tipodecambio, 0), 1)
+                       AS decimal(18,4)
+                   ) AS importe,
+                   CAST(
+                       ISNULL(cp.propina, 0)
+                       * COALESCE(NULLIF(cp.tipodecambio, 0), NULLIF(fp.tipodecambio, 0), 1)
+                       AS decimal(18,4)
+                   ) AS propina,
                    cp.referencia AS referencia, t.apertura AS fecha
             FROM chequespagos cp
             INNER JOIN cheques ch ON ch.folio = cp.folio
