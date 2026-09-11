@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "EDARSAHUB-ISCAM-ESTELAR-TICKET-PARITY-R45-CARLOS-20260911T170600Z",
+  "created_at_utc": "2026-09-11T17:06:00Z",
+  "requested_by": "chatgpt",
+  "requester_email": "carlosruz@edarsa.com.mx",
+  "project": "V1",
+  "request_source": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "83fd456c448d60a7884eb0efebd32365bc16809e",
+  "production_allowed": false,
+  "objective": "Corregir exclusivamente la paridad de ventas históricas SoftRestaurant entre Reporte Ejecutivo e ISCAM a nivel detalle de ticket/producto. El Reporte Ejecutivo en backend/modules/comercial/queries/softrestaurant.py es la fuente de verdad del universo de ventas. Actualmente Comercial V2 y el detalle canónico usan una ventana 09:00->09:00 que no es equivalente al filtro calendario por turnos.apertura del Ejecutivo; además existe un ETL legacy basado en Sync_Sales.FechaHora que no debe gobernar el detalle ISCAM. Alinear header/runtime y detalle canónico para que cada fecha use exactamente el mismo conjunto de cheques, importe, tickets y PAX que query_ventas_periodo_sr. Hacer primero cambios de código y DRY RUN para LA ESTELAR del 2026-09-04 al 2026-09-07, con evidencia específica del ticket 24667. No ejecutar resync con escritura de datos en esta orden.",
+  "acceptance": [
+    "Para SoftRestaurant histórico, el contrato de fecha debe ser la fecha calendario de turnos.apertura igual que query_ventas_periodo_sr; queda prohibida la ventana fija 09:00->09:00 y queda prohibido usar Sistema_TurnosOperativosUnidad para esta población histórica.",
+    "El universo de tickets del header/runtime y del detalle debe ser equivalente al del Reporte Ejecutivo: cheques INNER JOIN turnos por idturno, fecha por turnos.apertura y cheques.cancelado=0. No agregar filtros de cierre, idempresa u otros que excluyan filas respecto del Ejecutivo salvo que se demuestre equivalencia exacta con prueba automatizada.",
+    "El importe por ticket y el total diario deben reutilizar la semántica vigente de query_ventas_periodo_sr. No inventar tratamiento de propina: respetar el helper/contrato actual del Ejecutivo y demostrar igualdad de importe por día.",
+    "El scheduler sync_comercial_v2 debe seguir usando el detalle canónico directo del POS y no el ETL legacy backend/scripts/poblar_ventas_detalle_producto.py basado en Sync_Sales.items.",
+    "Actualizar o reemplazar test_softrestaurant_canonical_window_join_r40.py porque hoy blinda erróneamente 09:00->09:00. El nuevo test debe fallar ante cualquier reintroducción de esa ventana y debe comprobar paridad con backend/modules/comercial/queries/softrestaurant.py.",
+    "Agregar pruebas para detalle SoftRestaurant que validen: misma fecha_operacion que turnos.apertura calendario, cancelados excluidos, mismo total diario, mismo COUNT(DISTINCT folio) y mismo PAX que Ejecutivo.",
+    "Ejecutar DRY RUN sin DML para ESTELAR en 2026-09-04, 2026-09-05, 2026-09-06 y 2026-09-07. Reportar por día ventas/tickets/PAX del contrato Ejecutivo versus detalle preparado y delta exacto.",
+    "En el DRY RUN reportar el ticket 24667 con folio, idturno, turnos.apertura, cheques.fecha, cancelado, importe y fecha_operacion que le corresponde bajo el contrato Ejecutivo. Debe aparecer en una sola fecha canónica dentro del rango.",
+    "Identificar filas legacy o históricas de Comercial_Inteligencia_VentasDetalleProducto que quedarían en fecha incorrecta después del cambio, pero no borrarlas en esta orden. Entregar plan de resync controlado del rango necesario para limpiarlas después de que el DRY RUN cuadre.",
+    "No modificar frontend salvo que sea estrictamente necesario para mostrar datos ya corregidos; el objetivo es la fuente y el detalle, no maquillaje visual.",
+    "Todas las pruebas relevantes deben pasar y git diff --check debe quedar limpio."
+  ],
+  "constraints": [
+    "No usar ni modificar EDARSA_SQL_AUDITOR_RUNTIME ni Agente SQL Auditor.",
+    "No tocar Edarsahub_Produccion.",
+    "No ejecutar DML de resync sobre datos de ventas en esta orden; solo código, pruebas y dry-run.",
+    "No introducir hardcodes por LA ESTELAR fuera de fixtures/tests o del rango explícito del dry-run.",
+    "No sustituir turnos.apertura por cheques.fecha para asignar fecha_operacion SoftRestaurant histórica.",
+    "No usar ventana 09:00->09:00 para ventas históricas SoftRestaurant.",
+    "No mover lógica que ya funciona en MPRO; limitar el cambio a SoftRestaurant y paridad ISCAM/Ejecutivo.",
+    "Si base_sha ya no coincide con Edarsahub_Desarrollo, detenerse fail-closed y reportar BASE_SHA_MISMATCH sin sobrescribir trabajo ajeno."
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
