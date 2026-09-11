@@ -1,46 +1,58 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "45db5f37d6a55755446fae4ed34c606f3267a12e",
-  "generated_at_utc": "2026-09-11T03:31:47Z",
+  "development_sha": "c0f7d7e4ab47d953883d36ac194200eec5dad37e",
+  "generated_at_utc": "2026-09-11T03:44:07Z",
   "history": {
-    "done_total_local": 384,
+    "done_total_local": 385,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 409,
-    "results_total_local": 719
+    "results_total_local": 720
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 20,
+      "age_seconds": 11,
+      "job_id": "ARBITROA-BOS-GATE-A0-MASTER-ARCHITECTURE-V1-20260910",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 760,
       "job_id": "BOS-AGENT-HARNESS-AH0-MASTER-ARCHITECTURE-V1-R2-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 378,
+      "age_seconds": 1119,
       "job_id": "coa-gate5g-cfdi-development-execution-channel-v1-20260910",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 23,
+      "job_id": "BOS-AGENT-HARNESS-AH2-REGISTRY-FOUNDATION-V1-20260911",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
-  "queue_running": 0,
+  "queue_result_ready_recent": 3,
+  "queue_running": 1,
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "BOS-AGENT-HARNESS-AH2-REGISTRY-FOUNDATION-V1-20260911",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T03:31:43Z",
-    "last_receive_utc": "2026-09-11T03:31:44Z",
-    "last_terminal_utc": "2026-09-11T03:31:26Z",
-    "pid": "281"
+    "last_cycle_utc": "2026-09-11T03:44:05Z",
+    "last_receive_utc": "2026-09-11T03:44:00Z",
+    "last_terminal_utc": "2026-09-11T03:43:56Z",
+    "pid": "1293"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
