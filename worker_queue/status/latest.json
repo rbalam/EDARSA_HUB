@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "6454269c094f3dff05aff130bd99598a0321196d",
-  "generated_at_utc": "2026-09-11T05:37:18Z",
+  "generated_at_utc": "2026-09-11T05:38:49Z",
   "history": {
     "done_total_local": 399,
     "pending_total_local": 0,
@@ -13,67 +13,67 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3453,
+      "age_seconds": 3544,
       "job_id": "BOS-AGENT-HARNESS-AH4-WORKER-COMPILER-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 198,
+      "age_seconds": 288,
       "job_id": "BOS-AGENT-HARNESS-AH5-EVIDENCE-PROVENANCE-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2433,
+      "age_seconds": 2523,
       "job_id": "CATALOGO-AMPLIADO-GATE8G-MIGRATION-WRITER-RECOVERY-R1-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 180,
+      "age_seconds": 270,
       "job_id": "CATALOGO-AMPLIADO-GATE8G-MIGRATION-WRITER-RETRIGGER-R2-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 177,
+      "age_seconds": 267,
       "job_id": "CATALOGO-AMPLIADO-GATE8G-MIGRATION-WRITER-RETRIGGER-R3-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 170,
+      "age_seconds": 260,
       "job_id": "CATALOGO-AMPLIADO-GATE8G-SQL-POSTCHECK-READONLY-R1-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 164,
+      "age_seconds": 255,
       "job_id": "CAVAS-CORPORATIVAS-GATE12H3-FINAL-POSTAUDIT-PERSONA-LINK-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 150,
+      "age_seconds": 240,
       "job_id": "CAVAS-CORPORATIVAS-GATE12I-BOS-SOCIO-PERSONA-CONTROLLED-MIGRATION-EXECUTION-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3134,
+      "age_seconds": 3225,
       "job_id": "EDARSAHUB-INVENTARIOS-RECOVERY-CANARY-CONTEXT-COMPLETE-20260910T215000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3171,
+      "age_seconds": 3262,
       "job_id": "servers-integrations-gate5d-sql-security-readonly-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3138,
+      "age_seconds": 3228,
       "job_id": "worker-orchestrator-sql-migration-gate5-r1-20260911T0435Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -91,8 +91,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T05:37:15Z",
-    "last_receive_utc": "2026-09-11T05:37:16Z",
+    "last_cycle_utc": "2026-09-11T05:38:42Z",
+    "last_receive_utc": "2026-09-11T05:38:44Z",
     "last_terminal_utc": "2026-09-11T05:34:48Z",
     "pid": "1088"
   },
