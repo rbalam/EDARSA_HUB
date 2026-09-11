@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-SOFT-PAYMENT-FX-R54-CARLOS-20260911T212500Z",
+  "created_at_utc": "2026-09-11T21:25:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e54411678270f72e1ef340478076161ed30d6277",
+  "production_allowed": false,
+  "objective": "Corregir exclusivamente la extraccion de Pagos por Ticket SoftRestaurant para convertir cada pago a MXN usando primero chequespagos.tipodecambio historico, luego formasdepago.tipodecambio y finalmente 1. R53 confirmo que los folios 104124 y 104623 de CIENFUEGOS tienen pagos en forma 03 DOLARES USA con cp.tipodecambio=16 y que esa omision explica exactamente la diferencia de 750 pesos. No hardcodear 16. No modificar Resumen de Cuentas, Comandas de Venta, Ventas por Periodo, Formas de Pago (Corte), MPRO ni Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+      "expected_count": 1,
+      "old": "                   fp.descripcion AS forma,\n                   cp.importe AS importe, cp.propina AS propina,\n                   cp.referencia AS referencia, t.apertura AS fecha\n",
+      "new": "                   fp.descripcion AS forma,\n                   CAST(\n                       ISNULL(cp.importe, 0)\n                       * COALESCE(NULLIF(cp.tipodecambio, 0), NULLIF(fp.tipodecambio, 0), 1)\n                       AS decimal(18,4)\n                   ) AS importe,\n                   CAST(\n                       ISNULL(cp.propina, 0)\n                       * COALESCE(NULLIF(cp.tipodecambio, 0), NULLIF(fp.tipodecambio, 0), 1)\n                       AS decimal(18,4)\n                   ) AS propina,\n                   cp.referencia AS referencia, t.apertura AS fecha\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_soft_payment_fx_r54.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nENRICH = ROOT / 'backend' / 'core' / 'scheduler' / 'jobs' / 'inteligencia_comercial_enrich.py'\n\n\ndef _soft_payment_query_block():\n    text = ENRICH.read_text(encoding='utf-8')\n    return text.split('def _extract_softrestaurant', 1)[1].split('# ============================================================================\\n# EXTRACCIÓN MPRO', 1)[0]\n\n\ndef test_softrestaurant_payments_use_historical_payment_exchange_rate_first():\n    block = _soft_payment_query_block()\n    fx = 'COALESCE(NULLIF(cp.tipodecambio, 0), NULLIF(fp.tipodecambio, 0), 1)'\n    assert block.count(fx) == 2\n    assert 'ISNULL(cp.importe, 0)' in block\n    assert 'ISNULL(cp.propina, 0)' in block\n\n\ndef test_softrestaurant_payment_fx_is_not_hardcoded_to_usd_rate():\n    block = _soft_payment_query_block()\n    assert '* 16' not in block\n    assert '= 16' not in block\n    assert 'cp.tipodecambio' in block\n    assert 'fp.tipodecambio' in block\n\n\ndef test_mpro_extractor_is_outside_softrestaurant_fx_change():\n    text = ENRICH.read_text(encoding='utf-8')\n    mpro = text.split('def _extract_mpro', 1)[1]\n    assert 'cp.Cp_Importe AS importe' in mpro\n    assert 'cp.Cp_Propina AS propina' in mpro\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+        "backend/tests/test_iscam_soft_payment_fx_r54.py",
+        "backend/tests/test_iscam_cuentas_comandas_locked_r50.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_soft_payment_fx_r54.py",
+        "backend/tests/test_iscam_cuentas_comandas_locked_r50.py"
+      ]
+    },
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
