@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "bcbbf68fb60aae1c2af9d123614dbd2c5be6fa99",
-  "generated_at_utc": "2026-09-11T04:32:30Z",
+  "generated_at_utc": "2026-09-11T04:33:47Z",
   "history": {
     "done_total_local": 391,
     "pending_total_local": 0,
@@ -13,49 +13,49 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2914,
+      "age_seconds": 2991,
       "job_id": "ARBITROA-BOS-GATE-A0-MASTER-ARCHITECTURE-V1-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2897,
+      "age_seconds": 2974,
       "job_id": "BOS-AGENT-HARNESS-AH2-REGISTRY-FOUNDATION-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2017,
+      "age_seconds": 2094,
       "job_id": "BOS-AGENT-HARNESS-AH3-PLANNER-ROUTER-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2882,
+      "age_seconds": 2959,
       "job_id": "CATALOGO-AMPLIADO-GATE8G-NOTIFICATIONS-MIGRATION-READONLY-R2-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1707,
+      "age_seconds": 1784,
       "job_id": "CAVAS-CORPORATIVAS-GATE12H-BOS-SOCIO-PERSONA-MIGRATION-READINESS-R4-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2644,
+      "age_seconds": 2721,
       "job_id": "CAVAS-CORPORATIVAS-GATE12H2-POSTAUDIT-PERSONA-LINK-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2560,
+      "age_seconds": 2637,
       "job_id": "EDARSAHUB-INVENTARIOS-RECOVERY-CANARY-CANDIDATE-AUDIT-20260910T214500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 65,
+      "age_seconds": 142,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5E-LIVE-DIAG-MIN-R1-20260911",
       "reason": null,
       "state": "RESULT_READY"
@@ -73,8 +73,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T04:32:27Z",
-    "last_receive_utc": "2026-09-11T04:32:28Z",
+    "last_cycle_utc": "2026-09-11T04:33:45Z",
+    "last_receive_utc": "2026-09-11T04:33:46Z",
     "last_terminal_utc": "2026-09-11T04:31:25Z",
     "pid": "285"
   },
