@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "24fda580c6c2045947ef88a997d5b4f7742d9bba",
-  "generated_at_utc": "2026-09-11T01:08:46Z",
+  "generated_at_utc": "2026-09-11T01:10:02Z",
   "history": {
     "done_total_local": 379,
     "pending_total_local": 0,
@@ -13,37 +13,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2216,
+      "age_seconds": 2293,
       "job_id": "CATALOGO-AMPLIADO-GATE8F-EXTERNAL-DELIVERY-CANONICAL-INTEGRATION-R4-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2555,
+      "age_seconds": 2632,
       "job_id": "CXP-GATE3D-B-MPRO-WRITE-CONTRACT-DISCOVERY-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2535,
+      "age_seconds": 2611,
       "job_id": "CXP-GATE3D-C-SOFTRESTAURANT-WRITE-CONTRACT-DISCOVERY-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2260,
+      "age_seconds": 2337,
       "job_id": "coa-gate5e-cfdi-emitidos-migration-design-v1-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1029,
+      "age_seconds": 1105,
       "job_id": "coa-gate5f-cfdi-emitidos-readonly-preflight-v1-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2611,
+      "age_seconds": 2687,
       "job_id": "worker-orchestrator-publisher-gate3-r1-20260910T2242Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -61,8 +61,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T01:08:41Z",
-    "last_receive_utc": "2026-09-11T01:08:42Z",
+    "last_cycle_utc": "2026-09-11T01:09:58Z",
+    "last_receive_utc": "2026-09-11T01:10:00Z",
     "last_terminal_utc": "2026-09-11T00:51:36Z",
     "pid": "284"
   },
