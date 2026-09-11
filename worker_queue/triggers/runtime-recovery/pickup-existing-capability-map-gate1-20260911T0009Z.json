@@ -1,0 +1,3 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Reactivate the existing Universal Worker runtime and pick up the already-published job EDARSAHUB-ENTERPRISE-CAPABILITY-MAP-GATE1-20260909 from worker_queue/inbox. Do not create, clone, rename, or re-emit the job. Preserve the original job_id and request file. If a terminal result already exists anywhere in worker_queue/results for this same job_id or equivalent terminal content, do not execute it again; only converge status/results safely. Do not create another worker, do not modify dispatcher/supervisor/watchdog, do not touch Production, and do not execute any destructive Git or SQL action.","production_touched":false}
