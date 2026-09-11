@@ -1,0 +1,64 @@
+{
+  "base_sha": "e6a6feb891f719734f67246f3882534f744afcd4",
+  "blockers": [],
+  "candidate_sha": "ff11d2e4ce2e248324458206e7ea0b262b29b394",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-11T23:12:02Z",
+  "development_sha": "ff11d2e4ce2e248324458206e7ea0b262b29b394",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/inteligencia_comercial/iscam_routes.py",
+    "backend/tests/test_iscam_formas_detallepagos_r64.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-FORMAS-DETALLEPAGOS-R64-CARLOS-20260911T230000Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-11T23:12:16Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "total",
+              "efectivo",
+              "tarjeta",
+              "amex",
+              "internacional",
+              "otros",
+              "propina"
+            ],
+            "name": "cienfuegos_aug26_formas_r64_control",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "3959563.00",
+                "680799.96",
+                "2241451.21",
+                "783979.83",
+                "278035.50",
+                "253332.00",
+                "369594.86"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-11T23:11:50Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
