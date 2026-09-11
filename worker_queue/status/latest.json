@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "e6a6feb891f719734f67246f3882534f744afcd4",
-  "generated_at_utc": "2026-09-11T22:50:56Z",
+  "generated_at_utc": "2026-09-11T22:52:10Z",
   "history": {
     "done_total_local": 432,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3145,
+      "age_seconds": 3219,
       "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-PAYMENTS-RESYNC-R58-CARLOS-20260911T221000Z",
       "reasons": [
         "ACTIONS_REQUIRED"
@@ -22,31 +22,31 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 748,
+      "age_seconds": 822,
       "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-FORMAS-DIAG-R62-CARLOS-20260911T223500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1202,
+      "age_seconds": 1276,
       "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-PAYMENTS-RESYNC-R61-CARLOS-20260911T222500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2074,
+      "age_seconds": 2148,
       "job_id": "EDARSAHUB-ISCAM-PAYMENTS-ONLY-BRIDGE-R59-CARLOS-20260911T222000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1732,
+      "age_seconds": 1805,
       "job_id": "EDARSAHUB-ISCAM-PAYMENTS-ONLY-BRIDGE-R60-CARLOS-20260911T223000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3269,
+      "age_seconds": 3343,
       "job_id": "EDARSAHUB-ISCAM-PAYMENTS-ONLY-WORKER-MODE-R57-CARLOS-20260911T220000Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -64,8 +64,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T22:50:53Z",
-    "last_receive_utc": "2026-09-11T22:50:54Z",
+    "last_cycle_utc": "2026-09-11T22:52:05Z",
+    "last_receive_utc": "2026-09-11T22:52:06Z",
     "last_terminal_utc": "2026-09-11T22:38:27Z",
     "pid": "1027"
   },
