@@ -1,0 +1,70 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENT-HARNESS-AH1-SQL-DISCOVERY-V1-20260911",
+  "created_at_utc": "2026-09-11T01:49:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "AH1 READ ONLY. Auditar EDARSAHUB SQL real para producir evidencia de REUSE/EXTEND/CREATE/DO_NOT_TOUCH antes de cualquier schema nuevo del BOS Agent Harness. Cubrir agent/skill/policy/evidence, comunicaciones/notificaciones, marketing/campanas/consentimiento/atribucion, cliente/CRM/RRR/Customer360 y mobile/device/offline/sync/push. No DDL, no DML, no cambios de codigo, no Production write.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "agent_skill_policy_objects",
+          "sql": "SELECT s.name AS SchemaName, o.name AS ObjectName, o.type_desc AS ObjectType FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND (o.name LIKE '%Agent%' OR o.name LIKE '%Skill%' OR o.name LIKE '%Policy%' OR o.name LIKE '%Capability%' OR o.name LIKE '%Procedure%' OR o.name LIKE '%Execution%' OR o.name LIKE '%Evidence%') ORDER BY s.name,o.name"
+        },
+        {
+          "name": "agent_skill_policy_columns",
+          "sql": "SELECT s.name AS SchemaName,t.name AS TableName,c.column_id,c.name AS ColumnName,ty.name AS DataType,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE '%Agent%' OR t.name LIKE '%Skill%' OR t.name LIKE '%Policy%' OR t.name LIKE '%Capability%' OR t.name LIKE '%Procedure%' OR t.name LIKE '%Execution%' OR t.name LIKE '%Evidence%' ORDER BY s.name,t.name,c.column_id"
+        },
+        {
+          "name": "communications_objects",
+          "sql": "SELECT s.name AS SchemaName,o.name AS ObjectName,o.type_desc AS ObjectType FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND (o.name LIKE '%Notific%' OR o.name LIKE '%Comunic%' OR o.name LIKE '%Mensaje%' OR o.name LIKE '%Template%' OR o.name LIKE '%Provider%' OR o.name LIKE '%Queue%') ORDER BY s.name,o.name"
+        },
+        {
+          "name": "communications_known_columns",
+          "sql": "SELECT s.name AS SchemaName,t.name AS TableName,c.column_id,c.name AS ColumnName,ty.name AS DataType,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Sistema_NotificacionesConfig','Operativo_Notificaciones_Queue','Operativo_Notificaciones_Log') ORDER BY t.name,c.column_id"
+        },
+        {
+          "name": "marketing_campaign_consent_objects",
+          "sql": "SELECT s.name AS SchemaName,o.name AS ObjectName,o.type_desc AS ObjectType FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND (o.name LIKE '%Marketing%' OR o.name LIKE '%Campan%' OR o.name LIKE '%Campaign%' OR o.name LIKE '%Consent%' OR o.name LIKE '%OptOut%' OR o.name LIKE '%Preferenc%' OR o.name LIKE '%Segment%' OR o.name LIKE '%Audien%' OR o.name LIKE '%Journey%' OR o.name LIKE '%Atrib%' OR o.name LIKE '%Conversion%' OR o.name LIKE '%Experiment%' OR o.name LIKE '%ABTest%') ORDER BY s.name,o.name"
+        },
+        {
+          "name": "marketing_campaign_consent_columns",
+          "sql": "SELECT s.name AS SchemaName,t.name AS TableName,c.column_id,c.name AS ColumnName,ty.name AS DataType,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE '%Marketing%' OR t.name LIKE '%Campan%' OR t.name LIKE '%Campaign%' OR t.name LIKE '%Consent%' OR t.name LIKE '%Preferenc%' OR t.name LIKE '%Segment%' OR t.name LIKE '%Journey%' OR t.name LIKE '%Atrib%' OR t.name LIKE '%Conversion%' OR t.name LIKE '%Experiment%' ORDER BY s.name,t.name,c.column_id"
+        },
+        {
+          "name": "customer_crm_rrr_objects",
+          "sql": "SELECT s.name AS SchemaName,o.name AS ObjectName,o.type_desc AS ObjectType FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND (o.name LIKE 'Cliente_%' OR o.name LIKE 'CRM_%' OR o.name LIKE 'RRR_%' OR o.name LIKE 'vw_RRR_%' OR o.name LIKE '%Customer360%') ORDER BY s.name,o.name"
+        },
+        {
+          "name": "customer_canonical_columns",
+          "sql": "SELECT s.name AS SchemaName,t.name AS TableName,c.column_id,c.name AS ColumnName,ty.name AS DataType,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Cliente_Catalogo','Cliente_Contactos','Cliente_Direcciones','Cliente_UsuariosPortal','CRM_Cuentas','CRM_PostventaEncuestas','RRR_Eventos','RRR_LedgerMovimientos','RRR_ScoreHistorial','RRR_RankingHistorial') ORDER BY t.name,c.column_id"
+        },
+        {
+          "name": "mobile_device_sync_objects",
+          "sql": "SELECT s.name AS SchemaName,o.name AS ObjectName,o.type_desc AS ObjectType FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND (o.name LIKE '%Mobile%' OR o.name LIKE '%Device%' OR o.name LIKE '%Dispositivo%' OR o.name LIKE '%Push%' OR o.name LIKE '%Offline%' OR o.name LIKE '%Sync%' OR o.name LIKE '%Outbox%' OR o.name LIKE '%Inbox%' OR o.name LIKE '%Instalacion%' OR o.name LIKE '%Installation%') ORDER BY s.name,o.name"
+        },
+        {
+          "name": "mobile_device_sync_columns",
+          "sql": "SELECT s.name AS SchemaName,t.name AS TableName,c.column_id,c.name AS ColumnName,ty.name AS DataType,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE '%Mobile%' OR t.name LIKE '%Device%' OR t.name LIKE '%Dispositivo%' OR t.name LIKE '%Push%' OR t.name LIKE '%Offline%' OR t.name LIKE '%Sync%' OR t.name LIKE '%Outbox%' OR t.name LIKE '%Inbox%' OR t.name LIKE '%Instalacion%' ORDER BY s.name,t.name,c.column_id"
+        },
+        {
+          "name": "rbac_scope_objects",
+          "sql": "SELECT s.name AS SchemaName,o.name AS ObjectName,o.type_desc AS ObjectType FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND (o.name LIKE '%Rol%' OR o.name LIKE '%Permis%' OR o.name LIKE '%RBAC%' OR o.name LIKE '%Usuario%' OR o.name LIKE '%Empresa%' OR o.name LIKE '%Unidad%' OR o.name LIKE '%Sucursal%') ORDER BY s.name,o.name"
+        },
+        {
+          "name": "candidate_audit_log_objects",
+          "sql": "SELECT s.name AS SchemaName,o.name AS ObjectName,o.type_desc AS ObjectType FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND (o.name LIKE '%Audit%' OR o.name LIKE '%Auditor%' OR o.name LIKE '%Bitacora%' OR o.name LIKE '%Log%' OR o.name LIKE '%Evento%') ORDER BY s.name,o.name"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
