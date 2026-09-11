@@ -1,0 +1,46 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-ESTELAR-LINE-DISCOUNT-AUDIT-R47-CARLOS-20260911T182000Z",
+  "created_at_utc": "2026-09-11T18:20:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "45254e855b90ca68fbd560761020e2245edb803e",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Determinar con datos reales de LA ESTELAR la semantica exacta del descuento en cheqdet para corregir ISCAM sin prorratear contra cheques.total. La poblacion de tickets debe ser exactamente la del Reporte Ejecutivo: cheques INNER JOIN turnos por idturno, fecha calendario de turnos.apertura y cheques.cancelado=0. Comparar por ticket el encabezado contra la suma real de lineas calculadas producto por producto con cantidad, precio y descuento. No modificar codigo, datos ni Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": ["ESTELAR"],
+      "system_types": ["SOFTRESTAURANT"],
+      "queries": [
+        {
+          "name": "estelar_cheqdet_schema_amount_discount_fields",
+          "sql": "SELECT COLUMN_NAME, DATA_TYPE, NUMERIC_PRECISION, NUMERIC_SCALE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='cheqdet' AND (COLUMN_NAME IN ('foliodet','folio','idproducto','cantidad','precio','descuento','totalsrx','subtotalsrx') OR COLUMN_NAME LIKE '%descu%') ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "estelar_discounted_tickets_candidate_formulas_0407",
+          "sql": "SELECT TOP 50 c.folio, c.total AS total_encabezado, c.subtotal AS subtotal_encabezado, c.descuento AS descuento_encabezado, SUM(CAST(ISNULL(d.cantidad,0)*ISNULL(d.precio,0) AS decimal(18,4))) AS suma_cantidad_precio, SUM(CAST(ISNULL(d.descuento,0) AS decimal(18,4))) AS suma_descuento_linea, SUM(CAST((ISNULL(d.cantidad,0)*ISNULL(d.precio,0))-ISNULL(d.descuento,0) AS decimal(18,4))) AS candidato_descuento_importe, SUM(CAST((ISNULL(d.cantidad,0)*ISNULL(d.precio,0))*(1-(ISNULL(d.descuento,0)/100.0)) AS decimal(18,4))) AS candidato_descuento_porcentaje FROM cheques c INNER JOIN turnos t ON t.idturno=c.idturno INNER JOIN cheqdet d ON d.foliodet=c.folio WHERE t.apertura>='2026-09-04' AND t.apertura<'2026-09-08' AND c.cancelado=0 AND (ISNULL(c.descuento,0)<>0 OR ISNULL(d.descuento,0)<>0) GROUP BY c.folio,c.total,c.subtotal,c.descuento ORDER BY c.folio"
+        },
+        {
+          "name": "estelar_ticket_24667_line_detail",
+          "sql": "SELECT c.folio, c.total AS total_encabezado, c.subtotal AS subtotal_encabezado, c.descuento AS descuento_encabezado, t.apertura, d.idproducto, d.cantidad, d.precio, d.descuento AS descuento_linea, CAST(ISNULL(d.cantidad,0)*ISNULL(d.precio,0) AS decimal(18,4)) AS importe_base FROM cheques c INNER JOIN turnos t ON t.idturno=c.idturno LEFT JOIN cheqdet d ON d.foliodet=c.folio WHERE c.folio='24667' AND c.cancelado=0 ORDER BY d.idproducto"
+        },
+        {
+          "name": "estelar_day_reconciliation_candidate_formulas_0407",
+          "sql": "SELECT CONVERT(char(10),t.apertura,120) AS fecha_apertura, COUNT(DISTINCT c.folio) AS tickets, SUM(CAST(ISNULL(c.total,0) AS decimal(18,4))) AS encabezado_total, SUM(CAST(ISNULL(d.cantidad,0)*ISNULL(d.precio,0) AS decimal(18,4))) AS detalle_base, SUM(CAST((ISNULL(d.cantidad,0)*ISNULL(d.precio,0))-ISNULL(d.descuento,0) AS decimal(18,4))) AS detalle_descuento_importe, SUM(CAST((ISNULL(d.cantidad,0)*ISNULL(d.precio,0))*(1-(ISNULL(d.descuento,0)/100.0)) AS decimal(18,4))) AS detalle_descuento_porcentaje FROM cheques c INNER JOIN turnos t ON t.idturno=c.idturno INNER JOIN cheqdet d ON d.foliodet=c.folio WHERE t.apertura>='2026-09-04' AND t.apertura<'2026-09-08' AND c.cancelado=0 GROUP BY CONVERT(char(10),t.apertura,120) ORDER BY fecha_apertura"
+        }
+      ]
+    }
+  ]
+}
