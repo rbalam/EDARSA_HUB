@@ -1,121 +1,127 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "fbb193c02b4b798d676b4a7bb96b4c58733338ef",
-  "generated_at_utc": "2026-09-11T06:23:52Z",
+  "development_sha": "91f792b22bd2596ceb129faa3e49ee9fd49417e9",
+  "generated_at_utc": "2026-09-11T06:25:09Z",
   "history": {
-    "done_total_local": 409,
+    "done_total_local": 410,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 415,
-    "results_total_local": 750
+    "results_total_local": 751
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2991,
+      "age_seconds": 3068,
       "job_id": "BOS-AGENT-HARNESS-AH5-EVIDENCE-PROVENANCE-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2454,
+      "age_seconds": 2531,
       "job_id": "BOS-AGENT-HARNESS-AH5-EVIDENCE-PROVENANCE-V1-R2-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2316,
+      "age_seconds": 2393,
       "job_id": "BOS-AGENT-HARNESS-AH6-SECURITY-REDTEAM-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2164,
+      "age_seconds": 2241,
       "job_id": "BOS-AGENT-HARNESS-AH6-SECURITY-REDTEAM-V1-R2-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1985,
+      "age_seconds": 2062,
       "job_id": "BOS-AGENT-HARNESS-AH7-MARKETING-CX-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1766,
+      "age_seconds": 1843,
       "job_id": "BOS-AGENT-HARNESS-AH8-MOBILE-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1346,
+      "age_seconds": 1423,
       "job_id": "BOS-AGENT-HARNESS-AH9-CONTROL-PLANE-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2368,
+      "age_seconds": 2445,
       "job_id": "BOS-V1-GATE-C-FUNCTIONAL-COVERAGE-CERTIFICATION-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1592,
+      "age_seconds": 1669,
       "job_id": "BOS-V1-GATE-C-FUNCTIONAL-COVERAGE-CERTIFICATION-R3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2973,
+      "age_seconds": 3050,
       "job_id": "CATALOGO-AMPLIADO-GATE8G-MIGRATION-WRITER-RETRIGGER-R2-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2970,
+      "age_seconds": 3047,
       "job_id": "CATALOGO-AMPLIADO-GATE8G-MIGRATION-WRITER-RETRIGGER-R3-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2963,
+      "age_seconds": 3040,
       "job_id": "CATALOGO-AMPLIADO-GATE8G-SQL-POSTCHECK-READONLY-R1-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2958,
+      "age_seconds": 3035,
       "job_id": "CAVAS-CORPORATIVAS-GATE12H3-FINAL-POSTAUDIT-PERSONA-LINK-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2943,
+      "age_seconds": 3020,
       "job_id": "CAVAS-CORPORATIVAS-GATE12I-BOS-SOCIO-PERSONA-CONTROLLED-MIGRATION-EXECUTION-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 347,
+      "age_seconds": 424,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-IDENTITY-AUDIT-READONLY-20260911T0003Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 577,
+      "age_seconds": 654,
       "job_id": "CXP-GATE3D-B-R1-MPRO-PHYSICAL-WRITE-CONTRACT-READONLY-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2004,
+      "age_seconds": 66,
+      "job_id": "RRR-GATE4D-R4-CANONICAL-RUNNER-RETRY-20260911",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2081,
       "job_id": "coa-gate5g-r2-cfdi-development-workflow-recovery-v1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 634,
+      "age_seconds": 711,
       "job_id": "servers-integrations-gate5d-hub-escritura-readonly-20260911",
       "reason": null,
       "state": "RESULT_READY"
@@ -128,14 +134,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 18,
+  "queue_result_ready_recent": 19,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T06:23:47Z",
-    "last_receive_utc": "2026-09-11T06:23:48Z",
-    "last_terminal_utc": "2026-09-11T06:18:04Z",
+    "last_cycle_utc": "2026-09-11T06:25:06Z",
+    "last_receive_utc": "2026-09-11T06:25:07Z",
+    "last_terminal_utc": "2026-09-11T06:24:02Z",
     "pid": "286"
   },
   "schema": "edarsahub.worker-health.v3",
