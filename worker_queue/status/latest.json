@@ -1,45 +1,51 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "9b5737749a96cd79606c1091a7f30cc45adb4301",
-  "generated_at_utc": "2026-09-11T00:26:05Z",
+  "generated_at_utc": "2026-09-11T00:27:25Z",
   "history": {
-    "done_total_local": 375,
+    "done_total_local": 376,
     "pending_total_local": 0,
-    "processing_total_local": 1,
-    "rejected_total_local": 406,
-    "results_total_local": 708
+    "processing_total_local": 0,
+    "rejected_total_local": 407,
+    "results_total_local": 710
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 50,
-      "job_id": "worker-orchestrator-publisher-gate3-r1-20260910T2242Z",
+      "age_seconds": 75,
+      "job_id": "CXP-GATE3D-B-MPRO-WRITE-CONTRACT-DISCOVERY-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3,
-      "job_id": "CXP-GATE3D-B-MPRO-WRITE-CONTRACT-DISCOVERY-READONLY-20260910",
+      "age_seconds": 55,
+      "job_id": "CXP-GATE3D-C-SOFTRESTAURANT-WRITE-CONTRACT-DISCOVERY-READONLY-20260910",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 130,
+      "job_id": "worker-orchestrator-publisher-gate3-r1-20260910T2242Z",
+      "reason": null,
+      "state": "RESULT_READY"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
-  "queue_running": 1,
+  "queue_result_ready_recent": 3,
+  "queue_running": 0,
   "runtime": {
-    "current_job_id": "CXP-GATE3D-B-MPRO-WRITE-CONTRACT-DISCOVERY-READONLY-20260910",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T00:26:00Z",
-    "last_receive_utc": "2026-09-11T00:26:02Z",
-    "last_terminal_utc": "2026-09-11T00:25:15Z",
+    "last_cycle_utc": "2026-09-11T00:27:21Z",
+    "last_receive_utc": "2026-09-11T00:27:23Z",
+    "last_terminal_utc": "2026-09-11T00:26:30Z",
     "pid": "284"
   },
   "schema": "edarsahub.worker-health.v3",
