@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-PAYMENTS-ONLY-WORKER-MODE-R57-CARLOS-20260911T220000Z",
+  "created_at_utc": "2026-09-11T22:00:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "55a9ebc79bf03f9ab900484d94913f61a57f75a8",
+  "production_allowed": false,
+  "objective": "Agregar al Universal Worker un modo operativo cerrado ISCAM_PAYMENTS_ONLY_RESYNC que solo puede invocar backend/scripts/resync_iscam_pagos_unidad.py para una unidad y rango explicitos, exige confirmacion para escritura y auditoria SQL READ_ONLY posterior. No permite shell arbitrario ni acciones de repositorio durante la operacion. No modificar Resumen de Cuentas, Comandas de Venta, Ventas por Periodo, Formas de Pago (Corte), MPRO ni Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "SOFTRESTAURANT_FULL_HISTORY_MODE = \"SOFTRESTAURANT_FULL_HISTORY_RESYNC\"\nMPRO_FULL_HISTORY_MODE = \"MPRO_FULL_HISTORY_RESYNC\"\nISCAM_DETAIL_BACKFILL_MODE = \"ISCAM_DETAIL_BACKFILL\"\n",
+      "new": "SOFTRESTAURANT_FULL_HISTORY_MODE = \"SOFTRESTAURANT_FULL_HISTORY_RESYNC\"\nMPRO_FULL_HISTORY_MODE = \"MPRO_FULL_HISTORY_RESYNC\"\nISCAM_DETAIL_BACKFILL_MODE = \"ISCAM_DETAIL_BACKFILL\"\nISCAM_PAYMENTS_ONLY_RESYNC_MODE = \"ISCAM_PAYMENTS_ONLY_RESYNC\"\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "            return 0\n\n        if mode == MPRO_FULL_HISTORY_MODE:\n",
+      "new": "            return 0\n\n        if mode == ISCAM_PAYMENTS_ONLY_RESYNC_MODE:\n            if expected_base and expected_base != current_head:\n                raise RuntimeError(f\"BASE_SHA_MISMATCH_OPERATIONAL_MODE:expected={expected_base}:actual={current_head}\")\n            if job.get(\"actions\") not in (None, []):\n                raise RuntimeError(\"ISCAM_PAYMENTS_ONLY_ACTIONS_FORBIDDEN\")\n            units = job.get(\"units\", [])\n            if not isinstance(units, list) or len(units) != 1 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):\n                raise RuntimeError(\"ISCAM_PAYMENTS_ONLY_EXACTLY_ONE_UNIT_REQUIRED\")\n            fecha_inicio = str(job.get(\"fecha_inicio\") or \"\")\n            fecha_fin = str(job.get(\"fecha_fin\") or \"\")\n            if not DATE_RE.fullmatch(fecha_inicio) or not DATE_RE.fullmatch(fecha_fin):\n                raise RuntimeError(\"ISCAM_PAYMENTS_ONLY_DATES_INVALID\")\n            inicio_dt = datetime.strptime(fecha_inicio, \"%Y-%m-%d\")\n            fin_dt = datetime.strptime(fecha_fin, \"%Y-%m-%d\")\n            if fin_dt <= inicio_dt:\n                raise RuntimeError(\"ISCAM_PAYMENTS_ONLY_DATE_RANGE_INVALID\")\n            dry_run = job.get(\"dry_run\", True)\n            if not isinstance(dry_run, bool):\n                raise RuntimeError(\"ISCAM_PAYMENTS_ONLY_DRY_RUN_INVALID\")\n            if dry_run is False and job.get(\"confirm_payments_only_resync\") is not True:\n                raise RuntimeError(\"ISCAM_PAYMENTS_ONLY_CONFIRMATION_REQUIRED\")\n            checks = job.get(\"checks\") or []\n            if not checks or any(not isinstance(c, dict) or c.get(\"type\") != \"sql_readonly_audit\" for c in checks):\n                raise RuntimeError(\"ISCAM_PAYMENTS_ONLY_SQL_AUDIT_REQUIRED\")\n            script = ROOT / \"backend\" / \"scripts\" / \"resync_iscam_pagos_unidad.py\"\n            if not script.is_file():\n                raise RuntimeError(\"ISCAM_PAYMENTS_ONLY_SCRIPT_NOT_FOUND\")\n            unit = units[0].strip().upper()\n            cmd = [PYTHON_BIN, str(script), \"--unit\", unit, \"--fi\", fecha_inicio, \"--ff\", fecha_fin]\n            if dry_run is False:\n                cmd.append(\"--execute\")\n            backend = ROOT / \"backend\"\n            execution = run(cmd, cwd=ROOT, timeout=SOFTRESTAURANT_RESYNC_MAX_SECONDS, env_extra={**load_backend_runtime_env(), \"PYTHONPATH\": str(backend)})\n            result[\"operation\"] = ISCAM_PAYMENTS_ONLY_RESYNC_MODE\n            result[\"dry_run\"] = dry_run\n            result[\"units\"] = [unit]\n            result[\"fecha_inicio\"] = fecha_inicio\n            result[\"fecha_fin\"] = fecha_fin\n            result[\"canonical_sql_mutation\"] = not dry_run\n            result[\"operation_output\"] = execution.stdout[-20000:]\n            result[\"files_changed\"] = []\n            if execution.returncode != 0:\n                result[\"blockers\"].append(f\"iscam_payments_only_resync_failed:rc={execution.returncode}\")\n            check_results = []\n            if not result[\"blockers\"]:\n                for check in checks:\n                    check_result = run_check(ROOT, check)\n                    check_results.append(check_result)\n                    if check_result[\"status\"] != \"PASS\":\n                        result[\"blockers\"].append(\"check_failed:sql_readonly_audit\")\n                        break\n            result[\"checks\"] = check_results\n            result[\"tests\"] = \"PASS\" if check_results and all(x[\"status\"] == \"PASS\" for x in check_results) else \"FAIL\"\n            result[\"quality_gate\"] = \"PASS\" if not result[\"blockers\"] else \"FAIL\"\n            if not result[\"blockers\"]:\n                result[\"status\"] = \"OPERATIONAL_COMPLETE\"\n                result[\"percent_complete\"] = 100\n                result[\"certification\"] = \"CERTIFIED_OPERATIONAL\"\n                result[\"summary_es\"] = \"El Worker resincronizo exclusivamente Pagos por Ticket para una unidad y rango autorizados y certifico el resultado con SQL de solo lectura. No modifico Sync_Sales, Cuentas, Comandas, Cortes ni Produccion.\"\n            else:\n                result[\"percent_complete\"] = 0\n                result[\"certification\"] = \"NOT_CERTIFIED\"\n            return 0\n\n        if mode == MPRO_FULL_HISTORY_MODE:\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_payments_only_worker_mode_r57.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nDISPATCHER = ROOT / 'tools' / 'mirror_sync' / 'universal_job_dispatcher.py'\n\n\ndef _mode_block():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    return text.split('if mode == ISCAM_PAYMENTS_ONLY_RESYNC_MODE:', 1)[1].split('if mode == MPRO_FULL_HISTORY_MODE:', 1)[0]\n\n\ndef test_payments_only_operational_mode_is_closed():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'ISCAM_PAYMENTS_ONLY_RESYNC_MODE = \"ISCAM_PAYMENTS_ONLY_RESYNC\"' in text\n    block = _mode_block()\n    assert 'ISCAM_PAYMENTS_ONLY_ACTIONS_FORBIDDEN' in block\n    assert 'ISCAM_PAYMENTS_ONLY_EXACTLY_ONE_UNIT_REQUIRED' in block\n    assert 'ISCAM_PAYMENTS_ONLY_CONFIRMATION_REQUIRED' in block\n    assert 'ISCAM_PAYMENTS_ONLY_SQL_AUDIT_REQUIRED' in block\n\n\ndef test_payments_only_mode_invokes_only_closed_payment_script():\n    block = _mode_block()\n    assert 'resync_iscam_pagos_unidad.py' in block\n    assert 'resync_softrestaurant_full_history.py' not in block\n    assert 'backfill_detalle_producto_pendientes.py' not in block\n    assert 'sync_cortes' not in block\n    assert 'enrich_unidad' not in block\n\n\ndef test_payments_only_mode_requires_explicit_dates_and_execute_confirmation():\n    block = _mode_block()\n    assert 'fecha_inicio' in block\n    assert 'fecha_fin' in block\n    assert 'confirm_payments_only_resync' in block\n    assert 'cmd.append(\"--execute\")' in block\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "backend/tests/test_iscam_payments_only_worker_mode_r57.py",
+        "backend/tests/test_iscam_cuentas_comandas_locked_r50.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_payments_only_worker_mode_r57.py",
+        "backend/tests/test_iscam_payments_only_resync_r56.py",
+        "backend/tests/test_iscam_soft_payment_fx_r54.py",
+        "backend/tests/test_iscam_cuentas_comandas_locked_r50.py"
+      ]
+    },
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
