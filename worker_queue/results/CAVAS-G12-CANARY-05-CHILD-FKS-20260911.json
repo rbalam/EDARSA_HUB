@@ -1,0 +1,78 @@
+{
+  "base_sha": "91f792b22bd2596ceb129faa3e49ee9fd49417e9",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-11T06:36:09Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-G12-CANARY-05-CHILD-FKS-20260911",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-11T06:36:47Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "child_table",
+              "child_column",
+              "parent_table",
+              "parent_column",
+              "fk_name",
+              "is_disabled",
+              "is_not_trusted"
+            ],
+            "name": "child_fks",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "CavaSocios_Botellas",
+                "SocioID",
+                "CavaSocios_Socios",
+                "SocioID",
+                "FK_CavaSocios_Botellas_Socio",
+                false,
+                false
+              ],
+              [
+                "CavaSocios_Cargos",
+                "SocioID",
+                "CavaSocios_Socios",
+                "SocioID",
+                "FK_CavaSocios_Cargos_Socio",
+                false,
+                false
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "SocioID",
+                "CavaSocios_Socios",
+                "SocioID",
+                "FK_CavaSocios_Movimientos_Socio",
+                false,
+                false
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-11T06:36:08Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
