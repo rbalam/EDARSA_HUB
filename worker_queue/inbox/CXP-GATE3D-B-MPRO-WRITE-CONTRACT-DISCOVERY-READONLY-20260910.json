@@ -1,0 +1,89 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CXP-GATE3D-B-MPRO-WRITE-CONTRACT-DISCOVERY-READONLY-20260910",
+  "created_at_utc": "2026-09-11T00:26:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9b5737749a96cd79606c1091a7f30cc45adb4301",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "GATE 3D-B MPRO WRITE CONTRACT DISCOVERY, estrictamente READ ONLY. Certificar schema completo de dbo.Pago_CXP, PK/UQ/defaults/nullability, mecanismo observable de generacion de Pc_ID, tablas hijas y obligatoriedad estructural, patrones agregados de registros existentes sin exponer transacciones, y relacion demostrable con polizas/contabilidad. No implementar ni probar writer.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": ["ORIGEN", "130QRO"],
+      "system_types": ["MPRO"],
+      "queries": [
+        {
+          "name": "gate3db_pago_cxp_columns_full",
+          "sql": "SELECT c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity,COLUMNPROPERTY(c.object_id,c.name,'IsComputed') AS is_computed,dc.name AS default_name,dc.definition AS default_definition FROM sys.columns c INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id WHERE c.object_id=OBJECT_ID(N'dbo.Pago_CXP') ORDER BY c.column_id"
+        },
+        {
+          "name": "gate3db_pago_cxp_keys_indexes",
+          "sql": "SELECT i.index_id,i.name AS index_name,i.type_desc,i.is_unique,i.is_primary_key,i.is_unique_constraint,i.has_filter,i.filter_definition,ic.key_ordinal,ic.is_included_column,c.name AS column_name FROM sys.indexes i LEFT JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id LEFT JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.Pago_CXP') ORDER BY i.index_id,ic.key_ordinal,ic.index_column_id"
+        },
+        {
+          "name": "gate3db_pago_cxp_constraints",
+          "sql": "SELECT o.name AS constraint_name,o.type_desc,cc.definition AS check_definition FROM sys.objects o LEFT JOIN sys.check_constraints cc ON cc.object_id=o.object_id WHERE o.parent_object_id=OBJECT_ID(N'dbo.Pago_CXP') AND o.type IN ('PK','UQ','C','D','F') ORDER BY o.type,o.name"
+        },
+        {
+          "name": "gate3db_pago_cxp_foreign_keys_all",
+          "sql": "SELECT fk.name AS fk_name,OBJECT_SCHEMA_NAME(fk.parent_object_id) AS parent_schema,OBJECT_NAME(fk.parent_object_id) AS parent_table,pc.name AS parent_column,OBJECT_SCHEMA_NAME(fk.referenced_object_id) AS referenced_schema,OBJECT_NAME(fk.referenced_object_id) AS referenced_table,rc.name AS referenced_column,fk.delete_referential_action_desc,fk.update_referential_action_desc FROM sys.foreign_keys fk INNER JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id INNER JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id INNER JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fk.parent_object_id=OBJECT_ID(N'dbo.Pago_CXP') OR fk.referenced_object_id=OBJECT_ID(N'dbo.Pago_CXP') ORDER BY parent_schema,parent_table,fk.name,fkc.constraint_column_id"
+        },
+        {
+          "name": "gate3db_pc_id_metadata",
+          "sql": "SELECT c.name AS column_name,c.is_identity,COLUMNPROPERTY(c.object_id,c.name,'IsComputed') AS is_computed,dc.definition AS default_definition,ic.seed_value,ic.increment_value FROM sys.columns c LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id LEFT JOIN sys.identity_columns ic ON ic.object_id=c.object_id AND ic.column_id=c.column_id WHERE c.object_id=OBJECT_ID(N'dbo.Pago_CXP') AND c.name=N'Pc_ID'"
+        },
+        {
+          "name": "gate3db_pc_id_references_modules",
+          "sql": "SELECT TOP 200 s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.sql_modules sm INNER JOIN sys.objects o ON o.object_id=sm.object_id INNER JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE sm.definition LIKE N'%Pago_CXP%' AND sm.definition LIKE N'%Pc_ID%' ORDER BY o.type_desc,s.name,o.name"
+        },
+        {
+          "name": "gate3db_pago_cxp_triggers",
+          "sql": "SELECT t.name AS trigger_name,t.is_disabled,t.is_instead_of_trigger,sm.definition FROM sys.triggers t LEFT JOIN sys.sql_modules sm ON sm.object_id=t.object_id WHERE t.parent_id=OBJECT_ID(N'dbo.Pago_CXP') ORDER BY t.name"
+        },
+        {
+          "name": "gate3db_child_tables_schema",
+          "sql": "SELECT OBJECT_NAME(c.object_id) AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity,dc.definition AS default_definition FROM sys.columns c INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id WHERE c.object_id IN (OBJECT_ID(N'dbo.Pago_Cxp_Comprobante'),OBJECT_ID(N'dbo.Pago_CXP_Impuesto')) ORDER BY table_name,c.column_id"
+        },
+        {
+          "name": "gate3db_child_tables_keys",
+          "sql": "SELECT OBJECT_NAME(i.object_id) AS table_name,i.name AS index_name,i.is_unique,i.is_primary_key,i.is_unique_constraint,ic.key_ordinal,c.name AS column_name FROM sys.indexes i LEFT JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id LEFT JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id IN (OBJECT_ID(N'dbo.Pago_Cxp_Comprobante'),OBJECT_ID(N'dbo.Pago_CXP_Impuesto')) ORDER BY table_name,i.index_id,ic.key_ordinal"
+        },
+        {
+          "name": "gate3db_existing_shape_aggregates",
+          "sql": "SELECT COUNT_BIG(*) AS total_pagos,COUNT_BIG(DISTINCT Cxp_Folio) AS cxp_distintas,COUNT_BIG(DISTINCT Pc_ID) AS pc_id_distintos,SUM(CASE WHEN Pc_ID IS NULL THEN 1 ELSE 0 END) AS pc_id_nulls,SUM(CASE WHEN Cxp_Folio IS NULL THEN 1 ELSE 0 END) AS cxp_folio_nulls FROM dbo.Pago_CXP"
+        },
+        {
+          "name": "gate3db_child_presence_aggregates",
+          "sql": "SELECT COUNT_BIG(*) AS pagos_total,SUM(CASE WHEN EXISTS (SELECT 1 FROM dbo.Pago_Cxp_Comprobante c WHERE c.Cxp_Folio=p.Cxp_Folio AND c.Pc_ID=p.Pc_ID) THEN 1 ELSE 0 END) AS pagos_con_comprobante,SUM(CASE WHEN EXISTS (SELECT 1 FROM dbo.Pago_CXP_Impuesto i WHERE i.Cxp_Folio=p.Cxp_Folio AND i.Pc_ID=p.Pc_ID) THEN 1 ELSE 0 END) AS pagos_con_impuesto FROM dbo.Pago_CXP p"
+        },
+        {
+          "name": "gate3db_candidate_poliza_dependencies",
+          "sql": "SELECT TOP 300 OBJECT_SCHEMA_NAME(d.referencing_id) AS referencing_schema,OBJECT_NAME(d.referencing_id) AS referencing_object,o.type_desc,d.referenced_schema_name,d.referenced_entity_name FROM sys.sql_expression_dependencies d LEFT JOIN sys.objects o ON o.object_id=d.referencing_id WHERE (d.referenced_entity_name=N'Pago_CXP' AND (OBJECT_NAME(d.referencing_id) LIKE N'%Poliza%' OR OBJECT_NAME(d.referencing_id) LIKE N'%Conta%')) OR (OBJECT_NAME(d.referencing_id) LIKE N'%Pago_CXP%' AND (d.referenced_entity_name LIKE N'%Poliza%' OR d.referenced_entity_name LIKE N'%Conta%')) ORDER BY referencing_schema,referencing_object,d.referenced_entity_name"
+        },
+        {
+          "name": "gate3db_poliza_module_links",
+          "sql": "SELECT TOP 100 s.name AS schema_name,o.name AS object_name,o.type_desc,sm.definition FROM sys.sql_modules sm INNER JOIN sys.objects o ON o.object_id=sm.object_id INNER JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE sm.definition LIKE N'%Pago_CXP%' AND (sm.definition LIKE N'%Poliza%' OR sm.definition LIKE N'%Conta%') ORDER BY o.type_desc,s.name,o.name"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ ONLY SQL ONLY",
+    "actions must remain empty",
+    "NO INSERT UPDATE DELETE MERGE EXEC EXECUTE DDL SELECT INTO OR MULTI-STATEMENT SQL",
+    "NO procedure execution",
+    "NO individual business transaction rows",
+    "Only schema metadata and aggregates for existing-data patterns",
+    "NO Production",
+    "NO code or file mutation",
+    "Connections only through PosRuntimeResolver and get_external_sql_connection",
+    "Do not infer Pc_ID generation, mandatory child rows, idempotency, or accounting effects without evidence",
+    "Payment Executor writer remains unimplemented"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
