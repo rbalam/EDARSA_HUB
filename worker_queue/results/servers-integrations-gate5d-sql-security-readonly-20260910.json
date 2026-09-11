@@ -1,0 +1,233 @@
+{
+  "base_sha": "47b793a123e4f19eee25e326647275c15cee30c4",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-11T04:44:27Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "servers-integrations-gate5d-sql-security-readonly-20260910",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-11T04:44:33Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "database_user",
+              "can_create_table",
+              "can_alter_dbo",
+              "can_insert_rbac",
+              "can_update_rbac",
+              "can_insert_role_links"
+            ],
+            "name": "identity_and_effective_permissions",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura",
+                1,
+                1,
+                1,
+                1,
+                1
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "member_name",
+              "role_name"
+            ],
+            "name": "hrlectura_database_roles",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "HRLectura",
+                "db_accessadmin"
+              ],
+              [
+                "HRLectura",
+                "db_backupoperator"
+              ],
+              [
+                "HRLectura",
+                "db_datareader"
+              ],
+              [
+                "HRLectura",
+                "db_datawriter"
+              ],
+              [
+                "HRLectura",
+                "db_ddladmin"
+              ],
+              [
+                "HRLectura",
+                "db_owner"
+              ],
+              [
+                "HRLectura",
+                "db_securityadmin"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "principal_name",
+              "state_desc",
+              "permission_name",
+              "class_desc",
+              "database_scope"
+            ],
+            "name": "hrlectura_explicit_database_permissions",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "HRLectura",
+                "GRANT",
+                "CONNECT",
+                "DATABASE",
+                "EDARSAHUB"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "principal_name",
+              "state_desc",
+              "permission_name",
+              "class_desc",
+              "schema_name",
+              "object_name"
+            ],
+            "name": "hrlectura_explicit_schema_object_permissions",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "name",
+              "type_desc",
+              "authentication_type_desc",
+              "default_schema_name",
+              "is_fixed_role"
+            ],
+            "name": "candidate_migration_principals",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "HUB_Escritura",
+                "SQL_USER",
+                "INSTANCE",
+                "dbo",
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "name",
+              "type_desc",
+              "is_fixed_role"
+            ],
+            "name": "candidate_migration_roles",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "db_datawriter",
+                "DATABASE_ROLE",
+                true
+              ],
+              [
+                "db_ddladmin",
+                "DATABASE_ROLE",
+                true
+              ],
+              [
+                "db_denydatawriter",
+                "DATABASE_ROLE",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "role_name",
+              "member_name"
+            ],
+            "name": "fixed_role_members_for_hrlectura",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "db_accessadmin",
+                "HRLectura"
+              ],
+              [
+                "db_backupoperator",
+                "HRLectura"
+              ],
+              [
+                "db_datareader",
+                "HRLectura"
+              ],
+              [
+                "db_datawriter",
+                "HRLectura"
+              ],
+              [
+                "db_ddladmin",
+                "HRLectura"
+              ],
+              [
+                "db_owner",
+                "HRLectura"
+              ],
+              [
+                "db_securityadmin",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "server_role",
+              "login_name"
+            ],
+            "name": "server_role_membership_hrlectura",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-11T04:44:24Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
