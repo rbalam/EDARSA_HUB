@@ -1,39 +1,39 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "69de8734d97e2ede4425ba3038f90d11fc3f37e1",
-  "generated_at_utc": "2026-09-11T03:25:27Z",
+  "development_sha": "4a4468af772c22b939b61755bbc3d183c64f7e9d",
+  "generated_at_utc": "2026-09-11T03:26:41Z",
   "history": {
-    "done_total_local": 382,
+    "done_total_local": 383,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 409,
-    "results_total_local": 717
+    "results_total_local": 718
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 8,
+      "age_seconds": 73,
       "job_id": "coa-gate5g-cfdi-development-execution-channel-v1-20260910",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 0,
-  "queue_running": 1,
+  "queue_result_ready_recent": 1,
+  "queue_running": 0,
   "runtime": {
-    "current_job_id": "coa-gate5g-cfdi-development-execution-channel-v1-20260910",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T03:25:24Z",
-    "last_receive_utc": "2026-09-11T03:25:25Z",
-    "last_terminal_utc": "2026-09-11T02:24:54Z",
+    "last_cycle_utc": "2026-09-11T03:26:38Z",
+    "last_receive_utc": "2026-09-11T03:26:39Z",
+    "last_terminal_utc": "2026-09-11T03:25:28Z",
     "pid": "281"
   },
   "schema": "edarsahub.worker-health.v3",
