@@ -1,0 +1,1783 @@
+{
+  "base_sha": "9b5737749a96cd79606c1091a7f30cc45adb4301",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-11T00:26:30Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CXP-GATE3D-C-SOFTRESTAURANT-WRITE-CONTRACT-DISCOVERY-READONLY-20260910",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-11T00:26:58Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable",
+              "is_identity",
+              "is_computed",
+              "default_name",
+              "default_definition"
+            ],
+            "name": "gate3dc_pagosproveedores_columns_full",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                1,
+                "foliocompra",
+                "numeric",
+                9,
+                10,
+                0,
+                true,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                2,
+                "fecha",
+                "datetime",
+                8,
+                23,
+                3,
+                true,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                3,
+                "abono",
+                "money",
+                8,
+                19,
+                4,
+                true,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                4,
+                "referencia",
+                "varchar",
+                40,
+                0,
+                0,
+                true,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                5,
+                "enviadoacentral",
+                "bit",
+                1,
+                1,
+                0,
+                true,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                6,
+                "foliogasto",
+                "numeric",
+                9,
+                10,
+                0,
+                true,
+                false,
+                0,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_id",
+              "index_name",
+              "type_desc",
+              "is_unique",
+              "is_primary_key",
+              "is_unique_constraint",
+              "has_filter",
+              "filter_definition",
+              "key_ordinal",
+              "is_included_column",
+              "column_name"
+            ],
+            "name": "gate3dc_pagosproveedores_keys_indexes",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                0,
+                null,
+                "HEAP",
+                false,
+                false,
+                false,
+                false,
+                null,
+                null,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "constraint_name",
+              "type_desc",
+              "check_definition"
+            ],
+            "name": "gate3dc_pagosproveedores_constraints",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "parent_schema",
+              "parent_table",
+              "parent_column",
+              "referenced_schema",
+              "referenced_table",
+              "referenced_column",
+              "delete_referential_action_desc",
+              "update_referential_action_desc"
+            ],
+            "name": "gate3dc_pagosproveedores_foreign_keys_all",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_name",
+              "is_unique",
+              "is_primary_key",
+              "is_unique_constraint",
+              "key_ordinal",
+              "column_name"
+            ],
+            "name": "gate3dc_reference_index_uniqueness",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_pagos",
+              "foliocompra_nulls",
+              "fecha_nulls",
+              "abono_nulls",
+              "referencia_vacia",
+              "compras_distintas",
+              "referencias_distintas"
+            ],
+            "name": "gate3dc_existing_shape_aggregates",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "45765",
+                0,
+                0,
+                0,
+                194,
+                "44032",
+                "5409"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "referencias_repetidas"
+            ],
+            "name": "gate3dc_reference_duplicate_aggregate",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2527"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "combinaciones_repetidas"
+            ],
+            "name": "gate3dc_same_purchase_reference_duplicate_aggregate",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "153"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc"
+            ],
+            "name": "gate3dc_candidate_related_objects",
+            "row_count_returned": 28,
+            "rows": [
+              [
+                "dbo",
+                "DF__compras__polizag__3D3402A0",
+                "DEFAULT_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "DF_configuracion_nopermitirarchivopoliza",
+                "DEFAULT_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "DF_configuracion_polizanodesglosarimpuestos",
+                "DEFAULT_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "DF_gastos_Enviado",
+                "DEFAULT_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "DF_gastos_intentoEnvioAF",
+                "DEFAULT_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_chequespagos_formasdepago",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_chequespagosf_formasdepago",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_gastos_compras",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_gastos_cuentascontables",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_gastos_empresas",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_gastos_tipogastos",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_gastosmovtos_gastos",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_subtipogastos_tipogastos",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_tempchequespagos_formasdepago",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "PK_gastos",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "PK_subtipogastos",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "PK_tipogastos",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "bitacoraarchivopoliza",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "chequespagos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "chequespagosf",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "compras",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "gastos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "gastosmovtos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "pagosproveedores",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "pagosproveedores_respaldo",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "subtipogastos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "tempchequespagos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "tipogastos",
+                "USER_TABLE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "parent_schema",
+              "parent_table",
+              "parent_column",
+              "referenced_schema",
+              "referenced_table",
+              "referenced_column"
+            ],
+            "name": "gate3dc_related_foreign_keys",
+            "row_count_returned": 9,
+            "rows": [
+              [
+                "FK_chequespagos_formasdepago",
+                "dbo",
+                "chequespagos",
+                "idformadepago",
+                "dbo",
+                "formasdepago",
+                "idformadepago"
+              ],
+              [
+                "FK_chequespagosf_formasdepago",
+                "dbo",
+                "chequespagosf",
+                "idformadepago",
+                "dbo",
+                "formasdepago",
+                "idformadepago"
+              ],
+              [
+                "FK_compras_proveedores",
+                "dbo",
+                "compras",
+                "idproveedor",
+                "dbo",
+                "proveedores",
+                "idproveedor"
+              ],
+              [
+                "FK_comprasmovtos_compras",
+                "dbo",
+                "comprasmovtos",
+                "idcompra",
+                "dbo",
+                "compras",
+                "idcompra"
+              ],
+              [
+                "FK_gastos_compras",
+                "dbo",
+                "gastos",
+                "idcompra",
+                "dbo",
+                "compras",
+                "idcompra"
+              ],
+              [
+                "FK_gastos_cuentascontables",
+                "dbo",
+                "gastos",
+                "idcuentacontable",
+                "dbo",
+                "cuentascontables",
+                "idcuentacontable"
+              ],
+              [
+                "FK_gastos_empresas",
+                "dbo",
+                "gastos",
+                "idempresa",
+                "dbo",
+                "empresas",
+                "idempresa"
+              ],
+              [
+                "FK_gastos_tipogastos",
+                "dbo",
+                "gastos",
+                "Idtipogasto",
+                "dbo",
+                "tipogastos",
+                "Idtipogasto"
+              ],
+              [
+                "FK_gastosmovtos_gastos",
+                "dbo",
+                "gastosmovtos",
+                "idgasto",
+                "dbo",
+                "gastos",
+                "idgasto"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "parent_schema",
+              "parent_object",
+              "trigger_name",
+              "is_disabled",
+              "is_instead_of_trigger",
+              "definition"
+            ],
+            "name": "gate3dc_triggers_related",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc",
+              "definition"
+            ],
+            "name": "gate3dc_module_links_pago_gasto_cheque_poliza",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "dbo",
+                "AC_vwPagosProv",
+                "VIEW",
+                "--SELECT * FROM AC_vwPagosProv\r\nCREATE VIEW AC_vwPagosProv\r\nAS \r\n\r\nSELECT 'COMPRAS' AS modulo,\r\n\t\tcompras.folio AS foliocompra,\r\n       pagosproveedores.fecha,\r\n\t   DATEPART(DAY,pagosproveedores.fecha) AS dia,\r\n       pagosproveedores.abono,\r\n       pagosproveedores.referencia,\r\n       --pagosproveedores.enviadoacentral,\r\n       compras.foliofactura,\r\n       compras.fechafactura,\r\n       compras.fechavencimiento,\r\n       compras.idproveedor,\r\n       proveedores.nombre\r\nFROM pagosproveedores\r\n    INNER JOIN compras\r\n        ON pagosproveedores.foliocompra = compras.idcompra\r\n    INNER JOIN proveedores\r\n        ON proveedores.idproveedor = compras.idproveedor\r\n--WHERE compras.idempresa = 'EST'\r\n--      AND pagosproveedores.fecha\r\n--      BETWEEN '01/07/2025 06:00:00 AM' AND '01/08/2025 05:59:59 AM'\r\nUNION\r\nSELECT 'GASTOS' AS modulo,\r\n\t   gastos.folio AS foliocompra,\r\n       pagosproveedores.fecha,\r\n\t   DATEPART(DAY,pagosproveedores.fecha) AS dia,\r\n       pagosproveedores.abono,\r\n       pagosproveedores.referencia,\r\n       --pagosproveedores.enviadoacentral,\r\n       gastos.foliofactura,\r\n       gastos.fecha AS fechafactura,\r\n       '' AS fechavencimiento,\r\n       gastos.idproveedor,\r\n       proveedores.nombre\r\nFROM pagosproveedores\r\n    INNER JOIN gastos\r\n        ON pagosproveedores.foliogasto = gastos.idgasto\r\n    INNER JOIN proveedores\r\n        ON proveedores.idproveedor = gastos.idproveedor\r\n--WHERE gastos.idempresa = 'EST'\r\n--      AND pagosproveedores.fecha\r\n--      BETWEEN '01/07/2025 06:00:00 AM' AND '01/08/2025 05:59:59 AM'\r\n--ORDER BY proveedores.nombre,\r\n--         pagosproveedores.fecha\r\n"
+              ],
+              [
+                "dbo",
+                "AC_vwSaldoCxp",
+                "VIEW",
+                "CREATE VIEW AC_vwSaldoCxp\r\nAS\r\nWITH ProvSaldo AS (\r\nSELECT 1 AS tipodecompra,\r\n       p.idproveedor,\r\n       p.nombre,\r\n       folio,\r\n       foliofactura,\r\n       fechafactura,\r\n\t   CONVERT(DATETIME, CONVERT(CHAR(10), c.fechaaplicacion, 102) + ' 00:00:00.00', 102) AS fechaaplicacion,\r\n       fechavencimiento,\r\n       CASE WHEN DATEDIFF(day,fechavencimiento,GETDATE())  <0 THEN 0 ELSE DATEDIFF(day,fechavencimiento,GETDATE()) END  AS diasvencidos,\r\n       CASE WHEN DATEDIFF(day,fechavencimiento,GETDATE())  >0 THEN 0 ELSE DATEDIFF(day,fechavencimiento,GETDATE()) END AS  diasvencimiento,\r\n\t   c.total,\r\n       ISNULL((SELECT SUM(abono) AS abono FROM pagosproveedores WHERE foliocompra =c.idcompra ),0) AS   abono,\r\n       descuento\r\nFROM proveedores  AS p\r\n    INNER JOIN compras AS c\r\n        ON p.idproveedor = c.idproveedor\r\nWHERE  CAST(ISNULL(cancelado, 0) AS INT) = 0\r\n), Cxp AS (\r\nSELECT '['+ p.idproveedor+'] '+p.nombre AS PROVEEDOR,\r\n       folio,\r\n       foliofactura,\r\n       fechafactura,\r\n       fechavencimiento,\r\n\t   p.diasvencidos,\r\n\t   p.diasvencimiento,\r\n\t   CASE WHEN p.diasvencidos+p.diasvencimiento <= 0 THEN SUM(p.total-p.abono) ELSE 0 END AS [POR VENCER],\r\n\t   CASE WHEN p.diasvencidos >= 1 AND p.diasvencidos <= 15  then  SUM(p.total-p.abono) ELSE 0 END  AS [01-15],\r\n\t   CASE WHEN p.diasvencidos >= 16 AND p.diasvencidos <= 30 then  SUM(p.total-p.abono) ELSE 0 END  AS [16-30],\r\n\t   CASE WHEN p.diasvencidos >= 31 AND p.diasvencidos <= 60 then  SUM(p.total-p.abono) ELSE 0 END  AS [31-60],\r\n\t   CASE WHEN p.diasvencidos >= 61 AND p.diasvencidos <= 90 then SUM(p.total-p.abono) ELSE 0 END  AS [61-90],\r\n\t   CASE WHEN p.diasvencidos >= 91 AND p.diasvencidos <= 120 then  SUM(p.total-p.abono) ELSE 0 END  AS [91-120],\r\n\t   CASE WHEN p.diasvencidos >= 121 AND p.diasvencidos <= 150 then  SUM(p.total-p.abono) ELSE 0 END  AS [121-150],\r\n\t   CASE WHEN p.diasvencidos >= 150 then  SUM(p.total-p.abono) ELSE 0 END  AS [+151],\r\n\t   p.fechaaplicacion\r\n  FROM ProvSaldo AS p\r\n  GROUP BY p.nombre,\r\n\t\t\tp.idproveedor,\r\n\t\t   p.diasvencidos,\r\n\t\tfolio,\r\n       foliofactura,\r\n       fechafactura,\r\n       fechavencimiento,\r\n\t\t   p.diasvencimiento,\r\n\t\t   p.fechaaplicacion\r\n HAVING SUM(p.total-p.abono)>0\r\n)\t\r\nSELECT Cxp.PROVEEDOR,\r\n\t   SUM(Cxp.[POR VENCER]) [POR VENCER],\r\n       SUM(Cxp.[01-15]) [01-15],\r\n       SUM(Cxp.[16-30]) [16-30],\r\n       SUM(Cxp.[31-60]) [31-60],\r\n       SUM(Cxp.[61-90]) [61-90],\r\n       SUM(Cxp.[91-120]) [91-120],\r\n       SUM(Cxp.[121-150]) [121-150],\r\n       SUM(Cxp.[+151]) [+151],\r\n\t   SUM(Cxp.[POR VENCER])+ SUM(Cxp.[01-15])+ SUM(Cxp.[16-30])+ SUM(Cxp.[31-60]) + SUM(Cxp.[61-90]) + SUM(Cxp.[91-120]) + SUM(Cxp.[121-150]) + SUM(Cxp.[+151]) AS [Total CXP],\r\n\t   Cxp.fechaaplicacion\r\nFROM Cxp\r\n--WHERE Cxp.fechaaplicacion  BETWEEN '01/01/2024 06:00:00 AM' AND '12/09/2024 05:59:59 AM'\r\nGROUP BY Cxp.PROVEEDOR,Cxp.fechaaplicacion;\r\n"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "referencing_schema",
+              "referencing_object",
+              "type_desc",
+              "referenced_schema_name",
+              "referenced_entity_name"
+            ],
+            "name": "gate3dc_expression_dependencies_related",
+            "row_count_returned": 22,
+            "rows": [
+              [
+                "dbo",
+                "AC_spKardexCPP",
+                "SQL_STORED_PROCEDURE",
+                "dbo",
+                "compras"
+              ],
+              [
+                "dbo",
+                "AC_vwPagosProv",
+                "VIEW",
+                null,
+                "compras"
+              ],
+              [
+                "dbo",
+                "AC_vwPagosProv",
+                "VIEW",
+                null,
+                "gastos"
+              ],
+              [
+                "dbo",
+                "AC_vwPagosProv",
+                "VIEW",
+                null,
+                "pagosproveedores"
+              ],
+              [
+                "dbo",
+                "AC_vwSaldoCxp",
+                "VIEW",
+                null,
+                "compras"
+              ],
+              [
+                "dbo",
+                "AC_vwSaldoCxp",
+                "VIEW",
+                null,
+                "pagosproveedores"
+              ],
+              [
+                "dbo",
+                "acVwComprasDiarias",
+                "VIEW",
+                null,
+                "compras"
+              ],
+              [
+                "dbo",
+                "indicator_data_details_payments",
+                "SQL_TABLE_VALUED_FUNCTION",
+                null,
+                "chequespagos"
+              ],
+              [
+                "dbo",
+                "indicator_data_details_payments_station",
+                "SQL_TABLE_VALUED_FUNCTION",
+                null,
+                "chequespagos"
+              ],
+              [
+                "dbo",
+                "indicator_data_details_payments_waiter",
+                "SQL_TABLE_VALUED_FUNCTION",
+                null,
+                "chequespagos"
+              ],
+              [
+                "dbo",
+                "indicator_data_details_tip",
+                "SQL_TABLE_VALUED_FUNCTION",
+                null,
+                "chequespagos"
+              ],
+              [
+                "dbo",
+                "indicator_data_general_payments",
+                "SQL_TABLE_VALUED_FUNCTION",
+                null,
+                "chequespagos"
+              ],
+              [
+                "dbo",
+                "indicator_data_general_payments_station",
+                "SQL_TABLE_VALUED_FUNCTION",
+                null,
+                "chequespagos"
+              ],
+              [
+                "dbo",
+                "indicator_data_general_payments_waiter",
+                "SQL_TABLE_VALUED_FUNCTION",
+                null,
+                "chequespagos"
+              ],
+              [
+                "dbo",
+                "indicator_data_general_tip",
+                "SQL_TABLE_VALUED_FUNCTION",
+                null,
+                "chequespagos"
+              ],
+              [
+                "dbo",
+                "indicator_data_global_payments",
+                "SQL_TABLE_VALUED_FUNCTION",
+                null,
+                "chequespagos"
+              ],
+              [
+                "dbo",
+                "indicator_data_global_payments_station",
+                "SQL_TABLE_VALUED_FUNCTION",
+                null,
+                "chequespagos"
+              ],
+              [
+                "dbo",
+                "indicator_data_global_payments_waiter",
+                "SQL_TABLE_VALUED_FUNCTION",
+                null,
+                "chequespagos"
+              ],
+              [
+                "dbo",
+                "indicator_data_global_tip",
+                "SQL_TABLE_VALUED_FUNCTION",
+                null,
+                "chequespagos"
+              ],
+              [
+                "dbo",
+                "vwcalculacheques",
+                "VIEW",
+                null,
+                "chequespagos"
+              ],
+              [
+                "dbo",
+                "vwFormaCobro",
+                "VIEW",
+                null,
+                "chequespagos"
+              ],
+              [
+                "dbo",
+                "vwVentaFormaPago",
+                "VIEW",
+                null,
+                "chequespagos"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable",
+              "is_identity",
+              "is_computed",
+              "default_name",
+              "default_definition"
+            ],
+            "name": "gate3dc_pagosproveedores_columns_full",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                1,
+                "foliocompra",
+                "numeric",
+                9,
+                10,
+                0,
+                true,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                2,
+                "fecha",
+                "datetime",
+                8,
+                23,
+                3,
+                true,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                3,
+                "abono",
+                "money",
+                8,
+                19,
+                4,
+                true,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                4,
+                "referencia",
+                "varchar",
+                40,
+                0,
+                0,
+                true,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                5,
+                "enviadoacentral",
+                "bit",
+                1,
+                1,
+                0,
+                true,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                6,
+                "foliogasto",
+                "numeric",
+                9,
+                10,
+                0,
+                true,
+                false,
+                0,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_id",
+              "index_name",
+              "type_desc",
+              "is_unique",
+              "is_primary_key",
+              "is_unique_constraint",
+              "has_filter",
+              "filter_definition",
+              "key_ordinal",
+              "is_included_column",
+              "column_name"
+            ],
+            "name": "gate3dc_pagosproveedores_keys_indexes",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                0,
+                null,
+                "HEAP",
+                false,
+                false,
+                false,
+                false,
+                null,
+                null,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "constraint_name",
+              "type_desc",
+              "check_definition"
+            ],
+            "name": "gate3dc_pagosproveedores_constraints",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "parent_schema",
+              "parent_table",
+              "parent_column",
+              "referenced_schema",
+              "referenced_table",
+              "referenced_column",
+              "delete_referential_action_desc",
+              "update_referential_action_desc"
+            ],
+            "name": "gate3dc_pagosproveedores_foreign_keys_all",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_name",
+              "is_unique",
+              "is_primary_key",
+              "is_unique_constraint",
+              "key_ordinal",
+              "column_name"
+            ],
+            "name": "gate3dc_reference_index_uniqueness",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_pagos",
+              "foliocompra_nulls",
+              "fecha_nulls",
+              "abono_nulls",
+              "referencia_vacia",
+              "compras_distintas",
+              "referencias_distintas"
+            ],
+            "name": "gate3dc_existing_shape_aggregates",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "6323",
+                0,
+                0,
+                0,
+                108,
+                "6182",
+                "676"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "referencias_repetidas"
+            ],
+            "name": "gate3dc_reference_duplicate_aggregate",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "307"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "combinaciones_repetidas"
+            ],
+            "name": "gate3dc_same_purchase_reference_duplicate_aggregate",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "47"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc"
+            ],
+            "name": "gate3dc_candidate_related_objects",
+            "row_count_returned": 33,
+            "rows": [
+              [
+                "dbo",
+                "DF__compras__polizag__3D3402A0",
+                "DEFAULT_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "DF_configuracion_nopermitirarchivopoliza",
+                "DEFAULT_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "DF_configuracion_polizanodesglosarimpuestos",
+                "DEFAULT_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "DF_gastos_Enviado",
+                "DEFAULT_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "DF_gastos_intentoEnvioAF",
+                "DEFAULT_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_chequespagos_formasdepago",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_chequespagosf_formasdepago",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_gastos_compras",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_gastos_cuentascontables",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_gastos_empresas",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_gastos_tipogastos",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_gastosmovtos_gastos",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_polizasgeneradasdetalle_idpoliza",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_subtipogastos_tipogastos",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_tempchequespagos_formasdepago",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "PK_gastos",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "PK_polizasgeneradas_1",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "PK_subtipogastos",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "PK_tipogastos",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "bitacoraarchivopoliza",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "chequespagos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "chequespagos_log",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "chequespagosf",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "compras",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "gastos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "gastosmovtos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "pagosproveedores",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "pagosproveedoresTemp",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "polizasgeneradas",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "polizasgeneradasdetalle",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "subtipogastos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "tempchequespagos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "tipogastos",
+                "USER_TABLE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "parent_schema",
+              "parent_table",
+              "parent_column",
+              "referenced_schema",
+              "referenced_table",
+              "referenced_column"
+            ],
+            "name": "gate3dc_related_foreign_keys",
+            "row_count_returned": 9,
+            "rows": [
+              [
+                "FK_chequespagos_formasdepago",
+                "dbo",
+                "chequespagos",
+                "idformadepago",
+                "dbo",
+                "formasdepago",
+                "idformadepago"
+              ],
+              [
+                "FK_chequespagosf_formasdepago",
+                "dbo",
+                "chequespagosf",
+                "idformadepago",
+                "dbo",
+                "formasdepago",
+                "idformadepago"
+              ],
+              [
+                "FK_compras_proveedores",
+                "dbo",
+                "compras",
+                "idproveedor",
+                "dbo",
+                "proveedores",
+                "idproveedor"
+              ],
+              [
+                "FK_comprasmovtos_compras",
+                "dbo",
+                "comprasmovtos",
+                "idcompra",
+                "dbo",
+                "compras",
+                "idcompra"
+              ],
+              [
+                "FK_gastos_compras",
+                "dbo",
+                "gastos",
+                "idcompra",
+                "dbo",
+                "compras",
+                "idcompra"
+              ],
+              [
+                "FK_gastos_cuentascontables",
+                "dbo",
+                "gastos",
+                "idcuentacontable",
+                "dbo",
+                "cuentascontables",
+                "idcuentacontable"
+              ],
+              [
+                "FK_gastos_empresas",
+                "dbo",
+                "gastos",
+                "idempresa",
+                "dbo",
+                "empresas",
+                "idempresa"
+              ],
+              [
+                "FK_gastos_tipogastos",
+                "dbo",
+                "gastos",
+                "Idtipogasto",
+                "dbo",
+                "tipogastos",
+                "Idtipogasto"
+              ],
+              [
+                "FK_gastosmovtos_gastos",
+                "dbo",
+                "gastosmovtos",
+                "idgasto",
+                "dbo",
+                "gastos",
+                "idgasto"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "parent_schema",
+              "parent_object",
+              "trigger_name",
+              "is_disabled",
+              "is_instead_of_trigger",
+              "definition"
+            ],
+            "name": "gate3dc_triggers_related",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc",
+              "definition"
+            ],
+            "name": "gate3dc_module_links_pago_gasto_cheque_poliza",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "referencing_schema",
+              "referencing_object",
+              "type_desc",
+              "referenced_schema_name",
+              "referenced_entity_name"
+            ],
+            "name": "gate3dc_expression_dependencies_related",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable",
+              "is_identity",
+              "is_computed",
+              "default_name",
+              "default_definition"
+            ],
+            "name": "gate3dc_pagosproveedores_columns_full",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                1,
+                "foliocompra",
+                "numeric",
+                9,
+                10,
+                0,
+                true,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                2,
+                "fecha",
+                "datetime",
+                8,
+                23,
+                3,
+                true,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                3,
+                "abono",
+                "money",
+                8,
+                19,
+                4,
+                true,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                4,
+                "referencia",
+                "varchar",
+                40,
+                0,
+                0,
+                true,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                5,
+                "enviadoacentral",
+                "bit",
+                1,
+                1,
+                0,
+                true,
+                false,
+                0,
+                null,
+                null
+              ],
+              [
+                6,
+                "foliogasto",
+                "numeric",
+                9,
+                10,
+                0,
+                true,
+                false,
+                0,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_id",
+              "index_name",
+              "type_desc",
+              "is_unique",
+              "is_primary_key",
+              "is_unique_constraint",
+              "has_filter",
+              "filter_definition",
+              "key_ordinal",
+              "is_included_column",
+              "column_name"
+            ],
+            "name": "gate3dc_pagosproveedores_keys_indexes",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                0,
+                null,
+                "HEAP",
+                false,
+                false,
+                false,
+                false,
+                null,
+                null,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "constraint_name",
+              "type_desc",
+              "check_definition"
+            ],
+            "name": "gate3dc_pagosproveedores_constraints",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "parent_schema",
+              "parent_table",
+              "parent_column",
+              "referenced_schema",
+              "referenced_table",
+              "referenced_column",
+              "delete_referential_action_desc",
+              "update_referential_action_desc"
+            ],
+            "name": "gate3dc_pagosproveedores_foreign_keys_all",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_name",
+              "is_unique",
+              "is_primary_key",
+              "is_unique_constraint",
+              "key_ordinal",
+              "column_name"
+            ],
+            "name": "gate3dc_reference_index_uniqueness",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_pagos",
+              "foliocompra_nulls",
+              "fecha_nulls",
+              "abono_nulls",
+              "referencia_vacia",
+              "compras_distintas",
+              "referencias_distintas"
+            ],
+            "name": "gate3dc_existing_shape_aggregates",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "47705",
+                0,
+                0,
+                0,
+                9971,
+                "45447",
+                "612"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "referencias_repetidas"
+            ],
+            "name": "gate3dc_reference_duplicate_aggregate",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "234"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "combinaciones_repetidas"
+            ],
+            "name": "gate3dc_same_purchase_reference_duplicate_aggregate",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "511"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc"
+            ],
+            "name": "gate3dc_candidate_related_objects",
+            "row_count_returned": 30,
+            "rows": [
+              [
+                "dbo",
+                "DF__compras__polizag__3D3402A0",
+                "DEFAULT_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "DF_configuracion_nopermitirarchivopoliza",
+                "DEFAULT_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "DF_configuracion_polizanodesglosarimpuestos",
+                "DEFAULT_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "DF_gastos_Enviado",
+                "DEFAULT_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "DF_gastos_intentoEnvioAF",
+                "DEFAULT_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_chequespagos_formasdepago",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_chequespagosf_formasdepago",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_gastos_compras",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_gastos_cuentascontables",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_gastos_empresas",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_gastos_tipogastos",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_gastosmovtos_gastos",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_subtipogastos_tipogastos",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_tempchequespagos_formasdepago",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "PK_gastos",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "PK_subtipogastos",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "PK_tipogastos",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "tr_nx_chequespagos_audit",
+                "SQL_TRIGGER"
+              ],
+              [
+                "dbo",
+                "bitacoraarchivopoliza",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "chequespagos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "chequespagosf",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "compras",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "gastos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "gastosmovtos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "nx_chequespagos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "nx_chequespagos_log",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "pagosproveedores",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "subtipogastos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "tempchequespagos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "tipogastos",
+                "USER_TABLE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "parent_schema",
+              "parent_table",
+              "parent_column",
+              "referenced_schema",
+              "referenced_table",
+              "referenced_column"
+            ],
+            "name": "gate3dc_related_foreign_keys",
+            "row_count_returned": 9,
+            "rows": [
+              [
+                "FK_chequespagos_formasdepago",
+                "dbo",
+                "chequespagos",
+                "idformadepago",
+                "dbo",
+                "formasdepago",
+                "idformadepago"
+              ],
+              [
+                "FK_chequespagosf_formasdepago",
+                "dbo",
+                "chequespagosf",
+                "idformadepago",
+                "dbo",
+                "formasdepago",
+                "idformadepago"
+              ],
+              [
+                "FK_compras_proveedores",
+                "dbo",
+                "compras",
+                "idproveedor",
+                "dbo",
+                "proveedores",
+                "idproveedor"
+              ],
+              [
+                "FK_comprasmovtos_compras",
+                "dbo",
+                "comprasmovtos",
+                "idcompra",
+                "dbo",
+                "compras",
+                "idcompra"
+              ],
+              [
+                "FK_gastos_compras",
+                "dbo",
+                "gastos",
+                "idcompra",
+                "dbo",
+                "compras",
+                "idcompra"
+              ],
+              [
+                "FK_gastos_cuentascontables",
+                "dbo",
+                "gastos",
+                "idcuentacontable",
+                "dbo",
+                "cuentascontables",
+                "idcuentacontable"
+              ],
+              [
+                "FK_gastos_empresas",
+                "dbo",
+                "gastos",
+                "idempresa",
+                "dbo",
+                "empresas",
+                "idempresa"
+              ],
+              [
+                "FK_gastos_tipogastos",
+                "dbo",
+                "gastos",
+                "Idtipogasto",
+                "dbo",
+                "tipogastos",
+                "Idtipogasto"
+              ],
+              [
+                "FK_gastosmovtos_gastos",
+                "dbo",
+                "gastosmovtos",
+                "idgasto",
+                "dbo",
+                "gastos",
+                "idgasto"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "parent_schema",
+              "parent_object",
+              "trigger_name",
+              "is_disabled",
+              "is_instead_of_trigger",
+              "definition"
+            ],
+            "name": "gate3dc_triggers_related",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "dbo",
+                "chequespagos",
+                "tr_nx_chequespagos_audit",
+                false,
+                false,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc",
+              "definition"
+            ],
+            "name": "gate3dc_module_links_pago_gasto_cheque_poliza",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "referencing_schema",
+              "referencing_object",
+              "type_desc",
+              "referenced_schema_name",
+              "referenced_entity_name"
+            ],
+            "name": "gate3dc_expression_dependencies_related",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-11T00:26:21Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
