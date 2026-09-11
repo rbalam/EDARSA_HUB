@@ -1,0 +1,28 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"RRR-GATE4D-R4-CANONICAL-RUNNER-RETRY-20260911",
+  "created_at_utc":"2026-09-11T06:03:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"fbb193c02b4b798d676b4a7bb96b4c58733338ef",
+  "production_allowed":false,
+  "objective":"Gate 4D R4: reemplazar solamente el cuerpo del paso Execute GO batches transactionally por el runner canonico edarsahub_sql_runner.py y modificar el marker existente para re-disparar el workflow. Reutilizar V2 sin cambios. No DML. No Production.",
+  "actions":[
+    {
+      "type":"replace_text",
+      "path":".github/workflows/rrr-gate4-customer360-v2-development.yml",
+      "old":"          python - <<'PY'\n          import os,re,pymssql,pathlib\n          sql=pathlib.Path(os.environ['MIGRATION_SCRIPT']).read_text(encoding='utf-8')\n          batches=[b.strip() for b in re.split(r'(?im)^\\s*GO\\s*$',sql) if b.strip()]\n          if len(batches)!=4: raise SystemExit(f'EXPECTED_4_BATCHES_GOT_{len(batches)}')\n          c=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],autocommit=False)\n          q=c.cursor()\n          try:\n              for b in batches: q.execute(b)\n              c.commit()\n          except Exception:\n              c.rollback(); raise\n          finally:\n              q.close(); c.close()\n          print('EXECUTED_4_CREATE_VIEW_BATCHES')\n          PY\n",
+      "new":"          set -euo pipefail\n          export EDARSAHUB_ALLOW_MIGRATIONS=true\n          PYTHONPATH=\"$GITHUB_WORKSPACE/backend\" python backend/tools/edarsahub_sql_runner.py --mode migrate --script \"${MIGRATION_SCRIPT}\"\n"
+    },
+    {
+      "type":"replace_text",
+      "path":"ops/migrations/requests/RRR-GATE4-CUSTOMER360-V2-20260909.execute",
+      "old":"rollback_percent=100\n",
+      "new":"rollback_percent=100\nretry_job=RRR-GATE4D-R4-CANONICAL-RUNNER-RETRY-20260911\nretry_reason=canonical_runner\n"
+    }
+  ],
+  "checks":[{"type":"git_diff_check"}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
