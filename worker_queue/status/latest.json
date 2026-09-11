@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "c0c5ff92e351d4a351a5602afb903ce59d1f7a08",
-  "generated_at_utc": "2026-09-11T07:27:28Z",
+  "generated_at_utc": "2026-09-11T07:28:44Z",
   "history": {
     "done_total_local": 418,
     "pending_total_local": 0,
@@ -13,61 +13,61 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2648,
+      "age_seconds": 2724,
       "job_id": "ARBITROA-BOS-GATE-A1-SQL-DISCOVERY-READONLY-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 167,
+      "age_seconds": 242,
       "job_id": "ARBITROA-BOS-GATE-A2-REPOSITORY-CONTRACT-DISCOVERY-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2924,
+      "age_seconds": 2999,
       "job_id": "BOS-AGENT-HARNESS-AH10-E2E-SIMULATION-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 149,
+      "age_seconds": 225,
       "job_id": "BOS-AGENT-HARNESS-AH10-E2E-SIMULATION-V1-R2-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3135,
+      "age_seconds": 3210,
       "job_id": "CAVAS-G12-CANARY-01-PERSONAID-EXISTS-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3113,
+      "age_seconds": 3188,
       "job_id": "CAVAS-G12-CANARY-02-PERSONAID-TYPE-NULL-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3101,
+      "age_seconds": 3177,
       "job_id": "CAVAS-G12-CANARY-03-PERSONAID-FK-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3090,
+      "age_seconds": 3165,
       "job_id": "CAVAS-G12-CANARY-04-PERSONAID-INDEX-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3078,
+      "age_seconds": 3154,
       "job_id": "CAVAS-G12-CANARY-05-CHILD-FKS-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3066,
+      "age_seconds": 3142,
       "job_id": "CAVAS-G12-CANARY-06-PERSONAID-POPULATION-20260911",
       "reason": null,
       "state": "RESULT_READY"
@@ -85,8 +85,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T07:27:27Z",
-    "last_receive_utc": "2026-09-11T07:27:28Z",
+    "last_cycle_utc": "2026-09-11T07:28:40Z",
+    "last_receive_utc": "2026-09-11T07:28:40Z",
     "last_terminal_utc": "2026-09-11T07:24:58Z",
     "pid": "286"
   },
