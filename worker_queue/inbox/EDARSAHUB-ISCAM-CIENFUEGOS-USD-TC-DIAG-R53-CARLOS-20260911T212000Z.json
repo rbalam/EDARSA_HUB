@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-USD-TC-DIAG-R53-CARLOS-20260911T212000Z",
+  "created_at_utc": "2026-09-11T21:20:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e54411678270f72e1ef340478076161ed30d6277",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Confirmar de donde obtiene SoftRestaurant CIENFUEGOS el tipo de cambio para la forma de pago 03 DOLARES USA. R52 demostro que folios 104124 y 104623 quedan cortos exactamente por 600 y 150 al sumar cp.importe sin convertir; 40 USD y 10 USD requieren una equivalencia efectiva de 16 MXN/USD para cuadrar. No hardcodear 16: localizar campo o tabla fuente de moneda/tipo de cambio y evidencia de esos dos pagos. No modificar Cuentas, Comandas, codigo, datos ni Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": ["CIENFUEGOS"],
+      "system_types": ["SOFTRESTAURANT"],
+      "queries": [
+        {
+          "name": "cienfuegos_currency_related_columns",
+          "sql": "SELECT TABLE_NAME,COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE (TABLE_NAME IN ('chequespagos','formasdepago','cheques') OR TABLE_NAME LIKE '%moneda%' OR TABLE_NAME LIKE '%cambio%' OR TABLE_NAME LIKE '%divisa%' OR TABLE_NAME LIKE '%dolar%') AND (COLUMN_NAME LIKE '%moneda%' OR COLUMN_NAME LIKE '%cambio%' OR COLUMN_NAME LIKE '%dolar%' OR COLUMN_NAME LIKE '%divisa%' OR COLUMN_NAME LIKE '%factor%' OR COLUMN_NAME LIKE '%valor%' OR COLUMN_NAME LIKE '%tipo%' OR COLUMN_NAME LIKE '%importe%') ORDER BY TABLE_NAME,ORDINAL_POSITION"
+        },
+        {
+          "name": "cienfuegos_currency_candidate_tables",
+          "sql": "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' AND (TABLE_NAME LIKE '%moneda%' OR TABLE_NAME LIKE '%cambio%' OR TABLE_NAME LIKE '%divisa%' OR TABLE_NAME LIKE '%dolar%' OR TABLE_NAME LIKE '%tipo%cambio%') ORDER BY TABLE_NAME"
+        },
+        {
+          "name": "cienfuegos_forma_pago_03_full_row",
+          "sql": "SELECT * FROM formasdepago WHERE idformadepago='03'"
+        },
+        {
+          "name": "cienfuegos_gap_ticket_payment_full_rows",
+          "sql": "SELECT * FROM chequespagos WHERE folio IN ('104124','104623') ORDER BY folio,idformadepago"
+        },
+        {
+          "name": "cienfuegos_gap_usd_implied_exchange_rate",
+          "sql": "SELECT ch.folio, CAST(ch.total AS decimal(18,4)) AS total_cheque, CAST(SUM(CASE WHEN cp.idformadepago<>'03' THEN ISNULL(cp.importe,0) ELSE 0 END) AS decimal(18,4)) AS pagos_mxn, CAST(SUM(CASE WHEN cp.idformadepago='03' THEN ISNULL(cp.importe,0) ELSE 0 END) AS decimal(18,4)) AS usd_nominal, CAST(CASE WHEN SUM(CASE WHEN cp.idformadepago='03' THEN ISNULL(cp.importe,0) ELSE 0 END)<>0 THEN (ch.total-SUM(CASE WHEN cp.idformadepago<>'03' THEN ISNULL(cp.importe,0) ELSE 0 END))/SUM(CASE WHEN cp.idformadepago='03' THEN ISNULL(cp.importe,0) ELSE 0 END) ELSE NULL END AS decimal(18,4)) AS tipo_cambio_implicito FROM cheques ch INNER JOIN chequespagos cp ON cp.folio=ch.folio WHERE ch.folio IN ('104124','104623') GROUP BY ch.folio,ch.total ORDER BY ch.folio"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
