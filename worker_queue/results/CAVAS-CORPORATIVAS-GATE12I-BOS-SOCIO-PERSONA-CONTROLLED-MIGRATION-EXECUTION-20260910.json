@@ -1,0 +1,28 @@
+{
+  "base_sha": "e2dea704daf1ca7d1ac485bad3ffdf78870fac54",
+  "blockers": [],
+  "candidate_sha": "6454269c094f3dff05aff130bd99598a0321196d",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-11T05:34:48Z",
+  "development_sha": "6454269c094f3dff05aff130bd99598a0321196d",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    ".github/workflows/cavas-gate12i-persona-link-development-migration.yml",
+    "ops/migrations/requests/CAVAS-GATE12I-PERSONA-LINK-20260910.execute"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CORPORATIVAS-GATE12I-BOS-SOCIO-PERSONA-CONTROLLED-MIGRATION-EXECUTION-20260910",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-11T05:37:41Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-11T05:34:36Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
