@@ -1,0 +1,353 @@
+{
+  "base_sha": "45254e855b90ca68fbd560761020e2245edb803e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-11T18:20:42Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-ESTELAR-LINE-DISCOUNT-AUDIT-R47-CARLOS-20260911T182000Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-11T18:20:45Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "COLUMN_NAME",
+              "DATA_TYPE",
+              "NUMERIC_PRECISION",
+              "NUMERIC_SCALE"
+            ],
+            "name": "estelar_cheqdet_schema_amount_discount_fields",
+            "row_count_returned": 10,
+            "rows": [
+              [
+                "foliodet",
+                "bigint",
+                19,
+                0
+              ],
+              [
+                "cantidad",
+                "numeric",
+                14,
+                6
+              ],
+              [
+                "idproducto",
+                "varchar",
+                null,
+                null
+              ],
+              [
+                "descuento",
+                "numeric",
+                8,
+                4
+              ],
+              [
+                "precio",
+                "money",
+                19,
+                4
+              ],
+              [
+                "usuariodescuento",
+                "varchar",
+                null,
+                null
+              ],
+              [
+                "comentariodescuento",
+                "varchar",
+                null,
+                null
+              ],
+              [
+                "idtipodescuento",
+                "varchar",
+                null,
+                null
+              ],
+              [
+                "subtotalsrx",
+                "numeric",
+                7,
+                5
+              ],
+              [
+                "totalsrx",
+                "numeric",
+                7,
+                5
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "folio",
+              "total_encabezado",
+              "subtotal_encabezado",
+              "descuento_encabezado",
+              "suma_cantidad_precio",
+              "suma_descuento_linea",
+              "candidato_descuento_importe",
+              "candidato_descuento_porcentaje"
+            ],
+            "name": "estelar_discounted_tickets_candidate_formulas_0407",
+            "row_count_returned": 15,
+            "rows": [
+              [
+                "24586",
+                "0.0000",
+                "1176.7241",
+                "100.0000",
+                "1365.0000",
+                "0.0000",
+                "1365.0000",
+                "1365.0000"
+              ],
+              [
+                "24587",
+                "0.0000",
+                "0.0000",
+                "0.0000",
+                "525.0000",
+                "800.0000",
+                "-275.0000",
+                "0.0000"
+              ],
+              [
+                "24588",
+                "0.0000",
+                "0.0000",
+                "0.0000",
+                "380.0000",
+                "100.0000",
+                "280.0000",
+                "0.0000"
+              ],
+              [
+                "24670",
+                "1298.0000",
+                "1118.6121",
+                "0.0000",
+                "3035.0000",
+                "303.2800",
+                "2731.7200",
+                "1210.0900"
+              ],
+              [
+                "24671",
+                "0.0000",
+                "0.0000",
+                "0.0000",
+                "535.0000",
+                "400.0000",
+                "135.0000",
+                "0.0000"
+              ],
+              [
+                "24672",
+                "0.0000",
+                "0.0000",
+                "0.0000",
+                "65.0000",
+                "100.0000",
+                "-35.0000",
+                "0.0000"
+              ],
+              [
+                "24674",
+                "0.0000",
+                "0.0000",
+                "0.0000",
+                "400.0000",
+                "600.0000",
+                "-200.0000",
+                "0.0000"
+              ],
+              [
+                "24705",
+                "0.0000",
+                "0.0000",
+                "0.0000",
+                "190.0000",
+                "100.0000",
+                "90.0000",
+                "0.0000"
+              ],
+              [
+                "24730",
+                "0.0000",
+                "0.0000",
+                "0.0000",
+                "975.0000",
+                "800.0000",
+                "175.0000",
+                "0.0000"
+              ],
+              [
+                "24760",
+                "650.0000",
+                "560.3836",
+                "0.0000",
+                "1955.0000",
+                "209.6400",
+                "1745.3600",
+                "535.0450"
+              ],
+              [
+                "24782",
+                "0.0000",
+                "0.0000",
+                "0.0000",
+                "160.0000",
+                "100.0000",
+                "60.0000",
+                "0.0000"
+              ],
+              [
+                "24801",
+                "2113.0000",
+                "1821.8147",
+                "0.0000",
+                "7150.0000",
+                "219.1300",
+                "6930.8700",
+                "2113.3050"
+              ],
+              [
+                "24808",
+                "1397.0000",
+                "1204.4310",
+                "0.0000",
+                "2600.0000",
+                "65.1100",
+                "2534.8900",
+                "907.1400"
+              ],
+              [
+                "24859",
+                "878.0000",
+                "756.8966",
+                "0.0000",
+                "1000.0000",
+                "83.2000",
+                "916.8000",
+                "168.0000"
+              ],
+              [
+                "24860",
+                "0.0000",
+                "0.0000",
+                "0.0000",
+                "190.0000",
+                "100.0000",
+                "90.0000",
+                "0.0000"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "folio",
+              "total_encabezado",
+              "subtotal_encabezado",
+              "descuento_encabezado",
+              "apertura",
+              "idproducto",
+              "cantidad",
+              "precio",
+              "descuento_linea",
+              "importe_base"
+            ],
+            "name": "estelar_ticket_24667_line_detail",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "24667",
+                "20000.0000",
+                "17241.3793",
+                "0.0000",
+                "2026-09-05T02:48:41",
+                "C020001",
+                "200.000000",
+                "100.0000",
+                "0.0000",
+                "20000.0000"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha_apertura",
+              "tickets",
+              "encabezado_total",
+              "detalle_base",
+              "detalle_descuento_importe",
+              "detalle_descuento_porcentaje"
+            ],
+            "name": "estelar_day_reconciliation_candidate_formulas_0407",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "2026-09-04",
+                80,
+                "2495910.0000",
+                "102110.0000",
+                "101210.0000",
+                "101205.0000"
+              ],
+              [
+                "2026-09-05",
+                167,
+                "6862670.0000",
+                "285297.5000",
+                "282400.3400",
+                "272998.0800"
+              ],
+              [
+                "2026-09-06",
+                20,
+                "174210.0000",
+                "17195.0000",
+                "17195.0000",
+                "17195.0000"
+              ],
+              [
+                "2026-09-07",
+                17,
+                "1982680.0000",
+                "34990.0000",
+                "34806.8000",
+                "33968.0000"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-11T18:20:40Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
