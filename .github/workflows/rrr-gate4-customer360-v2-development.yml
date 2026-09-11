@@ -46,22 +46,9 @@ jobs:
           EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
         shell: bash
         run: |
-          python - <<'PY'
-          import os,re,pymssql,pathlib
-          sql=pathlib.Path(os.environ['MIGRATION_SCRIPT']).read_text(encoding='utf-8')
-          batches=[b.strip() for b in re.split(r'(?im)^\s*GO\s*$',sql) if b.strip()]
-          if len(batches)!=4: raise SystemExit(f'EXPECTED_4_BATCHES_GOT_{len(batches)}')
-          c=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],autocommit=False)
-          q=c.cursor()
-          try:
-              for b in batches: q.execute(b)
-              c.commit()
-          except Exception:
-              c.rollback(); raise
-          finally:
-              q.close(); c.close()
-          print('EXECUTED_4_CREATE_VIEW_BATCHES')
-          PY
+          set -euo pipefail
+          export EDARSAHUB_ALLOW_MIGRATIONS=true
+          PYTHONPATH="$GITHUB_WORKSPACE/backend" python backend/tools/edarsahub_sql_runner.py --mode migrate --script "${MIGRATION_SCRIPT}"
       - name: Postcheck
         env:
           EDARSAHUB_SQL_USER: HRLectura
