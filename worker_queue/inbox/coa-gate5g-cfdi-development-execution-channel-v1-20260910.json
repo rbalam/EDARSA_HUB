@@ -1,0 +1,96 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate5g-cfdi-development-execution-channel-v1-20260910",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "47f362249040bcf6dcb63581b88ce71703bd7358",
+  "objective": "COA Gate 5G: reutilizar y convertir el workflow existente .github/workflows/coa-core-development-migration.yml en un canal canonico multi-migracion COA para Development, sin duplicar workflow ni helpers. Conservar compatibilidad del trigger Core existente y agregar el trigger CFDI Emitidos. Para CFDI Emitidos usar exclusivamente backend/database/migrations/20260910_coa_cfdi_emitidos.sql y backend/database/migrations/20260910_coa_cfdi_emitidos_rollback.sql certificados. El flujo debe: resolver el contrato de migracion por trigger; ejecutar preflight inmediato READ_ONLY con HRLectura; validar identidad EDARSAHUB/HRLectura y permisos CREATE TABLE + ALTER dbo antes de escribir; ejecutar migracion transaccional; ejecutar postcheck exacto; subir artifact siempre; ejecutar rollback automatico si falla la migracion o el postcheck; fallar el Gate despues de rollback; no tocar Produccion; no modificar los DDL certificados. El postcheck CFDI debe confirmar: tablas dbo.Fiscal_DocumentosEmitidosEstatus y dbo.Fiscal_DocumentosEmitidos existen; PK respectivas existen; 5 indices del dominio fiscal existen incluyendo UUID unique filtrado; FKs de Empresa, Unidad, Cliente, Venta, Estatus, Moneda, CreadoPor y ModificadoPor existen; COA_ExpedienteReferencias contiene VentaID bigint NULL y DocumentoFiscalEmitidoID bigint NULL; existen sus 2 FKs y sus 2 indices filtrados; CK_COA_ExpedienteReferencias_UnSoloDestino existe, esta habilitado/confiable y su definicion incluye VentaID y DocumentoFiscalEmitidoID; DocumentoFiscalID sigue referenciando Compras_DocumentosFiscales; tablas fiscales nuevas quedan en 0 filas. Crear trigger ops/migrations/requests/COA-CFDI-EMITIDOS-20260910.execute para disparar el workflow en Development. No certificar ejecucion fisica en este job: solo integrar el canal/trigger y dejar que GitHub Actions produzca run + artifact para auditoria posterior.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA",
+    "chat": "coa-gate5g-cfdi-development-execution-channel-v1-20260910"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/coa-core-development-migration.yml",
+      "expected_count": 1,
+      "old": "    paths:\n      - ops/migrations/requests/COA-CORE-20260909.execute",
+      "new": "    paths:\n      - ops/migrations/requests/COA-CORE-20260909.execute\n      - ops/migrations/requests/COA-CFDI-EMITIDOS-20260910.execute"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/coa-core-development-migration.yml",
+      "expected_count": 1,
+      "old": "      MIGRATION_SCRIPT: backend/database/migrations/20260909_coa_core.sql\n      ROLLBACK_SCRIPT: backend/database/migrations/20260909_coa_core_rollback.sql",
+      "new": "      MIGRATION_SCRIPT: ''\n      ROLLBACK_SCRIPT: ''\n      MIGRATION_KIND: ''"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/coa-core-development-migration.yml",
+      "expected_count": 1,
+      "old": "      - name: Setup Python",
+      "new": "      - name: Resolve canonical migration contract\n        shell: bash\n        run: |\n          set -euo pipefail\n          CHANGED=\"$(git diff-tree --no-commit-id --name-only -r \"${GITHUB_SHA}\")\"\n          if echo \"${CHANGED}\" | grep -qx 'ops/migrations/requests/COA-CFDI-EMITIDOS-20260910.execute'; then\n            echo 'MIGRATION_KIND=CFDI_EMITIDOS' >> \"$GITHUB_ENV\"\n            echo 'MIGRATION_SCRIPT=backend/database/migrations/20260910_coa_cfdi_emitidos.sql' >> \"$GITHUB_ENV\"\n            echo 'ROLLBACK_SCRIPT=backend/database/migrations/20260910_coa_cfdi_emitidos_rollback.sql' >> \"$GITHUB_ENV\"\n          elif echo \"${CHANGED}\" | grep -qx 'ops/migrations/requests/COA-CORE-20260909.execute'; then\n            echo 'MIGRATION_KIND=CORE' >> \"$GITHUB_ENV\"\n            echo 'MIGRATION_SCRIPT=backend/database/migrations/20260909_coa_core.sql' >> \"$GITHUB_ENV\"\n            echo 'ROLLBACK_SCRIPT=backend/database/migrations/20260909_coa_core_rollback.sql' >> \"$GITHUB_ENV\"\n          else\n            echo \"No canonical COA migration trigger found\" >&2\n            exit 1\n          fi\n\n      - name: Setup Python"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/coa-core-development-migration.yml",
+      "expected_count": 1,
+      "old": "          names=['COA_Expedientes','COA_ExpedienteEventos','COA_ExpedienteReferencias','COA_ReglasComision','COA_ReglasComisionCondiciones','COA_ExcepcionesRegla','COA_ComisionAplicada']\n          cur.execute(\"SELECT name FROM sys.tables WHERE name IN (%s)\" % ','.join([\"'%s'\"%n for n in names]))\n          rows=cur.fetchall(); print({'existing_coa_tables':rows})\n          if rows: raise SystemExit('COA_PREFLIGHT_OBJECT_COLLISION')\n          refs=[('Sistema_Empresas','EmpresaID'),('Unidades_Negocio','id'),('Usuario_Catalogo','UsuarioID'),('Cliente_Catalogo','ClienteID'),('Proveedor_Catalogo','ProveedorID'),('Proveedor_Monedas','MonedaID'),('Compras_DocumentosFiscales','DocumentoFiscalID'),('Finanzas_Pagos','PagoID'),('Finanzas_CxP_DecisionesPago','DecisionPagoID'),('RH_Nomina','NominaID'),('RH_Nomina_Dispersion','DispersionNominaID'),('RH_Nomina_Recibos','NominaReciboID'),('RH_Colaboradores_Expediente','ColaboradorID'),('CRM_Contratos','ContratoID')]\n          for t,c in refs:\n              cur.execute(\"SELECT COUNT(*) AS n FROM sys.columns WHERE object_id=OBJECT_ID(%s) AND name=%s\",('dbo.'+t,c))\n              if int(cur.fetchone()['n'])!=1: raise SystemExit('COA_PREFLIGHT_REFERENCE_MISSING:%s.%s'%(t,c))\n          cur.close(); conn.close(); print('COA_PREFLIGHT=PASS')",
+      "new": "          kind=os.environ['MIGRATION_KIND']\n          if kind=='CORE':\n              names=['COA_Expedientes','COA_ExpedienteEventos','COA_ExpedienteReferencias','COA_ReglasComision','COA_ReglasComisionCondiciones','COA_ExcepcionesRegla','COA_ComisionAplicada']\n              cur.execute(\"SELECT name FROM sys.tables WHERE name IN (%s)\" % ','.join([\"'%s'\"%n for n in names]))\n              rows=cur.fetchall(); print({'existing_coa_tables':rows})\n              if rows: raise SystemExit('COA_PREFLIGHT_OBJECT_COLLISION')\n              refs=[('Sistema_Empresas','EmpresaID'),('Unidades_Negocio','id'),('Usuario_Catalogo','UsuarioID'),('Cliente_Catalogo','ClienteID'),('Proveedor_Catalogo','ProveedorID'),('Proveedor_Monedas','MonedaID'),('Compras_DocumentosFiscales','DocumentoFiscalID'),('Finanzas_Pagos','PagoID'),('Finanzas_CxP_DecisionesPago','DecisionPagoID'),('RH_Nomina','NominaID'),('RH_Nomina_Dispersion','DispersionNominaID'),('RH_Nomina_Recibos','NominaReciboID'),('RH_Colaboradores_Expediente','ColaboradorID'),('CRM_Contratos','ContratoID')]\n          elif kind=='CFDI_EMITIDOS':\n              cur.execute(\"SELECT COUNT(*) AS n FROM sys.tables WHERE name IN ('Fiscal_DocumentosEmitidosEstatus','Fiscal_DocumentosEmitidos')\")\n              rows=int(cur.fetchone()['n']); print({'existing_fiscal_tables':rows})\n              if rows!=0: raise SystemExit('COA_CFDI_PREFLIGHT_OBJECT_COLLISION')\n              cur.execute(\"SELECT COUNT(*) AS n FROM sys.columns WHERE object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND name IN ('VentaID','DocumentoFiscalEmitidoID')\")\n              if int(cur.fetchone()['n'])!=0: raise SystemExit('COA_CFDI_PREFLIGHT_COLUMN_COLLISION')\n              refs=[('Sistema_Empresas','EmpresaID'),('Unidades_Negocio','id'),('Usuario_Catalogo','UsuarioID'),('Cliente_Catalogo','ClienteID'),('Proveedor_Monedas','MonedaID'),('Venta_Encabezado','VentaID')]\n              cur.execute(\"SELECT COUNT(*) AS n FROM dbo.COA_ExpedienteReferencias\")\n              print({'coa_reference_rows':int(cur.fetchone()['n'])})\n          else:\n              raise SystemExit('COA_UNKNOWN_MIGRATION_KIND')\n          for t,c in refs:\n              cur.execute(\"SELECT COUNT(*) AS n FROM sys.columns WHERE object_id=OBJECT_ID(%s) AND name=%s\",('dbo.'+t,c))\n              if int(cur.fetchone()['n'])!=1: raise SystemExit('COA_PREFLIGHT_REFERENCE_MISSING:%s.%s'%(t,c))\n          cur.close(); conn.close(); print('COA_PREFLIGHT=PASS')"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/coa-core-development-migration.yml",
+      "expected_count": 1,
+      "old": "      - name: Execute transactional migration\n        env:\n          EDARSAHUB_ALLOW_MIGRATIONS: 'true'\n        shell: bash\n        run: |\n          set -euo pipefail\n          PYTHONPATH=\"$GITHUB_WORKSPACE/backend\" python backend/tools/edarsahub_sql_runner.py --mode migrate --script \"${MIGRATION_SCRIPT}\" 2>&1 | tee evidence/migration.txt",
+      "new": "      - name: Execute transactional migration\n        id: migration\n        continue-on-error: true\n        env:\n          EDARSAHUB_ALLOW_MIGRATIONS: 'true'\n        shell: bash\n        run: |\n          set -euo pipefail\n          PYTHONPATH=\"$GITHUB_WORKSPACE/backend\" python backend/tools/edarsahub_sql_runner.py --mode migrate --script \"${MIGRATION_SCRIPT}\" 2>&1 | tee evidence/migration.txt"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/coa-core-development-migration.yml",
+      "expected_count": 1,
+      "old": "      - name: Postcheck exact schema\n        id: postcheck\n        continue-on-error: true",
+      "new": "      - name: Postcheck exact schema\n        id: postcheck\n        if: steps.migration.outcome == 'success'\n        continue-on-error: true"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/coa-core-development-migration.yml",
+      "expected_count": 1,
+      "old": "          cur.execute(\"SELECT COUNT(*) n FROM sys.tables WHERE name LIKE 'COA[_]%'\"); tables=int(cur.fetchone()['n'])\n          cur.execute(\"SELECT COUNT(*) n FROM sys.key_constraints kc JOIN sys.tables t ON t.object_id=kc.parent_object_id WHERE kc.type='PK' AND t.name LIKE 'COA[_]%'\"); pks=int(cur.fetchone()['n'])\n          cur.execute(\"SELECT COUNT(*) n FROM sys.indexes i JOIN sys.tables t ON t.object_id=i.object_id WHERE i.name LIKE 'IX_COA[_]%'\"); indexes=int(cur.fetchone()['n'])\n          cur.execute(\"SELECT COUNT(*) n FROM sys.foreign_keys fk JOIN sys.tables t ON t.object_id=fk.parent_object_id WHERE t.name LIKE 'COA[_]%'\"); fks=int(cur.fetchone()['n'])\n          cur.execute(\"SELECT SUM(p.rows) n FROM sys.tables t JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE t.name LIKE 'COA[_]%'\"); rows=int(cur.fetchone()['n'] or 0)\n          print({'tables':tables,'pks':pks,'indexes':indexes,'fks':fks,'rows':rows})\n          cur.close(); conn.close()\n          if tables!=7 or pks!=7 or indexes!=12 or fks!=38 or rows!=0: raise SystemExit('COA_POSTCHECK_CONTRACT_MISMATCH')\n          print('COA_POSTCHECK=PASS')",
+      "new": "          kind=os.environ['MIGRATION_KIND']\n          if kind=='CORE':\n              cur.execute(\"SELECT COUNT(*) n FROM sys.tables WHERE name LIKE 'COA[_]%'\"); tables=int(cur.fetchone()['n'])\n              cur.execute(\"SELECT COUNT(*) n FROM sys.key_constraints kc JOIN sys.tables t ON t.object_id=kc.parent_object_id WHERE kc.type='PK' AND t.name LIKE 'COA[_]%'\"); pks=int(cur.fetchone()['n'])\n              cur.execute(\"SELECT COUNT(*) n FROM sys.indexes i JOIN sys.tables t ON t.object_id=i.object_id WHERE i.name LIKE 'IX_COA[_]%'\"); indexes=int(cur.fetchone()['n'])\n              cur.execute(\"SELECT COUNT(*) n FROM sys.foreign_keys fk JOIN sys.tables t ON t.object_id=fk.parent_object_id WHERE t.name LIKE 'COA[_]%'\"); fks=int(cur.fetchone()['n'])\n              cur.execute(\"SELECT SUM(p.rows) n FROM sys.tables t JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE t.name LIKE 'COA[_]%'\"); rows=int(cur.fetchone()['n'] or 0)\n              print({'tables':tables,'pks':pks,'indexes':indexes,'fks':fks,'rows':rows})\n              if tables!=7 or pks!=7 or indexes!=12 or fks!=38 or rows!=0: raise SystemExit('COA_POSTCHECK_CONTRACT_MISMATCH')\n          elif kind=='CFDI_EMITIDOS':\n              cur.execute(\"SELECT COUNT(*) n FROM sys.tables WHERE name IN ('Fiscal_DocumentosEmitidosEstatus','Fiscal_DocumentosEmitidos')\"); tables=int(cur.fetchone()['n'])\n              cur.execute(\"SELECT COUNT(*) n FROM sys.key_constraints kc WHERE kc.type='PK' AND kc.parent_object_id IN (OBJECT_ID('dbo.Fiscal_DocumentosEmitidosEstatus'),OBJECT_ID('dbo.Fiscal_DocumentosEmitidos'))\"); pks=int(cur.fetchone()['n'])\n              cur.execute(\"SELECT COUNT(*) n FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.Fiscal_DocumentosEmitidos') AND name IN ('UX_Fiscal_DocumentosEmitidos_UUID','IX_Fiscal_DocumentosEmitidos_Cliente_Fecha','IX_Fiscal_DocumentosEmitidos_Empresa_Estatus','IX_Fiscal_DocumentosEmitidos_Unidad','IX_Fiscal_DocumentosEmitidos_Venta')\"); fiscal_indexes=int(cur.fetchone()['n'])\n              cur.execute(\"SELECT COUNT(*) n FROM sys.foreign_keys WHERE parent_object_id=OBJECT_ID('dbo.Fiscal_DocumentosEmitidos') AND name IN ('FK_Fiscal_DocumentosEmitidos_Empresa','FK_Fiscal_DocumentosEmitidos_Unidad','FK_Fiscal_DocumentosEmitidos_Cliente','FK_Fiscal_DocumentosEmitidos_Venta','FK_Fiscal_DocumentosEmitidos_Estatus','FK_Fiscal_DocumentosEmitidos_Moneda','FK_Fiscal_DocumentosEmitidos_CreadoPor','FK_Fiscal_DocumentosEmitidos_ModificadoPor')\"); fiscal_fks=int(cur.fetchone()['n'])\n              cur.execute(\"SELECT COUNT(*) n FROM sys.columns WHERE object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND ((name='VentaID' AND system_type_id=127 AND is_nullable=1) OR (name='DocumentoFiscalEmitidoID' AND system_type_id=127 AND is_nullable=1))\"); coa_cols=int(cur.fetchone()['n'])\n              cur.execute(\"SELECT COUNT(*) n FROM sys.foreign_keys WHERE parent_object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND name IN ('FK_COA_ExpedienteReferencias_Venta','FK_COA_ExpedienteReferencias_DocumentoFiscalEmitido')\"); coa_fks=int(cur.fetchone()['n'])\n              cur.execute(\"SELECT COUNT(*) n FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND name IN ('IX_COA_ExpedienteReferencias_Venta','IX_COA_ExpedienteReferencias_DocumentoFiscalEmitido') AND has_filter=1\"); coa_indexes=int(cur.fetchone()['n'])\n              cur.execute(\"SELECT definition,is_disabled,is_not_trusted FROM sys.check_constraints WHERE parent_object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND name='CK_COA_ExpedienteReferencias_UnSoloDestino'\"); ck=cur.fetchone()\n              ck_ok=bool(ck and not ck['is_disabled'] and not ck['is_not_trusted'] and 'VentaID' in ck['definition'] and 'DocumentoFiscalEmitidoID' in ck['definition'])\n              cur.execute(\"SELECT COUNT(*) n FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.tables rt ON rt.object_id=fkc.referenced_object_id WHERE fkc.parent_object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND pc.name='DocumentoFiscalID' AND rt.name='Compras_DocumentosFiscales'\"); compras_fk=int(cur.fetchone()['n'])\n              cur.execute(\"SELECT COALESCE(SUM(p.rows),0) n FROM sys.tables t JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE t.name IN ('Fiscal_DocumentosEmitidosEstatus','Fiscal_DocumentosEmitidos')\"); rows=int(cur.fetchone()['n'] or 0)\n              print({'tables':tables,'pks':pks,'fiscal_indexes':fiscal_indexes,'fiscal_fks':fiscal_fks,'coa_cols':coa_cols,'coa_fks':coa_fks,'coa_indexes':coa_indexes,'check_ok':ck_ok,'compras_fk':compras_fk,'rows':rows})\n              if not (tables==2 and pks==2 and fiscal_indexes==5 and fiscal_fks==8 and coa_cols==2 and coa_fks==2 and coa_indexes==2 and ck_ok and compras_fk==1 and rows==0): raise SystemExit('COA_CFDI_POSTCHECK_CONTRACT_MISMATCH')\n          else:\n              raise SystemExit('COA_UNKNOWN_MIGRATION_KIND')\n          cur.close(); conn.close(); print('COA_POSTCHECK=PASS')"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/coa-core-development-migration.yml",
+      "expected_count": 1,
+      "old": "      - name: Rollback automatically if postcheck failed\n        if: steps.postcheck.outcome == 'failure'",
+      "new": "      - name: Rollback automatically if migration or postcheck failed\n        if: steps.migration.outcome == 'failure' || steps.postcheck.outcome == 'failure'"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/coa-core-development-migration.yml",
+      "expected_count": 1,
+      "old": "      - name: Fail gate after rollback\n        if: steps.postcheck.outcome == 'failure'",
+      "new": "      - name: Fail gate after rollback\n        if: steps.migration.outcome == 'failure' || steps.postcheck.outcome == 'failure'"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/coa-core-development-migration.yml",
+      "expected_count": 1,
+      "old": "          name: coa-core-development-migration-evidence-${{ github.run_id }}",
+      "new": "          name: coa-development-migration-evidence-${{ github.run_id }}"
+    },
+    {
+      "type": "write_file",
+      "path": "ops/migrations/requests/COA-CFDI-EMITIDOS-20260910.execute",
+      "content": "COA_DEVELOPMENT_MIGRATION\nGATE=5G\nMIGRATION_KIND=CFDI_EMITIDOS\nSOURCE_GATE5E_SHA=0c32b93cee5d4ef54c4845850b6fedc937a63cb3\nSOURCE_GATE5F_RESULT=coa-gate5f-cfdi-emitidos-readonly-preflight-v1-20260910\nPRODUCTION=false\n"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
