@@ -42,6 +42,7 @@ ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "s
 SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
 MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
+ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
 UNIT_CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 MAX_ACTIONS = int(os.environ.get("EDARSAHUB_JOB_MAX_ACTIONS", "100"))
@@ -224,6 +225,21 @@ def validate(job: Any) -> list[str]:
             errors.append("ISCAM_DETAIL_BACKFILL_DRY_RUN_INVALID")
         if dry_run is False and job.get("confirm_detail_backfill") is not True:
             errors.append("ISCAM_DETAIL_BACKFILL_CONFIRMATION_REQUIRED")
+    elif mode == ISCAM_PAYMENTS_ONLY_RESYNC_MODE:
+        if actions not in (None, []):
+            errors.append("ISCAM_PAYMENTS_ONLY_ACTIONS_FORBIDDEN")
+        units = job.get("units", [])
+        if not isinstance(units, list) or len(units) != 1 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):
+            errors.append("ISCAM_PAYMENTS_ONLY_EXACTLY_ONE_UNIT_REQUIRED")
+        if not isinstance(job.get("fecha_inicio"), str) or not DATE_RE.fullmatch(job.get("fecha_inicio", "")):
+            errors.append("ISCAM_PAYMENTS_ONLY_FECHA_INICIO_INVALID")
+        if not isinstance(job.get("fecha_fin"), str) or not DATE_RE.fullmatch(job.get("fecha_fin", "")):
+            errors.append("ISCAM_PAYMENTS_ONLY_FECHA_FIN_INVALID")
+        dry_run = job.get("dry_run", True)
+        if not isinstance(dry_run, bool):
+            errors.append("ISCAM_PAYMENTS_ONLY_DRY_RUN_INVALID")
+        if dry_run is False and job.get("confirm_payments_only_resync") is not True:
+            errors.append("ISCAM_PAYMENTS_ONLY_CONFIRMATION_REQUIRED")
     elif mode == MPRO_FULL_HISTORY_MODE:
         if actions not in (None, []):
             errors.append("MPRO_RESYNC_ACTIONS_FORBIDDEN")
@@ -265,6 +281,11 @@ def validate(job: Any) -> list[str]:
             errors.append("ISCAM_DETAIL_BACKFILL_AUDIT_REQUIRED")
         elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
             errors.append("ISCAM_DETAIL_BACKFILL_ONLY_SQL_AUDIT_ALLOWED")
+    elif mode == ISCAM_PAYMENTS_ONLY_RESYNC_MODE:
+        if not isinstance(checks, list) or not checks:
+            errors.append("ISCAM_PAYMENTS_ONLY_AUDIT_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+            errors.append("ISCAM_PAYMENTS_ONLY_ONLY_SQL_AUDIT_ALLOWED")
     elif mode == MPRO_FULL_HISTORY_MODE:
         if not isinstance(checks, list) or not checks:
             errors.append("MPRO_RESYNC_AUDIT_REQUIRED")
