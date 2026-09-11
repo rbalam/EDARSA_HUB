@@ -1,0 +1,28 @@
+{
+  "base_sha": "24fda580c6c2045947ef88a997d5b4f7742d9bba",
+  "blockers": [],
+  "candidate_sha": "47f362249040bcf6dcb63581b88ce71703bd7358",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-11T01:36:24Z",
+  "development_sha": "47f362249040bcf6dcb63581b88ce71703bd7358",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_gate_chain_orchestrator.py",
+    "tools/mirror_sync/gate_chain_orchestrator.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "worker-orchestrator-selfchain-gate4-r1-20260911T0028Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-11T01:36:39Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-11T01:36:18Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
