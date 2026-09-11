@@ -1,0 +1,25 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-CIENFUEGOS-R67-CARLOS-20260911T233700Z",
+  "created_at_utc": "2026-09-11T23:37:00Z",
+  "requester": {"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ff11d2e4ce2e248324458206e7ea0b262b29b394",
+  "production_allowed": false,
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "units": ["CIENFUEGOS"],
+  "fecha_inicio": "2023-01-01",
+  "fecha_fin": "2026-09-12",
+  "dry_run": false,
+  "confirm_detail_backfill": true,
+  "actions": [],
+  "objective": "Backfill historico completo visible en ISCAM 2023-2026 para CIENFUEGOS, exclusivamente dbo.Comercial_Inteligencia_VentasDetalleProducto, usando contrato canónico SoftRestaurant por turnos.apertura. Escribir solo dias OK_HEADER_CANONICO y fallar cerrado en diferencias. Preservar agosto 2026 ya certificado. No modificar encabezado Runtime/KPIs, Sync_Sales, pagos, codigo ni Produccion.",
+  "checks": [{"type":"sql_readonly_audit","source":"EDARSAHUB","queries":[
+    {"name":"cf_detail_parity_2023_2026","sql":"WITH r AS (SELECT CAST(fecha_operacion AS date) fecha,SUM(CAST(ISNULL(ventas_total,0) AS decimal(18,4))) ventas,SUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets,SUM(CAST(ISNULL(pax_total,0) AS bigint)) pax FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion>='2023-01-01' AND fecha_operacion<'2026-09-12' AND (ISNULL(ventas_total,0)<>0 OR ISNULL(tickets_total,0)<>0 OR ISNULL(pax_total,0)<>0) GROUP BY CAST(fecha_operacion AS date)), d AS (SELECT CAST(fecha_operacion AS date) fecha,SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) ventas,COUNT(DISTINCT id_transaccion) tickets,SUM(CAST(ISNULL(pax,0) AS bigint)) pax FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion>='2023-01-01' AND fecha_operacion<'2026-09-12' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY CAST(fecha_operacion AS date)) SELECT COUNT(*) AS problem_days,CAST(ISNULL(SUM(CASE WHEN d.fecha IS NULL THEN r.ventas ELSE ABS(r.ventas-ISNULL(d.ventas,0)) END),0) AS decimal(18,2)) AS sales_gap_abs FROM r LEFT JOIN d ON d.fecha=r.fecha WHERE d.fecha IS NULL OR ABS(r.ventas-d.ventas)>0.05 OR r.tickets<>d.tickets OR r.pax<>d.pax"},
+    {"name":"cf_aug26_guard","sql":"SELECT COUNT(DISTINCT id_transaccion) tickets,CAST(SUM(ISNULL(importe_neto,0)) AS decimal(18,2)) ventas,SUM(CAST(ISNULL(pax,0) AS bigint)) pax FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion>='2026-08-01' AND fecha_operacion<'2026-09-01' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
