@@ -1,0 +1,27 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-RECOVERY-CANARY-CONTEXT-COMPLETE-20260910T215000Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Completar en solo lectura el contexto faltante del candidato ID 373 para una recuperación quirúrgica segura. Verificar folio inicial 3905 y sus fechas en Compras_Inventarios_Fisicos_Sync, y confirmar que el folio final 3913 corresponde al mismo server/unidad/almacén. No modificar datos ni código.",
+  "mode":"READ_ONLY_SQL",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {
+          "name":"initial_folio_3905",
+          "sql":"SELECT TOP (5) server_id, sucursal_id, unidad_negocio_codigo, almacen_id, folio, fecha, sync_status FROM dbo.Compras_Inventarios_Fisicos_Sync WHERE LOWER(server_id)=LOWER('a5547321-1139-4d2b-9d53-182ca737b6b6') AND almacen_id='3' AND folio='3905' ORDER BY sync_timestamp DESC"
+        },
+        {
+          "name":"final_folio_3913",
+          "sql":"SELECT TOP (5) server_id, sucursal_id, unidad_negocio_codigo, almacen_id, folio, fecha, sync_status FROM dbo.Compras_Inventarios_Fisicos_Sync WHERE LOWER(server_id)=LOWER('a5547321-1139-4d2b-9d53-182ca737b6b6') AND almacen_id='3' AND folio='3913' ORDER BY sync_timestamp DESC"
+        }
+      ]
+    }
+  ],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
