@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE8G-SQL-POSTCHECK-READONLY-R1-20260910",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "472bb4d01a2536e536566f006aab5b8422ee55e2",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Demostrar con evidencia SQL READ ONLY que la configuracion canonica de notificaciones para Catalogo Ampliado fue materializada: provider >=2, templates >=2 y configs >=2. Validar identidad SQL canonica EDARSAHUB/HRLectura y devolver conteos y filas exactas sin DML, sin cambios de archivos y sin envios externos.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "sql_identity",
+          "sql": "SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS user_name;"
+        },
+        {
+          "name": "provider_count",
+          "sql": "SELECT COUNT(*) AS provider_count FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ColeccionOrigen='notification_provider_config' AND JSON_VALUE(PayloadMongo,'$.canal') IN ('email','whatsapp') AND ((JSON_VALUE(PayloadMongo,'$.canal')='email' AND JSON_VALUE(PayloadMongo,'$.provider')='smtp') OR (JSON_VALUE(PayloadMongo,'$.canal')='whatsapp' AND JSON_VALUE(PayloadMongo,'$.provider')='twilio'));"
+        },
+        {
+          "name": "provider_rows",
+          "sql": "SELECT MongoId, ColeccionOrigen, JSON_VALUE(PayloadMongo,'$.canal') AS canal, JSON_VALUE(PayloadMongo,'$.provider') AS provider, Activo FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ColeccionOrigen='notification_provider_config' AND JSON_VALUE(PayloadMongo,'$.canal') IN ('email','whatsapp') AND ((JSON_VALUE(PayloadMongo,'$.canal')='email' AND JSON_VALUE(PayloadMongo,'$.provider')='smtp') OR (JSON_VALUE(PayloadMongo,'$.canal')='whatsapp' AND JSON_VALUE(PayloadMongo,'$.provider')='twilio')) ORDER BY canal, provider;"
+        },
+        {
+          "name": "template_count",
+          "sql": "SELECT COUNT(*) AS template_count FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ColeccionOrigen='notification_templates' AND JSON_VALUE(PayloadMongo,'$.codigo')='catalogo_ampliado_documento_vencimiento' AND JSON_VALUE(PayloadMongo,'$.canal') IN ('email','whatsapp');"
+        },
+        {
+          "name": "template_rows",
+          "sql": "SELECT MongoId, ColeccionOrigen, JSON_VALUE(PayloadMongo,'$.canal') AS canal, JSON_VALUE(PayloadMongo,'$.codigo') AS codigo, Activo FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ColeccionOrigen='notification_templates' AND JSON_VALUE(PayloadMongo,'$.codigo')='catalogo_ampliado_documento_vencimiento' AND JSON_VALUE(PayloadMongo,'$.canal') IN ('email','whatsapp') ORDER BY canal;"
+        },
+        {
+          "name": "config_count",
+          "sql": "SELECT COUNT(*) AS config_count FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ColeccionOrigen='notification_config' AND JSON_VALUE(PayloadMongo,'$.modulo')='catalogo_ampliado' AND JSON_VALUE(PayloadMongo,'$.evento')='DOCUMENTO_VENCIMIENTO' AND JSON_VALUE(PayloadMongo,'$.canal') IN ('email','whatsapp') AND JSON_VALUE(PayloadMongo,'$.modo_envio')='real';"
+        },
+        {
+          "name": "config_rows",
+          "sql": "SELECT MongoId, ColeccionOrigen, JSON_VALUE(PayloadMongo,'$.canal') AS canal, JSON_VALUE(PayloadMongo,'$.modulo') AS modulo, JSON_VALUE(PayloadMongo,'$.evento') AS evento, JSON_VALUE(PayloadMongo,'$.provider') AS provider, JSON_VALUE(PayloadMongo,'$.modo_envio') AS modo_envio, JSON_VALUE(PayloadMongo,'$.template_codigo') AS template_codigo, JSON_VALUE(PayloadMongo,'$.max_reintentos') AS max_reintentos, JSON_VALUE(PayloadMongo,'$.ventana_duplicidad_minutos') AS ventana_duplicidad_minutos, Activo FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1 AND ColeccionOrigen='notification_config' AND JSON_VALUE(PayloadMongo,'$.modulo')='catalogo_ampliado' AND JSON_VALUE(PayloadMongo,'$.evento')='DOCUMENTO_VENCIMIENTO' AND JSON_VALUE(PayloadMongo,'$.canal') IN ('email','whatsapp') ORDER BY canal;"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ ONLY exclusively",
+    "DB_NAME() must be EDARSAHUB",
+    "SUSER_SNAME() must be HRLectura",
+    "USER_NAME() must be HRLectura",
+    "No INSERT UPDATE DELETE MERGE DDL EXEC or stored procedure execution",
+    "No file changes",
+    "No external EMAIL or WhatsApp sends",
+    "Do not touch Production",
+    "production_touched must remain false"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
