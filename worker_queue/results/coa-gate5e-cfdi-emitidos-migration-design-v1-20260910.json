@@ -1,0 +1,29 @@
+{
+  "base_sha": "9b5737749a96cd79606c1091a7f30cc45adb4301",
+  "blockers": [],
+  "candidate_sha": "0c32b93cee5d4ef54c4845850b6fedc937a63cb3",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-11T00:31:05Z",
+  "development_sha": "0c32b93cee5d4ef54c4845850b6fedc937a63cb3",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/database/migrations/20260910_coa_cfdi_emitidos.sql",
+    "backend/database/migrations/20260910_coa_cfdi_emitidos_rollback.sql",
+    "docs/COA/COA_GATE5E_CFDI_EMITIDOS_MIGRATION_AUDIT.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "coa-gate5e-cfdi-emitidos-migration-design-v1-20260910",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-11T00:31:20Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-11T00:30:59Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
