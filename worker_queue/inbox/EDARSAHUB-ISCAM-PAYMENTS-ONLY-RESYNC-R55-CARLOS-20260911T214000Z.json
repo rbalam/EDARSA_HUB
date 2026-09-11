@@ -1,0 +1,58 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-PAYMENTS-ONLY-RESYNC-R55-CARLOS-20260911T214000Z",
+  "created_at_utc": "2026-09-11T21:40:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "1d1d29ae941fd026ca621b491eb0ccadde769ddf",
+  "production_allowed": false,
+  "objective": "Agregar una capacidad cerrada para resincronizar exclusivamente Finanzas_CortesCaja_DetallePagos por unidad y rango, reutilizando la extraccion SoftRestaurant ya corregida por R54 con tipo de cambio. Debe borrar/reinsertar solo pagos del rango solicitado y no actualizar Sync_Sales, Resumen de Cuentas, Comandas de Venta, Ventas por Periodo, Formas de Pago (Corte), MPRO ni Produccion. El primer uso sera CIENFUEGOS 2026-08-01..2026-09-01.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+      "expected_count": 1,
+      "old": "    metrics = _write_enrichment(codigo, sistema_origen, tipos, pagos, fecha_inicio, fecha_fin)\n    base.update(metrics)\n    base[\"tiempo_total_s\"] = round(time.time() - t0, 1)\n    return base\n",
+      "new": "    metrics = _write_enrichment(codigo, sistema_origen, tipos, pagos, fecha_inicio, fecha_fin)\n    base.update(metrics)\n    base[\"tiempo_total_s\"] = round(time.time() - t0, 1)\n    return base\n\n\ndef _write_payments_only(unidad_codigo, sistema, pagos, fi, ff):\n    \"\"\"Re-escribe SOLO Finanzas_CortesCaja_DetallePagos del rango.\n\n    No toca Sync_Sales ni ninguna tabla de Cuentas/Comandas/Cortes.\n    \"\"\"\n    metrics = {\"pagos_extraidos\": len(pagos), \"pagos_insertados\": 0}\n    conn = get_sql_connection()\n    try:\n        cur = conn.cursor()\n        cur.execute(\n            \"DELETE FROM dbo.Finanzas_CortesCaja_DetallePagos \"\n            \"WHERE UnidadNegocio=%s AND FechaHora >= %s AND FechaHora < %s\",\n            (unidad_codigo, fi, ff),\n        )\n        metrics[\"pagos_eliminados\"] = cur.rowcount if cur.rowcount and cur.rowcount > 0 else 0\n        now = datetime.now()\n        rows = []\n        for p in pagos:\n            folio = str(p.get(\"folio\"))\n            codigo = (p.get(\"codigo\") or \"\").strip()\n            forma = (p.get(\"forma\") or codigo or \"SIN_FORMA\").strip()\n            importe = float(p.get(\"importe\") or 0)\n            propina = float(p.get(\"propina\") or 0)\n            referencia = (p.get(\"referencia\") or \"\").strip() or None\n            fecha = p.get(\"fecha\")\n            h = _hash_pago(sistema, unidad_codigo, folio, codigo, importe, propina, referencia)\n            rows.append((None, forma, codigo or None, importe, referencia, sistema,\n                         h, 1, unidad_codigo, folio, fecha, propina, now))\n        if rows:\n            prefix = (\n                \"INSERT INTO dbo.Finanzas_CortesCaja_DetallePagos \"\n                \"(CorteCajaID, FormaPago, FormaPagoCodigo, Importe, Referencia, SistemaOrigen, \"\n                \" HashOrigen, Activo, UnidadNegocio, NumeroTicket, FechaHora, Propina, FechaAlta)\"\n            )\n            metrics[\"pagos_insertados\"] = _bulk_insert(cur, prefix, 13, rows)\n        cur.close()\n        conn.commit()\n        return metrics\n    except Exception as e:\n        try:\n            conn.rollback()\n        except Exception:\n            pass\n        metrics[\"error\"] = f\"{type(e).__name__}: {e}\"\n        return metrics\n    finally:\n        try:\n            conn.close()\n        except Exception:\n            pass\n\n\ndef resync_pagos_unidad(unidad_codigo, fecha_inicio, fecha_fin, dry_run=False):\n    \"\"\"Resincroniza SOLO pagos por ticket para SoftRestaurant en [fi, ff).\"\"\"\n    unidades = get_unidades_negocio_pos([unidad_codigo])\n    if not unidades:\n        return {\"unidad\": unidad_codigo, \"error\": \"unidad no encontrada en canonico\"}\n    unidad_row = unidades[0]\n    cfg = get_pos_config_for_unidad(unidad_row)\n    if not cfg or not cfg.get(\"host\"):\n        return {\"unidad\": unidad_codigo, \"error\": \"config POS no resuelta\"}\n    system = (cfg.get(\"system_type\") or \"\").upper()\n    if \"MPRO\" in system:\n        return {\"unidad\": unidad_codigo, \"error\": \"payments-only R55 autorizado solo para SoftRestaurant\"}\n    codigo = unidad_row.get(\"unidad_codigo\")\n    try:\n        _tipos, pagos = _extract_softrestaurant(cfg, fecha_inicio, fecha_fin)\n    except Exception as e:\n        return {\"unidad\": codigo, \"sistema\": \"SoftRestaurant\", \"error\": f\"extraccion: {type(e).__name__}: {e}\"}\n    result = {\n        \"unidad\": codigo,\n        \"sistema\": \"SoftRestaurant\",\n        \"periodo\": f\"{fecha_inicio}..{fecha_fin}\",\n        \"pagos_extraidos\": len(pagos),\n        \"dry_run\": dry_run,\n    }\n    if dry_run:\n        result[\"mensaje\"] = \"DRY RUN: pagos extraidos; no se escribio en EDARSAHUB.\"\n        return result\n    result.update(_write_payments_only(codigo, \"SoftRestaurant\", pagos, fecha_inicio, fecha_fin))\n    return result\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/scripts/resync_iscam_pagos_unidad.py",
+      "content": "#!/usr/bin/env python3\n\"\"\"Resincronizacion cerrada de Pagos por Ticket ISCAM.\n\nSolo llama resync_pagos_unidad; no toca Sync_Sales, Cuentas, Comandas ni Cortes.\n\"\"\"\nfrom __future__ import annotations\n\nimport argparse\nimport json\n\nfrom core.scheduler.jobs.inteligencia_comercial_enrich import resync_pagos_unidad\nfrom core.sql_first.db import fetch_all_dict\n\n\ndef _verify(unidad: str, fi: str, ff: str):\n    rows = fetch_all_dict(\n        \"SELECT COUNT(*) AS filas, COUNT(DISTINCT NumeroTicket) AS tickets, \"\n        \"CAST(ISNULL(SUM(Importe),0) AS decimal(18,2)) AS importe, \"\n        \"CAST(ISNULL(SUM(Propina),0) AS decimal(18,2)) AS propina \"\n        \"FROM dbo.Finanzas_CortesCaja_DetallePagos \"\n        \"WHERE UnidadNegocio=%s AND FechaHora >= %s AND FechaHora < %s AND ISNULL(Activo,1)=1\",\n        (unidad, fi, ff),\n    )\n    return rows[0] if rows else {}\n\n\ndef main():\n    parser = argparse.ArgumentParser()\n    parser.add_argument(\"--unit\", required=True)\n    parser.add_argument(\"--fi\", required=True)\n    parser.add_argument(\"--ff\", required=True)\n    parser.add_argument(\"--execute\", action=\"store_true\")\n    args = parser.parse_args()\n    unidad = args.unit.strip().upper()\n    result = resync_pagos_unidad(unidad, args.fi, args.ff, dry_run=not args.execute)\n    print(json.dumps({\"event\": \"resync\", \"result\": result}, ensure_ascii=False, default=str))\n    if result.get(\"error\"):\n        raise SystemExit(2)\n    if args.execute:\n        verification = _verify(unidad, args.fi, args.ff)\n        print(json.dumps({\"event\": \"verification\", \"unidad\": unidad, \"fi\": args.fi, \"ff\": args.ff, \"result\": verification}, ensure_ascii=False, default=str))\n\n\nif __name__ == \"__main__\":\n    main()\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_payments_only_resync_r55.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nENRICH = ROOT / 'backend' / 'core' / 'scheduler' / 'jobs' / 'inteligencia_comercial_enrich.py'\nSCRIPT = ROOT / 'backend' / 'scripts' / 'resync_iscam_pagos_unidad.py'\n\n\ndef _payments_only_block():\n    text = ENRICH.read_text(encoding='utf-8')\n    return text.split('def _write_payments_only', 1)[1].split('def resync_pagos_unidad', 1)[0]\n\n\ndef test_payments_only_writer_targets_only_detalle_pagos():\n    block = _payments_only_block()\n    assert 'Finanzas_CortesCaja_DetallePagos' in block\n    assert 'Sync_Sales' not in block\n    assert 'Finanzas_CortesCaja ' not in block\n    assert 'Comercial_Inteligencia_VentasDetalleProducto' not in block\n\n\ndef test_payments_only_resync_reuses_r54_fx_extractor():\n    text = ENRICH.read_text(encoding='utf-8')\n    fn = text.split('def resync_pagos_unidad', 1)[1]\n    assert '_extract_softrestaurant(cfg, fecha_inicio, fecha_fin)' in fn\n    assert '_write_payments_only' in fn\n    assert 'COALESCE(NULLIF(cp.tipodecambio, 0), NULLIF(fp.tipodecambio, 0), 1)' in text\n\n\ndef test_cli_is_closed_to_payment_resync_function():\n    text = SCRIPT.read_text(encoding='utf-8')\n    assert 'resync_pagos_unidad' in text\n    assert 'enrich_unidad' not in text\n    assert 'sync_cortes' not in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+        "backend/scripts/resync_iscam_pagos_unidad.py",
+        "backend/tests/test_iscam_payments_only_resync_r55.py",
+        "backend/tests/test_iscam_cuentas_comandas_locked_r50.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_payments_only_resync_r55.py",
+        "backend/tests/test_iscam_soft_payment_fx_r54.py",
+        "backend/tests/test_iscam_cuentas_comandas_locked_r50.py"
+      ]
+    },
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
