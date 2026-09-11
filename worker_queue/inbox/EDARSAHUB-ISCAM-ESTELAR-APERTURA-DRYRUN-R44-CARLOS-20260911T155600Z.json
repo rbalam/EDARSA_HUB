@@ -1,0 +1,64 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-ESTELAR-APERTURA-DRYRUN-R44-CARLOS-20260911T155600Z",
+  "created_at_utc": "2026-09-11T15:56:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "83fd456c448d60a7884eb0efebd32365bc16809e",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Diagnosticar y certificar sin escrituras la conciliacion ISCAM de LA ESTELAR para 2026-09-05, 2026-09-06 y 2026-09-07 usando como contrato canonico SoftRestaurant la fecha de turnos.apertura y cheques.cancelado=0, sin ventanas inventadas 09:00-09:00 ni COMIDA/CENA. Determinar el origen de la doble fecha_operacion del ticket 24667 y comparar POS contra detalle/KPI EDARSAHUB. No modificar SQL, codigo ni Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": ["ESTELAR"],
+      "system_types": ["SOFTRESTAURANT"],
+      "queries": [
+        {
+          "name": "estelar_ticket_24667_apertura_origen",
+          "sql": "SELECT c.folio, c.idturno, c.cancelado, c.total, c.nopersonas, t.apertura FROM cheques c INNER JOIN turnos t ON t.idturno=c.idturno WHERE c.folio='24667'"
+        },
+        {
+          "name": "estelar_schema_cheques_campos_venta",
+          "sql": "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='cheques' AND COLUMN_NAME IN ('folio','idturno','cancelado','total','propina','nopersonas') ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "estelar_ventas_brutas_por_apertura_0507",
+          "sql": "SELECT CONVERT(char(10),t.apertura,120) AS fecha_apertura, COUNT(DISTINCT c.folio) AS tickets, SUM(ISNULL(c.total,0)) AS total_bruto, SUM(ISNULL(c.nopersonas,0)) AS pax FROM cheques c INNER JOIN turnos t ON t.idturno=c.idturno WHERE t.apertura>='2026-09-05' AND t.apertura<'2026-09-08' AND c.cancelado=0 GROUP BY CONVERT(char(10),t.apertura,120) ORDER BY fecha_apertura"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "hub_ticket_24667_activos",
+          "sql": "SELECT fecha_operacion, fecha_hora, numero_ticket, id_transaccion, producto_codigo_fuente, cantidad, precio_unitario, importe_neto, pax, sync_run_id, activo, estado_origen, cancelado_origen, es_kpi_valido FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ESTELAR' AND numero_ticket='24667' AND ISNULL(activo,1)=1 ORDER BY fecha_operacion, fecha_hora"
+        },
+        {
+          "name": "hub_detalle_canonico_0507",
+          "sql": "WITH tickets AS (SELECT fecha_operacion, id_transaccion, numero_ticket, SUM(ISNULL(importe_neto,0)) AS importe_ticket, MAX(ISNULL(pax,0)) AS pax_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion>='2026-09-05' AND fecha_operacion<'2026-09-08' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY fecha_operacion,id_transaccion,numero_ticket) SELECT fecha_operacion, SUM(importe_ticket) AS ventas, COUNT(*) AS tickets, SUM(pax_ticket) AS pax FROM tickets GROUP BY fecha_operacion ORDER BY fecha_operacion"
+        },
+        {
+          "name": "hub_kpis_0507",
+          "sql": "SELECT fecha_operacion, ventas_total, tickets_total, pax_total, activo FROM dbo.Comercial_KPIs_Diarios_v2 WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion>='2026-09-05' AND fecha_operacion<'2026-09-08' AND ISNULL(activo,1)=1 ORDER BY fecha_operacion"
+        },
+        {
+          "name": "hub_duplicados_ticket_entre_fechas_septiembre",
+          "sql": "SELECT numero_ticket, id_transaccion, COUNT(DISTINCT fecha_operacion) AS fechas_activas, MIN(fecha_operacion) AS fecha_min, MAX(fecha_operacion) AS fecha_max, SUM(ISNULL(importe_neto,0)) AS importe_lineas FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion>='2026-09-01' AND fecha_operacion<'2026-10-01' AND ISNULL(activo,1)=1 GROUP BY numero_ticket,id_transaccion HAVING COUNT(DISTINCT fecha_operacion)>1 ORDER BY fechas_activas DESC, numero_ticket"
+        }
+      ]
+    }
+  ]
+}
