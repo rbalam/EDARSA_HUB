@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "83fd456c448d60a7884eb0efebd32365bc16809e",
-  "generated_at_utc": "2026-09-11T07:35:27Z",
+  "generated_at_utc": "2026-09-11T07:36:41Z",
   "history": {
     "done_total_local": 419,
     "pending_total_local": 0,
@@ -13,62 +13,32 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3128,
+      "age_seconds": 3201,
       "job_id": "ARBITROA-BOS-GATE-A1-SQL-DISCOVERY-READONLY-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 646,
+      "age_seconds": 719,
       "job_id": "ARBITROA-BOS-GATE-A2-REPOSITORY-CONTRACT-DISCOVERY-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3403,
+      "age_seconds": 3477,
       "job_id": "BOS-AGENT-HARNESS-AH10-E2E-SIMULATION-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 628,
+      "age_seconds": 702,
       "job_id": "BOS-AGENT-HARNESS-AH10-E2E-SIMULATION-V1-R2-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 109,
+      "age_seconds": 182,
       "job_id": "BOS-AGENT-HARNESS-AH11-LOCAL-RUNTIME-V1-20260911",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3592,
-      "job_id": "CAVAS-G12-CANARY-02-PERSONAID-TYPE-NULL-20260911",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3581,
-      "job_id": "CAVAS-G12-CANARY-03-PERSONAID-FK-20260911",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3569,
-      "job_id": "CAVAS-G12-CANARY-04-PERSONAID-INDEX-20260911",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3558,
-      "job_id": "CAVAS-G12-CANARY-05-CHILD-FKS-20260911",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3546,
-      "job_id": "CAVAS-G12-CANARY-06-PERSONAID-POPULATION-20260911",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -80,13 +50,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 10,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T07:35:27Z",
-    "last_receive_utc": "2026-09-11T07:35:22Z",
+    "last_cycle_utc": "2026-09-11T07:36:39Z",
+    "last_receive_utc": "2026-09-11T07:36:39Z",
     "last_terminal_utc": "2026-09-11T07:33:38Z",
     "pid": "286"
   },
