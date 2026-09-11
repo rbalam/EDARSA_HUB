@@ -1,19 +1,25 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "4a4468af772c22b939b61755bbc3d183c64f7e9d",
-  "generated_at_utc": "2026-09-11T03:30:30Z",
+  "development_sha": "45db5f37d6a55755446fae4ed34c606f3267a12e",
+  "generated_at_utc": "2026-09-11T03:31:47Z",
   "history": {
-    "done_total_local": 383,
+    "done_total_local": 384,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 409,
-    "results_total_local": 718
+    "results_total_local": 719
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 302,
+      "age_seconds": 20,
+      "job_id": "BOS-AGENT-HARNESS-AH0-MASTER-ARCHITECTURE-V1-R2-20260911",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 378,
       "job_id": "coa-gate5g-cfdi-development-execution-channel-v1-20260910",
       "reason": null,
       "state": "RESULT_READY"
@@ -26,14 +32,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T03:30:24Z",
-    "last_receive_utc": "2026-09-11T03:30:26Z",
-    "last_terminal_utc": "2026-09-11T03:25:28Z",
+    "last_cycle_utc": "2026-09-11T03:31:43Z",
+    "last_receive_utc": "2026-09-11T03:31:44Z",
+    "last_terminal_utc": "2026-09-11T03:31:26Z",
     "pid": "281"
   },
   "schema": "edarsahub.worker-health.v3",
