@@ -1,0 +1,30 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"WORKER-AGENT-RUNTIME-ACTIVATION-GATE5E-LIVE-DIAG-MIN-R1-20260911",
+  "created_at_utc":"2026-09-11T03:56:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"f3a58cf86da57c86eae6f5801d4bfcf3094b55e2",
+  "production_allowed":false,
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer",
+  "objective":"Diagnostico minimo del canario live fallido. No certifica el canario. No Produccion. Registrar si Docker existe y si el executor real devuelve exito, returncode y stderr sanitizado. Mantener PUBLIC/R1, external:web, una llamada externa y timeout <=30s.",
+  "actions":[
+    {
+      "type":"write_file",
+      "path":"backend/tests/test_agent_reach_live_network_diagnostic.py",
+      "content":"import json, shutil\nfrom pathlib import Path\nfrom core.agent_external_research_service import execute_external_research\nfrom tests.test_agent_external_research_service import context, request\nOUT=Path('tests/agent_reach_live_network_diagnostic_evidence.json')\ndef test_diag():\n d=shutil.which('docker')\n ev={'diagnostic_only':True,'canary_certified':False,'production_touched':False,'docker_available':bool(d)}\n if not d:\n  ev['exact_error']='DOCKER_COMMAND_NOT_AVAILABLE'\n else:\n  r=execute_external_research({'allowed':True},'OpenAI official website',request(),context(),Path('../infra/agent-reach/versions.lock'),timeout_seconds=30,docker_binary=d)\n  ev.update({'allowed':r.evidence.allowed,'success':r.evidence.success,'reason':r.evidence.reason,'returncode':r.evidence.returncode,'stdout_bytes':r.evidence.stdout_bytes,'stderr_bytes':r.evidence.stderr_bytes})\n OUT.write_text(json.dumps(ev,indent=2,sort_keys=True)+'\\n',encoding='utf-8')\n assert True\n"
+    },
+    {
+      "type":"write_file",
+      "path":"backend/tests/agent_reach_live_network_diagnostic_evidence.json",
+      "content":"{\"diagnostic_only\":true,\"canary_certified\":false,\"production_touched\":false,\"status\":\"PENDING\"}\n"
+    }
+  ],
+  "checks":[
+    {"type":"py_compile","paths":["backend/tests/test_agent_reach_live_network_diagnostic.py"]},
+    {"type":"pytest","paths":["backend/tests/test_agent_reach_live_network_diagnostic.py"]},
+    {"type":"git_diff_check"}
+  ]
+}
