@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "24fda580c6c2045947ef88a997d5b4f7742d9bba",
-  "generated_at_utc": "2026-09-11T01:25:08Z",
+  "generated_at_utc": "2026-09-11T01:26:23Z",
   "history": {
     "done_total_local": 379,
     "pending_total_local": 0,
@@ -13,38 +13,26 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3199,
+      "age_seconds": 3274,
       "job_id": "CATALOGO-AMPLIADO-GATE8F-EXTERNAL-DELIVERY-CANONICAL-INTEGRATION-R4-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3538,
-      "job_id": "CXP-GATE3D-B-MPRO-WRITE-CONTRACT-DISCOVERY-READONLY-20260910",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3518,
+      "age_seconds": 3592,
       "job_id": "CXP-GATE3D-C-SOFTRESTAURANT-WRITE-CONTRACT-DISCOVERY-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3243,
+      "age_seconds": 3318,
       "job_id": "coa-gate5e-cfdi-emitidos-migration-design-v1-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2012,
+      "age_seconds": 2086,
       "job_id": "coa-gate5f-cfdi-emitidos-readonly-preflight-v1-20260910",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3593,
-      "job_id": "worker-orchestrator-publisher-gate3-r1-20260910T2242Z",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -56,13 +44,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T01:25:07Z",
-    "last_receive_utc": "2026-09-11T01:25:08Z",
+    "last_cycle_utc": "2026-09-11T01:26:21Z",
+    "last_receive_utc": "2026-09-11T01:26:22Z",
     "last_terminal_utc": "2026-09-11T00:51:36Z",
     "pid": "284"
   },
