@@ -1,0 +1,69 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-FORMAS-DIAG-R62-CARLOS-20260911T223500Z",
+  "created_at_utc": "2026-09-11T22:35:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e6a6feb891f719734f67246f3882534f744afcd4",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "objective": "Diagnosticar sin modificar datos por que ISCAM Formas de Pago de CIENFUEGOS agosto 2026 suma 4,407,464.95 mientras Ventas por Periodo/Resumen de Cuentas suma 3,959,563.00. Comparar Finanzas_CortesCaja, turnos SoftRestaurant, cheques canonicos y chequespagos normalizados. Identificar de forma cuantitativa si el exceso 447,901.95 proviene de propinas u otros campos de turnos. No modificar Pagos por Ticket ya certificado, Cuentas, Comandas, codigo, datos ni Produccion.",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "edarsahub_cienfuegos_formas_aug26_summary",
+          "sql": "SELECT COUNT(*) AS cortes, CAST(ISNULL(SUM(TotalVenta),0) AS decimal(18,2)) AS total_venta_cortes, CAST(ISNULL(SUM(TotalEfectivo),0) AS decimal(18,2)) AS efectivo, CAST(ISNULL(SUM(TotalTarjetaDebito),0) AS decimal(18,2)) AS tarjeta_debito, CAST(ISNULL(SUM(TotalTarjetaCredito),0) AS decimal(18,2)) AS tarjeta_credito, CAST(ISNULL(SUM(TotalVales),0) AS decimal(18,2)) AS vales, CAST(ISNULL(SUM(Propinas),0) AS decimal(18,2)) AS propinas_guardadas, CAST(ISNULL(SUM(FondoInicial),0) AS decimal(18,2)) AS fondos, CAST(ISNULL(SUM(TotalVenta),0)-3959563.00 AS decimal(18,2)) AS diferencia_vs_ejecutivo FROM dbo.Finanzas_CortesCaja WHERE UnidadNegocioNombre='CIENFUEGOS' AND FechaApertura>='2026-08-01' AND FechaApertura<'2026-09-01' AND ISNULL(Activo,1)=1"
+        },
+        {
+          "name": "edarsahub_cienfuegos_formas_aug26_daily",
+          "sql": "SELECT CAST(FechaApertura AS date) AS fecha, COUNT(*) AS cortes, CAST(SUM(ISNULL(TotalVenta,0)) AS decimal(18,2)) AS total_venta, CAST(SUM(ISNULL(TotalEfectivo,0)) AS decimal(18,2)) AS efectivo, CAST(SUM(ISNULL(TotalTarjetaDebito,0)) AS decimal(18,2)) AS tarjeta_debito, CAST(SUM(ISNULL(TotalTarjetaCredito,0)) AS decimal(18,2)) AS tarjeta_credito, CAST(SUM(ISNULL(TotalVales,0)) AS decimal(18,2)) AS vales FROM dbo.Finanzas_CortesCaja WHERE UnidadNegocioNombre='CIENFUEGOS' AND FechaApertura>='2026-08-01' AND FechaApertura<'2026-09-01' AND ISNULL(Activo,1)=1 GROUP BY CAST(FechaApertura AS date) ORDER BY fecha"
+        },
+        {
+          "name": "edarsahub_cienfuegos_formas_origin_integrity",
+          "sql": "SELECT SistemaOrigen, TablaOrigen, COUNT(*) AS filas, MIN(FechaApertura) AS primera_apertura, MAX(FechaApertura) AS ultima_apertura, MIN(FechaCierre) AS primer_cierre, MAX(FechaCierre) AS ultimo_cierre FROM dbo.Finanzas_CortesCaja WHERE UnidadNegocioNombre='CIENFUEGOS' AND FechaApertura>='2026-08-01' AND FechaApertura<'2026-09-01' AND ISNULL(Activo,1)=1 GROUP BY SistemaOrigen, TablaOrigen"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": ["CIENFUEGOS"],
+      "system_types": ["SOFTRESTAURANT"],
+      "queries": [
+        {
+          "name": "pos_cienfuegos_aug26_canonical_sales_vs_turnos",
+          "sql": "WITH ventas AS (SELECT COUNT(DISTINCT ch.folio) AS cheques, CAST(ISNULL(SUM(ch.total),0) AS decimal(18,2)) AS venta_total, ISNULL(SUM(ch.nopersonas),0) AS pax FROM cheques ch INNER JOIN turnos t ON t.idturno=ch.idturno WHERE t.apertura>='2026-08-01' AND t.apertura<'2026-09-01' AND ch.cancelado=0), cortes AS (SELECT COUNT(*) AS turnos, CAST(ISNULL(SUM(efectivo),0) AS decimal(18,2)) AS efectivo, CAST(ISNULL(SUM(tarjeta),0) AS decimal(18,2)) AS tarjeta, CAST(ISNULL(SUM(credito),0) AS decimal(18,2)) AS credito, CAST(ISNULL(SUM(vales),0) AS decimal(18,2)) AS vales, CAST(ISNULL(SUM(ISNULL(efectivo,0)+ISNULL(tarjeta,0)+ISNULL(credito,0)+ISNULL(vales,0)),0) AS decimal(18,2)) AS total_formas FROM turnos WHERE apertura>='2026-08-01' AND apertura<'2026-09-01' AND cierre IS NOT NULL) SELECT v.cheques,v.venta_total,v.pax,c.turnos,c.efectivo,c.tarjeta,c.credito,c.vales,c.total_formas,CAST(c.total_formas-v.venta_total AS decimal(18,2)) AS diferencia FROM ventas v CROSS JOIN cortes c"
+        },
+        {
+          "name": "pos_cienfuegos_aug26_normalized_payments",
+          "sql": "SELECT COUNT(*) AS filas_pago, COUNT(DISTINCT cp.folio) AS tickets_con_pago, CAST(ISNULL(SUM(ISNULL(cp.importe,0)*COALESCE(NULLIF(cp.tipodecambio,0),NULLIF(fp.tipodecambio,0),1)),0) AS decimal(18,2)) AS importe_mxn, CAST(ISNULL(SUM(ISNULL(cp.propina,0)*COALESCE(NULLIF(cp.tipodecambio,0),NULLIF(fp.tipodecambio,0),1)),0) AS decimal(18,2)) AS propina_mxn, CAST(ISNULL(SUM((ISNULL(cp.importe,0)+ISNULL(cp.propina,0))*COALESCE(NULLIF(cp.tipodecambio,0),NULLIF(fp.tipodecambio,0),1)),0) AS decimal(18,2)) AS importe_mas_propina FROM chequespagos cp INNER JOIN cheques ch ON ch.folio=cp.folio INNER JOIN turnos t ON t.idturno=ch.idturno LEFT JOIN formasdepago fp ON fp.idformadepago=cp.idformadepago WHERE t.apertura>='2026-08-01' AND t.apertura<'2026-09-01' AND ch.cancelado=0 AND ch.total>0"
+        },
+        {
+          "name": "pos_cienfuegos_aug26_turnos_vs_payments_components",
+          "sql": "WITH cortes AS (SELECT CAST(ISNULL(SUM(ISNULL(efectivo,0)+ISNULL(tarjeta,0)+ISNULL(credito,0)+ISNULL(vales,0)),0) AS decimal(18,2)) AS total_formas FROM turnos WHERE apertura>='2026-08-01' AND apertura<'2026-09-01' AND cierre IS NOT NULL), pagos AS (SELECT CAST(ISNULL(SUM(ISNULL(cp.importe,0)*COALESCE(NULLIF(cp.tipodecambio,0),NULLIF(fp.tipodecambio,0),1)),0) AS decimal(18,2)) AS importe, CAST(ISNULL(SUM(ISNULL(cp.propina,0)*COALESCE(NULLIF(cp.tipodecambio,0),NULLIF(fp.tipodecambio,0),1)),0) AS decimal(18,2)) AS propina FROM chequespagos cp INNER JOIN cheques ch ON ch.folio=cp.folio INNER JOIN turnos t ON t.idturno=ch.idturno LEFT JOIN formasdepago fp ON fp.idformadepago=cp.idformadepago WHERE t.apertura>='2026-08-01' AND t.apertura<'2026-09-01' AND ch.cancelado=0 AND ch.total>0) SELECT c.total_formas,p.importe,p.propina,CAST(p.importe+p.propina AS decimal(18,2)) AS importe_mas_propina,CAST(c.total_formas-p.importe AS decimal(18,2)) AS exceso_vs_importe,CAST(c.total_formas-(p.importe+p.propina) AS decimal(18,2)) AS residual_despues_propina FROM cortes c CROSS JOIN pagos p"
+        },
+        {
+          "name": "pos_cienfuegos_aug26_payment_forms_breakdown",
+          "sql": "SELECT cp.idformadepago AS codigo, fp.descripcion AS forma, CAST(SUM(ISNULL(cp.importe,0)*COALESCE(NULLIF(cp.tipodecambio,0),NULLIF(fp.tipodecambio,0),1)) AS decimal(18,2)) AS importe_mxn, CAST(SUM(ISNULL(cp.propina,0)*COALESCE(NULLIF(cp.tipodecambio,0),NULLIF(fp.tipodecambio,0),1)) AS decimal(18,2)) AS propina_mxn, COUNT(*) AS filas FROM chequespagos cp INNER JOIN cheques ch ON ch.folio=cp.folio INNER JOIN turnos t ON t.idturno=ch.idturno LEFT JOIN formasdepago fp ON fp.idformadepago=cp.idformadepago WHERE t.apertura>='2026-08-01' AND t.apertura<'2026-09-01' AND ch.cancelado=0 AND ch.total>0 GROUP BY cp.idformadepago,fp.descripcion ORDER BY cp.idformadepago"
+        },
+        {
+          "name": "pos_cienfuegos_aug26_daily_gap",
+          "sql": "WITH v AS (SELECT CAST(t.apertura AS date) AS fecha, CAST(SUM(ch.total) AS decimal(18,2)) AS venta FROM cheques ch INNER JOIN turnos t ON t.idturno=ch.idturno WHERE t.apertura>='2026-08-01' AND t.apertura<'2026-09-01' AND ch.cancelado=0 GROUP BY CAST(t.apertura AS date)), c AS (SELECT CAST(apertura AS date) AS fecha, CAST(SUM(ISNULL(efectivo,0)+ISNULL(tarjeta,0)+ISNULL(credito,0)+ISNULL(vales,0)) AS decimal(18,2)) AS formas FROM turnos WHERE apertura>='2026-08-01' AND apertura<'2026-09-01' AND cierre IS NOT NULL GROUP BY CAST(apertura AS date)) SELECT COALESCE(v.fecha,c.fecha) AS fecha,ISNULL(v.venta,0) AS venta,ISNULL(c.formas,0) AS formas,CAST(ISNULL(c.formas,0)-ISNULL(v.venta,0) AS decimal(18,2)) AS diferencia FROM v FULL OUTER JOIN c ON c.fecha=v.fecha ORDER BY COALESCE(v.fecha,c.fecha)"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
