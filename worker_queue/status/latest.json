@@ -1,99 +1,111 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "79a82d58bdfba24a817379e77887957dd76b777f",
-  "generated_at_utc": "2026-09-11T05:49:21Z",
+  "development_sha": "eb0e885991f44aa9f5150770f02e7caa782926c9",
+  "generated_at_utc": "2026-09-11T05:50:43Z",
   "history": {
-    "done_total_local": 401,
+    "done_total_local": 402,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 415,
-    "results_total_local": 742
+    "results_total_local": 743
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 920,
+      "age_seconds": 1003,
       "job_id": "BOS-AGENT-HARNESS-AH5-EVIDENCE-PROVENANCE-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 382,
+      "age_seconds": 465,
       "job_id": "BOS-AGENT-HARNESS-AH5-EVIDENCE-PROVENANCE-V1-R2-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 245,
+      "age_seconds": 327,
       "job_id": "BOS-AGENT-HARNESS-AH6-SECURITY-REDTEAM-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 92,
+      "age_seconds": 175,
       "job_id": "BOS-AGENT-HARNESS-AH6-SECURITY-REDTEAM-V1-R2-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 297,
+      "age_seconds": 379,
       "job_id": "BOS-V1-GATE-C-FUNCTIONAL-COVERAGE-CERTIFICATION-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3155,
+      "age_seconds": 3238,
       "job_id": "CATALOGO-AMPLIADO-GATE8G-MIGRATION-WRITER-RECOVERY-R1-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 902,
+      "age_seconds": 985,
       "job_id": "CATALOGO-AMPLIADO-GATE8G-MIGRATION-WRITER-RETRIGGER-R2-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 899,
+      "age_seconds": 982,
       "job_id": "CATALOGO-AMPLIADO-GATE8G-MIGRATION-WRITER-RETRIGGER-R3-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 892,
+      "age_seconds": 975,
       "job_id": "CATALOGO-AMPLIADO-GATE8G-SQL-POSTCHECK-READONLY-R1-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 887,
+      "age_seconds": 969,
       "job_id": "CAVAS-CORPORATIVAS-GATE12H3-FINAL-POSTAUDIT-PERSONA-LINK-READONLY-20260910",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 872,
+      "age_seconds": 955,
       "job_id": "CAVAS-CORPORATIVAS-GATE12I-BOS-SOCIO-PERSONA-CONTROLLED-MIGRATION-EXECUTION-20260910",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 16,
+      "job_id": "coa-gate5g-r2-cfdi-development-workflow-recovery-v1-20260911",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 12,
+      "job_id": "BOS-AGENT-HARNESS-AH7-MARKETING-CX-V1-20260911",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 11,
-  "queue_running": 0,
+  "queue_result_ready_recent": 12,
+  "queue_running": 1,
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "BOS-AGENT-HARNESS-AH7-MARKETING-CX-V1-20260911",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T05:49:19Z",
-    "last_receive_utc": "2026-09-11T05:49:20Z",
-    "last_terminal_utc": "2026-09-11T05:47:48Z",
+    "last_cycle_utc": "2026-09-11T05:50:42Z",
+    "last_receive_utc": "2026-09-11T05:50:37Z",
+    "last_terminal_utc": "2026-09-11T05:50:27Z",
     "pid": "1088"
   },
   "schema": "edarsahub.worker-health.v3",
