@@ -255,6 +255,13 @@ def apply_action(worktree: Path, action: dict[str, Any]) -> str:
         raise ValueError(f"UNSUPPORTED_ACTION:{kind}")
     relative = str(action.get("path") or "")
     target = safe_path(worktree, relative)
+    repo_path = Path(relative)
+    if (
+        kind == "write_file"
+        and repo_path.parts[:2] == ("backend", "core")
+        and not target.exists()
+    ):
+        raise RuntimeError(f"CORE_GROWTH_FORBIDDEN:{relative}")
     verify_expected_hash(target, action)
     if kind == "replace_text":
         if not target.is_file():

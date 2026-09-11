@@ -102,6 +102,14 @@ def validate_action(action: Any, index: int) -> list[str]:
         return errors
     if not safe_repo_path(action.get("path")):
         errors.append(f"{prefix}_INVALID_PATH")
+    relative = str(action.get("path") or "")
+    repo_path = Path(relative)
+    if (
+        kind == "write_file"
+        and repo_path.parts[:2] == ("backend", "core")
+        and not (ROOT / repo_path).exists()
+    ):
+        errors.append(f"{prefix}_CORE_GROWTH_FORBIDDEN")
     if kind == "replace_text":
         old = action.get("old")
         new = action.get("new")
