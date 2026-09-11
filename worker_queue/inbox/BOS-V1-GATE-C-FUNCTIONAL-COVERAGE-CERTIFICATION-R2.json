@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-C-FUNCTIONAL-COVERAGE-CERTIFICATION-R2",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Gate C R2 evidence-only. Auditar los 7 dominios de Gate C usando evidencia real existente del repositorio y resultados terminales certificados del Universal Worker. No implementar ni corregir funcionalidad. Construir matriz repository_ok, terminal_ok, matched_token, matched_job_id y evidence_type para comercial, costos_margenes, finanzas_tesoreria, inventarios, clientes_crm, operaciones y administracion. Clasificar cada fallo como REAL_MISSING_EVIDENCE o TEST_FALSE_NEGATIVE. Si existe evidencia valida que el test actual no reconoce por depender de substring sobre job_id, corregir unicamente el mecanismo de certificacion (prueba/dossier), nunca funcionalidad. No tocar Produccion, SQL, Mongo, Worker, Supervisor ni watchdog. No fabricar jobs para satisfacer nombres.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/BOS/certifications/BOS_V1_GATE_C_FUNCTIONAL_COVERAGE_CERTIFICATION.md",
+      "content": "# BOS V1 Gate C - Functional Coverage Certification R2\n\nEvidence-only certification. No functional reimplementation.\n\nAuditar cobertura existente para Comercial, costos/margenes, finanzas/tesoreria, inventarios, clientes/CRM, operaciones y administracion. Para cada dominio documentar repository_ok, terminal_ok, matched_token, matched_job_id y evidence_type. Clasificar faltantes como REAL_MISSING_EVIDENCE o TEST_FALSE_NEGATIVE. Si el criterio substring sobre job_id produce falsos negativos, corregir solo el mecanismo de certificacion con evidencia estructurada existente. Production: NO. SQL: NO. Mongo: NO. Worker/Supervisor/watchdog: NO.\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_bos_v1_gate_c_functional_coverage_certification.py",
+      "content": "# Gate C R2: evidence-only certification test.\n# The worker must first audit the repository and certified terminal results,\n# preserve the seven-domain matrix, and reject job_id substring as sole proof\n# when it causes a demonstrated false negative.\n# Functional domain code must not be modified to satisfy this certification.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/tests/test_bos_v1_gate_c_functional_coverage_certification.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_bos_v1_gate_c_functional_coverage_certification.py"
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
