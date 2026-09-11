@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-FORMAS-MAP-R63-CARLOS-20260911T224500Z",
+  "created_at_utc": "2026-09-11T22:45:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e6a6feb891f719734f67246f3882534f744afcd4",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "objective": "Mapear en solo lectura las formas de pago reales usadas por CIENFUEGOS en agosto 2026 para poder corregir exclusivamente el endpoint ISCAM Formas de Pago sin tocar Finanzas_CortesCaja ni reportes ya correctos. Identificar metadatos de formasdepago y montos normalizados por codigo, incluyendo efectivo, transferencia, dolares, credito, debito, AMEX, CLIP, CXC e internacional. No modificar Sync_Sales, Ventas por Periodo, Resumen de Cuentas, Comandas, Pagos por Ticket, Finanzas_CortesCaja, codigo, datos ni Produccion.",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": ["CIENFUEGOS"],
+      "system_types": ["SOFTRESTAURANT"],
+      "queries": [
+        {
+          "name": "cienfuegos_aug26_used_payment_forms_metadata",
+          "sql": "SELECT fp.idformadepago AS codigo, fp.descripcion AS forma, fp.tipo, fp.subtipo, fp.tipotarjeta, fp.tipoTarjetaBancaria, fp.aceptapropina, fp.nofacturable, fp.idformapago_SAT, CAST(fp.tipodecambio AS decimal(18,4)) AS tipo_cambio_catalogo, COUNT(*) AS filas_pago, CAST(SUM(ISNULL(cp.importe,0)*COALESCE(NULLIF(cp.tipodecambio,0),NULLIF(fp.tipodecambio,0),1)) AS decimal(18,2)) AS importe_mxn, CAST(SUM(ISNULL(cp.propina,0)*COALESCE(NULLIF(cp.tipodecambio,0),NULLIF(fp.tipodecambio,0),1)) AS decimal(18,2)) AS propina_mxn FROM chequespagos cp INNER JOIN cheques ch ON ch.folio=cp.folio INNER JOIN turnos t ON t.idturno=ch.idturno LEFT JOIN formasdepago fp ON fp.idformadepago=cp.idformadepago WHERE t.apertura>='2026-08-01' AND t.apertura<'2026-09-01' AND ch.cancelado=0 AND ch.total>0 GROUP BY fp.idformadepago,fp.descripcion,fp.tipo,fp.subtipo,fp.tipotarjeta,fp.tipoTarjetaBancaria,fp.aceptapropina,fp.nofacturable,fp.idformapago_SAT,fp.tipodecambio ORDER BY fp.idformadepago"
+        },
+        {
+          "name": "cienfuegos_aug26_payment_forms_catalog_full_rows",
+          "sql": "SELECT idformadepago, descripcion, tipo, subtipo, tipotarjeta, tipoTarjetaBancaria, aceptapropina, nofacturable, idformapago_SAT, tipodecambio, comision, visible FROM formasdepago WHERE idformadepago IN ('01','02','03','10','11','12','14','20','24') ORDER BY idformadepago"
+        },
+        {
+          "name": "cienfuegos_aug26_payment_total_control",
+          "sql": "SELECT CAST(SUM(ISNULL(cp.importe,0)*COALESCE(NULLIF(cp.tipodecambio,0),NULLIF(fp.tipodecambio,0),1)) AS decimal(18,2)) AS total_importe_mxn, CAST(SUM(ISNULL(cp.propina,0)*COALESCE(NULLIF(cp.tipodecambio,0),NULLIF(fp.tipodecambio,0),1)) AS decimal(18,2)) AS total_propina_mxn FROM chequespagos cp INNER JOIN cheques ch ON ch.folio=cp.folio INNER JOIN turnos t ON t.idturno=ch.idturno LEFT JOIN formasdepago fp ON fp.idformadepago=cp.idformadepago WHERE t.apertura>='2026-08-01' AND t.apertura<'2026-09-01' AND ch.cancelado=0 AND ch.total>0"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
