@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "e6a6feb891f719734f67246f3882534f744afcd4",
-  "generated_at_utc": "2026-09-11T22:32:32Z",
+  "generated_at_utc": "2026-09-11T22:33:45Z",
   "history": {
     "done_total_local": 431,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2042,
+      "age_seconds": 2115,
       "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-PAYMENTS-RESYNC-R58-CARLOS-20260911T221000Z",
       "reasons": [
         "ACTIONS_REQUIRED"
@@ -22,43 +22,43 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 98,
+      "age_seconds": 171,
       "job_id": "EDARSAHUB-ISCAM-CIENFUEGOS-PAYMENTS-RESYNC-R61-CARLOS-20260911T222500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 970,
+      "age_seconds": 1043,
       "job_id": "EDARSAHUB-ISCAM-PAYMENTS-ONLY-BRIDGE-R59-CARLOS-20260911T222000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 628,
+      "age_seconds": 701,
       "job_id": "EDARSAHUB-ISCAM-PAYMENTS-ONLY-BRIDGE-R60-CARLOS-20260911T223000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3104,
+      "age_seconds": 3177,
       "job_id": "EDARSAHUB-ISCAM-PAYMENTS-ONLY-RESYNC-R55-CARLOS-20260911T214000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2550,
+      "age_seconds": 2623,
       "job_id": "EDARSAHUB-ISCAM-PAYMENTS-ONLY-RESYNC-R56-CARLOS-20260911T215000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2166,
+      "age_seconds": 2239,
       "job_id": "EDARSAHUB-ISCAM-PAYMENTS-ONLY-WORKER-MODE-R57-CARLOS-20260911T220000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3499,
+      "age_seconds": 3571,
       "job_id": "EDARSAHUB-ISCAM-SOFT-PAYMENT-FX-R54-CARLOS-20260911T212500Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -76,8 +76,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T22:32:28Z",
-    "last_receive_utc": "2026-09-11T22:32:29Z",
+    "last_cycle_utc": "2026-09-11T22:33:41Z",
+    "last_receive_utc": "2026-09-11T22:33:42Z",
     "last_terminal_utc": "2026-09-11T22:30:53Z",
     "pid": "1027"
   },
