@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "de53545b2f1db2591dc43387828e3db7c0b7a7d6",
-  "generated_at_utc": "2026-09-11T19:20:43Z",
+  "generated_at_utc": "2026-09-11T19:22:00Z",
   "history": {
     "done_total_local": 422,
     "pending_total_local": 0,
@@ -13,19 +13,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3600,
-      "job_id": "EDARSAHUB-ISCAM-ESTELAR-LINE-DISCOUNT-AUDIT-R47-CARLOS-20260911T182000Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2190,
+      "age_seconds": 2268,
       "job_id": "EDARSAHUB-ISCAM-SOFT-DISCOUNTS-NO-PRORATE-R48-CARLOS-20260911T183000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 483,
+      "age_seconds": 561,
       "job_id": "EDARSAHUB-ISCAM-SOFT-NO-PRORATE-R49-CARLOS-20260911T191500Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -38,13 +32,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T19:20:38Z",
-    "last_receive_utc": "2026-09-11T19:20:39Z",
+    "last_cycle_utc": "2026-09-11T19:21:56Z",
+    "last_receive_utc": "2026-09-11T19:21:57Z",
     "last_terminal_utc": "2026-09-11T19:12:39Z",
     "pid": "138"
   },
