@@ -1,0 +1,64 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE12H-BOS-SOCIO-PERSONA-MIGRATION-READINESS-R4-20260910",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2e153eeed0ec321f0f497443c1901340ab793ea4",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate 12H readiness previa a ejecutar la migracion ya certificada de Gate 12G. Auditar exclusivamente metadata SQL actual para confirmar que dbo.CavaSocios_Socios.PersonaID sigue ausente, que dbo.Gobierno_Persona.PersonaID sigue siendo bigint PK, que no existe FK o indice previo/conflictivo para PersonaID, que las tres FK operativas Botellas/Cargos/Movimientos siguen intactas por SocioID y que la poblacion de socios permanece agregadamente identificada. NO ejecutar DDL/DML, NO crear otra migracion y NO realizar backfill. Este Gate solo decide READY_FOR_CONTROLLED_DEVELOPMENT_MIGRATION o BLOCKED segun evidencia fisica.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate12h_r4_personaid_absent",
+          "sql": "SELECT COUNT_BIG(*) AS personaid_columns FROM sys.columns WHERE object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND name=N'PersonaID'"
+        },
+        {
+          "name": "gate12h_r4_persona_pk",
+          "sql": "SELECT c.name AS column_name,t.name AS data_type,ic.key_ordinal FROM sys.indexes i JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE i.object_id=OBJECT_ID(N'dbo.Gobierno_Persona') AND i.is_primary_key=1 ORDER BY ic.key_ordinal"
+        },
+        {
+          "name": "gate12h_r4_existing_persona_fk",
+          "sql": "SELECT fk.name AS fk_name,pc.name AS parent_column,OBJECT_SCHEMA_NAME(fk.referenced_object_id) AS referenced_schema,OBJECT_NAME(fk.referenced_object_id) AS referenced_table,rc.name AS referenced_column,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fk.parent_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND (pc.name=N'PersonaID' OR fk.referenced_object_id=OBJECT_ID(N'dbo.Gobierno_Persona')) ORDER BY fk.name"
+        },
+        {
+          "name": "gate12h_r4_existing_persona_index",
+          "sql": "SELECT i.name AS index_name,c.name AS column_name,ic.key_ordinal,i.is_unique,i.is_disabled,i.has_filter,i.filter_definition FROM sys.indexes i JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND (i.name=N'IX_CavaSocios_Socios_PersonaID' OR c.name=N'PersonaID') AND i.is_hypothetical=0 ORDER BY i.name,ic.key_ordinal"
+        },
+        {
+          "name": "gate12h_r4_children_fk_preserved",
+          "sql": "SELECT OBJECT_NAME(fk.parent_object_id) AS child_table,pc.name AS child_column,OBJECT_NAME(fk.referenced_object_id) AS parent_table,rc.name AS parent_column,fk.name AS fk_name,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fk.referenced_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND OBJECT_NAME(fk.parent_object_id) IN (N'CavaSocios_Botellas',N'CavaSocios_Cargos',N'CavaSocios_Movimientos') ORDER BY child_table,fk.name"
+        },
+        {
+          "name": "gate12h_r4_socios_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_socios FROM dbo.CavaSocios_Socios"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL ONLY",
+    "ACTIONS MUST REMAIN EMPTY",
+    "HRLectura only",
+    "NO DDL OR DML",
+    "NO Production",
+    "NO Mongo",
+    "NO secrets",
+    "NO PII output",
+    "Do not execute backend/database/migrations/20260910_cavas_socios_persona_link.sql in this Gate",
+    "Do not create another migration",
+    "Do not create PersonaID, FK or index in this Gate",
+    "Do not backfill",
+    "Do not create Gobierno_Persona rows",
+    "Do not create ClienteID in CavaSocios_Socios",
+    "SocioID remains membership PK",
+    "Botellas Cargos Movimientos remain linked by SocioID",
+    "production_touched must remain false",
+    "files_changed must remain empty"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
