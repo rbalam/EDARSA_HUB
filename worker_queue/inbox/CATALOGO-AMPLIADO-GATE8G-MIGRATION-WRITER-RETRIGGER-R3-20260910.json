@@ -1,0 +1,33 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE8G-MIGRATION-WRITER-RETRIGGER-R3-20260910",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "472bb4d01a2536e536566f006aab5b8422ee55e2",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Re-disparar quirurgicamente el workflow ya integrado catalogo-ampliado-gate8f-development-migration.yml. El request R2 existe en worker/requests pero no fue ingerido: no hay RESULT, health muestra Worker ONLINE, queue_depth=0 y queue_running=0. Modificar exclusivamente el trigger existente agregando TRIGGER_REVISION=3 para generar un push nuevo ahora que el workflow existe. No modificar workflow, migracion ni codigo funcional.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "ops/migrations/requests/CATALOGO-AMPLIADO-GATE8F-RECOVERY-20260910.execute",
+      "old": "GATE=8G_RECOVERY\nTARGET=DEVELOPMENT\nMIGRATION=20260910_003_catalogo_ampliado_notifications_config.sql\nEXPECTED_BLOB_SHA=7a26d74e3520c344f90b02fea789056e5b274863\nCHANNEL=DEDICATED_MIGRATION_WRITER\nPRODUCTION_ALLOWED=false\n",
+      "new": "GATE=8G_RECOVERY\nTARGET=DEVELOPMENT\nMIGRATION=20260910_003_catalogo_ampliado_notifications_config.sql\nEXPECTED_BLOB_SHA=7a26d74e3520c344f90b02fea789056e5b274863\nCHANNEL=DEDICATED_MIGRATION_WRITER\nPRODUCTION_ALLOWED=false\nTRIGGER_REVISION=3\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [{"type":"git_diff_check"}],
+  "constraints": [
+    "Edarsahub_Desarrollo only",
+    "Modify only ops/migrations/requests/CATALOGO-AMPLIADO-GATE8F-RECOVERY-20260910.execute",
+    "Do not modify workflow",
+    "Do not modify migration SQL",
+    "Do not touch Production",
+    "production_touched must remain false",
+    "No external sends",
+    "No secrets"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
