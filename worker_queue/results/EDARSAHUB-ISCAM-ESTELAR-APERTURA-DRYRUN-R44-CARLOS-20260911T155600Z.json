@@ -1,0 +1,125 @@
+{
+  "base_sha": "83fd456c448d60a7884eb0efebd32365bc16809e",
+  "blockers": [
+    "check_failed:sql_readonly_audit"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-11T18:03:29Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-ESTELAR-APERTURA-DRYRUN-R44-CARLOS-20260911T155600Z",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-11T18:03:51Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "folio",
+              "idturno",
+              "cancelado",
+              "total",
+              "nopersonas",
+              "apertura"
+            ],
+            "name": "estelar_ticket_24667_apertura_origen",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "24667",
+                "456",
+                false,
+                "20000.0000",
+                "1",
+                "2026-09-05T02:48:41"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "COLUMN_NAME",
+              "DATA_TYPE"
+            ],
+            "name": "estelar_schema_cheques_campos_venta",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                "folio",
+                "bigint"
+              ],
+              [
+                "nopersonas",
+                "numeric"
+              ],
+              [
+                "cancelado",
+                "bit"
+              ],
+              [
+                "idturno",
+                "numeric"
+              ],
+              [
+                "total",
+                "money"
+              ],
+              [
+                "propina",
+                "money"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha_apertura",
+              "tickets",
+              "total_bruto",
+              "pax"
+            ],
+            "name": "estelar_ventas_brutas_por_apertura_0507",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "2026-09-05",
+                168,
+                "272998.0000",
+                "481"
+              ],
+              [
+                "2026-09-06",
+                21,
+                "17195.0000",
+                "36"
+              ],
+              [
+                "2026-09-07",
+                17,
+                "33968.0000",
+                "41"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-11T18:02:54Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
