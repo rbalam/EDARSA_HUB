@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-SCHEDULER-HEALTH-R69-CARLOS-20260911T235800Z",
+  "created_at_utc": "2026-09-11T23:58:00Z",
+  "requester": {"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ff11d2e4ce2e248324458206e7ea0b262b29b394",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "objective": "Auditar por que la sincronizacion automatica comercial/ISCAM no esta manteniendo actualizado el detalle para SoftRestaurant y ManagementPro. Revisar ultimas ejecuciones de sync_comercial_v2 y logs de conectividad/sync sin modificar datos ni codigo.",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "scheduler_comercial_v2_recent_runs",
+          "sql": "SELECT TOP 60 JobName,RunID,Accion,FechaAccion,Exito,MensajeError,DetallesJSON FROM dbo.Scheduler_BitacoraJobs WHERE JobName='sync_comercial_v2' ORDER BY FechaAccion DESC"
+        },
+        {
+          "name": "scheduler_commercial_related_recent_runs",
+          "sql": "SELECT TOP 100 JobName,RunID,Accion,FechaAccion,Exito,MensajeError FROM dbo.Scheduler_BitacoraJobs WHERE JobName LIKE '%comercial%' OR JobName LIKE '%ISCAM%' ORDER BY FechaAccion DESC"
+        },
+        {
+          "name": "sync_log_schema",
+          "sql": "SELECT COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Comercial_SyncLog_v2' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "sync_log_recent",
+          "sql": "SELECT TOP 50 * FROM dbo.Comercial_SyncLog_v2 ORDER BY created_at DESC"
+        },
+        {
+          "name": "unit_catalog_current",
+          "sql": "SELECT u.codigo,u.nombre,u.activo AS unidad_activa,u.server_id,u.sucursal_origen_id,s.system_type,s.activo AS servidor_activo FROM dbo.Unidades_Negocio u LEFT JOIN dbo.Servidores_Conexiones s ON s.id=u.server_id WHERE u.codigo IN ('ESTELAR','CIENFUEGOS','130MID','ORIGEN','130QRO') ORDER BY u.codigo"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
