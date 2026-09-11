@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "91f792b22bd2596ceb129faa3e49ee9fd49417e9",
-  "generated_at_utc": "2026-09-11T06:33:48Z",
+  "generated_at_utc": "2026-09-11T06:35:01Z",
   "history": {
     "done_total_local": 410,
     "pending_total_local": 0,
@@ -13,115 +13,79 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3587,
-      "job_id": "BOS-AGENT-HARNESS-AH5-EVIDENCE-PROVENANCE-V1-20260911",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3049,
+      "age_seconds": 3123,
       "job_id": "BOS-AGENT-HARNESS-AH5-EVIDENCE-PROVENANCE-V1-R2-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2912,
+      "age_seconds": 2985,
       "job_id": "BOS-AGENT-HARNESS-AH6-SECURITY-REDTEAM-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2759,
+      "age_seconds": 2833,
       "job_id": "BOS-AGENT-HARNESS-AH6-SECURITY-REDTEAM-V1-R2-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2580,
+      "age_seconds": 2654,
       "job_id": "BOS-AGENT-HARNESS-AH7-MARKETING-CX-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2362,
+      "age_seconds": 2435,
       "job_id": "BOS-AGENT-HARNESS-AH8-MOBILE-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1942,
+      "age_seconds": 2016,
       "job_id": "BOS-AGENT-HARNESS-AH9-CONTROL-PLANE-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2964,
+      "age_seconds": 3037,
       "job_id": "BOS-V1-GATE-C-FUNCTIONAL-COVERAGE-CERTIFICATION-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2188,
+      "age_seconds": 2262,
       "job_id": "BOS-V1-GATE-C-FUNCTIONAL-COVERAGE-CERTIFICATION-R3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3569,
-      "job_id": "CATALOGO-AMPLIADO-GATE8G-MIGRATION-WRITER-RETRIGGER-R2-20260910",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3566,
-      "job_id": "CATALOGO-AMPLIADO-GATE8G-MIGRATION-WRITER-RETRIGGER-R3-20260910",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3559,
-      "job_id": "CATALOGO-AMPLIADO-GATE8G-SQL-POSTCHECK-READONLY-R1-20260910",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3554,
-      "job_id": "CAVAS-CORPORATIVAS-GATE12H3-FINAL-POSTAUDIT-PERSONA-LINK-READONLY-20260910",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3539,
-      "job_id": "CAVAS-CORPORATIVAS-GATE12I-BOS-SOCIO-PERSONA-CONTROLLED-MIGRATION-EXECUTION-20260910",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 943,
+      "age_seconds": 1017,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-IDENTITY-AUDIT-READONLY-20260911T0003Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1173,
+      "age_seconds": 1247,
       "job_id": "CXP-GATE3D-B-R1-MPRO-PHYSICAL-WRITE-CONTRACT-READONLY-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 585,
+      "age_seconds": 659,
       "job_id": "RRR-GATE4D-R4-CANONICAL-RUNNER-RETRY-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2600,
+      "age_seconds": 2674,
       "job_id": "coa-gate5g-r2-cfdi-development-workflow-recovery-v1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1229,
+      "age_seconds": 1303,
       "job_id": "servers-integrations-gate5d-hub-escritura-readonly-20260911",
       "reason": null,
       "state": "RESULT_READY"
@@ -134,13 +98,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 19,
+  "queue_result_ready_recent": 13,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T06:33:45Z",
-    "last_receive_utc": "2026-09-11T06:33:46Z",
+    "last_cycle_utc": "2026-09-11T06:34:58Z",
+    "last_receive_utc": "2026-09-11T06:34:59Z",
     "last_terminal_utc": "2026-09-11T06:24:02Z",
     "pid": "286"
   },
