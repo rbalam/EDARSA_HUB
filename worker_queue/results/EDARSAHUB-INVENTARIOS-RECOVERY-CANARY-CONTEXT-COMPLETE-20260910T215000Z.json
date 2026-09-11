@@ -1,0 +1,85 @@
+{
+  "base_sha": "987958f0fb7cb11b935b500fe39bdd32d896e0dd",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-11T04:45:03Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-INVENTARIOS-RECOVERY-CANARY-CONTEXT-COMPLETE-20260910T215000Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-11T04:45:19Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "server_id",
+              "sucursal_id",
+              "unidad_negocio_codigo",
+              "almacen_id",
+              "folio",
+              "fecha",
+              "sync_status"
+            ],
+            "name": "initial_folio_3905",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "",
+                "130MID",
+                "3",
+                "3905",
+                "2026-09-01T18:21:47",
+                "REPLACED"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "server_id",
+              "sucursal_id",
+              "unidad_negocio_codigo",
+              "almacen_id",
+              "folio",
+              "fecha",
+              "sync_status"
+            ],
+            "name": "final_folio_3913",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "",
+                "130MID",
+                "3",
+                "3913",
+                "2026-09-08T13:49:35",
+                "REPLACED"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-11T04:45:02Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
