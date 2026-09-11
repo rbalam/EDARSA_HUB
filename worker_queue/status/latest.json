@@ -1,91 +1,121 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "91f792b22bd2596ceb129faa3e49ee9fd49417e9",
-  "generated_at_utc": "2026-09-11T06:35:01Z",
+  "generated_at_utc": "2026-09-11T06:36:15Z",
   "history": {
-    "done_total_local": 410,
+    "done_total_local": 415,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 415,
-    "results_total_local": 751
+    "results_total_local": 756
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3123,
+      "age_seconds": 3197,
       "job_id": "BOS-AGENT-HARNESS-AH5-EVIDENCE-PROVENANCE-V1-R2-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2985,
+      "age_seconds": 3059,
       "job_id": "BOS-AGENT-HARNESS-AH6-SECURITY-REDTEAM-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2833,
+      "age_seconds": 2907,
       "job_id": "BOS-AGENT-HARNESS-AH6-SECURITY-REDTEAM-V1-R2-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2654,
+      "age_seconds": 2728,
       "job_id": "BOS-AGENT-HARNESS-AH7-MARKETING-CX-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2435,
+      "age_seconds": 2509,
       "job_id": "BOS-AGENT-HARNESS-AH8-MOBILE-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2016,
+      "age_seconds": 2090,
       "job_id": "BOS-AGENT-HARNESS-AH9-CONTROL-PLANE-V1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3037,
+      "age_seconds": 3111,
       "job_id": "BOS-V1-GATE-C-FUNCTIONAL-COVERAGE-CERTIFICATION-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2262,
+      "age_seconds": 2336,
       "job_id": "BOS-V1-GATE-C-FUNCTIONAL-COVERAGE-CERTIFICATION-R3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1017,
+      "age_seconds": 62,
+      "job_id": "CAVAS-G12-CANARY-01-PERSONAID-EXISTS-20260911",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 40,
+      "job_id": "CAVAS-G12-CANARY-02-PERSONAID-TYPE-NULL-20260911",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 29,
+      "job_id": "CAVAS-G12-CANARY-03-PERSONAID-FK-20260911",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 17,
+      "job_id": "CAVAS-G12-CANARY-04-PERSONAID-INDEX-20260911",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 5,
+      "job_id": "CAVAS-G12-CANARY-05-CHILD-FKS-20260911",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1091,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-IDENTITY-AUDIT-READONLY-20260911T0003Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1247,
+      "age_seconds": 1321,
       "job_id": "CXP-GATE3D-B-R1-MPRO-PHYSICAL-WRITE-CONTRACT-READONLY-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 659,
+      "age_seconds": 733,
       "job_id": "RRR-GATE4D-R4-CANONICAL-RUNNER-RETRY-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2674,
+      "age_seconds": 2748,
       "job_id": "coa-gate5g-r2-cfdi-development-workflow-recovery-v1-20260911",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1303,
+      "age_seconds": 1377,
       "job_id": "servers-integrations-gate5d-hub-escritura-readonly-20260911",
       "reason": null,
       "state": "RESULT_READY"
@@ -98,14 +128,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 13,
+  "queue_result_ready_recent": 18,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-11T06:34:58Z",
-    "last_receive_utc": "2026-09-11T06:34:59Z",
-    "last_terminal_utc": "2026-09-11T06:24:02Z",
+    "last_cycle_utc": "2026-09-11T06:36:13Z",
+    "last_receive_utc": "2026-09-11T06:36:14Z",
+    "last_terminal_utc": "2026-09-11T06:36:09Z",
     "pid": "286"
   },
   "schema": "edarsahub.worker-health.v3",
