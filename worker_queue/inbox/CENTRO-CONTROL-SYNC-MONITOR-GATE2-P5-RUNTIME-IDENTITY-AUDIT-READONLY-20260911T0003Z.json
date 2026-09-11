@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-IDENTITY-AUDIT-READONLY-20260911T0003Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "mode": "READ_ONLY_SQL",
+  "production_allowed": false,
+  "objective": "Auditar exclusivamente en EDARSAHUB SQL, mediante la conexion canonica de solo lectura, que identidades dedicadas de prueba/RBAC existen en dbo.Usuario_Catalogo, cuales estan activas, cuales tienen hash de password configurado y que roles activos/principales tienen. Identificar la mejor candidata no-humana para P5 Runtime E2E sin modificar usuarios, roles, passwords, permisos, datos ni Produccion. No exponer PasswordHashTexto ni ningun secreto.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "rbac_test_identity_candidates",
+          "sql": "SELECT TOP 100 u.UsuarioID, u.Email, u.Username, u.Activo, CASE WHEN u.PasswordHashTexto IS NOT NULL AND LTRIM(RTRIM(CONVERT(NVARCHAR(MAX), u.PasswordHashTexto))) <> '' THEN 'SI' ELSE 'NO' END AS TienePasswordHash, r.CodigoRol, r.NombreRol, ura.EsPrincipal, ura.Activo AS RolAsignacionActiva FROM dbo.Usuario_Catalogo u LEFT JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID = u.UsuarioID LEFT JOIN dbo.Usuario_Roles r ON r.RolID = ura.RolID WHERE LOWER(ISNULL(u.Email,'')) LIKE '%test%' OR LOWER(ISNULL(u.Email,'')) LIKE '%rbac%' OR LOWER(ISNULL(u.Username,'')) LIKE '%test%' OR LOWER(ISNULL(u.Username,'')) LIKE '%rbac%' ORDER BY u.Activo DESC, u.Email, ISNULL(ura.EsPrincipal,0) DESC, ISNULL(ura.Activo,0) DESC"
+        },
+        {
+          "name": "active_admin_like_candidates_without_secret_material",
+          "sql": "SELECT TOP 100 u.UsuarioID, u.Email, u.Username, u.Activo, CASE WHEN u.PasswordHashTexto IS NOT NULL AND LTRIM(RTRIM(CONVERT(NVARCHAR(MAX), u.PasswordHashTexto))) <> '' THEN 'SI' ELSE 'NO' END AS TienePasswordHash, r.CodigoRol, r.NombreRol, ura.EsPrincipal, ura.Activo AS RolAsignacionActiva FROM dbo.Usuario_Catalogo u LEFT JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID = u.UsuarioID LEFT JOIN dbo.Usuario_Roles r ON r.RolID = ura.RolID WHERE u.Activo = 1 AND (LOWER(ISNULL(r.CodigoRol,'')) LIKE '%admin%' OR LOWER(ISNULL(r.NombreRol,'')) LIKE '%admin%') ORDER BY u.Email, ISNULL(ura.EsPrincipal,0) DESC, ISNULL(ura.Activo,0) DESC"
+        },
+        {
+          "name": "rbac_test_role_summary",
+          "sql": "SELECT r.CodigoRol, r.NombreRol, COUNT(DISTINCT u.UsuarioID) AS UsuariosCandidatos, SUM(CASE WHEN u.Activo = 1 THEN 1 ELSE 0 END) AS AsignacionesUsuarioActivo FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID = u.UsuarioID INNER JOIN dbo.Usuario_Roles r ON r.RolID = ura.RolID WHERE LOWER(ISNULL(u.Email,'')) LIKE '%test%' OR LOWER(ISNULL(u.Email,'')) LIKE '%rbac%' OR LOWER(ISNULL(u.Username,'')) LIKE '%test%' OR LOWER(ISNULL(u.Username,'')) LIKE '%rbac%' GROUP BY r.CodigoRol, r.NombreRol ORDER BY r.CodigoRol"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ ONLY SQL only",
+    "Use canonical EDARSAHUB readonly connection",
+    "NO Production",
+    "NO Mongo",
+    "NO LIVE source connections",
+    "NO DML or DDL",
+    "NO password reset in this job",
+    "NO role or permission changes",
+    "Never return PasswordHashTexto, plaintext passwords, tokens or secrets",
+    "Do not modify Universal Worker structure",
+    "files_changed must remain empty"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "technical"
+}
