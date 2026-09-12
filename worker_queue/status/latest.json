@@ -1,11 +1,11 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "ff11d2e4ce2e248324458206e7ea0b262b29b394",
-  "generated_at_utc": "2026-09-12T06:20:21Z",
+  "generated_at_utc": "2026-09-12T06:21:36Z",
   "history": {
     "done_total_local": 434,
-    "pending_total_local": 5,
-    "processing_total_local": 0,
+    "pending_total_local": 4,
+    "processing_total_local": 1,
     "rejected_total_local": 426,
     "results_total_local": 783
   },
@@ -13,56 +13,56 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1380,
-      "job_id": "EDARSAHUB-ISCAM-CHUNK-ESTELAR-2026H1-R70-CARLOS-20260912T060000Z",
-      "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
-      "state": "BLOCKED"
-    },
-    {
-      "age_seconds": 23377,
+      "age_seconds": 23452,
       "job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-CIENFUEGOS-R67-CARLOS-20260911T233700Z",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 21286,
+      "age_seconds": 21361,
       "job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-ESTELAR-R65-CARLOS-20260911T233500Z",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 23013,
+      "age_seconds": 23087,
       "job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-MPRO-R68-CARLOS-20260911T235500Z",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 22918,
+      "age_seconds": 22993,
       "job_id": "EDARSAHUB-ISCAM-SCHEDULER-HEALTH-R69-CARLOS-20260911T235800Z",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 1841,
+      "age_seconds": 1916,
       "job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-130MID-R66-CARLOS-20260911T233600Z",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1455,
+      "job_id": "EDARSAHUB-ISCAM-CHUNK-ESTELAR-2026H1-R70-CARLOS-20260912T060000Z",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
-  "queue_blocked": 5,
+  "queue_blocked": 4,
   "queue_depth": 5,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 1,
-  "queue_running": 0,
+  "queue_running": 1,
   "runtime": {
-    "current_job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-130MID-R66-CARLOS-20260911T233600Z",
+    "current_job_id": "EDARSAHUB-ISCAM-CHUNK-ESTELAR-2026H1-R70-CARLOS-20260912T060000Z",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-12T06:20:19Z",
-    "last_receive_utc": "2026-09-12T06:20:19Z",
+    "last_cycle_utc": "2026-09-12T06:21:31Z",
+    "last_receive_utc": "2026-09-12T06:21:32Z",
     "last_terminal_utc": "2026-09-12T05:49:39Z",
     "pid": "283"
   },
