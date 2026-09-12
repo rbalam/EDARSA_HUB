@@ -1,31 +1,31 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "ff11d2e4ce2e248324458206e7ea0b262b29b394",
-  "generated_at_utc": "2026-09-12T17:06:42Z",
+  "generated_at_utc": "2026-09-12T17:07:53Z",
   "history": {
     "done_total_local": 434,
     "pending_total_local": 2,
     "processing_total_local": 1,
-    "rejected_total_local": 428,
+    "rejected_total_local": 443,
     "results_total_local": 785
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1948,
+      "age_seconds": 2019,
       "job_id": "EDARSAHUB-ISCAM-MONTHLY-202601-ESTELAR-CARLOS-20260912",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 61699,
+      "age_seconds": 61771,
       "job_id": "EDARSAHUB-ISCAM-SCHEDULER-HEALTH-R69-CARLOS-20260911T235800Z",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 1226,
+      "age_seconds": 1297,
       "job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-ESTELAR-R65-CARLOS-20260911T233500Z",
       "reasons": [
         "REQUESTER_RBAC_DENIED:REQUESTER_RBAC_LOOKUP_FAILED"
@@ -34,19 +34,169 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 132,
+      "age_seconds": 52,
+      "job_id": "EDARSAHUB-ISCAM-MONTHLY-ALL-202301-CARLOS-20260912",
+      "reasons": [
+        "OBJECTIVE_REQUIRED",
+        "SUMMARY_LANGUAGE_MUST_BE_ES"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 52,
+      "job_id": "EDARSAHUB-ISCAM-MONTHLY-ALL-202302-CARLOS-20260912",
+      "reasons": [
+        "OBJECTIVE_REQUIRED",
+        "SUMMARY_LANGUAGE_MUST_BE_ES"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 52,
+      "job_id": "EDARSAHUB-ISCAM-MONTHLY-ALL-202303-CARLOS-20260912",
+      "reasons": [
+        "OBJECTIVE_REQUIRED",
+        "SUMMARY_LANGUAGE_MUST_BE_ES"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 52,
+      "job_id": "EDARSAHUB-ISCAM-MONTHLY-ALL-202304-CARLOS-20260912",
+      "reasons": [
+        "OBJECTIVE_REQUIRED",
+        "SUMMARY_LANGUAGE_MUST_BE_ES"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 52,
+      "job_id": "EDARSAHUB-ISCAM-MONTHLY-ALL-202305-CARLOS-20260912",
+      "reasons": [
+        "OBJECTIVE_REQUIRED",
+        "SUMMARY_LANGUAGE_MUST_BE_ES"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 52,
+      "job_id": "EDARSAHUB-ISCAM-MONTHLY-ALL-202306-CARLOS-20260912",
+      "reasons": [
+        "OBJECTIVE_REQUIRED",
+        "SUMMARY_LANGUAGE_MUST_BE_ES"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 52,
+      "job_id": "EDARSAHUB-ISCAM-MONTHLY-ALL-202307-CARLOS-20260912",
+      "reasons": [
+        "OBJECTIVE_REQUIRED",
+        "SUMMARY_LANGUAGE_MUST_BE_ES"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 52,
+      "job_id": "EDARSAHUB-ISCAM-MONTHLY-ALL-202308-CARLOS-20260912",
+      "reasons": [
+        "OBJECTIVE_REQUIRED",
+        "SUMMARY_LANGUAGE_MUST_BE_ES"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 52,
+      "job_id": "EDARSAHUB-ISCAM-MONTHLY-ALL-202309-CARLOS-20260912",
+      "reasons": [
+        "OBJECTIVE_REQUIRED",
+        "SUMMARY_LANGUAGE_MUST_BE_ES"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 52,
+      "job_id": "EDARSAHUB-ISCAM-MONTHLY-ALL-202310-CARLOS-20260912",
+      "reasons": [
+        "OBJECTIVE_REQUIRED",
+        "SUMMARY_LANGUAGE_MUST_BE_ES"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 52,
+      "job_id": "EDARSAHUB-ISCAM-MONTHLY-ALL-202311-CARLOS-20260912",
+      "reasons": [
+        "OBJECTIVE_REQUIRED",
+        "SUMMARY_LANGUAGE_MUST_BE_ES"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 52,
+      "job_id": "EDARSAHUB-ISCAM-MONTHLY-ALL-202312-CARLOS-20260912",
+      "reasons": [
+        "OBJECTIVE_REQUIRED",
+        "SUMMARY_LANGUAGE_MUST_BE_ES"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 52,
+      "job_id": "EDARSAHUB-ISCAM-MONTHLY-ALL-202401-CARLOS-20260912",
+      "reasons": [
+        "OBJECTIVE_REQUIRED",
+        "SUMMARY_LANGUAGE_MUST_BE_ES"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 52,
+      "job_id": "EDARSAHUB-ISCAM-MONTHLY-ALL-202402-CARLOS-20260912",
+      "reasons": [
+        "OBJECTIVE_REQUIRED",
+        "SUMMARY_LANGUAGE_MUST_BE_ES"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 52,
+      "job_id": "EDARSAHUB-ISCAM-MONTHLY-ALL-202403-CARLOS-20260912",
+      "reasons": [
+        "OBJECTIVE_REQUIRED",
+        "SUMMARY_LANGUAGE_MUST_BE_ES"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 203,
       "job_id": "EDARSAHUB-ISCAM-CHUNK-ESTELAR-2026H1-R70-CARLOS-20260912T060000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1759,
+      "age_seconds": 1830,
       "job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-CIENFUEGOS-R67-CARLOS-20260911T233700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1226,
+      "age_seconds": 1297,
       "job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-MPRO-R68-CARLOS-20260911T235500Z",
       "reason": null,
       "state": "RUNNING"
@@ -58,14 +208,14 @@
   "queue_depth": 3,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 1,
+  "queue_rejected_recent": 16,
   "queue_result_ready_recent": 2,
   "queue_running": 1,
   "runtime": {
     "current_job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-MPRO-R68-CARLOS-20260911T235500Z",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-12T17:06:37Z",
-    "last_receive_utc": "2026-09-12T17:06:38Z",
+    "last_cycle_utc": "2026-09-12T17:07:49Z",
+    "last_receive_utc": "2026-09-12T17:07:49Z",
     "last_terminal_utc": "2026-09-12T17:03:27Z",
     "pid": "299"
   },
