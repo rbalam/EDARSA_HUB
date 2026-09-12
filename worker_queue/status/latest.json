@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "ff11d2e4ce2e248324458206e7ea0b262b29b394",
-  "generated_at_utc": "2026-09-12T16:55:50Z",
+  "generated_at_utc": "2026-09-12T16:57:02Z",
   "history": {
     "done_total_local": 434,
     "pending_total_local": 3,
@@ -13,25 +13,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 575,
+      "age_seconds": 646,
       "job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-MPRO-R68-CARLOS-20260911T235500Z",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 1296,
+      "age_seconds": 1368,
       "job_id": "EDARSAHUB-ISCAM-MONTHLY-202601-ESTELAR-CARLOS-20260912",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 61048,
+      "age_seconds": 61119,
       "job_id": "EDARSAHUB-ISCAM-SCHEDULER-HEALTH-R69-CARLOS-20260911T235800Z",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 575,
+      "age_seconds": 646,
       "job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-ESTELAR-R65-CARLOS-20260911T233500Z",
       "reasons": [
         "REQUESTER_RBAC_DENIED:REQUESTER_RBAC_LOOKUP_FAILED"
@@ -40,13 +40,13 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1107,
+      "age_seconds": 1179,
       "job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-CIENFUEGOS-R67-CARLOS-20260911T233700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1653,
+      "age_seconds": 1724,
       "job_id": "EDARSAHUB-ISCAM-CHUNK-ESTELAR-2026H1-R70-CARLOS-20260912T060000Z",
       "reason": null,
       "state": "RUNNING"
@@ -64,8 +64,8 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-ISCAM-CHUNK-ESTELAR-2026H1-R70-CARLOS-20260912T060000Z",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-12T16:55:48Z",
-    "last_receive_utc": "2026-09-12T16:55:48Z",
+    "last_cycle_utc": "2026-09-12T16:56:59Z",
+    "last_receive_utc": "2026-09-12T16:57:00Z",
     "last_terminal_utc": "2026-09-12T05:49:39Z",
     "pid": "299"
   },
