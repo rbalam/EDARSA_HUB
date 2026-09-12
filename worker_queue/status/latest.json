@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "ff11d2e4ce2e248324458206e7ea0b262b29b394",
-  "generated_at_utc": "2026-09-12T06:05:06Z",
+  "generated_at_utc": "2026-09-12T06:06:19Z",
   "history": {
     "done_total_local": 434,
     "pending_total_local": 5,
@@ -13,37 +13,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 465,
+      "age_seconds": 538,
       "job_id": "EDARSAHUB-ISCAM-CHUNK-ESTELAR-2026H1-R70-CARLOS-20260912T060000Z",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 22462,
+      "age_seconds": 22535,
       "job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-CIENFUEGOS-R67-CARLOS-20260911T233700Z",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 20371,
+      "age_seconds": 20444,
       "job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-ESTELAR-R65-CARLOS-20260911T233500Z",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 22098,
+      "age_seconds": 22171,
       "job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-MPRO-R68-CARLOS-20260911T235500Z",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 22004,
+      "age_seconds": 22077,
       "job_id": "EDARSAHUB-ISCAM-SCHEDULER-HEALTH-R69-CARLOS-20260911T235800Z",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 926,
+      "age_seconds": 999,
       "job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-130MID-R66-CARLOS-20260911T233600Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -61,8 +61,8 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-130MID-R66-CARLOS-20260911T233600Z",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-12T06:05:05Z",
-    "last_receive_utc": "2026-09-12T06:05:00Z",
+    "last_cycle_utc": "2026-09-12T06:06:17Z",
+    "last_receive_utc": "2026-09-12T06:06:18Z",
     "last_terminal_utc": "2026-09-12T05:49:39Z",
     "pid": "283"
   },
