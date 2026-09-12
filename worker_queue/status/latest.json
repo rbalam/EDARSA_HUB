@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "ff11d2e4ce2e248324458206e7ea0b262b29b394",
-  "generated_at_utc": "2026-09-12T00:36:06Z",
+  "generated_at_utc": "2026-09-12T00:37:19Z",
   "history": {
     "done_total_local": 434,
     "pending_total_local": 5,
@@ -13,31 +13,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 615,
+      "age_seconds": 688,
       "job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-130MID-R66-CARLOS-20260911T233600Z",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 2722,
+      "age_seconds": 2795,
       "job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-CIENFUEGOS-R67-CARLOS-20260911T233700Z",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 631,
+      "age_seconds": 704,
       "job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-ESTELAR-R65-CARLOS-20260911T233500Z",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 2358,
+      "age_seconds": 2430,
       "job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-MPRO-R68-CARLOS-20260911T235500Z",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 2263,
+      "age_seconds": 2336,
       "job_id": "EDARSAHUB-ISCAM-SCHEDULER-HEALTH-R69-CARLOS-20260911T235800Z",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
@@ -55,8 +55,8 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-ISCAM-HIST-DETAIL-130MID-R66-CARLOS-20260911T233600Z",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-12T00:36:04Z",
-    "last_receive_utc": "2026-09-12T00:36:05Z",
+    "last_cycle_utc": "2026-09-12T00:37:16Z",
+    "last_receive_utc": "2026-09-12T00:37:16Z",
     "last_terminal_utc": "2026-09-11T23:12:02Z",
     "pid": "1303"
   },
