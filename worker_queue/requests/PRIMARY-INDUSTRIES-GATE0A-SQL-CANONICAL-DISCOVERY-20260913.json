@@ -1,0 +1,65 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "PRIMARY-INDUSTRIES-GATE0A-SQL-CANONICAL-DISCOVERY-20260913",
+  "created_at_utc": "2026-09-13T18:52:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Auditar en READ_ONLY_SQL el esquema canonico real de EDARSAHUB para iniciar EDARSAHUB BOS Primary Industries. Identificar entidades, relaciones, llaves, vistas y capacidades ya existentes que puedan reutilizarse o extenderse para agricultura, ganaderia, avicultura, porcicultura, pesca, acuicultura, silvicultura, granos, apicultura y otros giros del sector primario. Producir evidencia suficiente para clasificar REUTILIZAR / EXTENDER / HUECO_REAL sin ejecutar DDL ni DML.",
+  "acceptance": [
+    "status PASS para todos los checks READ_ONLY_SQL o blockers explicitos con evidencia",
+    "inventario de objetos candidatos por dominio",
+    "columnas, tipos, PK/FK e indices relevantes de los objetos candidatos",
+    "deteccion de capacidades canonicas de empresa, unidad organizacional/productiva, inventario, almacen, lote, compras, proveedores, costos, activos, mantenimiento, personal, geografia, calidad, produccion, trazabilidad, documentos, workflows, RBAC, calendarios, zonas horarias, monedas e idiomas",
+    "cero DDL y cero DML",
+    "production_touched=false"
+  ],
+  "constraints": [
+    "EDARSAHUB SQL Server es la fuente canonica",
+    "No Mongo como fuente operativa o de verdad",
+    "No LIVE",
+    "No hardcode de IDs, empresas, unidades, monedas, idiomas, zonas horarias o reglas sectoriales",
+    "No crear tablas ni modificar esquema",
+    "No duplicar catalogos o entidades existentes",
+    "No crecer backend/core",
+    "Aplicar principio descubrir -> reutilizar -> extender -> crear solo lo faltante",
+    "Respetar RBAC y estructura multiempresa existente",
+    "No tocar Scheduler, NetPay ni Produccion"
+  ],
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "primary_candidate_objects",
+          "sql": "SELECT TOP (1000) s.name AS schema_name, o.type_desc, o.name AS object_name FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND o.type IN ('U','V','P') AND (LOWER(o.name) LIKE '%empresa%' OR LOWER(o.name) LIKE '%unidad%' OR LOWER(o.name) LIKE '%sucursal%' OR LOWER(o.name) LIKE '%almacen%' OR LOWER(o.name) LIKE '%invent%' OR LOWER(o.name) LIKE '%lote%' OR LOWER(o.name) LIKE '%proveedor%' OR LOWER(o.name) LIKE '%compra%' OR LOWER(o.name) LIKE '%costo%' OR LOWER(o.name) LIKE '%activo%' OR LOWER(o.name) LIKE '%manten%' OR LOWER(o.name) LIKE '%emple%' OR LOWER(o.name) LIKE '%personal%' OR LOWER(o.name) LIKE '%ubic%' OR LOWER(o.name) LIKE '%geo%' OR LOWER(o.name) LIKE '%calidad%' OR LOWER(o.name) LIKE '%produ%' OR LOWER(o.name) LIKE '%traza%' OR LOWER(o.name) LIKE '%document%' OR LOWER(o.name) LIKE '%workflow%' OR LOWER(o.name) LIKE '%rol%' OR LOWER(o.name) LIKE '%permiso%' OR LOWER(o.name) LIKE '%calend%' OR LOWER(o.name) LIKE '%moneda%' OR LOWER(o.name) LIKE '%idioma%' OR LOWER(o.name) LIKE '%zona%' OR LOWER(o.name) LIKE '%agric%' OR LOWER(o.name) LIKE '%ganad%' OR LOWER(o.name) LIKE '%avic%' OR LOWER(o.name) LIKE '%porc%' OR LOWER(o.name) LIKE '%pesca%' OR LOWER(o.name) LIKE '%acuic%' OR LOWER(o.name) LIKE '%forest%' OR LOWER(o.name) LIKE '%grano%' OR LOWER(o.name) LIKE '%apiar%') ORDER BY s.name, o.type_desc, o.name;"
+        },
+        {
+          "name": "primary_candidate_columns",
+          "sql": "SELECT TOP (2000) s.name AS schema_name, t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.precision, c.scale, c.is_nullable, c.is_identity FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.is_ms_shipped=0 AND (LOWER(t.name) LIKE '%empresa%' OR LOWER(t.name) LIKE '%unidad%' OR LOWER(t.name) LIKE '%sucursal%' OR LOWER(t.name) LIKE '%almacen%' OR LOWER(t.name) LIKE '%invent%' OR LOWER(t.name) LIKE '%lote%' OR LOWER(t.name) LIKE '%proveedor%' OR LOWER(t.name) LIKE '%compra%' OR LOWER(t.name) LIKE '%costo%' OR LOWER(t.name) LIKE '%activo%' OR LOWER(t.name) LIKE '%manten%' OR LOWER(t.name) LIKE '%emple%' OR LOWER(t.name) LIKE '%personal%' OR LOWER(t.name) LIKE '%ubic%' OR LOWER(t.name) LIKE '%geo%' OR LOWER(t.name) LIKE '%calidad%' OR LOWER(t.name) LIKE '%produ%' OR LOWER(t.name) LIKE '%traza%' OR LOWER(t.name) LIKE '%document%' OR LOWER(t.name) LIKE '%workflow%' OR LOWER(t.name) LIKE '%rol%' OR LOWER(t.name) LIKE '%permiso%' OR LOWER(t.name) LIKE '%calend%' OR LOWER(t.name) LIKE '%moneda%' OR LOWER(t.name) LIKE '%idioma%' OR LOWER(t.name) LIKE '%zona%') ORDER BY s.name, t.name, c.column_id;"
+        },
+        {
+          "name": "primary_candidate_foreign_keys",
+          "sql": "SELECT TOP (1000) schp.name AS parent_schema, tp.name AS parent_table, cp.name AS parent_column, fk.name AS fk_name, schr.name AS referenced_schema, tr.name AS referenced_table, cr.name AS referenced_column FROM sys.foreign_key_columns fkc JOIN sys.foreign_keys fk ON fk.object_id=fkc.constraint_object_id JOIN sys.tables tp ON tp.object_id=fkc.parent_object_id JOIN sys.schemas schp ON schp.schema_id=tp.schema_id JOIN sys.columns cp ON cp.object_id=fkc.parent_object_id AND cp.column_id=fkc.parent_column_id JOIN sys.tables tr ON tr.object_id=fkc.referenced_object_id JOIN sys.schemas schr ON schr.schema_id=tr.schema_id JOIN sys.columns cr ON cr.object_id=fkc.referenced_object_id AND cr.column_id=fkc.referenced_column_id WHERE LOWER(tp.name) LIKE '%empresa%' OR LOWER(tp.name) LIKE '%unidad%' OR LOWER(tp.name) LIKE '%sucursal%' OR LOWER(tp.name) LIKE '%almacen%' OR LOWER(tp.name) LIKE '%invent%' OR LOWER(tp.name) LIKE '%lote%' OR LOWER(tp.name) LIKE '%proveedor%' OR LOWER(tp.name) LIKE '%compra%' OR LOWER(tp.name) LIKE '%costo%' OR LOWER(tp.name) LIKE '%activo%' OR LOWER(tp.name) LIKE '%manten%' OR LOWER(tp.name) LIKE '%emple%' OR LOWER(tp.name) LIKE '%personal%' OR LOWER(tp.name) LIKE '%ubic%' OR LOWER(tp.name) LIKE '%calidad%' OR LOWER(tp.name) LIKE '%produ%' OR LOWER(tp.name) LIKE '%traza%' OR LOWER(tr.name) LIKE '%empresa%' OR LOWER(tr.name) LIKE '%unidad%' OR LOWER(tr.name) LIKE '%almacen%' OR LOWER(tr.name) LIKE '%invent%' OR LOWER(tr.name) LIKE '%lote%' OR LOWER(tr.name) LIKE '%proveedor%' OR LOWER(tr.name) LIKE '%producto%' ORDER BY schp.name, tp.name, fk.name;"
+        },
+        {
+          "name": "primary_candidate_keys_indexes",
+          "sql": "SELECT TOP (1500) s.name AS schema_name, t.name AS table_name, i.name AS index_name, i.is_primary_key, i.is_unique, i.type_desc, c.name AS column_name, ic.key_ordinal, ic.is_included_column FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.indexes i ON i.object_id=t.object_id JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE t.is_ms_shipped=0 AND (LOWER(t.name) LIKE '%empresa%' OR LOWER(t.name) LIKE '%unidad%' OR LOWER(t.name) LIKE '%almacen%' OR LOWER(t.name) LIKE '%invent%' OR LOWER(t.name) LIKE '%lote%' OR LOWER(t.name) LIKE '%proveedor%' OR LOWER(t.name) LIKE '%compra%' OR LOWER(t.name) LIKE '%producto%' OR LOWER(t.name) LIKE '%costo%' OR LOWER(t.name) LIKE '%activo%' OR LOWER(t.name) LIKE '%manten%' OR LOWER(t.name) LIKE '%calidad%' OR LOWER(t.name) LIKE '%produ%' OR LOWER(t.name) LIKE '%traza%') ORDER BY s.name, t.name, i.index_id, ic.key_ordinal;"
+        },
+        {
+          "name": "canonical_localization_and_time_fields",
+          "sql": "SELECT TOP (1000) s.name AS schema_name, t.name AS table_name, c.name AS column_name, ty.name AS data_type FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.is_ms_shipped=0 AND (LOWER(c.name) LIKE '%fecha%' OR LOWER(c.name) LIKE '%timezone%' OR LOWER(c.name) LIKE '%zona_hor%' OR LOWER(c.name) LIKE '%moneda%' OR LOWER(c.name) LIKE '%currency%' OR LOWER(c.name) LIKE '%idioma%' OR LOWER(c.name) LIKE '%locale%' OR LOWER(c.name) LIKE '%pais%' OR LOWER(c.name) LIKE '%unidad_med%' OR LOWER(c.name) LIKE '%uom%') ORDER BY s.name, t.name, c.column_id;"
+        },
+        {
+          "name": "canonical_security_objects",
+          "sql": "SELECT TOP (750) s.name AS schema_name, o.type_desc, o.name AS object_name FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND o.type IN ('U','V','P') AND (LOWER(o.name) LIKE '%usuario%' OR LOWER(o.name) LIKE '%rol%' OR LOWER(o.name) LIKE '%permiso%' OR LOWER(o.name) LIKE '%auth%' OR LOWER(o.name) LIKE '%access%' OR LOWER(o.name) LIKE '%empresa%usuario%' OR LOWER(o.name) LIKE '%almacen%usuario%') ORDER BY s.name, o.type_desc, o.name;"
+        }
+      ]
+    }
+  ]
+}
