@@ -1,26 +1,32 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "6e5c96041cd89bd1d37b2d05f2ebc5e192fa4ed6",
-  "generated_at_utc": "2026-09-14T23:11:51Z",
+  "generated_at_utc": "2026-09-14T23:13:11Z",
   "history": {
-    "done_total_local": 466,
+    "done_total_local": 467,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 488,
-    "results_total_local": 828
+    "results_total_local": 829
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1533,
+      "age_seconds": 1613,
       "job_id": "EDARSAHUB-DASHBOARD-IA-TICKET-EXECUTOR-FIX-CARLOS-20260914T214500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1086,
+      "age_seconds": 1166,
       "job_id": "EDARSAHUB-ISCAM-DAILY-PENDING-R72A-ESTELAR-CARLOS-20260914T225000Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 36,
+      "job_id": "EDARSAHUB-ISCAM-PAX-AGGREGATION-FIX-R73-CARLOS-20260914T230500Z",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -32,14 +38,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-14T23:11:48Z",
-    "last_receive_utc": "2026-09-14T23:11:49Z",
-    "last_terminal_utc": "2026-09-14T22:53:45Z",
+    "last_cycle_utc": "2026-09-14T23:13:06Z",
+    "last_receive_utc": "2026-09-14T23:13:07Z",
+    "last_terminal_utc": "2026-09-14T23:12:34Z",
     "pid": "1065"
   },
   "schema": "edarsahub.worker-health.v3",
