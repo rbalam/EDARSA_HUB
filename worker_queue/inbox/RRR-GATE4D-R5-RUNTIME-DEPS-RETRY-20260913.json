@@ -1,0 +1,28 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"RRR-GATE4D-R5-RUNTIME-DEPS-RETRY-20260913",
+  "created_at_utc":"2026-09-14T01:18:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"9019e0829a69d6c78627913905c6a83e6048e870",
+  "production_allowed":false,
+  "objective":"Gate4D R5 quirurgico: corregir solamente el runtime Python del workflow Customer360 V2 para que el runner canonico disponga de las mismas dependencias ya probadas en Gate3. Mantener SQL V2 y runner sin cambios. Re-disparar mediante el marker existente. No DML. No Production.",
+  "actions":[
+    {
+      "type":"replace_text",
+      "path":".github/workflows/rrr-gate4-customer360-v2-development.yml",
+      "old":"      - name: Install SQL runtime\n        run: python -m pip install pymssql\n",
+      "new":"      - name: Install SQL runtime\n        run: python -m pip install pymssql pydantic python-dotenv email-validator\n"
+    },
+    {
+      "type":"replace_text",
+      "path":"ops/migrations/requests/RRR-GATE4-CUSTOMER360-V2-20260909.execute",
+      "old":"retry_reason=canonical_runner\n",
+      "new":"retry_reason=canonical_runner\nretry_job_r5=RRR-GATE4D-R5-RUNTIME-DEPS-RETRY-20260913\nretry_reason_r5=install_canonical_runner_dependencies\n"
+    }
+  ],
+  "checks":[{"type":"git_diff_check"}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
