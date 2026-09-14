@@ -1,0 +1,100 @@
+{
+  "base_sha": "09263c3d1e8a182f8039119d59e4ac7fd6823d26",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-14T19:16:24Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "RRR-GATE4D-R8-R1-INDEPENDENT-POSTCHECK-READONLY-20260914",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-14T19:16:35Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "user_name"
+            ],
+            "name": "r8_r1_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "present_count"
+            ],
+            "name": "r8_r1_present_count",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "4"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "view_name"
+            ],
+            "name": "r8_r1_present_names",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "vw_RRR_ClienteActividadComercial"
+              ],
+              [
+                "vw_RRR_ClienteRankingActual"
+              ],
+              [
+                "vw_RRR_ClienteScoreActual"
+              ],
+              [
+                "vw_RRR_Customer360"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "duplicate_groups"
+            ],
+            "name": "r8_r1_duplicate_customer360",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-14T19:16:23Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
