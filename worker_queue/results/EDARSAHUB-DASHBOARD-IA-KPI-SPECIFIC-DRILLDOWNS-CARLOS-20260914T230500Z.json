@@ -1,0 +1,30 @@
+{
+  "base_sha": "a2d4cf6daeedf065e6ec13e377caa04323c6caea",
+  "blockers": [
+    "development_push_failed:frontend/src/portal-inteligencia/pages/DashboardIA.jsx:1:1: error: AGENT_GUARD: archivo reservado por worker-EDARSAHUB-DASHBOARD-IA-KPI-SPECIFIC-DRILLDOWNS-CARLOS-20260914T230500Z tarea=EDARSAHUB-DASHBOARD-IA-KPI-SPECIFIC-DRILLDOWNS-CARLOS-20260914T230500Z\nerror: failed to push some refs to 'https://github.com/rbalam/EDARSA_HUB.git'\n"
+  ],
+  "candidate_sha": "97e746f16e55857f675c38689facc1f747595ea4",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-14T23:25:29Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "frontend/src/components/comercial/analytics/CanonicalTicketDrilldown.jsx",
+    "frontend/src/portal-inteligencia/components/TicketDrilldownModal.jsx",
+    "frontend/src/portal-inteligencia/pages/DashboardIA.jsx"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-DASHBOARD-IA-KPI-SPECIFIC-DRILLDOWNS-CARLOS-20260914T230500Z",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-14T23:25:36Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-14T23:23:29Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
