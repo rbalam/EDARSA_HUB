@@ -1,0 +1,32 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-COVERAGE-MATRIX-R71-CARLOS-20260914T183500Z",
+  "created_at_utc": "2026-09-14T18:35:00Z",
+  "requester": {"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d9695e261fafa2c27a3fd7e7f50b3113fc731f05",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "objective": "Construir una matriz mensual de cobertura y conciliacion ISCAM 2023-01-01 a 2026-09-13 para ESTELAR, 130MID, CIENFUEGOS, ORIGEN y 130QRO, comparando Runtime V2 contra Comercial_Inteligencia_VentasDetalleProducto con exactamente la misma regla del backfill canonico: ventas_total tolerancia 0.05, tickets_total exacto y pax_total exacto. No modificar datos, codigo, Sync_Sales, Finanzas_CortesCaja ni Produccion. Identificar solo los meses y dias que siguen pendientes para relanzar reparaciones quirurgicas.",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "iscam_coverage_monthly_2023_2026",
+          "sql": "WITH rt AS ( SELECT unidad_negocio_id, fecha_operacion, SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS ventas_runtime, SUM(CAST(ISNULL(tickets_total,0) AS bigint)) AS tickets_runtime, SUM(CAST(ISNULL(pax_total,0) AS bigint)) AS pax_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id IN ('ESTELAR','130MID','CIENFUEGOS','ORIGEN','130QRO') AND fecha_operacion >= '2023-01-01' AND fecha_operacion < '2026-09-13' GROUP BY unidad_negocio_id, fecha_operacion ), det AS ( SELECT unidad_negocio_id, fecha_operacion, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN CAST(ISNULL(importe_neto,0) AS decimal(19,4)) ELSE 0 END) AS ventas_detalle, COUNT(DISTINCT CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN numero_ticket ELSE NULL END) AS tickets_detalle, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN CAST(ISNULL(pax,0) AS bigint) ELSE 0 END) AS pax_detalle FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('ESTELAR','130MID','CIENFUEGOS','ORIGEN','130QRO') AND fecha_operacion >= '2023-01-01' AND fecha_operacion < '2026-09-13' GROUP BY unidad_negocio_id, fecha_operacion ), daily AS ( SELECT rt.unidad_negocio_id, rt.fecha_operacion, rt.ventas_runtime, rt.tickets_runtime, rt.pax_runtime, ISNULL(det.ventas_detalle,0) AS ventas_detalle, ISNULL(det.tickets_detalle,0) AS tickets_detalle, ISNULL(det.pax_detalle,0) AS pax_detalle, CASE WHEN ABS(rt.ventas_runtime-ISNULL(det.ventas_detalle,0)) <= 0.05 AND rt.tickets_runtime=ISNULL(det.tickets_detalle,0) AND rt.pax_runtime=ISNULL(det.pax_detalle,0) THEN 1 ELSE 0 END AS dia_ok FROM rt LEFT JOIN det ON det.unidad_negocio_id=rt.unidad_negocio_id AND det.fecha_operacion=rt.fecha_operacion ) SELECT unidad_negocio_id AS sucursal, YEAR(fecha_operacion) AS anio, MONTH(fecha_operacion) AS mes, COUNT(*) AS dias_runtime, SUM(dia_ok) AS dias_correctos, COUNT(*)-SUM(dia_ok) AS dias_pendientes, CAST(SUM(ventas_runtime) AS decimal(19,2)) AS ventas_runtime, CAST(SUM(ventas_detalle) AS decimal(19,2)) AS ventas_detalle, CAST(SUM(ventas_detalle)-SUM(ventas_runtime) AS decimal(19,2)) AS diferencia_ventas, SUM(tickets_runtime) AS tickets_runtime, SUM(tickets_detalle) AS tickets_detalle, SUM(pax_runtime) AS pax_runtime, SUM(pax_detalle) AS pax_detalle, MIN(CASE WHEN dia_ok=0 THEN fecha_operacion END) AS primer_dia_pendiente, MAX(CASE WHEN dia_ok=0 THEN fecha_operacion END) AS ultimo_dia_pendiente FROM daily GROUP BY unidad_negocio_id, YEAR(fecha_operacion), MONTH(fecha_operacion) ORDER BY unidad_negocio_id, anio, mes"
+        },
+        {
+          "name": "iscam_pending_summary_by_unit",
+          "sql": "WITH rt AS ( SELECT unidad_negocio_id, fecha_operacion, CAST(ISNULL(ventas_total,0) AS decimal(19,4)) AS ventas_runtime, CAST(ISNULL(tickets_total,0) AS bigint) AS tickets_runtime, CAST(ISNULL(pax_total,0) AS bigint) AS pax_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id IN ('ESTELAR','130MID','CIENFUEGOS','ORIGEN','130QRO') AND fecha_operacion >= '2023-01-01' AND fecha_operacion < '2026-09-13' ), det AS ( SELECT unidad_negocio_id, fecha_operacion, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN CAST(ISNULL(importe_neto,0) AS decimal(19,4)) ELSE 0 END) AS ventas_detalle, COUNT(DISTINCT CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN numero_ticket ELSE NULL END) AS tickets_detalle, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN CAST(ISNULL(pax,0) AS bigint) ELSE 0 END) AS pax_detalle FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('ESTELAR','130MID','CIENFUEGOS','ORIGEN','130QRO') AND fecha_operacion >= '2023-01-01' AND fecha_operacion < '2026-09-13' GROUP BY unidad_negocio_id, fecha_operacion ), daily AS ( SELECT rt.*, ISNULL(det.ventas_detalle,0) AS ventas_detalle, ISNULL(det.tickets_detalle,0) AS tickets_detalle, ISNULL(det.pax_detalle,0) AS pax_detalle, CASE WHEN ABS(rt.ventas_runtime-ISNULL(det.ventas_detalle,0)) <= 0.05 AND rt.tickets_runtime=ISNULL(det.tickets_detalle,0) AND rt.pax_runtime=ISNULL(det.pax_detalle,0) THEN 1 ELSE 0 END AS dia_ok FROM rt LEFT JOIN det ON det.unidad_negocio_id=rt.unidad_negocio_id AND det.fecha_operacion=rt.fecha_operacion ) SELECT unidad_negocio_id AS sucursal, COUNT(*) AS dias_runtime, SUM(dia_ok) AS dias_correctos, COUNT(*)-SUM(dia_ok) AS dias_pendientes, MIN(fecha_operacion) AS primera_fecha_runtime, MAX(fecha_operacion) AS ultima_fecha_runtime, MIN(CASE WHEN dia_ok=0 THEN fecha_operacion END) AS primer_dia_pendiente, MAX(CASE WHEN dia_ok=0 THEN fecha_operacion END) AS ultimo_dia_pendiente, CAST(SUM(ventas_runtime) AS decimal(19,2)) AS ventas_runtime, CAST(SUM(ventas_detalle) AS decimal(19,2)) AS ventas_detalle, CAST(SUM(ventas_detalle)-SUM(ventas_runtime) AS decimal(19,2)) AS diferencia_ventas FROM daily GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
