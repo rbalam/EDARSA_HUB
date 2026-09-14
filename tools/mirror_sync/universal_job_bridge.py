@@ -45,6 +45,7 @@ SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
 MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
 ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
+SQL_MIGRATION_DEVELOPMENT_MODE = "SQL_MIGRATION_DEVELOPMENT"
 UNIT_CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 MAX_ACTIONS = int(os.environ.get("EDARSAHUB_JOB_MAX_ACTIONS", "100"))
@@ -262,6 +263,34 @@ def validate(job: Any) -> list[str]:
             errors.append("ISCAM_PAYMENTS_ONLY_DRY_RUN_INVALID")
         if dry_run is False and job.get("confirm_payments_only_resync") is not True:
             errors.append("ISCAM_PAYMENTS_ONLY_CONFIRMATION_REQUIRED")
+    elif mode == SQL_MIGRATION_DEVELOPMENT_MODE:
+        if actions not in (None, []):
+            errors.append("SQL_MIGRATION_ACTIONS_FORBIDDEN")
+        for forbidden_field in ("sql", "command", "shell", "script", "path"):
+            if job.get(forbidden_field) is not None:
+                errors.append(f"SQL_MIGRATION_FORBIDDEN_FIELD:{forbidden_field}")
+        migration_path = str(job.get("migration_path") or "")
+        migration_parts = Path(migration_path).parts
+        if (
+            not safe_repo_path(migration_path)
+            or len(migration_parts) < 4
+            or migration_parts[:3] != ("backend", "database", "migrations")
+            or not migration_path.lower().endswith(".sql")
+        ):
+            errors.append("SQL_MIGRATION_PATH_INVALID")
+        migration_sha256 = str(job.get("migration_sha256") or "").lower()
+        if not re.fullmatch(r"[0-9a-f]{64}", migration_sha256):
+            errors.append("SQL_MIGRATION_SHA256_INVALID")
+        if job.get("confirm_sql_migration") is not True:
+            errors.append("SQL_MIGRATION_CONFIRMATION_REQUIRED")
+        preflight_checks = job.get("preflight_checks")
+        if not isinstance(preflight_checks, list) or not preflight_checks:
+            errors.append("SQL_MIGRATION_PREFLIGHT_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in preflight_checks):
+            errors.append("SQL_MIGRATION_PREFLIGHT_ONLY_SQL_AUDIT_ALLOWED")
+        else:
+            for index, check in enumerate(preflight_checks, 1):
+                errors.extend(validate_check(check, index))
     elif mode == MPRO_FULL_HISTORY_MODE:
         if actions not in (None, []):
             errors.append("MPRO_RESYNC_ACTIONS_FORBIDDEN")
@@ -313,6 +342,11 @@ def validate(job: Any) -> list[str]:
             errors.append("ISCAM_PAYMENTS_ONLY_AUDIT_REQUIRED")
         elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
             errors.append("ISCAM_PAYMENTS_ONLY_ONLY_SQL_AUDIT_ALLOWED")
+    elif mode == SQL_MIGRATION_DEVELOPMENT_MODE:
+        if not isinstance(checks, list) or not checks:
+            errors.append("SQL_MIGRATION_POST_AUDIT_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+            errors.append("SQL_MIGRATION_POST_ONLY_SQL_AUDIT_ALLOWED")
     elif mode == MPRO_FULL_HISTORY_MODE:
         if not isinstance(checks, list) or not checks:
             errors.append("MPRO_RESYNC_AUDIT_REQUIRED")

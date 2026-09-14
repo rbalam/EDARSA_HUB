@@ -50,6 +50,7 @@ SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
 MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
 ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
+SQL_MIGRATION_DEVELOPMENT_MODE = "SQL_MIGRATION_DEVELOPMENT"
 UNIT_CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 SOFTRESTAURANT_RESYNC_MAX_SECONDS = int(os.environ.get("EDARSAHUB_SOFTRESTAURANT_RESYNC_MAX_SECONDS", "21600"))
@@ -732,6 +733,90 @@ def process_one(path: Path) -> int:
                 result["percent_complete"] = 100
                 result["certification"] = "CERTIFIED_OPERATIONAL"
                 result["summary_es"] = "El Worker resincronizo exclusivamente Pagos por Ticket para una unidad y rango autorizados y certifico el resultado con SQL de solo lectura. No modifico Sync_Sales, Cuentas, Comandas, Cortes ni Produccion."
+            else:
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+            return 0
+
+        if mode == SQL_MIGRATION_DEVELOPMENT_MODE:
+            if expected_base and expected_base != current_head:
+                raise RuntimeError(f"BASE_SHA_MISMATCH_OPERATIONAL_MODE:expected={expected_base}:actual={current_head}")
+            if job.get("actions") not in (None, []):
+                raise RuntimeError("SQL_MIGRATION_ACTIONS_FORBIDDEN")
+            for forbidden_field in ("sql", "command", "shell", "script", "path"):
+                if job.get(forbidden_field) is not None:
+                    raise RuntimeError(f"SQL_MIGRATION_FORBIDDEN_FIELD:{forbidden_field}")
+            migration_path = str(job.get("migration_path") or "")
+            migration_parts = Path(migration_path).parts
+            if (
+                not migration_path
+                or Path(migration_path).is_absolute()
+                or ".." in migration_parts
+                or len(migration_parts) < 4
+                or migration_parts[:3] != ("backend", "database", "migrations")
+                or not migration_path.lower().endswith(".sql")
+            ):
+                raise RuntimeError("SQL_MIGRATION_PATH_INVALID")
+            migration_sha256 = str(job.get("migration_sha256") or "").lower()
+            if not re.fullmatch(r"[0-9a-f]{64}", migration_sha256):
+                raise RuntimeError("SQL_MIGRATION_SHA256_INVALID")
+            if job.get("confirm_sql_migration") is not True:
+                raise RuntimeError("SQL_MIGRATION_CONFIRMATION_REQUIRED")
+            preflight_checks = job.get("preflight_checks") or []
+            checks = job.get("checks") or []
+            if not preflight_checks or any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in preflight_checks):
+                raise RuntimeError("SQL_MIGRATION_PREFLIGHT_SQL_AUDIT_REQUIRED")
+            if not checks or any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+                raise RuntimeError("SQL_MIGRATION_POST_SQL_AUDIT_REQUIRED")
+            preflight_results = []
+            for check in preflight_checks:
+                check_result = run_check(ROOT, check)
+                preflight_results.append(check_result)
+                if check_result["status"] != "PASS":
+                    result["blockers"].append("check_failed:sql_migration_preflight")
+                    break
+            result["preflight_checks"] = preflight_results
+            result["operation"] = SQL_MIGRATION_DEVELOPMENT_MODE
+            result["migration_path"] = migration_path
+            result["migration_sha256"] = migration_sha256
+            result["canonical_sql_mutation"] = True
+            result["files_changed"] = []
+            if result["blockers"]:
+                result["checks"] = []
+                result["tests"] = "FAIL"
+                result["quality_gate"] = "FAIL"
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+                return 0
+            helper = ROOT / "tools" / "mirror_sync" / "sql_migration_development.py"
+            if not helper.is_file():
+                raise RuntimeError("SQL_MIGRATION_HELPER_NOT_FOUND")
+            backend = ROOT / "backend"
+            execution = run(
+                [PYTHON_BIN, str(helper), "--migration-path", migration_path, "--migration-sha256", migration_sha256, "--confirm"],
+                cwd=ROOT,
+                timeout=MAX_SECONDS,
+                env_extra={**load_backend_runtime_env(), "PYTHONPATH": str(backend)},
+            )
+            result["operation_output"] = (execution.stdout or "")[-12000:]
+            if execution.returncode != 0:
+                result["blockers"].append(f"sql_migration_failed:rc={execution.returncode}")
+            check_results = []
+            if not result["blockers"]:
+                for check in checks:
+                    check_result = run_check(ROOT, check)
+                    check_results.append(check_result)
+                    if check_result["status"] != "PASS":
+                        result["blockers"].append("check_failed:sql_migration_post_audit")
+                        break
+            result["checks"] = check_results
+            result["tests"] = "PASS" if (preflight_results and check_results and all(x["status"] == "PASS" for x in preflight_results + check_results)) else "FAIL"
+            result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
+            if not result["blockers"]:
+                result["status"] = "OPERATIONAL_COMPLETE"
+                result["percent_complete"] = 100
+                result["certification"] = "CERTIFIED_OPERATIONAL"
+                result["summary_es"] = "El Worker ejecuto preflight SQL HRLectura, una migracion Development versionada y SHA-bound mediante writer dedicado, y post-audit SQL HRLectura. No acepto SQL inline, shell arbitrario ni toco Produccion."
             else:
                 result["percent_complete"] = 0
                 result["certification"] = "NOT_CERTIFIED"
