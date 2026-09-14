@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "6e5c96041cd89bd1d37b2d05f2ebc5e192fa4ed6",
-  "generated_at_utc": "2026-09-14T23:36:36Z",
+  "generated_at_utc": "2026-09-14T23:37:50Z",
   "history": {
     "done_total_local": 467,
     "pending_total_local": 0,
@@ -13,37 +13,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 666,
+      "age_seconds": 741,
       "job_id": "EDARSAHUB-DASHBOARD-IA-KPI-SPECIFIC-DRILLDOWNS-CARLOS-20260914T230500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3019,
+      "age_seconds": 3093,
       "job_id": "EDARSAHUB-DASHBOARD-IA-TICKET-EXECUTOR-FIX-CARLOS-20260914T214500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1346,
+      "age_seconds": 1420,
       "job_id": "EDARSAHUB-ISCAM-COVERAGE-SCHEDULER-R74-CARLOS-20260914T231500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2571,
+      "age_seconds": 2645,
       "job_id": "EDARSAHUB-ISCAM-DAILY-PENDING-R72A-ESTELAR-CARLOS-20260914T225000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1094,
+      "age_seconds": 1168,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-R75A-ESTELAR-20250612-20250619-CARLOS-20260914T232000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1442,
+      "age_seconds": 1516,
       "job_id": "EDARSAHUB-ISCAM-PAX-AGGREGATION-FIX-R73-CARLOS-20260914T230500Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -61,8 +61,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-14T23:36:36Z",
-    "last_receive_utc": "2026-09-14T23:36:31Z",
+    "last_cycle_utc": "2026-09-14T23:37:46Z",
+    "last_receive_utc": "2026-09-14T23:37:47Z",
     "last_terminal_utc": "2026-09-14T23:25:29Z",
     "pid": "1065"
   },
