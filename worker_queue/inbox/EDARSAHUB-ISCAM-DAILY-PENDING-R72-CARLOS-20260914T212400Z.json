@@ -1,0 +1,41 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-DAILY-PENDING-R72-CARLOS-20260914T212400Z",
+  "created_at_utc": "2026-09-14T21:24:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b7bd7c0b33fec9063c78a3e7e8460cd0bbeacdc8",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "objective": "R72: obtener la matriz diaria de pendientes ISCAM para ESTELAR, 130MID, CIENFUEGOS, ORIGEN y 130QRO en el rango 2023-01-01 a 2026-09-12 incluido, sin modificar datos ni codigo. Separar A) dias con Runtime existente cuyo detalle falta o no concilia contra Comercial_Inteligencia_VentasDetalleProducto y B) fechas del rango objetivo sin Runtime, que deben tratarse como problema upstream y no como backfill de detalle. Conservar exactamente la regla canonica ya certificada: ventas tolerancia 0.05, tickets exactos y PAX exactos; detalle valido solo es_kpi_valido=1 y activo=1. No tocar Produccion, Sync_Sales, Finanzas_CortesCaja, Finanzas_CortesCaja_DetallePagos ni la logica funcional de reportes ISCAM.",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "iscam_pending_daily_runtime_present",
+          "sql": "WITH rt AS ( SELECT unidad_negocio_id, fecha_operacion, SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS ventas_runtime, SUM(CAST(ISNULL(tickets_total,0) AS bigint)) AS tickets_runtime, SUM(CAST(ISNULL(pax_total,0) AS bigint)) AS pax_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id IN ('ESTELAR','130MID','CIENFUEGOS','ORIGEN','130QRO') AND fecha_operacion >= '2023-01-01' AND fecha_operacion < '2026-09-13' GROUP BY unidad_negocio_id, fecha_operacion ), det AS ( SELECT unidad_negocio_id, fecha_operacion, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN CAST(ISNULL(importe_neto,0) AS decimal(19,4)) ELSE 0 END) AS ventas_detalle, COUNT(DISTINCT CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN numero_ticket END) AS tickets_detalle, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN CAST(ISNULL(pax,0) AS bigint) ELSE 0 END) AS pax_detalle FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('ESTELAR','130MID','CIENFUEGOS','ORIGEN','130QRO') AND fecha_operacion >= '2023-01-01' AND fecha_operacion < '2026-09-13' GROUP BY unidad_negocio_id, fecha_operacion ) SELECT rt.unidad_negocio_id AS sucursal, rt.fecha_operacion AS fecha, CAST(rt.ventas_runtime AS decimal(19,2)) AS ventas_runtime, CAST(ISNULL(det.ventas_detalle,0) AS decimal(19,2)) AS ventas_detalle, CAST(ISNULL(det.ventas_detalle,0)-rt.ventas_runtime AS decimal(19,2)) AS diferencia_ventas, rt.tickets_runtime, ISNULL(det.tickets_detalle,0) AS tickets_detalle, ISNULL(det.tickets_detalle,0)-rt.tickets_runtime AS diferencia_tickets, rt.pax_runtime, ISNULL(det.pax_detalle,0) AS pax_detalle, ISNULL(det.pax_detalle,0)-rt.pax_runtime AS diferencia_pax, CASE WHEN det.fecha_operacion IS NULL THEN 'A_DETALLE_AUSENTE' ELSE 'A_DETALLE_NO_CONCILIA' END AS clasificacion FROM rt LEFT JOIN det ON det.unidad_negocio_id=rt.unidad_negocio_id AND det.fecha_operacion=rt.fecha_operacion WHERE ABS(rt.ventas_runtime-ISNULL(det.ventas_detalle,0)) > 0.05 OR rt.tickets_runtime<>ISNULL(det.tickets_detalle,0) OR rt.pax_runtime<>ISNULL(det.pax_detalle,0) ORDER BY rt.unidad_negocio_id, rt.fecha_operacion"
+        },
+        {
+          "name": "iscam_runtime_missing_days_objective_range",
+          "sql": "WITH fechas AS ( SELECT CAST('2023-01-01' AS date) AS fecha UNION ALL SELECT DATEADD(day,1,fecha) FROM fechas WHERE fecha < CAST('2026-09-12' AS date) ), unidades AS ( SELECT v.unidad_negocio_id FROM (VALUES ('ESTELAR'),('130MID'),('CIENFUEGOS'),('ORIGEN'),('130QRO')) v(unidad_negocio_id) ), rt AS ( SELECT DISTINCT unidad_negocio_id, CAST(fecha_operacion AS date) AS fecha_operacion FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id IN ('ESTELAR','130MID','CIENFUEGOS','ORIGEN','130QRO') AND fecha_operacion >= '2023-01-01' AND fecha_operacion < '2026-09-13' ), det AS ( SELECT unidad_negocio_id, CAST(fecha_operacion AS date) AS fecha_operacion, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN CAST(ISNULL(importe_neto,0) AS decimal(19,4)) ELSE 0 END) AS ventas_detalle, COUNT(DISTINCT CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN numero_ticket END) AS tickets_detalle, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN CAST(ISNULL(pax,0) AS bigint) ELSE 0 END) AS pax_detalle FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('ESTELAR','130MID','CIENFUEGOS','ORIGEN','130QRO') AND fecha_operacion >= '2023-01-01' AND fecha_operacion < '2026-09-13' GROUP BY unidad_negocio_id, CAST(fecha_operacion AS date) ) SELECT u.unidad_negocio_id AS sucursal, f.fecha, CAST(NULL AS decimal(19,2)) AS ventas_runtime, CAST(ISNULL(det.ventas_detalle,0) AS decimal(19,2)) AS ventas_detalle, CAST(NULL AS decimal(19,2)) AS diferencia_ventas, CAST(NULL AS bigint) AS tickets_runtime, ISNULL(det.tickets_detalle,0) AS tickets_detalle, CAST(NULL AS bigint) AS diferencia_tickets, CAST(NULL AS bigint) AS pax_runtime, ISNULL(det.pax_detalle,0) AS pax_detalle, CAST(NULL AS bigint) AS diferencia_pax, 'B_SIN_RUNTIME_REVISAR_UPSTREAM' AS clasificacion FROM unidades u CROSS JOIN fechas f LEFT JOIN rt ON rt.unidad_negocio_id=u.unidad_negocio_id AND rt.fecha_operacion=f.fecha LEFT JOIN det ON det.unidad_negocio_id=u.unidad_negocio_id AND det.fecha_operacion=f.fecha WHERE rt.fecha_operacion IS NULL ORDER BY u.unidad_negocio_id, f.fecha OPTION (MAXRECURSION 0)"
+        },
+        {
+          "name": "iscam_daily_pending_summary_r72",
+          "sql": "WITH rt AS ( SELECT unidad_negocio_id, fecha_operacion, SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS ventas_runtime, SUM(CAST(ISNULL(tickets_total,0) AS bigint)) AS tickets_runtime, SUM(CAST(ISNULL(pax_total,0) AS bigint)) AS pax_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id IN ('ESTELAR','130MID','CIENFUEGOS','ORIGEN','130QRO') AND fecha_operacion >= '2023-01-01' AND fecha_operacion < '2026-09-13' GROUP BY unidad_negocio_id, fecha_operacion ), det AS ( SELECT unidad_negocio_id, fecha_operacion, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN CAST(ISNULL(importe_neto,0) AS decimal(19,4)) ELSE 0 END) AS ventas_detalle, COUNT(DISTINCT CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN numero_ticket END) AS tickets_detalle, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN CAST(ISNULL(pax,0) AS bigint) ELSE 0 END) AS pax_detalle FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('ESTELAR','130MID','CIENFUEGOS','ORIGEN','130QRO') AND fecha_operacion >= '2023-01-01' AND fecha_operacion < '2026-09-13' GROUP BY unidad_negocio_id, fecha_operacion ), p AS ( SELECT rt.unidad_negocio_id, rt.fecha_operacion, CASE WHEN det.fecha_operacion IS NULL THEN 'A_DETALLE_AUSENTE' ELSE 'A_DETALLE_NO_CONCILIA' END AS clasificacion FROM rt LEFT JOIN det ON det.unidad_negocio_id=rt.unidad_negocio_id AND det.fecha_operacion=rt.fecha_operacion WHERE ABS(rt.ventas_runtime-ISNULL(det.ventas_detalle,0)) > 0.05 OR rt.tickets_runtime<>ISNULL(det.tickets_detalle,0) OR rt.pax_runtime<>ISNULL(det.pax_detalle,0) ) SELECT unidad_negocio_id AS sucursal, clasificacion, COUNT(*) AS dias, MIN(fecha_operacion) AS primera_fecha, MAX(fecha_operacion) AS ultima_fecha FROM p GROUP BY unidad_negocio_id, clasificacion ORDER BY unidad_negocio_id, clasificacion"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
