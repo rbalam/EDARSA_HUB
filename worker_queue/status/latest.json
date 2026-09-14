@@ -1,31 +1,37 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "13b7fa05fbb27609d2583c650e3937e634d5a267",
-  "generated_at_utc": "2026-09-14T15:50:23Z",
+  "generated_at_utc": "2026-09-14T15:51:37Z",
   "history": {
-    "done_total_local": 440,
+    "done_total_local": 441,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 477,
-    "results_total_local": 795
+    "results_total_local": 796
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 572,
+      "age_seconds": 645,
       "job_id": "ARBITROA-BOS-GATE-A3-DOMAIN-DATA-CONTRACT-V1-20260913",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 223,
+      "age_seconds": 296,
       "job_id": "BOS-UNIVERSAL-WORKER-GENERIC-READONLY-CONTRACT-V1-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 517,
+      "age_seconds": 52,
+      "job_id": "EDARSA-LOGISTICS-GATE0-ASIS-CANONICAL-DISCOVERY-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 590,
       "job_id": "RRR-GATE4D-R5-POSTCHECK-READONLY-20260913",
       "reason": null,
       "state": "RESULT_READY"
@@ -38,15 +44,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-14T15:50:23Z",
-    "last_receive_utc": "2026-09-14T15:50:18Z",
-    "last_terminal_utc": "2026-09-14T15:46:40Z",
-    "pid": "10147"
+    "last_cycle_utc": "2026-09-14T15:51:32Z",
+    "last_receive_utc": "2026-09-14T15:51:32Z",
+    "last_terminal_utc": "2026-09-14T15:50:44Z",
+    "pid": "40732"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
