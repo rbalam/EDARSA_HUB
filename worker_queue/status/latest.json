@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "d9695e261fafa2c27a3fd7e7f50b3113fc731f05",
-  "generated_at_utc": "2026-09-14T18:24:21Z",
+  "generated_at_utc": "2026-09-14T18:25:33Z",
   "history": {
     "done_total_local": 452,
     "pending_total_local": 0,
@@ -13,55 +13,49 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1815,
+      "age_seconds": 1888,
       "job_id": "ARBITROA-BOS-GATE-A4-PREFLIGHT-SQL-READONLY-V1-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3449,
+      "age_seconds": 3521,
       "job_id": "BOS-AGENT-HARNESS-AH12-DEV-CERTIFICATION-V1-R3-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 685,
+      "age_seconds": 757,
       "job_id": "BOS-UNIVERSAL-WORKER-GENERIC-READONLY-PUBLISHER-CERT-V1-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 250,
+      "age_seconds": 322,
       "job_id": "BOS-V1-MASTER-STATUS-GLOBAL-PROGRESS-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3596,
-      "job_id": "EDARSA-LOGISTICS-GATE0-REPOSITORY-CONTRACT-DISCOVERY-R1",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 252,
+      "age_seconds": 325,
       "job_id": "EDARSAHUB-ENTERPRISE-CAPABILITY-MAP-GATE1-R2-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 483,
+      "age_seconds": 555,
       "job_id": "EDARSAHUB-SERVICES-GATE0A-SQL-ASIS-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3474,
+      "age_seconds": 3546,
       "job_id": "RRR-GATE4D-R7-CANONICAL-RUNNER-ROLLBACK-DIAGNOSTIC-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2656,
+      "age_seconds": 2728,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5F-GITHUB-ACTIONS-LIVE-CANARY-HARNESS-R1-20260914",
       "reason": null,
       "state": "RESULT_READY"
@@ -74,13 +68,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 9,
+  "queue_result_ready_recent": 8,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-14T18:24:18Z",
-    "last_receive_utc": "2026-09-14T18:24:18Z",
+    "last_cycle_utc": "2026-09-14T18:25:28Z",
+    "last_receive_utc": "2026-09-14T18:25:29Z",
     "last_terminal_utc": "2026-09-14T18:20:10Z",
     "pid": "89468"
   },
