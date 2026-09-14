@@ -1,0 +1,33 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-DASHBOARD-IA-DRILLDOWN-DATERANGE-R1-CARLOS-20260914T183500Z",
+  "created_at_utc": "2026-09-14T18:35:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Inteligencia Comercial-Dasboard IA"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d9695e261fafa2c27a3fd7e7f50b3113fc731f05",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir el drilldown en blanco del Dashboard IA de Inteligencia Comercial para todas las unidades (CIENFUEGOS, ESTELAR, ORIGEN, 130MID y 130QRO) haciendo que TicketDrilldownModal reciba siempre el rango de fechas canonico que ya devuelve /inteligencia/dashboard para Dia, Semana, Mes y Ano, conservando fallback al rango personalizado. Cambio minimo; no tocar Produccion ni alterar fuentes KPI.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/DashboardIA.jsx",
+      "old": "      <TicketDrilldownModal open={drill} onClose={() => setDrill(false)}\n        unidad={unidadSeleccionada} periodo={periodoActivo}\n        fechaInicio={esCustom ? rangoInicio : undefined} fechaFin={esCustom ? rangoFin : undefined}\n        titulo=\"Reconstrucción de Tickets\" />",
+      "new": "      <TicketDrilldownModal open={drill} onClose={() => setDrill(false)}\n        unidad={unidadSeleccionada} periodo={periodoActivo}\n        fechaInicio={data.fechaInicio || (esCustom ? rangoInicio : undefined)}\n        fechaFin={data.fechaFin || (esCustom ? rangoFin : undefined)}\n        titulo=\"Reconstrucción de Tickets\" />",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "frontend_build", "directory": "frontend"}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
