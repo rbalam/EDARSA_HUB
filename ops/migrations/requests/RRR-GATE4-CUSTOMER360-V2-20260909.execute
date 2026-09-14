@@ -13,3 +13,5 @@ diagnostic_job_r6=RRR-GATE4D-R6-INSTRUMENTED-ROLLBACK-DIAGNOSTIC-20260914
 diagnostic_mode_r6=rollback_only_no_deploy
 diagnostic_job_r7=RRR-GATE4D-R7-CANONICAL-RUNNER-ROLLBACK-DIAGNOSTIC-20260914
 diagnostic_mode_r7=canonical_get_connection_cursor_as_dict_rollback_only
+deployment_job_r8=RRR-GATE4D-R8-CONTROLLED-COMMIT-DEPLOYMENT-20260914
+deployment_mode_r8=canonical_get_connection_cursor_as_dict_commit_with_durable_evidence
