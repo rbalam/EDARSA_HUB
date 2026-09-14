@@ -1,0 +1,62 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-DASHBOARD-IA-TICKET-EXECUTOR-FIX-CARLOS-20260914T214500Z",
+  "created_at_utc": "2026-09-14T21:45:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Inteligencia Comercial-Dasboard IA"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "702a11722e80b2effa508557734d2ea14acc7a46",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir la causa backend del error 'No fue posible consultar la información' del drilldown de tickets. repository_tickets llama al executor por defecto con (sql, params), pero importa _execute_readonly_query cuya firma acepta solo query. Esto provoca TypeError antes de ejecutar SQL. Sustituir el executor por la ruta parametrizada canónica execute_sql_query_params de EDARSAHUB y agregar prueba de regresión que ejerza el executor por defecto.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_analytics/repository_tickets.py",
+      "old": "from modules.comercial_v2.periodos_routes import (\n    _execute_readonly_query,\n)\n",
+      "new": "from core.db import execute_sql_query_params\nfrom core.server_registry import EDARSAHUB_CONFIG\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_analytics/repository_tickets.py",
+      "old": "QueryExecutor = Callable[[str, tuple[Any, ...]], list[dict[str, Any]]]\n\n\ndef _date_string",
+      "new": "QueryExecutor = Callable[[str, tuple[Any, ...]], list[dict[str, Any]]]\n\n\ndef _execute_readonly_query_params(\n    sql: str,\n    params: tuple[Any, ...],\n) -> list[dict[str, Any]]:\n    cfg = EDARSAHUB_CONFIG\n    return list(execute_sql_query_params(\n        cfg['host'],\n        cfg['port'],\n        cfg['database'],\n        cfg['username'],\n        cfg['password'],\n        sql,\n        params,\n    ) or [])\n\n\ndef _date_string",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_analytics/repository_tickets.py",
+      "old": "    executor = query_executor or _execute_readonly_query\n    return list(executor(sql, params) or [])",
+      "new": "    executor = query_executor or _execute_readonly_query_params\n    return list(executor(sql, params) or [])",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_comercial_analytics_tickets.py",
+      "old": "import pytest\n\nos.environ.setdefault(",
+      "new": "import pytest\n\nimport modules.comercial_analytics.repository_tickets as repository_tickets\n\nos.environ.setdefault(",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_comercial_analytics_tickets.py",
+      "old": "    with pytest.raises(LookupError):\n        get_ticket_detail(\n            identity=parse_ticket_pk(ticket_pk),\n            allowed_unit_codes=[\"130MID\"],\n            query_executor=lambda sql, params: [],\n        )\n",
+      "new": "    with pytest.raises(LookupError):\n        get_ticket_detail(\n            identity=parse_ticket_pk(ticket_pk),\n            allowed_unit_codes=[\"130MID\"],\n            query_executor=lambda sql, params: [],\n        )\n\n\ndef test_default_executor_uses_parameterized_edarsahub_query(monkeypatch):\n    calls = []\n\n    def fake_execute_sql_query_params(\n        host, port, database, username, password, query, params\n    ):\n        calls.append((host, port, database, username, password, query, params))\n        if \"COUNT(*) AS total\" in query:\n            return [{\"total\": 0}]\n        return []\n\n    monkeypatch.setattr(\n        repository_tickets,\n        \"execute_sql_query_params\",\n        fake_execute_sql_query_params,\n    )\n\n    result = repository_tickets.list_tickets(\n        fecha_inicio=\"2026-07-01\",\n        fecha_fin=\"2026-07-31\",\n        allowed_unit_codes=[\"CIENFUEGOS\"],\n        unidad_negocio_id=\"CIENFUEGOS\",\n    )\n\n    assert result[\"total\"] == 0\n    assert len(calls) == 2\n    assert calls[0][-1] == (\n        \"2026-07-01\",\n        \"2026-07-31\",\n        \"CIENFUEGOS\",\n    )\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/comercial_analytics/repository_tickets.py", "backend/tests/test_comercial_analytics_tickets.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_comercial_analytics_tickets.py"]}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
