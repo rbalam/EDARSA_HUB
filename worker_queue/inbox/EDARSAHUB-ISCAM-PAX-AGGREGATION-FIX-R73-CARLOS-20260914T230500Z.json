@@ -1,0 +1,46 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-PAX-AGGREGATION-FIX-R73-CARLOS-20260914T230500Z",
+  "created_at_utc": "2026-09-14T23:05:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ab4a95d56fef730553226acb09290ffe0c7835d2",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir de forma definitiva la conciliacion de PAX del detalle ISCAM. Comercial_Inteligencia_VentasDetalleProducto repite el PAX del ticket en cada linea de producto; por ello tanto el backfill historico como freshness deben agrupar primero por numero_ticket usando MAX(pax) y despues sumar pax_ticket por fecha. Mantener sin cambios la logica canonica de ventas, tickets, fecha operativa, Runtime, reportes certificados, Sync_Sales, Finanzas_CortesCaja y Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/backfill_detalle_producto_pendientes.py",
+      "old": "        SELECT\n            fecha_operacion,\n            SUM(\n                CASE\n                    WHEN ISNULL(es_kpi_valido, 1) = 1\n                    THEN ISNULL(importe_neto, 0)\n                    ELSE 0\n                END\n            ) AS ventas_detalle,\n            COUNT(DISTINCT\n                CASE\n                    WHEN ISNULL(es_kpi_valido, 1) = 1\n                    THEN numero_ticket\n                    ELSE NULL\n                END\n            ) AS tickets_detalle,\n            SUM(\n                CASE\n                    WHEN ISNULL(es_kpi_valido, 1) = 1\n                    THEN ISNULL(pax, 0)\n                    ELSE 0\n                END\n            ) AS pax_detalle\n        FROM {DESTINO}\n        WHERE unidad_negocio_id = %s\n          AND fecha_operacion >= %s\n          AND fecha_operacion < %s\n          AND ISNULL(activo, 1) = 1\n        GROUP BY fecha_operacion",
+      "new": "        WITH detalle_ticket AS (\n            SELECT\n                fecha_operacion,\n                numero_ticket,\n                SUM(CAST(ISNULL(importe_neto, 0) AS decimal(19,4))) AS ventas_ticket,\n                MAX(CAST(ISNULL(pax, 0) AS bigint)) AS pax_ticket\n            FROM {DESTINO}\n            WHERE unidad_negocio_id = %s\n              AND fecha_operacion >= %s\n              AND fecha_operacion < %s\n              AND ISNULL(activo, 1) = 1\n              AND ISNULL(es_kpi_valido, 1) = 1\n            GROUP BY fecha_operacion, numero_ticket\n        )\n        SELECT\n            fecha_operacion,\n            SUM(ventas_ticket) AS ventas_detalle,\n            COUNT(*) AS tickets_detalle,\n            SUM(pax_ticket) AS pax_detalle\n        FROM detalle_ticket\n        GROUP BY fecha_operacion",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+      "old": "        detalle AS (\n            SELECT CAST(fecha_operacion AS date) AS fecha_operacion,\n                   SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) AS ventas_detalle,\n                   COUNT(DISTINCT id_transaccion) AS tickets_detalle,\n                   SUM(CAST(ISNULL(pax,0) AS bigint)) AS pax_detalle\n            FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n            WHERE unidad_negocio_id = %s\n              AND fecha_operacion >= %s AND fecha_operacion < %s\n              AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n            GROUP BY CAST(fecha_operacion AS date)\n        )",
+      "new": "        detalle_ticket AS (\n            SELECT CAST(fecha_operacion AS date) AS fecha_operacion,\n                   numero_ticket,\n                   SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) AS ventas_ticket,\n                   MAX(CAST(ISNULL(pax,0) AS bigint)) AS pax_ticket\n            FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n            WHERE unidad_negocio_id = %s\n              AND fecha_operacion >= %s AND fecha_operacion < %s\n              AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n            GROUP BY CAST(fecha_operacion AS date), numero_ticket\n        ),\n        detalle AS (\n            SELECT fecha_operacion,\n                   SUM(ventas_ticket) AS ventas_detalle,\n                   COUNT(*) AS tickets_detalle,\n                   SUM(pax_ticket) AS pax_detalle\n            FROM detalle_ticket\n            GROUP BY fecha_operacion\n        )",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_detail_pax_ticket_aggregation.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nBACKFILL = ROOT / 'backend' / 'scripts' / 'backfill_detalle_producto_pendientes.py'\nROUTES = ROOT / 'backend' / 'modules' / 'inteligencia_comercial' / 'iscam_routes.py'\n\n\ndef test_backfill_aggregates_pax_once_per_ticket():\n    text = BACKFILL.read_text(encoding='utf-8')\n    block = text.split('def _detalle_existente(', 1)[1].split('def _detalle_concilia(', 1)[0]\n    assert 'WITH detalle_ticket AS (' in block\n    assert 'GROUP BY fecha_operacion, numero_ticket' in block\n    assert 'MAX(CAST(ISNULL(pax, 0) AS bigint)) AS pax_ticket' in block\n    assert 'SUM(pax_ticket) AS pax_detalle' in block\n    assert 'SUM(\\n                CASE\\n                    WHEN ISNULL(es_kpi_valido, 1) = 1\\n                    THEN ISNULL(pax, 0)' not in block\n\n\ndef test_freshness_aggregates_pax_once_per_ticket():\n    text = ROUTES.read_text(encoding='utf-8')\n    block = text.split('def _detail_coverage(', 1)[1].split('# ============================================================================\\n# 1)', 1)[0]\n    assert 'detalle_ticket AS (' in block\n    assert 'GROUP BY CAST(fecha_operacion AS date), numero_ticket' in block\n    assert 'MAX(CAST(ISNULL(pax,0) AS bigint)) AS pax_ticket' in block\n    assert 'SUM(pax_ticket) AS pax_detalle' in block\n    assert 'SUM(CAST(ISNULL(pax,0) AS bigint)) AS pax_detalle' not in block\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/scripts/backfill_detalle_producto_pendientes.py", "backend/modules/inteligencia_comercial/iscam_routes.py", "backend/tests/test_iscam_detail_pax_ticket_aggregation.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_iscam_detail_pax_ticket_aggregation.py", "backend/tests/test_iscam_detail_parity_backfill_r33.py"]}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
