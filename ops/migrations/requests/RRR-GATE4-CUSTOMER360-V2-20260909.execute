@@ -7,3 +7,5 @@ rollback_certification=CERTIFIED_READ_ONLY
 rollback_percent=100
 retry_job=RRR-GATE4D-R4-CANONICAL-RUNNER-RETRY-20260911
 retry_reason=canonical_runner
+retry_job_r5=RRR-GATE4D-R5-RUNTIME-DEPS-RETRY-20260913
+retry_reason_r5=install_canonical_runner_dependencies
