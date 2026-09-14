@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "ff11d2e4ce2e248324458206e7ea0b262b29b394",
-  "generated_at_utc": "2026-09-14T01:14:19Z",
+  "development_sha": "9019e0829a69d6c78627913905c6a83e6048e870",
+  "generated_at_utc": "2026-09-14T01:15:33Z",
   "history": {
     "done_total_local": 436,
     "pending_total_local": 0,
@@ -13,13 +13,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 861,
+      "age_seconds": 935,
       "job_id": "PRIMARY-INDUSTRIES-GATE0A-SQL-CANONICAL-DISCOVERY-20260913",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 65,
+      "age_seconds": 140,
       "job_id": "RRR-GATE4D-R4-R1-POSTFAIL-READONLY-20260913",
       "reason": null,
       "state": "RESULT_READY"
@@ -37,8 +37,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-14T01:14:18Z",
-    "last_receive_utc": "2026-09-14T01:14:13Z",
+    "last_cycle_utc": "2026-09-14T01:15:31Z",
+    "last_receive_utc": "2026-09-14T01:15:32Z",
     "last_terminal_utc": "2026-09-14T01:13:13Z",
     "pid": "286"
   },
