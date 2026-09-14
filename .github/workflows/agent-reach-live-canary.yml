@@ -1,0 +1,51 @@
+name: Agent-Reach Live Canary
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact Edarsahub_Desarrollo SHA to certify
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  live-canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.expected_sha }}
+          persist-credentials: false
+
+      - name: Verify exact SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ inputs.expected_sha }}"
+          echo "EXACT_SHA_CHECK=PASS"
+
+      - name: Build canonical Agent-Reach image
+        shell: bash
+        run: |
+          set -euo pipefail
+          infra/agent-reach/build.sh
+
+      - name: Execute real live canary
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH=backend
+          python -m pytest -q backend/tests/test_agent_reach_live_network_canary.py
+
+      - name: Upload sanitized live evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-reach-live-canary-evidence-${{ inputs.expected_sha }}
+          path: backend/tests/agent_reach_live_network_canary_evidence.json
+          if-no-files-found: error
+          retention-days: 7
