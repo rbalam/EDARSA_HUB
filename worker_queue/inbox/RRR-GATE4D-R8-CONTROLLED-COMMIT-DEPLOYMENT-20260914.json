@@ -1,0 +1,64 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"RRR-GATE4D-R8-CONTROLLED-COMMIT-DEPLOYMENT-20260914",
+  "created_at_utc":"2026-09-14T18:15:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"d9695e261fafa2c27a3fd7e7f50b3113fc731f05",
+  "production_allowed":false,
+  "objective":"Gate4D R8 despliegue real controlado. Usar exactamente la ruta canonica validada en R7: get_connection('migrate'), cursor(as_dict=True), split_sql_batches y ejecucion batch a batch del SQL V2. Sustituir solo el rollback exitoso por commit. En cualquier excepcion hacer rollback. Persistir evidencia durable y exigir postcheck fisico 4/4. No tocar Produccion.",
+  "actions":[
+    {
+      "type":"replace_text",
+      "path":".github/workflows/rrr-gate4-customer360-v2-development.yml",
+      "old":"      - name: R7 canonical runner rollback-only diagnostic\n",
+      "new":"      - name: R8 controlled canonical deployment\n"
+    },
+    {
+      "type":"replace_text",
+      "path":".github/workflows/rrr-gate4-customer360-v2-development.yml",
+      "old":"          report={'job':'RRR-GATE4D-R7-CANONICAL-RUNNER-ROLLBACK-DIAGNOSTIC-20260914','stage':'init','batch':None,'batch_count':None,'batches':[],'identity':None,'exception':None,'rollback':None,'diagnostic_outcome':None}\n          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'rrr_gate4_r7_diagnostic.json'\n",
+      "new":"          report={'job':'RRR-GATE4D-R8-CONTROLLED-COMMIT-DEPLOYMENT-20260914','stage':'init','batch':None,'batch_count':None,'batches':[],'identity':None,'exception':None,'commit':None,'rollback':None,'deployment_outcome':None}\n          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'rrr_gate4_r8_deployment.json'\n"
+    },
+    {
+      "type":"replace_text",
+      "path":".github/workflows/rrr-gate4-customer360-v2-development.yml",
+      "old":"              report['stage']='rollback_success_path'\n              conn.rollback(); report['rollback']='OK'; report['diagnostic_outcome']='CANONICAL_PATH_ALL_BATCHES_EXECUTED_THEN_ROLLED_BACK'\n",
+      "new":"              report['stage']='commit_success_path'\n              conn.commit(); report['commit']='OK'; report['deployment_outcome']='CANONICAL_PATH_ALL_BATCHES_EXECUTED_AND_COMMITTED'\n"
+    },
+    {
+      "type":"replace_text",
+      "path":".github/workflows/rrr-gate4-customer360-v2-development.yml",
+      "old":"              report['diagnostic_outcome']='CANONICAL_PATH_FAILURE_CAPTURED'\n",
+      "new":"              report['deployment_outcome']='CANONICAL_PATH_FAILURE_CAPTURED'\n"
+    },
+    {
+      "type":"replace_text",
+      "path":".github/workflows/rrr-gate4-customer360-v2-development.yml",
+      "old":"      - name: R7 physical postcheck after canonical rollback\n",
+      "new":"      - name: R8 mandatory physical postcheck 4 of 4\n"
+    },
+    {
+      "type":"replace_text",
+      "path":".github/workflows/rrr-gate4-customer360-v2-development.yml",
+      "old":"          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'rrr_gate4_r7_postcheck.json'; out.write_text(json.dumps(result,indent=2,default=str),encoding='utf-8'); print(out.read_text(encoding='utf-8'))\n",
+      "new":"          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'rrr_gate4_r8_postcheck.json'; out.write_text(json.dumps(result,indent=2,default=str),encoding='utf-8'); print(out.read_text(encoding='utf-8'))\n          if result['exception'] is not None or result['present_count'] != 4 or set(result['views'] or []) != set(views):\n              raise SystemExit('R8_POSTCHECK_FAILED')\n"
+    },
+    {
+      "type":"replace_text",
+      "path":".github/workflows/rrr-gate4-customer360-v2-development.yml",
+      "old":"      - name: Upload R7 durable diagnostic evidence\n        if: always()\n        uses: actions/upload-artifact@v4\n        with:\n          name: rrr-gate4-r7-canonical-runner-diagnostic-evidence\n          path: |\n            ${{ runner.temp }}/rrr_gate4_r7_diagnostic.json\n            ${{ runner.temp }}/rrr_gate4_r7_postcheck.json\n          if-no-files-found: error\n          retention-days: 90\n",
+      "new":"      - name: Upload R8 durable deployment evidence\n        if: always()\n        uses: actions/upload-artifact@v4\n        with:\n          name: rrr-gate4-r8-controlled-deployment-evidence\n          path: |\n            ${{ runner.temp }}/rrr_gate4_r8_deployment.json\n            ${{ runner.temp }}/rrr_gate4_r8_postcheck.json\n          if-no-files-found: error\n          retention-days: 90\n"
+    },
+    {
+      "type":"replace_text",
+      "path":"ops/migrations/requests/RRR-GATE4-CUSTOMER360-V2-20260909.execute",
+      "old":"diagnostic_mode_r7=canonical_get_connection_cursor_as_dict_rollback_only\n",
+      "new":"diagnostic_mode_r7=canonical_get_connection_cursor_as_dict_rollback_only\ndeployment_job_r8=RRR-GATE4D-R8-CONTROLLED-COMMIT-DEPLOYMENT-20260914\ndeployment_mode_r8=canonical_get_connection_cursor_as_dict_commit_with_durable_evidence\n"
+    }
+  ],
+  "checks":[{"type":"git_diff_check"}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
