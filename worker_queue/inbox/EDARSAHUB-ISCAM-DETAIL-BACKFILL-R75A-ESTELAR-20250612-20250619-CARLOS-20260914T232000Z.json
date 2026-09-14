@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-R75A-ESTELAR-20250612-20250619-CARLOS-20260914T232000Z",
+  "created_at_utc": "2026-09-14T23:20:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a2d4cf6daeedf065e6ec13e377caa04323c6caea",
+  "production_allowed": false,
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "objective": "R75A: iniciar la reparacion historica real de detalle ISCAM para ESTELAR sobre 2025-06-12 a 2025-06-19 inclusive. Usar el backfill canonico ya corregido por R73: PAX una sola vez por ticket, ventas tolerancia 0.05, tickets y PAX exactos. Idempotente: saltar YA_CONCILIADO, omitir SIN_RUNTIME y escribir exclusivamente dias con OK_HEADER_CANONICO. No recalcular Runtime, no tocar Sync_Sales, Finanzas_CortesCaja, logica certificada de reportes ni Produccion.",
+  "units": ["ESTELAR"],
+  "fecha_inicio": "2025-06-12",
+  "fecha_fin": "2025-06-20",
+  "dry_run": false,
+  "confirm_detail_backfill": true,
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "estelar_r75a_post_backfill_coverage",
+          "sql": "WITH rt AS ( SELECT CAST(fecha_operacion AS date) AS fecha_operacion, SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS ventas_runtime, SUM(CAST(ISNULL(tickets_total,0) AS bigint)) AS tickets_runtime, SUM(CAST(ISNULL(pax_total,0) AS bigint)) AS pax_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion >= '2025-06-12' AND fecha_operacion < '2025-06-20' GROUP BY CAST(fecha_operacion AS date) ), dt AS ( SELECT CAST(fecha_operacion AS date) AS fecha_operacion, numero_ticket, SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) AS ventas_ticket, MAX(CAST(ISNULL(pax,0) AS bigint)) AS pax_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion >= '2025-06-12' AND fecha_operacion < '2025-06-20' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY CAST(fecha_operacion AS date), numero_ticket ), det AS ( SELECT fecha_operacion, SUM(ventas_ticket) AS ventas_detalle, COUNT(*) AS tickets_detalle, SUM(pax_ticket) AS pax_detalle FROM dt GROUP BY fecha_operacion ) SELECT rt.fecha_operacion AS fecha, CAST(rt.ventas_runtime AS decimal(19,2)) AS ventas_runtime, CAST(ISNULL(det.ventas_detalle,0) AS decimal(19,2)) AS ventas_detalle, rt.tickets_runtime, ISNULL(det.tickets_detalle,0) AS tickets_detalle, rt.pax_runtime, ISNULL(det.pax_detalle,0) AS pax_detalle FROM rt LEFT JOIN det ON det.fecha_operacion=rt.fecha_operacion ORDER BY rt.fecha_operacion"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
