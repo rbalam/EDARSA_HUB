@@ -1,0 +1,55 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "000-WORKER-WAKE-ACTIVE-JOB-GUARD-R1-CARLOS-20260914T212200Z",
+  "created_at_utc": "2026-09-14T21:22:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Inteligencia Comercial-Dasboard IA"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b7bd7c0b33fec9063c78a3e7e8460cd0bbeacdc8",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Estabilizar definitivamente el Universal Worker para que el endpoint /internal/worker/wake nunca reinicie ni intente converger el runtime mientras existe un job activo con heartbeat sano. Esto evita dejar jobs huérfanos en processing cuando llegan wakes concurrentes durante una ejecución. Producción prohibida.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "old": "def _restart_worker() -> None:\n",
+      "new": "def _active_job_id() -> str | None:\n    try:\n        value = (RUNTIME_DIR / \"current_job_id\").read_text(encoding=\"utf-8\").strip()\n    except OSError:\n        return None\n    return value or None\n\n\ndef _restart_worker() -> None:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "old": "    convergence = _converge_development_if_safe()\n    heartbeat_age = _heartbeat_age_seconds()\n    current_worker_tree = _current_worker_code_tree()\n",
+      "new": "    heartbeat_age = _heartbeat_age_seconds()\n    active_job_id = _active_job_id()\n    if active_job_id and heartbeat_age is not None and heartbeat_age <= 90:\n        return {\n            \"accepted\": True,\n            \"action\": \"active_job_preserved\",\n            \"queue_sha\": current,\n            \"active_job_id\": active_job_id,\n            \"heartbeat_age_seconds\": round(heartbeat_age, 3),\n            \"runtime_convergence\": {\"state\": \"DEFERRED_ACTIVE_JOB\"},\n            \"wake_route_version\": WAKE_ROUTE_VERSION,\n            \"production_touched\": False,\n        }\n\n    convergence = _converge_development_if_safe()\n    current_worker_tree = _current_worker_code_tree()\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "old": "WAKE_ROUTE_VERSION = \"r30-code-aware\"",
+      "new": "WAKE_ROUTE_VERSION = \"r31-active-job-guard\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_runtime_wake_convergence_r42.py",
+      "old": "def test_wake_contract_still_forbids_production_touch():\n    text = ROUTE.read_text(encoding='utf-8')\n    assert 'production_touched' in text\n    assert 'Production is never touched' in text\n",
+      "new": "def test_wake_contract_still_forbids_production_touch():\n    text = ROUTE.read_text(encoding='utf-8')\n    assert 'production_touched' in text\n    assert 'Production is never touched' in text\n\n\ndef test_wake_preserves_active_job_before_runtime_convergence():\n    text = ROUTE.read_text(encoding='utf-8')\n    fn = text.split('def wake_worker(', 1)[1]\n    active_pos = fn.index('active_job_id = _active_job_id()')\n    converge_pos = fn.index('convergence = _converge_development_if_safe()')\n    assert active_pos < converge_pos\n    assert '\"action\": \"active_job_preserved\"' in fn\n    assert '\"state\": \"DEFERRED_ACTIVE_JOB\"' in fn\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/worker_runtime_wake/routes.py", "backend/tests/test_worker_runtime_wake_convergence_r42.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_worker_runtime_wake_convergence_r42.py"]}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
