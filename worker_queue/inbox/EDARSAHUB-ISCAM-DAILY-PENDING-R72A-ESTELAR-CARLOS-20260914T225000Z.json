@@ -1,0 +1,40 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-DAILY-PENDING-R72A-ESTELAR-CARLOS-20260914T225000Z",
+  "created_at_utc": "2026-09-14T22:50:00Z",
+  "requester": {"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ab4a95d56fef730553226acb09290ffe0c7835d2",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "objective": "R72A: obtener todos los dias pendientes de ESTELAR con Runtime existente, en ventanas menores a 200 dias para evitar timeout/truncamiento. Solo lectura. No modificar datos, codigo, Produccion, Sync_Sales, Finanzas_CortesCaja ni la logica certificada de ISCAM. Regla identica al backfill canonico actual: ventas tolerancia 0.05, tickets exactos, pax exactos, detalle con es_kpi_valido=1 y activo=1.",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "estelar_runtime_bounds",
+          "sql": "SELECT MIN(fecha_operacion) AS primera_fecha_runtime, MAX(fecha_operacion) AS ultima_fecha_runtime, COUNT(DISTINCT fecha_operacion) AS dias_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion >= '2023-01-01' AND fecha_operacion < '2026-09-13'"
+        },
+        {
+          "name": "estelar_pending_20250612_20250930",
+          "sql": "WITH rt AS ( SELECT fecha_operacion, SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS ventas_runtime, SUM(CAST(ISNULL(tickets_total,0) AS bigint)) AS tickets_runtime, SUM(CAST(ISNULL(pax_total,0) AS bigint)) AS pax_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion >= '2025-06-12' AND fecha_operacion < '2025-10-01' GROUP BY fecha_operacion ), det AS ( SELECT fecha_operacion, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN CAST(ISNULL(importe_neto,0) AS decimal(19,4)) ELSE 0 END) AS ventas_detalle, COUNT(DISTINCT CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN numero_ticket END) AS tickets_detalle, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN CAST(ISNULL(pax,0) AS bigint) ELSE 0 END) AS pax_detalle FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion >= '2025-06-12' AND fecha_operacion < '2025-10-01' GROUP BY fecha_operacion ) SELECT rt.fecha_operacion AS fecha, CAST(rt.ventas_runtime AS decimal(19,2)) AS ventas_runtime, CAST(ISNULL(det.ventas_detalle,0) AS decimal(19,2)) AS ventas_detalle, CAST(ISNULL(det.ventas_detalle,0)-rt.ventas_runtime AS decimal(19,2)) AS diferencia_ventas, rt.tickets_runtime, ISNULL(det.tickets_detalle,0) AS tickets_detalle, ISNULL(det.tickets_detalle,0)-rt.tickets_runtime AS diferencia_tickets, rt.pax_runtime, ISNULL(det.pax_detalle,0) AS pax_detalle, ISNULL(det.pax_detalle,0)-rt.pax_runtime AS diferencia_pax, CASE WHEN det.fecha_operacion IS NULL THEN 'DETALLE_AUSENTE' ELSE 'DETALLE_NO_CONCILIA' END AS clasificacion FROM rt LEFT JOIN det ON det.fecha_operacion=rt.fecha_operacion WHERE ABS(rt.ventas_runtime-ISNULL(det.ventas_detalle,0)) > 0.05 OR rt.tickets_runtime<>ISNULL(det.tickets_detalle,0) OR rt.pax_runtime<>ISNULL(det.pax_detalle,0) ORDER BY rt.fecha_operacion"
+        },
+        {
+          "name": "estelar_pending_20251001_20260331",
+          "sql": "WITH rt AS ( SELECT fecha_operacion, SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS ventas_runtime, SUM(CAST(ISNULL(tickets_total,0) AS bigint)) AS tickets_runtime, SUM(CAST(ISNULL(pax_total,0) AS bigint)) AS pax_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion >= '2025-10-01' AND fecha_operacion < '2026-04-01' GROUP BY fecha_operacion ), det AS ( SELECT fecha_operacion, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN CAST(ISNULL(importe_neto,0) AS decimal(19,4)) ELSE 0 END) AS ventas_detalle, COUNT(DISTINCT CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN numero_ticket END) AS tickets_detalle, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN CAST(ISNULL(pax,0) AS bigint) ELSE 0 END) AS pax_detalle FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion >= '2025-10-01' AND fecha_operacion < '2026-04-01' GROUP BY fecha_operacion ) SELECT rt.fecha_operacion AS fecha, CAST(rt.ventas_runtime AS decimal(19,2)) AS ventas_runtime, CAST(ISNULL(det.ventas_detalle,0) AS decimal(19,2)) AS ventas_detalle, CAST(ISNULL(det.ventas_detalle,0)-rt.ventas_runtime AS decimal(19,2)) AS diferencia_ventas, rt.tickets_runtime, ISNULL(det.tickets_detalle,0) AS tickets_detalle, ISNULL(det.tickets_detalle,0)-rt.tickets_runtime AS diferencia_tickets, rt.pax_runtime, ISNULL(det.pax_detalle,0) AS pax_detalle, ISNULL(det.pax_detalle,0)-rt.pax_runtime AS diferencia_pax, CASE WHEN det.fecha_operacion IS NULL THEN 'DETALLE_AUSENTE' ELSE 'DETALLE_NO_CONCILIA' END AS clasificacion FROM rt LEFT JOIN det ON det.fecha_operacion=rt.fecha_operacion WHERE ABS(rt.ventas_runtime-ISNULL(det.ventas_detalle,0)) > 0.05 OR rt.tickets_runtime<>ISNULL(det.tickets_detalle,0) OR rt.pax_runtime<>ISNULL(det.pax_detalle,0) ORDER BY rt.fecha_operacion"
+        },
+        {
+          "name": "estelar_pending_20260401_20260912",
+          "sql": "WITH rt AS ( SELECT fecha_operacion, SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS ventas_runtime, SUM(CAST(ISNULL(tickets_total,0) AS bigint)) AS tickets_runtime, SUM(CAST(ISNULL(pax_total,0) AS bigint)) AS pax_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion >= '2026-04-01' AND fecha_operacion < '2026-09-13' GROUP BY fecha_operacion ), det AS ( SELECT fecha_operacion, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN CAST(ISNULL(importe_neto,0) AS decimal(19,4)) ELSE 0 END) AS ventas_detalle, COUNT(DISTINCT CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN numero_ticket END) AS tickets_detalle, SUM(CASE WHEN ISNULL(es_kpi_valido,1)=1 AND ISNULL(activo,1)=1 THEN CAST(ISNULL(pax,0) AS bigint) ELSE 0 END) AS pax_detalle FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ESTELAR' AND fecha_operacion >= '2026-04-01' AND fecha_operacion < '2026-09-13' GROUP BY fecha_operacion ) SELECT rt.fecha_operacion AS fecha, CAST(rt.ventas_runtime AS decimal(19,2)) AS ventas_runtime, CAST(ISNULL(det.ventas_detalle,0) AS decimal(19,2)) AS ventas_detalle, CAST(ISNULL(det.ventas_detalle,0)-rt.ventas_runtime AS decimal(19,2)) AS diferencia_ventas, rt.tickets_runtime, ISNULL(det.tickets_detalle,0) AS tickets_detalle, ISNULL(det.tickets_detalle,0)-rt.tickets_runtime AS diferencia_tickets, rt.pax_runtime, ISNULL(det.pax_detalle,0) AS pax_detalle, ISNULL(det.pax_detalle,0)-rt.pax_runtime AS diferencia_pax, CASE WHEN det.fecha_operacion IS NULL THEN 'DETALLE_AUSENTE' ELSE 'DETALLE_NO_CONCILIA' END AS clasificacion FROM rt LEFT JOIN det ON det.fecha_operacion=rt.fecha_operacion WHERE ABS(rt.ventas_runtime-ISNULL(det.ventas_detalle,0)) > 0.05 OR rt.tickets_runtime<>ISNULL(det.tickets_detalle,0) OR rt.pax_runtime<>ISNULL(det.pax_detalle,0) ORDER BY rt.fecha_operacion"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
