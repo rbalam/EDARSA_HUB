@@ -151,16 +151,24 @@ def _detail_coverage(unidad_codigo: str, desde: str, hasta_exclusivo: str):
               AND (ISNULL(ventas_total,0) <> 0 OR ISNULL(tickets_total,0) <> 0 OR ISNULL(pax_total,0) <> 0)
             GROUP BY CAST(fecha_operacion AS date)
         ),
-        detalle AS (
+        detalle_ticket AS (
             SELECT CAST(fecha_operacion AS date) AS fecha_operacion,
-                   SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) AS ventas_detalle,
-                   COUNT(DISTINCT id_transaccion) AS tickets_detalle,
-                   SUM(CAST(ISNULL(pax,0) AS bigint)) AS pax_detalle
+                   numero_ticket,
+                   SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) AS ventas_ticket,
+                   MAX(CAST(ISNULL(pax,0) AS bigint)) AS pax_ticket
             FROM dbo.Comercial_Inteligencia_VentasDetalleProducto
             WHERE unidad_negocio_id = %s
               AND fecha_operacion >= %s AND fecha_operacion < %s
               AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1
-            GROUP BY CAST(fecha_operacion AS date)
+            GROUP BY CAST(fecha_operacion AS date), numero_ticket
+        ),
+        detalle AS (
+            SELECT fecha_operacion,
+                   SUM(ventas_ticket) AS ventas_detalle,
+                   COUNT(*) AS tickets_detalle,
+                   SUM(pax_ticket) AS pax_detalle
+            FROM detalle_ticket
+            GROUP BY fecha_operacion
         )
         SELECT r.fecha_operacion, r.ventas_runtime, r.tickets_runtime, r.pax_runtime,
                d.fecha_operacion AS detalle_fecha,
