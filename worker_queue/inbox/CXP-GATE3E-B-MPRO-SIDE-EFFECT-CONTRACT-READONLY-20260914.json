@@ -1,0 +1,47 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CXP-GATE3E-B-MPRO-SIDE-EFFECT-CONTRACT-READONLY-20260914",
+  "created_at_utc": "2026-09-14T16:06:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d3d13aa6b7b7b8dc50d13a2dfa9c781456051222",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "GATE 3E-B MPRO SIDE-EFFECT CONTRACT. Descubrir en READ ONLY la logica observable alrededor de Pago_CXP: generacion de Pc_ID, modulos SQL que escriben/consumen Pago_CXP, estados/formas de pago, uso condicional de tablas hijas, relaciones con polizas/contabilidad/bancos y mecanismos de cancelacion/reverso. No ejecutar procedimientos, no escribir, no implementar Payment Executor.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": ["ORIGEN", "130QRO"],
+      "system_types": ["MPRO"],
+      "queries": [
+        {"name":"e3b_runtime_identity","sql":"SELECT @@SERVERNAME AS server_name,DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user"},
+        {"name":"e3b_modules_pago_cxp","sql":"SELECT TOP 200 s.name AS schema_name,o.name AS object_name,o.type_desc,sm.definition FROM sys.sql_modules sm INNER JOIN sys.objects o ON o.object_id=sm.object_id INNER JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE sm.definition LIKE N'%Pago_CXP%' ORDER BY o.type_desc,s.name,o.name"},
+        {"name":"e3b_modules_pc_id","sql":"SELECT TOP 200 s.name AS schema_name,o.name AS object_name,o.type_desc,sm.definition FROM sys.sql_modules sm INNER JOIN sys.objects o ON o.object_id=sm.object_id INNER JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE sm.definition LIKE N'%Pc_ID%' AND (sm.definition LIKE N'%Pago_CXP%' OR sm.definition LIKE N'%Cuenta_X_Pagar%') ORDER BY o.type_desc,s.name,o.name"},
+        {"name":"e3b_related_triggers","sql":"SELECT OBJECT_SCHEMA_NAME(t.parent_id) AS parent_schema,OBJECT_NAME(t.parent_id) AS parent_object,t.name AS trigger_name,t.is_disabled,t.is_instead_of_trigger,sm.definition FROM sys.triggers t LEFT JOIN sys.sql_modules sm ON sm.object_id=t.object_id WHERE OBJECT_NAME(t.parent_id) IN (N'Pago_CXP',N'Cuenta_X_Pagar',N'Pago_Cxp_Comprobante',N'Pago_CXP_Impuesto') ORDER BY parent_object,t.name"},
+        {"name":"e3b_dependency_graph","sql":"SELECT TOP 300 OBJECT_SCHEMA_NAME(d.referencing_id) AS referencing_schema,OBJECT_NAME(d.referencing_id) AS referencing_object,o.type_desc,d.referenced_schema_name,d.referenced_entity_name FROM sys.sql_expression_dependencies d LEFT JOIN sys.objects o ON o.object_id=d.referencing_id WHERE d.referenced_entity_name IN (N'Pago_CXP',N'Cuenta_X_Pagar',N'Pago_Cxp_Comprobante',N'Pago_CXP_Impuesto') OR OBJECT_NAME(d.referencing_id) IN (N'Pago_CXP',N'Cuenta_X_Pagar',N'Pago_Cxp_Comprobante',N'Pago_CXP_Impuesto') ORDER BY referencing_schema,referencing_object,d.referenced_entity_name"},
+        {"name":"e3b_accounting_candidate_objects","sql":"SELECT TOP 200 s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name LIKE N'%Poliza%' OR o.name LIKE N'%Contab%' OR o.name LIKE N'%Banco%' OR o.name LIKE N'%Movimiento%' OR o.name LIKE N'%Egreso%' ORDER BY o.type_desc,s.name,o.name"},
+        {"name":"e3b_accounting_module_links","sql":"SELECT TOP 100 s.name AS schema_name,o.name AS object_name,o.type_desc,sm.definition FROM sys.sql_modules sm INNER JOIN sys.objects o ON o.object_id=sm.object_id INNER JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE sm.definition LIKE N'%Pago_CXP%' AND (sm.definition LIKE N'%Poliza%' OR sm.definition LIKE N'%Banco%' OR sm.definition LIKE N'%Contab%' OR sm.definition LIKE N'%Egreso%' OR sm.definition LIKE N'%Movimiento%') ORDER BY o.type_desc,s.name,o.name"},
+        {"name":"e3b_payment_shape_by_form_state","sql":"SELECT Fp_Cve_Forma_Pago,Es_Cve_Estado,COUNT_BIG(*) AS total FROM dbo.Pago_CXP GROUP BY Fp_Cve_Forma_Pago,Es_Cve_Estado ORDER BY Fp_Cve_Forma_Pago,Es_Cve_Estado"},
+        {"name":"e3b_child_comprobante_by_form","sql":"SELECT p.Fp_Cve_Forma_Pago,COUNT_BIG(*) AS pagos,COUNT_BIG(c.Cxp_Folio) AS comprobantes_relacionados FROM dbo.Pago_CXP p LEFT JOIN dbo.Pago_Cxp_Comprobante c ON c.Cxp_Folio=p.Cxp_Folio AND c.Pc_ID=p.Pc_ID GROUP BY p.Fp_Cve_Forma_Pago ORDER BY p.Fp_Cve_Forma_Pago"},
+        {"name":"e3b_child_impuesto_by_form","sql":"SELECT p.Fp_Cve_Forma_Pago,COUNT_BIG(*) AS pagos,COUNT_BIG(i.Cxp_Folio) AS impuestos_relacionados FROM dbo.Pago_CXP p LEFT JOIN dbo.Pago_CXP_Impuesto i ON i.Cxp_Folio=p.Cxp_Folio AND i.Pc_ID=p.Pc_ID GROUP BY p.Fp_Cve_Forma_Pago ORDER BY p.Fp_Cve_Forma_Pago"},
+        {"name":"e3b_cancel_reverse_modules","sql":"SELECT TOP 100 s.name AS schema_name,o.name AS object_name,o.type_desc,sm.definition FROM sys.sql_modules sm INNER JOIN sys.objects o ON o.object_id=sm.object_id INNER JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE (sm.definition LIKE N'%Pago_CXP%' OR sm.definition LIKE N'%Cuenta_X_Pagar%') AND (sm.definition LIKE N'%Cancel%' OR sm.definition LIKE N'%Baja%' OR sm.definition LIKE N'%Revers%' OR sm.definition LIKE N'%Anul%') ORDER BY o.type_desc,s.name,o.name"}
+      ]
+    }
+  ],
+  "constraints": [
+    "READ ONLY SQL ONLY",
+    "actions must remain empty",
+    "NO INSERT UPDATE DELETE MERGE EXEC EXECUTE DDL SELECT INTO OR MULTI-STATEMENT SQL",
+    "NO procedure execution",
+    "NO individual business transaction rows",
+    "Only metadata, module definitions and aggregates",
+    "NO Production",
+    "NO code or file mutation",
+    "Connections only through PosRuntimeResolver and get_external_sql_connection",
+    "Do not call any module official unless its definition and dependencies substantiate the role",
+    "Do not infer writer safety from table existence alone",
+    "Payment Executor writer remains 0 percent"
+  ]
+}
