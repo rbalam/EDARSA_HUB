@@ -1,0 +1,57 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-UNIVERSAL-WORKER-GENERIC-READONLY-PUBLISHER-CERT-V1-20260914",
+  "created_at_utc": "2026-09-14T17:44:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9ba7deecb25e09e3ccac22283651b7d6fe4e4a98",
+  "production_allowed": false,
+  "objective": "Correccion quirurgica del publisher/certifier para el modo generico READ_ONLY ya certificado por bridge/dispatcher. Mantener intactas las ramas READ_ONLY_SQL y READ_ONLY_REPOSITORY. Para READ_ONLY_COMPLETE sin evidencia SQL/repository, certificar unicamente si files_changed=[]; tests=PASS; quality_gate=PASS; blockers=[]; production_touched=false; checks no vacios; todos los checks tienen status=PASS; y cada check es exclusivamente py_compile, pytest o git_diff_check. Cualquier check desconocido, frontend_build, sql_readonly_audit sin evidencia estructurada, cambio de archivo, fallo, blocker o Production debe permanecer NOT_CERTIFIED. No tocar Agent Harness funcional, backend/core, SQL, Mongo, RBAC ni Production.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "old": "def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:\n",
+      "new": "GENERIC_READ_ONLY_CHECKS = frozenset({\"py_compile\", \"pytest\", \"git_diff_check\"})\n\n\ndef generic_readonly_evidence(result: dict[str, Any]) -> dict[str, Any] | None:\n    checks = result.get(\"checks\") or []\n    if not isinstance(checks, list) or not checks:\n        return None\n    sanitized = []\n    for check in checks:\n        if not isinstance(check, dict):\n            return None\n        kind = str(check.get(\"type\") or \"\")\n        if kind not in GENERIC_READ_ONLY_CHECKS:\n            return None\n        if str(check.get(\"status\") or \"\").upper() != \"PASS\":\n            return None\n        sanitized.append({\"type\": kind, \"status\": \"PASS\"})\n    return {\"checks\": sanitized}\n\n\ndef certification_evidence(result: dict[str, Any]) -> dict[str, Any]:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "old": "    if result.get(\"status\") == \"READ_ONLY_COMPLETE\":\n        readonly_evidence = sanitize_readonly_evidence(result)\n        repository_evidence = sanitize_repository_evidence(result)\n        if (\n            str(result.get(\"tests\", \"\")).upper() == \"PASS\"\n            and str(result.get(\"quality_gate\", \"\")).upper() == \"PASS\"\n            and result.get(\"production_touched\") is False\n            and not (result.get(\"blockers\") or [])\n            and (readonly_evidence is not None or repository_evidence is not None)\n        ):\n            return {\n                \"certified\": True,\n                \"certification\": \"CERTIFIED_READ_ONLY\",\n                \"work_completion\": \"COMPLETE\",\n                \"percent_complete\": 100,\n                \"certification_basis\": \"READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE\" if readonly_evidence is not None else \"READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE\",\n            }\n        return {\n            **pending,\n            \"certification\": \"NOT_CERTIFIED\",\n            \"work_completion\": \"NOT_CERTIFIED\",\n            \"percent_complete\": min(int(result.get(\"percent_complete\") or 0), 95),\n        }\n",
+      "new": "    if result.get(\"status\") == \"READ_ONLY_COMPLETE\":\n        readonly_evidence = sanitize_readonly_evidence(result)\n        repository_evidence = sanitize_repository_evidence(result)\n        generic_evidence = generic_readonly_evidence(result)\n        base_pass = (\n            str(result.get(\"tests\", \"\")).upper() == \"PASS\"\n            and str(result.get(\"quality_gate\", \"\")).upper() == \"PASS\"\n            and result.get(\"production_touched\") is False\n            and not (result.get(\"blockers\") or [])\n        )\n        if base_pass and (readonly_evidence is not None or repository_evidence is not None):\n            return {\n                \"certified\": True,\n                \"certification\": \"CERTIFIED_READ_ONLY\",\n                \"work_completion\": \"COMPLETE\",\n                \"percent_complete\": 100,\n                \"certification_basis\": \"READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE\" if readonly_evidence is not None else \"READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE\",\n            }\n        if base_pass and generic_evidence is not None and (result.get(\"files_changed\") or []) == []:\n            return {\n                \"certified\": True,\n                \"certification\": \"CERTIFIED_READ_ONLY\",\n                \"work_completion\": \"COMPLETE\",\n                \"percent_complete\": 100,\n                \"certification_basis\": \"GENERIC_READ_ONLY_NON_MUTATING_CHECKS_PASS\",\n            }\n        return {\n            **pending,\n            \"certification\": \"NOT_CERTIFIED\",\n            \"work_completion\": \"NOT_CERTIFIED\",\n            \"percent_complete\": min(int(result.get(\"percent_complete\") or 0), 95),\n        }\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_readonly_result_publisher.py",
+      "old": "def test_readonly_without_evidence_is_not_certified():\n    publisher = _publisher()\n    result = _result()\n    result[\"checks\"] = []\n    assert publisher.certification_evidence(result)[\"certification\"] == \"NOT_CERTIFIED\"\n",
+      "new": "def test_readonly_without_evidence_is_not_certified():\n    publisher = _publisher()\n    result = _result()\n    result[\"checks\"] = []\n    assert publisher.certification_evidence(result)[\"certification\"] == \"NOT_CERTIFIED\"\n\n\ndef _generic_result():\n    return {\n        \"status\": \"READ_ONLY_COMPLETE\",\n        \"tests\": \"PASS\",\n        \"quality_gate\": \"PASS\",\n        \"production_touched\": False,\n        \"blockers\": [],\n        \"files_changed\": [],\n        \"percent_complete\": 100,\n        \"checks\": [\n            {\"type\": \"py_compile\", \"status\": \"PASS\"},\n            {\"type\": \"pytest\", \"status\": \"PASS\"},\n            {\"type\": \"git_diff_check\", \"status\": \"PASS\"},\n        ],\n    }\n\n\ndef test_generic_readonly_certifies_only_non_mutating_pass_checks():\n    publisher = _publisher()\n    evidence = publisher.certification_evidence(_generic_result())\n    assert evidence[\"certification\"] == \"CERTIFIED_READ_ONLY\"\n    assert evidence[\"work_completion\"] == \"COMPLETE\"\n    assert evidence[\"percent_complete\"] == 100\n    assert evidence[\"certification_basis\"] == \"GENERIC_READ_ONLY_NON_MUTATING_CHECKS_PASS\"\n\n\ndef test_generic_readonly_rejects_disallowed_or_failed_checks():\n    publisher = _publisher()\n    for check in (\n        {\"type\": \"frontend_build\", \"status\": \"PASS\"},\n        {\"type\": \"sql_readonly_audit\", \"status\": \"PASS\"},\n        {\"type\": \"unknown\", \"status\": \"PASS\"},\n        {\"type\": \"pytest\", \"status\": \"FAIL\"},\n    ):\n        result = _generic_result()\n        result[\"checks\"] = [check]\n        assert publisher.certification_evidence(result)[\"certification\"] == \"NOT_CERTIFIED\"\n\n\ndef test_generic_readonly_rejects_changed_files_production_or_blockers():\n    publisher = _publisher()\n    changed = _generic_result()\n    changed[\"files_changed\"] = [\"backend/x.py\"]\n    assert publisher.certification_evidence(changed)[\"certification\"] == \"NOT_CERTIFIED\"\n\n    production = _generic_result()\n    production[\"production_touched\"] = True\n    assert publisher.certification_evidence(production)[\"certification\"] == \"NOT_CERTIFIED\"\n\n    blocked = _generic_result()\n    blocked[\"blockers\"] = [\"x\"]\n    assert publisher.certification_evidence(blocked)[\"certification\"] == \"NOT_CERTIFIED\"\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "backend/tests/test_worker_readonly_result_publisher.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_readonly_result_publisher.py",
+        "backend/tests/test_worker_repository_contract_audit.py",
+        "backend/tests/test_worker_generic_readonly.py",
+        "backend/tests/test_worker_sql_readonly_audit.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
