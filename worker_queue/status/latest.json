@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "03aed3f490f48133eb07eb7b6d10b077eafac6e3",
-  "generated_at_utc": "2026-09-14T17:25:18Z",
+  "generated_at_utc": "2026-09-14T17:26:36Z",
   "history": {
-    "done_total_local": 446,
+    "done_total_local": 447,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 481,
-    "results_total_local": 802
+    "results_total_local": 803
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 487,
+      "age_seconds": 565,
       "job_id": "CXP-GATE3E-B-MPRO-SIDE-EFFECT-CONTRACT-READONLY-20260914",
       "reasons": [
         "SUMMARY_LANGUAGE_MUST_BE_ES"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 465,
+      "age_seconds": 543,
       "job_id": "CXP-GATE3E-C-SOFTRESTAURANT-SIDE-EFFECT-CONTRACT-READONLY-20260914",
       "reasons": [
         "SUMMARY_LANGUAGE_MUST_BE_ES"
@@ -31,19 +31,25 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 53,
+      "age_seconds": 131,
       "job_id": "EDARSA-LOGISTICS-GATE0-REPOSITORY-CONTRACT-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 323,
+      "age_seconds": 401,
       "job_id": "EDARSAHUB-INVENTARIOS-TARGETED-RECOVERY-R1-20260914T094000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 105,
+      "age_seconds": 9,
+      "job_id": "RRR-GATE4D-R7-CANONICAL-RUNNER-ROLLBACK-DIAGNOSTIC-20260914",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 183,
       "job_id": "UNIVERSAL-WORKER-READ-ONLY-REPOSITORY-DISCOVERY-MODE-V1",
       "reason": null,
       "state": "RESULT_READY"
@@ -56,14 +62,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 2,
-  "queue_result_ready_recent": 3,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-14T17:25:15Z",
-    "last_receive_utc": "2026-09-14T17:25:17Z",
-    "last_terminal_utc": "2026-09-14T17:24:24Z",
+    "last_cycle_utc": "2026-09-14T17:26:31Z",
+    "last_receive_utc": "2026-09-14T17:26:32Z",
+    "last_terminal_utc": "2026-09-14T17:26:27Z",
     "pid": "33221"
   },
   "schema": "edarsahub.worker-health.v3",
