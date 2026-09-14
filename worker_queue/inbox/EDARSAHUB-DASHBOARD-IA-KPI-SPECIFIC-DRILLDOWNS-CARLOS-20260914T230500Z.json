@@ -1,0 +1,152 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-DASHBOARD-IA-KPI-SPECIFIC-DRILLDOWNS-CARLOS-20260914T230500Z",
+  "created_at_utc": "2026-09-14T23:05:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Inteligencia Comercial-Dasboard IA"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ab4a95d56fef730553226acb09290ffe0c7835d2",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Hacer que cada KPI del Dashboard IA abra un drilldown ejecutivo diferente, reutilizando la misma fuente canonica de tickets pero enfocando columnas, orden y titulo segun el KPI. Ventas debe mostrar tickets y venta; PAX Promedio debe mostrar venta por PAX; Cheque Promedio debe mostrar importe por cheque y desviacion contra el promedio; PAX Total debe priorizar PAX por ticket; Cheques Emitidos debe mostrar la relacion de cheques; Propinas debe mostrar propina y porcentaje por ticket. Mantener la reconstruccion generica de tickets como accion separada y conservar el segundo nivel ticket -> productos.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/DashboardIA.jsx",
+      "old": "  const [drill, setDrill] = useState(false);\n  const reqRef = useRef(0);",
+      "new": "  const [drill, setDrill] = useState(false);\n  const [drillKpi, setDrillKpi] = useState(null);\n  const reqRef = useRef(0);",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/DashboardIA.jsx",
+      "old": "  const kpiPrincipales = [\n    { title: 'Acumulado cerrado', value: formatMoney(data.ventasTotales), icon: DollarSign, color: 'emerald', trend: data.trends?.ventas_totales },\n    { title: 'PAX Promedio', sub: 'Ventas ÷ PAX', value: money2(data.paxPromedio), icon: Users, color: 'cyan', trend: null },\n    { title: 'Cheque Promedio', sub: 'Ventas ÷ cheques', value: money2(data.chequePromedio), icon: Receipt, color: 'violet', trend: null },\n  ];\n  const kpiSecundarios = [\n    { title: 'PAX Total', value: data.paxTotal.toLocaleString(), icon: Users, color: 'blue', trend: data.trends?.pax_total },\n    { title: 'Cheques Emitidos', value: data.chequesTotal.toLocaleString(), icon: Receipt, color: 'purple', trend: data.trends?.cheques_total },\n    { title: 'Propinas', value: formatMoney(data.propinaTotal), icon: TrendingUp, color: 'amber', trend: data.trends?.propinas_total },\n  ];",
+      "new": "  const kpiPrincipales = [\n    { title: 'Acumulado cerrado', value: formatMoney(data.ventasTotales), rawValue: data.ventasTotales, metric: 'ventas', drillTitle: 'Ventas · Tickets del período', icon: DollarSign, color: 'emerald', trend: data.trends?.ventas_totales },\n    { title: 'PAX Promedio', sub: 'Ventas ÷ PAX', value: money2(data.paxPromedio), rawValue: data.paxPromedio, metric: 'pax_promedio', drillTitle: 'PAX Promedio · Consumo por persona', icon: Users, color: 'cyan', trend: null },\n    { title: 'Cheque Promedio', sub: 'Ventas ÷ cheques', value: money2(data.chequePromedio), rawValue: data.chequePromedio, metric: 'cheque_promedio', drillTitle: 'Cheque Promedio · Distribución por ticket', icon: Receipt, color: 'violet', trend: null },\n  ];\n  const kpiSecundarios = [\n    { title: 'PAX Total', value: data.paxTotal.toLocaleString(), rawValue: data.paxTotal, metric: 'pax_total', drillTitle: 'PAX Total · Comensales por ticket', icon: Users, color: 'blue', trend: data.trends?.pax_total },\n    { title: 'Cheques Emitidos', value: data.chequesTotal.toLocaleString(), rawValue: data.chequesTotal, metric: 'cheques', drillTitle: 'Cheques Emitidos · Relación de tickets', icon: Receipt, color: 'purple', trend: data.trends?.cheques_total },\n    { title: 'Propinas', value: formatMoney(data.propinaTotal), rawValue: data.propinaTotal, metric: 'propinas', drillTitle: 'Propinas · Detalle por ticket', icon: TrendingUp, color: 'amber', trend: data.trends?.propinas_total },\n  ];",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/DashboardIA.jsx",
+      "old": "      <button onClick={() => setDrill(true)} data-testid={`kpi-card-${idx}`}",
+      "new": "      <button onClick={() => { setDrillKpi(kpi); setDrill(true); }} data-testid={`kpi-card-${idx}`}",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/DashboardIA.jsx",
+      "old": "        <p className=\"text-[10px] text-slate-500 mt-2 flex items-center gap-1\"><Search className=\"h-3 w-3\" /> Ver tickets</p>",
+      "new": "        <p className=\"text-[10px] text-slate-500 mt-2 flex items-center gap-1\"><Search className=\"h-3 w-3\" /> Ver detalle del KPI</p>",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/DashboardIA.jsx",
+      "old": "          <button onClick={() => setDrill(true)} data-testid=\"dashboard-drilldown-btn\"",
+      "new": "          <button onClick={() => { setDrillKpi(null); setDrill(true); }} data-testid=\"dashboard-drilldown-btn\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/DashboardIA.jsx",
+      "old": "      <TicketDrilldownModal open={drill} onClose={() => setDrill(false)}\n        unidad={unidadSeleccionada} periodo={periodoActivo}\n        fechaInicio={data.fechaInicio || (esCustom ? rangoInicio : undefined)}\n        fechaFin={data.fechaFin || (esCustom ? rangoFin : undefined)}\n        titulo=\"Reconstrucción de Tickets\" />",
+      "new": "      <TicketDrilldownModal open={drill} onClose={() => setDrill(false)}\n        unidad={unidadSeleccionada} periodo={periodoActivo}\n        fechaInicio={data.fechaInicio || (esCustom ? rangoInicio : undefined)}\n        fechaFin={data.fechaFin || (esCustom ? rangoFin : undefined)}\n        metric={drillKpi?.metric || 'tickets'}\n        kpiValor={drillKpi?.rawValue}\n        titulo={drillKpi?.drillTitle || 'Reconstrucción de Tickets'} />",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/components/TicketDrilldownModal.jsx",
+      "old": "import { ExportButtons } from './ExportButtons';\n\nexport function TicketDrilldownModal({",
+      "new": "import { ExportButtons } from './ExportButtons';\n\nconst DEFAULT_TICKET_COLUMNS = [\n  { key: 'fecha', label: 'FECHA' },\n  { key: 'hora', label: 'HORA' },\n  { key: 'unidad', label: 'UNIDAD' },\n  { key: 'numero_ticket', label: 'TICKET', mono: true },\n  { key: 'pax', label: 'PAX', align: 'center', format: 'number' },\n  { key: 'lineas', label: 'LÍNEAS', align: 'center', format: 'number' },\n  { key: 'ventas', label: 'VENTAS', align: 'right', format: 'money', emphasis: true },\n];\n\nconst KPI_TICKET_COLUMNS = {\n  tickets: DEFAULT_TICKET_COLUMNS,\n  ventas: [\n    { key: 'fecha', label: 'FECHA' },\n    { key: 'hora', label: 'HORA' },\n    { key: 'numero_ticket', label: 'TICKET', mono: true },\n    { key: 'pax', label: 'PAX', align: 'center', format: 'number' },\n    { key: 'ventas', label: 'VENTAS', align: 'right', format: 'money', emphasis: true },\n  ],\n  pax_promedio: [\n    { key: 'fecha', label: 'FECHA' },\n    { key: 'hora', label: 'HORA' },\n    { key: 'numero_ticket', label: 'TICKET', mono: true },\n    { key: 'pax', label: 'PAX', align: 'center', format: 'number' },\n    { key: 'ventas', label: 'VENTAS', align: 'right', format: 'money' },\n    { key: 'venta_por_pax', label: 'VENTA / PAX', align: 'right', format: 'money', emphasis: true },\n  ],\n  cheque_promedio: [\n    { key: 'fecha', label: 'FECHA' },\n    { key: 'hora', label: 'HORA' },\n    { key: 'numero_ticket', label: 'TICKET', mono: true },\n    { key: 'pax', label: 'PAX', align: 'center', format: 'number' },\n    { key: 'ventas', label: 'IMPORTE CHEQUE', align: 'right', format: 'money', emphasis: true },\n    { key: 'vs_promedio', label: 'VS PROMEDIO', align: 'right', format: 'money' },\n  ],\n  pax_total: [\n    { key: 'fecha', label: 'FECHA' },\n    { key: 'hora', label: 'HORA' },\n    { key: 'numero_ticket', label: 'TICKET', mono: true },\n    { key: 'pax', label: 'PAX', align: 'center', format: 'number', emphasis: true },\n    { key: 'ventas', label: 'VENTAS', align: 'right', format: 'money' },\n  ],\n  cheques: [\n    { key: 'fecha', label: 'FECHA' },\n    { key: 'hora', label: 'HORA' },\n    { key: 'numero_ticket', label: 'CHEQUE / TICKET', mono: true, emphasis: true },\n    { key: 'pax', label: 'PAX', align: 'center', format: 'number' },\n    { key: 'ventas', label: 'IMPORTE', align: 'right', format: 'money' },\n  ],\n  propinas: [\n    { key: 'fecha', label: 'FECHA' },\n    { key: 'hora', label: 'HORA' },\n    { key: 'numero_ticket', label: 'TICKET', mono: true },\n    { key: 'ventas', label: 'VENTAS', align: 'right', format: 'money' },\n    { key: 'propina', label: 'PROPINA', align: 'right', format: 'money', emphasis: true },\n    { key: 'propina_pct', label: '% PROPINA', align: 'right', format: 'percent' },\n  ],\n};\n\nconst KPI_SORT_KEY = {\n  ventas: 'ventas',\n  pax_promedio: 'venta_por_pax',\n  cheque_promedio: 'ventas',\n  pax_total: 'pax',\n  propinas: 'propina',\n};\n\nexport function TicketDrilldownModal({",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/components/TicketDrilldownModal.jsx",
+      "old": "  fechaInicio,\n  fechaFin,\n  titulo = 'Reconstrucción de Tickets',\n}) {",
+      "new": "  fechaInicio,\n  fechaFin,\n  metric = 'tickets',\n  kpiValor = null,\n  titulo = 'Reconstrucción de Tickets',\n}) {",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/components/TicketDrilldownModal.jsx",
+      "old": "      periodo,\n      fechaInicio,\n      fechaFin,\n    }),\n    [unidad, periodo, fechaInicio, fechaFin]\n  );",
+      "new": "      periodo,\n      fechaInicio,\n      fechaFin,\n      metric,\n      kpiValor,\n    }),\n    [unidad, periodo, fechaInicio, fechaFin, metric, kpiValor]\n  );",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/components/TicketDrilldownModal.jsx",
+      "old": "    return {\n      tickets: payload.items || [],\n      filters: {",
+      "new": "    const normalizedTickets = (payload.items || []).map((ticket) => {\n      const ventas = Number(ticket.ventas || 0);\n      const pax = Number(ticket.pax || 0);\n      const propina = Number(ticket.propina || 0);\n      const promedio = Number(currentScope?.kpiValor || 0);\n\n      return {\n        ...ticket,\n        venta_por_pax: pax > 0 ? ventas / pax : 0,\n        vs_promedio: ventas - promedio,\n        propina_pct: ventas > 0 ? (propina / ventas) * 100 : 0,\n      };\n    });\n\n    const sortKey = KPI_SORT_KEY[currentScope?.metric];\n    const tickets = sortKey\n      ? [...normalizedTickets].sort(\n          (a, b) => Number(b[sortKey] || 0) - Number(a[sortKey] || 0)\n        )\n      : normalizedTickets;\n\n    return {\n      tickets,\n      filters: {",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/components/TicketDrilldownModal.jsx",
+      "old": "  const renderExportActions = useCallback(({",
+      "new": "  const ticketColumns = KPI_TICKET_COLUMNS[metric] || DEFAULT_TICKET_COLUMNS;\n\n  const renderExportActions = useCallback(({",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/components/TicketDrilldownModal.jsx",
+      "old": "          columns={[\n            { key: 'fecha', label: 'Fecha' },\n            { key: 'hora', label: 'Hora' },\n            { key: 'unidad', label: 'Unidad' },\n            { key: 'numero_ticket', label: 'Ticket' },\n            { key: 'pax', label: 'PAX' },\n            { key: 'lineas', label: 'Líneas' },\n            { key: 'ventas', label: 'Ventas' },\n            { key: 'propina', label: 'Propina' },\n          ]}",
+      "new": "          columns={ticketColumns.map(({ key, label }) => ({ key, label }))}",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/components/TicketDrilldownModal.jsx",
+      "old": "  }, []);\n\n  return (\n    <CanonicalTicketDrilldown",
+      "new": "  }, [ticketColumns]);\n\n  return (\n    <CanonicalTicketDrilldown",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/components/TicketDrilldownModal.jsx",
+      "old": "      title={titulo}\n      loadTickets={loadTickets}",
+      "new": "      title={titulo}\n      ticketColumns={ticketColumns}\n      loadTickets={loadTickets}",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/analytics/CanonicalTicketDrilldown.jsx",
+      "old": "const formatMoney = (value) => (\n  moneyFormatter.format(Number(value || 0))\n);\n\nfunction EmptyState",
+      "new": "const formatMoney = (value) => (\n  moneyFormatter.format(Number(value || 0))\n);\n\nconst DEFAULT_TICKET_COLUMNS = [\n  { key: 'fecha', label: 'FECHA' },\n  { key: 'hora', label: 'HORA' },\n  { key: 'unidad', label: 'UNIDAD' },\n  { key: 'numero_ticket', label: 'TICKET', mono: true },\n  { key: 'pax', label: 'PAX', align: 'center', format: 'number' },\n  { key: 'lineas', label: 'LÍNEAS', align: 'center', format: 'number' },\n  { key: 'ventas', label: 'VENTAS', align: 'right', format: 'money', emphasis: true },\n];\n\nconst formatTicketValue = (ticket, column) => {\n  const value = ticket?.[column.key];\n\n  if (column.format === 'money') return formatMoney(value);\n  if (column.format === 'number') {\n    return Number(value || 0).toLocaleString('es-MX');\n  }\n  if (column.format === 'percent') {\n    return `${Number(value || 0).toFixed(2)}%`;\n  }\n\n  return value === null || value === undefined || value === ''\n    ? '—'\n    : value;\n};\n\nfunction EmptyState",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/analytics/CanonicalTicketDrilldown.jsx",
+      "old": "  title = 'Reconstrucción de tickets',\n  loadTickets,",
+      "new": "  title = 'Reconstrucción de tickets',\n  ticketColumns = DEFAULT_TICKET_COLUMNS,\n  loadTickets,",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/analytics/CanonicalTicketDrilldown.jsx",
+      "old": "                <thead className=\"sticky top-0 bg-slate-800\">\n                  <tr className=\"text-left text-xs text-slate-400\">\n                    <th className=\"px-4 py-2\">FECHA</th>\n                    <th className=\"px-4 py-2\">HORA</th>\n                    <th className=\"px-4 py-2\">UNIDAD</th>\n                    <th className=\"px-4 py-2\">TICKET</th>\n                    <th className=\"px-4 py-2 text-center\">PAX</th>\n                    <th className=\"px-4 py-2 text-center\">LÍNEAS</th>\n                    <th className=\"px-4 py-2 text-right\">VENTAS</th>\n                  </tr>\n                </thead>",
+      "new": "                <thead className=\"sticky top-0 bg-slate-800\">\n                  <tr className=\"text-left text-xs text-slate-400\">\n                    {ticketColumns.map((column) => (\n                      <th\n                        key={column.key}\n                        className={`px-4 py-2 ${\n                          column.align === 'right'\n                            ? 'text-right'\n                            : column.align === 'center'\n                              ? 'text-center'\n                              : 'text-left'\n                        }`}\n                      >\n                        {column.label}\n                      </th>\n                    ))}\n                  </tr>\n                </thead>",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/comercial/analytics/CanonicalTicketDrilldown.jsx",
+      "old": "                        <td className=\"px-4 py-2 text-slate-300\">\n                          {ticket.fecha}\n                        </td>\n                        <td className=\"px-4 py-2 text-slate-400\">\n                          {ticket.hora}\n                        </td>\n                        <td className=\"px-4 py-2 text-slate-300\">\n                          {ticket.unidad}\n                        </td>\n                        <td className=\"px-4 py-2 font-mono text-emerald-400\">\n                          {ticket.numero_ticket || ticket.folio}\n                        </td>\n                        <td className=\"px-4 py-2 text-center text-slate-300\">\n                          {ticket.pax || 0}\n                        </td>\n                        <td className=\"px-4 py-2 text-center text-slate-400\">\n                          {ticket.lineas || 0}\n                        </td>\n                        <td className=\"px-4 py-2 text-right font-semibold text-white\">\n                          {formatMoney(ticket.ventas)}\n                        </td>",
+      "new": "                        {ticketColumns.map((column) => {\n                          const alignClass = column.align === 'right'\n                            ? 'text-right'\n                            : column.align === 'center'\n                              ? 'text-center'\n                              : 'text-left';\n                          const valueClass = column.emphasis\n                            ? 'font-semibold text-emerald-400'\n                            : column.mono\n                              ? 'font-mono text-emerald-400'\n                              : 'text-slate-300';\n\n                          return (\n                            <td\n                              key={column.key}\n                              className={`px-4 py-2 ${alignClass} ${valueClass}`}\n                            >\n                              {formatTicketValue(ticket, column)}\n                            </td>\n                          );\n                        })}",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "frontend_build", "directory": "frontend"}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
