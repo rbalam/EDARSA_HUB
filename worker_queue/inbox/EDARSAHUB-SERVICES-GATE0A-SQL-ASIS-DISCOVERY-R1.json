@@ -1,0 +1,65 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SERVICES-GATE0A-SQL-ASIS-DISCOVERY-R1",
+  "created_at_utc": "2026-09-14T18:15:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d9695e261fafa2c27a3fd7e7f50b3113fc731f05",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Gate 0A SQL AS-IS de EDARSAHUB Services. Auditar exclusivamente la base SQL canonica para identificar capacidades existentes y colisiones antes de disenar Prestadores de Servicios, Construction, Fabrication, Interiors and Design y Real Estate and Land. La evidencia debe permitir clasificar posteriormente REUSE, EXTEND, CONSOLIDATE, NEW o DO_NOT_CREATE. No DDL, no DML, no EXEC y no Production.",
+  "constraints": [
+    "EDARSAHUB SQL Server es la fuente canonica",
+    "No Mongo como fuente operativa o de verdad",
+    "No LIVE",
+    "No hardcodear IDs empresas unidades monedas idiomas zonas horarias ni reglas sectoriales",
+    "No crear tablas ni modificar esquema",
+    "No duplicar catalogos o entidades existentes",
+    "No crecer backend/core",
+    "Respetar RBAC y estructura multiempresa existente",
+    "No tocar Scheduler NetPay ni Produccion"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "SVC_00_CANONICAL_IDENTITY",
+          "sql": "SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS database_user;"
+        },
+        {
+          "name": "SVC_01_CANDIDATE_OBJECTS",
+          "sql": "SELECT TOP (2500) s.name AS schema_name,o.type_desc,o.name AS object_name,o.create_date,o.modify_date FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND o.type IN ('U','V','P','FN','IF','TF') AND (LOWER(o.name) LIKE '%servicio%' OR LOWER(o.name) LIKE '%prestador%' OR LOWER(o.name) LIKE '%cliente%' OR LOWER(o.name) LIKE '%proveedor%' OR LOWER(o.name) LIKE '%persona%' OR LOWER(o.name) LIKE '%empleado%' OR LOWER(o.name) LIKE '%proyecto%' OR LOWER(o.name) LIKE '%obra%' OR LOWER(o.name) LIKE '%orden%' OR LOWER(o.name) LIKE '%evento%' OR LOWER(o.name) LIKE '%contrato%' OR LOWER(o.name) LIKE '%cotiz%' OR LOWER(o.name) LIKE '%presupuesto%' OR LOWER(o.name) LIKE '%anticipo%' OR LOWER(o.name) LIKE '%estimacion%' OR LOWER(o.name) LIKE '%comision%' OR LOWER(o.name) LIKE '%invent%' OR LOWER(o.name) LIKE '%almacen%' OR LOWER(o.name) LIKE '%material%' OR LOWER(o.name) LIKE '%insumo%' OR LOWER(o.name) LIKE '%costo%' OR LOWER(o.name) LIKE '%activo%' OR LOWER(o.name) LIKE '%maquinaria%' OR LOWER(o.name) LIKE '%fabric%' OR LOWER(o.name) LIKE '%produ%' OR LOWER(o.name) LIKE '%merma%' OR LOWER(o.name) LIKE '%document%' OR LOWER(o.name) LIKE '%inmueble%' OR LOWER(o.name) LIKE '%predio%' OR LOWER(o.name) LIKE '%terreno%' OR LOWER(o.name) LIKE '%lote%' OR LOWER(o.name) LIKE '%parcela%' OR LOWER(o.name) LIKE '%catastr%' OR LOWER(o.name) LIKE '%escritura%' OR LOWER(o.name) LIKE '%notari%' OR LOWER(o.name) LIKE '%propiedad%' OR LOWER(o.name) LIKE '%promesa%' OR LOWER(o.name) LIKE '%cartera%' OR LOWER(o.name) LIKE '%financ%' OR LOWER(o.name) LIKE '%gis%' OR LOWER(o.name) LIKE '%geo%' OR LOWER(o.name) LIKE '%cad%' OR LOWER(o.name) LIKE '%bim%' OR LOWER(o.name) LIKE '%cocina%' OR LOWER(o.name) LIKE '%mueble%' OR LOWER(o.name) LIKE '%carpint%' OR LOWER(o.name) LIKE '%alumin%' OR LOWER(o.name) LIKE '%cancel%' OR LOWER(o.name) LIKE '%vidrio%' OR LOWER(o.name) LIKE '%piso%' OR LOWER(o.name) LIKE '%recub%' OR LOWER(o.name) LIKE '%jardin%' OR LOWER(o.name) LIKE '%electric%' OR LOWER(o.name) LIKE '%plomer%' OR LOWER(o.name) LIKE '%arquitect%' OR LOWER(o.name) LIKE '%ingenier%' OR LOWER(o.name) LIKE '%constru%') ORDER BY s.name,o.type_desc,o.name;"
+        },
+        {
+          "name": "SVC_02_CANDIDATE_COLUMNS",
+          "sql": "SELECT TOP (5000) s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.is_ms_shipped=0 AND (LOWER(t.name) LIKE '%servicio%' OR LOWER(t.name) LIKE '%cliente%' OR LOWER(t.name) LIKE '%proveedor%' OR LOWER(t.name) LIKE '%proyecto%' OR LOWER(t.name) LIKE '%obra%' OR LOWER(t.name) LIKE '%contrato%' OR LOWER(t.name) LIKE '%cotiz%' OR LOWER(t.name) LIKE '%presupuesto%' OR LOWER(t.name) LIKE '%comision%' OR LOWER(t.name) LIKE '%invent%' OR LOWER(t.name) LIKE '%material%' OR LOWER(t.name) LIKE '%costo%' OR LOWER(t.name) LIKE '%fabric%' OR LOWER(t.name) LIKE '%inmueble%' OR LOWER(t.name) LIKE '%predio%' OR LOWER(t.name) LIKE '%terreno%' OR LOWER(t.name) LIKE '%lote%' OR LOWER(t.name) LIKE '%escritura%' OR LOWER(t.name) LIKE '%notari%') ORDER BY s.name,t.name,c.column_id;"
+        },
+        {
+          "name": "SVC_03_FOREIGN_KEYS",
+          "sql": "SELECT TOP (3000) schp.name AS parent_schema,tp.name AS parent_table,cp.name AS parent_column,fk.name AS fk_name,schr.name AS referenced_schema,tr.name AS referenced_table,cr.name AS referenced_column FROM sys.foreign_key_columns fkc JOIN sys.foreign_keys fk ON fk.object_id=fkc.constraint_object_id JOIN sys.tables tp ON tp.object_id=fkc.parent_object_id JOIN sys.schemas schp ON schp.schema_id=tp.schema_id JOIN sys.columns cp ON cp.object_id=fkc.parent_object_id AND cp.column_id=fkc.parent_column_id JOIN sys.tables tr ON tr.object_id=fkc.referenced_object_id JOIN sys.schemas schr ON schr.schema_id=tr.schema_id JOIN sys.columns cr ON cr.object_id=fkc.referenced_object_id AND cr.column_id=fkc.referenced_column_id WHERE LOWER(tp.name) LIKE '%cliente%' OR LOWER(tp.name) LIKE '%proveedor%' OR LOWER(tp.name) LIKE '%proyecto%' OR LOWER(tp.name) LIKE '%obra%' OR LOWER(tp.name) LIKE '%contrato%' OR LOWER(tp.name) LIKE '%comision%' OR LOWER(tp.name) LIKE '%invent%' OR LOWER(tp.name) LIKE '%material%' OR LOWER(tp.name) LIKE '%predio%' OR LOWER(tp.name) LIKE '%lote%' OR LOWER(tr.name) LIKE '%cliente%' OR LOWER(tr.name) LIKE '%proveedor%' OR LOWER(tr.name) LIKE '%empresa%' OR LOWER(tr.name) LIKE '%usuario%' OR LOWER(tr.name) LIKE '%producto%' ORDER BY schp.name,tp.name,fk.name;"
+        },
+        {
+          "name": "SVC_04_KEYS_INDEXES",
+          "sql": "SELECT TOP (4000) s.name AS schema_name,t.name AS table_name,i.name AS index_name,i.is_primary_key,i.is_unique,i.type_desc,c.name AS column_name,ic.key_ordinal,ic.is_included_column FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.indexes i ON i.object_id=t.object_id JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE t.is_ms_shipped=0 AND i.index_id>0 AND (LOWER(t.name) LIKE '%cliente%' OR LOWER(t.name) LIKE '%proveedor%' OR LOWER(t.name) LIKE '%proyecto%' OR LOWER(t.name) LIKE '%obra%' OR LOWER(t.name) LIKE '%contrato%' OR LOWER(t.name) LIKE '%comision%' OR LOWER(t.name) LIKE '%invent%' OR LOWER(t.name) LIKE '%material%' OR LOWER(t.name) LIKE '%predio%' OR LOWER(t.name) LIKE '%lote%') ORDER BY s.name,t.name,i.index_id,ic.key_ordinal;"
+        },
+        {
+          "name": "SVC_05_CANONICAL_SHARED_EXACT_OBJECTS",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name IN ('Cliente_Catalogo','Cliente_Contactos','Cliente_Direcciones','Venta_Cotizaciones','Venta_Pedidos','CRM_Leads','CRM_Oportunidades','COA_Expedientes','COA_ExpedienteEventos','COA_ExpedienteReferencias','COA_ReglasComision','COA_ReglasComisionCondiciones','COA_ComisionAplicada','Usuario_Catalogo','Usuario_EmpresasAsignacion','Usuario_AlmacenesAsignacion','Usuario_SucursalesAsignacion','Usuario_RolesAsignacion','Usuario_RolesContexto','Sistema_RBAC_Permisos','Sistema_RBAC_Roles','Sistema_RBAC_RolesPermisos') ORDER BY o.name;"
+        },
+        {
+          "name": "SVC_06_LOCALIZATION_TIME_MONEY_UOM",
+          "sql": "SELECT TOP (2500) s.name AS schema_name,t.name AS table_name,c.name AS column_name,ty.name AS data_type FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.is_ms_shipped=0 AND (LOWER(c.name) LIKE '%fecha%' OR LOWER(c.name) LIKE '%timezone%' OR LOWER(c.name) LIKE '%zona_hor%' OR LOWER(c.name) LIKE '%moneda%' OR LOWER(c.name) LIKE '%currency%' OR LOWER(c.name) LIKE '%idioma%' OR LOWER(c.name) LIKE '%locale%' OR LOWER(c.name) LIKE '%pais%' OR LOWER(c.name) LIKE '%unidad_med%' OR LOWER(c.name) LIKE '%uom%' OR LOWER(c.name) LIKE '%superficie%' OR LOWER(c.name) LIKE '%hectarea%') ORDER BY s.name,t.name,c.column_id;"
+        },
+        {
+          "name": "SVC_07_CANONICAL_SECURITY",
+          "sql": "SELECT TOP (1000) s.name AS schema_name,o.type_desc,o.name AS object_name FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND o.type IN ('U','V','P') AND (LOWER(o.name) LIKE '%usuario%' OR LOWER(o.name) LIKE '%rol%' OR LOWER(o.name) LIKE '%permiso%' OR LOWER(o.name) LIKE '%rbac%' OR LOWER(o.name) LIKE '%autoriz%' OR LOWER(o.name) LIKE '%empresa%asign%' OR LOWER(o.name) LIKE '%sucursal%asign%' OR LOWER(o.name) LIKE '%almacen%asign%') ORDER BY s.name,o.type_desc,o.name;"
+        }
+      ]
+    }
+  ]
+}
