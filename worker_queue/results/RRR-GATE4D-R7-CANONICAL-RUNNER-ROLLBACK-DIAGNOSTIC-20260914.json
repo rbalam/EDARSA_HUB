@@ -1,0 +1,28 @@
+{
+  "base_sha": "03aed3f490f48133eb07eb7b6d10b077eafac6e3",
+  "blockers": [],
+  "candidate_sha": "c5af281e27e961b62431d1d3e65caf14cc08e81c",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-14T17:26:27Z",
+  "development_sha": "c5af281e27e961b62431d1d3e65caf14cc08e81c",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    ".github/workflows/rrr-gate4-customer360-v2-development.yml",
+    "ops/migrations/requests/RRR-GATE4-CUSTOMER360-V2-20260909.execute"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "RRR-GATE4D-R7-CANONICAL-RUNNER-ROLLBACK-DIAGNOSTIC-20260914",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-14T17:27:12Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-14T17:26:22Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
