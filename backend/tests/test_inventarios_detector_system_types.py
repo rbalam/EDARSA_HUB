@@ -36,6 +36,7 @@ def _load_detector_module(monkeypatch):
     sql_repository.actualizar_inventario_completado = _noop
     sql_repository.actualizar_inventario_error = _noop
     sql_repository.get_inventarios_pendientes_reintento = _noop
+    sql_repository.get_inventario_error_by_id = _noop
     sql_repository.registrar_bitacora_job = _noop
 
     system_type_utils = types.ModuleType("core.system_type_utils")
@@ -226,4 +227,50 @@ async def test_reintento_rehidrata_contexto_persistido(monkeypatch):
     assert capturado["fecha_inventario"] == "2026-09-01"
     assert capturado["metadata"] == {"source": "EDARSAHUB_SYNC"}
     assert capturado["intentos"] == 2
+    assert job.stats["inventarios_reintentados"] == 1
+
+
+@pytest.mark.asyncio
+async def test_retry_error_by_id_reintenta_solo_el_registro_objetivo(monkeypatch):
+    detector_module = _load_detector_module(monkeypatch)
+
+    async def fake_get_by_id(record_id):
+        assert record_id == 373
+        return {
+            "ID": 373,
+            "SistemaOrigen": "SOFTRESTAURANT",
+            "ServerID": "server-130mid",
+            "SucursalID": "130MID",
+            "AlmacenID": "3",
+            "FolioInventario": "3913",
+            "Estado": "ERROR",
+            "Intentos": 3,
+            "DetallesJSON": (
+                '{"server_name":"130 MERIDA",'
+                '"almacen_nombre":"PRODUCCION",'
+                '"folio_inicial":"3905",'
+                '"fecha_inicial":"2026-09-01T18:21:47",'
+                '"fecha_inventario":"2026-09-08T13:49:35"}'
+            ),
+        }
+
+    monkeypatch.setattr(detector_module, "get_inventario_error_by_id", fake_get_by_id)
+    procesados = []
+
+    async def fake_procesar(registro):
+        procesados.append(registro)
+
+    job = detector_module.InventariosDetectorJob(db={})
+    monkeypatch.setattr(job, "_procesar_inventario_desde_registro", fake_procesar)
+
+    result = await job.retry_error_by_id(373)
+
+    assert result["status"] == "EXECUTED"
+    assert result["record_id"] == 373
+    assert len(procesados) == 1
+    assert procesados[0]["clave"]["folio_inventario"] == "3913"
+    assert procesados[0]["folio_inicial"] == "3905"
+    assert procesados[0]["fecha_inicial"] == "2026-09-01T18:21:47"
+    assert procesados[0]["fecha_inventario"] == "2026-09-08T13:49:35"
+    assert procesados[0]["intentos"] == 3
     assert job.stats["inventarios_reintentados"] == 1

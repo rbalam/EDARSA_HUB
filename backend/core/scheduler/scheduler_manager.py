@@ -249,6 +249,23 @@ class SchedulerManager:
         
         job = create_inventarios_detector_job(self.db, job_config)
         await job.run()
+
+    async def retry_inventario_error_by_id(self, record_id: int) -> Dict[str, Any]:
+        """Recuperación administrativa de un único ERROR usando el job canónico."""
+        import os
+
+        if os.environ.get("SCHEDULER_INVENTARIOS_EMAIL_ENABLED", "false").lower() == "true":
+            return {
+                "status": "error",
+                "message": "Desactive SCHEDULER_INVENTARIOS_EMAIL_ENABLED antes del canario de recuperación",
+            }
+
+        job_config = self.config.jobs.get("inventarios_detector")
+        if not job_config or not job_config.enabled:
+            return {"status": "error", "message": "inventarios_detector está deshabilitado"}
+
+        job = create_inventarios_detector_job(self.db, job_config)
+        return await job.retry_error_by_id(record_id)
     
     async def _run_sync_short_comercial_job(self):
         """
