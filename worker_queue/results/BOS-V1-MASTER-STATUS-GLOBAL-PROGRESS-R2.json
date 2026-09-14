@@ -1,0 +1,23 @@
+{
+  "base_sha": "d9695e261fafa2c27a3fd7e7f50b3113fc731f05",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:WRITE_EXISTING_REQUIRES_EXPECTED_SHA256:docs/BOS/certifications/BOS_V1_MASTER_STATUS_GLOBAL_PROGRESS.md"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-14T18:20:10Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-V1-MASTER-STATUS-GLOBAL-PROGRESS-R2",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-14T18:20:15Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-14T18:20:09Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
