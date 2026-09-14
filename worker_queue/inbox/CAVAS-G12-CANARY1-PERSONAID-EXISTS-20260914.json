@@ -1,0 +1,33 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-G12-CANARY1-PERSONAID-EXISTS-20260914",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9ba7deecb25e09e3ccac22283651b7d6fe4e4a98",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "objective": "Canario unitario 1 de Gate 12 Cavas: certificar unicamente si dbo.CavaSocios_Socios.PersonaID existe fisicamente. Sin DDL, sin DML y sin tocar Produccion.",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "persona_id_exists",
+          "sql": "SELECT COUNT_BIG(*) AS personaid_columns FROM sys.columns WHERE object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND name=N'PersonaID'"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY_SQL only",
+    "NO DDL",
+    "NO DML",
+    "NO repository mutation",
+    "NO Production",
+    "NO secrets or PII",
+    "Do not create another migration"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
