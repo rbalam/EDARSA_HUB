@@ -32,7 +32,7 @@ LOCK_PATH = Path("/tmp/edarsahub-universal-worker-wake.lock")
 COOLDOWN_PATH = Path("/tmp/edarsahub-universal-worker-wake.last")
 WORKER_TREE_STATE = RUNTIME_DIR / "active_worker_code_tree_sha"
 WORKER_CODE_TREE_SPEC = "HEAD:tools/mirror_sync"
-WAKE_ROUTE_VERSION = "r30-code-aware"
+WAKE_ROUTE_VERSION = "r31-active-job-guard"
 _SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 
 
@@ -149,6 +149,14 @@ def _heartbeat_age_seconds() -> float | None:
         return None
 
 
+def _active_job_id() -> str | None:
+    try:
+        value = (RUNTIME_DIR / "current_job_id").read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    return value or None
+
+
 def _restart_worker() -> None:
     try:
         completed = subprocess.run(
@@ -190,8 +198,21 @@ def wake_worker(
             detail="stale worker queue proof",
         )
 
-    convergence = _converge_development_if_safe()
     heartbeat_age = _heartbeat_age_seconds()
+    active_job_id = _active_job_id()
+    if active_job_id and heartbeat_age is not None and heartbeat_age <= 90:
+        return {
+            "accepted": True,
+            "action": "active_job_preserved",
+            "queue_sha": current,
+            "active_job_id": active_job_id,
+            "heartbeat_age_seconds": round(heartbeat_age, 3),
+            "runtime_convergence": {"state": "DEFERRED_ACTIVE_JOB"},
+            "wake_route_version": WAKE_ROUTE_VERSION,
+            "production_touched": False,
+        }
+
+    convergence = _converge_development_if_safe()
     current_worker_tree = _current_worker_code_tree()
     active_worker_tree = _active_worker_code_tree()
     worker_code_current = active_worker_tree == current_worker_tree

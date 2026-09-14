@@ -18,3 +18,13 @@ def test_wake_contract_still_forbids_production_touch():
     text = ROUTE.read_text(encoding='utf-8')
     assert 'production_touched' in text
     assert 'Production is never touched' in text
+
+
+def test_wake_preserves_active_job_before_runtime_convergence():
+    text = ROUTE.read_text(encoding='utf-8')
+    fn = text.split('def wake_worker(', 1)[1]
+    active_pos = fn.index('active_job_id = _active_job_id()')
+    converge_pos = fn.index('convergence = _converge_development_if_safe()')
+    assert active_pos < converge_pos
+    assert '"action": "active_job_preserved"' in fn
+    assert '"state": "DEFERRED_ACTIVE_JOB"' in fn
