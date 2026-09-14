@@ -1,0 +1,116 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-UNIVERSAL-WORKER-GENERIC-READONLY-CONTRACT-V1-20260914",
+  "created_at_utc": "2026-09-14T15:44:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6dd02708a69b32c614cc5b2a149e30128b53a297",
+  "production_allowed": false,
+  "objective": "Recuperacion quirurgica del contrato canonico Universal Worker. Agregar un modo generico READ_ONLY separado de mutacion y de READ_ONLY_SQL. READ_ONLY debe exigir actions exactamente igual a [], aceptar exclusivamente checks git_diff_check, py_compile y pytest, rechazar frontend_build/sql_readonly_audit/acciones/Production, ejecutar los checks sin escribir caches o bytecode dentro del repositorio, verificar que el estado tracked del repo no cambie y emitir resultado terminal READ_ONLY_COMPLETE/CERTIFIED_READ_ONLY. No crear mecanismo paralelo, no tocar backend/core, SQL, Mongo, RBAC, Scheduler, NetPay ni Production.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\", \"sql_readonly_audit\"}\n",
+      "new": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\", \"sql_readonly_audit\"}\nREAD_ONLY_MODE = \"READ_ONLY\"\nREAD_ONLY_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\"}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    if mode == \"READ_ONLY_SQL\":\n        if actions not in (None, []):\n            errors.append(\"READ_ONLY_SQL_ACTIONS_FORBIDDEN\")\n    elif mode == ISCAM_DETAIL_BACKFILL_MODE:\n",
+      "new": "    if mode == \"READ_ONLY_SQL\":\n        if actions not in (None, []):\n            errors.append(\"READ_ONLY_SQL_ACTIONS_FORBIDDEN\")\n    elif mode == READ_ONLY_MODE:\n        if actions != []:\n            errors.append(\"READ_ONLY_ACTIONS_MUST_BE_EMPTY_LIST\")\n    elif mode == ISCAM_DETAIL_BACKFILL_MODE:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    if mode == \"READ_ONLY_SQL\":\n        if not isinstance(checks, list) or not checks:\n            errors.append(\"READ_ONLY_SQL_CHECK_REQUIRED\")\n        elif any(not isinstance(c, dict) or c.get(\"type\") != \"sql_readonly_audit\" for c in checks):\n            errors.append(\"READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED\")\n    elif mode == ISCAM_DETAIL_BACKFILL_MODE:\n",
+      "new": "    if mode == \"READ_ONLY_SQL\":\n        if not isinstance(checks, list) or not checks:\n            errors.append(\"READ_ONLY_SQL_CHECK_REQUIRED\")\n        elif any(not isinstance(c, dict) or c.get(\"type\") != \"sql_readonly_audit\" for c in checks):\n            errors.append(\"READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED\")\n    elif mode == READ_ONLY_MODE:\n        if not isinstance(checks, list) or not checks:\n            errors.append(\"READ_ONLY_CHECK_REQUIRED\")\n        elif any(not isinstance(c, dict) or c.get(\"type\") not in READ_ONLY_CHECKS for c in checks):\n            errors.append(\"READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED\")\n    elif mode == ISCAM_DETAIL_BACKFILL_MODE:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\", \"sql_readonly_audit\"}\n",
+      "new": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\", \"sql_readonly_audit\"}\nREAD_ONLY_MODE = \"READ_ONLY\"\nREAD_ONLY_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\"}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:\n    kind = str(check.get(\"type\"))\n    started = now()\n",
+      "new": "def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False) -> dict[str, Any]:\n    kind = str(check.get(\"type\"))\n    started = now()\n    env_extra: dict[str, str] = {}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "    elif kind == \"py_compile\":\n        paths = [str(p) for p in check.get(\"paths\") or []]\n        cmd = [PYTHON_BIN, \"-m\", \"py_compile\", *paths]\n        cwd = worktree\n",
+      "new": "    elif kind == \"py_compile\":\n        paths = [str(p) for p in check.get(\"paths\") or []]\n        cmd = [PYTHON_BIN, \"-m\", \"py_compile\", *paths]\n        cwd = worktree\n        if readonly:\n            env_extra[\"PYTHONPYCACHEPREFIX\"] = str(Path(tempfile.gettempdir()) / \"edarsahub-worker-readonly-pyc\")\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        cmd = [PYTHON_BIN, \"-m\", \"pytest\", \"-q\", *paths]\n        cwd = backend\n        env_extra = {**load_backend_runtime_env(), \"PYTHONPATH\": str(backend)}\n",
+      "new": "        pytest_args = [\"-q\"]\n        if readonly:\n            pytest_args.extend([\"-p\", \"no:cacheprovider\"])\n        cmd = [PYTHON_BIN, \"-m\", \"pytest\", *pytest_args, *paths]\n        cwd = backend\n        env_extra = {**load_backend_runtime_env(), \"PYTHONPATH\": str(backend)}\n        if readonly:\n            env_extra[\"PYTHONDONTWRITEBYTECODE\"] = \"1\"\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        result = run(cmd, cwd=cwd, timeout=MAX_SECONDS, env_extra=locals().get(\"env_extra\"))\n",
+      "new": "        result = run(cmd, cwd=cwd, timeout=MAX_SECONDS, env_extra=env_extra or None)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "allow_empty_scope_advance=(mode == \"READ_ONLY_SQL\")",
+      "new": "allow_empty_scope_advance=(mode in {\"READ_ONLY_SQL\", READ_ONLY_MODE})",
+      "expected_count": 2
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        if mode == \"READ_ONLY_SQL\":\n            if job.get(\"actions\") not in (None, []):\n",
+      "new": "        if mode == READ_ONLY_MODE:\n            if job.get(\"actions\") != []:\n                raise RuntimeError(\"READ_ONLY_ACTIONS_MUST_BE_EMPTY_LIST\")\n            checks = job.get(\"checks\") or []\n            if not checks or any(not isinstance(c, dict) or c.get(\"type\") not in READ_ONLY_CHECKS for c in checks):\n                raise RuntimeError(\"READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED\")\n            tracked_before = git(\"status\", \"--porcelain=v1\", \"--untracked-files=no\", cwd=ROOT).stdout\n            check_results = []\n            for check in checks:\n                check_result = run_check(ROOT, check, readonly=True)\n                check_results.append(check_result)\n                if check_result[\"status\"] != \"PASS\":\n                    result[\"blockers\"].append(f\"check_failed:{check.get('type')}\")\n                    break\n            tracked_after = git(\"status\", \"--porcelain=v1\", \"--untracked-files=no\", cwd=ROOT).stdout\n            if tracked_after != tracked_before:\n                result[\"blockers\"].append(\"readonly_tracked_repo_mutation_detected\")\n            result[\"checks\"] = check_results\n            result[\"files_changed\"] = []\n            result[\"tests\"] = \"PASS\" if check_results and all(x[\"status\"] == \"PASS\" for x in check_results) else \"FAIL\"\n            result[\"quality_gate\"] = \"PASS\" if not result[\"blockers\"] else \"FAIL\"\n            result[\"work_completion\"] = \"COMPLETE\" if not result[\"blockers\"] else \"INCOMPLETE\"\n            if not result[\"blockers\"]:\n                result[\"status\"] = \"READ_ONLY_COMPLETE\"\n                result[\"percent_complete\"] = 100\n                result[\"certification\"] = \"CERTIFIED_READ_ONLY\"\n                result[\"certification_basis\"] = \"NON_MUTATING_CHECKS_ONLY\"\n                result[\"summary_es\"] = \"El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.\"\n            else:\n                result[\"percent_complete\"] = 0\n                result[\"certification\"] = \"NOT_CERTIFIED\"\n            return 0\n\n        if mode == \"READ_ONLY_SQL\":\n            if job.get(\"actions\") not in (None, []):\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_generic_readonly.py",
+      "content": "from __future__ import annotations\n\nimport importlib.util\nimport sys\nfrom pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nBRIDGE = ROOT / 'tools' / 'mirror_sync' / 'universal_job_bridge.py'\nDISPATCHER = ROOT / 'tools' / 'mirror_sync' / 'universal_job_dispatcher.py'\n\n\ndef load_module(path: Path, name: str):\n    spec = importlib.util.spec_from_file_location(name, path)\n    module = importlib.util.module_from_spec(spec)\n    assert spec and spec.loader\n    spec.loader.exec_module(module)\n    return module\n\n\ndef base_job():\n    return {\n        'schema': 'edarsahub.worker-job.v2',\n        'job_id': 'READONLY-CONTRACT-TEST-001',\n        'target_repo': 'rbalam/EDARSA_HUB',\n        'target_branch': 'Edarsahub_Desarrollo',\n        'production_allowed': False,\n        'objective': 'generic readonly contract test',\n        'human_summary_language': 'es',\n        'mode': 'READ_ONLY',\n        'actions': [],\n        'checks': [\n            {'type': 'git_diff_check'},\n            {'type': 'py_compile', 'paths': ['tools/mirror_sync/universal_job_bridge.py']},\n            {'type': 'pytest', 'paths': ['backend/tests/test_worker_generic_readonly.py']},\n        ],\n    }\n\n\ndef test_bridge_accepts_generic_readonly_with_empty_actions_and_safe_checks():\n    bridge = load_module(BRIDGE, 'generic_readonly_bridge_ok')\n    assert bridge.validate(base_job()) == []\n\n\ndef test_bridge_requires_actions_to_be_exact_empty_list():\n    bridge = load_module(BRIDGE, 'generic_readonly_bridge_actions')\n    missing = base_job()\n    missing.pop('actions')\n    assert 'READ_ONLY_ACTIONS_MUST_BE_EMPTY_LIST' in bridge.validate(missing)\n    mutated = base_job()\n    mutated['actions'] = [{'type': 'write_file', 'path': 'x.txt', 'content': 'x'}]\n    assert 'READ_ONLY_ACTIONS_MUST_BE_EMPTY_LIST' in bridge.validate(mutated)\n\n\ndef test_bridge_rejects_non_readonly_checks_and_production():\n    bridge = load_module(BRIDGE, 'generic_readonly_bridge_checks')\n    for check in (\n        {'type': 'frontend_build', 'directory': 'frontend'},\n        {'type': 'sql_readonly_audit', 'queries': [{'name': 'x', 'sql': 'SELECT 1'}]},\n    ):\n        job = base_job()\n        job['checks'] = [check]\n        assert 'READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED' in bridge.validate(job)\n    prod = base_job()\n    prod['production_allowed'] = True\n    assert 'PRODUCTION_MUST_BE_FALSE' in bridge.validate(prod)\n\n\ndef load_dispatcher():\n    mirror_sync = ROOT / 'tools' / 'mirror_sync'\n    sys.path.insert(0, str(mirror_sync))\n    try:\n        return load_module(DISPATCHER, 'generic_readonly_dispatcher')\n    finally:\n        sys.path.remove(str(mirror_sync))\n\n\ndef test_readonly_py_compile_redirects_bytecode(monkeypatch):\n    dispatcher = load_dispatcher()\n    captured = {}\n\n    class Completed:\n        returncode = 0\n        stdout = ''\n\n    def fake_run(args, cwd=None, check=False, timeout=None, env_extra=None):\n        captured['args'] = args\n        captured['env_extra'] = env_extra or {}\n        return Completed()\n\n    monkeypatch.setattr(dispatcher, 'run', fake_run)\n    result = dispatcher.run_check(ROOT, {'type': 'py_compile', 'paths': ['tools/mirror_sync/universal_job_bridge.py']}, readonly=True)\n    assert result['status'] == 'PASS'\n    assert 'PYTHONPYCACHEPREFIX' in captured['env_extra']\n    assert str(captured['env_extra']['PYTHONPYCACHEPREFIX']).startswith('/tmp/')\n\n\ndef test_readonly_pytest_disables_repo_cache_and_bytecode(monkeypatch):\n    dispatcher = load_dispatcher()\n    captured = {}\n\n    class Completed:\n        returncode = 0\n        stdout = ''\n\n    def fake_run(args, cwd=None, check=False, timeout=None, env_extra=None):\n        captured['args'] = args\n        captured['env_extra'] = env_extra or {}\n        return Completed()\n\n    monkeypatch.setattr(dispatcher, 'run', fake_run)\n    result = dispatcher.run_check(ROOT, {'type': 'pytest', 'paths': ['backend/tests/test_worker_generic_readonly.py']}, readonly=True)\n    assert result['status'] == 'PASS'\n    assert ['-p', 'no:cacheprovider'] == captured['args'][captured['args'].index('-p'):captured['args'].index('-p') + 2]\n    assert captured['env_extra']['PYTHONDONTWRITEBYTECODE'] == '1'\n\n\ndef test_dispatcher_has_dedicated_readonly_terminal_and_no_shell_execution():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'READ_ONLY_COMPLETE' in text\n    assert 'CERTIFIED_READ_ONLY' in text\n    assert 'READ_ONLY_ACTIONS_MUST_BE_EMPTY_LIST' in text\n    assert 'READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED' in text\n    assert 'readonly_tracked_repo_mutation_detected' in text\n    assert 'shell=True' not in text\n"
+    },
+    {
+      "type": "write_file",
+      "path": "docs/BOS/BOS_UNIVERSAL_WORKER_GENERIC_READONLY_CONTRACT_V1.md",
+      "content": "# Universal Worker - Generic READ_ONLY Contract V1\n\n## Purpose\nProvide a canonical generic `READ_ONLY` mode for repository certification checks without treating the request as a mutation job.\n\n## Contract\n- `mode`: exactly `READ_ONLY`.\n- `actions`: exactly `[]`; omission or any action is rejected.\n- Allowed checks only: `git_diff_check`, `py_compile`, `pytest`.\n- `frontend_build`, `sql_readonly_audit`, mutation actions, arbitrary shell and Production remain forbidden.\n- `py_compile` redirects bytecode to `/tmp`.\n- `pytest` disables pytest cache and Python bytecode writes inside the repo.\n- Dispatcher compares tracked repository state before and after checks and fails closed on any change.\n\n## Terminal success\n`status=READ_ONLY_COMPLETE`, `quality_gate=PASS`, `tests=PASS`, `certification=CERTIFIED_READ_ONLY`, `work_completion=COMPLETE`, `percent_complete=100`, `production_touched=false`.\n\nThis extends the existing Universal Worker contract; it does not create another executor or queue.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "backend/tests/test_worker_generic_readonly.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_generic_readonly.py",
+        "backend/tests/test_worker_sql_readonly_audit.py",
+        "backend/tests/test_worker_core_growth_guard.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
