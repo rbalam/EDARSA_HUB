@@ -1,0 +1,34 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"RRR-GATE4D-R8-INDEPENDENT-POSTCHECK-READONLY-20260914",
+  "created_at_utc":"2026-09-14T18:56:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"8441223930424f523e9cbae65a6f89aca5f98201",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Independent physical certification postcheck after R8 controlled commit deployment. Read only. Confirm canonical SQL identity and exactly 4/4 RRR Customer360 views persisted. No DDL, no DML, no repository changes, no Production.",
+  "sql_checks":[
+    {
+      "name":"r8_independent_identity",
+      "query":"SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS user_name"
+    },
+    {
+      "name":"r8_independent_present_count",
+      "query":"SELECT COUNT(*) AS present_count FROM sys.views WHERE schema_id=SCHEMA_ID('dbo') AND name IN ('vw_RRR_ClienteActividadComercial','vw_RRR_ClienteScoreActual','vw_RRR_ClienteRankingActual','vw_RRR_Customer360')"
+    },
+    {
+      "name":"r8_independent_present_names",
+      "query":"SELECT name AS view_name FROM sys.views WHERE schema_id=SCHEMA_ID('dbo') AND name IN ('vw_RRR_ClienteActividadComercial','vw_RRR_ClienteScoreActual','vw_RRR_ClienteRankingActual','vw_RRR_Customer360') ORDER BY name"
+    },
+    {
+      "name":"r8_independent_duplicate_customer360",
+      "query":"SELECT COUNT(*) AS duplicate_groups FROM (SELECT ClienteID FROM dbo.vw_RRR_Customer360 GROUP BY ClienteID HAVING COUNT_BIG(*)>1) d"
+    }
+  ],
+  "expected":{"database_name":"EDARSAHUB","login_name":"HRLectura","user_name":"HRLectura","present_count":4,"duplicate_groups":0,"present_names":["vw_RRR_ClienteActividadComercial","vw_RRR_ClienteRankingActual","vw_RRR_ClienteScoreActual","vw_RRR_Customer360"]},
+  "checks":[{"type":"sql_readonly_evidence"}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
