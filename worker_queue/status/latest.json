@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "6e5c96041cd89bd1d37b2d05f2ebc5e192fa4ed6",
-  "generated_at_utc": "2026-09-14T22:07:52Z",
+  "generated_at_utc": "2026-09-14T22:09:03Z",
   "history": {
     "done_total_local": 464,
     "pending_total_local": 0,
@@ -13,19 +13,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2231,
+      "age_seconds": 2301,
       "job_id": "000-WORKER-WAKE-ACTIVE-JOB-GUARD-R1-CARLOS-20260914T212200Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1640,
+      "age_seconds": 1711,
       "job_id": "EDARSAHUB-DASHBOARD-IA-DRILLDOWN-DATERANGE-R3-CARLOS-20260914T192032Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2180,
+      "age_seconds": 2250,
       "job_id": "EDARSAHUB-ISCAM-DAILY-PENDING-R72-CARLOS-20260914T212400Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -43,8 +43,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-14T22:07:48Z",
-    "last_receive_utc": "2026-09-14T22:07:49Z",
+    "last_cycle_utc": "2026-09-14T22:08:59Z",
+    "last_receive_utc": "2026-09-14T22:08:59Z",
     "last_terminal_utc": "2026-09-14T21:40:31Z",
     "pid": "934"
   },
