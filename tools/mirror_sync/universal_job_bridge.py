@@ -39,6 +39,8 @@ SCHEMA = "edarsahub.worker-job.v2"
 JOB_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
 ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit"}
+READ_ONLY_MODE = "READ_ONLY"
+READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest"}
 SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
 MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
@@ -210,6 +212,9 @@ def validate(job: Any) -> list[str]:
     if mode == "READ_ONLY_SQL":
         if actions not in (None, []):
             errors.append("READ_ONLY_SQL_ACTIONS_FORBIDDEN")
+    elif mode == READ_ONLY_MODE:
+        if actions != []:
+            errors.append("READ_ONLY_ACTIONS_MUST_BE_EMPTY_LIST")
     elif mode == ISCAM_DETAIL_BACKFILL_MODE:
         if actions not in (None, []):
             errors.append("ISCAM_DETAIL_BACKFILL_ACTIONS_FORBIDDEN")
@@ -276,6 +281,11 @@ def validate(job: Any) -> list[str]:
             errors.append("READ_ONLY_SQL_CHECK_REQUIRED")
         elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
             errors.append("READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED")
+    elif mode == READ_ONLY_MODE:
+        if not isinstance(checks, list) or not checks:
+            errors.append("READ_ONLY_CHECK_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") not in READ_ONLY_CHECKS for c in checks):
+            errors.append("READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED")
     elif mode == ISCAM_DETAIL_BACKFILL_MODE:
         if not isinstance(checks, list) or not checks:
             errors.append("ISCAM_DETAIL_BACKFILL_AUDIT_REQUIRED")

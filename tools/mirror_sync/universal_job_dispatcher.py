@@ -44,6 +44,8 @@ MAX_CONCURRENCY_REPLAY_ATTEMPTS = int(os.environ.get("EDARSAHUB_CONCURRENCY_REPL
 JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
 ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit"}
+READ_ONLY_MODE = "READ_ONLY"
+READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest"}
 SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
 MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
@@ -296,9 +298,10 @@ def apply_action(worktree: Path, action: dict[str, Any]) -> str:
     raise ValueError(f"UNSUPPORTED_ACTION:{kind}")
 
 
-def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:
+def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False) -> dict[str, Any]:
     kind = str(check.get("type"))
     started = now()
+    env_extra: dict[str, str] = {}
     if kind == "git_diff_check":
         cmd = ["git", "diff", "--check"]
         cwd = worktree
@@ -306,6 +309,8 @@ def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:
         paths = [str(p) for p in check.get("paths") or []]
         cmd = [PYTHON_BIN, "-m", "py_compile", *paths]
         cwd = worktree
+        if readonly:
+            env_extra["PYTHONPYCACHEPREFIX"] = str(Path(tempfile.gettempdir()) / "edarsahub-worker-readonly-pyc")
     elif kind == "pytest":
         backend = worktree / "backend"
         if not backend.is_dir():
@@ -318,9 +323,14 @@ def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:
             elif path.startswith("backend/"):
                 path = path[len("backend/"):]
             paths.append(path)
-        cmd = [PYTHON_BIN, "-m", "pytest", "-q", *paths]
+        pytest_args = ["-q"]
+        if readonly:
+            pytest_args.extend(["-p", "no:cacheprovider"])
+        cmd = [PYTHON_BIN, "-m", "pytest", *pytest_args, *paths]
         cwd = backend
         env_extra = {**load_backend_runtime_env(), "PYTHONPATH": str(backend)}
+        if readonly:
+            env_extra["PYTHONDONTWRITEBYTECODE"] = "1"
     elif kind == "sql_readonly_audit":
         helper = worktree / "tools" / "mirror_sync" / "sql_readonly_audit.py"
         if not helper.is_file():
@@ -352,7 +362,7 @@ def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:
     else:
         raise ValueError(f"UNSUPPORTED_CHECK:{kind}")
     try:
-        result = run(cmd, cwd=cwd, timeout=MAX_SECONDS, env_extra=locals().get("env_extra"))
+        result = run(cmd, cwd=cwd, timeout=MAX_SECONDS, env_extra=env_extra or None)
         full_output = result.stdout or ""
         response = {"type": kind, "status": "PASS" if result.returncode == 0 else "FAIL", "returncode": result.returncode, "started_at_utc": started, "completed_at_utc": now(), "output": full_output[-12000:]}
         if kind == "sql_readonly_audit":
@@ -513,12 +523,12 @@ def process_one(path: Path) -> int:
             if not git_is_ancestor(expected_base, current_head):
                 raise RuntimeError(f"BASE_NOT_ANCESTOR:expected={expected_base}:actual={current_head}")
             changed = git_changed_paths(expected_base, current_head)
-            pickup_policy = evaluate_scope_advance(expected_base, current_head, requested_paths, changed, allow_empty_scope_advance=(mode == "READ_ONLY_SQL"))
+            pickup_policy = evaluate_scope_advance(expected_base, current_head, requested_paths, changed, allow_empty_scope_advance=(mode in {"READ_ONLY_SQL", READ_ONLY_MODE}))
             if pickup_policy["decision"] not in {"SAFE_REPLAY", "EXACT_BASE"}:
                 conflicts = ",".join(pickup_policy.get("scope_conflicts") or [])
                 raise RuntimeError(f"CONCURRENT_SCOPE_CONFLICT:expected={expected_base}:actual={current_head}:paths={conflicts}")
         else:
-            pickup_policy = evaluate_scope_advance(expected_base, current_head, requested_paths, [], allow_empty_scope_advance=(mode == "READ_ONLY_SQL"))
+            pickup_policy = evaluate_scope_advance(expected_base, current_head, requested_paths, [], allow_empty_scope_advance=(mode in {"READ_ONLY_SQL", READ_ONLY_MODE}))
         base_sha = current_head
         result["requested_base_sha"] = expected_base
         result["base_sha"] = base_sha
@@ -528,6 +538,39 @@ def process_one(path: Path) -> int:
         result["concurrency_replays"] = 0
         result["concurrent_head_changes"] = []
         result["concurrency"] = {"pickup": pickup_policy, "integration": []}
+
+        if mode == READ_ONLY_MODE:
+            if job.get("actions") != []:
+                raise RuntimeError("READ_ONLY_ACTIONS_MUST_BE_EMPTY_LIST")
+            checks = job.get("checks") or []
+            if not checks or any(not isinstance(c, dict) or c.get("type") not in READ_ONLY_CHECKS for c in checks):
+                raise RuntimeError("READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED")
+            tracked_before = git("status", "--porcelain=v1", "--untracked-files=no", cwd=ROOT).stdout
+            check_results = []
+            for check in checks:
+                check_result = run_check(ROOT, check, readonly=True)
+                check_results.append(check_result)
+                if check_result["status"] != "PASS":
+                    result["blockers"].append(f"check_failed:{check.get('type')}")
+                    break
+            tracked_after = git("status", "--porcelain=v1", "--untracked-files=no", cwd=ROOT).stdout
+            if tracked_after != tracked_before:
+                result["blockers"].append("readonly_tracked_repo_mutation_detected")
+            result["checks"] = check_results
+            result["files_changed"] = []
+            result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
+            result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
+            result["work_completion"] = "COMPLETE" if not result["blockers"] else "INCOMPLETE"
+            if not result["blockers"]:
+                result["status"] = "READ_ONLY_COMPLETE"
+                result["percent_complete"] = 100
+                result["certification"] = "CERTIFIED_READ_ONLY"
+                result["certification_basis"] = "NON_MUTATING_CHECKS_ONLY"
+                result["summary_es"] = "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion."
+            else:
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+            return 0
 
         if mode == "READ_ONLY_SQL":
             if job.get("actions") not in (None, []):
