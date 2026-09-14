@@ -1,20 +1,26 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "6e5c96041cd89bd1d37b2d05f2ebc5e192fa4ed6",
-  "generated_at_utc": "2026-09-14T22:52:46Z",
+  "generated_at_utc": "2026-09-14T22:53:59Z",
   "history": {
-    "done_total_local": 465,
+    "done_total_local": 466,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 488,
-    "results_total_local": 827
+    "results_total_local": 828
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 388,
+      "age_seconds": 462,
       "job_id": "EDARSAHUB-DASHBOARD-IA-TICKET-EXECUTOR-FIX-CARLOS-20260914T214500Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 14,
+      "job_id": "EDARSAHUB-ISCAM-DAILY-PENDING-R72A-ESTELAR-CARLOS-20260914T225000Z",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -26,14 +32,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-14T22:52:06Z",
-    "last_receive_utc": "2026-09-14T22:52:42Z",
-    "last_terminal_utc": "2026-09-14T22:46:17Z",
+    "last_cycle_utc": "2026-09-14T22:53:58Z",
+    "last_receive_utc": "2026-09-14T22:53:58Z",
+    "last_terminal_utc": "2026-09-14T22:53:45Z",
     "pid": "1065"
   },
   "schema": "edarsahub.worker-health.v3",
