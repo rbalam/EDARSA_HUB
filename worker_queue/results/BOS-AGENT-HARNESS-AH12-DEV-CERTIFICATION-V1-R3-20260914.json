@@ -1,0 +1,23 @@
+{
+  "base_sha": "c5af281e27e961b62431d1d3e65caf14cc08e81c",
+  "blockers": [],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-14T17:26:51Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-AGENT-HARNESS-AH12-DEV-CERTIFICATION-V1-R3-20260914",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-14T17:26:59Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-14T17:26:50Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
