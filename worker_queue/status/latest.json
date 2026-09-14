@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "d9695e261fafa2c27a3fd7e7f50b3113fc731f05",
-  "generated_at_utc": "2026-09-14T18:13:11Z",
+  "generated_at_utc": "2026-09-14T18:14:23Z",
   "history": {
     "done_total_local": 450,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3360,
+      "age_seconds": 3432,
       "job_id": "CXP-GATE3E-B-MPRO-SIDE-EFFECT-CONTRACT-READONLY-20260914",
       "reasons": [
         "SUMMARY_LANGUAGE_MUST_BE_ES"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3338,
+      "age_seconds": 3410,
       "job_id": "CXP-GATE3E-C-SOFTRESTAURANT-SIDE-EFFECT-CONTRACT-READONLY-20260914",
       "reasons": [
         "SUMMARY_LANGUAGE_MUST_BE_ES"
@@ -31,49 +31,49 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1145,
+      "age_seconds": 1218,
       "job_id": "ARBITROA-BOS-GATE-A4-PREFLIGHT-SQL-READONLY-V1-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2779,
+      "age_seconds": 2852,
       "job_id": "BOS-AGENT-HARNESS-AH12-DEV-CERTIFICATION-V1-R3-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 15,
+      "age_seconds": 87,
       "job_id": "BOS-UNIVERSAL-WORKER-GENERIC-READONLY-PUBLISHER-CERT-V1-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2926,
+      "age_seconds": 2999,
       "job_id": "EDARSA-LOGISTICS-GATE0-REPOSITORY-CONTRACT-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3196,
+      "age_seconds": 3268,
       "job_id": "EDARSAHUB-INVENTARIOS-TARGETED-RECOVERY-R1-20260914T094000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2804,
+      "age_seconds": 2876,
       "job_id": "RRR-GATE4D-R7-CANONICAL-RUNNER-ROLLBACK-DIAGNOSTIC-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2978,
+      "age_seconds": 3050,
       "job_id": "UNIVERSAL-WORKER-READ-ONLY-REPOSITORY-DISCOVERY-MODE-V1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1986,
+      "age_seconds": 2059,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5F-GITHUB-ACTIONS-LIVE-CANARY-HARNESS-R1-20260914",
       "reason": null,
       "state": "RESULT_READY"
@@ -91,8 +91,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-14T18:13:10Z",
-    "last_receive_utc": "2026-09-14T18:13:05Z",
+    "last_cycle_utc": "2026-09-14T18:13:49Z",
+    "last_receive_utc": "2026-09-14T18:13:44Z",
     "last_terminal_utc": "2026-09-14T18:12:55Z",
     "pid": "944"
   },
