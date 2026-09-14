@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "6e5c96041cd89bd1d37b2d05f2ebc5e192fa4ed6",
-  "generated_at_utc": "2026-09-14T20:15:31Z",
+  "generated_at_utc": "2026-09-14T20:16:45Z",
   "history": {
     "done_total_local": 462,
     "pending_total_local": 0,
@@ -13,20 +13,14 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2898,
+      "age_seconds": 2972,
       "job_id": "BOS-AGENT-HARNESS-AH12-DEV-CERTIFICATION-V1-R4-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2289,
+      "age_seconds": 2363,
       "job_id": "EDARSAHUB-DASHBOARD-IA-DRILLDOWN-DATERANGE-R2-CARLOS-20260914T190400Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3546,
-      "job_id": "RRR-GATE4D-R8-R1-INDEPENDENT-POSTCHECK-READONLY-20260914",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -38,13 +32,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-14T20:15:29Z",
-    "last_receive_utc": "2026-09-14T20:15:29Z",
+    "last_cycle_utc": "2026-09-14T20:16:40Z",
+    "last_receive_utc": "2026-09-14T20:16:40Z",
     "last_terminal_utc": "2026-09-14T19:37:21Z",
     "pid": "289"
   },
