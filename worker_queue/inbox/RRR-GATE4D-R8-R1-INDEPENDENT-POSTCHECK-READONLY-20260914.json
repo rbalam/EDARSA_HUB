@@ -1,0 +1,26 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"RRR-GATE4D-R8-R1-INDEPENDENT-POSTCHECK-READONLY-20260914",
+  "created_at_utc":"2026-09-14T19:16:30Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"8441223930424f523e9cbae65a6f89aca5f98201",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Postcheck fisico independiente posterior a R8 exitoso. Confirmar identidad SQL, persistencia exacta de las cuatro vistas Customer360 y ausencia de ClienteID duplicado en vw_RRR_Customer360. Solo SELECT; sin DDL ni DML.",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {"name":"r8_r1_identity","sql":"SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS user_name"},
+        {"name":"r8_r1_present_count","sql":"SELECT COUNT_BIG(*) AS present_count FROM sys.views v JOIN sys.schemas s ON s.schema_id=v.schema_id WHERE s.name='dbo' AND v.name IN ('vw_RRR_ClienteActividadComercial','vw_RRR_ClienteScoreActual','vw_RRR_ClienteRankingActual','vw_RRR_Customer360')"},
+        {"name":"r8_r1_present_names","sql":"SELECT v.name AS view_name FROM sys.views v JOIN sys.schemas s ON s.schema_id=v.schema_id WHERE s.name='dbo' AND v.name IN ('vw_RRR_ClienteActividadComercial','vw_RRR_ClienteScoreActual','vw_RRR_ClienteRankingActual','vw_RRR_Customer360') ORDER BY v.name"},
+        {"name":"r8_r1_duplicate_customer360","sql":"SELECT COUNT_BIG(*) AS duplicate_groups FROM (SELECT ClienteID FROM dbo.vw_RRR_Customer360 GROUP BY ClienteID HAVING COUNT_BIG(*) > 1) d"}
+      ]
+    }
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
