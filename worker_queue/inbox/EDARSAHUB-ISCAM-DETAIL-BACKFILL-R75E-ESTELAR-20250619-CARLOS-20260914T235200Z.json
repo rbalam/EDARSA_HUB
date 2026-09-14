@@ -1,0 +1,22 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-ISCAM-DETAIL-BACKFILL-R75E-ESTELAR-20250619-CARLOS-20260914T235200Z",
+  "created_at_utc":"2026-09-14T23:52:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"97e746f16e55857f675c38689facc1f747595ea4",
+  "production_allowed":false,
+  "mode":"ISCAM_DETAIL_BACKFILL",
+  "objective":"Reparar exclusivamente ESTELAR 2025-06-19 con el backfill canonico corregido por R73. Idempotente. Escribir solo si pasa OK_HEADER_CANONICO. No tocar Runtime, Sync_Sales, Finanzas_CortesCaja, reportes certificados ni Produccion.",
+  "units":["ESTELAR"],
+  "fecha_inicio":"2025-06-19",
+  "fecha_fin":"2025-06-20",
+  "dry_run":false,
+  "confirm_detail_backfill":true,
+  "actions":[],
+  "checks":[],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
