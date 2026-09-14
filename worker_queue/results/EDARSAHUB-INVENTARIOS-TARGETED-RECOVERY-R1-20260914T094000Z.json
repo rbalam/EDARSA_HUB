@@ -1,0 +1,31 @@
+{
+  "base_sha": "d3d13aa6b7b7b8dc50d13a2dfa9c781456051222",
+  "blockers": [],
+  "candidate_sha": "a8c4965cabf4760e2d2f111bc785c32bb276b1df",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-14T17:19:54Z",
+  "development_sha": "a8c4965cabf4760e2d2f111bc785c32bb276b1df",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/core/scheduler/jobs/inventarios_detector_job.py",
+    "backend/core/scheduler/routes.py",
+    "backend/core/scheduler/scheduler_manager.py",
+    "backend/core/scheduler/sql_repository.py",
+    "backend/tests/test_inventarios_detector_system_types.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-INVENTARIOS-TARGETED-RECOVERY-R1-20260914T094000Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-14T17:19:56Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-14T17:19:49Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
