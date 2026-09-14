@@ -1,25 +1,25 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "829c62141053fb25f0639762ce557803fa63a05e",
-  "generated_at_utc": "2026-09-14T19:07:44Z",
+  "development_sha": "09263c3d1e8a182f8039119d59e4ac7fd6823d26",
+  "generated_at_utc": "2026-09-14T19:09:03Z",
   "history": {
-    "done_total_local": 459,
+    "done_total_local": 460,
     "pending_total_local": 0,
     "processing_total_local": 1,
     "rejected_total_local": 486,
-    "results_total_local": 819
+    "results_total_local": 820
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 329,
+      "age_seconds": 409,
       "job_id": "EDARSAHUB-DASHBOARD-IA-DRILLDOWN-DATERANGE-R2-CARLOS-20260914T190400Z",
       "reason": "El worker no termino esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 402,
+      "age_seconds": 481,
       "job_id": "RRR-GATE4D-R8-INDEPENDENT-POSTCHECK-READONLY-20260914",
       "reasons": [
         "READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED",
@@ -29,79 +29,85 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3288,
+      "age_seconds": 3367,
       "job_id": "BOS-UNIVERSAL-WORKER-GENERIC-READONLY-PUBLISHER-CERT-V1-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2854,
+      "age_seconds": 2933,
       "job_id": "BOS-V1-MASTER-STATUS-GLOBAL-PROGRESS-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1297,
+      "age_seconds": 1377,
       "job_id": "BOS-V1-MASTER-STATUS-GLOBAL-PROGRESS-R3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2357,
+      "age_seconds": 2437,
       "job_id": "CAVAS-G12-CANARY1-PERSONAID-EXISTS-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 381,
+      "age_seconds": 460,
       "job_id": "EDARSA-LOGISTICS-GATE1A-SHARED-CAPABILITIES-AND-FIELD-UX-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 425,
+      "age_seconds": 504,
       "job_id": "EDARSAHUB-DASHBOARD-IA-DRILLDOWN-DATERANGE-R1-CARLOS-20260914T183500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2856,
+      "age_seconds": 2935,
       "job_id": "EDARSAHUB-ENTERPRISE-CAPABILITY-MAP-GATE1-R2-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 932,
+      "age_seconds": 1011,
       "job_id": "EDARSAHUB-ISCAM-COVERAGE-MATRIX-R71-CARLOS-20260914T183500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3086,
+      "age_seconds": 3165,
       "job_id": "EDARSAHUB-SERVICES-GATE0A-SQL-ASIS-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 349,
+      "age_seconds": 429,
       "job_id": "EDARSAHUB-SERVICES-GATE0B-CERT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 429,
+      "age_seconds": 508,
       "job_id": "EDARSAHUB-SERVICES-GATE0B-REPOSITORY-CONTRACT-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 924,
+      "age_seconds": 66,
+      "job_id": "EDARSAHUB-SERVICES-GATE1-CAPABILITY-OWNERSHIP-MAP-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1003,
       "job_id": "RRR-GATE4D-R8-CONTROLLED-COMMIT-DEPLOYMENT-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1274,
+      "age_seconds": 1353,
       "job_id": "worker-orchestrator-sql-migration-integration-gate6-r1-20260914T1720Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -114,14 +120,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 13,
+  "queue_result_ready_recent": 14,
   "queue_running": 0,
   "runtime": {
-    "current_job_id": "EDARSAHUB-DASHBOARD-IA-DRILLDOWN-DATERANGE-R2-CARLOS-20260914T190400Z",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-14T19:07:39Z",
-    "last_receive_utc": "2026-09-14T19:07:40Z",
-    "last_terminal_utc": "2026-09-14T19:01:54Z",
+    "last_cycle_utc": "2026-09-14T19:09:03Z",
+    "last_receive_utc": "2026-09-14T19:08:58Z",
+    "last_terminal_utc": "2026-09-14T19:07:57Z",
     "pid": "289"
   },
   "schema": "edarsahub.worker-health.v3",
