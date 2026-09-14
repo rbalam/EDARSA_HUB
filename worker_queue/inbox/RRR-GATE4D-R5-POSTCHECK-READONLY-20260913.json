@@ -1,0 +1,25 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"RRR-GATE4D-R5-POSTCHECK-READONLY-20260913",
+  "created_at_utc":"2026-09-14T01:45:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"178074c6f8006a79849b9be897e2564934f718f5",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Postcheck fisico independiente posterior al workflow R5 fallido 34795505979. Confirmar identidad SQL, conteo y nombres exactos de las cuatro vistas Customer360. Solo SELECT; sin DDL ni DML.",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {"name":"r5_postcheck_identity","sql":"SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS user_name"},
+        {"name":"r5_postcheck_present_count","sql":"SELECT COUNT_BIG(*) AS present_count FROM sys.views v JOIN sys.schemas s ON s.schema_id=v.schema_id WHERE s.name='dbo' AND v.name IN ('vw_RRR_ClienteActividadComercial','vw_RRR_ClienteScoreActual','vw_RRR_ClienteRankingActual','vw_RRR_Customer360')"},
+        {"name":"r5_postcheck_present_names","sql":"SELECT v.name AS view_name FROM sys.views v JOIN sys.schemas s ON s.schema_id=v.schema_id WHERE s.name='dbo' AND v.name IN ('vw_RRR_ClienteActividadComercial','vw_RRR_ClienteScoreActual','vw_RRR_ClienteRankingActual','vw_RRR_Customer360') ORDER BY v.name"}
+      ]
+    }
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
