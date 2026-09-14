@@ -1,0 +1,82 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ENTERPRISE-CAPABILITY-MAP-GATE1-R2-20260914",
+  "created_at_utc": "2026-09-14T17:45:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9ba7deecb25e09e3ccac22283651b7d6fe4e4a98",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Ejecutar Gate 1 R2 del Enterprise Capability Map sobre Edarsahub_Desarrollo usando exclusivamente la capability canonica READ_ONLY con repository_contract_audit. Inventariar y aportar evidencia verificable de backend, frontend, SQL referenciado, APIs, RBAC, scheduler, dashboards, conectores, IA, workflows, catalogos y automatizaciones. No crear codigo, no modificar archivos, no tocar SQL, Mongo, fuentes LIVE ni Produccion. La interpretacion y clasificacion semantica del mapa se realizara posteriormente sobre la evidencia estructurada del Worker.",
+  "acceptance": [
+    "El job termina en modo READ_ONLY sin modificaciones de repositorio.",
+    "Se obtiene evidencia estructurada para arquitectura backend y frontend.",
+    "Se obtiene evidencia de APIs, tablas SQL referenciadas, RBAC y permisos.",
+    "Se obtiene evidencia de scheduler, workflows, automatizaciones y agentes/IA.",
+    "Se obtiene evidencia de integraciones SoftRestaurant, MPRO, NetPay, vtiger, Twilio, SAP, Oracle, Dynamics, BBVA y Banorte cuando existan referencias en el repositorio.",
+    "Se obtiene evidencia de dashboards, KPIs, menus y catalogos.",
+    "No se leen ni publican archivos sensibles excluidos por repository_contract_audit.",
+    "production_touched=false y files_changed=[] en el resultado terminal.",
+    "quality_gate=PASS, tests=PASS y certification=CERTIFIED_READ_ONLY para considerar Gate 1 R2 ejecutado correctamente."
+  ],
+  "constraints": [
+    "READ ONLY estricto.",
+    "No actions de mutacion.",
+    "No tocar Edarsahub_Produccion.",
+    "No DDL ni DML.",
+    "No usar MongoDB como fuente operativa.",
+    "No conectar a fuentes LIVE.",
+    "No crear arquitectura paralela ni crecer backend/core.",
+    "No exponer secretos, tokens, passwords, certificados ni archivos .env.",
+    "Reutilizar exclusivamente la capability canonica repository_contract_audit existente."
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": ["backend", "frontend"],
+        "search_terms": ["router", "apirouter", "endpoint", "dashboard", "kpi", "menu", "catalog", "catalogo", "workflow", "automation", "automatizacion", "agent", "prompt"],
+        "include_patterns": ["*.py", "*.js", "*.jsx", "*.ts", "*.tsx", "*.json", "*.sql"],
+        "exclude_patterns": [],
+        "max_results": 1800
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": ["backend", "tools", "scripts"],
+        "search_terms": ["rbac", "permiso", "permission", "role", "rol", "usuario_roles", "menu-permissions", "get_current_user", "scheduler", "apscheduler", "asyncioscheduler", "worker", "queue", "job", "sla"],
+        "include_patterns": ["*.py", "*.sql", "*.json", "*.yml", "*.yaml"],
+        "exclude_patterns": [],
+        "max_results": 1800
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": ["backend", "tools", "scripts", "frontend"],
+        "search_terms": ["softrestaurant", "mpro", "netpay", "vtiger", "twilio", "sap", "oracle", "dynamics", "bbva", "banorte", "connector", "integration", "integracion", "live", "mongo", "sql_first", "get_sql_connection", "readonly_sql_connection"],
+        "include_patterns": ["*.py", "*.js", "*.jsx", "*.ts", "*.tsx", "*.sql", "*.json"],
+        "exclude_patterns": [],
+        "max_results": 1800
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": ["backend", "frontend", "tools", "scripts", "docs"],
+        "search_terms": ["dbo.", "table", "view", "procedure", "funcion", "function", "catalog", "catalogo", "empresa", "sucursal", "unidad", "capability", "enterprise core", "duplicate", "duplicado", "reutilizable"],
+        "include_patterns": ["*.py", "*.sql", "*.md", "*.json", "*.js", "*.jsx", "*.ts", "*.tsx"],
+        "exclude_patterns": [],
+        "max_results": 1800
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
