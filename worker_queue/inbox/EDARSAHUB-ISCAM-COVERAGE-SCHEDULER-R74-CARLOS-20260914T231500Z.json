@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-COVERAGE-SCHEDULER-R74-CARLOS-20260914T231500Z",
+  "created_at_utc": "2026-09-14T23:15:00Z",
+  "requester": {"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a2d4cf6daeedf065e6ec13e377caa04323c6caea",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "objective": "R74: certificar cobertura real ISCAM despues de R73 usando PAX una sola vez por ticket, y auditar evidencia reciente del scheduler automatico. Solo lectura. No modificar datos, codigo ni Produccion.",
+  "checks": [
+    {
+      "type":"sql_readonly_audit",
+      "source":"EDARSAHUB",
+      "queries":[
+        {
+          "name":"iscam_coverage_correct_ticket_pax",
+          "sql":"WITH rt AS ( SELECT unidad_negocio_id, CAST(fecha_operacion AS date) AS fecha_operacion, SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS ventas_runtime, SUM(CAST(ISNULL(tickets_total,0) AS bigint)) AS tickets_runtime, SUM(CAST(ISNULL(pax_total,0) AS bigint)) AS pax_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id IN ('ESTELAR','130MID','CIENFUEGOS','ORIGEN','130QRO') AND fecha_operacion >= '2023-01-01' AND fecha_operacion < '2026-09-13' GROUP BY unidad_negocio_id, CAST(fecha_operacion AS date) ), dt AS ( SELECT unidad_negocio_id, CAST(fecha_operacion AS date) AS fecha_operacion, numero_ticket, SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) AS ventas_ticket, MAX(CAST(ISNULL(pax,0) AS bigint)) AS pax_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('ESTELAR','130MID','CIENFUEGOS','ORIGEN','130QRO') AND fecha_operacion >= '2023-01-01' AND fecha_operacion < '2026-09-13' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY unidad_negocio_id, CAST(fecha_operacion AS date), numero_ticket ), det AS ( SELECT unidad_negocio_id, fecha_operacion, SUM(ventas_ticket) AS ventas_detalle, COUNT(*) AS tickets_detalle, SUM(pax_ticket) AS pax_detalle FROM dt GROUP BY unidad_negocio_id, fecha_operacion ), cmp AS ( SELECT rt.unidad_negocio_id, rt.fecha_operacion, rt.ventas_runtime, rt.tickets_runtime, rt.pax_runtime, det.fecha_operacion AS detalle_fecha, ISNULL(det.ventas_detalle,0) AS ventas_detalle, ISNULL(det.tickets_detalle,0) AS tickets_detalle, ISNULL(det.pax_detalle,0) AS pax_detalle, CASE WHEN det.fecha_operacion IS NULL THEN 'DETALLE_AUSENTE' WHEN ABS(rt.ventas_runtime-ISNULL(det.ventas_detalle,0)) <= 0.05 AND rt.tickets_runtime=ISNULL(det.tickets_detalle,0) AND rt.pax_runtime=ISNULL(det.pax_detalle,0) THEN 'CORRECTO' ELSE 'NO_CONCILIA' END AS estado FROM rt LEFT JOIN det ON det.unidad_negocio_id=rt.unidad_negocio_id AND det.fecha_operacion=rt.fecha_operacion ) SELECT unidad_negocio_id AS sucursal, COUNT(*) AS dias_runtime, SUM(CASE WHEN estado='CORRECTO' THEN 1 ELSE 0 END) AS dias_correctos, SUM(CASE WHEN estado='DETALLE_AUSENTE' THEN 1 ELSE 0 END) AS dias_detalle_ausente, SUM(CASE WHEN estado='NO_CONCILIA' THEN 1 ELSE 0 END) AS dias_no_concilia, SUM(CASE WHEN estado<>'CORRECTO' THEN 1 ELSE 0 END) AS dias_pendientes, MIN(CASE WHEN estado<>'CORRECTO' THEN fecha_operacion END) AS primera_fecha_pendiente, MAX(CASE WHEN estado<>'CORRECTO' THEN fecha_operacion END) AS ultima_fecha_pendiente, CAST(SUM(ventas_runtime) AS decimal(19,2)) AS ventas_runtime, CAST(SUM(ventas_detalle) AS decimal(19,2)) AS ventas_detalle, CAST(SUM(ventas_detalle)-SUM(ventas_runtime) AS decimal(19,2)) AS diferencia_ventas FROM cmp GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        },
+        {
+          "name":"runtime_latest_by_unit",
+          "sql":"SELECT unidad_negocio_id AS sucursal, MIN(CAST(fecha_operacion AS date)) AS primera_fecha_runtime, MAX(CAST(fecha_operacion AS date)) AS ultima_fecha_runtime, COUNT(DISTINCT CAST(fecha_operacion AS date)) AS dias_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id IN ('ESTELAR','130MID','CIENFUEGOS','ORIGEN','130QRO') AND fecha_operacion >= '2023-01-01' AND fecha_operacion < '2026-09-15' GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        },
+        {
+          "name":"scheduler_comercial_recent_bitacora",
+          "sql":"SELECT TOP 50 ID, JobName, RunID, Accion, FechaAccion, ServerID, Exito, MensajeError FROM dbo.Scheduler_BitacoraJobs WHERE JobName LIKE '%comercial%' OR Accion LIKE '%comercial%' ORDER BY ID DESC"
+        },
+        {
+          "name":"comercial_synclog_columns",
+          "sql":"SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Comercial_SyncLog_v2' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name":"comercial_synclog_sample",
+          "sql":"SELECT TOP 20 * FROM dbo.Comercial_SyncLog_v2"
+        }
+      ]
+    }
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
