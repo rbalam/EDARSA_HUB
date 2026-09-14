@@ -39,6 +39,32 @@ const formatMoney = (value) => (
   moneyFormatter.format(Number(value || 0))
 );
 
+const DEFAULT_TICKET_COLUMNS = [
+  { key: 'fecha', label: 'FECHA' },
+  { key: 'hora', label: 'HORA' },
+  { key: 'unidad', label: 'UNIDAD' },
+  { key: 'numero_ticket', label: 'TICKET', mono: true },
+  { key: 'pax', label: 'PAX', align: 'center', format: 'number' },
+  { key: 'lineas', label: 'LÍNEAS', align: 'center', format: 'number' },
+  { key: 'ventas', label: 'VENTAS', align: 'right', format: 'money', emphasis: true },
+];
+
+const formatTicketValue = (ticket, column) => {
+  const value = ticket?.[column.key];
+
+  if (column.format === 'money') return formatMoney(value);
+  if (column.format === 'number') {
+    return Number(value || 0).toLocaleString('es-MX');
+  }
+  if (column.format === 'percent') {
+    return `${Number(value || 0).toFixed(2)}%`;
+  }
+
+  return value === null || value === undefined || value === ''
+    ? '—'
+    : value;
+};
+
 function EmptyState({ status }) {
   const message = status === STATUS.ERROR
     ? 'No fue posible consultar la información.'
@@ -56,6 +82,7 @@ export default function CanonicalTicketDrilldown({
   onClose,
   scope,
   title = 'Reconstrucción de tickets',
+  ticketColumns = DEFAULT_TICKET_COLUMNS,
   loadTickets,
   loadTicketDetail,
   renderExportActions,
@@ -248,13 +275,20 @@ export default function CanonicalTicketDrilldown({
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-slate-800">
                   <tr className="text-left text-xs text-slate-400">
-                    <th className="px-4 py-2">FECHA</th>
-                    <th className="px-4 py-2">HORA</th>
-                    <th className="px-4 py-2">UNIDAD</th>
-                    <th className="px-4 py-2">TICKET</th>
-                    <th className="px-4 py-2 text-center">PAX</th>
-                    <th className="px-4 py-2 text-center">LÍNEAS</th>
-                    <th className="px-4 py-2 text-right">VENTAS</th>
+                    {ticketColumns.map((column) => (
+                      <th
+                        key={column.key}
+                        className={`px-4 py-2 ${
+                          column.align === 'right'
+                            ? 'text-right'
+                            : column.align === 'center'
+                              ? 'text-center'
+                              : 'text-left'
+                        }`}
+                      >
+                        {column.label}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
 
@@ -276,27 +310,27 @@ export default function CanonicalTicketDrilldown({
                         onClick={() => openTicket(ticket)}
                         className="cursor-pointer border-t border-slate-700/40 hover:bg-slate-700/40"
                       >
-                        <td className="px-4 py-2 text-slate-300">
-                          {ticket.fecha}
-                        </td>
-                        <td className="px-4 py-2 text-slate-400">
-                          {ticket.hora}
-                        </td>
-                        <td className="px-4 py-2 text-slate-300">
-                          {ticket.unidad}
-                        </td>
-                        <td className="px-4 py-2 font-mono text-emerald-400">
-                          {ticket.numero_ticket || ticket.folio}
-                        </td>
-                        <td className="px-4 py-2 text-center text-slate-300">
-                          {ticket.pax || 0}
-                        </td>
-                        <td className="px-4 py-2 text-center text-slate-400">
-                          {ticket.lineas || 0}
-                        </td>
-                        <td className="px-4 py-2 text-right font-semibold text-white">
-                          {formatMoney(ticket.ventas)}
-                        </td>
+                        {ticketColumns.map((column) => {
+                          const alignClass = column.align === 'right'
+                            ? 'text-right'
+                            : column.align === 'center'
+                              ? 'text-center'
+                              : 'text-left';
+                          const valueClass = column.emphasis
+                            ? 'font-semibold text-emerald-400'
+                            : column.mono
+                              ? 'font-mono text-emerald-400'
+                              : 'text-slate-300';
+
+                          return (
+                            <td
+                              key={column.key}
+                              className={`px-4 py-2 ${alignClass} ${valueClass}`}
+                            >
+                              {formatTicketValue(ticket, column)}
+                            </td>
+                          );
+                        })}
                       </tr>
                     );
                   })}
