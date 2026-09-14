@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "178074c6f8006a79849b9be897e2564934f718f5",
-  "generated_at_utc": "2026-09-14T02:13:12Z",
+  "generated_at_utc": "2026-09-14T02:14:25Z",
   "history": {
     "done_total_local": 437,
     "pending_total_local": 0,
@@ -13,13 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3599,
-      "job_id": "RRR-GATE4D-R4-R1-POSTFAIL-READONLY-20260913",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3275,
+      "age_seconds": 3348,
       "job_id": "RRR-GATE4D-R5-RUNTIME-DEPS-RETRY-20260913",
       "reason": null,
       "state": "RESULT_READY"
@@ -32,13 +26,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 1,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-14T02:13:09Z",
-    "last_receive_utc": "2026-09-14T02:13:09Z",
+    "last_cycle_utc": "2026-09-14T02:14:25Z",
+    "last_receive_utc": "2026-09-14T02:14:20Z",
     "last_terminal_utc": "2026-09-14T01:18:37Z",
     "pid": "159"
   },
