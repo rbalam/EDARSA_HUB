@@ -171,6 +171,32 @@ def sanitize_readonly_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
     return {"checks": sanitized_checks} if sanitized_checks else None
 
 
+def sanitize_repository_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
+    sanitized_checks = []
+    allowed_entry_keys = ("path", "matched_terms", "candidate_ownership", "symbols", "imports", "routes", "tables_referenced", "helpers", "connections", "rbac_contracts", "scheduler_contracts", "integrations")
+    for check in result.get("checks") or []:
+        if not isinstance(check, dict) or check.get("type") != "repository_contract_audit":
+            continue
+        payload = check.get("repository_evidence")
+        if not isinstance(payload, dict):
+            continue
+        if payload.get("status") != "PASS":
+            continue
+        entries = []
+        for entry in payload.get("evidence") or []:
+            if not isinstance(entry, dict):
+                continue
+            entries.append({key: entry.get(key) for key in allowed_entry_keys if key in entry})
+        sanitized_checks.append({
+            "status": "PASS",
+            "mode": "READ_ONLY_REPOSITORY",
+            "summary": payload.get("summary"),
+            "truncated": bool(payload.get("truncated")),
+            "evidence": entries,
+        })
+    return {"checks": sanitized_checks} if sanitized_checks else None
+
+
 def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
     source_sha = result.get("development_sha")
 
@@ -183,19 +209,20 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
 
     if result.get("status") == "READ_ONLY_COMPLETE":
         readonly_evidence = sanitize_readonly_evidence(result)
+        repository_evidence = sanitize_repository_evidence(result)
         if (
             str(result.get("tests", "")).upper() == "PASS"
             and str(result.get("quality_gate", "")).upper() == "PASS"
             and result.get("production_touched") is False
             and not (result.get("blockers") or [])
-            and readonly_evidence is not None
+            and (readonly_evidence is not None or repository_evidence is not None)
         ):
             return {
                 "certified": True,
                 "certification": "CERTIFIED_READ_ONLY",
                 "work_completion": "COMPLETE",
                 "percent_complete": 100,
-                "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+                "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE" if readonly_evidence is not None else "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
             }
         return {
             **pending,
@@ -352,6 +379,9 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
     readonly_evidence = sanitize_readonly_evidence(result)
     if readonly_evidence is not None:
         public["sql_readonly_evidence"] = readonly_evidence
+    repository_evidence = sanitize_repository_evidence(result)
+    if repository_evidence is not None:
+        public["repository_contract_evidence"] = repository_evidence
 
     evidence = certification_evidence(result)
 

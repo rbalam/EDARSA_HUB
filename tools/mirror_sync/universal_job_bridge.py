@@ -38,9 +38,9 @@ QUEUE_REF = os.environ.get(
 SCHEMA = "edarsahub.worker-job.v2"
 JOB_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
-ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit"}
+ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit", "repository_contract_audit"}
 READ_ONLY_MODE = "READ_ONLY"
-READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest"}
+READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest", "repository_contract_audit"}
 SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
 MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
@@ -168,6 +168,23 @@ def validate_check(check: Any, index: int) -> list[str]:
             sql = item.get("sql")
             if not isinstance(sql, str) or not sql.strip():
                 return [f"{prefix}_QUERY_SQL_REQUIRED"]
+    if kind == "repository_contract_audit":
+        request = check.get("request")
+        if not isinstance(request, dict):
+            return [f"{prefix}_REQUEST_REQUIRED"]
+        paths = request.get("paths")
+        if not isinstance(paths, list) or not paths or not all(safe_repo_path(p) for p in paths):
+            return [f"{prefix}_INVALID_PATHS"]
+        terms = request.get("search_terms")
+        if not isinstance(terms, list) or not terms or not all(isinstance(t, str) and t.strip() for t in terms):
+            return [f"{prefix}_SEARCH_TERMS_REQUIRED"]
+        for field in ("include_patterns", "exclude_patterns"):
+            value = request.get(field, [])
+            if not isinstance(value, list) or not all(isinstance(item, str) and item.strip() for item in value):
+                return [f"{prefix}_{field.upper()}_INVALID"]
+        max_results = request.get("max_results", 500)
+        if not isinstance(max_results, int) or max_results < 1 or max_results > 5000:
+            return [f"{prefix}_MAX_RESULTS_INVALID"]
     return []
 
 

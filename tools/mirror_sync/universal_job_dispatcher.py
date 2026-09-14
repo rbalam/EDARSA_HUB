@@ -43,9 +43,9 @@ MAX_SECONDS = int(os.environ.get("EDARSAHUB_JOB_MAX_SECONDS", "1800"))
 MAX_CONCURRENCY_REPLAY_ATTEMPTS = int(os.environ.get("EDARSAHUB_CONCURRENCY_REPLAY_ATTEMPTS", "3"))
 JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
-ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit"}
+ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit", "repository_contract_audit"}
 READ_ONLY_MODE = "READ_ONLY"
-READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest"}
+READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest", "repository_contract_audit"}
 SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
 MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
@@ -331,6 +331,13 @@ def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False) -> 
         env_extra = {**load_backend_runtime_env(), "PYTHONPATH": str(backend)}
         if readonly:
             env_extra["PYTHONDONTWRITEBYTECODE"] = "1"
+    elif kind == "repository_contract_audit":
+        helper = worktree / "tools" / "mirror_sync" / "repository_contract_audit.py"
+        if not helper.is_file():
+            helper = ROOT / "tools" / "mirror_sync" / "repository_contract_audit.py"
+        cmd = [PYTHON_BIN, str(helper), "--request-json", json.dumps(check.get("request") or {}, ensure_ascii=False)]
+        cwd = worktree
+        env_extra = {"PYTHONDONTWRITEBYTECODE": "1"}
     elif kind == "sql_readonly_audit":
         helper = worktree / "tools" / "mirror_sync" / "sql_readonly_audit.py"
         if not helper.is_file():
@@ -365,13 +372,16 @@ def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False) -> 
         result = run(cmd, cwd=cwd, timeout=MAX_SECONDS, env_extra=env_extra or None)
         full_output = result.stdout or ""
         response = {"type": kind, "status": "PASS" if result.returncode == 0 else "FAIL", "returncode": result.returncode, "started_at_utc": started, "completed_at_utc": now(), "output": full_output[-12000:]}
-        if kind == "sql_readonly_audit":
+        if kind in {"sql_readonly_audit", "repository_contract_audit"}:
             try:
-                sql_evidence = json.loads(full_output.strip())
+                structured_evidence = json.loads(full_output.strip())
             except (json.JSONDecodeError, TypeError):
-                sql_evidence = None
-            if isinstance(sql_evidence, dict):
-                response["sql_evidence"] = sql_evidence
+                structured_evidence = None
+            if isinstance(structured_evidence, dict):
+                if kind == "sql_readonly_audit":
+                    response["sql_evidence"] = structured_evidence
+                else:
+                    response["repository_evidence"] = structured_evidence
         return response
     except subprocess.TimeoutExpired as exc:
         text = exc.stdout if isinstance(exc.stdout, str) else ""
