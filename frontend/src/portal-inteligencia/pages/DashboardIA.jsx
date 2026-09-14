@@ -315,7 +315,8 @@ export default function DashboardIA({ unidadSeleccionada, onNavigate, periodo = 
 
       <TicketDrilldownModal open={drill} onClose={() => setDrill(false)}
         unidad={unidadSeleccionada} periodo={periodoActivo}
-        fechaInicio={esCustom ? rangoInicio : undefined} fechaFin={esCustom ? rangoFin : undefined}
+        fechaInicio={data.fechaInicio || (esCustom ? rangoInicio : undefined)}
+        fechaFin={data.fechaFin || (esCustom ? rangoFin : undefined)}
         titulo="Reconstrucción de Tickets" />
     </div>
   );
