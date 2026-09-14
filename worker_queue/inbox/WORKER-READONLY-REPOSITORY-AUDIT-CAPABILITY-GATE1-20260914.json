@@ -1,0 +1,122 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "WORKER-READONLY-REPOSITORY-AUDIT-CAPABILITY-GATE1-20260914",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "178074c6f8006a79849b9be897e2564934f718f5",
+  "production_allowed": false,
+  "objective": "Extender quirurgicamente el Universal Worker para incorporar una capability transversal, canonica y atomica READ_ONLY_REPOSITORY_AUDIT. Debe inspeccionar el repositorio sin acciones de escritura, sin shell arbitrario recibido desde jobs, sin tocar SQL/Mongo/LIVE/Produccion y sin crecer backend/core. Reutilizar bridge, dispatcher, safe_repo_path, run_check y el esquema worker-job.v2. El resultado debe ser evidencia estructurada y reproducible del repositorio; la interpretacion semantica posterior pertenece a BOS/ChatGPT, no al Worker.",
+  "acceptance": [
+    "El bridge reconoce mode READ_ONLY_REPOSITORY_AUDIT y prohibe actions no vacias.",
+    "El bridge solo permite check type repository_readonly_audit para ese modo y valida roots como rutas seguras.",
+    "El dispatcher ejecuta repository_readonly_audit mediante helper Python propio, sin shell arbitrario suministrado por el job.",
+    "El helper usa git ls-files como inventario canonico, soporta roots opcionales y devuelve JSON estructurado con archivos, extensiones, simbolos Python, rutas API detectables y metadatos de evidencia sin leer ni imprimir secretos.",
+    "El modo READ_ONLY_REPOSITORY_AUDIT termina con files_changed=[], CERTIFIED_READ_ONLY y production_touched=false cuando todos los checks pasan.",
+    "No se crea ningun archivo bajo backend/core ni modulo Hospitality especifico.",
+    "py_compile y git diff --check pasan para los archivos modificados.",
+    "Solo se modifican tools/mirror_sync/universal_job_bridge.py, tools/mirror_sync/universal_job_dispatcher.py y se crea tools/mirror_sync/repository_readonly_audit.py."
+  ],
+  "constraints": [
+    "EDARSAHUB BOS manda; no crear arquitectura paralela.",
+    "No tocar Edarsahub_Produccion.",
+    "No tocar SQL, MongoDB ni fuentes LIVE.",
+    "No hardcodear secretos, credenciales o URLs sensibles.",
+    "No ejecutar comandos recibidos desde el payload del job.",
+    "No crecer backend/core.",
+    "Mantener el Worker determinista, fail-closed y reusable por cualquier dominio.",
+    "No modificar Gate 1 Hospitality original ni publicar Gate 1 R2 en este job."
+  ],
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\", \"sql_readonly_audit\"}",
+      "new": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\", \"sql_readonly_audit\", \"repository_readonly_audit\"}",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "ISCAM_PAYMENTS_ONLY_RESYNC_MODE = \"ISCAM_PAYMENTS_ONLY_RESYNC\"\nUNIT_CODE_RE",
+      "new": "ISCAM_PAYMENTS_ONLY_RESYNC_MODE = \"ISCAM_PAYMENTS_ONLY_RESYNC\"\nREAD_ONLY_REPOSITORY_AUDIT_MODE = \"READ_ONLY_REPOSITORY_AUDIT\"\nUNIT_CODE_RE",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    return []\n\n\ndef validate(job: Any) -> list[str]:",
+      "new": "    if kind == \"repository_readonly_audit\":\n        roots = check.get(\"roots\", [])\n        if roots is not None:\n            if not isinstance(roots, list) or not all(safe_repo_path(p) for p in roots):\n                return [f\"{prefix}_INVALID_ROOTS\"]\n        max_files = check.get(\"max_files\", 10000)\n        if not isinstance(max_files, int) or max_files < 1 or max_files > 50000:\n            return [f\"{prefix}_INVALID_MAX_FILES\"]\n    return []\n\n\ndef validate(job: Any) -> list[str]:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    actions = job.get(\"actions\")\n    if mode == \"READ_ONLY_SQL\":",
+      "new": "    actions = job.get(\"actions\")\n    if mode == READ_ONLY_REPOSITORY_AUDIT_MODE:\n        if actions not in (None, []):\n            errors.append(\"READ_ONLY_REPOSITORY_AUDIT_ACTIONS_FORBIDDEN\")\n    elif mode == \"READ_ONLY_SQL\":",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    checks = job.get(\"checks\", [{\"type\": \"git_diff_check\"}])\n    if mode == \"READ_ONLY_SQL\":",
+      "new": "    checks = job.get(\"checks\", [{\"type\": \"git_diff_check\"}])\n    if mode == READ_ONLY_REPOSITORY_AUDIT_MODE:\n        if not isinstance(checks, list) or not checks:\n            errors.append(\"READ_ONLY_REPOSITORY_AUDIT_CHECK_REQUIRED\")\n        elif any(not isinstance(c, dict) or c.get(\"type\") != \"repository_readonly_audit\" for c in checks):\n            errors.append(\"READ_ONLY_REPOSITORY_AUDIT_ONLY_CHECKS_ALLOWED\")\n    elif mode == \"READ_ONLY_SQL\":",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\", \"sql_readonly_audit\"}",
+      "new": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\", \"sql_readonly_audit\", \"repository_readonly_audit\"}",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "ISCAM_PAYMENTS_ONLY_RESYNC_MODE = \"ISCAM_PAYMENTS_ONLY_RESYNC\"\nUNIT_CODE_RE",
+      "new": "ISCAM_PAYMENTS_ONLY_RESYNC_MODE = \"ISCAM_PAYMENTS_ONLY_RESYNC\"\nREAD_ONLY_REPOSITORY_AUDIT_MODE = \"READ_ONLY_REPOSITORY_AUDIT\"\nUNIT_CODE_RE",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "    elif kind == \"frontend_build\":",
+      "new": "    elif kind == \"repository_readonly_audit\":\n        helper = worktree / \"tools\" / \"mirror_sync\" / \"repository_readonly_audit.py\"\n        if not helper.is_file():\n            helper = ROOT / \"tools\" / \"mirror_sync\" / \"repository_readonly_audit.py\"\n        cmd = [PYTHON_BIN, str(helper), \"--roots-json\", json.dumps(check.get(\"roots\") or [], ensure_ascii=False), \"--max-files\", str(check.get(\"max_files\", 10000))]\n        cwd = worktree\n    elif kind == \"frontend_build\":",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "allow_empty_scope_advance=(mode == \"READ_ONLY_SQL\")",
+      "new": "allow_empty_scope_advance=(mode in {\"READ_ONLY_SQL\", READ_ONLY_REPOSITORY_AUDIT_MODE})",
+      "expected_count": 2
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        if mode == \"READ_ONLY_SQL\":\n",
+      "new": "        if mode == READ_ONLY_REPOSITORY_AUDIT_MODE:\n            if job.get(\"actions\") not in (None, []):\n                raise RuntimeError(\"READ_ONLY_REPOSITORY_AUDIT_ACTIONS_FORBIDDEN\")\n            checks = job.get(\"checks\") or []\n            if not checks or any(not isinstance(c, dict) or c.get(\"type\") != \"repository_readonly_audit\" for c in checks):\n                raise RuntimeError(\"READ_ONLY_REPOSITORY_AUDIT_ONLY_CHECKS_ALLOWED\")\n            check_results = []\n            for check in checks:\n                check_result = run_check(ROOT, check)\n                check_results.append(check_result)\n                if check_result[\"status\"] != \"PASS\":\n                    result[\"blockers\"].append(\"check_failed:repository_readonly_audit\")\n                    break\n            result[\"checks\"] = check_results\n            result[\"files_changed\"] = []\n            result[\"tests\"] = \"PASS\" if check_results and all(x[\"status\"] == \"PASS\" for x in check_results) else \"FAIL\"\n            result[\"quality_gate\"] = \"PASS\" if not result[\"blockers\"] else \"FAIL\"\n            if not result[\"blockers\"]:\n                result[\"status\"] = \"READ_ONLY_COMPLETE\"\n                result[\"percent_complete\"] = 100\n                result[\"certification\"] = \"CERTIFIED_READ_ONLY\"\n                result[\"summary_es\"] = \"El Worker universal audito el repositorio de forma determinista y solo lectura. No modifico archivos, SQL, Mongo ni Produccion.\"\n            else:\n                result[\"percent_complete\"] = 0\n                result[\"certification\"] = \"NOT_CERTIFIED\"\n            return 0\n\n        if mode == \"READ_ONLY_SQL\":\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "tools/mirror_sync/repository_readonly_audit.py",
+      "content": "#!/usr/bin/env python3\n\"\"\"Deterministic read-only repository evidence collector for EDARSAHUB Worker.\"\"\"\nfrom __future__ import annotations\n\nimport argparse\nimport ast\nimport json\nimport re\nimport subprocess\nfrom collections import Counter, defaultdict\nfrom pathlib import Path\nfrom typing import Any\n\nROOT = Path(__file__).resolve().parents[2]\nTEXT_SUFFIXES = {'.py', '.js', '.jsx', '.ts', '.tsx', '.sql', '.md', '.json', '.yml', '.yaml'}\nEXCLUDED_PARTS = {'.git', 'node_modules', 'dist', 'build', '.venv', 'venv', '__pycache__', 'graphify-out'}\nROUTE_RE = re.compile(r'@(?:router|app)\\.(get|post|put|patch|delete)\\(\\s*[\\\"\\\']([^\\\"\\\']+)[\\\"\\\']')\nJS_EXPORT_RE = re.compile(r'\\bexport\\s+(?:default\\s+)?(?:async\\s+)?(?:function|class|const|let|var)\\s+([A-Za-z_$][A-Za-z0-9_$]*)')\nSECRET_NAME_RE = re.compile(r'(password|passwd|secret|token|api[_-]?key|authorization|connection[_-]?string)', re.I)\n\ndef run_git(args: list[str]) -> str:\n    proc = subprocess.run(['git', '-C', str(ROOT), *args], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)\n    if proc.returncode != 0:\n        raise RuntimeError('GIT_READ_FAILED')\n    return proc.stdout\n\ndef safe_root(value: str) -> str:\n    path = Path(value)\n    if path.is_absolute() or '..' in path.parts or (path.parts and path.parts[0] == '.git'):\n        raise ValueError('INVALID_ROOT')\n    return path.as_posix().rstrip('/')\n\ndef included(path: str, roots: list[str]) -> bool:\n    parts = Path(path).parts\n    if any(part in EXCLUDED_PARTS for part in parts):\n        return False\n    if not roots:\n        return True\n    return any(path == root or path.startswith(root + '/') for root in roots)\n\ndef python_symbols(path: Path) -> list[dict[str, Any]]:\n    try:\n        tree = ast.parse(path.read_text(encoding='utf-8', errors='ignore'))\n    except Exception:\n        return []\n    out = []\n    for node in ast.walk(tree):\n        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):\n            out.append({'name': node.name, 'kind': 'class' if isinstance(node, ast.ClassDef) else 'function', 'line': getattr(node, 'lineno', None)})\n    return out[:500]\n\ndef text_evidence(path: Path) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:\n    routes: list[dict[str, Any]] = []\n    symbols: list[dict[str, Any]] = []\n    if path.suffix.lower() not in TEXT_SUFFIXES:\n        return routes, symbols\n    try:\n        text = path.read_text(encoding='utf-8', errors='ignore')\n    except Exception:\n        return routes, symbols\n    if path.suffix.lower() == '.py':\n        symbols.extend(python_symbols(path))\n        for match in ROUTE_RE.finditer(text):\n            line = text.count('\\n', 0, match.start()) + 1\n            routes.append({'method': match.group(1).upper(), 'path': match.group(2), 'line': line})\n    elif path.suffix.lower() in {'.js', '.jsx', '.ts', '.tsx'}:\n        for match in JS_EXPORT_RE.finditer(text):\n            line = text.count('\\n', 0, match.start()) + 1\n            symbols.append({'name': match.group(1), 'kind': 'export', 'line': line})\n    return routes[:500], symbols[:500]\n\ndef main() -> int:\n    parser = argparse.ArgumentParser()\n    parser.add_argument('--roots-json', default='[]')\n    parser.add_argument('--max-files', type=int, default=10000)\n    args = parser.parse_args()\n    roots_raw = json.loads(args.roots_json)\n    if not isinstance(roots_raw, list):\n        raise ValueError('ROOTS_MUST_BE_LIST')\n    roots = [safe_root(str(item)) for item in roots_raw if str(item).strip()]\n    if args.max_files < 1 or args.max_files > 50000:\n        raise ValueError('INVALID_MAX_FILES')\n    tracked = [line for line in run_git(['ls-files']).splitlines() if line.strip()]\n    selected = [path for path in tracked if included(path, roots)]\n    truncated = len(selected) > args.max_files\n    selected = selected[:args.max_files]\n    extensions = Counter()\n    top_roots = Counter()\n    evidence: dict[str, dict[str, Any]] = {}\n    for relative in selected:\n        repo_path = ROOT / relative\n        suffix = repo_path.suffix.lower() or '<none>'\n        extensions[suffix] += 1\n        top_roots[Path(relative).parts[0] if Path(relative).parts else '<root>'] += 1\n        routes, symbols = text_evidence(repo_path)\n        item: dict[str, Any] = {}\n        if routes:\n            item['api_routes'] = routes\n        if symbols:\n            item['symbols'] = symbols\n        if item:\n            evidence[relative] = item\n    payload = {\n        'schema': 'edarsahub.repository-readonly-audit.v1',\n        'mode': 'READ_ONLY_REPOSITORY_AUDIT',\n        'repository': 'rbalam/EDARSA_HUB',\n        'base_sha': run_git(['rev-parse', 'HEAD']).strip(),\n        'roots': roots,\n        'tracked_files_total': len(tracked),\n        'selected_files_total': len(selected),\n        'truncated': truncated,\n        'extensions': dict(sorted(extensions.items())),\n        'top_roots': dict(sorted(top_roots.items())),\n        'files': selected,\n        'evidence': evidence,\n        'secrets_values_emitted': False,\n        'production_touched': False,\n    }\n    print(json.dumps(payload, ensure_ascii=False, sort_keys=True))\n    return 0\n\nif __name__ == '__main__':\n    raise SystemExit(main())\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/repository_readonly_audit.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
