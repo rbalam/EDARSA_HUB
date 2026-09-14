@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "6e5c96041cd89bd1d37b2d05f2ebc5e192fa4ed6",
-  "generated_at_utc": "2026-09-14T20:00:28Z",
+  "generated_at_utc": "2026-09-14T20:01:46Z",
   "history": {
     "done_total_local": 462,
     "pending_total_local": 0,
@@ -13,59 +13,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3565,
-      "job_id": "RRR-GATE4D-R8-INDEPENDENT-POSTCHECK-READONLY-20260914",
-      "reasons": [
-        "READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED",
-        "CHECK_1_INVALID_TYPE"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 1995,
+      "age_seconds": 2074,
       "job_id": "BOS-AGENT-HARNESS-AH12-DEV-CERTIFICATION-V1-R4-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3544,
-      "job_id": "EDARSA-LOGISTICS-GATE1A-SHARED-CAPABILITIES-AND-FIELD-UX-DISCOVERY-R1",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3588,
-      "job_id": "EDARSAHUB-DASHBOARD-IA-DRILLDOWN-DATERANGE-R1-CARLOS-20260914T183500Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1386,
+      "age_seconds": 1464,
       "job_id": "EDARSAHUB-DASHBOARD-IA-DRILLDOWN-DATERANGE-R2-CARLOS-20260914T190400Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3513,
+      "age_seconds": 3591,
       "job_id": "EDARSAHUB-SERVICES-GATE0B-CERT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3593,
-      "job_id": "EDARSAHUB-SERVICES-GATE0B-REPOSITORY-CONTRACT-DISCOVERY-R1",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3150,
+      "age_seconds": 3228,
       "job_id": "EDARSAHUB-SERVICES-GATE1-CAPABILITY-OWNERSHIP-MAP-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2643,
+      "age_seconds": 2722,
       "job_id": "RRR-GATE4D-R8-R1-INDEPENDENT-POSTCHECK-READONLY-20260914",
       "reason": null,
       "state": "RESULT_READY"
@@ -77,14 +49,14 @@
   "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 8,
+  "queue_rejected_recent": 0,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-14T20:00:26Z",
-    "last_receive_utc": "2026-09-14T20:00:26Z",
+    "last_cycle_utc": "2026-09-14T20:01:42Z",
+    "last_receive_utc": "2026-09-14T20:01:43Z",
     "last_terminal_utc": "2026-09-14T19:37:21Z",
     "pid": "289"
   },
