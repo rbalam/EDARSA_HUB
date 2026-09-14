@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "9ba7deecb25e09e3ccac22283651b7d6fe4e4a98",
-  "generated_at_utc": "2026-09-14T17:44:47Z",
+  "generated_at_utc": "2026-09-14T17:46:02Z",
   "history": {
     "done_total_local": 449,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1656,
+      "age_seconds": 1731,
       "job_id": "CXP-GATE3E-B-MPRO-SIDE-EFFECT-CONTRACT-READONLY-20260914",
       "reasons": [
         "SUMMARY_LANGUAGE_MUST_BE_ES"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1635,
+      "age_seconds": 1710,
       "job_id": "CXP-GATE3E-C-SOFTRESTAURANT-SIDE-EFFECT-CONTRACT-READONLY-20260914",
       "reasons": [
         "SUMMARY_LANGUAGE_MUST_BE_ES"
@@ -31,37 +31,37 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1076,
+      "age_seconds": 1151,
       "job_id": "BOS-AGENT-HARNESS-AH12-DEV-CERTIFICATION-V1-R3-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1223,
+      "age_seconds": 1298,
       "job_id": "EDARSA-LOGISTICS-GATE0-REPOSITORY-CONTRACT-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1492,
+      "age_seconds": 1567,
       "job_id": "EDARSAHUB-INVENTARIOS-TARGETED-RECOVERY-R1-20260914T094000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1100,
+      "age_seconds": 1175,
       "job_id": "RRR-GATE4D-R7-CANONICAL-RUNNER-ROLLBACK-DIAGNOSTIC-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1275,
+      "age_seconds": 1350,
       "job_id": "UNIVERSAL-WORKER-READ-ONLY-REPOSITORY-DISCOVERY-MODE-V1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 283,
+      "age_seconds": 358,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5F-GITHUB-ACTIONS-LIVE-CANARY-HARNESS-R1-20260914",
       "reason": null,
       "state": "RESULT_READY"
@@ -79,8 +79,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-14T17:44:42Z",
-    "last_receive_utc": "2026-09-14T17:44:42Z",
+    "last_cycle_utc": "2026-09-14T17:45:59Z",
+    "last_receive_utc": "2026-09-14T17:46:00Z",
     "last_terminal_utc": "2026-09-14T17:40:04Z",
     "pid": "33221"
   },
