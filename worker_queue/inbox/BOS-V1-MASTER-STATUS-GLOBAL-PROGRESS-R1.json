@@ -1,0 +1,22 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-MASTER-STATUS-GLOBAL-PROGRESS-R1",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Calcular el status maestro real de BOS V1 y su porcentaje global de avance usando exclusivamente evidencia existente: programa estrategico BOS, dossiers/certificaciones integrados y resultados terminales del Universal Worker. No implementar funcionalidad. No asumir avances por nombre de archivos ni por memoria. Identificar todos los Gates/Fases/Macrofases que BOS V1 define como obligatorios, clasificar cada uno como COMPLETE, PARTIAL, BLOCKED, NOT_STARTED o NOT_EVIDENCED y calcular porcentaje global real con una metodologia explicita, reproducible y sin doble conteo. Gate C R3 ya puede considerarse cerrado solo si la evidencia terminal certificada lo confirma. Para cada Gate reportar evidencia terminal usada, certification, percent_complete, tests/quality_gate, production_touched y SHA cuando exista. Distinguir avance funcional de avance de certificacion. Si el programa no define pesos, usar ponderacion uniforme por gate obligatorio y documentarlo; si define pesos oficiales, usarlos. Entregar porcentaje global, porcentaje certificado, porcentaje funcional evidenciado, blockers reales, gates cerrados, gates abiertos y siguiente gate correcto. No tocar Produccion, SQL, Mongo, Universal Worker, Supervisor ni watchdog.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/BOS/certifications/BOS_V1_MASTER_STATUS_GLOBAL_PROGRESS.md",
+      "content": "# BOS V1 - Master Status Global Progress\n\nEvidence-only master status.\n\nEl Universal Worker debe completar este dossier usando el programa estrategico BOS V1 y resultados terminales reales.\n\n## Reglas\n- No inventar porcentaje.\n- No inferir cierre por nombre de archivo.\n- Solo aceptar gates cerrados con evidencia terminal compatible.\n- No doble contar subgates y gate padre.\n- Separar avance funcional, avance de certificacion y avance global.\n- Documentar formula exacta de porcentaje.\n- Si no hay pesos oficiales, ponderacion uniforme por gate obligatorio del programa.\n- Gate C R3: validar contra su resultado terminal antes de marcarlo cerrado.\n\n## Salida obligatoria\n- program_scope\n- weighting_method\n- gates_total\n- gates_complete\n- gates_partial\n- gates_blocked\n- gates_not_started\n- global_percent_complete\n- certified_percent_complete\n- functional_evidence_percent_complete\n- blockers[]\n- next_gate\n- production_touched=false\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es"
+}
