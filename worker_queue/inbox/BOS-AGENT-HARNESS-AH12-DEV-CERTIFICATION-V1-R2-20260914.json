@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENT-HARNESS-AH12-DEV-CERTIFICATION-V1-R2-20260914",
+  "created_at_utc": "2026-09-14T15:48:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "AH12 DEV Certification R2. Certificar en modo generico READ_ONLY canonico el BOS Agent Harness V1 completo en Development sobre AH0-AH11 y sobre el contrato Generic READ_ONLY ya certificado. Verificar coherencia y regresion de Registry, Planner/Router, Worker Compiler, Evidence/Provenance, Security/Red Team, Marketing/CX, Mobile, Control Plane, E2E Simulation y Local Runtime; verificar Core Slimming; confirmar que Local Runtime reutiliza core.agent_execution_gate y core.agent_runtime_activation; confirmar que Production, EXECUTE y external execution permanecen fail-closed. Este gate no puede realizar acciones, cambios de codigo, SQL, Mongo, red, envios, nuevas autorizaciones ni promociones. Exito solo si todos los checks pasan, actions permanece vacio, no cambia ningun archivo tracked y production_touched=false.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/agent_harness/registry.py",
+        "backend/modules/agent_harness/planner_router.py",
+        "backend/modules/agent_harness/worker_compiler.py",
+        "backend/modules/agent_harness/evidence.py",
+        "backend/modules/agent_harness/redteam.py",
+        "backend/modules/agent_harness/marketing_cx.py",
+        "backend/modules/agent_harness/mobile.py",
+        "backend/modules/agent_harness/control_plane.py",
+        "backend/modules/agent_harness/e2e_simulation.py",
+        "backend/modules/agent_harness/local_runtime.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_bos_agent_harness_registry.py",
+        "backend/tests/test_bos_agent_harness_planner_router.py",
+        "backend/tests/test_bos_agent_harness_worker_compiler.py",
+        "backend/tests/test_bos_agent_harness_evidence.py",
+        "backend/tests/test_bos_agent_harness_security_redteam.py",
+        "backend/tests/test_bos_agent_harness_marketing_cx.py",
+        "backend/tests/test_bos_agent_harness_mobile.py",
+        "backend/tests/test_bos_agent_harness_control_plane.py",
+        "backend/tests/test_bos_agent_harness_e2e_simulation.py",
+        "backend/tests/test_bos_agent_harness_local_runtime.py",
+        "backend/tests/test_worker_core_growth_guard.py",
+        "backend/tests/test_worker_generic_readonly.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
