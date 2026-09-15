@@ -1,0 +1,88 @@
+{
+  "base_sha": "3cb02ea9ff4b759291e86f55a4b84a2bdad57b5b",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-15T21:43:45Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ESTELAR-POSTSYNC-VERIFY-R89-CARLOS-20260915T214500Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-15T21:43:48Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas_total",
+              "tickets_total",
+              "pax_total",
+              "sync_run_id"
+            ],
+            "name": "estelar_destination_04_05_after_r88",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "2026-09-04",
+                "119840.00",
+                81,
+                195,
+                "INCR-20260908-010339-81c7"
+              ],
+              [
+                "2026-09-05",
+                "252998.00",
+                167,
+                480,
+                "RESYNC-ESTELAR-20260901-20260914-6b02"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha_operacion",
+              "numero_ticket",
+              "producto_codigo_fuente",
+              "cantidad",
+              "importe_bruto",
+              "pax",
+              "sync_run_id"
+            ],
+            "name": "estelar_ticket_24667_after_r88",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-09-04",
+                "24667",
+                "C020001",
+                "200.0000",
+                "20000.00",
+                1,
+                "INCR-20260908-183901-abc1"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-15T21:43:44Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
