@@ -1,0 +1,31 @@
+{
+  "base_sha": "4d0a56a7728aacfc00d64d6a6651896987210042",
+  "blockers": [
+    "GIT_PUSH_FAILED"
+  ],
+  "candidate_sha": "20406f2a6b0941bf2a6a5781ed8c05c136911e2e",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-15T17:21:18Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+    "backend/core/scheduler/scheduler_manager.py",
+    "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+    "backend/tests/test_iscam_scheduler_definitive_fix_r80b.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-SCHEDULER-DEFINITIVE-FIX-R80B-CARLOS-20260915T172000Z",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-15T17:21:27Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-15T17:21:00Z",
+  "status": "GIT_PUSH_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
