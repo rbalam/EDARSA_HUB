@@ -1,0 +1,28 @@
+{
+  "base_sha": "40e809704d69b2a16e4119913cd1223523fb2e2f",
+  "blockers": [],
+  "candidate_sha": "74103f60837858e933dd6c64b3a8e39de9c46eb7",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-15T05:49:53Z",
+  "development_sha": "74103f60837858e933dd6c64b3a8e39de9c46eb7",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    ".github/workflows/agent-reach-live-canary.yml",
+    "backend/tests/live_canary_requests/gate5g_worker_autotrigger_20260914.json"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5I-CANONICAL-PYTHON-DEPS-R1-20260914",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-15T05:50:23Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-15T05:49:49Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
