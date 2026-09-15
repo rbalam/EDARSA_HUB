@@ -1,0 +1,48 @@
+{
+  "base_sha": "3cb02ea9ff4b759291e86f55a4b84a2bdad57b5b",
+  "blockers": [
+    "check_failed:sql_readonly_audit"
+  ],
+  "canonical_sql_mutation": true,
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-15T21:38:45Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ESTELAR-SEPT-REAL-R88-CARLOS-20260915T214000Z",
+  "operation": "COMERCIAL_RANGE_RESYNC",
+  "operation_summary": {
+    "committed": true,
+    "detail_success": true,
+    "event": "comercial_range_summary",
+    "fecha_fin": "2026-09-14",
+    "fecha_inicio": "2026-09-01",
+    "header_success": true,
+    "records_errored": 0,
+    "records_inserted": 0,
+    "records_processed": 14,
+    "records_skipped": 14,
+    "records_updated": 0,
+    "stage": "HEADER_KPI",
+    "success": true,
+    "unidad": "ESTELAR",
+    "warning": ""
+  },
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-15T21:39:06Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-15T21:38:40Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "units": [
+    "ESTELAR"
+  ],
+  "work_completion": "NOT_CERTIFIED"
+}
