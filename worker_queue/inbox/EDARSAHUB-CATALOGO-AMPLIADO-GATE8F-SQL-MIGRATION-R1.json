@@ -1,0 +1,57 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-CATALOGO-AMPLIADO-GATE8F-SQL-MIGRATION-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "objective": "Ejecutar exactamente una vez en EDARSAHUB Development la migracion versionada Gate8F de Catalogo Ampliado, usando la credencial SQL canonica existente previamente certificada con permisos suficientes. La ejecucion queda SHA256-bound, transaccional, con preflight y postcheck READ_ONLY fail-closed, sin SQL inline de escritura, sin segundo secreto y sin tocar Produccion.",
+  "human_summary_language": "es",
+  "actions": [],
+  "migration_path": "backend/database/migrations/20260910_003_catalogo_ampliado_notifications_config.sql",
+  "migration_sha256": "5a0788d606d540e38802c0dc6f0689bfa077580f1cc85ad52de98dff0442896b",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": true,
+  "preflight_checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "gate8f_writer_identity_permission_gate",
+          "sql": "SELECT 1 / CASE WHEN DB_NAME()='EDARSAHUB' AND SUSER_SNAME()='HRLectura' AND USER_NAME()='HRLectura' AND OBJECT_ID('dbo.Sistema_NotificacionesConfig','U') IS NOT NULL AND HAS_PERMS_BY_NAME('dbo.Sistema_NotificacionesConfig','OBJECT','INSERT')=1 THEN 1 ELSE 0 END AS gate8f_writer_preflight"
+        },
+        {
+          "name": "gate8f_baseline",
+          "sql": "SELECT SUM(CASE WHEN ColeccionOrigen='notification_provider_config' AND ((LOWER(PayloadMongo) LIKE '%\"canal\":\"email\"%' AND LOWER(PayloadMongo) LIKE '%\"provider\":\"smtp\"%') OR (LOWER(PayloadMongo) LIKE '%\"canal\":\"whatsapp\"%' AND LOWER(PayloadMongo) LIKE '%\"provider\":\"twilio\"%')) THEN 1 ELSE 0 END) AS provider_rows, SUM(CASE WHEN ColeccionOrigen='notification_templates' AND LOWER(PayloadMongo) LIKE '%catalogo_ampliado_documento_vencimiento%' AND (LOWER(PayloadMongo) LIKE '%\"canal\":\"email\"%' OR LOWER(PayloadMongo) LIKE '%\"canal\":\"whatsapp\"%') THEN 1 ELSE 0 END) AS template_rows, SUM(CASE WHEN ColeccionOrigen='notification_config' AND LOWER(PayloadMongo) LIKE '%catalogo_ampliado%' AND LOWER(PayloadMongo) LIKE '%documento_vencimiento%' AND LOWER(PayloadMongo) LIKE '%\"modo_envio\":\"real\"%' AND (LOWER(PayloadMongo) LIKE '%\"canal\":\"email\"%' OR LOWER(PayloadMongo) LIKE '%\"canal\":\"whatsapp\"%') THEN 1 ELSE 0 END) AS module_config_rows FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "gate8f_postcheck_identity",
+          "sql": "SELECT 1 / CASE WHEN DB_NAME()='EDARSAHUB' AND SUSER_SNAME()='HRLectura' AND USER_NAME()='HRLectura' THEN 1 ELSE 0 END AS gate8f_postcheck_identity"
+        },
+        {
+          "name": "gate8f_materialization_gate",
+          "sql": "SELECT 1 / CASE WHEN (SELECT SUM(CASE WHEN ColeccionOrigen='notification_provider_config' AND ((LOWER(PayloadMongo) LIKE '%\"canal\":\"email\"%' AND LOWER(PayloadMongo) LIKE '%\"provider\":\"smtp\"%') OR (LOWER(PayloadMongo) LIKE '%\"canal\":\"whatsapp\"%' AND LOWER(PayloadMongo) LIKE '%\"provider\":\"twilio\"%')) THEN 1 ELSE 0 END) FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1) >= 2 AND (SELECT SUM(CASE WHEN ColeccionOrigen='notification_templates' AND LOWER(PayloadMongo) LIKE '%catalogo_ampliado_documento_vencimiento%' AND (LOWER(PayloadMongo) LIKE '%\"canal\":\"email\"%' OR LOWER(PayloadMongo) LIKE '%\"canal\":\"whatsapp\"%') THEN 1 ELSE 0 END) FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1) >= 2 AND (SELECT SUM(CASE WHEN ColeccionOrigen='notification_config' AND LOWER(PayloadMongo) LIKE '%catalogo_ampliado%' AND LOWER(PayloadMongo) LIKE '%documento_vencimiento%' AND LOWER(PayloadMongo) LIKE '%\"modo_envio\":\"real\"%' AND (LOWER(PayloadMongo) LIKE '%\"canal\":\"email\"%' OR LOWER(PayloadMongo) LIKE '%\"canal\":\"whatsapp\"%') THEN 1 ELSE 0 END) FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1) >= 2 THEN 1 ELSE 0 END AS gate8f_materialization_ok"
+        },
+        {
+          "name": "gate8f_materialization_counts",
+          "sql": "SELECT SUM(CASE WHEN ColeccionOrigen='notification_provider_config' AND ((LOWER(PayloadMongo) LIKE '%\"canal\":\"email\"%' AND LOWER(PayloadMongo) LIKE '%\"provider\":\"smtp\"%') OR (LOWER(PayloadMongo) LIKE '%\"canal\":\"whatsapp\"%' AND LOWER(PayloadMongo) LIKE '%\"provider\":\"twilio\"%')) THEN 1 ELSE 0 END) AS provider_rows, SUM(CASE WHEN ColeccionOrigen='notification_templates' AND LOWER(PayloadMongo) LIKE '%catalogo_ampliado_documento_vencimiento%' AND (LOWER(PayloadMongo) LIKE '%\"canal\":\"email\"%' OR LOWER(PayloadMongo) LIKE '%\"canal\":\"whatsapp\"%') THEN 1 ELSE 0 END) AS template_rows, SUM(CASE WHEN ColeccionOrigen='notification_config' AND LOWER(PayloadMongo) LIKE '%catalogo_ampliado%' AND LOWER(PayloadMongo) LIKE '%documento_vencimiento%' AND LOWER(PayloadMongo) LIKE '%\"modo_envio\":\"real\"%' AND (LOWER(PayloadMongo) LIKE '%\"canal\":\"email\"%' OR LOWER(PayloadMongo) LIKE '%\"canal\":\"whatsapp\"%') THEN 1 ELSE 0 END) AS module_config_rows FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Worker 3"
+  }
+}
