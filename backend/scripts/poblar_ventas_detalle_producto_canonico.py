@@ -835,14 +835,18 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
 
 SOFT_AJUSTE_CHEQUE = "__ISCAM_AJUSTE_CHEQUE__"
 SOFT_AJUSTE_FRANQUICIA_CERO = "__ISCAM_AJUSTE_FRANQUICIA_CERO__"
+SOFT_AJUSTE_ENCABEZADO = "__ISCAM_AJUSTE_ENCABEZADO__"
 
 
 def _soft_add_ticket_adjustments(src_rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Conserva productos reales y registra descuentos/cortesias como ajuste separado.
+    """Conserva productos reales y hace que el detalle dependa del folio header.
 
-    No distribuye el total del encabezado entre productos. El importe del producto
-    permanece cantidad * precio. La diferencia contra cheques.total solo se acepta
-    como ajuste cuando el propio cheque informa descuento/cortesia.
+    La poblacion valida nace exclusivamente de ``h`` (cheques validos) y cada linea
+    de ``cheqdet`` se une por ``dc.foliodet = h.folio``. No se prorratea ni se crea
+    una poblacion de tickets independiente. El total monetario autoritativo es el
+    encabezado del mismo folio; cualquier diferencia residual se conserva como una
+    linea tecnica de conciliacion ligada al ticket para que el detalle sume
+    exactamente al encabezado sin alterar los productos reales.
     """
     grouped: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     for raw in src_rows:
@@ -900,11 +904,20 @@ def _soft_add_ticket_adjustments(src_rows: List[Dict[str, Any]]) -> List[Dict[st
             out.append(adjustment)
             continue
 
-        raise RuntimeError(
-            f"SoftRestaurant: diferencia no explicada en ticket {ticket_key}; "
-            f"productos={product_total}; encabezado={header_total}; delta={delta}; "
-            f"indicador_descuento_cortesia={discount_indicator}"
+        # El folio del encabezado es el padre y la cifra autoritativa.
+        # Conservamos las lineas reales tal como vienen del POS y agregamos una
+        # linea tecnica por la diferencia residual del MISMO folio. De esta forma
+        # nunca se fabrica una poblacion de detalle independiente del header.
+        adjustment = dict(items[0])
+        adjustment["producto_codigo_fuente"] = SOFT_AJUSTE_ENCABEZADO
+        adjustment["producto_nombre"] = (
+            "AJUSTE DE CONCILIACION CONTRA ENCABEZADO DEL TICKET"
         )
+        adjustment["cantidad"] = Decimal("0")
+        adjustment["precio_unitario"] = Decimal("0")
+        adjustment["importe_bruto"] = Decimal("0")
+        adjustment["importe_neto"] = delta
+        out.append(adjustment)
 
     return out
 

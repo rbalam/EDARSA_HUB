@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.poblar_ventas_detalle_producto_canonico import SOFT_AJUSTE_CHEQUE, _soft_add_ticket_adjustments
+from scripts.poblar_ventas_detalle_producto_canonico import SOFT_AJUSTE_CHEQUE, SOFT_AJUSTE_ENCABEZADO, _soft_add_ticket_adjustments
 
 ROOT = Path(__file__).resolve().parents[2]
 ROUTES = ROOT / 'backend' / 'modules' / 'inteligencia_comercial' / 'iscam_routes.py'
@@ -29,9 +29,15 @@ def test_discounted_ticket_adds_separate_adjustment_without_touching_product():
     assert sum(r['importe_neto'] for r in out) == Decimal('90')
 
 
-def test_unexplained_difference_fails_closed():
-    with pytest.raises(RuntimeError, match='diferencia no explicada'):
-        _soft_add_ticket_adjustments([_row(header='90', discount='0')])
+def test_unexplained_difference_is_reconciled_to_same_header_folio():
+    out = _soft_add_ticket_adjustments([_row(header='90', discount='0')])
+    assert out[0]['producto_codigo_fuente'] == 'P1'
+    assert out[0]['importe_neto'] == Decimal('100')
+    assert out[1]['producto_codigo_fuente'] == SOFT_AJUSTE_ENCABEZADO
+    assert out[1]['id_transaccion'] == 'T1'
+    assert out[1]['numero_ticket'] == 'T1'
+    assert out[1]['importe_neto'] == Decimal('-10')
+    assert sum(r['importe_neto'] for r in out) == Decimal('90')
 
 
 def test_iscam_routes_separate_adjustments_from_products():
