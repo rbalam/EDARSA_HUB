@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "1aa85a8d05bc73e67b40e7a0a84a943513c2585b",
-  "generated_at_utc": "2026-09-15T14:34:49Z",
+  "generated_at_utc": "2026-09-15T14:36:03Z",
   "history": {
     "done_total_local": 488,
     "pending_total_local": 0,
@@ -13,37 +13,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 18,
+      "age_seconds": 92,
       "job_id": "BOS-AGENT-HARNESS-V1-CAVAS-CORPORATIVAS-READONLY-DOMAIN-CANARY-GATE20",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 498,
+      "age_seconds": 572,
       "job_id": "BOS-AGENT-HARNESS-V1-INTELIGENCIA-PORTAL-CLOSURE-READONLY-DOMAIN-CANARY-GATE19",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 33,
+      "age_seconds": 106,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R2-PYTEST-CONTRACT-FIX-1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 490,
+      "age_seconds": 563,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CANONIZATION-R3B",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 116,
+      "age_seconds": 189,
       "job_id": "WORKER-BOS-AGENT-CONTROL-CENTER-PRODUCT-INTEGRATION-GATE6A-R2-DISCOVERY-20260915",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 222,
+      "age_seconds": 295,
       "job_id": "WORKER-REJECTED-CORRECTION-REQUEUE-R3",
       "reason": null,
       "state": "RESULT_READY"
@@ -61,8 +61,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T14:34:45Z",
-    "last_receive_utc": "2026-09-15T14:34:47Z",
+    "last_cycle_utc": "2026-09-15T14:36:03Z",
+    "last_receive_utc": "2026-09-15T14:35:58Z",
     "last_terminal_utc": "2026-09-15T14:34:30Z",
     "pid": "25361"
   },
