@@ -1,0 +1,67 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SCHEDULER-RSYNC-MANUAL-FIX-R74-CARLOS-20260915T163000Z",
+  "created_at_utc": "2026-09-15T16:30:00Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "fb2574dd87b9630de4a3e67ef406dcda955d8bb2",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir el modulo Programacion/Scheduler -> R-Sync Manual para que Ventas Cerradas (KPIs) ejecute DRY RUN y REAL controlado sin confundir fallos del detalle ISCAM con fallos de conectividad del servidor origen, y para que el frontend no corte a los 15 segundos ni oculte el error real. Mantener el origen canonico actual mediante get_server_connection_config + execute_query_on_server, no tocar Produccion, no cambiar la logica de fecha operativa ni los contratos de ventas ya certificados. Validar CIENFUEGOS y LA ESTELAR para 2026-09-01 a 2026-09-14 primero en DRY RUN; NO ejecutar REAL como parte de la validacion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "old": "        detalle_producto = _ejecutar_backfill_detalle_iscam(\n            unidad_negocio_id, fecha_inicio, fecha_fin, commit=False\n        )\n\n        return {\n            'success': bool(detalle_producto.get('success')),\n            'modo': 'DRY_RUN',\n            'mensaje': ('Simulación completada - NO se modificaron datos' if detalle_producto.get('success') else 'Header validado, pero el detalle ISCAM tiene días que no concilian'),\n            'records_processed': len(detalle),\n            'registros_que_se_sincronizarian': len(detalle),\n            'registros_extraidos': len(detalle),\n            'registros_afectados': 0,\n            'query_source': query_source,\n            'system_type_raw': sistema_raw,\n            'system_type_normalized': sistema_normalizado,\n            'backend_contract_version': (\n                'softrestaurant-turnos-v2'\n                if sistema == 'SOFTRESTAURANT'\n                else 'mpro-handler-oficial-v1'\n            ),\n            'detalle': detalle,\n            'detalle_producto': detalle_producto\n        }",
+      "new": "        # El item de catalogo 'Ventas Cerradas (KPIs)' valida primero el header KPI.\n        # El detalle ISCAM es una etapa auxiliar: si falla no debe falsear que el\n        # servidor origen estuvo OFFLINE ni convertir un header valido en fallo.\n        try:\n            detalle_producto = _ejecutar_backfill_detalle_iscam(\n                unidad_negocio_id, fecha_inicio, fecha_fin, commit=False\n            )\n        except Exception as detalle_exc:\n            detalle_producto = {\n                'success': False,\n                'modo': 'DRY_RUN',\n                'error_message': f'Fallo en validacion auxiliar DETALLE_ISCAM: {detalle_exc}',\n            }\n\n        detalle_success = bool(detalle_producto.get('success'))\n        detalle_warning = (\n            None\n            if detalle_success\n            else detalle_producto.get('error_message')\n            or 'HEADER_KPI validado; DETALLE_ISCAM requiere revision.'\n        )\n\n        return {\n            'success': True,\n            'modo': 'DRY_RUN',\n            'stage': 'HEADER_KPI',\n            'header_success': True,\n            'detail_success': detalle_success,\n            'warning_message': detalle_warning,\n            'mensaje': 'Simulación de Ventas Cerradas (KPIs) completada - NO se modificaron datos',\n            'records_processed': len(detalle),\n            'registros_que_se_sincronizarian': len(detalle),\n            'registros_extraidos': len(detalle),\n            'registros_afectados': 0,\n            'query_source': query_source,\n            'system_type_raw': sistema_raw,\n            'system_type_normalized': sistema_normalizado,\n            'backend_contract_version': (\n                'softrestaurant-turnos-v2'\n                if sistema == 'SOFTRESTAURANT'\n                else 'mpro-handler-oficial-v1'\n            ),\n            'detalle': detalle,\n            'detalle_producto': detalle_producto\n        }",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "old": "        detalle_producto = (\n            _ejecutar_backfill_detalle_iscam(\n                unidad_negocio_id, fecha_inicio, fecha_fin, commit=True\n            )\n            if resultado.success\n            else {'success': False, 'modo': 'NO_EJECUTADO', 'error_message': 'Header no exitoso'}\n        )\n        success_total = bool(resultado.success and detalle_producto.get('success'))\n\n        return {\n            'success': success_total,\n            'records_processed': resultado.records_processed,\n            'records_inserted': resultado.records_inserted,\n            'records_updated': resultado.records_updated,\n            'records_skipped': resultado.records_skipped,\n            'records_errored': resultado.records_errored,\n            'duration_seconds': resultado.duration_seconds,\n            'detalle_producto': detalle_producto,\n            'error_message': resultado.error_message or detalle_producto.get('error_message')\n        }",
+      "new": "        if resultado.success:\n            try:\n                detalle_producto = _ejecutar_backfill_detalle_iscam(\n                    unidad_negocio_id, fecha_inicio, fecha_fin, commit=True\n                )\n            except Exception as detalle_exc:\n                detalle_producto = {\n                    'success': False,\n                    'modo': 'REAL',\n                    'error_message': f'HEADER_KPI sincronizado; fallo auxiliar DETALLE_ISCAM: {detalle_exc}',\n                }\n        else:\n            detalle_producto = {\n                'success': False,\n                'modo': 'NO_EJECUTADO',\n                'error_message': 'DETALLE_ISCAM no ejecutado porque HEADER_KPI no fue exitoso',\n            }\n\n        detalle_success = bool(detalle_producto.get('success'))\n        detalle_warning = (\n            None\n            if not resultado.success or detalle_success\n            else detalle_producto.get('error_message')\n            or 'HEADER_KPI sincronizado; DETALLE_ISCAM requiere revision.'\n        )\n\n        return {\n            'success': bool(resultado.success),\n            'stage': 'HEADER_KPI' if resultado.success else 'HEADER_KPI_FAILED',\n            'header_success': bool(resultado.success),\n            'detail_success': detalle_success,\n            'warning_message': detalle_warning,\n            'records_processed': resultado.records_processed,\n            'records_inserted': resultado.records_inserted,\n            'records_updated': resultado.records_updated,\n            'records_skipped': resultado.records_skipped,\n            'records_errored': resultado.records_errored,\n            'duration_seconds': resultado.duration_seconds,\n            'detalle_producto': detalle_producto,\n            'error_message': resultado.error_message\n        }",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/admin/ResyncPanel.jsx",
+      "old": "        const resp = await api.post('/admin/scheduler/resync/execute', {\n          tipo_sync: executionCodigo,\n          unidad_negocio_id: unidadId,\n          fecha_inicio: fi,\n          fecha_fin: ff,\n          motivo,\n          dry_run: isDryRun,\n        });",
+      "new": "        const resp = await api.post('/admin/scheduler/resync/execute', {\n          tipo_sync: executionCodigo,\n          unidad_negocio_id: unidadId,\n          fecha_inicio: fi,\n          fecha_fin: ff,\n          motivo,\n          dry_run: isDryRun,\n        }, { timeout: 120000 });",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/admin/ResyncPanel.jsx",
+      "old": "      } catch (error) {\n        results.push({\n          tipo: it,\n          data: { success: false, modo: isDryRun ? 'DRY_RUN' : 'REAL',\n                  error_message: error.response?.data?.detail || 'Error de ejecución' },\n        });\n      }",
+      "new": "      } catch (error) {\n        const errorData = error.response?.data || {};\n        const resultadoError = errorData?.resultado || {};\n        const isTimeout = error.code === 'ECONNABORTED' || String(error.message || '').toLowerCase().includes('timeout');\n        const errorMessage = isTimeout\n          ? 'TIMEOUT_CLIENTE: la re-sincronización superó 120 segundos. Reintente o reduzca el rango.'\n          : errorData?.error_message\n            || resultadoError?.error_message\n            || errorData?.detail\n            || error.message\n            || 'Error de ejecución sin detalle';\n        results.push({\n          tipo: it,\n          data: {\n            success: false,\n            modo: isDryRun ? 'DRY_RUN' : 'REAL',\n            stage: isTimeout ? 'TIMEOUT_CLIENTE' : (errorData?.stage || resultadoError?.stage || 'EJECUCION'),\n            error_message: errorMessage,\n          },\n        });\n      }",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/components/admin/ResyncPanel.jsx",
+      "old": "                          {r.data.resultado && (\n                            <span className=\"ml-3\">Procesados: {resultado.records_processed || 0}\n                              {r.data.modo === 'REAL' && ` · Insertados: ${resultado.records_inserted || 0} · Actualizados: ${resultado.records_updated || 0}`}\n                            </span>\n                          )}\n                        </div>",
+      "new": "                          {r.data.resultado && (\n                            <span className=\"ml-3\">Procesados: {resultado.records_processed || 0}\n                              {r.data.modo === 'REAL' && ` · Insertados: ${resultado.records_inserted || 0} · Actualizados: ${resultado.records_updated || 0}`}\n                            </span>\n                          )}\n                        </div>\n                        {(r.data.warning_message || resultado.warning_message) && (\n                          <p className=\"rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800\">\n                            Advertencia {resultado.stage || r.data.stage || 'DETALLE_ISCAM'}: {r.data.warning_message || resultado.warning_message}\n                          </p>\n                        )}",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_scheduler_rsync_manual_r74.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nBACKEND = ROOT / 'backend' / 'api' / 'admin_scheduler_resync.py'\nFRONTEND = ROOT / 'frontend' / 'src' / 'components' / 'admin' / 'ResyncPanel.jsx'\n\n\ndef test_kpi_dry_run_does_not_report_detail_failure_as_origin_failure():\n    text = BACKEND.read_text(encoding='utf-8')\n    dry = text.split('async def _ejecutar_dry_run(', 1)[1].split('async def _ejecutar_sync_real(', 1)[0]\n    assert \"'success': True\" in dry\n    assert \"'stage': 'HEADER_KPI'\" in dry\n    assert \"'detail_success': detalle_success\" in dry\n    assert 'Fallo en validacion auxiliar DETALLE_ISCAM' in dry\n    assert 'execute_query_on_server(config, query)' in dry\n    assert 'ConnectionStatus.ONLINE' in dry\n\n\ndef test_real_kpi_success_is_not_blocked_by_auxiliary_detail():\n    text = BACKEND.read_text(encoding='utf-8')\n    real = text.split('async def _ejecutar_sync_real(', 1)[1]\n    assert \"'success': bool(resultado.success)\" in real\n    assert \"'header_success': bool(resultado.success)\" in real\n    assert \"'warning_message': detalle_warning\" in real\n    assert \"'error_message': resultado.error_message\" in real\n\n\ndef test_frontend_rsync_uses_long_timeout_and_surfaces_real_error():\n    text = FRONTEND.read_text(encoding='utf-8')\n    assert \"}, { timeout: 120000 });\" in text\n    assert \"errorData?.error_message\" in text\n    assert \"resultadoError?.error_message\" in text\n    assert \"TIMEOUT_CLIENTE\" in text\n    assert \"error.response?.data?.detail || 'Error de ejecución'\" not in text\n\n\ndef test_frontend_surfaces_auxiliary_detail_warning():\n    text = FRONTEND.read_text(encoding='utf-8')\n    assert 'r.data.warning_message || resultado.warning_message' in text\n    assert 'Advertencia' in text\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/api/admin_scheduler_resync.py", "backend/tests/test_scheduler_rsync_manual_r74.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_scheduler_rsync_manual_r74.py", "backend/tests/test_admin_scheduler_resync_origin_contract.py", "backend/tests/test_iscam_detail_only_manual_resync_r37.py"]}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
