@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "31909461ec698e4d31228474cbd56b3843fa42f4",
-  "generated_at_utc": "2026-09-15T14:58:18Z",
+  "generated_at_utc": "2026-09-15T14:59:37Z",
   "history": {
     "done_total_local": 489,
     "pending_total_local": 0,
@@ -13,61 +13,61 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1428,
+      "age_seconds": 1506,
       "job_id": "BOS-AGENT-HARNESS-V1-CAVAS-CORPORATIVAS-READONLY-DOMAIN-CANARY-GATE20",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1907,
+      "age_seconds": 1986,
       "job_id": "BOS-AGENT-HARNESS-V1-INTELIGENCIA-PORTAL-CLOSURE-READONLY-DOMAIN-CANARY-GATE19",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1442,
+      "age_seconds": 1520,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R2-PYTEST-CONTRACT-FIX-1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1164,
+      "age_seconds": 1243,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R2-REPLAY-1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 850,
+      "age_seconds": 928,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R2-SHARED-SAFETY-CONTRACT-FIX-2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 692,
+      "age_seconds": 771,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 305,
+      "age_seconds": 384,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1899,
+      "age_seconds": 1978,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CANONIZATION-R3B",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1525,
+      "age_seconds": 1604,
       "job_id": "WORKER-BOS-AGENT-CONTROL-CENTER-PRODUCT-INTEGRATION-GATE6A-R2-DISCOVERY-20260915",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1631,
+      "age_seconds": 1710,
       "job_id": "WORKER-REJECTED-CORRECTION-REQUEUE-R3",
       "reason": null,
       "state": "RESULT_READY"
@@ -85,8 +85,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T14:58:14Z",
-    "last_receive_utc": "2026-09-15T14:58:17Z",
+    "last_cycle_utc": "2026-09-15T14:59:34Z",
+    "last_receive_utc": "2026-09-15T14:59:36Z",
     "last_terminal_utc": "2026-09-15T14:53:13Z",
     "pid": "25361"
   },
