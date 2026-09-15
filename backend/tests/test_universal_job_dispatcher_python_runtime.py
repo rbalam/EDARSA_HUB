@@ -193,10 +193,9 @@ def test_all_internal_python_subprocesses_are_canonical():
         '"py_compile", *paths]'
     ) in text
 
-    assert (
-        'cmd = [PYTHON_BIN, "-m", '
-        '"pytest", "-q", *paths]'
-    ) in text
+    assert 'pytest_args = ["-q"]' in text
+    assert 'pytest_args.extend(["-p", "no:cacheprovider"])' in text
+    assert 'cmd = [PYTHON_BIN, "-m", "pytest", *pytest_args, *paths]' in text
 
     assert "/usr/bin/python3" not in text
     assert "/usr/local/bin/python3" not in text
