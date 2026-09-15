@@ -707,8 +707,9 @@ def _soft_operational_datetime_range(cfg: Dict[str, Any], dia: date) -> Tuple[st
 
     Para un dia, Reporte Ejecutivo equivale a [00:00:00, siguiente 00:00:00).
     """
-    del cfg
     inicio = datetime.combine(dia, datetime.min.time())
+    if str(cfg.get('unidad_codigo') or '').strip().upper() == 'ESTELAR':
+        inicio += timedelta(hours=9)
     fin = inicio + timedelta(days=1)
     return (
         inicio.strftime("%Y-%m-%d %H:%M:%S"),
