@@ -1,80 +1,83 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "888c2ad3e0f2226ce38c8b08bcc923c45b9d1656",
-  "generated_at_utc": "2026-09-15T04:46:37Z",
+  "development_sha": "2a485ed069fa03efa1a842e88f831de3787189c1",
+  "generated_at_utc": "2026-09-15T05:15:33Z",
   "history": {
-    "done_total_local": 471,
+    "done_total_local": 473,
     "pending_total_local": 0,
     "processing_total_local": 1,
-    "rejected_total_local": 503,
-    "results_total_local": 844
+    "rejected_total_local": 505,
+    "results_total_local": 847
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 896,
+      "age_seconds": 27,
+      "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R2-PYTEST-CONTRACT-FIX-1",
+      "reasons": [
+        "SUMMARY_LANGUAGE_MUST_BE_ES"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 22,
+      "job_id": "BOS-AGENT-HARNESS-V1-COMERCIAL-READONLY-DOMAIN-CANARY-GATE15",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2633,
       "job_id": "BOS-AGENT-HARNESS-V1-CONTROLLED-DEV-CANARY-GATE13",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 381,
+      "age_seconds": 2118,
       "job_id": "BOS-AGENT-HARNESS-V1-CONTROLLED-DEV-EXECUTION-GATE14",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3373,
-      "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R1",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1975,
-      "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R2",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1946,
-      "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CLASSIFICATION-R2",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1635,
+      "age_seconds": 3371,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CLASSIFICATION-R2-1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 989,
+      "age_seconds": 2726,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CLASSIFICATION-R2-2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 562,
+      "age_seconds": 2299,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CLASSIFICATION-R2-3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3399,
-      "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-DISCOVERY-R1",
+      "age_seconds": 7,
+      "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-TEST-CONTRACT-FIX-R2-4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 757,
+      "age_seconds": 1733,
+      "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5G-R2-WORKER-AUTOTRIGGER-LIVE-CANARY-20260914",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2494,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5G-WORKER-AUTOTRIGGER-LIVE-CANARY-R1-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 4,
-      "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5G-R2-WORKER-AUTOTRIGGER-LIVE-CANARY-20260914",
+      "age_seconds": 27,
+      "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5H-PYTEST-HARNESS-R1-20260914",
       "reason": null,
       "state": "RUNNING"
     }
@@ -85,16 +88,16 @@
   "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 10,
+  "queue_rejected_recent": 1,
+  "queue_result_ready_recent": 9,
   "queue_running": 1,
   "runtime": {
-    "current_job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5G-R2-WORKER-AUTOTRIGGER-LIVE-CANARY-20260914",
+    "current_job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5H-PYTEST-HARNESS-R1-20260914",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T04:46:32Z",
-    "last_receive_utc": "2026-09-15T04:46:32Z",
-    "last_terminal_utc": "2026-09-15T04:40:15Z",
-    "pid": "871"
+    "last_cycle_utc": "2026-09-15T05:15:32Z",
+    "last_receive_utc": "2026-09-15T05:15:26Z",
+    "last_terminal_utc": "2026-09-15T05:15:25Z",
+    "pid": "146"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
