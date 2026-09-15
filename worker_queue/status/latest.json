@@ -1,20 +1,20 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "d0d0f4e512093c9085b488c3ec1d3a831c6514bc",
-  "generated_at_utc": "2026-09-15T19:55:30Z",
+  "generated_at_utc": "2026-09-15T20:57:21Z",
   "history": {
-    "done_total_local": 503,
+    "done_total_local": 504,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 524,
-    "results_total_local": 894
+    "results_total_local": 895
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1984,
-      "job_id": "EDARSAHUB-ESTELAR-OPDAY-R85B-CARLOS-20260915T191812Z",
+      "age_seconds": 16,
+      "job_id": "EDARSAHUB-ESTELAR-R85B-VERIFY-R86-CARLOS-20260915T192500Z",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -31,10 +31,10 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T19:55:26Z",
-    "last_receive_utc": "2026-09-15T19:55:27Z",
-    "last_terminal_utc": "2026-09-15T19:22:25Z",
-    "pid": "825"
+    "last_cycle_utc": "2026-09-15T20:57:15Z",
+    "last_receive_utc": "2026-09-15T20:57:18Z",
+    "last_terminal_utc": "2026-09-15T20:57:04Z",
+    "pid": "713"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
