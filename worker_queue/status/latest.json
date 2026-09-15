@@ -1,61 +1,67 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "f7ae4ea31cd44b01be8e70a9eb8d6e9d2bded586",
-  "generated_at_utc": "2026-09-15T18:03:24Z",
+  "generated_at_utc": "2026-09-15T18:04:37Z",
   "history": {
-    "done_total_local": 501,
+    "done_total_local": 502,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 524,
-    "results_total_local": 892
+    "results_total_local": 893
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 87,
+      "age_seconds": 160,
       "job_id": "EDARSAHUB-ESTELAR-SOFT-DATE-BASIS-AUDIT-R83-CARLOS-20260915T180000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1523,
+      "age_seconds": 1597,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-R82-ESTELAR-20260912-20260914-CARLOS-20260915T173500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1797,
+      "age_seconds": 9,
+      "job_id": "EDARSAHUB-ISCAM-ESTELAR-20260914-FLAGS-R84-CARLOS-20260915T175000Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1870,
       "job_id": "EDARSAHUB-ISCAM-R80C-POSTVERIFY-R81-CARLOS-20260915T173000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 895,
+      "age_seconds": 969,
       "job_id": "EDARSAHUB-ISCAM-R82-FAILURE-ISOLATION-R83-CARLOS-20260915T174000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3448,
+      "age_seconds": 3521,
       "job_id": "EDARSAHUB-ISCAM-SCHEDULER-DEFINITIVE-FIX-R80-CARLOS-20260915T171000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2525,
+      "age_seconds": 2598,
       "job_id": "EDARSAHUB-ISCAM-SCHEDULER-DEFINITIVE-FIX-R80B-CARLOS-20260915T172000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2411,
+      "age_seconds": 2484,
       "job_id": "EDARSAHUB-ISCAM-SCHEDULER-DEFINITIVE-FIX-R80C-CARLOS-20260915T172500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1516,
+      "age_seconds": 1589,
       "job_id": "EDARSAHUB-WORKER-FULL-GATE-CI-FIX-R80D-CARLOS-20260915T173000Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -68,14 +74,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 8,
+  "queue_result_ready_recent": 9,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T18:03:11Z",
-    "last_receive_utc": "2026-09-15T18:03:06Z",
-    "last_terminal_utc": "2026-09-15T18:01:56Z",
+    "last_cycle_utc": "2026-09-15T18:04:36Z",
+    "last_receive_utc": "2026-09-15T18:04:31Z",
+    "last_terminal_utc": "2026-09-15T18:04:27Z",
     "pid": "839"
   },
   "schema": "edarsahub.worker-health.v3",
