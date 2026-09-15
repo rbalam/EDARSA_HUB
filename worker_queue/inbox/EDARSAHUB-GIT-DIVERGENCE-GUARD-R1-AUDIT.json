@@ -1,0 +1,69 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R1-AUDIT",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Auditoria AS-IS previa obligatoria para EDARSAHUB-GIT-DIVERGENCE-GUARD-R1. Localizar y mapear sin modificar archivos todos los mecanismos actuales relacionados con git fetch, checkout/switch, commit, push, EDARSA_ALLOW_PUSH, mirror sync, Universal Worker, worker health, worktree, locks, compare-and-swap, artifact guards y comandos destructivos. Identificar duplicaciones, quienes pueden escribir actualmente sobre /app o refs de Edarsahub_Desarrollo, race conditions, permisos de push persistentes, git pull/merge/reset --hard/clean/force, falsos PASS por control de salida y cualquier ruta que pueda dejar divergencia local/remota. Confirmar el patron actual de worktrees aislados del Worker y el scope de locks. Producir evidencia estructurada READ_ONLY para diseñar el cambio minimo; no publicar, no commit, no push, no SQL, no Production.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync",
+          "backend/tests",
+          "backup_a_github.sh",
+          "docs"
+        ],
+        "search_terms": [
+          "git fetch",
+          "git checkout",
+          "git switch",
+          "git commit",
+          "git push",
+          "EDARSA_ALLOW_PUSH",
+          "git worktree",
+          "worktree",
+          "dispatcher.lock",
+          "flock",
+          "LOCK_FILE",
+          "merge-base",
+          "git pull",
+          "git merge",
+          "git rebase",
+          "reset --hard",
+          "git clean",
+          "--force",
+          "force-with-lease",
+          "repository_artifact_guard",
+          "return 0",
+          "|| true",
+          "PUSH=PASS",
+          "PUBLISH_STATUS=COMPLETE",
+          "REMOTE_HEAD_MATCH=YES"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.conf",
+          "*.md"
+        ],
+        "exclude_patterns": [
+          "frontend/**",
+          "node_modules/**",
+          ".git/**"
+        ],
+        "max_results": 2000
+      }
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Worker 3"
+  },
+  "human_summary_language": "es"
+}
