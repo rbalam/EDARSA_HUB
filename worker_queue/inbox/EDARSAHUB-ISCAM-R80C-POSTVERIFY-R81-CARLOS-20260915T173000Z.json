@@ -1,0 +1,20 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-ISCAM-R80C-POSTVERIFY-R81-CARLOS-20260915T173000Z",
+  "created_at_utc":"2026-09-15T17:30:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"6be655eb8b7b9281e2f499b562a8118491a54406",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Verificar efecto operativo posterior a R80C: confirmar nuevas ejecuciones de sync_comercial_v2 y conciliacion ESTELAR 2026-09-12 y 2026-09-14 Runtime V2 vs detalle ISCAM. Solo lectura.",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"scheduler_post_r80c","sql":"SELECT TOP 10 FechaAccion,RunID,Exito,JSON_VALUE(DetallesJSON,'$.status') AS status_logger,JSON_VALUE(DetallesJSON,'$.metadata.result_summary.estatus_general') AS estatus_general,JSON_VALUE(DetallesJSON,'$.metadata.result_summary.detalle_producto_exitosos') AS detalle_exitosos,JSON_VALUE(DetallesJSON,'$.metadata.result_summary.detalle_producto_fallidos') AS detalle_fallidos,JSON_VALUE(DetallesJSON,'$.metadata.result_summary.detalle_producto_omitidos') AS detalle_omitidos FROM dbo.Scheduler_BitacoraJobs WHERE JobName='sync_comercial_v2' AND Accion='FINISH' ORDER BY FechaAccion DESC"},
+    {"name":"estelar_12_14_runtime_vs_detalle","sql":"WITH rt AS (SELECT CAST(fecha_operacion AS date) fecha,SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) ventas_runtime,SUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets_runtime,SUM(CAST(ISNULL(pax_total,0) AS bigint)) pax_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='ESTELAR' AND CAST(fecha_operacion AS date) IN ('2026-09-12','2026-09-14') GROUP BY CAST(fecha_operacion AS date)), dt_ticket AS (SELECT CAST(fecha_operacion AS date) fecha,numero_ticket,SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) venta_ticket,MAX(CAST(ISNULL(pax,0) AS bigint)) pax_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ESTELAR' AND CAST(fecha_operacion AS date) IN ('2026-09-12','2026-09-14') AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY CAST(fecha_operacion AS date),numero_ticket), dt AS (SELECT fecha,SUM(venta_ticket) ventas_detalle,COUNT(*) tickets_detalle,SUM(pax_ticket) pax_detalle FROM dt_ticket GROUP BY fecha) SELECT rt.fecha,rt.ventas_runtime,ISNULL(dt.ventas_detalle,0) ventas_detalle,CAST(rt.ventas_runtime-ISNULL(dt.ventas_detalle,0) AS decimal(19,4)) delta_ventas,rt.tickets_runtime,ISNULL(dt.tickets_detalle,0) tickets_detalle,rt.tickets_runtime-ISNULL(dt.tickets_detalle,0) delta_tickets,rt.pax_runtime,ISNULL(dt.pax_detalle,0) pax_detalle,rt.pax_runtime-ISNULL(dt.pax_detalle,0) delta_pax,CASE WHEN ABS(rt.ventas_runtime-ISNULL(dt.ventas_detalle,0))<=0.05 AND rt.tickets_runtime=ISNULL(dt.tickets_detalle,0) AND rt.pax_runtime=ISNULL(dt.pax_detalle,0) THEN 'OK' ELSE 'PENDIENTE' END estado FROM rt LEFT JOIN dt ON dt.fecha=rt.fecha ORDER BY rt.fecha"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
