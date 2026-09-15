@@ -1,0 +1,23 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-ISCAM-AUTO-SCHEDULER-RCA-R78-CARLOS-20260915T163700Z",
+  "created_at_utc":"2026-09-15T16:37:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"4d0a56a7728aacfc00d64d6a6651896987210042",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Diagnosticar la causa de fondo del scheduler automatico sync_comercial_v2 que actualiza Runtime V2 pero deja detalle ISCAM ausente. Auditar ejecuciones y errores de detalle de ESTELAR 2026-09-12 y 2026-09-14 sin modificar datos.",
+  "actions":[],
+  "checks":[
+    {"type":"sql_readonly_audit","queries":[
+      {"name":"sync_comercial_v2_ultimas_ejecuciones","sql":"SELECT TOP 20 FechaAccion, RunID, Exito, JSON_VALUE(DetallesJSON,'$.status') AS status_logger, JSON_VALUE(DetallesJSON,'$.metadata.result_summary.estatus_general') AS estatus_general, JSON_VALUE(DetallesJSON,'$.metadata.result_summary.unidades_procesadas') AS unidades_procesadas, JSON_VALUE(DetallesJSON,'$.metadata.result_summary.unidades_exitosas') AS unidades_exitosas, JSON_VALUE(DetallesJSON,'$.metadata.result_summary.unidades_fallidas') AS unidades_fallidas, JSON_VALUE(DetallesJSON,'$.metadata.result_summary.detalle_producto_exitosos') AS detalle_exitosos, JSON_VALUE(DetallesJSON,'$.metadata.result_summary.detalle_producto_fallidos') AS detalle_fallidos, JSON_VALUE(DetallesJSON,'$.metadata.result_summary.detalle_producto_omitidos') AS detalle_omitidos FROM dbo.Scheduler_BitacoraJobs WHERE JobName='sync_comercial_v2' AND Accion='FINISH' ORDER BY FechaAccion DESC"},
+      {"name":"estelar_detalle_fallos_12_14","sql":"SELECT TOP 100 b.FechaAccion, b.RunID, b.Exito, du.unidad_negocio_id, dd.fecha_operacion, dd.status AS detalle_status, dd.error AS detalle_error, du.detalle_producto_status, du.detalle_producto_error FROM dbo.Scheduler_BitacoraJobs b CROSS APPLY OPENJSON(JSON_QUERY(b.DetallesJSON,'$.metadata.result_summary.detalles_unidades')) WITH (unidad_negocio_id nvarchar(50) '$.unidad_negocio_id', detalle_producto_status nvarchar(100) '$.detalle_producto_status', detalle_producto_error nvarchar(1000) '$.detalle_producto_error', detalle_producto_dias nvarchar(max) '$.detalle_producto_dias' AS JSON) du CROSS APPLY OPENJSON(du.detalle_producto_dias) WITH (fecha_operacion nvarchar(20) '$.fecha_operacion', status nvarchar(100) '$.status', error nvarchar(1000) '$.error') dd WHERE b.JobName='sync_comercial_v2' AND b.Accion='FINISH' AND b.FechaAccion>='2026-09-12' AND du.unidad_negocio_id='ESTELAR' AND dd.fecha_operacion IN ('2026-09-12','2026-09-14') ORDER BY b.FechaAccion DESC, dd.fecha_operacion"},
+      {"name":"scheduler_cadencia_24h","sql":"SELECT CAST(FechaAccion AS date) AS fecha, COUNT(*) AS finish_runs, SUM(CASE WHEN Exito=1 THEN 1 ELSE 0 END) AS finish_exito, SUM(CASE WHEN Exito=0 THEN 1 ELSE 0 END) AS finish_fallo, MIN(FechaAccion) AS primera, MAX(FechaAccion) AS ultima FROM dbo.Scheduler_BitacoraJobs WHERE JobName='sync_comercial_v2' AND Accion='FINISH' AND FechaAccion>=DATEADD(hour,-24,SYSUTCDATETIME()) GROUP BY CAST(FechaAccion AS date) ORDER BY fecha DESC"}
+    ]}
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
