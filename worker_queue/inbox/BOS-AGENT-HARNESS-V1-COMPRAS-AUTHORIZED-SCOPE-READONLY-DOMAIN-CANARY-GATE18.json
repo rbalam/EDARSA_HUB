@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENT-HARNESS-V1-COMPRAS-AUTHORIZED-SCOPE-READONLY-DOMAIN-CANARY-GATE18",
+  "created_at_utc": "2026-09-15T06:17:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "84973e7ddf844111ce86317c005475cb4911f777",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Gate18: cuarto canario de dominio BOS real sobre Compras y alcance canonico por unidad, exclusivamente READ_ONLY. Verificar que canonical_server_id traduce codigo/pk de unidad al server_id real preservando compatibilidad legacy; que servidores compartidos no seleccionan arbitrariamente la primera unidad; que resolve_authorized_unidad_scope requiere identidad SQL interna, usa metadata canonica, falla cerrado ante permiso denegado o error de autorizacion y rechaza unidad vacia antes de consultar repositorio. Se permite leer solamente el catalogo canonico EDARSAHUB SQL requerido por los tests existentes; no conectar a POS/SoftRestaurant/MPRO live, no modificar permisos, no ejecutar writes SQL/Mongo, no alterar Compras, inventarios, Scheduler, NetPay ni Production. Exito solo con checks PASS, blockers=[], files_changed=[], production_touched=false y terminal CERTIFIED_READ_ONLY/COMPLETE/100.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/corporate_filters/request_resolver.py",
+        "backend/core/unidades_service.py",
+        "backend/modules/compras/repository.py",
+        "backend/modules/agent_harness/planner.py",
+        "backend/modules/agent_harness/router.py",
+        "backend/modules/agent_harness/worker_compiler.py",
+        "backend/modules/agent_harness/evidence.py",
+        "backend/modules/agent_harness/control_plane.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_compras_canonical_unidad.py",
+        "backend/tests/test_request_resolver_authorized_scope.py",
+        "backend/tests/test_bos_agent_harness_planner_router.py",
+        "backend/tests/test_bos_agent_harness_worker_compiler.py",
+        "backend/tests/test_bos_agent_harness_evidence.py",
+        "backend/tests/test_bos_agent_harness_control_plane.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
