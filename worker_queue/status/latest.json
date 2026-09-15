@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "84973e7ddf844111ce86317c005475cb4911f777",
-  "generated_at_utc": "2026-09-15T06:27:25Z",
+  "generated_at_utc": "2026-09-15T06:28:38Z",
   "history": {
     "done_total_local": 482,
     "pending_total_local": 0,
@@ -13,55 +13,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3078,
+      "age_seconds": 3152,
       "job_id": "BOS-AGENT-HARNESS-V1-COSTOS-MARGENES-READONLY-DOMAIN-CANARY-GATE16",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2210,
+      "age_seconds": 2284,
       "job_id": "BOS-AGENT-HARNESS-V1-INVENTARIOS-FISICOS-READONLY-DOMAIN-CANARY-GATE17",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 472,
+      "age_seconds": 546,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE0A-REPOSITORY-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 507,
+      "age_seconds": 580,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CANONIZATION-R3A",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2829,
+      "age_seconds": 2903,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-FINAL-READONLY-CANARY-R2-6",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 541,
+      "age_seconds": 615,
       "job_id": "UNIVERSAL-WORKER-READ-ONLY-REPOSITORY-CANARY-V1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2251,
+      "age_seconds": 2325,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5I-CANONICAL-PYTHON-DEPS-R1-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 937,
+      "age_seconds": 1010,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5J-PHASE-CLOSURE-R1-20260915",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 926,
+      "age_seconds": 999,
       "job_id": "WORKER-REJECTED-CORRECTION-REQUEUE-R1",
       "reason": null,
       "state": "RESULT_READY"
@@ -79,8 +79,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T06:27:23Z",
-    "last_receive_utc": "2026-09-15T06:27:24Z",
+    "last_cycle_utc": "2026-09-15T06:28:34Z",
+    "last_receive_utc": "2026-09-15T06:28:35Z",
     "last_terminal_utc": "2026-09-15T06:19:31Z",
     "pid": "287"
   },
