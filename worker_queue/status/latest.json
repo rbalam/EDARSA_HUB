@@ -1,10 +1,10 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "84973e7ddf844111ce86317c005475cb4911f777",
-  "generated_at_utc": "2026-09-15T06:17:07Z",
+  "generated_at_utc": "2026-09-15T06:18:21Z",
   "history": {
     "done_total_local": 480,
-    "pending_total_local": 0,
+    "pending_total_local": 1,
     "processing_total_local": 0,
     "rejected_total_local": 506,
     "results_total_local": 855
@@ -13,43 +13,49 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2460,
+      "age_seconds": 0,
+      "job_id": "UNIVERSAL-WORKER-READ-ONLY-REPOSITORY-CANARY-V1",
+      "reason": null,
+      "state": "PENDING"
+    },
+    {
+      "age_seconds": 2535,
       "job_id": "BOS-AGENT-HARNESS-V1-COSTOS-MARGENES-READONLY-DOMAIN-CANARY-GATE16",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1592,
+      "age_seconds": 1667,
       "job_id": "BOS-AGENT-HARNESS-V1-INVENTARIOS-FISICOS-READONLY-DOMAIN-CANARY-GATE17",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2211,
+      "age_seconds": 2285,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-FINAL-READONLY-CANARY-R2-6",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3002,
+      "age_seconds": 3076,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-TEST-CONTRACT-FIX-R2-5",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1633,
+      "age_seconds": 1707,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5I-CANONICAL-PYTHON-DEPS-R1-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 318,
+      "age_seconds": 393,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5J-PHASE-CLOSURE-R1-20260915",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 308,
+      "age_seconds": 382,
       "job_id": "WORKER-REJECTED-CORRECTION-REQUEUE-R1",
       "reason": null,
       "state": "RESULT_READY"
@@ -58,17 +64,17 @@
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
-  "queue_pending": 0,
+  "queue_pending": 1,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 7,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T06:17:06Z",
-    "last_receive_utc": "2026-09-15T06:17:07Z",
+    "last_cycle_utc": "2026-09-15T06:18:20Z",
+    "last_receive_utc": "2026-09-15T06:18:20Z",
     "last_terminal_utc": "2026-09-15T06:11:59Z",
     "pid": "287"
   },
