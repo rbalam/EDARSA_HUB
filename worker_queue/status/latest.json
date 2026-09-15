@@ -1,31 +1,37 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "d8d33ca3271c47a0d7d67d89355e9ef11654d0e7",
-  "generated_at_utc": "2026-09-15T14:32:10Z",
+  "generated_at_utc": "2026-09-15T14:33:35Z",
   "history": {
-    "done_total_local": 485,
+    "done_total_local": 486,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 510,
-    "results_total_local": 863
+    "results_total_local": 864
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 339,
+      "age_seconds": 424,
       "job_id": "BOS-AGENT-HARNESS-V1-INTELIGENCIA-PORTAL-CLOSURE-READONLY-DOMAIN-CANARY-GATE19",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 331,
+      "age_seconds": 416,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CANONIZATION-R3B",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 63,
+      "age_seconds": 42,
+      "job_id": "WORKER-BOS-AGENT-CONTROL-CENTER-PRODUCT-INTEGRATION-GATE6A-R2-DISCOVERY-20260915",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 148,
       "job_id": "WORKER-REJECTED-CORRECTION-REQUEUE-R3",
       "reason": null,
       "state": "RESULT_READY"
@@ -38,15 +44,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T14:32:05Z",
-    "last_receive_utc": "2026-09-15T14:32:08Z",
-    "last_terminal_utc": "2026-09-15T14:31:07Z",
-    "pid": "285"
+    "last_cycle_utc": "2026-09-15T14:33:34Z",
+    "last_receive_utc": "2026-09-15T14:33:35Z",
+    "last_terminal_utc": "2026-09-15T14:32:53Z",
+    "pid": "25361"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
