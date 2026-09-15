@@ -41,6 +41,17 @@ jobs:
           set -euo pipefail
           infra/agent-reach/build.sh
 
+      - name: Set up Python test runtime
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install live canary test dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check pytest==9.0.2
+
       - name: Execute real live canary
         shell: bash
         run: |
