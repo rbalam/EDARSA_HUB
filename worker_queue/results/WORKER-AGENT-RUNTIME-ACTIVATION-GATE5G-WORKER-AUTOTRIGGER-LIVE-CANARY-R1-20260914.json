@@ -1,0 +1,23 @@
+{
+  "base_sha": "74ac721c0e1d84ad58c51621a1c12125b0c0da71",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:WRITE_EXISTING_REQUIRES_EXPECTED_SHA256:.github/workflows/agent-reach-live-canary.yml"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-15T04:33:59Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5G-WORKER-AUTOTRIGGER-LIVE-CANARY-R1-20260914",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-15T04:34:11Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-15T04:33:57Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
