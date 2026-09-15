@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "6e5c96041cd89bd1d37b2d05f2ebc5e192fa4ed6",
-  "generated_at_utc": "2026-09-15T00:21:28Z",
+  "generated_at_utc": "2026-09-15T00:22:41Z",
   "history": {
     "done_total_local": 467,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1692,
+      "age_seconds": 1765,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-R75C-ESTELAR-20250614-CARLOS-20260914T235200Z",
       "reasons": [
         "ISCAM_DETAIL_BACKFILL_AUDIT_REQUIRED"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1681,
+      "age_seconds": 1753,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-R75D-ESTELAR-20250618-CARLOS-20260914T235200Z",
       "reasons": [
         "ISCAM_DETAIL_BACKFILL_AUDIT_REQUIRED"
@@ -31,7 +31,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1669,
+      "age_seconds": 1742,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-R75E-ESTELAR-20250619-CARLOS-20260914T235200Z",
       "reasons": [
         "ISCAM_DETAIL_BACKFILL_AUDIT_REQUIRED"
@@ -40,13 +40,13 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3358,
+      "age_seconds": 3431,
       "job_id": "EDARSAHUB-DASHBOARD-IA-KPI-SPECIFIC-DRILLDOWNS-CARLOS-20260914T230500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1700,
+      "age_seconds": 1773,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-R75B-ESTELAR-20250612-CARLOS-20260914T235200Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -64,8 +64,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T00:21:26Z",
-    "last_receive_utc": "2026-09-15T00:21:27Z",
+    "last_cycle_utc": "2026-09-15T00:22:36Z",
+    "last_receive_utc": "2026-09-15T00:22:37Z",
     "last_terminal_utc": "2026-09-14T23:53:07Z",
     "pid": "236854"
   },
