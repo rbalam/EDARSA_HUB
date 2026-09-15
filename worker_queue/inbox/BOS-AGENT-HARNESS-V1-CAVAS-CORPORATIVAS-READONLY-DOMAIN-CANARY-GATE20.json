@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENT-HARNESS-V1-CAVAS-CORPORATIVAS-READONLY-DOMAIN-CANARY-GATE20",
+  "created_at_utc": "2026-09-15T14:32:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d8d33ca3271c47a0d7d67d89355e9ef11654d0e7",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Gate20: sexto canario de dominio BOS real sobre Cavas Corporativas, exclusivamente READ_ONLY y determinista. Verificar que la API reutiliza permisos RBAC canonicos existentes, responde 401/403 ante autenticacion o permiso denegado, evalua beneficios aplicables mediante el servicio canonico, y preserva idempotencia al registrar un beneficio sin duplicar aplicaciones. Verificar ademas que una identidad no autorizada no obtiene beneficios y que un beneficio no aplicable no puede registrarse. Ejecutar solo pruebas locales con FakeService/FakeRepository; no consultar SQL live, no red externa, no modificar archivos, no tocar permisos, menus, Scheduler, NetPay, Agent Reach ni Production. Exito solo con checks PASS, blockers=[], files_changed=[], production_touched=false y terminal CERTIFIED_READ_ONLY/COMPLETE/100.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/cavas_corporativas/domain.py",
+        "backend/modules/cavas_corporativas/repository.py",
+        "backend/modules/cavas_corporativas/service.py",
+        "backend/modules/cavas_corporativas/routes.py",
+        "backend/modules/agent_harness/planner.py",
+        "backend/modules/agent_harness/router.py",
+        "backend/modules/agent_harness/worker_compiler.py",
+        "backend/modules/agent_harness/evidence.py",
+        "backend/modules/agent_harness/control_plane.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cavas_corporativas_routes.py",
+        "backend/tests/test_cavas_corporativas_service.py",
+        "backend/tests/test_bos_agent_harness_planner_router.py",
+        "backend/tests/test_bos_agent_harness_worker_compiler.py",
+        "backend/tests/test_bos_agent_harness_evidence.py",
+        "backend/tests/test_bos_agent_harness_control_plane.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
