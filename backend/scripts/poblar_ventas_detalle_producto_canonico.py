@@ -904,6 +904,16 @@ def _soft_add_ticket_adjustments(src_rows: List[Dict[str, Any]]) -> List[Dict[st
             out.append(adjustment)
             continue
 
+        # Un encabezado en cero con detalle monetario no explicado sigue siendo
+        # un caso anomalo y se bloquea. La unica excepcion es la franquicia
+        # negativa ya resuelta arriba. Esto conserva el guard historico R80C.
+        if header_total == Decimal("0"):
+            raise RuntimeError(
+                f"SoftRestaurant: diferencia no explicada en ticket {ticket_key}; "
+                f"productos={product_total}; encabezado={header_total}; delta={delta}; "
+                f"indicador_descuento_cortesia={discount_indicator}"
+            )
+
         # El folio del encabezado es el padre y la cifra autoritativa.
         # Conservamos las lineas reales tal como vienen del POS y agregamos una
         # linea tecnica por la diferencia residual del MISMO folio. De esta forma
