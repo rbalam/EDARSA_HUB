@@ -1,43 +1,49 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "74ac721c0e1d84ad58c51621a1c12125b0c0da71",
-  "generated_at_utc": "2026-09-15T04:18:48Z",
+  "generated_at_utc": "2026-09-15T04:19:59Z",
   "history": {
     "done_total_local": 469,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 499,
-    "results_total_local": 838
+    "rejected_total_local": 500,
+    "results_total_local": 839
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1705,
+      "age_seconds": 1776,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3260,
+      "age_seconds": 3331,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R1-AUDIT",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 307,
+      "age_seconds": 378,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 278,
+      "age_seconds": 349,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CLASSIFICATION-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1730,
+      "age_seconds": 37,
+      "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CLASSIFICATION-R2-1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1802,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
@@ -50,14 +56,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 5,
+  "queue_result_ready_recent": 6,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T04:18:45Z",
-    "last_receive_utc": "2026-09-15T04:18:46Z",
-    "last_terminal_utc": "2026-09-15T04:14:10Z",
+    "last_cycle_utc": "2026-09-15T04:19:57Z",
+    "last_receive_utc": "2026-09-15T04:19:57Z",
+    "last_terminal_utc": "2026-09-15T04:19:22Z",
     "pid": "871"
   },
   "schema": "edarsahub.worker-health.v3",
