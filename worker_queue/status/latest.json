@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "74ac721c0e1d84ad58c51621a1c12125b0c0da71",
-  "generated_at_utc": "2026-09-15T04:25:52Z",
+  "generated_at_utc": "2026-09-15T04:27:08Z",
   "history": {
     "done_total_local": 469,
     "pending_total_local": 0,
@@ -13,31 +13,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2129,
+      "age_seconds": 2204,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 731,
+      "age_seconds": 807,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 701,
+      "age_seconds": 777,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CLASSIFICATION-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 390,
+      "age_seconds": 466,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CLASSIFICATION-R2-1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2154,
+      "age_seconds": 2230,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
@@ -55,8 +55,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T04:25:52Z",
-    "last_receive_utc": "2026-09-15T04:25:47Z",
+    "last_cycle_utc": "2026-09-15T04:27:05Z",
+    "last_receive_utc": "2026-09-15T04:27:06Z",
     "last_terminal_utc": "2026-09-15T04:19:22Z",
     "pid": "871"
   },
