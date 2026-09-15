@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "78b5e7c3b129304e904c10279a1326aff6339b1d",
-  "generated_at_utc": "2026-09-15T22:03:11Z",
+  "generated_at_utc": "2026-09-15T22:04:32Z",
   "history": {
     "done_total_local": 507,
     "pending_total_local": 0,
@@ -13,37 +13,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 803,
+      "age_seconds": 884,
       "job_id": "EDARSAHUB-130MID-SEPT-REAL-R91-CARLOS-20260915T220100Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 834,
+      "age_seconds": 914,
       "job_id": "EDARSAHUB-CIENFUEGOS-SEPT-REAL-R90-CARLOS-20260915T220000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1517,
+      "age_seconds": 1597,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-RESYNC-CAPABILITY-R87-CARLOS-20260915T211500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1166,
+      "age_seconds": 1247,
       "job_id": "EDARSAHUB-ESTELAR-POSTSYNC-VERIFY-R89-CARLOS-20260915T214500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1466,
+      "age_seconds": 1547,
       "job_id": "EDARSAHUB-ESTELAR-SEPT-REAL-R88-CARLOS-20260915T214000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 147,
+      "age_seconds": 227,
       "job_id": "EDARSAHUB-ISCAM-FOLIO-HEADER-R92-CARLOS-20260915T221000Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -61,8 +61,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T22:03:08Z",
-    "last_receive_utc": "2026-09-15T22:03:03Z",
+    "last_cycle_utc": "2026-09-15T22:04:31Z",
+    "last_receive_utc": "2026-09-15T22:04:26Z",
     "last_terminal_utc": "2026-09-15T22:00:44Z",
     "pid": "687"
   },
