@@ -622,21 +622,35 @@ def _runtime_metrics(row: Dict[str, Any]) -> Dict[str, Any]:
         0,
     )
 
-    source_text = " ".join(
-        str(value)
-        for value in row.values()
-        if value is not None
+    es_venta_abierta_raw = _first(
+        row,
+        ["es_venta_abierta"],
+        None,
     )
+    es_corte_cerrado_raw = _first(
+        row,
+        ["es_corte_cerrado"],
+        None,
+    )
+
+    if es_venta_abierta_raw is not None:
+        es_abierta = _s(es_venta_abierta_raw).upper() in {
+            "1", "TRUE", "SI", "YES"
+        }
+    elif es_corte_cerrado_raw is not None:
+        es_corte_cerrado = _s(es_corte_cerrado_raw).upper() in {
+            "1", "TRUE", "SI", "YES"
+        }
+        es_abierta = not es_corte_cerrado
+    else:
+        es_abierta = _d(ventas_abiertas) > 0
 
     return {
         "ventas": _d(row["ventas_total"]),
         "tickets": int(_d(row["tickets_total"])),
         "pax": int(_d(row["pax_total"])),
         "ventas_abiertas": _d(ventas_abiertas),
-        "es_abierta": (
-            "Comercial_Ventas_Dia_Abiertas_v2"
-            in source_text
-        ),
+        "es_abierta": es_abierta,
     }
 
 
@@ -819,6 +833,7 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
 
 
 SOFT_AJUSTE_CHEQUE = "__ISCAM_AJUSTE_CHEQUE__"
+SOFT_AJUSTE_FRANQUICIA_CERO = "__ISCAM_AJUSTE_FRANQUICIA_CERO__"
 
 
 def _soft_add_ticket_adjustments(src_rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -856,6 +871,27 @@ def _soft_add_ticket_adjustments(src_rows: List[Dict[str, Any]]) -> List[Dict[st
             adjustment = dict(items[0])
             adjustment["producto_codigo_fuente"] = SOFT_AJUSTE_CHEQUE
             adjustment["producto_nombre"] = "AJUSTE DEL CHEQUE (DESCUENTO / CORTESIA NO ASIGNADO A PRODUCTO)"
+            adjustment["cantidad"] = Decimal("0")
+            adjustment["precio_unitario"] = Decimal("0")
+            adjustment["importe_bruto"] = Decimal("0")
+            adjustment["importe_neto"] = delta
+            out.append(adjustment)
+            continue
+
+        negative_franchise = any(
+            _d(row.get("importe_neto")) < 0
+            and "FRANQUICIA" in _s(row.get("producto_nombre")).upper()
+            for row in items
+        )
+        if (
+            header_total == Decimal("0")
+            and product_total < Decimal("0")
+            and delta > Decimal("0")
+            and negative_franchise
+        ):
+            adjustment = dict(items[0])
+            adjustment["producto_codigo_fuente"] = SOFT_AJUSTE_FRANQUICIA_CERO
+            adjustment["producto_nombre"] = "AJUSTE DE CIERRE A CERO (FRANQUICIA)"
             adjustment["cantidad"] = Decimal("0")
             adjustment["precio_unitario"] = Decimal("0")
             adjustment["importe_bruto"] = Decimal("0")

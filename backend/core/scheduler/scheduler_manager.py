@@ -589,11 +589,18 @@ class SchedulerManager:
                 ),
                 processed_count=result.get("total_insertados", 0) + result.get("total_actualizados", 0) + result.get("total_omitidos", 0),
                 success_count=result.get("unidades_exitosas", 0),
+                failed_count=(
+                    int(result.get("unidades_fallidas", 0) or 0)
+                    + int(result.get("detalle_producto_fallidos", 0) or 0)
+                ),
                 skipped_count=result.get("total_omitidos", 0),
                 message=f"Unidades: {result.get('unidades_exitosas', 0)}/{result.get('unidades_procesadas', 0)}, "
                         f"Insertados: {result.get('total_insertados', 0)}, "
                         f"Actualizados: {result.get('total_actualizados', 0)}, "
-                        f"Omitidos: {result.get('total_omitidos', 0)}",
+                        f"Omitidos: {result.get('total_omitidos', 0)}, "
+                        f"Detalle OK: {result.get('detalle_producto_exitosos', 0)}, "
+                        f"Detalle fallido: {result.get('detalle_producto_fallidos', 0)}, "
+                        f"Detalle omitido: {result.get('detalle_producto_omitidos', 0)}",
                 extra_metadata={"result_summary": result}
             )
             

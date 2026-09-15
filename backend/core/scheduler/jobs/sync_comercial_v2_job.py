@@ -46,6 +46,17 @@ JOB_NAME = "sync_comercial_v2"
 SYNC_INCREMENTAL_DAYS = int(os.environ.get("SYNC_COMERCIAL_V2_DAYS", "3"))
 
 
+def _resolve_estatus_general(results: Dict[str, Any]) -> str:
+    """No declara COMPLETADO si el detalle ISCAM tiene fallos."""
+    header_failures = int(results.get("unidades_fallidas") or 0)
+    detail_failures = int(results.get("detalle_producto_fallidos") or 0)
+    if header_failures == 0 and detail_failures == 0:
+        return "COMPLETADO"
+    if int(results.get("unidades_exitosas") or 0) > 0:
+        return "PARCIAL"
+    return "FALLIDO"
+
+
 # =============================================================================
 # CONFIGURACIÓN DE UNIDADES - REFACTORIZADO CON UnidadesService
 # =============================================================================
@@ -594,11 +605,7 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
     
     results["fin_ejecucion"] = end_time.isoformat()
     results["duracion_ms"] = duration_ms
-    results["estatus_general"] = (
-        "COMPLETADO" if results["unidades_fallidas"] == 0 
-        else "PARCIAL" if results["unidades_exitosas"] > 0 
-        else "FALLIDO"
-    )
+    results["estatus_general"] = _resolve_estatus_general(results)
     
     logger.info(
         f"[SYNC_COMERCIAL_V2] Sincronización finalizada: "
