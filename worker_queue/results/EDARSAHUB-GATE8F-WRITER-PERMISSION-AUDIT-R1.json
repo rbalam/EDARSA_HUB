@@ -1,0 +1,92 @@
+{
+  "base_sha": "31909461ec698e4d31228474cbd56b3843fa42f4",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-15T14:59:56Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-GATE8F-WRITER-PERMISSION-AUDIT-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-15T15:00:02Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "db_user"
+            ],
+            "name": "identity_and_database",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_present",
+              "can_select",
+              "can_insert",
+              "can_update",
+              "can_delete"
+            ],
+            "name": "gate8f_target_permissions",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1,
+                1,
+                1,
+                1,
+                1
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "db_datareader",
+              "db_datawriter",
+              "db_ddladmin",
+              "db_owner"
+            ],
+            "name": "database_writer_roles",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1,
+                1,
+                1,
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-15T14:59:55Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
