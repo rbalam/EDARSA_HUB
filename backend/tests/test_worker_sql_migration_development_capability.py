@@ -33,8 +33,16 @@ def test_production_forbidden(tmp_path,monkeypatch):
 def test_dedicated_credentials_required():
     with pytest.raises(mod.MigrationContractError,match='MIGRATION_CREDENTIALS_REQUIRED'): mod.build_child_env({'EDARSAHUB_SQL_HOST':'db','EDARSAHUB_SQL_DATABASE':'EDARSAHUB'})
 
-def test_hrlectura_forbidden_as_writer():
+def test_hrlectura_forbidden_as_dedicated_writer():
     with pytest.raises(mod.MigrationContractError,match='HRLECTURA_CANNOT_BE_MIGRATION_WRITER'): mod.build_child_env(env('HRLectura'))
+
+def test_existing_canonical_writer_requires_explicit_opt_in():
+    source={'EDARSAHUB_SQL_HOST':'db','EDARSAHUB_SQL_DATABASE':'EDARSAHUB','EDARSAHUB_SQL_USER':'HRLectura','EDARSAHUB_SQL_PASSWORD':'existing'}
+    with pytest.raises(mod.MigrationContractError,match='MIGRATION_CREDENTIALS_REQUIRED'): mod.build_child_env(source)
+
+def test_explicit_canonical_writer_reuses_existing_sql_credentials():
+    source={'EDARSAHUB_SQL_HOST':'db','EDARSAHUB_SQL_DATABASE':'EDARSAHUB','EDARSAHUB_SQL_USER':'HRLectura','EDARSAHUB_SQL_PASSWORD':'existing'}
+    child=mod.build_child_env(source,allow_canonical_sql_writer=True); assert child['EDARSAHUB_SQL_USER']=='HRLectura'; assert child['EDARSAHUB_SQL_PASSWORD']=='existing'; assert child['EDARSAHUB_MIGRATION_CREDENTIAL_SOURCE']=='canonical'; assert child['EDARSAHUB_ALLOW_MIGRATIONS']=='true'
 
 def test_child_env_reuses_host_db_and_overrides_only_credentials():
     source=env(); source['EDARSAHUB_SQL_PORT']='1433'; source['EDARSAHUB_SQL_USER']='HRLectura'; source['EDARSAHUB_SQL_PASSWORD']='readonly'

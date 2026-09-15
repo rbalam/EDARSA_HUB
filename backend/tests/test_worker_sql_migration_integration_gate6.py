@@ -70,6 +70,9 @@ def test_dispatcher_contract_is_closed_and_ordered():
     assert '--migration-path' in block
     assert '--migration-sha256' in block
     assert '--confirm' in block
+    assert 'confirm_use_existing_sql_writer' in block
+    assert '--allow-canonical-sql-writer' in block
+    assert 'use_existing_sql_writer' in block
     assert 'CERTIFIED_OPERATIONAL' in block
     assert 'check_failed:sql_migration_preflight' in block
     assert 'sql_migration_failed:rc=' in block

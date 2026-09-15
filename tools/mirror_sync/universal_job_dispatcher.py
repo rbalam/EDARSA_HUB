@@ -729,6 +729,7 @@ def process_one(path: Path) -> int:
                 raise RuntimeError("SQL_MIGRATION_SHA256_INVALID")
             if job.get("confirm_sql_migration") is not True:
                 raise RuntimeError("SQL_MIGRATION_CONFIRMATION_REQUIRED")
+            use_existing_sql_writer = job.get("confirm_use_existing_sql_writer") is True
             preflight_checks = job.get("preflight_checks") or []
             checks = job.get("checks") or []
             if not preflight_checks or any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in preflight_checks):
@@ -759,8 +760,12 @@ def process_one(path: Path) -> int:
             if not helper.is_file():
                 raise RuntimeError("SQL_MIGRATION_HELPER_NOT_FOUND")
             backend = ROOT / "backend"
+            migration_cmd = [PYTHON_BIN, str(helper), "--migration-path", migration_path, "--migration-sha256", migration_sha256, "--confirm"]
+            if use_existing_sql_writer:
+                migration_cmd.append("--allow-canonical-sql-writer")
+            result["use_existing_sql_writer"] = use_existing_sql_writer
             execution = run(
-                [PYTHON_BIN, str(helper), "--migration-path", migration_path, "--migration-sha256", migration_sha256, "--confirm"],
+                migration_cmd,
                 cwd=ROOT,
                 timeout=MAX_SECONDS,
                 env_extra={**load_backend_runtime_env(), "PYTHONPATH": str(backend)},
