@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "1aa85a8d05bc73e67b40e7a0a84a943513c2585b",
-  "generated_at_utc": "2026-09-15T14:50:47Z",
+  "generated_at_utc": "2026-09-15T14:52:38Z",
   "history": {
     "done_total_local": 488,
     "pending_total_local": 0,
@@ -13,55 +13,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 976,
+      "age_seconds": 1087,
       "job_id": "BOS-AGENT-HARNESS-V1-CAVAS-CORPORATIVAS-READONLY-DOMAIN-CANARY-GATE20",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1456,
+      "age_seconds": 1567,
       "job_id": "BOS-AGENT-HARNESS-V1-INTELIGENCIA-PORTAL-CLOSURE-READONLY-DOMAIN-CANARY-GATE19",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 991,
+      "age_seconds": 1101,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R2-PYTEST-CONTRACT-FIX-1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 713,
+      "age_seconds": 823,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R2-REPLAY-1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 398,
+      "age_seconds": 509,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R2-SHARED-SAFETY-CONTRACT-FIX-2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 241,
+      "age_seconds": 351,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1448,
+      "age_seconds": 1558,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CANONIZATION-R3B",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1074,
+      "age_seconds": 1184,
       "job_id": "WORKER-BOS-AGENT-CONTROL-CENTER-PRODUCT-INTEGRATION-GATE6A-R2-DISCOVERY-20260915",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1180,
+      "age_seconds": 1290,
       "job_id": "WORKER-REJECTED-CORRECTION-REQUEUE-R3",
       "reason": null,
       "state": "RESULT_READY"
@@ -79,8 +79,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T14:50:47Z",
-    "last_receive_utc": "2026-09-15T14:50:42Z",
+    "last_cycle_utc": "2026-09-15T14:52:34Z",
+    "last_receive_utc": "2026-09-15T14:52:36Z",
     "last_terminal_utc": "2026-09-15T14:46:46Z",
     "pid": "25361"
   },
