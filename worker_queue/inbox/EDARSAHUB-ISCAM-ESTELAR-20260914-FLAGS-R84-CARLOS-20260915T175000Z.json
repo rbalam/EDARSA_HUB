@@ -1,0 +1,17 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-ISCAM-ESTELAR-20260914-FLAGS-R84-CARLOS-20260915T175000Z",
+  "created_at_utc":"2026-09-15T17:50:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"f7ae4ea31cd44b01be8e70a9eb8d6e9d2bded586",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Inspeccionar exclusivamente los flags canonicos del Runtime V2 de ESTELAR 2026-09-14 para cerrar el ultimo bloqueo de detalle. Solo lectura.",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[{"name":"estelar_20260914_runtime_flags","sql":"SELECT TOP 5 fecha_operacion,ventas_total,tickets_total,pax_total,ventas_abiertas,es_venta_abierta,es_corte_cerrado,fuente_original FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='ESTELAR' AND CAST(fecha_operacion AS date)='2026-09-14'"}]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
