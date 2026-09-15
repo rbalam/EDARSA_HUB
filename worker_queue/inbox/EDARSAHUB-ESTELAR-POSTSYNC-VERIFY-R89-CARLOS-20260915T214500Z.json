@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ESTELAR-POSTSYNC-VERIFY-R89-CARLOS-20260915T214500Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3cb02ea9ff4b759291e86f55a4b84a2bdad57b5b",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Verificar en EDARSAHUB el resultado REAL de R88 para LA ESTELAR septiembre 2026, sin escribir datos. Confirmar KPIs 04/09 y 05/09 y asignacion activa del ticket 24667.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "estelar_destination_04_05_after_r88",
+          "sql": "SELECT CAST(fecha_operacion AS date) AS fecha_operacion, CAST(ventas_total AS decimal(18,2)) AS ventas_total, tickets_total, pax_total, sync_run_id FROM dbo.Comercial_KPIs_Diarios_v2 WHERE unidad_negocio_id='ESTELAR' AND CAST(fecha_operacion AS date) IN ('2026-09-04','2026-09-05') AND ISNULL(activo,1)=1 ORDER BY CAST(fecha_operacion AS date)"
+        },
+        {
+          "name": "estelar_ticket_24667_after_r88",
+          "sql": "SELECT CAST(fecha_operacion AS date) AS fecha_operacion, numero_ticket, producto_codigo_fuente, cantidad, CAST(importe_bruto AS decimal(18,2)) AS importe_bruto, pax, sync_run_id FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ESTELAR' AND numero_ticket='24667' AND ISNULL(activo,1)=1 ORDER BY fecha_operacion, fecha_hora"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
