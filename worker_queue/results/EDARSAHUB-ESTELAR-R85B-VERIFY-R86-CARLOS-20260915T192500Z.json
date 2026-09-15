@@ -1,0 +1,85 @@
+{
+  "base_sha": "d0d0f4e512093c9085b488c3ec1d3a831c6514bc",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-15T20:57:04Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ESTELAR-R85B-VERIFY-R86-CARLOS-20260915T192500Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-15T20:57:22Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas_total",
+              "cheques",
+              "pax"
+            ],
+            "name": "estelar_operational_day_04_05",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "2026-09-04",
+                "119840.00",
+                81,
+                "195"
+              ],
+              [
+                "2026-09-05",
+                "252998.00",
+                167,
+                "480"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "folio",
+              "numcheque",
+              "total",
+              "nopersonas",
+              "idturno",
+              "apertura",
+              "fecha_operacion"
+            ],
+            "name": "ticket_24667_operational_assignment",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "24667",
+                "24214",
+                "20000.0000",
+                "1",
+                "456",
+                "2026-09-05T02:48:41",
+                "2026-09-04"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-15T20:57:03Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
