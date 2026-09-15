@@ -1,0 +1,54 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ESTELAR-OPDAY-R85B-CARLOS-20260915T191812Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d8b2198a17bab940e9153e62a9a239abdeefdaf1",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir LA ESTELAR para que Ventas Cerradas y detalle ISCAM usen dia operativo 09:00 a 09:00. El ticket 24667 por 20000 registrado a las 02:49 del 05/09/2026 debe pertenecer al 04/09/2026. Las demas unidades conservan la regla actual. No tocar Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+      "old": "WHERE CONVERT(varchar, tr.apertura, 112) = '{fecha_operacion_sql}'",
+      "new": "WHERE CONVERT(varchar, DATEADD(hour, -{offset_hours}, tr.apertura), 112) = '{fecha_operacion_sql}'",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+      "old": "    del server_config\n    bloques = []",
+      "new": "    offset_hours = 9 if str((server_config or {}).get('unidad_codigo') or '').strip().upper() == 'ESTELAR' else 0\n    bloques = []",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+      "old": "            fecha_operacion_sql=fecha_actual.strftime('%Y%m%d'),",
+      "new": "            fecha_operacion_sql=fecha_actual.strftime('%Y%m%d'),\n            offset_hours=offset_hours,",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "    del cfg\n    inicio = datetime.combine(dia, datetime.min.time())\n    fin = inicio + timedelta(days=1)",
+      "new": "    inicio = datetime.combine(dia, datetime.min.time())\n    if str(cfg.get('unidad_codigo') or '').strip().upper() == 'ESTELAR':\n        inicio += timedelta(hours=9)\n    fin = inicio + timedelta(days=1)",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "py_compile", "paths": ["backend/modules/comercial_v2/sync_comercial_edarsahub.py", "backend/scripts/poblar_ventas_detalle_producto_canonico.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_scheduler_rsync_manual_r74.py", "backend/tests/test_iscam_detail_only_manual_resync_r37.py"]}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
