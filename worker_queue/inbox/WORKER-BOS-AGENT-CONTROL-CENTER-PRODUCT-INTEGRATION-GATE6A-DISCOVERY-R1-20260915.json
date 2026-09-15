@@ -1,0 +1,20 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "WORKER-BOS-AGENT-CONTROL-CENTER-PRODUCT-INTEGRATION-GATE6A-DISCOVERY-R1-20260915",
+  "created_at_utc": "2026-09-15T06:30:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "84973e7ddf844111ce86317c005475cb4911f777",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "objective": "Nueva fase BOS Product Integration & Agent Control Center. Auditar sin cambios el contrato exacto para: (1) crear en el menu SQL canonico de EDARSAHUB BOS una seccion operativa 'Agentes e IA' con Centro de Agentes, Agent Reach, Runtime & Egress, Capacidades y Policies, Ejecuciones y Evidencias/Certificaciones; (2) crear las rutas/pantallas correspondientes respetando EnterpriseNavigationMenu, Sistema_Modulos/Sistema_ModulosMenus, Usuario_Modulos, Usuario_PermisosRolModulo, Usuario_RolesContexto y /api/sistema/menus/usuario; (3) definir una capa reusable de integracion funcional para que modulos concretos invoquen Agent Reach solo mediante contratos BOS Agent Harness existentes, nunca acceso directo al executor/runtime; (4) inventariar consumidores candidatos reales existentes y priorizarlos por riesgo/valor; (5) definir por consumidor capability, scopes, data classification, max risk, external_calls budget, timeout/output budget, empresa/unidad y permisos RBAC; (6) identificar endpoints y archivos exactos a crear/modificar; (7) identificar migracion SQL idempotente y reversible necesaria sin duplicar catalogos ni hardcodear IDs; (8) proponer gates de implementacion y pruebas. Mantener invariante: mas capacidad no implica mas privilegio. No tocar Produccion, Worker, Supervisor, watchdog, core innecesariamente, Mongo, menus existentes ni permisos existentes.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit"
+    }
+  ]
+}
