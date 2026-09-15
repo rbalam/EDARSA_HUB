@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENT-HARNESS-V1-FECHA-OPERACION-COMERCIAL-READONLY-DOMAIN-CANARY-GATE21",
+  "created_at_utc": "2026-09-15T16:36:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4d0a56a7728aacfc00d64d6a6651896987210042",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Gate21: sexto canario de dominio BOS real sobre contrato FechaOperacion Comercial, exclusivamente READ_ONLY y sin persistencia. Verificar que MPRO trata Venta_Encabezado.Vn_Fecha como fecha comercial y no la desplaza por ventana operativa; que SoftRestaurant conserva el calculo canonico de fecha_operacion a partir del timestamp operativo; y que la prueba aborta si el agrupador intenta invocar persistencia SQL. No modificar archivos, no ejecutar acciones, no tocar SQL/Mongo, Scheduler, NetPay, permisos, Agent Reach ni Production. Exito solo con checks PASS, blockers=[], files_changed=[], production_touched=false y terminal CERTIFIED_READ_ONLY/COMPLETE/100.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial_v2/schemas.py",
+        "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+        "backend/core/utils/operational_window.py",
+        "backend/modules/agent_harness/planner.py",
+        "backend/modules/agent_harness/router.py",
+        "backend/modules/agent_harness/worker_compiler.py",
+        "backend/modules/agent_harness/evidence.py",
+        "backend/modules/agent_harness/control_plane.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_mpro_fecha_operacion_contract.py",
+        "backend/tests/test_bos_agent_harness_planner_router.py",
+        "backend/tests/test_bos_agent_harness_worker_compiler.py",
+        "backend/tests/test_bos_agent_harness_evidence.py",
+        "backend/tests/test_bos_agent_harness_control_plane.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
