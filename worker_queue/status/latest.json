@@ -1,50 +1,56 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "78b5e7c3b129304e904c10279a1326aff6339b1d",
-  "generated_at_utc": "2026-09-15T22:07:01Z",
+  "development_sha": "2e18c0cd8e3a33cd08fae9a34ef12c3d68443b2d",
+  "generated_at_utc": "2026-09-15T22:08:16Z",
   "history": {
-    "done_total_local": 507,
+    "done_total_local": 508,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 527,
-    "results_total_local": 901
+    "results_total_local": 902
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1033,
+      "age_seconds": 1108,
       "job_id": "EDARSAHUB-130MID-SEPT-REAL-R91-CARLOS-20260915T220100Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1064,
+      "age_seconds": 1139,
       "job_id": "EDARSAHUB-CIENFUEGOS-SEPT-REAL-R90-CARLOS-20260915T220000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1746,
+      "age_seconds": 1821,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-RESYNC-CAPABILITY-R87-CARLOS-20260915T211500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1396,
+      "age_seconds": 1471,
       "job_id": "EDARSAHUB-ESTELAR-POSTSYNC-VERIFY-R89-CARLOS-20260915T214500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1696,
+      "age_seconds": 1771,
       "job_id": "EDARSAHUB-ESTELAR-SEPT-REAL-R88-CARLOS-20260915T214000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 376,
+      "age_seconds": 451,
       "job_id": "EDARSAHUB-ISCAM-FOLIO-HEADER-R92-CARLOS-20260915T221000Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 64,
+      "job_id": "EDARSAHUB-ISCAM-FOLIO-HEADER-R93-CARLOS-20260915T221500Z",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -56,14 +62,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 7,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T22:06:55Z",
-    "last_receive_utc": "2026-09-15T22:06:58Z",
-    "last_terminal_utc": "2026-09-15T22:00:44Z",
+    "last_cycle_utc": "2026-09-15T22:08:16Z",
+    "last_receive_utc": "2026-09-15T22:08:11Z",
+    "last_terminal_utc": "2026-09-15T22:07:12Z",
     "pid": "687"
   },
   "schema": "edarsahub.worker-health.v3",
