@@ -1,0 +1,62 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENT-HARNESS-V1-CONTROLLED-DEV-EXECUTION-GATE14",
+  "created_at_utc": "2026-09-15T04:05:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "74ac721c0e1d84ad58c51621a1c12125b0c0da71",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Gate14 controlled DEV execution canary del BOS Agent Harness V1. Ejecutar una sola mutacion documental aislada y reversible para probar el ciclo real Planner/Router -> Worker Compiler -> Universal Worker -> Evidence -> Control Plane -> certificacion, sin impacto funcional. Crear exclusivamente docs/BOS/BOS_AGENT_HARNESS_GATE14_CONTROLLED_DEV_EXECUTION_CANARY.md. No tocar backend/core, SQL, Mongo, RBAC, Scheduler, NetPay, secretos, permisos, integraciones externas ni Production. Exito solo con tests PASS, quality gate PASS, blockers=[], production_touched=false y certificacion terminal del Worker.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/BOS/BOS_AGENT_HARNESS_GATE14_CONTROLLED_DEV_EXECUTION_CANARY.md",
+      "content": "# BOS Agent Harness V1 - Gate14 Controlled DEV Execution Canary\n\n- Scope: Development only\n- Risk: R1\n- Data classification: INTERNAL\n- Executor: Universal Worker\n- Procedure: repo-change\n- Mutation type: documentation-only canary\n- Production allowed: false\n- SQL touched: false\n- Mongo touched: false\n- RBAC touched: false\n- Scheduler touched: false\n- NetPay touched: false\n\nThis file is the controlled, non-functional mutation artifact for Gate14. Its only purpose is to prove the certified DEV execution path of BOS Agent Harness V1 through the canonical Universal Worker while preserving fail-closed production policy.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/agent_harness/planner.py",
+        "backend/modules/agent_harness/router.py",
+        "backend/modules/agent_harness/worker_compiler.py",
+        "backend/modules/agent_harness/evidence.py",
+        "backend/modules/agent_harness/control_plane.py",
+        "backend/modules/agent_harness/e2e_simulation.py",
+        "backend/modules/agent_harness/local_runtime.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_bos_agent_harness_planner_router.py",
+        "backend/tests/test_bos_agent_harness_worker_compiler.py",
+        "backend/tests/test_bos_agent_harness_evidence.py",
+        "backend/tests/test_bos_agent_harness_control_plane.py",
+        "backend/tests/test_bos_agent_harness_e2e_simulation.py",
+        "backend/tests/test_bos_agent_harness_local_runtime.py",
+        "backend/tests/test_worker_core_growth_guard.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "harness_context": {
+    "plan_step_id": "gate14-controlled-dev-execution",
+    "domain": "engineering",
+    "procedure": "repo-change",
+    "risk": "R1",
+    "data_classification": "INTERNAL",
+    "agent_id": "bos-backend",
+    "agent_version": "1",
+    "skill_id": "repo-change",
+    "skill_version": "1",
+    "executor": "worker"
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
