@@ -1,20 +1,32 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "d0d0f4e512093c9085b488c3ec1d3a831c6514bc",
-  "generated_at_utc": "2026-09-15T21:37:46Z",
+  "development_sha": "3cb02ea9ff4b759291e86f55a4b84a2bdad57b5b",
+  "generated_at_utc": "2026-09-15T21:39:03Z",
   "history": {
-    "done_total_local": 504,
+    "done_total_local": 505,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 524,
-    "results_total_local": 895
+    "rejected_total_local": 525,
+    "results_total_local": 897
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2442,
+      "age_seconds": 68,
+      "job_id": "EDARSAHUB-COMERCIAL-RANGE-RESYNC-CAPABILITY-R87-CARLOS-20260915T211500Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2518,
       "job_id": "EDARSAHUB-ESTELAR-R85B-VERIFY-R86-CARLOS-20260915T192500Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 17,
+      "job_id": "EDARSAHUB-ESTELAR-SEPT-REAL-R88-CARLOS-20260915T214000Z",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -26,14 +38,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T21:37:45Z",
-    "last_receive_utc": "2026-09-15T21:37:40Z",
-    "last_terminal_utc": "2026-09-15T20:57:04Z",
+    "last_cycle_utc": "2026-09-15T21:38:58Z",
+    "last_receive_utc": "2026-09-15T21:39:00Z",
+    "last_terminal_utc": "2026-09-15T21:38:45Z",
     "pid": "713"
   },
   "schema": "edarsahub.worker-health.v3",
