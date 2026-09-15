@@ -1,0 +1,41 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R2-PYTEST-CONTRACT-FIX-1",
+  "created_at_utc": "2026-09-15T04:43:09Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Correccion quirurgica previa al replay de EDARSAHUB-GIT-DIVERGENCE-GUARD-R2. Eliminar exclusivamente la asercion obsoleta de test_shared_app_sync_safety_contract.py que exige git merge --ff-only dentro de test_apply_owns_collision_decision. Esa asercion contradice el contrato canonico R2, que elimina git merge y lo valida separadamente en test_git_divergence_guard_r1.py. No modificar implementacion, Worker runtime, Supervisor, .env, SQL, Production ni ningun otro test. Validar unicamente que la suite preexistente de shared-app safety siga PASS despues de quitar esa dependencia de implementacion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_shared_app_sync_safety_contract.py",
+      "old": "    assert \"git merge --ff-only\" in text\n",
+      "new": "",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/tests/test_shared_app_sync_safety_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_shared_app_sync_safety_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Worker 3"
+  }
+}
