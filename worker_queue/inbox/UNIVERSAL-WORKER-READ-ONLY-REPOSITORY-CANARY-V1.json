@@ -1,0 +1,31 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "UNIVERSAL-WORKER-READ-ONLY-REPOSITORY-CANARY-V1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "09263c3d1e8a182f8039119d59e4ac7fd6823d26",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Canario minimo del modo READ_ONLY existente del Universal Worker usando repository_contract_audit. Debe demostrar ejecucion sin acciones, sin mutaciones tracked, sin commit, sin integracion y sin tocar Produccion. No modificar EDARSAHUB BOS ni crear capacidades nuevas.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync"
+        ],
+        "search_terms": [
+          "READ_ONLY_MODE",
+          "repository_contract_audit"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 50
+      }
+    }
+  ]
+}
