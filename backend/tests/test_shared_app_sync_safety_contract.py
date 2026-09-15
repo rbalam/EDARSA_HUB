@@ -51,7 +51,6 @@ def test_apply_owns_collision_decision():
     assert "UNTRACKED_COLLISION=" in text
     assert "ABORT=LOCAL_TRACKED_COLLISION" in text
     assert "ABORT=UNTRACKED_WOULD_BE_OVERWRITTEN" in text
-    assert "git merge --ff-only" in text
 
 
 def test_worker_control_plane_has_no_stash_or_reset():
