@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "3cb02ea9ff4b759291e86f55a4b84a2bdad57b5b",
-  "generated_at_utc": "2026-09-15T21:45:20Z",
+  "generated_at_utc": "2026-09-15T21:46:34Z",
   "history": {
     "done_total_local": 506,
     "pending_total_local": 0,
@@ -13,25 +13,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 445,
+      "age_seconds": 519,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-RESYNC-CAPABILITY-R87-CARLOS-20260915T211500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 95,
+      "age_seconds": 169,
       "job_id": "EDARSAHUB-ESTELAR-POSTSYNC-VERIFY-R89-CARLOS-20260915T214500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2896,
+      "age_seconds": 2970,
       "job_id": "EDARSAHUB-ESTELAR-R85B-VERIFY-R86-CARLOS-20260915T192500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 395,
+      "age_seconds": 469,
       "job_id": "EDARSAHUB-ESTELAR-SEPT-REAL-R88-CARLOS-20260915T214000Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -49,8 +49,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T21:45:16Z",
-    "last_receive_utc": "2026-09-15T21:45:18Z",
+    "last_cycle_utc": "2026-09-15T21:46:33Z",
+    "last_receive_utc": "2026-09-15T21:46:34Z",
     "last_terminal_utc": "2026-09-15T21:43:45Z",
     "pid": "206396"
   },
