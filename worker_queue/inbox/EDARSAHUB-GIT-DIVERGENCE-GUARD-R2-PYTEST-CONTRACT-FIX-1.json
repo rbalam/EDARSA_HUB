@@ -32,6 +32,7 @@
       "type": "git_diff_check"
     }
   ],
+  "human_summary_language": "es",
   "requester": {
     "email": "ricardo@edarsa.com.mx",
     "source": "chatgpt-classic",
