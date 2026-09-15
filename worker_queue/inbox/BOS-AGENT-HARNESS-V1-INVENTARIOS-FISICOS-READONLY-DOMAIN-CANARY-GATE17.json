@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENT-HARNESS-V1-INVENTARIOS-FISICOS-READONLY-DOMAIN-CANARY-GATE17",
+  "created_at_utc": "2026-09-15T05:40:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "40e809704d69b2a16e4119913cd1223523fb2e2f",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Gate17: tercer canario de dominio BOS real sobre Inventarios fisicos/Operaciones. Verificar en solo lectura la invariante canonica de alcance: servidores single-tenant SoftRestaurant no filtran por sucursal, servidores compartidos MPRO si desambiguan por sucursal mediante _shared_server; EDARSAHUB SQL puede consultarse solo como fuente canonica de unidades, sin consultar POS/SoftRestaurant/MPRO en vivo ni ejecutar escrituras. No modificar archivos, no ejecutar acciones, no tocar Mongo, no alterar inventarios, movimientos, permisos, Scheduler, NetPay ni Production. Exito solo con checks PASS, blockers=[], files_changed=[], production_touched=false y terminal CERTIFIED_READ_ONLY/COMPLETE/100.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/server.py",
+        "backend/core/corporate_filters/request_resolver.py",
+        "backend/core/unidades_service.py",
+        "backend/modules/compras/repository.py",
+        "backend/modules/agent_harness/planner.py",
+        "backend/modules/agent_harness/router.py",
+        "backend/modules/agent_harness/worker_compiler.py",
+        "backend/modules/agent_harness/evidence.py",
+        "backend/modules/agent_harness/control_plane.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_inventarios_fisicos_scope_canonico.py",
+        "backend/tests/test_bos_agent_harness_planner_router.py",
+        "backend/tests/test_bos_agent_harness_worker_compiler.py",
+        "backend/tests/test_bos_agent_harness_evidence.py",
+        "backend/tests/test_bos_agent_harness_control_plane.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
