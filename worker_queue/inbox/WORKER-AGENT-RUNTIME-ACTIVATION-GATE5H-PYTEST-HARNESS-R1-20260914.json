@@ -1,0 +1,31 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5H-PYTEST-HARNESS-R1-20260914",
+  "created_at_utc": "2026-09-15T04:58:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2a485ed069fa03efa1a842e88f831de3787189c1",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "objective": "Gate 5H quirurgico: corregir exclusivamente el harness de GitHub Actions Agent-Reach Live Canary para proporcionar Python de test y pytest antes de ejecutar el canario. Mantener intactos Agent Reach, sus ejecutores, policy/capability, Worker, Supervisor, watchdog y Produccion. Usar actions/setup-python@v5 con Python 3.11 e instalar pytest==9.0.2, version ya canonica en backend/requirements.txt. Reutilizar el mismo marcador controlado de Gate 5G para que el commit integrado por el Worker vuelva a disparar automaticamente exactamente un canario live. No secrets, no docker.sock, no mounts, no deploy, no image push.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": ".github/workflows/agent-reach-live-canary.yml",
+      "expected_sha256": "af4bb7ba70d4242bb590f08909fdcbe62c0d09f5465f28849d3cf7430ca3e7f5",
+      "content": "name: Agent-Reach Live Canary\n\non:\n  workflow_dispatch:\n    inputs:\n      expected_sha:\n        description: Exact Edarsahub_Desarrollo SHA to certify\n        required: true\n        type: string\n  push:\n    branches:\n      - Edarsahub_Desarrollo\n    paths:\n      - backend/tests/live_canary_requests/gate5g_worker_autotrigger_20260914.json\n\npermissions:\n  contents: read\n\njobs:\n  live-canary:\n    runs-on: ubuntu-latest\n    timeout-minutes: 30\n    env:\n      EXPECTED_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_sha || github.sha }}\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ env.EXPECTED_SHA }}\n          persist-credentials: false\n\n      - name: Verify exact SHA\n        shell: bash\n        run: |\n          set -euo pipefail\n          test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\n          echo \"EXACT_SHA_CHECK=PASS\"\n\n      - name: Build canonical Agent-Reach image\n        shell: bash\n        run: |\n          set -euo pipefail\n          infra/agent-reach/build.sh\n\n      - name: Set up Python test runtime\n        uses: actions/setup-python@v5\n        with:\n          python-version: \"3.11\"\n\n      - name: Install live canary test dependency\n        shell: bash\n        run: |\n          set -euo pipefail\n          python -m pip install --disable-pip-version-check pytest==9.0.2\n\n      - name: Execute real live canary\n        shell: bash\n        run: |\n          set -euo pipefail\n          export PYTHONPATH=backend\n          python -m pytest -q backend/tests/test_agent_reach_live_network_canary.py\n\n      - name: Upload sanitized live evidence\n        if: always()\n        uses: actions/upload-artifact@v4\n        with:\n          name: agent-reach-live-canary-evidence-${{ env.EXPECTED_SHA }}\n          path: backend/tests/agent_reach_live_network_canary_evidence.json\n          if-no-files-found: error\n          retention-days: 7\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/live_canary_requests/gate5g_worker_autotrigger_20260914.json",
+      "expected_sha256": "96daa75fa101b6c36287cb16d3d58b748130a44fbfb4597da84f58810b6c97c6",
+      "content": "{\n  \"schema\": \"edarsahub.agent-reach-live-canary-request.v1\",\n  \"job_id\": \"WORKER-AGENT-RUNTIME-ACTIVATION-GATE5H-PYTEST-HARNESS-R1-20260914\",\n  \"requested_by\": \"universal-worker\",\n  \"environment\": \"DEVELOPMENT\",\n  \"risk\": \"R1\",\n  \"data_classification\": \"PUBLIC\",\n  \"external_calls_budget\": 1,\n  \"production_allowed\": false\n}\n"
+    }
+  ],
+  "checks": [
+    {"type": "pytest", "paths": ["backend/tests/test_agent_reach_live_canary_workflow_contract.py"]},
+    {"type": "git_diff_check"}
+  ]
+}
