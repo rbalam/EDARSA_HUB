@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "4d0a56a7728aacfc00d64d6a6651896987210042",
-  "generated_at_utc": "2026-09-15T16:36:52Z",
+  "generated_at_utc": "2026-09-15T16:38:07Z",
   "history": {
     "done_total_local": 494,
     "pending_total_local": 0,
-    "processing_total_local": 0,
-    "rejected_total_local": 515,
-    "results_total_local": 877
+    "processing_total_local": 1,
+    "rejected_total_local": 516,
+    "results_total_local": 878
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2653,
+      "age_seconds": 2728,
       "job_id": "WORKER-BOS-AGENTS-IA-GATE6B-IMPLEMENTATION-R1-20260915",
       "reasons": [
         "INVALID_JSON"
@@ -22,57 +22,69 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1236,
+      "age_seconds": 28,
+      "job_id": "BOS-AGENT-HARNESS-V1-FECHA-OPERACION-COMERCIAL-READONLY-DOMAIN-CANARY-GATE21",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1311,
       "job_id": "EDARSAHUB-CATALOGO-AMPLIADO-GATE8F-SQL-MIGRATION-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 317,
+      "age_seconds": 392,
       "job_id": "EDARSAHUB-ISCAM-ESTELAR-SEPT-REGRESSION-AUDIT-R77-CARLOS-20260915T163000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 128,
+      "age_seconds": 203,
       "job_id": "EDARSAHUB-SCHEDULER-RSYNC-MANUAL-FIX-R74-CARLOS-20260915T163000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1617,
+      "age_seconds": 1692,
       "job_id": "EDARSAHUB-SQL-MIGRATION-CANONICAL-CREDENTIAL-REUSE-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1439,
+      "age_seconds": 1514,
       "job_id": "EDARSAHUB-SQL-MIGRATION-CANONICAL-CREDENTIAL-REUSE-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2292,
+      "age_seconds": 2367,
       "job_id": "WORKER-BOS-AGENTS-IA-GATE6B-R2-IMPLEMENTATION-20260915",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 4,
+      "job_id": "EDARSAHUB-ISCAM-AUTO-SCHEDULER-RCA-R78-CARLOS-20260915T163700Z",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 6,
-  "queue_running": 0,
+  "queue_result_ready_recent": 7,
+  "queue_running": 1,
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "EDARSAHUB-ISCAM-AUTO-SCHEDULER-RCA-R78-CARLOS-20260915T163700Z",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T16:36:46Z",
-    "last_receive_utc": "2026-09-15T16:36:41Z",
-    "last_terminal_utc": "2026-09-15T16:34:43Z",
+    "last_cycle_utc": "2026-09-15T16:38:00Z",
+    "last_receive_utc": "2026-09-15T16:38:03Z",
+    "last_terminal_utc": "2026-09-15T16:37:38Z",
     "pid": "180962"
   },
   "schema": "edarsahub.worker-health.v3",
