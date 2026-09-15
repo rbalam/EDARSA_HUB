@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "84973e7ddf844111ce86317c005475cb4911f777",
-  "generated_at_utc": "2026-09-15T06:40:44Z",
+  "generated_at_utc": "2026-09-15T06:41:59Z",
   "history": {
     "done_total_local": 483,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 134,
+      "age_seconds": 208,
       "job_id": "WORKER-BOS-AGENT-CONTROL-CENTER-PRODUCT-INTEGRATION-GATE6A-DISCOVERY-R1-20260915",
       "reasons": [
         "CHECK_1_REQUEST_REQUIRED"
@@ -22,55 +22,55 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 187,
+      "age_seconds": 261,
       "job_id": "BOS-AGENT-HARNESS-V1-COMPRAS-AUTHORIZED-SCOPE-READONLY-DOMAIN-CANARY-GATE18",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3010,
+      "age_seconds": 3084,
       "job_id": "BOS-AGENT-HARNESS-V1-INVENTARIOS-FISICOS-READONLY-DOMAIN-CANARY-GATE17",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1272,
+      "age_seconds": 1346,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE0A-REPOSITORY-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1306,
+      "age_seconds": 1381,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CANONIZATION-R3A",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1341,
+      "age_seconds": 1415,
       "job_id": "UNIVERSAL-WORKER-READ-ONLY-REPOSITORY-CANARY-V1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3051,
+      "age_seconds": 3125,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5I-CANONICAL-PYTHON-DEPS-R1-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1736,
+      "age_seconds": 1810,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5J-PHASE-CLOSURE-R1-20260915",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1725,
+      "age_seconds": 1800,
       "job_id": "WORKER-REJECTED-CORRECTION-REQUEUE-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 258,
+      "age_seconds": 332,
       "job_id": "WORKER-REJECTED-CORRECTION-REQUEUE-R2",
       "reason": null,
       "state": "RESULT_READY"
@@ -88,8 +88,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T06:40:41Z",
-    "last_receive_utc": "2026-09-15T06:40:43Z",
+    "last_cycle_utc": "2026-09-15T06:41:53Z",
+    "last_receive_utc": "2026-09-15T06:41:54Z",
     "last_terminal_utc": "2026-09-15T06:37:37Z",
     "pid": "287"
   },
