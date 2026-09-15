@@ -7,6 +7,11 @@ on:
         description: Exact Edarsahub_Desarrollo SHA to certify
         required: true
         type: string
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - backend/tests/live_canary_requests/gate5g_worker_autotrigger_20260914.json
 
 permissions:
   contents: read
@@ -15,17 +20,19 @@ jobs:
   live-canary:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      EXPECTED_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.expected_sha }}
+          ref: ${{ env.EXPECTED_SHA }}
           persist-credentials: false
 
       - name: Verify exact SHA
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "${{ inputs.expected_sha }}"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           echo "EXACT_SHA_CHECK=PASS"
 
       - name: Build canonical Agent-Reach image
@@ -45,7 +52,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: agent-reach-live-canary-evidence-${{ inputs.expected_sha }}
+          name: agent-reach-live-canary-evidence-${{ env.EXPECTED_SHA }}
           path: backend/tests/agent_reach_live_network_canary_evidence.json
           if-no-files-found: error
           retention-days: 7
