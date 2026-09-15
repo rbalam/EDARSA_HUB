@@ -1,73 +1,79 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "31909461ec698e4d31228474cbd56b3843fa42f4",
-  "generated_at_utc": "2026-09-15T14:59:37Z",
+  "generated_at_utc": "2026-09-15T15:00:54Z",
   "history": {
-    "done_total_local": 489,
+    "done_total_local": 490,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 512,
-    "results_total_local": 870
+    "results_total_local": 871
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1506,
+      "age_seconds": 1583,
       "job_id": "BOS-AGENT-HARNESS-V1-CAVAS-CORPORATIVAS-READONLY-DOMAIN-CANARY-GATE20",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1986,
+      "age_seconds": 2063,
       "job_id": "BOS-AGENT-HARNESS-V1-INTELIGENCIA-PORTAL-CLOSURE-READONLY-DOMAIN-CANARY-GATE19",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1520,
+      "age_seconds": 58,
+      "job_id": "EDARSAHUB-GATE8F-WRITER-PERMISSION-AUDIT-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1598,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R2-PYTEST-CONTRACT-FIX-1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1243,
+      "age_seconds": 1320,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R2-REPLAY-1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 928,
+      "age_seconds": 1006,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R2-SHARED-SAFETY-CONTRACT-FIX-2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 771,
+      "age_seconds": 848,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 384,
+      "age_seconds": 461,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1978,
+      "age_seconds": 2055,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CANONIZATION-R3B",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1604,
+      "age_seconds": 1681,
       "job_id": "WORKER-BOS-AGENT-CONTROL-CENTER-PRODUCT-INTEGRATION-GATE6A-R2-DISCOVERY-20260915",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1710,
+      "age_seconds": 1787,
       "job_id": "WORKER-REJECTED-CORRECTION-REQUEUE-R3",
       "reason": null,
       "state": "RESULT_READY"
@@ -80,14 +86,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 10,
+  "queue_result_ready_recent": 11,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T14:59:34Z",
-    "last_receive_utc": "2026-09-15T14:59:36Z",
-    "last_terminal_utc": "2026-09-15T14:53:13Z",
+    "last_cycle_utc": "2026-09-15T15:00:52Z",
+    "last_receive_utc": "2026-09-15T15:00:54Z",
+    "last_terminal_utc": "2026-09-15T14:59:56Z",
     "pid": "25361"
   },
   "schema": "edarsahub.worker-health.v3",
