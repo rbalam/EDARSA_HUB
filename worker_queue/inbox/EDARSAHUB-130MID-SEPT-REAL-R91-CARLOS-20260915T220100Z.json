@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-130MID-SEPT-REAL-R91-CARLOS-20260915T220100Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3cb02ea9ff4b759291e86f55a4b84a2bdad57b5b",
+  "production_allowed": false,
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "objective": "Sincronizar REAL 130MID del 2026-09-01 al 2026-09-14 inclusive usando el handler oficial. Debe sincronizar encabezado Comercial_KPIs_Diarios_v2 y detalle ISCAM, y luego validar el destino. No tocar Edarsahub_Produccion.",
+  "actions": [],
+  "units": ["130MID"],
+  "fecha_inicio": "2026-09-01",
+  "fecha_fin": "2026-09-14",
+  "dry_run": false,
+  "confirm_comercial_range_resync": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "130mid_destination_sep_after_sync",
+          "sql": "SELECT COUNT(*) AS dias, CAST(SUM(ISNULL(ventas_total,0)) AS decimal(18,2)) AS ventas_total, SUM(ISNULL(tickets_total,0)) AS tickets_total, SUM(ISNULL(pax_total,0)) AS pax_total FROM dbo.Comercial_KPIs_Diarios_v2 WHERE unidad_negocio_id='130MID' AND CAST(fecha_operacion AS date) BETWEEN '2026-09-01' AND '2026-09-14' AND ISNULL(activo,1)=1"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": ["130MID"],
+      "system_types": ["SOFTRESTAURANT"],
+      "queries": [
+        {
+          "name": "130mid_source_sep",
+          "sql": "SELECT CAST(SUM(ISNULL(ch.total,0)) AS decimal(18,2)) AS ventas_total, COUNT(*) AS tickets_total, SUM(ISNULL(ch.nopersonas,0)) AS pax_total FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE tr.apertura>='2026-09-01 00:00:00' AND tr.apertura<'2026-09-15 00:00:00' AND ISNULL(ch.cancelado,0)=0"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
