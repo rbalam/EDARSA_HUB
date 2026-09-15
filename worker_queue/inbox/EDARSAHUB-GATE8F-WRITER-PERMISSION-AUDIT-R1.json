@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-GATE8F-WRITER-PERMISSION-AUDIT-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar en solo lectura la identidad y permisos efectivos de la conexion canonica HRLectura sobre EDARSAHUB y especificamente dbo.Sistema_NotificacionesConfig antes de decidir el canal de escritura para la migracion Gate8F. No ejecutar DDL/DML, no modificar secretos, no tocar Produccion.",
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "identity_and_database",
+          "sql": "SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS db_user"
+        },
+        {
+          "name": "gate8f_target_permissions",
+          "sql": "SELECT CASE WHEN OBJECT_ID('dbo.Sistema_NotificacionesConfig','U') IS NULL THEN 0 ELSE 1 END AS table_present, COALESCE(HAS_PERMS_BY_NAME('dbo.Sistema_NotificacionesConfig','OBJECT','SELECT'),0) AS can_select, COALESCE(HAS_PERMS_BY_NAME('dbo.Sistema_NotificacionesConfig','OBJECT','INSERT'),0) AS can_insert, COALESCE(HAS_PERMS_BY_NAME('dbo.Sistema_NotificacionesConfig','OBJECT','UPDATE'),0) AS can_update, COALESCE(HAS_PERMS_BY_NAME('dbo.Sistema_NotificacionesConfig','OBJECT','DELETE'),0) AS can_delete"
+        },
+        {
+          "name": "database_writer_roles",
+          "sql": "SELECT COALESCE(IS_ROLEMEMBER('db_datareader'),0) AS db_datareader, COALESCE(IS_ROLEMEMBER('db_datawriter'),0) AS db_datawriter, COALESCE(IS_ROLEMEMBER('db_ddladmin'),0) AS db_ddladmin, COALESCE(IS_ROLEMEMBER('db_owner'),0) AS db_owner"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Worker 3"
+  }
+}
