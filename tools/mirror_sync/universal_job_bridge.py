@@ -23,8 +23,11 @@ STATE = ROOT / ".git" / "universal-worker-queue"
 PENDING = STATE / "pending"
 PROCESSING = STATE / "processing"
 REJECTED = STATE / "rejected"
+REJECTED_HISTORY = STATE / "rejected_history"
 DONE = STATE / "done"
 RESULTS = STATE / "results"
+CORRECTABLE_REJECTION_REASONS = {"SUMMARY_LANGUAGE_MUST_BE_ES"}
+CORRECTABLE_REJECTION_FIELDS = {"human_summary_language"}
 REMOTE = os.environ.get("EDARSAHUB_QUEUE_REMOTE", "origin")
 CANONICAL_REMOTE = os.environ.get(
     "EDARSAHUB_QUEUE_CANONICAL_REMOTE",
@@ -80,7 +83,7 @@ def resolve_queue_remote() -> str:
 
 
 def ensure_dirs() -> None:
-    for path in (PENDING, PROCESSING, REJECTED, DONE, RESULTS):
+    for path in (PENDING, PROCESSING, REJECTED, REJECTED_HISTORY, DONE, RESULTS):
         path.mkdir(parents=True, exist_ok=True)
 
 
@@ -383,12 +386,75 @@ def read_remote(path: str) -> str:
 
 
 def already_claimed(name: str) -> bool:
-    # worker_queue/inbox is immutable audit history. A job is actionable only
-    # when no local lifecycle/terminal evidence exists for its job_id.
+    # worker_queue/inbox is immutable audit history. Normal lifecycle evidence
+    # remains terminal. REJECTED is evaluated separately so a strictly
+    # metadata-only contract correction can retry the same immutable job
+    # identity while preserving its prior rejection evidence.
     return any(
         (folder / name).exists()
-        for folder in (PENDING, PROCESSING, DONE, REJECTED, RESULTS)
+        for folder in (PENDING, PROCESSING, DONE, RESULTS)
     )
+
+
+def _read_json_file(path: Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        return payload if isinstance(payload, dict) else {}
+    except Exception:
+        return {}
+
+
+def rejected_correction_retry_decision(name: str, raw: str, job: dict[str, Any]) -> dict[str, Any]:
+    rejection_path = REJECTED / name
+    if not rejection_path.exists():
+        return {"present": False, "allowed": True}
+    raw_path = REJECTED / f"{name}.raw"
+    if not raw_path.is_file():
+        return {"present": True, "allowed": False, "reason": "REJECTED_RETRY_RAW_EVIDENCE_MISSING"}
+    previous_raw = raw_path.read_text(encoding="utf-8")
+    if previous_raw == raw:
+        return {"present": True, "allowed": False, "reason": "REJECTED_REQUEST_UNCHANGED"}
+    rejection = _read_json_file(rejection_path)
+    reasons = {str(value) for value in (rejection.get("reasons") or [])}
+    if not reasons or not reasons.issubset(CORRECTABLE_REJECTION_REASONS):
+        return {"present": True, "allowed": False, "reason": "REJECTED_REASON_NOT_CORRECTABLE", "previous_reasons": sorted(reasons)}
+    if list(REJECTED_HISTORY.glob(f"{Path(name).stem}.*.json")):
+        return {"present": True, "allowed": False, "reason": "REJECTED_CORRECTION_RETRY_LIMIT_REACHED"}
+    try:
+        previous_job = json.loads(previous_raw)
+    except json.JSONDecodeError:
+        return {"present": True, "allowed": False, "reason": "REJECTED_RETRY_PREVIOUS_JSON_INVALID"}
+    if not isinstance(previous_job, dict):
+        return {"present": True, "allowed": False, "reason": "REJECTED_RETRY_PREVIOUS_JOB_INVALID"}
+    keys = set(previous_job) | set(job)
+    changed_fields = sorted(key for key in keys if previous_job.get(key) != job.get(key))
+    if not changed_fields:
+        return {"present": True, "allowed": False, "reason": "REJECTED_REQUEST_UNCHANGED"}
+    if set(changed_fields) - CORRECTABLE_REJECTION_FIELDS:
+        return {"present": True, "allowed": False, "reason": "REJECTED_RETRY_SCOPE_CHANGED", "changed_fields": changed_fields}
+    if job.get("human_summary_language") != "es":
+        return {"present": True, "allowed": False, "reason": "REJECTED_RETRY_CORRECTION_INVALID", "changed_fields": changed_fields}
+    return {
+        "present": True,
+        "allowed": True,
+        "reason": "REJECTED_CONTRACT_CORRECTION_ALLOWED",
+        "previous_reasons": sorted(reasons),
+        "corrected_fields": changed_fields,
+    }
+
+
+def archive_rejection_for_retry(name: str) -> dict[str, str]:
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    rejection_path = REJECTED / name
+    raw_path = REJECTED / f"{name}.raw"
+    archived_rejection = REJECTED_HISTORY / f"{Path(name).stem}.{stamp}.json"
+    archived_raw = REJECTED_HISTORY / f"{Path(name).stem}.{stamp}.json.raw"
+    os.replace(rejection_path, archived_rejection)
+    os.replace(raw_path, archived_raw)
+    return {
+        "rejection": str(archived_rejection),
+        "raw": str(archived_raw),
+    }
 
 
 def write_rejection(source: str, reason: list[str], raw: str = "") -> None:
@@ -420,11 +486,21 @@ def receive() -> int:
         try:
             job = json.loads(raw)
         except json.JSONDecodeError:
+            if (REJECTED / name).exists():
+                skipped += 1
+                continue
             write_rejection(path, ["INVALID_JSON"], raw)
             rejected += 1
             continue
+        retry_decision = rejected_correction_retry_decision(name, raw, job)
+        if retry_decision.get("present") and not retry_decision.get("allowed"):
+            skipped += 1
+            continue
         errors = validate(job)
         if errors:
+            if retry_decision.get("present"):
+                skipped += 1
+                continue
             write_rejection(path, errors, raw)
             rejected += 1
             continue
@@ -451,6 +527,9 @@ def receive() -> int:
                 rejected += 1
                 continue
 
+        retry_archive = None
+        if retry_decision.get("present"):
+            retry_archive = archive_rejection_for_retry(name)
         envelope = {
             "received_at_utc": datetime.now(timezone.utc).isoformat(),
             "queue_branch": QUEUE_BRANCH,
@@ -458,6 +537,13 @@ def receive() -> int:
             "requester_authorization": requester_authorization,
             "job": job,
         }
+        if retry_decision.get("present"):
+            envelope["_worker_rejected_correction_retry"] = {
+                "retry_count": 1,
+                "previous_reasons": retry_decision.get("previous_reasons", []),
+                "corrected_fields": retry_decision.get("corrected_fields", []),
+                "archived_evidence": retry_archive,
+            }
         (PENDING / name).write_text(json.dumps(envelope, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         accepted += 1
     print(f"UNIVERSAL_QUEUE_ACCEPTED={accepted}")
