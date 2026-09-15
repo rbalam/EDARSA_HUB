@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "40e809704d69b2a16e4119913cd1223523fb2e2f",
-  "generated_at_utc": "2026-09-15T05:42:50Z",
+  "generated_at_utc": "2026-09-15T05:44:03Z",
   "history": {
     "done_total_local": 477,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1664,
+      "age_seconds": 1737,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R2-PYTEST-CONTRACT-FIX-1",
       "reasons": [
         "SUMMARY_LANGUAGE_MUST_BE_ES"
@@ -22,43 +22,43 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1659,
+      "age_seconds": 1732,
       "job_id": "BOS-AGENT-HARNESS-V1-COMERCIAL-READONLY-DOMAIN-CANARY-GATE15",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 404,
+      "age_seconds": 477,
       "job_id": "BOS-AGENT-HARNESS-V1-COSTOS-MARGENES-READONLY-DOMAIN-CANARY-GATE16",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 155,
+      "age_seconds": 228,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-FINAL-READONLY-CANARY-R2-6",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1644,
+      "age_seconds": 1717,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-TEST-CONTRACT-FIX-R2-4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 946,
+      "age_seconds": 1019,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-TEST-CONTRACT-FIX-R2-5",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3370,
+      "age_seconds": 3443,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5G-R2-WORKER-AUTOTRIGGER-LIVE-CANARY-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1626,
+      "age_seconds": 1699,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5H-PYTEST-HARNESS-R1-20260914",
       "reason": null,
       "state": "RESULT_READY"
@@ -76,8 +76,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T05:42:49Z",
-    "last_receive_utc": "2026-09-15T05:42:49Z",
+    "last_cycle_utc": "2026-09-15T05:43:59Z",
+    "last_receive_utc": "2026-09-15T05:43:59Z",
     "last_terminal_utc": "2026-09-15T05:40:15Z",
     "pid": "146"
   },
