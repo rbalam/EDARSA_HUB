@@ -1,0 +1,62 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-ISCAM-SCHEDULER-DEFINITIVE-FIX-R80-CARLOS-20260915T171000Z",
+  "created_at_utc":"2026-09-15T17:10:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"4d0a56a7728aacfc00d64d6a6651896987210042",
+  "production_allowed":false,
+  "mode":"MUTATION",
+  "objective":"Corregir de fondo la sincronizacion automatica ISCAM sin tocar consultas certificadas de ventas: (1) clasificar dia abierto usando campos canonicos es_venta_abierta/es_corte_cerrado y ventas_abiertas, nunca por texto de procedencia; (2) impedir que sync_comercial_v2 reporte COMPLETADO cuando existan detalle_producto_fallidos; (3) registrar failed_count de detalle en Scheduler_BitacoraJobs. Mantener reintento natural de ultimos 3 dias. No tocar Produccion.",
+  "actions":[
+    {
+      "type":"replace_text",
+      "path":"backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old":"    source_text = \" \".join(\n        str(value)\n        for value in row.values()\n        if value is not None\n    )\n\n    return {\n        \"ventas\": _d(row[\"ventas_total\"]),\n        \"tickets\": int(_d(row[\"tickets_total\"])),\n        \"pax\": int(_d(row[\"pax_total\"])),\n        \"ventas_abiertas\": _d(ventas_abiertas),\n        \"es_abierta\": (\n            \"Comercial_Ventas_Dia_Abiertas_v2\"\n            in source_text\n        ),\n    }",
+      "new":"    es_venta_abierta_raw = _first(\n        row,\n        [\"es_venta_abierta\"],\n        None,\n    )\n    es_corte_cerrado_raw = _first(\n        row,\n        [\"es_corte_cerrado\"],\n        None,\n    )\n\n    if es_venta_abierta_raw is not None:\n        es_abierta = _s(es_venta_abierta_raw).upper() in {\n            \"1\", \"TRUE\", \"SI\", \"YES\"\n        }\n    elif es_corte_cerrado_raw is not None:\n        es_corte_cerrado = _s(es_corte_cerrado_raw).upper() in {\n            \"1\", \"TRUE\", \"SI\", \"YES\"\n        }\n        es_abierta = not es_corte_cerrado\n    else:\n        es_abierta = _d(ventas_abiertas) > 0\n\n    return {\n        \"ventas\": _d(row[\"ventas_total\"]),\n        \"tickets\": int(_d(row[\"tickets_total\"])),\n        \"pax\": int(_d(row[\"pax_total\"])),\n        \"ventas_abiertas\": _d(ventas_abiertas),\n        \"es_abierta\": es_abierta,\n    }",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+      "old":"JOB_NAME = \"sync_comercial_v2\"\nSYNC_INCREMENTAL_DAYS = int(os.environ.get(\"SYNC_COMERCIAL_V2_DAYS\", \"3\"))\n",
+      "new":"JOB_NAME = \"sync_comercial_v2\"\nSYNC_INCREMENTAL_DAYS = int(os.environ.get(\"SYNC_COMERCIAL_V2_DAYS\", \"3\"))\n\n\ndef _resolve_estatus_general(results: Dict[str, Any]) -> str:\n    \"\"\"No declara COMPLETADO si el detalle ISCAM tiene fallos.\"\"\"\n    header_failures = int(results.get(\"unidades_fallidas\") or 0)\n    detail_failures = int(results.get(\"detalle_producto_fallidos\") or 0)\n\n    if header_failures == 0 and detail_failures == 0:\n        return \"COMPLETADO\"\n\n    if int(results.get(\"unidades_exitosas\") or 0) > 0:\n        return \"PARCIAL\"\n\n    return \"FALLIDO\"\n",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+      "old":"    results[\"estatus_general\"] = (\n        \"COMPLETADO\" if results[\"unidades_fallidas\"] == 0 \n        else \"PARCIAL\" if results[\"unidades_exitosas\"] > 0 \n        else \"FALLIDO\"\n    )",
+      "new":"    results[\"estatus_general\"] = _resolve_estatus_general(results)",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/core/scheduler/scheduler_manager.py",
+      "old":"                success_count=result.get(\"unidades_exitosas\", 0),\n                skipped_count=result.get(\"total_omitidos\", 0),",
+      "new":"                success_count=result.get(\"unidades_exitosas\", 0),\n                failed_count=(\n                    int(result.get(\"unidades_fallidas\", 0) or 0)\n                    + int(result.get(\"detalle_producto_fallidos\", 0) or 0)\n                ),\n                skipped_count=result.get(\"total_omitidos\", 0),",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/core/scheduler/scheduler_manager.py",
+      "old":"                        f\"Omitidos: {result.get('total_omitidos', 0)}\",",
+      "new":"                        f\"Omitidos: {result.get('total_omitidos', 0)}, \"\n                        f\"Detalle OK: {result.get('detalle_producto_exitosos', 0)}, \"\n                        f\"Detalle fallido: {result.get('detalle_producto_fallidos', 0)}, \"\n                        f\"Detalle omitido: {result.get('detalle_producto_omitidos', 0)}\",",
+      "expected_count":1
+    },
+    {
+      "type":"write_file",
+      "path":"backend/tests/test_iscam_scheduler_definitive_fix_r80.py",
+      "content":"from decimal import Decimal\n\nfrom core.scheduler.jobs.sync_comercial_v2_job import _resolve_estatus_general\nfrom scripts.poblar_ventas_detalle_producto_canonico import _runtime_metrics\n\n\ndef _runtime_row(**overrides):\n    row = {\n        'ventas_total': Decimal('28329.75'),\n        'tickets_total': 22,\n        'pax_total': 46,\n        'ventas_abiertas': Decimal('0'),\n        'es_venta_abierta': False,\n        'es_corte_cerrado': True,\n        'fuente_original': 'Comercial_Ventas_Dia_Abiertas_v2',\n    }\n    row.update(overrides)\n    return row\n\n\ndef test_closed_overlay_with_zero_open_sales_is_not_open():\n    metrics = _runtime_metrics(_runtime_row())\n    assert metrics['ventas_abiertas'] == Decimal('0')\n    assert metrics['es_abierta'] is False\n\n\ndef test_explicit_open_flag_is_respected():\n    metrics = _runtime_metrics(_runtime_row(es_venta_abierta=True, es_corte_cerrado=False))\n    assert metrics['es_abierta'] is True\n\n\ndef test_fallback_uses_open_sales_when_flags_are_absent():\n    row = _runtime_row()\n    row.pop('es_venta_abierta')\n    row.pop('es_corte_cerrado')\n    row['ventas_abiertas'] = Decimal('10.00')\n    assert _runtime_metrics(row)['es_abierta'] is True\n\n\ndef test_detail_failure_prevents_false_completed_status():\n    status = _resolve_estatus_general({\n        'unidades_fallidas': 0,\n        'unidades_exitosas': 5,\n        'detalle_producto_fallidos': 8,\n    })\n    assert status == 'PARCIAL'\n\n\ndef test_no_header_or_detail_failures_is_completed():\n    status = _resolve_estatus_general({\n        'unidades_fallidas': 0,\n        'unidades_exitosas': 5,\n        'detalle_producto_fallidos': 0,\n    })\n    assert status == 'COMPLETADO'\n"
+    }
+  ],
+  "checks":[
+    {"type":"git_diff_check"},
+    {"type":"py_compile","paths":["backend/scripts/poblar_ventas_detalle_producto_canonico.py","backend/core/scheduler/jobs/sync_comercial_v2_job.py","backend/core/scheduler/scheduler_manager.py","backend/tests/test_iscam_scheduler_definitive_fix_r80.py"]},
+    {"type":"pytest","paths":["backend/tests/test_iscam_scheduler_definitive_fix_r80.py","backend/tests/test_scheduler_comercial_status.py","backend/tests/test_iscam_no_prorate_adjustments_r49.py","backend/tests/test_iscam_detail_pax_ticket_aggregation.py"]}
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
