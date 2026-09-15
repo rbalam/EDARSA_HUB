@@ -1,77 +1,26 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "84973e7ddf844111ce86317c005475cb4911f777",
-  "generated_at_utc": "2026-09-15T06:41:59Z",
+  "generated_at_utc": "2026-09-15T14:26:48Z",
   "history": {
-    "done_total_local": 483,
+    "done_total_local": 484,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 509,
-    "results_total_local": 860
+    "rejected_total_local": 510,
+    "results_total_local": 862
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 208,
-      "job_id": "WORKER-BOS-AGENT-CONTROL-CENTER-PRODUCT-INTEGRATION-GATE6A-DISCOVERY-R1-20260915",
-      "reasons": [
-        "CHECK_1_REQUEST_REQUIRED"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 261,
-      "job_id": "BOS-AGENT-HARNESS-V1-COMPRAS-AUTHORIZED-SCOPE-READONLY-DOMAIN-CANARY-GATE18",
+      "age_seconds": 17,
+      "job_id": "BOS-AGENT-HARNESS-V1-INTELIGENCIA-PORTAL-CLOSURE-READONLY-DOMAIN-CANARY-GATE19",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3084,
-      "job_id": "BOS-AGENT-HARNESS-V1-INVENTARIOS-FISICOS-READONLY-DOMAIN-CANARY-GATE17",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1346,
-      "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE0A-REPOSITORY-DISCOVERY-R1",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1381,
-      "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CANONIZATION-R3A",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1415,
-      "job_id": "UNIVERSAL-WORKER-READ-ONLY-REPOSITORY-CANARY-V1",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3125,
-      "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5I-CANONICAL-PYTHON-DEPS-R1-20260914",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1810,
-      "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5J-PHASE-CLOSURE-R1-20260915",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1800,
-      "job_id": "WORKER-REJECTED-CORRECTION-REQUEUE-R1",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 332,
-      "job_id": "WORKER-REJECTED-CORRECTION-REQUEUE-R2",
+      "age_seconds": 9,
+      "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CANONIZATION-R3B",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -82,16 +31,16 @@
   "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 9,
+  "queue_rejected_recent": 0,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T06:41:53Z",
-    "last_receive_utc": "2026-09-15T06:41:54Z",
-    "last_terminal_utc": "2026-09-15T06:37:37Z",
-    "pid": "287"
+    "last_cycle_utc": "2026-09-15T14:26:42Z",
+    "last_receive_utc": "2026-09-15T14:26:43Z",
+    "last_terminal_utc": "2026-09-15T14:26:39Z",
+    "pid": "285"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
