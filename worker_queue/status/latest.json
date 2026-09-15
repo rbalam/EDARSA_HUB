@@ -1,11 +1,11 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "888c2ad3e0f2226ce38c8b08bcc923c45b9d1656",
-  "generated_at_utc": "2026-09-15T04:45:25Z",
+  "generated_at_utc": "2026-09-15T04:46:37Z",
   "history": {
     "done_total_local": 471,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 503,
     "results_total_local": 844
   },
@@ -13,80 +13,86 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 825,
+      "age_seconds": 896,
       "job_id": "BOS-AGENT-HARNESS-V1-CONTROLLED-DEV-CANARY-GATE13",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 309,
+      "age_seconds": 381,
       "job_id": "BOS-AGENT-HARNESS-V1-CONTROLLED-DEV-EXECUTION-GATE14",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3301,
+      "age_seconds": 3373,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1904,
+      "age_seconds": 1975,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1874,
+      "age_seconds": 1946,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CLASSIFICATION-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1563,
+      "age_seconds": 1635,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CLASSIFICATION-R2-1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 917,
+      "age_seconds": 989,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CLASSIFICATION-R2-2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 491,
+      "age_seconds": 562,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CLASSIFICATION-R2-3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3327,
+      "age_seconds": 3399,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 686,
+      "age_seconds": 757,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5G-WORKER-AUTOTRIGGER-LIVE-CANARY-R1-20260914",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 4,
+      "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5G-R2-WORKER-AUTOTRIGGER-LIVE-CANARY-20260914",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 10,
-  "queue_running": 0,
+  "queue_running": 1,
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5G-R2-WORKER-AUTOTRIGGER-LIVE-CANARY-20260914",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T04:44:46Z",
-    "last_receive_utc": "2026-09-15T04:45:23Z",
+    "last_cycle_utc": "2026-09-15T04:46:32Z",
+    "last_receive_utc": "2026-09-15T04:46:32Z",
     "last_terminal_utc": "2026-09-15T04:40:15Z",
     "pid": "871"
   },
