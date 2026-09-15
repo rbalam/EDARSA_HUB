@@ -1,0 +1,16 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-BRANCH-ALIGNMENT-PRODUCTION-LAG-AUDIT-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "base_sha": "4d0a56a7728aacfc00d64d6a6651896987210042",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente la brecha entre Edarsahub_Produccion=7bd7f621b6a919f6fa427c49e217379496c6c068 y Edarsahub_Desarrollo=4d0a56a7728aacfc00d64d6a6651896987210042. Confirmar topologia, ahead/behind y merge-base; clasificar los 203 commits pendientes por dominio/riesgo/dependencias; identificar migraciones SQL, cambios de scheduler, auth/RBAC, frontend, infraestructura/worker y cambios potencialmente no promovibles; proponer lotes de promocion prudentes y ordenados con candidate SHA exacto por lote; recomendar un umbral operativo permanente para que Produccion no vuelva a quedar excesivamente atrasada. No hacer merge, push, tag, checkout mutante, rebase, cherry-pick ni tocar Produccion. El resultado debe indicar explicitamente PROMOTION_EXECUTED=NO, PRODUCTION_TOUCHED=NO y el primer lote SAFE_TO_PROMOTE=YES/NO con blockers verificables.",
+  "actions": [],
+  "checks": [
+    {"type": "repository_contract_audit"},
+    {"type": "git_diff_check"}
+  ]
+}
