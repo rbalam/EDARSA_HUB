@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "888c2ad3e0f2226ce38c8b08bcc923c45b9d1656",
-  "generated_at_utc": "2026-09-15T04:42:59Z",
+  "generated_at_utc": "2026-09-15T04:44:12Z",
   "history": {
     "done_total_local": 471,
     "pending_total_local": 0,
@@ -13,61 +13,61 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 679,
+      "age_seconds": 752,
       "job_id": "BOS-AGENT-HARNESS-V1-CONTROLLED-DEV-CANARY-GATE13",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 164,
+      "age_seconds": 237,
       "job_id": "BOS-AGENT-HARNESS-V1-CONTROLLED-DEV-EXECUTION-GATE14",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3156,
+      "age_seconds": 3229,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1758,
+      "age_seconds": 1831,
       "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1729,
+      "age_seconds": 1802,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CLASSIFICATION-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1417,
+      "age_seconds": 1490,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CLASSIFICATION-R2-1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 772,
+      "age_seconds": 845,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CLASSIFICATION-R2-2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 345,
+      "age_seconds": 418,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CLASSIFICATION-R2-3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3181,
+      "age_seconds": 3254,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 540,
+      "age_seconds": 613,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5G-WORKER-AUTOTRIGGER-LIVE-CANARY-R1-20260914",
       "reason": null,
       "state": "RESULT_READY"
@@ -85,8 +85,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T04:42:56Z",
-    "last_receive_utc": "2026-09-15T04:42:57Z",
+    "last_cycle_utc": "2026-09-15T04:44:12Z",
+    "last_receive_utc": "2026-09-15T04:44:07Z",
     "last_terminal_utc": "2026-09-15T04:40:15Z",
     "pid": "871"
   },
