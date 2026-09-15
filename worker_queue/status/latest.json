@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "84973e7ddf844111ce86317c005475cb4911f777",
-  "generated_at_utc": "2026-09-15T06:26:09Z",
+  "generated_at_utc": "2026-09-15T06:27:25Z",
   "history": {
     "done_total_local": 482,
     "pending_total_local": 0,
@@ -13,61 +13,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3003,
+      "age_seconds": 3078,
       "job_id": "BOS-AGENT-HARNESS-V1-COSTOS-MARGENES-READONLY-DOMAIN-CANARY-GATE16",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2135,
+      "age_seconds": 2210,
       "job_id": "BOS-AGENT-HARNESS-V1-INVENTARIOS-FISICOS-READONLY-DOMAIN-CANARY-GATE17",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 397,
+      "age_seconds": 472,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE0A-REPOSITORY-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 431,
+      "age_seconds": 507,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CANONIZATION-R3A",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2753,
+      "age_seconds": 2829,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-FINAL-READONLY-CANARY-R2-6",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3544,
-      "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-TEST-CONTRACT-FIX-R2-5",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 465,
+      "age_seconds": 541,
       "job_id": "UNIVERSAL-WORKER-READ-ONLY-REPOSITORY-CANARY-V1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2175,
+      "age_seconds": 2251,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5I-CANONICAL-PYTHON-DEPS-R1-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 861,
+      "age_seconds": 937,
       "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5J-PHASE-CLOSURE-R1-20260915",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 850,
+      "age_seconds": 926,
       "job_id": "WORKER-REJECTED-CORRECTION-REQUEUE-R1",
       "reason": null,
       "state": "RESULT_READY"
@@ -80,13 +74,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 10,
+  "queue_result_ready_recent": 9,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T06:26:07Z",
-    "last_receive_utc": "2026-09-15T06:26:07Z",
+    "last_cycle_utc": "2026-09-15T06:27:23Z",
+    "last_receive_utc": "2026-09-15T06:27:24Z",
     "last_terminal_utc": "2026-09-15T06:19:31Z",
     "pid": "287"
   },
