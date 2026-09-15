@@ -1,11 +1,11 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "84973e7ddf844111ce86317c005475cb4911f777",
-  "generated_at_utc": "2026-09-15T14:29:23Z",
+  "generated_at_utc": "2026-09-15T14:30:54Z",
   "history": {
     "done_total_local": 484,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 510,
     "results_total_local": 862
   },
@@ -13,32 +13,38 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 172,
+      "age_seconds": 263,
       "job_id": "BOS-AGENT-HARNESS-V1-INTELIGENCIA-PORTAL-CLOSURE-READONLY-DOMAIN-CANARY-GATE19",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 164,
+      "age_seconds": 255,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CANONIZATION-R3B",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 34,
+      "job_id": "WORKER-REJECTED-CORRECTION-REQUEUE-R3",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 2,
-  "queue_running": 0,
+  "queue_running": 1,
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "WORKER-REJECTED-CORRECTION-REQUEUE-R3",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T14:29:19Z",
-    "last_receive_utc": "2026-09-15T14:29:20Z",
+    "last_cycle_utc": "2026-09-15T14:30:50Z",
+    "last_receive_utc": "2026-09-15T14:30:51Z",
     "last_terminal_utc": "2026-09-15T14:26:39Z",
     "pid": "285"
   },
