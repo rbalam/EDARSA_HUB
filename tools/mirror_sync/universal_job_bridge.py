@@ -46,6 +46,7 @@ READ_ONLY_MODE = "READ_ONLY"
 READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest", "repository_contract_audit"}
 SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
 MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
+COMERCIAL_RANGE_RESYNC_MODE = "COMERCIAL_RANGE_RESYNC"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
 ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
 SQL_MIGRATION_DEVELOPMENT_MODE = "SQL_MIGRATION_DEVELOPMENT"
@@ -236,6 +237,21 @@ def validate(job: Any) -> list[str]:
     elif mode == READ_ONLY_MODE:
         if actions != []:
             errors.append("READ_ONLY_ACTIONS_MUST_BE_EMPTY_LIST")
+    elif mode == COMERCIAL_RANGE_RESYNC_MODE:
+        if actions not in (None, []):
+            errors.append("COMERCIAL_RANGE_RESYNC_ACTIONS_FORBIDDEN")
+        units = job.get("units", [])
+        if not isinstance(units, list) or len(units) != 1 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):
+            errors.append("COMERCIAL_RANGE_RESYNC_EXACTLY_ONE_UNIT_REQUIRED")
+        if not isinstance(job.get("fecha_inicio"), str) or not DATE_RE.fullmatch(job.get("fecha_inicio", "")):
+            errors.append("COMERCIAL_RANGE_RESYNC_FECHA_INICIO_INVALID")
+        if not isinstance(job.get("fecha_fin"), str) or not DATE_RE.fullmatch(job.get("fecha_fin", "")):
+            errors.append("COMERCIAL_RANGE_RESYNC_FECHA_FIN_INVALID")
+        dry_run = job.get("dry_run", True)
+        if not isinstance(dry_run, bool):
+            errors.append("COMERCIAL_RANGE_RESYNC_DRY_RUN_INVALID")
+        if dry_run is False and job.get("confirm_comercial_range_resync") is not True:
+            errors.append("COMERCIAL_RANGE_RESYNC_CONFIRMATION_REQUIRED")
     elif mode == ISCAM_DETAIL_BACKFILL_MODE:
         if actions not in (None, []):
             errors.append("ISCAM_DETAIL_BACKFILL_ACTIONS_FORBIDDEN")
@@ -335,6 +351,11 @@ def validate(job: Any) -> list[str]:
             errors.append("READ_ONLY_CHECK_REQUIRED")
         elif any(not isinstance(c, dict) or c.get("type") not in READ_ONLY_CHECKS for c in checks):
             errors.append("READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED")
+    elif mode == COMERCIAL_RANGE_RESYNC_MODE:
+        if not isinstance(checks, list) or not checks:
+            errors.append("COMERCIAL_RANGE_RESYNC_AUDIT_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+            errors.append("COMERCIAL_RANGE_RESYNC_ONLY_SQL_AUDIT_ALLOWED")
     elif mode == ISCAM_DETAIL_BACKFILL_MODE:
         if not isinstance(checks, list) or not checks:
             errors.append("ISCAM_DETAIL_BACKFILL_AUDIT_REQUIRED")

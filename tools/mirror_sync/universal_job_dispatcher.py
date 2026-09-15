@@ -49,6 +49,7 @@ READ_ONLY_MODE = "READ_ONLY"
 READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest", "repository_contract_audit"}
 SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
 MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
+COMERCIAL_RANGE_RESYNC_MODE = "COMERCIAL_RANGE_RESYNC"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
 ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
 SQL_MIGRATION_DEVELOPMENT_MODE = "SQL_MIGRATION_DEVELOPMENT"
@@ -573,6 +574,80 @@ def process_one(path: Path) -> int:
                 result["certification"] = "CERTIFIED_READ_ONLY"
                 result["summary_es"] = "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion."
             else:
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+            return 0
+
+        if mode == COMERCIAL_RANGE_RESYNC_MODE:
+            if expected_base and expected_base != current_head:
+                raise RuntimeError(f"BASE_SHA_MISMATCH_OPERATIONAL_MODE:expected={expected_base}:actual={current_head}")
+            if job.get("actions") not in (None, []):
+                raise RuntimeError("COMERCIAL_RANGE_RESYNC_ACTIONS_FORBIDDEN")
+            units = job.get("units", [])
+            if not isinstance(units, list) or len(units) != 1 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):
+                raise RuntimeError("COMERCIAL_RANGE_RESYNC_EXACTLY_ONE_UNIT_REQUIRED")
+            fecha_inicio = str(job.get("fecha_inicio") or "")
+            fecha_fin = str(job.get("fecha_fin") or "")
+            if not DATE_RE.fullmatch(fecha_inicio) or not DATE_RE.fullmatch(fecha_fin):
+                raise RuntimeError("COMERCIAL_RANGE_RESYNC_DATES_INVALID")
+            inicio_dt = datetime.strptime(fecha_inicio, "%Y-%m-%d")
+            fin_dt = datetime.strptime(fecha_fin, "%Y-%m-%d")
+            dias = (fin_dt - inicio_dt).days + 1
+            if dias < 1 or dias > 31:
+                raise RuntimeError("COMERCIAL_RANGE_RESYNC_DATE_RANGE_INVALID")
+            dry_run = job.get("dry_run", True)
+            if not isinstance(dry_run, bool):
+                raise RuntimeError("COMERCIAL_RANGE_RESYNC_DRY_RUN_INVALID")
+            if dry_run is False and job.get("confirm_comercial_range_resync") is not True:
+                raise RuntimeError("COMERCIAL_RANGE_RESYNC_CONFIRMATION_REQUIRED")
+            checks = job.get("checks") or []
+            if not checks or any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+                raise RuntimeError("COMERCIAL_RANGE_RESYNC_SQL_AUDIT_REQUIRED")
+            script = ROOT / "backend" / "scripts" / "resync_comercial_range_worker.py"
+            if not script.is_file():
+                raise RuntimeError("COMERCIAL_RANGE_RESYNC_SCRIPT_NOT_FOUND")
+            unit = units[0].strip().upper()
+            cmd = [PYTHON_BIN, str(script), "--unidad", unit, "--fecha-inicio", fecha_inicio, "--fecha-fin", fecha_fin]
+            if dry_run is False:
+                cmd.append("--commit")
+            backend = ROOT / "backend"
+            execution = run(cmd, cwd=ROOT, timeout=SOFTRESTAURANT_RESYNC_MAX_SECONDS, env_extra={**load_backend_runtime_env(), "PYTHONPATH": str(backend)})
+            summary = {}
+            for raw_line in reversed((execution.stdout or "").splitlines()):
+                try:
+                    candidate = json.loads(raw_line)
+                except Exception:
+                    continue
+                if isinstance(candidate, dict) and candidate.get("event") == "comercial_range_summary":
+                    summary = candidate
+                    break
+            result["operation"] = COMERCIAL_RANGE_RESYNC_MODE
+            result["dry_run"] = dry_run
+            result["units"] = [unit]
+            result["canonical_sql_mutation"] = not dry_run
+            result["operation_output"] = (execution.stdout or "")[-20000:]
+            result["operation_summary"] = summary
+            result["files_changed"] = []
+            if execution.returncode != 0:
+                result["blockers"].append("comercial_range_resync_execution_failed")
+            check_results = []
+            if execution.returncode == 0:
+                for check in checks:
+                    check_result = run_check(ROOT, check)
+                    check_results.append(check_result)
+                    if check_result["status"] != "PASS":
+                        result["blockers"].append("check_failed:sql_readonly_audit")
+                        break
+            result["checks"] = check_results
+            result["tests"] = "PASS" if execution.returncode == 0 and check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
+            result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
+            if not result["blockers"]:
+                result["status"] = "OPERATIONAL_COMPLETE"
+                result["percent_complete"] = 100
+                result["certification"] = "CERTIFIED_OPERATIONAL"
+                result["summary_es"] = "El Worker ejecuto la re-sincronizacion comercial cerrada para una unidad y rango autorizado usando el handler oficial; valido header KPI y detalle ISCAM y certifico el destino con SQL de solo lectura. No acepto shell, comandos ni rutas desde la solicitud y no toco Produccion."
+            else:
+                result["status"] = "BLOCKED"
                 result["percent_complete"] = 0
                 result["certification"] = "NOT_CERTIFIED"
             return 0
