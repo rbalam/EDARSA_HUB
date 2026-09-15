@@ -1,0 +1,36 @@
+{
+  "base_sha": "74ac721c0e1d84ad58c51621a1c12125b0c0da71",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-15T03:50:23Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_git_divergence_guard_r1.py",
+    "backup_a_github.sh",
+    "docs/architecture/GIT_DIVERGENCE_GUARD_R1.md",
+    "tools/mirror_sync/apply_remote_update.sh",
+    "tools/mirror_sync/finalize_local_snapshot.sh",
+    "tools/mirror_sync/git_divergence_guard.py",
+    "tools/mirror_sync/publish_local_snapshot.sh",
+    "tools/mirror_sync/shared_app_safety_guard.sh",
+    "tools/mirror_sync/supervisor/edarsahub-mirror-sync.conf",
+    "tools/mirror_sync/universal_job_dispatcher.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R1",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-15T03:50:28Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-15T03:50:20Z",
+  "status": "BLOCKED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
