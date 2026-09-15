@@ -1,0 +1,35 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "WORKER-AGENT-RUNTIME-ACTIVATION-GATE5G-WORKER-AUTOTRIGGER-LIVE-CANARY-R1-20260914",
+  "created_at_utc": "2026-09-14T18:36:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d9695e261fafa2c27a3fd7e7f50b3113fc731f05",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "objective": "Gate 5G: permitir que el Universal Worker dispare automaticamente una sola ejecucion live del canario Agent Reach sin instalar Docker en el Worker ni modificar Worker/Supervisor/watchdog. Mantener workflow_dispatch manual, agregar un trigger push limitado EXCLUSIVAMENTE al marcador unico backend/tests/live_canary_requests/gate5g_worker_autotrigger_20260914.json, usar github.sha como SHA exacto en el evento push, conservar expected_sha para workflow_dispatch, construir imagen canonica y ejecutar el mismo canario live. No secrets, no docker.sock, no mounts, no deploy, no image push, no Produccion. El propio commit integrado por el Worker que crea el marcador debe provocar la ejecucion GitHub Actions.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": ".github/workflows/agent-reach-live-canary.yml",
+      "content": "name: Agent-Reach Live Canary\n\non:\n  workflow_dispatch:\n    inputs:\n      expected_sha:\n        description: Exact Edarsahub_Desarrollo SHA to certify\n        required: true\n        type: string\n  push:\n    branches:\n      - Edarsahub_Desarrollo\n    paths:\n      - backend/tests/live_canary_requests/gate5g_worker_autotrigger_20260914.json\n\npermissions:\n  contents: read\n\njobs:\n  live-canary:\n    runs-on: ubuntu-latest\n    timeout-minutes: 30\n    env:\n      EXPECTED_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_sha || github.sha }}\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ env.EXPECTED_SHA }}\n          persist-credentials: false\n\n      - name: Verify exact SHA\n        shell: bash\n        run: |\n          set -euo pipefail\n          test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\n          echo \"EXACT_SHA_CHECK=PASS\"\n\n      - name: Build canonical Agent-Reach image\n        shell: bash\n        run: |\n          set -euo pipefail\n          infra/agent-reach/build.sh\n\n      - name: Execute real live canary\n        shell: bash\n        run: |\n          set -euo pipefail\n          export PYTHONPATH=backend\n          python -m pytest -q backend/tests/test_agent_reach_live_network_canary.py\n\n      - name: Upload sanitized live evidence\n        if: always()\n        uses: actions/upload-artifact@v4\n        with:\n          name: agent-reach-live-canary-evidence-${{ env.EXPECTED_SHA }}\n          path: backend/tests/agent_reach_live_network_canary_evidence.json\n          if-no-files-found: error\n          retention-days: 7\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_agent_reach_live_canary_workflow_contract.py",
+      "content": "from pathlib import Path\n\nWORKFLOW = Path(__file__).resolve().parents[2] / '.github' / 'workflows' / 'agent-reach-live-canary.yml'\n\ndef test_live_canary_workflow_is_sha_bound_and_worker_autotrigger_is_one_path_only():\n    text = WORKFLOW.read_text(encoding='utf-8')\n    required = [\n        'workflow_dispatch:', 'expected_sha:', 'push:',\n        'branches:', '- Edarsahub_Desarrollo',\n        '- backend/tests/live_canary_requests/gate5g_worker_autotrigger_20260914.json',\n        \"EXPECTED_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_sha || github.sha }}\",\n        'runs-on: ubuntu-latest', 'persist-credentials: false',\n        'infra/agent-reach/build.sh', 'test_agent_reach_live_network_canary.py',\n        'actions/upload-artifact@v4', 'contents: read', 'if: always()',\n    ]\n    for token in required:\n        assert token in text\n    forbidden = ['secrets.', '/var/run/docker.sock', 'docker.sock', 'docker push', 'kubectl ', 'ssh ', 'scp ', 'schedule:', 'repository_dispatch:']\n    for token in forbidden:\n        assert token not in text\n    assert text.count('backend/tests/live_canary_requests/gate5g_worker_autotrigger_20260914.json') == 1\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/live_canary_requests/gate5g_worker_autotrigger_20260914.json",
+      "content": "{\n  \"schema\": \"edarsahub.agent-reach-live-canary-request.v1\",\n  \"job_id\": \"WORKER-AGENT-RUNTIME-ACTIVATION-GATE5G-WORKER-AUTOTRIGGER-LIVE-CANARY-R1-20260914\",\n  \"requested_by\": \"universal-worker\",\n  \"environment\": \"DEVELOPMENT\",\n  \"risk\": \"R1\",\n  \"data_classification\": \"PUBLIC\",\n  \"external_calls_budget\": 1,\n  \"production_allowed\": false\n}\n"
+    }
+  ],
+  "checks": [
+    {"type": "py_compile", "paths": ["backend/tests/test_agent_reach_live_canary_workflow_contract.py", "backend/tests/test_agent_reach_live_network_canary.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_agent_reach_live_canary_workflow_contract.py"]},
+    {"type": "git_diff_check"}
+  ]
+}
