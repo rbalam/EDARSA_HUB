@@ -1,0 +1,198 @@
+{
+  "base_sha": "6be655eb8b7b9281e2f499b562a8118491a54406",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-15T17:33:27Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-R80C-POSTVERIFY-R81-CARLOS-20260915T173000Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-15T17:33:34Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "FechaAccion",
+              "RunID",
+              "Exito",
+              "status_logger",
+              "estatus_general",
+              "detalle_exitosos",
+              "detalle_fallidos",
+              "detalle_omitidos"
+            ],
+            "name": "scheduler_post_r80c",
+            "row_count_returned": 10,
+            "rows": [
+              [
+                "2026-09-15T16:30:57.633000",
+                "9e9c2ecbc5ca",
+                true,
+                "success",
+                "COMPLETADO",
+                "7",
+                "8",
+                "5"
+              ],
+              [
+                "2026-09-15T15:52:19.960000",
+                "c04267b18472",
+                true,
+                "success",
+                "COMPLETADO",
+                "7",
+                "8",
+                "5"
+              ],
+              [
+                "2026-09-15T02:44:54.573000",
+                "492eaced5530",
+                true,
+                "success",
+                "COMPLETADO",
+                "8",
+                "7",
+                "5"
+              ],
+              [
+                "2026-09-15T00:13:03.640000",
+                "dc54b625b732",
+                false,
+                "partial",
+                "PARCIAL",
+                "4",
+                "9",
+                "3"
+              ],
+              [
+                "2026-09-14T23:58:45.047000",
+                "ce3e4da7c2d0",
+                true,
+                "success",
+                "COMPLETADO",
+                "8",
+                "7",
+                "5"
+              ],
+              [
+                "2026-09-14T23:43:41.900000",
+                "dfaead2c85b5",
+                true,
+                "success",
+                "COMPLETADO",
+                "8",
+                "7",
+                "5"
+              ],
+              [
+                "2026-09-14T22:18:51.657000",
+                "40297aee6117",
+                true,
+                "success",
+                "COMPLETADO",
+                "8",
+                "7",
+                "5"
+              ],
+              [
+                "2026-09-14T22:03:52.147000",
+                "0c2fc345acf4",
+                true,
+                "success",
+                "COMPLETADO",
+                "8",
+                "7",
+                "5"
+              ],
+              [
+                "2026-09-14T21:48:51.707000",
+                "38cc194bdeeb",
+                true,
+                "success",
+                "COMPLETADO",
+                "8",
+                "7",
+                "5"
+              ],
+              [
+                "2026-09-14T19:54:35.507000",
+                "615c78c583c8",
+                true,
+                "success",
+                "COMPLETADO",
+                "8",
+                "7",
+                "5"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha",
+              "ventas_runtime",
+              "ventas_detalle",
+              "delta_ventas",
+              "tickets_runtime",
+              "tickets_detalle",
+              "delta_tickets",
+              "pax_runtime",
+              "pax_detalle",
+              "delta_pax",
+              "estado"
+            ],
+            "name": "estelar_12_14_runtime_vs_detalle",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "2026-09-12",
+                "234725.0000",
+                "0.0000",
+                "234725.0000",
+                "135",
+                0,
+                "135",
+                "423",
+                "0",
+                "423",
+                "PENDIENTE"
+              ],
+              [
+                "2026-09-14",
+                "28329.7500",
+                "0.0000",
+                "28329.7500",
+                "22",
+                0,
+                "22",
+                "46",
+                "0",
+                "46",
+                "PENDIENTE"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-15T17:33:26Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
