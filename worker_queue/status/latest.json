@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "2e18c0cd8e3a33cd08fae9a34ef12c3d68443b2d",
-  "generated_at_utc": "2026-09-15T22:32:46Z",
+  "generated_at_utc": "2026-09-15T23:53:22Z",
   "history": {
     "done_total_local": 508,
     "pending_total_local": 0,
@@ -11,50 +11,7 @@
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [
-    {
-      "age_seconds": 2578,
-      "job_id": "EDARSAHUB-130MID-SEPT-REAL-R91-CARLOS-20260915T220100Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2608,
-      "job_id": "EDARSAHUB-CIENFUEGOS-SEPT-REAL-R90-CARLOS-20260915T220000Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3291,
-      "job_id": "EDARSAHUB-COMERCIAL-RANGE-RESYNC-CAPABILITY-R87-CARLOS-20260915T211500Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2940,
-      "job_id": "EDARSAHUB-ESTELAR-POSTSYNC-VERIFY-R89-CARLOS-20260915T214500Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3241,
-      "job_id": "EDARSAHUB-ESTELAR-SEPT-REAL-R88-CARLOS-20260915T214000Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1921,
-      "job_id": "EDARSAHUB-ISCAM-FOLIO-HEADER-R92-CARLOS-20260915T221000Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1533,
-      "job_id": "EDARSAHUB-ISCAM-FOLIO-HEADER-R93-CARLOS-20260915T221500Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    }
-  ],
+  "jobs": [],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -62,15 +19,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 7,
+  "queue_result_ready_recent": 0,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T22:32:41Z",
-    "last_receive_utc": "2026-09-15T22:32:44Z",
+    "last_cycle_utc": "2026-09-15T23:52:57Z",
+    "last_receive_utc": "2026-09-15T23:53:18Z",
     "last_terminal_utc": "2026-09-15T22:07:12Z",
-    "pid": "687"
+    "pid": "63"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
