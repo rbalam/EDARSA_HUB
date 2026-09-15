@@ -1,0 +1,80 @@
+{
+  "base_sha": "fb2574dd87b9630de4a3e67ef406dcda955d8bb2",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-09-15T16:16:15Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-CATALOGO-AMPLIADO-GATE8F-SQL-MIGRATION-R1",
+  "operation": "SQL_MIGRATION_DEVELOPMENT",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-15T16:16:28Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "gate8f_postcheck_identity"
+            ],
+            "name": "gate8f_postcheck_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "gate8f_materialization_ok"
+            ],
+            "name": "gate8f_materialization_gate",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "provider_rows",
+              "template_rows",
+              "module_config_rows"
+            ],
+            "name": "gate8f_materialization_counts",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                2,
+                2,
+                2
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-15T16:16:13Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto preflight SQL HRLectura, una migracion Development versionada y SHA-bound mediante writer dedicado, y post-audit SQL HRLectura. No acepto SQL inline, shell arbitrario ni toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
