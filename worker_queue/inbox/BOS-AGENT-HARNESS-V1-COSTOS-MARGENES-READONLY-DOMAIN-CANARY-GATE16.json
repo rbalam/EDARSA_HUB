@@ -1,0 +1,55 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENT-HARNESS-V1-COSTOS-MARGENES-READONLY-DOMAIN-CANARY-GATE16",
+  "created_at_utc": "2026-09-15T05:31:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "40e809704d69b2a16e4119913cd1223523fb2e2f",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Gate16: segundo canario de dominio BOS real, Costos y Margenes, exclusivamente READ_ONLY y sin SQL live. Verificar ownership canonico del dominio costos_margenes, compatibilidad de adaptadores legacy, configuracion efectiva, cascada canonica de margen, preferencia de usuario, redondeo canonico y RBAC/configuracion sin ejecutar writes. No modificar archivos, no ejecutar acciones, no tocar SQL/Mongo, no alterar precios, permisos, Scheduler, NetPay ni Production. Exito solo con checks PASS, blockers=[], files_changed=[], production_touched=false y terminal CERTIFIED_READ_ONLY/COMPLETE/100.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/costos_margenes/routes.py",
+        "backend/modules/costos_margenes/routes_precios.py",
+        "backend/modules/costos_margenes/repository.py",
+        "backend/modules/costos_margenes/configuracion_repository.py",
+        "backend/modules/costos_margenes/reglas_margen_service.py",
+        "backend/modules/costos_margenes/reglas_margen_repository.py",
+        "backend/modules/comercial/alertas_margen_service.py",
+        "backend/modules/comercial/alertas_margen_repository.py",
+        "backend/modules/agent_harness/planner.py",
+        "backend/modules/agent_harness/router.py",
+        "backend/modules/agent_harness/worker_compiler.py",
+        "backend/modules/agent_harness/evidence.py",
+        "backend/modules/agent_harness/control_plane.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_costos_margenes_domain_ownership.py",
+        "backend/tests/test_costos_margenes_configuracion_repository.py",
+        "backend/tests/test_costos_margenes_routes_config_efectiva.py",
+        "backend/tests/test_resolver_margen_canonico_atomico.py",
+        "backend/tests/test_resolver_margen_batch_canonico_atomico.py",
+        "backend/tests/test_resolver_margen_usuario_canonico_atomico.py",
+        "backend/tests/test_precios_sugeridos_redondeo_canonico.py",
+        "backend/tests/test_costos_margenes_endpoint_config_usuario_rbac.py",
+        "backend/tests/test_bos_agent_harness_planner_router.py",
+        "backend/tests/test_bos_agent_harness_worker_compiler.py",
+        "backend/tests/test_bos_agent_harness_evidence.py",
+        "backend/tests/test_bos_agent_harness_control_plane.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
