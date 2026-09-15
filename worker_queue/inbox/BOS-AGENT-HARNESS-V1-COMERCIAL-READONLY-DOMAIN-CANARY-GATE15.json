@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENT-HARNESS-V1-COMERCIAL-READONLY-DOMAIN-CANARY-GATE15",
+  "created_at_utc": "2026-09-15T04:50:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2a485ed069fa03efa1a842e88f831de3787189c1",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Gate15: primer canario de dominio BOS real sobre Comercial, exclusivamente READ_ONLY y sin SQL live. Verificar el contrato comercial vigente declarado por el repositorio: KPI visible Ventas usa ventas_total con IVA; ventas_sin_propina/subtotal/neto no se usan como venta principal; propinas se mantienen separadas; acumulado cerrado y operacion del dia permanecen separados; periodos/comparativos no inventan datos; backend conserva la responsabilidad de KPIs. Ejecutar solo compilacion y tests locales existentes mas checks del Agent Harness. No modificar archivos, no ejecutar acciones, no tocar SQL/Mongo, no egress externo, no RBAC writes, no Scheduler, no NetPay y no Production. Exito solo con todos los checks PASS, blockers=[], files_changed=[], production_touched=false y terminal CERTIFIED_READ_ONLY/COMPLETE/100.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial_v2/periodos.py",
+        "backend/modules/comercial_v2/repository_readonly.py",
+        "backend/modules/comercial_v2/routes.py",
+        "backend/core/kpis_canonicos/service.py",
+        "backend/modules/dashboard_ejecutivo/routes.py",
+        "backend/modules/inteligencia_comercial/routes.py",
+        "backend/modules/agent_harness/planner.py",
+        "backend/modules/agent_harness/router.py",
+        "backend/modules/agent_harness/worker_compiler.py",
+        "backend/modules/agent_harness/evidence.py",
+        "backend/modules/agent_harness/control_plane.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_pricing_guardrails.py",
+        "backend/tests/test_propinas_consumidores_canonicos.py",
+        "backend/tests/test_acumulado_cerrado_contract.py",
+        "backend/tests/test_comercial_v2_periodos.py",
+        "backend/tests/test_bos_agent_harness_planner_router.py",
+        "backend/tests/test_bos_agent_harness_worker_compiler.py",
+        "backend/tests/test_bos_agent_harness_evidence.py",
+        "backend/tests/test_bos_agent_harness_control_plane.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
