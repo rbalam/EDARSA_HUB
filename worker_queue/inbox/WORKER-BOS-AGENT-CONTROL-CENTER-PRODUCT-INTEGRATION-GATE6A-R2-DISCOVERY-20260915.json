@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "WORKER-BOS-AGENT-CONTROL-CENTER-PRODUCT-INTEGRATION-GATE6A-R2-DISCOVERY-20260915",
+  "created_at_utc": "2026-09-15T14:28:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "84973e7ddf844111ce86317c005475cb4911f777",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Gate 6A-R2, descubrimiento contractual concreto y exclusivamente READ_ONLY para BOS Product Integration & Agent Control Center. Certificar sobre el repositorio actual: (1) que el menu Enterprise visible usa SQL canonico mediante backend/modules/sistema/menu_service.py, dbo.Sistema_Modulos, dbo.Sistema_ModulosMenus, dbo.Usuario_Modulos, dbo.Usuario_PermisosRolModulo y dbo.Usuario_RolesContexto, y frontend consume /api/sistema/menus/usuario sin fallback hardcodeado; (2) que backend/modules/agent_harness/registry.py ya define capability_ceiling, scope_ceiling, max_risk, allowed_data_classifications, budgets y max_concurrency; (3) que los consumidores BOS deben pasar por Agent Harness/Execution Gate y no llamar directo al executor/runtime; (4) que el primer gate de implementacion puede agregar el modulo/menu SQL 'Agentes e IA' y una pantalla Centro de Agentes sin duplicar catalogos ni hardcodear IDs; (5) que la primera integracion funcional debe ser un adaptador reusable y fail-closed con contexto empresa/unidad, capability EXTERNAL_RESEARCH, scope external:web, clasificacion PUBLIC por defecto, riesgo maximo R1, external_calls_budget=1, timeout/output budget canonicos y RBAC explicito; (6) identificar que cambios posteriores deben ser modulares fuera de core siempre que sea posible. No modificar archivos, SQL, menus, permisos, runtime, Worker, Supervisor, watchdog, Mongo ni Produccion. Exito solo con READ_ONLY_COMPLETE/CERTIFIED_READ_ONLY/100/PASS, files_changed=[], blockers=[] y production_touched=false.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/sistema/menu_service.py",
+        "backend/modules/agent_harness/registry.py",
+        "backend/modules/agent_harness/planner.py",
+        "backend/modules/agent_harness/router.py",
+        "backend/modules/agent_harness/control_plane.py",
+        "backend/core/agent_external_research_service.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_bos_agent_harness_planner_router.py",
+        "backend/tests/test_bos_agent_harness_control_plane.py",
+        "backend/tests/test_agent_external_research_service.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
