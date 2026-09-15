@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-FOLIO-HEADER-R92-CARLOS-20260915T221000Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3cb02ea9ff4b759291e86f55a4b84a2bdad57b5b",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir la sincronizacion ISCAM SoftRestaurant para que el detalle sea estrictamente hijo del folio del ticket del encabezado y nunca genere una poblacion independiente. Los productos reales se conservan sin prorrateo; cuando su suma no coincide con el total del encabezado del mismo folio, crear una linea tecnica de conciliacion ligada a ese folio por la diferencia exacta, en vez de bloquear el dia completo. Esto permite que encabezado y detalle permanezcan 1:1 por ticket y evita nuevas diferencias. Aplicar a CIENFUEGOS, 130MID y ESTELAR sin tocar Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "SOFT_AJUSTE_CHEQUE = \"__ISCAM_AJUSTE_CHEQUE__\"\nSOFT_AJUSTE_FRANQUICIA_CERO = \"__ISCAM_AJUSTE_FRANQUICIA_CERO__\"",
+      "new": "SOFT_AJUSTE_CHEQUE = \"__ISCAM_AJUSTE_CHEQUE__\"\nSOFT_AJUSTE_FRANQUICIA_CERO = \"__ISCAM_AJUSTE_FRANQUICIA_CERO__\"\nSOFT_AJUSTE_ENCABEZADO = \"__ISCAM_AJUSTE_ENCABEZADO__\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "    \"\"\"Conserva productos reales y registra descuentos/cortesias como ajuste separado.\n\n    No distribuye el total del encabezado entre productos. El importe del producto\n    permanece cantidad * precio. La diferencia contra cheques.total solo se acepta\n    como ajuste cuando el propio cheque informa descuento/cortesia.\n    \"\"\"",
+      "new": "    \"\"\"Conserva productos reales y hace que el detalle dependa del folio header.\n\n    La poblacion valida nace exclusivamente de ``h`` (cheques validos) y cada linea\n    de ``cheqdet`` se une por ``dc.foliodet = h.folio``. No se prorratea ni se crea\n    una poblacion de tickets independiente. El total monetario autoritativo es el\n    encabezado del mismo folio; cualquier diferencia residual se conserva como una\n    linea tecnica de conciliacion ligada al ticket para que el detalle sume\n    exactamente al encabezado sin alterar los productos reales.\n    \"\"\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "        raise RuntimeError(\n            f\"SoftRestaurant: diferencia no explicada en ticket {ticket_key}; \"\n            f\"productos={product_total}; encabezado={header_total}; delta={delta}; \"\n            f\"indicador_descuento_cortesia={discount_indicator}\"\n        )",
+      "new": "        # El folio del encabezado es el padre y la cifra autoritativa.\n        # Conservamos las lineas reales tal como vienen del POS y agregamos una\n        # linea tecnica por la diferencia residual del MISMO folio. De esta forma\n        # nunca se fabrica una poblacion de detalle independiente del header.\n        adjustment = dict(items[0])\n        adjustment[\"producto_codigo_fuente\"] = SOFT_AJUSTE_ENCABEZADO\n        adjustment[\"producto_nombre\"] = (\n            \"AJUSTE DE CONCILIACION CONTRA ENCABEZADO DEL TICKET\"\n        )\n        adjustment[\"cantidad\"] = Decimal(\"0\")\n        adjustment[\"precio_unitario\"] = Decimal(\"0\")\n        adjustment[\"importe_bruto\"] = Decimal(\"0\")\n        adjustment[\"importe_neto\"] = delta\n        out.append(adjustment)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_no_prorate_adjustments_r49.py",
+      "old": "from scripts.poblar_ventas_detalle_producto_canonico import SOFT_AJUSTE_CHEQUE, _soft_add_ticket_adjustments",
+      "new": "from scripts.poblar_ventas_detalle_producto_canonico import SOFT_AJUSTE_CHEQUE, SOFT_AJUSTE_ENCABEZADO, _soft_add_ticket_adjustments",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_no_prorate_adjustments_r49.py",
+      "old": "def test_unexplained_difference_fails_closed():\n    with pytest.raises(RuntimeError, match='diferencia no explicada'):\n        _soft_add_ticket_adjustments([_row(header='90', discount='0')])",
+      "new": "def test_unexplained_difference_is_reconciled_to_same_header_folio():\n    out = _soft_add_ticket_adjustments([_row(header='90', discount='0')])\n    assert out[0]['producto_codigo_fuente'] == 'P1'\n    assert out[0]['importe_neto'] == Decimal('100')\n    assert out[1]['producto_codigo_fuente'] == SOFT_AJUSTE_ENCABEZADO\n    assert out[1]['id_transaccion'] == 'T1'\n    assert out[1]['numero_ticket'] == 'T1'\n    assert out[1]['importe_neto'] == Decimal('-10')\n    assert sum(r['importe_neto'] for r in out) == Decimal('90')",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_header_folio_parent_r92.py",
+      "content": "from decimal import Decimal\nfrom pathlib import Path\n\nfrom scripts.poblar_ventas_detalle_producto_canonico import (\n    SOFT_AJUSTE_ENCABEZADO,\n    _soft_add_ticket_adjustments,\n    _validate,\n)\n\nROOT = Path(__file__).resolve().parents[2]\nDETAIL = ROOT / 'backend' / 'scripts' / 'poblar_ventas_detalle_producto_canonico.py'\n\n\ndef _row(ticket, header, detail, pax=1, product='P1'):\n    return {\n        'id_transaccion': f'SOFT:{ticket}',\n        'numero_ticket': str(ticket),\n        'folio_origen': str(ticket),\n        'importe_neto_ticket': Decimal(str(header)),\n        'descuento_ticket': Decimal('0'),\n        'importe_neto': Decimal(str(detail)),\n        'importe_bruto': Decimal(str(detail)),\n        'pax_ticket': pax,\n        'producto_codigo_fuente': product,\n        'producto_nombre': product,\n        'cantidad': Decimal('1'),\n        'precio_unitario': Decimal(str(detail)),\n        'es_kpi_valido': 1,\n    }\n\n\ndef test_soft_detail_population_is_header_folio_first():\n    text = DETAIL.read_text(encoding='utf-8')\n    block = text.split('def _extract_soft(', 1)[1].split('def _mpro_operational_datetime_range', 1)[0]\n    assert 'WITH h AS (' in block\n    assert 'FROM h' in block\n    assert 'LEFT JOIN cheqdet dc' in block\n    assert 'ON dc.foliodet = h.folio' in block\n\n\ndef test_missing_or_short_detail_is_completed_by_same_header_folio():\n    out = _soft_add_ticket_adjustments([_row('77', '125', '0', product='HEADER_SIN_DETALLE')])\n    assert out[-1]['producto_codigo_fuente'] == SOFT_AJUSTE_ENCABEZADO\n    assert out[-1]['numero_ticket'] == '77'\n    assert out[-1]['folio_origen'] == '77'\n    assert out[-1]['importe_neto'] == Decimal('125')\n    assert sum(x['importe_neto'] for x in out) == Decimal('125')\n\n\ndef test_validation_uses_exact_header_ticket_population_after_adjustment():\n    src = []\n    src.extend(_soft_add_ticket_adjustments([_row('10', '90', '100', pax=2)]))\n    src.extend(_soft_add_ticket_adjustments([_row('11', '50', '40', pax=1)]))\n    result = _validate(src, {'ventas': Decimal('140'), 'tickets': 2, 'pax': 3})\n    assert result['ok'] is True\n    assert result['ventas_por_ticket'] == Decimal('140')\n    assert result['ventas_detalle'] == Decimal('140')\n    assert result['tickets_por_ticket'] == 2\n    assert result['pax_por_ticket'] == 3\n    assert result['tickets_no_conciliados'] == []\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+        "backend/tests/test_iscam_no_prorate_adjustments_r49.py",
+        "backend/tests/test_iscam_header_folio_parent_r92.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_no_prorate_adjustments_r49.py",
+        "backend/tests/test_iscam_header_folio_parent_r92.py",
+        "backend/tests/test_iscam_detail_parity_backfill_r33.py"
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
