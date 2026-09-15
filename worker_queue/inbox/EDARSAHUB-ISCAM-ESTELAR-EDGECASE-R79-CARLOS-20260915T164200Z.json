@@ -1,0 +1,21 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-ISCAM-ESTELAR-EDGECASE-R79-CARLOS-20260915T164200Z",
+  "created_at_utc":"2026-09-15T16:42:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"4d0a56a7728aacfc00d64d6a6651896987210042",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Cerrar causa de los dos huecos ESTELAR sin modificar datos: verificar overlay abierto de 2026-09-14 y evidencia disponible en Sync_Sales para ticket 25202 del 2026-09-12.",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"estelar_runtime_20260914","sql":"SELECT TOP 5 * FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='ESTELAR' AND CAST(fecha_operacion AS date)='2026-09-14'"},
+    {"name":"estelar_overlay_20260914","sql":"SELECT TOP 20 unidad_negocio_id, fecha_operacion, ventas_abiertas, tickets_abiertos, pax_abiertos, ventas_cerradas_dia, tickets_cerrados_dia, pax_cerrados_dia, total_estimado_dia, snapshot_timestamp, fecha_ultima_actualizacion, fuente_original FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WHERE unidad_negocio_id='ESTELAR' AND CAST(fecha_operacion AS date)='2026-09-14' ORDER BY snapshot_timestamp DESC"},
+    {"name":"sync_sales_ticket_25202","sql":"SELECT TOP 20 id, branch, total, status, created_at, last_modified, IdTransaccion, UnidadNegocio, MontoTotal, Pax, NumeroTicket, FechaHora, items FROM dbo.Sync_Sales WHERE NumeroTicket='25202' AND (UnidadNegocio='ESTELAR' OR branch LIKE '%ESTELAR%') ORDER BY FechaHora DESC"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
