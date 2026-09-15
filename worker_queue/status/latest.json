@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "f7ae4ea31cd44b01be8e70a9eb8d6e9d2bded586",
-  "generated_at_utc": "2026-09-15T18:12:01Z",
+  "generated_at_utc": "2026-09-15T18:13:17Z",
   "history": {
     "done_total_local": 502,
     "pending_total_local": 0,
@@ -13,49 +13,49 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 604,
+      "age_seconds": 680,
       "job_id": "EDARSAHUB-ESTELAR-SOFT-DATE-BASIS-AUDIT-R83-CARLOS-20260915T180000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2040,
+      "age_seconds": 2117,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-R82-ESTELAR-20260912-20260914-CARLOS-20260915T173500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 453,
+      "age_seconds": 529,
       "job_id": "EDARSAHUB-ISCAM-ESTELAR-20260914-FLAGS-R84-CARLOS-20260915T175000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2314,
+      "age_seconds": 2390,
       "job_id": "EDARSAHUB-ISCAM-R80C-POSTVERIFY-R81-CARLOS-20260915T173000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1413,
+      "age_seconds": 1489,
       "job_id": "EDARSAHUB-ISCAM-R82-FAILURE-ISOLATION-R83-CARLOS-20260915T174000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3042,
+      "age_seconds": 3119,
       "job_id": "EDARSAHUB-ISCAM-SCHEDULER-DEFINITIVE-FIX-R80B-CARLOS-20260915T172000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2928,
+      "age_seconds": 3004,
       "job_id": "EDARSAHUB-ISCAM-SCHEDULER-DEFINITIVE-FIX-R80C-CARLOS-20260915T172500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2033,
+      "age_seconds": 2109,
       "job_id": "EDARSAHUB-WORKER-FULL-GATE-CI-FIX-R80D-CARLOS-20260915T173000Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -73,8 +73,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-15T18:12:00Z",
-    "last_receive_utc": "2026-09-15T18:11:55Z",
+    "last_cycle_utc": "2026-09-15T18:13:17Z",
+    "last_receive_utc": "2026-09-15T18:13:12Z",
     "last_terminal_utc": "2026-09-15T18:04:27Z",
     "pid": "839"
   },
