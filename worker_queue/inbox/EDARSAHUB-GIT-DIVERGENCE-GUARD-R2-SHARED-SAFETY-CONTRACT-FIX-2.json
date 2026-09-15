@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-GIT-DIVERGENCE-GUARD-R2-SHARED-SAFETY-CONTRACT-FIX-2",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Correccion quirurgica del contrato de prueba shared-app previo al replay del Git Divergence Guard R2. Actualizar exclusivamente el test heredado que esperaba LOCAL_DIRTY_COLLISION_AUDIT_REQUIRED para que valide la nueva politica canonica de hard block GIT_WORKTREE_NOT_CLEAN, preservando LOCAL_WORK_PRESERVATION_REQUIRED=YES y verificando que la semantica antigua ya no permanezca. No modificar implementacion, Worker, Supervisor, SQL, Production ni otros tests.",
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_shared_app_sync_safety_contract.py",
+      "old": "def test_dirty_app_is_observed_not_blanket_blocked():\n    guard = ROOT / \"tools/mirror_sync/shared_app_safety_guard.sh\"\n    text = guard.read_text(encoding=\"utf-8\")\n    assert \"LOCAL_DIRTY_COLLISION_AUDIT_REQUIRED\" in text\n    assert \"LOCAL_WORK_PRESERVATION_REQUIRED=YES\" in text\n    assert \"DEFERRED_LOCAL_DIRTY\" not in text\n",
+      "new": "def test_dirty_app_is_hard_blocked_without_discarding_local_work():\n    guard = ROOT / \"tools/mirror_sync/shared_app_safety_guard.sh\"\n    text = guard.read_text(encoding=\"utf-8\")\n    assert \"DECISION=GIT_WORKTREE_NOT_CLEAN\" in text\n    assert \"LOCAL_WORK_PRESERVATION_REQUIRED=YES\" in text\n    assert \"LOCAL_DIRTY_COLLISION_AUDIT_REQUIRED\" not in text\n    assert \"DEFERRED_LOCAL_DIRTY\" not in text\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": ["backend/tests/test_shared_app_sync_safety_contract.py"]
+    },
+    {
+      "type": "pytest",
+      "paths": ["backend/tests/test_shared_app_sync_safety_contract.py"]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V1.0",
+    "chat": "Worker 3"
+  }
+}
