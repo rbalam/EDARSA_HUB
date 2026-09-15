@@ -1,0 +1,42 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-ESTELAR-SOFT-DATE-BASIS-AUDIT-R83-CARLOS-20260915T180000Z",
+  "created_at_utc":"2026-09-15T18:00:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"f7ae4ea31cd44b01be8e70a9eb8d6e9d2bded586",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Auditar LA ESTELAR SoftRestaurant 2026-09-04 y 2026-09-05 para explicar la diferencia exacta observada en Preview contra el reporte oficial SoftRestaurant. Preview por turnos.apertura muestra 99,840 / 80 cheques / 194 PAX el 04 y 272,998 / 168 / 481 el 05; el reporte oficial SoftRestaurant muestra 119,840 / 81 / 195 el 04 y 252,998 / 167 / 480 el 05. Determinar si un cheque de 20,000 esta cambiando de fecha por usar turnos.apertura en vez de cheques.fecha y verificar la formula correcta de Venta Neta versus ch.subtotal. Solo SELECT, sin cambios ni sincronizacion.",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "source":"POS",
+      "units":["ESTELAR"],
+      "system_types":["SOFTRESTAURANT"],
+      "queries":[
+        {
+          "name":"aggregate_by_turn_opening_sep04_sep05",
+          "sql":"SELECT CONVERT(date,tr.apertura) AS fecha, SUM(ch.total) AS venta, SUM(ISNULL(ch.propina,0)) AS propina, SUM(ISNULL(ch.nopersonas,0)) AS pax, COUNT(DISTINCT ch.folio) AS cheques, SUM(ch.totalotrossindescuentos) AS otros, SUM(ch.totalimpuesto1) AS iva, SUM(ch.subtotal) AS subtotal_raw FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE tr.apertura >= '2026-09-04' AND tr.apertura < '2026-09-06' AND ISNULL(ch.cancelado,0)=0 GROUP BY CONVERT(date,tr.apertura) ORDER BY fecha"
+        },
+        {
+          "name":"aggregate_by_check_date_sep04_sep05",
+          "sql":"SELECT CONVERT(date,ch.fecha) AS fecha, SUM(ch.total) AS venta, SUM(ISNULL(ch.propina,0)) AS propina, SUM(ISNULL(ch.nopersonas,0)) AS pax, COUNT(DISTINCT ch.folio) AS cheques, SUM(ch.totalotrossindescuentos) AS otros, SUM(ch.totalimpuesto1) AS iva, SUM(ch.subtotal) AS subtotal_raw, SUM(ch.total)-SUM(ch.totalimpuesto1) AS venta_neta_calc FROM cheques ch WHERE ch.fecha >= '2026-09-04' AND ch.fecha < '2026-09-06' AND ISNULL(ch.cancelado,0)=0 GROUP BY CONVERT(date,ch.fecha) ORDER BY fecha"
+        },
+        {
+          "name":"checks_with_date_mismatch_sep04_sep05",
+          "sql":"SELECT TOP 100 ch.folio, ch.idturno, ch.fecha AS fecha_cheque, tr.apertura AS apertura_turno, tr.cierre AS cierre_turno, ch.total, ISNULL(ch.propina,0) AS propina, ISNULL(ch.nopersonas,0) AS pax, ch.totalotrossindescuentos AS otros, ch.totalimpuesto1 AS iva, ch.subtotal FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE ISNULL(ch.cancelado,0)=0 AND (ch.fecha >= '2026-09-04' AND ch.fecha < '2026-09-06' OR tr.apertura >= '2026-09-04' AND tr.apertura < '2026-09-06') AND CONVERT(date,ch.fecha) <> CONVERT(date,tr.apertura) ORDER BY ch.total DESC, ch.folio"
+        },
+        {
+          "name":"aggregate_soft_report_fields_by_check_date_sep01_sep14",
+          "sql":"SELECT CONVERT(date,ch.fecha) AS fecha, SUM(ch.totalalimentossindescuentos) AS alimentos, SUM(ch.totalbebidassindescuentos) AS bebidas, SUM(ch.totalotrossindescuentos) AS otros, SUM(ch.totalcortesias) AS cortesias, SUM(ch.totaldescuentos) AS descuentos, SUM(ch.total)-SUM(ch.totalimpuesto1) AS venta_neta_calc, SUM(ch.totalimpuesto1) AS impuestos, SUM(ch.total) AS total_con_impuestos, SUM(ISNULL(ch.propina,0)) AS propina, SUM(ISNULL(ch.nopersonas,0)) AS personas, COUNT(DISTINCT ch.folio) AS cuentas, SUM(ch.subtotal) AS subtotal_raw FROM cheques ch WHERE ch.fecha >= '2026-09-01' AND ch.fecha < '2026-09-15' AND ISNULL(ch.cancelado,0)=0 GROUP BY CONVERT(date,ch.fecha) ORDER BY fecha"
+        }
+      ]
+    }
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
