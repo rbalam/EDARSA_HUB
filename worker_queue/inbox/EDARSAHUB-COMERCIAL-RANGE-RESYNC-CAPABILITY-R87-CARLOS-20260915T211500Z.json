@@ -1,0 +1,86 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-RANGE-RESYNC-CAPABILITY-R87-CARLOS-20260915T211500Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d0d0f4e512093c9085b488c3ec1d3a831c6514bc",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Agregar una capacidad cerrada y determinista COMERCIAL_RANGE_RESYNC al Universal Worker para ejecutar el handler oficial de re-sincronizacion comercial por una sola unidad y rango maximo de 31 dias, con confirmacion explicita para escritura y auditoria SQL posterior. Debe reutilizar admin_scheduler_resync, no aceptar shell/comandos/rutas desde el job y no tocar Edarsahub_Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "ISCAM_DETAIL_BACKFILL_MODE = \"ISCAM_DETAIL_BACKFILL\"\nISCAM_PAYMENTS_ONLY_RESYNC_MODE = \"ISCAM_PAYMENTS_ONLY_RESYNC\"",
+      "new": "COMERCIAL_RANGE_RESYNC_MODE = \"COMERCIAL_RANGE_RESYNC\"\nISCAM_DETAIL_BACKFILL_MODE = \"ISCAM_DETAIL_BACKFILL\"\nISCAM_PAYMENTS_ONLY_RESYNC_MODE = \"ISCAM_PAYMENTS_ONLY_RESYNC\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    elif mode == READ_ONLY_MODE:\n        if actions != []:\n            errors.append(\"READ_ONLY_ACTIONS_MUST_BE_EMPTY_LIST\")\n    elif mode == ISCAM_DETAIL_BACKFILL_MODE:",
+      "new": "    elif mode == READ_ONLY_MODE:\n        if actions != []:\n            errors.append(\"READ_ONLY_ACTIONS_MUST_BE_EMPTY_LIST\")\n    elif mode == COMERCIAL_RANGE_RESYNC_MODE:\n        if actions not in (None, []):\n            errors.append(\"COMERCIAL_RANGE_RESYNC_ACTIONS_FORBIDDEN\")\n        units = job.get(\"units\", [])\n        if not isinstance(units, list) or len(units) != 1 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):\n            errors.append(\"COMERCIAL_RANGE_RESYNC_EXACTLY_ONE_UNIT_REQUIRED\")\n        if not isinstance(job.get(\"fecha_inicio\"), str) or not DATE_RE.fullmatch(job.get(\"fecha_inicio\", \"\")):\n            errors.append(\"COMERCIAL_RANGE_RESYNC_FECHA_INICIO_INVALID\")\n        if not isinstance(job.get(\"fecha_fin\"), str) or not DATE_RE.fullmatch(job.get(\"fecha_fin\", \"\")):\n            errors.append(\"COMERCIAL_RANGE_RESYNC_FECHA_FIN_INVALID\")\n        dry_run = job.get(\"dry_run\", True)\n        if not isinstance(dry_run, bool):\n            errors.append(\"COMERCIAL_RANGE_RESYNC_DRY_RUN_INVALID\")\n        if dry_run is False and job.get(\"confirm_comercial_range_resync\") is not True:\n            errors.append(\"COMERCIAL_RANGE_RESYNC_CONFIRMATION_REQUIRED\")\n    elif mode == ISCAM_DETAIL_BACKFILL_MODE:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    elif mode == READ_ONLY_MODE:\n        if not isinstance(checks, list) or not checks:\n            errors.append(\"READ_ONLY_CHECK_REQUIRED\")\n        elif any(not isinstance(c, dict) or c.get(\"type\") not in READ_ONLY_CHECKS for c in checks):\n            errors.append(\"READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED\")\n    elif mode == ISCAM_DETAIL_BACKFILL_MODE:",
+      "new": "    elif mode == READ_ONLY_MODE:\n        if not isinstance(checks, list) or not checks:\n            errors.append(\"READ_ONLY_CHECK_REQUIRED\")\n        elif any(not isinstance(c, dict) or c.get(\"type\") not in READ_ONLY_CHECKS for c in checks):\n            errors.append(\"READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED\")\n    elif mode == COMERCIAL_RANGE_RESYNC_MODE:\n        if not isinstance(checks, list) or not checks:\n            errors.append(\"COMERCIAL_RANGE_RESYNC_AUDIT_REQUIRED\")\n        elif any(not isinstance(c, dict) or c.get(\"type\") != \"sql_readonly_audit\" for c in checks):\n            errors.append(\"COMERCIAL_RANGE_RESYNC_ONLY_SQL_AUDIT_ALLOWED\")\n    elif mode == ISCAM_DETAIL_BACKFILL_MODE:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "ISCAM_DETAIL_BACKFILL_MODE = \"ISCAM_DETAIL_BACKFILL\"\nISCAM_PAYMENTS_ONLY_RESYNC_MODE = \"ISCAM_PAYMENTS_ONLY_RESYNC\"",
+      "new": "COMERCIAL_RANGE_RESYNC_MODE = \"COMERCIAL_RANGE_RESYNC\"\nISCAM_DETAIL_BACKFILL_MODE = \"ISCAM_DETAIL_BACKFILL\"\nISCAM_PAYMENTS_ONLY_RESYNC_MODE = \"ISCAM_PAYMENTS_ONLY_RESYNC\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        if mode == ISCAM_DETAIL_BACKFILL_MODE:\n",
+      "new": "        if mode == COMERCIAL_RANGE_RESYNC_MODE:\n            if expected_base and expected_base != current_head:\n                raise RuntimeError(f\"BASE_SHA_MISMATCH_OPERATIONAL_MODE:expected={expected_base}:actual={current_head}\")\n            if job.get(\"actions\") not in (None, []):\n                raise RuntimeError(\"COMERCIAL_RANGE_RESYNC_ACTIONS_FORBIDDEN\")\n            units = job.get(\"units\", [])\n            if not isinstance(units, list) or len(units) != 1 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):\n                raise RuntimeError(\"COMERCIAL_RANGE_RESYNC_EXACTLY_ONE_UNIT_REQUIRED\")\n            fecha_inicio = str(job.get(\"fecha_inicio\") or \"\")\n            fecha_fin = str(job.get(\"fecha_fin\") or \"\")\n            if not DATE_RE.fullmatch(fecha_inicio) or not DATE_RE.fullmatch(fecha_fin):\n                raise RuntimeError(\"COMERCIAL_RANGE_RESYNC_DATES_INVALID\")\n            inicio_dt = datetime.strptime(fecha_inicio, \"%Y-%m-%d\")\n            fin_dt = datetime.strptime(fecha_fin, \"%Y-%m-%d\")\n            dias = (fin_dt - inicio_dt).days + 1\n            if dias < 1 or dias > 31:\n                raise RuntimeError(\"COMERCIAL_RANGE_RESYNC_DATE_RANGE_INVALID\")\n            dry_run = job.get(\"dry_run\", True)\n            if not isinstance(dry_run, bool):\n                raise RuntimeError(\"COMERCIAL_RANGE_RESYNC_DRY_RUN_INVALID\")\n            if dry_run is False and job.get(\"confirm_comercial_range_resync\") is not True:\n                raise RuntimeError(\"COMERCIAL_RANGE_RESYNC_CONFIRMATION_REQUIRED\")\n            checks = job.get(\"checks\") or []\n            if not checks or any(not isinstance(c, dict) or c.get(\"type\") != \"sql_readonly_audit\" for c in checks):\n                raise RuntimeError(\"COMERCIAL_RANGE_RESYNC_SQL_AUDIT_REQUIRED\")\n            script = ROOT / \"backend\" / \"scripts\" / \"resync_comercial_range_worker.py\"\n            if not script.is_file():\n                raise RuntimeError(\"COMERCIAL_RANGE_RESYNC_SCRIPT_NOT_FOUND\")\n            unit = units[0].strip().upper()\n            cmd = [PYTHON_BIN, str(script), \"--unidad\", unit, \"--fecha-inicio\", fecha_inicio, \"--fecha-fin\", fecha_fin]\n            if dry_run is False:\n                cmd.append(\"--commit\")\n            backend = ROOT / \"backend\"\n            execution = run(cmd, cwd=ROOT, timeout=SOFTRESTAURANT_RESYNC_MAX_SECONDS, env_extra={**load_backend_runtime_env(), \"PYTHONPATH\": str(backend)})\n            summary = {}\n            for raw_line in reversed((execution.stdout or \"\").splitlines()):\n                try:\n                    candidate = json.loads(raw_line)\n                except Exception:\n                    continue\n                if isinstance(candidate, dict) and candidate.get(\"event\") == \"comercial_range_summary\":\n                    summary = candidate\n                    break\n            result[\"operation\"] = COMERCIAL_RANGE_RESYNC_MODE\n            result[\"dry_run\"] = dry_run\n            result[\"units\"] = [unit]\n            result[\"canonical_sql_mutation\"] = not dry_run\n            result[\"operation_output\"] = (execution.stdout or \"\")[-20000:]\n            result[\"operation_summary\"] = summary\n            result[\"files_changed\"] = []\n            if execution.returncode != 0:\n                result[\"blockers\"].append(\"comercial_range_resync_execution_failed\")\n            check_results = []\n            if execution.returncode == 0:\n                for check in checks:\n                    check_result = run_check(ROOT, check)\n                    check_results.append(check_result)\n                    if check_result[\"status\"] != \"PASS\":\n                        result[\"blockers\"].append(\"check_failed:sql_readonly_audit\")\n                        break\n            result[\"checks\"] = check_results\n            result[\"tests\"] = \"PASS\" if execution.returncode == 0 and check_results and all(x[\"status\"] == \"PASS\" for x in check_results) else \"FAIL\"\n            result[\"quality_gate\"] = \"PASS\" if not result[\"blockers\"] else \"FAIL\"\n            if not result[\"blockers\"]:\n                result[\"status\"] = \"OPERATIONAL_COMPLETE\"\n                result[\"percent_complete\"] = 100\n                result[\"certification\"] = \"CERTIFIED_OPERATIONAL\"\n                result[\"summary_es\"] = \"El Worker ejecuto la re-sincronizacion comercial cerrada para una unidad y rango autorizado usando el handler oficial; valido header KPI y detalle ISCAM y certifico el destino con SQL de solo lectura. No acepto shell, comandos ni rutas desde la solicitud y no toco Produccion.\"\n            else:\n                result[\"status\"] = \"BLOCKED\"\n                result[\"percent_complete\"] = 0\n                result[\"certification\"] = \"NOT_CERTIFIED\"\n            return 0\n\n        if mode == ISCAM_DETAIL_BACKFILL_MODE:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/scripts/resync_comercial_range_worker.py",
+      "content": "#!/usr/bin/env python3\n\"\"\"Closed Worker entrypoint for the official Comercial range resync.\"\"\"\nfrom __future__ import annotations\n\nimport argparse\nimport asyncio\nimport json\nimport sys\nimport uuid\nfrom datetime import date\n\nfrom api.admin_scheduler_resync import (\n    _ejecutar_dry_run,\n    _ejecutar_sync_real,\n    _get_unidad_config,\n)\n\n\ndef _safe_summary(result: dict, unit: str, fi: date, ff: date, committed: bool) -> dict:\n    return {\n        \"event\": \"comercial_range_summary\",\n        \"unidad\": unit,\n        \"fecha_inicio\": fi.isoformat(),\n        \"fecha_fin\": ff.isoformat(),\n        \"committed\": committed,\n        \"success\": bool(result.get(\"success\")),\n        \"stage\": result.get(\"stage\"),\n        \"header_success\": bool(result.get(\"header_success\", result.get(\"success\"))),\n        \"detail_success\": bool(result.get(\"detail_success\", False)),\n        \"records_processed\": int(result.get(\"records_processed\") or 0),\n        \"records_inserted\": int(result.get(\"records_inserted\") or 0),\n        \"records_updated\": int(result.get(\"records_updated\") or 0),\n        \"records_skipped\": int(result.get(\"records_skipped\") or 0),\n        \"records_errored\": int(result.get(\"records_errored\") or 0),\n        \"warning\": str(result.get(\"warning_message\") or \"\")[:500],\n    }\n\n\ndef main() -> int:\n    parser = argparse.ArgumentParser()\n    parser.add_argument(\"--unidad\", required=True)\n    parser.add_argument(\"--fecha-inicio\", required=True)\n    parser.add_argument(\"--fecha-fin\", required=True)\n    parser.add_argument(\"--commit\", action=\"store_true\")\n    args = parser.parse_args()\n\n    unit = args.unidad.strip().upper()\n    fi = date.fromisoformat(args.fecha_inicio)\n    ff = date.fromisoformat(args.fecha_fin)\n    days = (ff - fi).days + 1\n    if days < 1 or days > 31:\n        print(json.dumps({\"event\": \"comercial_range_summary\", \"unidad\": unit, \"success\": False, \"error\": \"RANGE_INVALID\"}))\n        return 2\n\n    config = _get_unidad_config(unit)\n    if not config:\n        print(json.dumps({\"event\": \"comercial_range_summary\", \"unidad\": unit, \"success\": False, \"error\": \"UNIT_NOT_FOUND\"}))\n        return 3\n    if str(config.get(\"sistema\") or \"\").upper() != \"SOFTRESTAURANT\":\n        print(json.dumps({\"event\": \"comercial_range_summary\", \"unidad\": unit, \"success\": False, \"error\": \"SYSTEM_NOT_SOFTRESTAURANT\"}))\n        return 4\n\n    if args.commit:\n        run_id = f\"WORKER-COMERCIAL-{unit}-{fi:%Y%m%d}-{ff:%Y%m%d}-{uuid.uuid4().hex[:8]}\"\n        result = asyncio.run(_ejecutar_sync_real(unit, config, fi, ff, run_id))\n    else:\n        result = asyncio.run(_ejecutar_dry_run(unit, config, fi, ff))\n\n    summary = _safe_summary(result, unit, fi, ff, args.commit)\n    print(json.dumps(summary, ensure_ascii=False, default=str))\n    return 0 if summary[\"success\"] and summary[\"header_success\"] and summary[\"detail_success\"] else 5\n\n\nif __name__ == \"__main__\":\n    sys.exit(main())\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_comercial_range_resync_capability_r87.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nBRIDGE = ROOT / 'tools' / 'mirror_sync' / 'universal_job_bridge.py'\nDISPATCHER = ROOT / 'tools' / 'mirror_sync' / 'universal_job_dispatcher.py'\nSCRIPT = ROOT / 'backend' / 'scripts' / 'resync_comercial_range_worker.py'\n\n\ndef test_bridge_requires_closed_contract_and_confirmation():\n    text = BRIDGE.read_text(encoding='utf-8')\n    assert 'COMERCIAL_RANGE_RESYNC_MODE = \"COMERCIAL_RANGE_RESYNC\"' in text\n    assert 'COMERCIAL_RANGE_RESYNC_EXACTLY_ONE_UNIT_REQUIRED' in text\n    assert 'COMERCIAL_RANGE_RESYNC_CONFIRMATION_REQUIRED' in text\n    assert 'COMERCIAL_RANGE_RESYNC_ONLY_SQL_AUDIT_ALLOWED' in text\n\n\ndef test_dispatcher_uses_fixed_script_and_not_job_shell():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    block = text.split('if mode == COMERCIAL_RANGE_RESYNC_MODE:', 1)[1].split('if mode == ISCAM_DETAIL_BACKFILL_MODE:', 1)[0]\n    assert 'resync_comercial_range_worker.py' in block\n    assert 'confirm_comercial_range_resync' in block\n    assert 'job.get(\"command\")' not in block\n    assert 'job.get(\"shell\")' not in block\n    assert 'job.get(\"path\")' not in block\n    assert 'shell=True' not in block\n\n\ndef test_script_reuses_official_scheduler_handlers():\n    text = SCRIPT.read_text(encoding='utf-8')\n    assert '_ejecutar_sync_real' in text\n    assert '_ejecutar_dry_run' in text\n    assert '_get_unidad_config' in text\n    assert 'days > 31' in text\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "backend/scripts/resync_comercial_range_worker.py",
+        "backend/tests/test_worker_comercial_range_resync_capability_r87.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_comercial_range_resync_capability_r87.py",
+        "backend/tests/test_worker_softrestaurant_full_history_capability_contract.py",
+        "backend/tests/test_worker_pos_sql_readonly_audit.py"
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
