@@ -1,0 +1,47 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENT-HARNESS-V1-CONTROLLED-DEV-CANARY-GATE13",
+  "created_at_utc": "2026-09-15T04:00:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "74ac721c0e1d84ad58c51621a1c12125b0c0da71",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Gate13 controlled DEV canary del BOS Agent Harness V1 sobre el estado real actual de Edarsahub_Desarrollo. Verificar end-to-end, sin mutaciones, que Registry, Planner/Router, Worker Compiler, Evidence/Provenance, Control Plane, E2E Simulation y Local Runtime permanecen coherentes y fail-closed; que el Control Plane puede representar gates/evidence/budgets de forma saludable; que resultados no terminales, Production touched, scopes insuficientes y budget overruns fallan cerrados. Este canario no puede ejecutar acciones, modificar archivos, tocar SQL/Mongo, emitir red/envios, ampliar permisos, usar EXECUTE ni tocar Production. Exito solo si todos los checks pasan, files_changed=[], blockers=[], production_touched=false y el publisher emite CERTIFIED_READ_ONLY/COMPLETE/100.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/agent_harness/registry.py",
+        "backend/modules/agent_harness/planner.py",
+        "backend/modules/agent_harness/router.py",
+        "backend/modules/agent_harness/worker_compiler.py",
+        "backend/modules/agent_harness/evidence.py",
+        "backend/modules/agent_harness/control_plane.py",
+        "backend/modules/agent_harness/e2e_simulation.py",
+        "backend/modules/agent_harness/local_runtime.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_bos_agent_harness_registry.py",
+        "backend/tests/test_bos_agent_harness_planner_router.py",
+        "backend/tests/test_bos_agent_harness_worker_compiler.py",
+        "backend/tests/test_bos_agent_harness_evidence.py",
+        "backend/tests/test_bos_agent_harness_control_plane.py",
+        "backend/tests/test_bos_agent_harness_e2e_simulation.py",
+        "backend/tests/test_bos_agent_harness_local_runtime.py",
+        "backend/tests/test_worker_generic_readonly.py",
+        "backend/tests/test_worker_readonly_result_publisher.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
