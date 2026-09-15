@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ESTELAR-R85B-VERIFY-R86-CARLOS-20260915T192500Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d0d0f4e512093c9085b488c3ec1d3a831c6514bc",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Verificar numericamente R85B en LA ESTELAR antes de sincronizar: 04/09 debe incluir ticket 24667 y totalizar 119840 con 81 cheques y 195 PAX; 05/09 debe totalizar 252998 con 167 cheques y 480 PAX. No escribir datos.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": ["ESTELAR"],
+      "system_types": ["SOFTRESTAURANT"],
+      "queries": [
+        {
+          "name": "estelar_operational_day_04_05",
+          "sql": "SELECT CONVERT(date, DATEADD(hour,-9,tr.apertura)) AS fecha_operacion, CAST(SUM(ch.total) AS decimal(18,2)) AS ventas_total, COUNT(DISTINCT ch.folio) AS cheques, SUM(ISNULL(ch.nopersonas,0)) AS pax FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE tr.apertura>='2026-09-04 09:00:00' AND tr.apertura<'2026-09-06 09:00:00' AND ch.cancelado=0 GROUP BY CONVERT(date, DATEADD(hour,-9,tr.apertura)) ORDER BY fecha_operacion"
+        },
+        {
+          "name": "ticket_24667_operational_assignment",
+          "sql": "SELECT ch.folio, ch.numcheque, ch.total, ch.nopersonas, tr.idturno, tr.apertura, CONVERT(date,DATEADD(hour,-9,tr.apertura)) AS fecha_operacion FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE ch.folio=24667"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
