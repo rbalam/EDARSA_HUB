@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from worker_concurrency import evaluate_scope_advance
+from git_divergence_guard import (GitGuardError, acquire_writer_lock, compare_and_swap, inspect_repository, mutation_policy, post_push_verify, release_writer_lock, requires_writer_lock, scoped_push_env, validate_commit_scope)
 
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
 STATE = ROOT / ".git" / "universal-worker-queue"
@@ -403,14 +404,8 @@ def changed_files(worktree: Path, base_sha: str) -> list[str]:
 
 
 def validate_scope(worktree: Path, base_sha: str, allowed: set[str]) -> list[str]:
-    actual = set(changed_files(worktree, base_sha))
-    extra = sorted(actual - allowed)
-    missing = sorted(allowed - actual)
-    blockers: list[str] = []
-    if extra:
-        blockers.append("unexpected_files:" + ",".join(extra))
-    if missing:
-        blockers.append("expected_files_unchanged:" + ",".join(missing))
+    actual = set(changed_files(worktree, base_sha)); extra = sorted(actual - allowed); missing = sorted(allowed - actual); blockers: list[str] = []
+    if extra or missing: blockers.append("GIT_SCOPE_VIOLATION:extra=" + ",".join(extra) + ";missing=" + ",".join(missing))
     return blockers
 
 
@@ -424,74 +419,32 @@ def create_commit(worktree: Path, job_id: str, files: list[str]) -> str:
     return git("rev-parse", "HEAD", cwd=worktree).stdout.strip()
 
 
-def integrate(worktree: Path, branch: str, head: str, base_sha: str, write_scope: set[str]) -> tuple[bool, str, str, list[dict[str, Any]]]:
-    candidate = head
-    evidence: list[dict[str, Any]] = []
-    credential_helper = resolve_repository_credential_helper()
-    if not credential_helper:
-        return False, "development_push_credential_helper_missing", candidate, evidence
-
-    git("fetch", REMOTE, DEV_BRANCH)
-    remote_dev = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
-    step: dict[str, Any] = {"candidate_base_sha": base_sha, "remote_development_sha": remote_dev, "candidate_sha_before": candidate, "concurrent_head_changes": []}
-    if remote_dev != base_sha:
-        if not git_is_ancestor(base_sha, remote_dev):
-            step["decision"] = "NON_FAST_FORWARD"
-            evidence.append(step)
-            return False, f"CONCURRENT_NON_FAST_FORWARD:{remote_dev}", candidate, evidence
-        changed = git_changed_paths(base_sha, remote_dev)
-        step["concurrent_head_changes"] = changed
-        policy = evaluate_scope_advance(base_sha, remote_dev, write_scope, changed)
-        step["scope_policy"] = policy
-        if policy["decision"] != "SAFE_REPLAY":
-            step["decision"] = "CONCURRENT_SCOPE_CONFLICT"
-            evidence.append(step)
-            conflicts = ",".join(policy.get("scope_conflicts") or [])
-            return False, f"CONCURRENT_SCOPE_CONFLICT:{conflicts or remote_dev}", candidate, evidence
-        step["decision"] = "REPLAY_REQUIRED"
-        evidence.append(step)
-        return False, f"CONCURRENT_REPLAY_REQUIRED:{remote_dev}", candidate, evidence
-
-    guard = ROOT / "scripts" / "agent_guardrails" / "validate_repository_artifacts.py"
+def integrate(worktree: Path, branch: str, head: str, base_sha: str, write_scope: set[str], job_id: str, remote_at_start: str) -> tuple[bool, str, str, list[dict[str, Any]]]:
+    candidate=head; evidence=[]; credential_helper=resolve_repository_credential_helper()
+    if not credential_helper: return False,"GIT_PUSH_FAILED:credential_helper_missing",candidate,evidence
+    step={"candidate_base_sha":base_sha,"candidate_sha_before":candidate,"remote_at_start":remote_at_start,"push_attempted":False}
+    try: remote_dev=compare_and_swap(ROOT,remote_at_start)
+    except GitGuardError as exc:
+        step["decision"]=exc.code; step.update(exc.evidence); evidence.append(step); return False,exc.code,candidate,evidence
+    step["remote_before_push"]=remote_dev
+    if remote_dev != base_sha: step["decision"]="GIT_DIVERGENCE_BLOCKED"; evidence.append(step); return False,"GIT_DIVERGENCE_BLOCKED:base_no_longer_remote_tip",candidate,evidence
+    merge_base=git("merge-base",remote_dev,candidate,check=False).stdout.strip(); step["merge_base_before_push"]=merge_base
+    if merge_base != remote_dev: step["decision"]="GIT_DIVERGENCE_BLOCKED"; evidence.append(step); return False,"GIT_DIVERGENCE_BLOCKED:candidate_not_fast_forward",candidate,evidence
+    try: validate_commit_scope(worktree,base_sha,candidate,write_scope)
+    except GitGuardError as exc:
+        step["decision"]=exc.code; step["scope_evidence"]=exc.evidence; evidence.append(step); return False,exc.code,candidate,evidence
+    guard=ROOT/"scripts"/"agent_guardrails"/"validate_repository_artifacts.py"
     if guard.is_file():
-        check = run([PYTHON_BIN, str(guard), "--range", base_sha, candidate], cwd=ROOT)
-        if check.returncode != 0:
-            step["artifact_guard"] = "FAIL"
-            step["artifact_guard_output"] = check.stdout[-1000:]
-            evidence.append(step)
-            return False, "repository_artifact_guard_failed:" + check.stdout[-1000:], candidate, evidence
-        step["artifact_guard"] = "PASS"
-
-    push = run(["git", "-c", "credential.helper=", "-c", f"credential.helper={credential_helper}", "push", REMOTE, f"{candidate}:refs/heads/{DEV_BRANCH}"], cwd=ROOT, env_extra={"EDARSA_ALLOW_PUSH": "1"})
-    step["push_returncode"] = push.returncode
-    if push.returncode == 0:
-        git("fetch", REMOTE, DEV_BRANCH)
-        after = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
-        step["remote_after_push"] = after
-        evidence.append(step)
-        if after == candidate:
-            step["decision"] = "PUSHED"
-            return True, after, candidate, evidence
-
-    step["push_output"] = push.stdout[-1000:]
-    git("fetch", REMOTE, DEV_BRANCH)
-    latest = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
-    if latest != remote_dev:
-        changed = git_changed_paths(base_sha, latest) if git_is_ancestor(base_sha, latest) else []
-        step["concurrent_head_changes"] = changed
-        policy = evaluate_scope_advance(base_sha, latest, write_scope, changed) if changed else {"decision": "NON_FAST_FORWARD", "scope_conflicts": []}
-        step["scope_policy"] = policy
-        if policy.get("decision") == "SAFE_REPLAY":
-            step["decision"] = "REPLAY_REQUIRED_AFTER_PUSH_RACE"
-            evidence.append(step)
-            return False, f"CONCURRENT_REPLAY_REQUIRED:{latest}", candidate, evidence
-        step["decision"] = "CONCURRENT_SCOPE_CONFLICT"
-        evidence.append(step)
-        conflicts = ",".join(policy.get("scope_conflicts") or [])
-        return False, f"CONCURRENT_SCOPE_CONFLICT:{conflicts or latest}", candidate, evidence
-    step["decision"] = "PUSH_FAILED"
-    evidence.append(step)
-    return False, f"development_push_failed:{push.stdout[-1000:]}", candidate, evidence
+        check=run([PYTHON_BIN,str(guard),"--range",base_sha,candidate],cwd=ROOT)
+        if check.returncode != 0: step["artifact_guard"]="FAIL"; step["artifact_guard_output"]=check.stdout[-1000:]; evidence.append(step); return False,"GIT_SCOPE_VIOLATION:repository_artifact_guard_failed",candidate,evidence
+        step["artifact_guard"]="PASS"
+    push_env=scoped_push_env(job_id,"universal-worker",os.environ); push=run(["git","-c","credential.helper=","-c",f"credential.helper={credential_helper}","push",REMOTE,f"{candidate}:refs/heads/{DEV_BRANCH}"],cwd=ROOT,env_extra={k:push_env[k] for k in ("EDARSA_ALLOW_PUSH","EDARSA_PUSH_JOB_ID","EDARSA_PUSH_OWNER")})
+    step["push_attempted"]=True; step["push_returncode"]=push.returncode; step["push_result"]="PASS" if push.returncode==0 else "FAIL"
+    if push.returncode != 0: step["push_output"]=(push.stdout or "")[-1000:]; step["decision"]="GIT_PUSH_FAILED"; evidence.append(step); return False,"GIT_PUSH_FAILED",candidate,evidence
+    try: post=post_push_verify(worktree,candidate)
+    except GitGuardError as exc:
+        step["decision"]=exc.code; step.update(exc.evidence); evidence.append(step); return False,exc.code,candidate,evidence
+    step.update(post); step["decision"]="CERTIFIED_GIT_SYNC"; evidence.append(step); return True,candidate,candidate,evidence
 
 
 def release_agent_guard_claim(job_id: str) -> tuple[bool, str]:
@@ -520,14 +473,28 @@ def process_one(path: Path) -> int:
     worktree: Path | None = None
     branch = ""
     agent_guard_claim_created = False
+    git_writer_lock: dict[str, Any] | None = None
     try:
         if job.get("schema") != "edarsahub.worker-job.v2":
             raise ValueError("UNSUPPORTED_JOB_SCHEMA")
 
         requested_paths = sorted({str(action.get("path")) for action in (job.get("actions") or []) if action.get("path")})
         mode = str(job.get("mode") or "")
-        git("fetch", REMOTE, DEV_BRANCH)
-        current_head = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
+        git_mutating = requires_writer_lock(mode)
+        if mode in {READ_ONLY_MODE, "READ_ONLY_SQL"}:
+            current_head = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
+        elif git_mutating:
+            try:
+                git_writer_lock = acquire_writer_lock(ROOT, job_id=job_id, owner="universal-worker", owner_pid=os.getpid())
+            except GitGuardError as exc:
+                result["status"] = exc.code; result["git_guard_error"] = exc.evidence; raise RuntimeError(exc.code) from exc
+            git_state = inspect_repository(ROOT, fetch=True); git_policy = mutation_policy(git_state)
+            result.update({"git_guard_start":git_state,"branch":git_state["current_branch"],"remote_at_start":git_state["remote_head"],"local_at_start":git_state["local_head"],"merge_base_at_start":git_state["merge_base"],"ahead_at_start":git_state["ahead_count"],"behind_at_start":git_state["behind_count"],"dirty_state":{"worktree_dirty":git_state["worktree_dirty"],"staged_count":git_state["staged_count"],"unstaged_count":git_state["unstaged_count"],"untracked_count":git_state["untracked_count"]},"lock_owner":{k:git_writer_lock.get(k) for k in ("job_id","owner","owner_pid","created_at_utc")}})
+            if not git_policy["allowed"]:
+                result["status"] = git_policy["terminal_status"]; result["git_guard_reason"] = git_policy["reason"]; raise RuntimeError(git_policy["reason"])
+            current_head = git_state["remote_head"]
+        else:
+            git("fetch", REMOTE, DEV_BRANCH); current_head = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
         expected_base = str(job.get("base_sha") or "").strip() or None
         pickup_policy: dict[str, Any]
         if expected_base and expected_base != current_head:
@@ -959,6 +926,7 @@ def process_one(path: Path) -> int:
                 allowed_files.add(relative)
             scope_blockers = validate_scope(worktree, execution_base_sha, allowed_files)
             if scope_blockers:
+                result["status"] = "GIT_SCOPE_VIOLATION"
                 result["blockers"].extend(scope_blockers)
                 break
             result["files_changed"] = changed_files(worktree, execution_base_sha)
@@ -968,33 +936,33 @@ def process_one(path: Path) -> int:
                 check_result = run_check(worktree, check)
                 check_results.append(check_result)
                 if check_result["status"] != "PASS":
+                    result["status"] = "GIT_TESTS_FAILED"
                     result["blockers"].append(f"check_failed:{check_result['type']}")
                     break
             result["checks"] = check_results
             result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else ("PASS" if not check_results and not result["blockers"] else "FAIL")
+            result["build"] = next((x["status"] for x in check_results if x.get("type") == "frontend_build"), "NOT_REQUESTED")
             result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
             if result["blockers"]:
                 break
 
             head = create_commit(worktree, job_id, sorted(allowed_files))
             result["candidate_sha"] = head
-            ok, detail, final_head, integration_evidence = integrate(worktree, branch, head, execution_base_sha, allowed_files)
+            result["commit_created"] = head
+            ok, detail, final_head, integration_evidence = integrate(worktree, branch, head, execution_base_sha, allowed_files, job_id, result["remote_at_start"])
             accumulated_integration.extend(integration_evidence)
             result["concurrency"]["integration"] = accumulated_integration
             result["integration_attempts"] = len(accumulated_integration)
             result["concurrent_head_changes"] = sorted({p for step in accumulated_integration for p in (step.get("concurrent_head_changes") or [])})
+            if integration_evidence:
+                last_git = integration_evidence[-1]
+                for field in ("remote_before_push","remote_after_push","local_after","ahead_after","behind_after","push_attempted","push_result"):
+                    if field in last_git: result[field]=last_git[field]
             if ok:
-                result["status"] = "INTEGRATED"
-                result["development_sha"] = final_head
-                result["percent_complete"] = 95
-                result["certification"] = "PENDING_AUDIT_EVIDENCE"
-                result["summary_es"] = "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada."
-                break
-            if detail.startswith("CONCURRENT_REPLAY_REQUIRED:"):
-                execution_base_sha = detail.split(":", 1)[1]
-                continue
-            result["blockers"].append(detail)
-            break
+                result["status"] = "INTEGRATED"; result["git_sync_status"] = "CERTIFIED_GIT_SYNC"; result["development_sha"] = final_head; result["percent_complete"] = 95; result["certification"] = "PENDING_AUDIT_EVIDENCE"; result["summary_es"] = "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada."; break
+            terminal = detail.split(":",1)[0]
+            if terminal in {"REMOTE_MOVED_RETRY_REQUIRED","GIT_DIVERGENCE_BLOCKED","GIT_SCOPE_VIOLATION","GIT_PUSH_FAILED","GIT_LOCK_BUSY"}: result["status"] = terminal
+            result["blockers"].append(detail); break
         else:
             result["blockers"].append("CONCURRENT_REPLAY_EXHAUSTED")
 
@@ -1019,6 +987,13 @@ def process_one(path: Path) -> int:
                 result["certification"] = "NOT_CERTIFIED"
         else:
             result["agent_guard_release"] = "NOT_REQUIRED"
+        if git_writer_lock is not None:
+            try:
+                release_writer_lock(ROOT, git_writer_lock); result["git_writer_lock_release"] = "PASS"
+            except GitGuardError as exc:
+                result["git_writer_lock_release"] = "FAIL"; result["blockers"].append("git_writer_lock_release_failed:" + exc.code); result["quality_gate"] = "FAIL"; result["certification"] = "NOT_CERTIFIED"
+        else:
+            result["git_writer_lock_release"] = "NOT_REQUIRED"
         if worktree is not None:
             git("worktree", "remove", "--force", str(worktree), check=False)
         if branch:
