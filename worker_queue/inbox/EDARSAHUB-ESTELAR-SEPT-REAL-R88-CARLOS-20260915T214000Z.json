@@ -1,0 +1,53 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ESTELAR-SEPT-REAL-R88-CARLOS-20260915T214000Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3cb02ea9ff4b759291e86f55a4b84a2bdad57b5b",
+  "production_allowed": false,
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "objective": "Sincronizar REAL LA ESTELAR para septiembre 2026 usando el handler oficial corregido por R85B. Ejecutar todos los dias operativos cerrados disponibles del 2026-09-01 al 2026-09-14 inclusive, actualizando header Comercial_KPIs_Diarios_v2 y detalle ISCAM con regla operacional 09:00-09:00. Validar destino contra origen y confirmar especialmente 04/09=119840,81 cheques,195 PAX y 05/09=252998,167 cheques,480 PAX. No tocar Edarsahub_Produccion.",
+  "actions": [],
+  "units": ["ESTELAR"],
+  "fecha_inicio": "2026-09-01",
+  "fecha_fin": "2026-09-14",
+  "dry_run": false,
+  "confirm_comercial_range_resync": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "estelar_destination_september_kpis",
+          "sql": "SELECT CAST(fecha_operacion AS date) AS fecha_operacion, CAST(ventas_total AS decimal(18,2)) AS ventas_total, CAST(propinas_total AS decimal(18,2)) AS propinas_total, tickets_total, pax_total, sync_run_id FROM dbo.Comercial_KPIs_Diarios_v2 WHERE unidad_negocio_id='ESTELAR' AND CAST(fecha_operacion AS date) BETWEEN '2026-09-01' AND '2026-09-14' AND ISNULL(activo,1)=1 ORDER BY CAST(fecha_operacion AS date)"
+        },
+        {
+          "name": "estelar_destination_ticket_24667",
+          "sql": "SELECT fecha_operacion, numero_ticket, producto_codigo_fuente, descripcion, cantidad, importe_bruto, pax, sync_run_id FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ESTELAR' AND numero_ticket='24667' AND ISNULL(activo,1)=1 ORDER BY fecha_operacion, fecha_hora"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": ["ESTELAR"],
+      "system_types": ["SOFTRESTAURANT"],
+      "queries": [
+        {
+          "name": "estelar_source_operational_04_05",
+          "sql": "SELECT CONVERT(date,DATEADD(hour,-9,tr.apertura)) AS fecha_operacion, CAST(SUM(ch.total) AS decimal(18,2)) AS ventas_total, COUNT(DISTINCT ch.folio) AS cheques, SUM(ISNULL(ch.nopersonas,0)) AS pax FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE tr.apertura>='2026-09-04 09:00:00' AND tr.apertura<'2026-09-06 09:00:00' AND ch.cancelado=0 GROUP BY CONVERT(date,DATEADD(hour,-9,tr.apertura)) ORDER BY fecha_operacion"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
