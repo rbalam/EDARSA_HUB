@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-FOLIO-HEADER-R93-CARLOS-20260915T221500Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "78b5e7c3b129304e904c10279a1326aff6339b1d",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir inmediatamente la regresion detectada por Worker Full Gate en R92 sin revertir el contrato folio-padre. Mantener el detalle SoftRestaurant estrictamente dependiente del folio del encabezado y la linea tecnica residual para tickets con encabezado no cero, pero conservar el guard historico fail-closed para tickets cuyo encabezado total es cero y cuyo detalle no cuadra, excepto el caso especial ya soportado de franquicia negativa que cierra a cero. No tocar Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "        # El folio del encabezado es el padre y la cifra autoritativa.\n        # Conservamos las lineas reales tal como vienen del POS y agregamos una\n        # linea tecnica por la diferencia residual del MISMO folio. De esta forma\n        # nunca se fabrica una poblacion de detalle independiente del header.\n        adjustment = dict(items[0])",
+      "new": "        # Un encabezado en cero con detalle monetario no explicado sigue siendo\n        # un caso anomalo y se bloquea. La unica excepcion es la franquicia\n        # negativa ya resuelta arriba. Esto conserva el guard historico R80C.\n        if header_total == Decimal(\"0\"):\n            raise RuntimeError(\n                f\"SoftRestaurant: diferencia no explicada en ticket {ticket_key}; \"\n                f\"productos={product_total}; encabezado={header_total}; delta={delta}; \"\n                f\"indicador_descuento_cortesia={discount_indicator}\"\n            )\n\n        # El folio del encabezado es el padre y la cifra autoritativa.\n        # Conservamos las lineas reales tal como vienen del POS y agregamos una\n        # linea tecnica por la diferencia residual del MISMO folio. De esta forma\n        # nunca se fabrica una poblacion de detalle independiente del header.\n        adjustment = dict(items[0])",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_scheduler_definitive_fix_r80c.py",
+        "backend/tests/test_iscam_no_prorate_adjustments_r49.py",
+        "backend/tests/test_iscam_header_folio_parent_r92.py",
+        "backend/tests/test_iscam_detail_parity_backfill_r33.py",
+        "backend/tests/test_iscam_detail_pax_ticket_aggregation.py",
+        "backend/tests/test_scheduler_rsync_manual_r74.py",
+        "backend/tests/test_admin_scheduler_resync_origin_contract.py",
+        "backend/tests/test_iscam_detail_only_manual_resync_r37.py",
+        "backend/tests/test_scheduler_comercial_status.py"
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
