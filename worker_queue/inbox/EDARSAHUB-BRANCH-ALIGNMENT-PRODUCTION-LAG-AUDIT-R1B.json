@@ -1,0 +1,25 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-BRANCH-ALIGNMENT-PRODUCTION-LAG-AUDIT-R1B",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "base_sha": "2e18c0cd8e3a33cd08fae9a34ef12c3d68443b2d",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en modo READ_ONLY la brecha actual entre Edarsahub_Produccion=7bd7f621b6a919f6fa427c49e217379496c6c068 y Edarsahub_Desarrollo=2e18c0cd8e3a33cd08fae9a34ef12c3d68443b2d. La topologia externa ya confirma Produccion como ancestro, ahead_by=210 y behind_by=0. Clasificar evidencia activa del repositorio asociada a migraciones SQL, scheduler, auth/RBAC, worker, frontend, infraestructura y mecanismos de promocion; identificar blockers verificables para una promocion prudente; no hacer merge, push, tag, rebase, cherry-pick ni tocar Produccion. El resultado debe servir como evidencia de governance para decidir el primer lote de promocion; PROMOTION_EXECUTED=NO y PRODUCTION_TOUCHED=NO.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [".github", "backend", "frontend", "tools", "ops"],
+        "search_terms": ["migration", "scheduler", "auth", "RBAC", "worker", "production", "Edarsahub_Produccion", "Edarsahub_Desarrollo", "deploy", "promotion"],
+        "include_patterns": ["*.py", "*.yml", "*.yaml", "*.sh", "*.sql", "*.js", "*.jsx", "*.json"],
+        "exclude_patterns": ["node_modules/**", "build/**", "dist/**", ".git/**"],
+        "max_results": 500
+      }
+    },
+    {"type": "git_diff_check"}
+  ]
+}
