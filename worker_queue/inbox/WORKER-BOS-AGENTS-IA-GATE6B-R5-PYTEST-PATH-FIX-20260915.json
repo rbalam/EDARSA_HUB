@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "WORKER-BOS-AGENTS-IA-GATE6B-R5-PYTEST-PATH-FIX-20260915",
+  "created_at_utc": "2026-09-16T00:06:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Reproducir exactamente el alcance funcional y los ocho archivos objetivo del manifest WORKER-BOS-AGENTS-IA-GATE6B-R4-IMPLEMENTATION-20260915 sobre el HEAD fresco 2bf8bd202469aecb771ee8256660ecad5267bcff. La unica correccion permitida respecto de R4 es en backend/tests/test_bos_gate6b_agent_reach.py: cambiar Path('backend/modules/agent_harness/module_agent_reach_adapter.py') por Path('modules/agent_harness/module_agent_reach_adapter.py'), porque el dispatcher ejecuta pytest con cwd=backend y la ruta anterior resuelve incorrectamente a backend/backend/modules/.... No ejecutar SQL. Mantener sin cambios semanticos la migracion versionada, el adaptador RBAC/Scope/Budget, el consumidor Marketing/CX, las pantallas/rutas y los mapeos de navegacion de R4. Ejecutar los mismos checks relevantes: py_compile de los nuevos Python, pytest de test_bos_gate6b_agent_reach.py y test_bos_agent_harness_planner_router.py, frontend build y git diff check.",
+  "acceptance": [
+    "Los ocho archivos objetivo coinciden funcionalmente con Gate 6B-R4 salvo la unica ruta de test corregida.",
+    "backend/tests/test_bos_gate6b_agent_reach.py usa Path('modules/agent_harness/module_agent_reach_adapter.py') y no usa Path('backend/modules/agent_harness/module_agent_reach_adapter.py').",
+    "py_compile PASS.",
+    "pytest de test_bos_gate6b_agent_reach.py y test_bos_agent_harness_planner_router.py PASS.",
+    "frontend build PASS.",
+    "git diff check PASS.",
+    "El resultado queda INTEGRATED, CERTIFIED, percent_complete 100, quality_gate PASS, tests PASS, blockers vacio y production_touched false."
+  ],
+  "constraints": [
+    "No ejecutar backend/database/migrations/20260915_001_bos_agents_ia_menu_rbac.sql; solo versionarla como en R4.",
+    "No tocar Edarsahub_Produccion.",
+    "No tocar Layout.js, Worker, Supervisor, watchdog ni runtime interno.",
+    "No cambiar RBAC, scopes, budgets, capability, risk, data classification ni procedimiento respecto de R4.",
+    "No introducir nuevas tablas, catalogos, rutas ni permisos fuera de los definidos en R4.",
+    "No hacer cambios funcionales adicionales; la unica correccion de causa raiz es la ruta relativa del test.",
+    "Si el HEAD avanzo de manera concurrente, aplicar solo una adaptacion mecanica no semantica o bloquear con evidencia exacta; no ampliar alcance."
+  ],
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
