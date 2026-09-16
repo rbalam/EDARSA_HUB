@@ -65,14 +65,18 @@ jobs:
           cur.close(); conn.close()
           PY
 
-      - name: Resolve writer and verify INSERT permission
+      - name: Fail closed - Development migration writer is not configured
         env:
-          MIGRATION_USER: ${{ secrets.EDARSAHUB_SQL_MIGRATION_USER }}
-          MIGRATION_PASSWORD: ${{ secrets.EDARSAHUB_SQL_MIGRATION_PASSWORD }}
+          MIGRATION_USER: HRLectura
+          MIGRATION_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
           READONLY_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
+          echo 'MIGRATION_WRITER_STATUS=UNCONFIGURED'
+          echo 'HRLECTURA_WRITER_FORBIDDEN=YES'
+          echo 'MIGRATION_EXECUTED=NO'
+          exit 78
           if [ -n "${MIGRATION_USER:-}" ] && [ -n "${MIGRATION_PASSWORD:-}" ]; then
             echo "EDARSAHUB_SQL_USER=${MIGRATION_USER}" >> "$GITHUB_ENV"
             echo "EDARSAHUB_SQL_PASSWORD=${MIGRATION_PASSWORD}" >> "$GITHUB_ENV"
@@ -93,8 +97,9 @@ jobs:
           PY
 
       - name: Execute idempotent canonical menu migration
+        if: ${{ false }}
         env:
-          EDARSAHUB_ALLOW_MIGRATIONS: 'true'
+          EDARSAHUB_ALLOW_MIGRATIONS: 'false'
         shell: bash
         run: |
           set -euo pipefail

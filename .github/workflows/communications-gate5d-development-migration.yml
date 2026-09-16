@@ -83,13 +83,17 @@ jobs:
           cur.close(); conn.close(); print('GATE5D_PREFLIGHT=PASS')
           PY
 
-      - name: Verify dedicated Development migration writer
+      - name: Fail closed - Development migration writer is not configured
         env:
-          EDARSAHUB_SQL_USER: ${{ secrets.EDARSAHUB_SQL_MIGRATION_USER }}
-          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_MIGRATION_PASSWORD }}
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
+          echo 'MIGRATION_WRITER_STATUS=UNCONFIGURED' | tee evidence/writer_permissions.txt
+          echo 'HRLECTURA_WRITER_FORBIDDEN=YES' | tee -a evidence/writer_permissions.txt
+          echo 'MIGRATION_EXECUTED=NO' | tee -a evidence/writer_permissions.txt
+          exit 78
           test -n "${EDARSAHUB_SQL_USER:-}"
           test -n "${EDARSAHUB_SQL_PASSWORD:-}"
           python - <<'PY' | tee evidence/writer_permissions.txt
@@ -106,10 +110,11 @@ jobs:
           PY
 
       - name: Execute transactional migration
+        if: ${{ false }}
         env:
-          EDARSAHUB_SQL_USER: ${{ secrets.EDARSAHUB_SQL_MIGRATION_USER }}
-          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_MIGRATION_PASSWORD }}
-          EDARSAHUB_ALLOW_MIGRATIONS: 'true'
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+          EDARSAHUB_ALLOW_MIGRATIONS: 'false'
         shell: bash
         run: |
           set -euo pipefail
@@ -144,11 +149,11 @@ jobs:
           PY
 
       - name: Rollback if postcheck failed
-        if: steps.postcheck.outcome == 'failure'
+        if: ${{ false }}
         env:
-          EDARSAHUB_SQL_USER: ${{ secrets.EDARSAHUB_SQL_MIGRATION_USER }}
-          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_MIGRATION_PASSWORD }}
-          EDARSAHUB_ALLOW_MIGRATIONS: 'true'
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+          EDARSAHUB_ALLOW_MIGRATIONS: 'false'
         shell: bash
         run: |
           set -euo pipefail
