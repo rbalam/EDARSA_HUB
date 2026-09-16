@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate5g-postfailure-readonly-verification-v1-20260914",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "d9695e261fafa2c27a3fd7e7f50b3113fc731f05",
+  "mode": "READ_ONLY_SQL",
+  "objective": "COA post-failure verification posterior al run 34567510668 attempt reejecutado. Verificar exclusivamente mediante SELECT/metadata que el rollback transaccional de backend/database/migrations/20260910_coa_cfdi_emitidos.sql dejo Development sin efectos parciales: las tablas dbo.Fiscal_DocumentosEmitidosEstatus y dbo.Fiscal_DocumentosEmitidos no existen; dbo.COA_ExpedienteReferencias no contiene VentaID ni DocumentoFiscalEmitidoID; no existen las FKs/indices nuevos CFDI; CK_COA_ExpedienteReferencias_UnSoloDestino permanece presente, habilitado y trusted, con contrato original sin VentaID/DocumentoFiscalEmitidoID; DocumentoFiscalID sigue referenciando Compras_DocumentosFiscales; y no hay drift en las referencias canonicas. No DDL, no DML, no EXEC, no Production.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "postfailure_target_tables",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE s.name='dbo' AND t.name IN ('Fiscal_DocumentosEmitidosEstatus','Fiscal_DocumentosEmitidos') ORDER BY t.name"
+        },
+        {
+          "name": "postfailure_target_columns",
+          "sql": "SELECT c.name AS column_name,ty.name AS data_type,c.is_nullable FROM sys.columns c JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND c.name IN ('VentaID','DocumentoFiscalEmitidoID') ORDER BY c.name"
+        },
+        {
+          "name": "postfailure_new_foreign_keys",
+          "sql": "SELECT fk.name AS foreign_key_name,OBJECT_NAME(fk.parent_object_id) AS parent_table,OBJECT_NAME(fk.referenced_object_id) AS referenced_table FROM sys.foreign_keys fk WHERE fk.name IN ('FK_COA_ExpedienteReferencias_Venta','FK_COA_ExpedienteReferencias_DocumentoFiscalEmitido','FK_Fiscal_DocumentosEmitidos_Empresa','FK_Fiscal_DocumentosEmitidos_Unidad','FK_Fiscal_DocumentosEmitidos_Cliente','FK_Fiscal_DocumentosEmitidos_Venta','FK_Fiscal_DocumentosEmitidos_Estatus','FK_Fiscal_DocumentosEmitidos_Moneda','FK_Fiscal_DocumentosEmitidos_CreadoPor','FK_Fiscal_DocumentosEmitidos_ModificadoPor') ORDER BY fk.name"
+        },
+        {
+          "name": "postfailure_new_indexes",
+          "sql": "SELECT OBJECT_SCHEMA_NAME(i.object_id) AS schema_name,OBJECT_NAME(i.object_id) AS table_name,i.name AS index_name FROM sys.indexes i WHERE i.name IN ('UX_Fiscal_DocumentosEmitidos_UUID','IX_Fiscal_DocumentosEmitidos_Cliente_Fecha','IX_Fiscal_DocumentosEmitidos_Empresa_Estatus','IX_Fiscal_DocumentosEmitidos_Unidad','IX_Fiscal_DocumentosEmitidos_Venta','IX_COA_ExpedienteReferencias_Venta','IX_COA_ExpedienteReferencias_DocumentoFiscalEmitido') ORDER BY i.name"
+        },
+        {
+          "name": "postfailure_original_check",
+          "sql": "SELECT cc.name AS constraint_name,cc.is_disabled,cc.is_not_trusted,cc.definition FROM sys.check_constraints cc WHERE cc.parent_object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND cc.name='CK_COA_ExpedienteReferencias_UnSoloDestino'"
+        },
+        {
+          "name": "postfailure_compras_fk_preserved",
+          "sql": "SELECT fk.name AS fk_name,pc.name AS parent_column,rt.name AS referenced_table,rc.name AS referenced_column FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.tables rt ON rt.object_id=fkc.referenced_object_id JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fkc.parent_object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND pc.name='DocumentoFiscalID'"
+        },
+        {
+          "name": "postfailure_coa_reference_rows",
+          "sql": "SELECT COUNT_BIG(*) AS coa_reference_rows FROM dbo.COA_ExpedienteReferencias"
+        },
+        {
+          "name": "postfailure_reference_types",
+          "sql": "SELECT t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Cliente_Catalogo' AND c.name='ClienteID') OR (t.name='Venta_Encabezado' AND c.name='VentaID') OR (t.name='Proveedor_Monedas' AND c.name='MonedaID') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID') ORDER BY t.name,c.name"
+        },
+        {
+          "name": "postfailure_database_identity",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
