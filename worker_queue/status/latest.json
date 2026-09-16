@@ -1,31 +1,38 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "2e18c0cd8e3a33cd08fae9a34ef12c3d68443b2d",
-  "generated_at_utc": "2026-09-16T00:00:53Z",
+  "generated_at_utc": "2026-09-16T00:02:07Z",
   "history": {
     "done_total_local": 508,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 527,
     "results_total_local": 902
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [],
+  "jobs": [
+    {
+      "age_seconds": 2,
+      "job_id": "EDARSAHUB-BRANCH-ALIGNMENT-PRODUCTION-LAG-AUDIT-R1B",
+      "reason": null,
+      "state": "RUNNING"
+    }
+  ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 0,
-  "queue_running": 0,
+  "queue_running": 1,
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "EDARSAHUB-BRANCH-ALIGNMENT-PRODUCTION-LAG-AUDIT-R1B",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-16T00:00:51Z",
-    "last_receive_utc": "2026-09-16T00:00:53Z",
+    "last_cycle_utc": "2026-09-16T00:02:03Z",
+    "last_receive_utc": "2026-09-16T00:02:06Z",
     "last_terminal_utc": "2026-09-15T22:07:12Z",
     "pid": "63"
   },
