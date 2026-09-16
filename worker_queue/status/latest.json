@@ -1,25 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "2bf8bd202469aecb771ee8256660ecad5267bcff",
-  "generated_at_utc": "2026-09-16T00:16:02Z",
+  "development_sha": "6177b3a769ed36e6afb9b5d3ac99b1147ff0a377",
+  "generated_at_utc": "2026-09-16T00:17:22Z",
   "history": {
-    "done_total_local": 510,
-    "pending_total_local": 1,
-    "processing_total_local": 1,
-    "rejected_total_local": 528,
-    "results_total_local": 904
+    "done_total_local": 512,
+    "pending_total_local": 0,
+    "processing_total_local": 0,
+    "rejected_total_local": 529,
+    "results_total_local": 907
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 4,
-      "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CANONIZATION-R3E",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 310,
+      "age_seconds": 390,
       "job_id": "WORKER-BOS-AGENTS-IA-GATE6B-R5-PYTEST-PATH-FIX-20260915",
       "reasons": [
         "INVALID_SCHEMA",
@@ -29,39 +23,51 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 834,
+      "age_seconds": 74,
+      "job_id": "BOS-AGENT-HARNESS-V1-FECHA-OPERACION-COMERCIAL-GATE21-RECOVERY-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 914,
       "job_id": "EDARSAHUB-BRANCH-ALIGNMENT-PRODUCTION-LAG-AUDIT-R1B",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 817,
+      "age_seconds": 66,
+      "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-CANONIZATION-R3E",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 897,
       "job_id": "EDARSAHUB-GLOBAL-CREDENTIALS-PUBLISHING-TEST-CONTRACT-FIX-R3D",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 4,
-      "job_id": "BOS-AGENT-HARNESS-V1-FECHA-OPERACION-COMERCIAL-GATE21-RECOVERY-R1",
+      "age_seconds": 26,
+      "job_id": "coa-gate5g-postfailure-readonly-verification-v1-20260914",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
     }
   ],
-  "oldest_pending_age_seconds": 4,
+  "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 2,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
-  "queue_pending": 1,
+  "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 2,
-  "queue_running": 1,
+  "queue_result_ready_recent": 5,
+  "queue_running": 0,
   "runtime": {
-    "current_job_id": "BOS-AGENT-HARNESS-V1-FECHA-OPERACION-COMERCIAL-GATE21-RECOVERY-R1",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-16T00:15:21Z",
-    "last_receive_utc": "2026-09-16T00:15:58Z",
-    "last_terminal_utc": "2026-09-16T00:02:24Z",
+    "last_cycle_utc": "2026-09-16T00:17:17Z",
+    "last_receive_utc": "2026-09-16T00:17:20Z",
+    "last_terminal_utc": "2026-09-16T00:16:55Z",
     "pid": "63"
   },
   "schema": "edarsahub.worker-health.v3",
