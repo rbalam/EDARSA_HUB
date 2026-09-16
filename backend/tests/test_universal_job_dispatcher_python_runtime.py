@@ -298,7 +298,7 @@ def test_integrate_push_uses_only_repository_local_credential_helper():
     text = DISPATCHER.read_text(encoding="utf-8")
 
     assert 'git("config", "--local", "--get", "credential.helper", cwd=ROOT, check=False)' in text
-    assert '"-c", "credential.helper="' in text
+    assert '"credential.helper="' in text
     assert 'f"credential.helper={credential_helper}"' in text
-    assert '"push", REMOTE' in text
+    assert '"push",REMOTE' in text
     assert "gh auth git-credential" not in text

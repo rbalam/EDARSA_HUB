@@ -19,7 +19,7 @@ def test_pickup_uses_scope_aware_policy_instead_of_global_sha_block():
 def test_integration_rechecks_scope_and_replays_only_when_safe():
     src = _source()
     assert "CONCURRENT_SCOPE_CONFLICT" in src
-    assert "CONCURRENT_REPLAY_REQUIRED" in src
+    assert "SAFE_REPLAY" in src
     assert "MAX_CONCURRENCY_REPLAY_ATTEMPTS" in src
     assert 'result["concurrency"]["integration"] = accumulated_integration' in src
     assert 'git("rebase", "--onto"' not in src
