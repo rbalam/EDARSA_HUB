@@ -650,6 +650,16 @@
       "cluster": "Cava de Socios",
       "releasedAt": "2026-08-15"
     },
+    "coa.dashboard": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "COA - Operaciones Administrativas",
+      "expectedPath": "/coa",
+      "order": 60,
+      "status": "active",
+      "cluster": "COA",
+      "releasedAt": "2026-09-08"
+    },
     "finanzas.dashboard": {
       "groupId": "finanzas-rentabilidad",
       "sectionId": "direccion-financiera",
@@ -1491,5 +1501,8 @@
     "tablajeria.ordenes",
     "tablajeria.plantillas"
   ],
-  "routeExemptions": []
+  "routeExemptions": [
+    "/cavas-corporativas",
+    "/catalogo-ampliado"
+  ]
 }

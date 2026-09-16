@@ -46,34 +46,26 @@ def _detalle_existente(
 ) -> Dict[date, Dict[str, Any]]:
     rows = _query_edarsahub_dicts(
         f"""
+        WITH detalle_ticket AS (
+            SELECT
+                fecha_operacion,
+                numero_ticket,
+                SUM(CAST(ISNULL(importe_neto, 0) AS decimal(19,4))) AS ventas_ticket,
+                MAX(CAST(ISNULL(pax, 0) AS bigint)) AS pax_ticket
+            FROM {DESTINO}
+            WHERE unidad_negocio_id = %s
+              AND fecha_operacion >= %s
+              AND fecha_operacion < %s
+              AND ISNULL(activo, 1) = 1
+              AND ISNULL(es_kpi_valido, 1) = 1
+            GROUP BY fecha_operacion, numero_ticket
+        )
         SELECT
             fecha_operacion,
-            SUM(
-                CASE
-                    WHEN ISNULL(es_kpi_valido, 1) = 1
-                    THEN ISNULL(importe_neto, 0)
-                    ELSE 0
-                END
-            ) AS ventas_detalle,
-            COUNT(DISTINCT
-                CASE
-                    WHEN ISNULL(es_kpi_valido, 1) = 1
-                    THEN numero_ticket
-                    ELSE NULL
-                END
-            ) AS tickets_detalle,
-            SUM(
-                CASE
-                    WHEN ISNULL(es_kpi_valido, 1) = 1
-                    THEN ISNULL(pax, 0)
-                    ELSE 0
-                END
-            ) AS pax_detalle
-        FROM {DESTINO}
-        WHERE unidad_negocio_id = %s
-          AND fecha_operacion >= %s
-          AND fecha_operacion < %s
-          AND ISNULL(activo, 1) = 1
+            SUM(ventas_ticket) AS ventas_detalle,
+            COUNT(*) AS tickets_detalle,
+            SUM(pax_ticket) AS pax_detalle
+        FROM detalle_ticket
         GROUP BY fecha_operacion
         """,
         (

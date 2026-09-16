@@ -3,9 +3,8 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any, Callable, Iterable
 
-from modules.comercial_v2.periodos_routes import (
-    _execute_readonly_query,
-)
+from core.db import execute_sql_query_params
+from core.server_registry import EDARSAHUB_CONFIG
 
 from .ticket_identity import (
     TicketIdentity,
@@ -20,6 +19,22 @@ ENRICHMENT_TABLE = "Comercial_ProductosEnriquecimiento"
 
 
 QueryExecutor = Callable[[str, tuple[Any, ...]], list[dict[str, Any]]]
+
+
+def _execute_readonly_query_params(
+    sql: str,
+    params: tuple[Any, ...],
+) -> list[dict[str, Any]]:
+    cfg = EDARSAHUB_CONFIG
+    return list(execute_sql_query_params(
+        cfg['host'],
+        cfg['port'],
+        cfg['database'],
+        cfg['username'],
+        cfg['password'],
+        sql,
+        params,
+    ) or [])
 
 
 def _date_string(value: Any, field: str) -> str:
@@ -77,7 +92,7 @@ def _execute(
     *,
     query_executor: QueryExecutor | None = None,
 ) -> list[dict[str, Any]]:
-    executor = query_executor or _execute_readonly_query
+    executor = query_executor or _execute_readonly_query_params
     return list(executor(sql, params) or [])
 
 

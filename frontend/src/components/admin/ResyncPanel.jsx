@@ -213,13 +213,27 @@ export default function ResyncPanel() {
           fecha_fin: ff,
           motivo,
           dry_run: isDryRun,
-        });
+        }, { timeout: 120000 });
         results.push({ tipo: { ...it, codigo: executionCodigo }, data: resp.data });
       } catch (error) {
+        const errorData = error.response?.data || {};
+        const resultadoError = errorData?.resultado || {};
+        const isTimeout = error.code === 'ECONNABORTED' || String(error.message || '').toLowerCase().includes('timeout');
+        const errorMessage = isTimeout
+          ? 'TIMEOUT_CLIENTE: la re-sincronización superó 120 segundos. Reintente o reduzca el rango.'
+          : errorData?.error_message
+            || resultadoError?.error_message
+            || errorData?.detail
+            || error.message
+            || 'Error de ejecución sin detalle';
         results.push({
           tipo: it,
-          data: { success: false, modo: isDryRun ? 'DRY_RUN' : 'REAL',
-                  error_message: error.response?.data?.detail || 'Error de ejecución' },
+          data: {
+            success: false,
+            modo: isDryRun ? 'DRY_RUN' : 'REAL',
+            stage: isTimeout ? 'TIMEOUT_CLIENTE' : (errorData?.stage || resultadoError?.stage || 'EJECUCION'),
+            error_message: errorMessage,
+          },
         });
       }
       setBatchResults([...results]);
@@ -439,6 +453,11 @@ export default function ResyncPanel() {
                             </span>
                           )}
                         </div>
+                        {(r.data.warning_message || resultado.warning_message) && (
+                          <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                            Advertencia {resultado.stage || r.data.stage || 'DETALLE_ISCAM'}: {r.data.warning_message || resultado.warning_message}
+                          </p>
+                        )}
 
                         {r.data.modo === 'DRY_RUN' && (
                           <div className="space-y-2" data-testid={`dry-run-detail-${r.tipo.codigo}`}>

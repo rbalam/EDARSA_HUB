@@ -1,0 +1,8 @@
+job=CATALOGO-AMPLIADO-GATE3-DDL-EXECUTION-20260908
+target_branch=Edarsahub_Desarrollo
+production_allowed=false
+migration=backend/database/migrations/20260908_catalogo_ampliado_gobierno_core.sql
+expected_blob_sha=0178fca34652b41a6e641125d078822055c83483
+preflight_job=CATALOGO-AMPLIADO-GATE2B-DDL-PREFLIGHT-READONLY-R1-20260908
+preflight_certification=CERTIFIED_READ_ONLY
+preflight_percent=100

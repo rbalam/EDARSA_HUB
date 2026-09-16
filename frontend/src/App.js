@@ -38,6 +38,7 @@ import CRMDashboard from '@/pages/crm/CRMDashboard';
 // Módulos Satélites
 import SuperCajaPage from '@/pages/satelites/SuperCajaPage';
 import ComanderoPage from '@/pages/satelites/ComanderoPage';
+import COAHome from '@/pages/satelites/COAHome';
 import LeadsPage from '@/pages/crm/LeadsPage';
 import OportunidadesPage from '@/pages/crm/OportunidadesPage';
 import PipelinePage from '@/pages/crm/PipelinePage';
@@ -62,6 +63,12 @@ import CapturaDirectaPage from '@/pages/tablajeria/CapturaDirectaPage';
 
 // Cava de Socios
 import { CavaSociosDashboard, SociosList, SocioDetail, SocioForm, InventarioCava, ConsumosCava } from '@/pages/cava-socios';
+
+// Cavas Corporativas B2B
+import CavasCorporativasDashboard from '@/pages/cavas-corporativas/CavasCorporativasDashboard';
+
+// Catalogo Ampliado / Gobierno Corporativo
+import CatalogoAmpliadoDashboard from '@/pages/catalogo-ampliado/CatalogoAmpliadoDashboard';
 
 // Costos y Márgenes (FASE 1C-3D)
 import CostosMargenes from '@/pages/comercial/CostosMargenes';
@@ -178,6 +185,10 @@ function App() {
               <Route path="cava-socios/socios/:id/editar" element={<SocioForm />} />
               <Route path="cava-socios/inventario" element={<InventarioCava />} />
               <Route path="cava-socios/consumos" element={<ConsumosCava />} />
+              {/* Cavas Corporativas B2B - reglas y RBAC permanecen en backend */}
+              <Route path="cavas-corporativas" element={<CavasCorporativasDashboard />} />
+              {/* Catalogo Ampliado - frontend consume exclusivamente /api/catalogo-ampliado */}
+              <Route path="catalogo-ampliado" element={<CatalogoAmpliadoDashboard />} />
               <Route path="recursos-humanos" element={<RecursosHumanos />} />
               <Route path="importador-rh" element={<ImportadorRH />} />
               <Route path="reportes-bi" element={<ReportesBI />} />
@@ -195,6 +206,7 @@ function App() {
               {/* Módulos Satélites */}
               <Route path="super-caja" element={<SuperCajaPage />} />
               <Route path="comandero" element={<ComanderoPage />} />
+              <Route path="coa" element={<COAHome />} />
 
               {/* Módulos registrados pendientes de implementación */}
               <Route path="pos/generico" element={<ComingSoonPage title="Punto de Venta" />} />

@@ -37,14 +37,16 @@ BEGIN
             WHEN 'octubre'    THEN 10
             WHEN 'noviembre'  THEN 11
             WHEN 'diciembre'  THEN 12
-            ELSE 5 -- fallback al mes de Mayo
+            ELSE NULL
         END;
 
-    -- Validar año seguro para evitar desbordamiento en DATEFROMPARTS
+    -- Un mes inválido no se convierte silenciosamente en otro periodo.
+    IF @NumeroMes IS NULL
+        RETURN NULL;
+
+    -- Un año inválido no se sustituye silenciosamente por otro periodo.
     IF @Anio IS NULL OR @Anio < 1900 OR @Anio > 2100
-    BEGIN
-        SET @Anio = YEAR(GETDATE());
-    END
+        RETURN NULL;
 
     -- Obtener la cantidad de días del mes de forma dinámica (soporta bisiestos)
     SET @DiasTotales = CAST(DAY(EOMONTH(DATEFROMPARTS(@Anio, @NumeroMes, 1))) AS DECIMAL(5, 2));

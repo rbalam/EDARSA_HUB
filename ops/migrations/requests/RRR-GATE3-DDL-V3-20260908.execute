@@ -1,0 +1,8 @@
+job=RRR-GATE3B-DDL-V3-EXECUTION-20260908
+target_branch=Edarsahub_Desarrollo
+production_allowed=false
+migration=docs/RRR/sql/RRR_GATE2_MINIMUM_DDL_V3.sql
+expected_blob_sha=fc184b211d8bd311c098d09c22e84e86a59b1937
+preflight_job=RRR-GATE3A-DDL-V3-PREFLIGHT-READONLY-20260908
+preflight_certification=CERTIFIED_READ_ONLY
+preflight_percent=100

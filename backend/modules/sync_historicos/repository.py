@@ -446,7 +446,7 @@ class SyncHistoricosRepository:
             SyncRunID, SyncType, ServerID, EmpresaID,
             FechaInicio, FechaFin,
             VentanaInicioHoraConfig, VentanaFinHoraConfig,
-            IsDryRun, Status, StartedAtMexico
+            IsDryRun, Status, StartedAtMexico, ConexionID, StartedAtUTC, IdempotencyKey
         ) VALUES (
             '{ejecucion.sync_run_id}', '{ejecucion.sync_type}',
             {f"'{ejecucion.ServerID}'" if ejecucion.ServerID else 'NULL'},
@@ -454,7 +454,10 @@ class SyncHistoricosRepository:
             '{ejecucion.fecha_inicio}', '{ejecucion.fecha_fin}',
             {ejecucion.ventana_inicio_hora_config}, {ejecucion.ventana_fin_hora_config},
             {1 if ejecucion.is_dry_run else 0}, 'RUNNING',
-            '{ejecucion.started_at_mexico.strftime('%Y-%m-%d %H:%M:%S')}'
+            '{ejecucion.started_at_mexico.strftime('%Y-%m-%d %H:%M:%S')}',
+            {f"(SELECT TOP 1 id FROM dbo.Servidores_Conexiones WHERE id=TRY_CONVERT(uniqueidentifier, '{ejecucion.ServerID}'))" if ejecucion.ServerID else 'NULL'},
+            SYSUTCDATETIME(),
+            '{ejecucion.sync_type}:{ejecucion.sync_run_id}'
         )
         """
         self._execute(query)
@@ -483,6 +486,7 @@ class SyncHistoricosRepository:
             RegistrosError = {registros_error},
             ErrorMessage = {error_msg_sql},
             FinishedAtMexico = '{now.strftime('%Y-%m-%d %H:%M:%S')}',
+            FinishedAtUTC = COALESCE(FinishedAtUTC, SYSUTCDATETIME()),
             DurationSeconds = DATEDIFF(SECOND, StartedAtMexico, '{now.strftime('%Y-%m-%d %H:%M:%S')}')
         WHERE SyncRunID = '{sync_run_id}'
         """

@@ -15,6 +15,7 @@ import { apiGet, apiPost, ESTADO } from '../api/client';
 import { exportToExcel, exportToPDF } from '../utils/exportUtils';
 
 const money = (n) => (n ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
+const money2 = (n) => (n ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const num = (n) => (n ?? 0).toLocaleString('es-MX', { maximumFractionDigits: 2 });
 
 const MESES = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -347,7 +348,7 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
   const drillProductos = async (periodo) => {
     setDrill({ tipo: 'productos', titulo: `Productos vendidos — ${periodo}`, items: [], loading: true, periodo });
     const res = await apiGet('/inteligencia/iscam/ventas-periodos/productos', { unidad, periodo, group_by: groupBy });
-    setDrill((d) => ({ ...d, items: res.data?.productos || [], loading: false }));
+    setDrill((d) => ({ ...d, items: res.data?.productos || [], resumen: res.data?.resumen_conciliacion || null, loading: false }));
   };
   const drillTickets = async (periodo, producto, nombre) => {
     setDrill({ tipo: 'tickets', titulo: `Tickets con "${nombre}" — ${periodo}`, items: [], loading: true });
@@ -357,7 +358,7 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
   const drillCuenta = async (folio) => {
     setDrill({ tipo: 'cuenta', titulo: `Detalle de cuenta — Folio ${folio}`, items: [], loading: true });
     const res = await apiGet('/inteligencia/iscam/cuentas/detalle', { unidad, folio });
-    setDrill((d) => ({ ...d, items: res.data?.productos || [], loading: false }));
+    setDrill((d) => ({ ...d, items: res.data?.productos || [], ajustes: res.data?.ajustes || [], resumen: res.data?.resumen_conciliacion || null, loading: false }));
   };
   const drillTiposServicio = async (periodo) => {
     setDrill({ tipo: 'tipos-servicio', titulo: `Tipo de servicio — ${periodo}`, items: [], loading: true });
@@ -367,7 +368,7 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
 
   const DRILL_COLS = {
     productos: [{ key: 'producto', label: 'Producto' }, { key: 'cantidad', label: 'Cantidad' }, { key: 'importe', label: 'Venta Total' }, { key: 'tickets', label: 'Tickets' }],
-    tickets: [{ key: 'folio', label: 'Folio' }, { key: 'fecha', label: 'Fecha' }, { key: 'cantidad', label: 'Cantidad' }, { key: 'importe_producto', label: 'Importe Producto' }, { key: 'importe_ticket', label: 'Importe Ticket' }],
+    tickets: [{ key: 'folio', label: 'Folio' }, { key: 'fecha', label: 'Fecha' }, { key: 'cantidad', label: 'Cantidad' }, { key: 'importe_producto', label: 'Importe Producto' }, { key: 'ajustes_cheque', label: 'Ajustes Cheque' }, { key: 'importe_ticket', label: 'Importe Ticket' }],
     'tipos-servicio': [{ key: 'tipo', label: 'Tipo de Servicio' }, { key: 'venta_total', label: 'Venta Total' }, { key: 'cheques', label: 'Cheques' }, { key: 'clientes', label: 'Clientes' }, { key: 'cheque_promedio', label: 'Cheque Prom.' }],
     cuenta: [{ key: 'producto', label: 'Producto' }, { key: 'cantidad', label: 'Cantidad' }, { key: 'precio', label: 'Precio' }, { key: 'importe', label: 'Importe' }],
   };
@@ -600,23 +601,35 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
           {drill.loading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-emerald-400" /></div>
           ) : drill.tipo === 'productos' ? (
-            <table className="w-full">
-              <thead><tr><TH>Producto</TH><TH right>Cantidad</TH><TH right>Importe</TH><TH right>Tickets</TH></tr></thead>
-              <tbody className="divide-y divide-slate-700">
-                {drill.items.map((p, i) => (
-                  <tr key={i} className="hover:bg-slate-700/40 cursor-pointer" onDoubleClick={() => drillTickets(drill.periodo, p.codigo, p.producto)} title="Doble clic: ver tickets" data-testid={`drill-prod-${p.codigo}`}>
-                    <TD><span className="inline-flex items-center gap-1">{p.producto}<ChevronRight className="h-3 w-3 text-slate-500" /></span></TD>
-                    <TD right>{num(p.cantidad)}</TD><TD right>{money(p.importe)}</TD><TD right>{p.tickets}</TD>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="space-y-4">
+              <table className="w-full">
+                <thead><tr><TH>Producto</TH><TH right>Cantidad</TH><TH right>Importe</TH><TH right>Tickets</TH></tr></thead>
+                <tbody className="divide-y divide-slate-700">
+                  {drill.items.map((p, i) => (
+                    <tr key={i} className="hover:bg-slate-700/40 cursor-pointer" onDoubleClick={() => drillTickets(drill.periodo, p.codigo, p.producto)} title="Doble clic: ver tickets" data-testid={`drill-prod-${p.codigo}`}>
+                      <TD><span className="inline-flex items-center gap-1">{p.producto}<ChevronRight className="h-3 w-3 text-slate-500" /></span></TD>
+                      <TD right>{num(p.cantidad)}</TD><TD right>{money2(p.importe)}</TD><TD right>{p.tickets}</TD>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {drill.resumen && (
+                <div className="border border-slate-600 rounded-lg p-3 bg-slate-900/40" data-testid="iscam-productos-conciliacion">
+                  <div className="text-xs uppercase font-semibold text-slate-400 mb-2">Resumen de conciliación</div>
+                  <div className="grid grid-cols-3 gap-3 text-sm">
+                    <div><div className="text-slate-400">Venta productos</div><div className="text-white font-semibold">{money2(drill.resumen.venta_productos)}</div></div>
+                    <div><div className="text-slate-400">Ajustes del cheque</div><div className="text-amber-300 font-semibold">{money2(drill.resumen.ajustes_cheque)}</div></div>
+                    <div><div className="text-slate-400">Venta neta conciliada</div><div className="text-emerald-300 font-semibold">{money2(drill.resumen.venta_neta)}</div></div>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : drill.tipo === 'tickets' ? (
             <table className="w-full">
-              <thead><tr><TH>Folio</TH><TH>Fecha</TH><TH right>Cant.</TH><TH right>Importe prod.</TH><TH right>Importe ticket</TH></tr></thead>
+              <thead><tr><TH>Folio</TH><TH>Fecha</TH><TH right>Cant.</TH><TH right>Importe prod.</TH><TH right>Ajustes cheque</TH><TH right>Total ticket</TH></tr></thead>
               <tbody className="divide-y divide-slate-700">
                 {drill.items.map((t, i) => (
-                  <tr key={i}><TD mono>{t.folio}</TD><TD>{(t.fecha || '').replace('T', ' ').slice(0, 16)}</TD><TD right>{num(t.cantidad)}</TD><TD right>{money(t.importe_producto)}</TD><TD right>{money(t.importe_ticket)}</TD></tr>
+                  <tr key={i}><TD mono>{t.folio}</TD><TD>{(t.fecha || '').replace('T', ' ').slice(0, 16)}</TD><TD right>{num(t.cantidad)}</TD><TD right>{money2(t.importe_producto)}</TD><TD right>{money2(t.ajustes_cheque)}</TD><TD right>{money2(t.importe_ticket)}</TD></tr>
                 ))}
               </tbody>
             </table>
@@ -630,14 +643,35 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
               </tbody>
             </table>
           ) : (
-            <table className="w-full">
-              <thead><tr><TH>Producto</TH><TH right>Cantidad</TH><TH right>Precio</TH><TH right>Importe</TH></tr></thead>
-              <tbody className="divide-y divide-slate-700">
-                {drill.items.map((p, i) => (
-                  <tr key={i}><TD>{p.producto}</TD><TD right>{num(p.cantidad)}</TD><TD right>{money(p.precio)}</TD><TD right>{money(p.importe)}</TD></tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="space-y-4">
+              <table className="w-full">
+                <thead><tr><TH>Producto</TH><TH right>Cantidad</TH><TH right>Precio</TH><TH right>Importe</TH></tr></thead>
+                <tbody className="divide-y divide-slate-700">
+                  {drill.items.map((p, i) => (
+                    <tr key={i}><TD>{p.producto}</TD><TD right>{num(p.cantidad)}</TD><TD right>{money2(p.precio)}</TD><TD right>{money2(p.importe)}</TD></tr>
+                  ))}
+                </tbody>
+              </table>
+              {!!drill.ajustes?.length && (
+                <div>
+                  <div className="px-3 py-2 text-xs font-semibold text-amber-300 uppercase">Ajustes del cheque</div>
+                  <table className="w-full"><tbody className="divide-y divide-slate-700">
+                    {drill.ajustes.map((a, i) => (<tr key={i}><TD>{a.concepto}</TD><TD right>{money2(a.importe)}</TD></tr>))}
+                  </tbody></table>
+                </div>
+              )}
+              {drill.resumen && (
+                <div className="border border-slate-600 rounded-lg p-3 bg-slate-900/40" data-testid="iscam-ticket-conciliacion">
+                  <div className="text-xs uppercase font-semibold text-slate-400 mb-2">Conciliación del ticket</div>
+                  <div className="grid grid-cols-4 gap-3 text-sm">
+                    <div><div className="text-slate-400">Productos</div><div className="text-white font-semibold">{money2(drill.resumen.venta_productos)}</div></div>
+                    <div><div className="text-slate-400">Ajustes</div><div className="text-amber-300 font-semibold">{money2(drill.resumen.ajustes_cheque)}</div></div>
+                    <div><div className="text-slate-400">Total ticket</div><div className="text-emerald-300 font-semibold">{money2(drill.resumen.total_ticket)}</div></div>
+                    <div><div className="text-slate-400">Diferencias encontradas</div><div className={Math.abs(drill.resumen.diferencia || 0) <= 0.05 ? "text-emerald-300 font-semibold" : "text-rose-300 font-semibold"}>{money2(drill.resumen.diferencia)}</div></div>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </Modal>
       )}

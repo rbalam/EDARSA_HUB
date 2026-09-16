@@ -19,33 +19,14 @@ from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 
-# Umbrales STALE por tipo de proceso (en minutos)
-STALE_THRESHOLDS = {
-    "VENTAS": 30,
-    "VENTAS_DIA": 30,
-    "INCREMENTAL": 30,
-    "INVENTARIOS": 120,
-    "EXISTENCIAS": 120,
-    "COMPRAS": 360,
-    "PEDIDOS": 360,
-    "ORDENES": 360,
-    "RECEPCIONES": 360,
-    "REQUISICIONES": 360,
-    "CATALOGOS": 1440,
-    "PRODUCTOS": 1440,
-    "ALMACENES": 1440,
-    "MOVIMIENTOS": 120,
-    "DEFAULT": 360,
-}
+# P3A-R3 certificó que no existe una configuración SQL explícita de SLA/threshold
+# aplicable al Sync Monitor. No se permiten umbrales operativos inventados.
+SYNC_SLA_EVIDENCE = "P3A_R3_NO_CANONICAL_SYNC_SLA_CONFIG_CERTIFIED"
 
 
-def _get_stale_threshold(sync_type: str) -> int:
-    """Obtiene el umbral STALE en minutos para un tipo de sync."""
-    sync_upper = (sync_type or "DEFAULT").upper()
-    for key, value in STALE_THRESHOLDS.items():
-        if key in sync_upper:
-            return value
-    return STALE_THRESHOLDS["DEFAULT"]
+def _get_stale_threshold(sync_type: str) -> Optional[int]:
+    """Devuelve None mientras no exista un SLA canónico certificado para el proceso."""
+    return None
 
 
 def _calculate_status(
@@ -54,25 +35,19 @@ def _calculate_status(
     sync_type: str,
     error_message: Optional[str] = None
 ) -> str:
-    """
-    Calcula el estado final del sync.
-    SUCCESS, WARNING, ERROR, STALE
-    """
+    """Calcula estado sin fabricar STALE cuando no hay SLA canónico."""
     if error_message or (original_status and "ERROR" in original_status.upper()):
         return "ERROR"
-    
-    if not last_sync:
-        return "STALE"
-    
-    threshold_minutes = _get_stale_threshold(sync_type)
-    cutoff = datetime.now() - timedelta(minutes=threshold_minutes)
-    
-    if last_sync < cutoff:
-        return "STALE"
-    
     if original_status and "WARNING" in original_status.upper():
         return "WARNING"
-    
+    if not last_sync:
+        return "SIN_TELEMETRIA"
+    threshold_minutes = _get_stale_threshold(sync_type)
+    if threshold_minutes is None:
+        return "SIN_SLA_THRESHOLD_CONFIGURADO"
+    cutoff = datetime.now() - timedelta(minutes=threshold_minutes)
+    if last_sync < cutoff:
+        return "STALE"
     return "SUCCESS"
 
 
@@ -249,7 +224,17 @@ def get_sync_monitor_data() -> Dict[str, Any]:
         # cursor as_dict ya retorna dicts
         errores_comercial = cursor.fetchall()
         
-        # 5. Últimos syncs generales (últimos 20)
+        # 5. Telemetría genérica Sync_Logs. P3A-R3 certificó que existe, pero
+        # no tiene server_id ni columnas de resultado cuantitativo; por ello se expone
+        # como actividad global NO asignable a procesos/servidores.
+        cursor.execute("""
+            SELECT TOP 20 id, service, type, message, timestamp, operador
+            FROM Sync_Logs
+            ORDER BY timestamp DESC, id DESC
+        """)
+        sync_logs_genericos = cursor.fetchall()
+
+        # 6. Últimos syncs generales (últimos 20)
         cursor.execute("""
             SELECT TOP 20
                 server_id,
@@ -409,7 +394,8 @@ def get_sync_monitor_data() -> Dict[str, Any]:
                 total_records = sum(p["total_records_24h"] for p in srv_procesos)
                 total_errors = sum(p["error_count_24h"] for p in srv_procesos)
             else:
-                srv_status = "STALE"
+                # Servidor activo sin proceso correlacionable en las fuentes canónicas.
+                srv_status = "SIN_TELEMETRIA"
                 last_sync_all = None
                 total_records = 0
                 total_errors = 0
@@ -432,6 +418,8 @@ def get_sync_monitor_data() -> Dict[str, Any]:
         servidores_warning = len([s for s in servidores if s["status"] == "WARNING"])
         servidores_error = len([s for s in servidores if s["status"] == "ERROR"])
         servidores_stale = len([s for s in servidores if s["status"] == "STALE"])
+        servidores_sin_sla = len([s for s in servidores if s["status"] == "SIN_SLA_THRESHOLD_CONFIGURADO"])
+        servidores_sin_telemetria = len([s for s in servidores if s["status"] == "SIN_TELEMETRIA"])
         
         total_errores_24h = total_errores_compras_24h + total_errores_comercial_24h
         total_records_24h = sum(p["total_records_24h"] for p in procesos)
@@ -445,12 +433,33 @@ def get_sync_monitor_data() -> Dict[str, Any]:
             "procesos": procesos,
             "errores": errores[:20],
             "ultimos_syncs": ultimos_syncs,
+            "sync_logs_genericos": [
+                {
+                    "id": row.get("id"),
+                    "service": _safe_str(row.get("service")),
+                    "type": _safe_str(row.get("type")),
+                    "message": _safe_str(row.get("message")),
+                    "timestamp": _safe_datetime(row.get("timestamp")).isoformat() if _safe_datetime(row.get("timestamp")) else None,
+                    "operador": _safe_str(row.get("operador")),
+                }
+                for row in sync_logs_genericos
+            ],
+            "universo": {
+                "server_catalog": "dbo.Servidores_Conexiones",
+                "process_sources": ["dbo.Compras_Sync_Log", "dbo.Comercial_SyncLog_v2"],
+                "generic_telemetry_source": "dbo.Sync_Logs",
+                "generic_telemetry_scope": "GLOBAL_UNSCOPED_NO_SERVER_ID",
+                "sla_config_status": "SIN_SLA_THRESHOLD_CONFIGURADO",
+                "sla_evidence": SYNC_SLA_EVIDENCE,
+            },
             "kpis": {
                 "total_servidores": total_servidores,
                 "servidores_ok": servidores_ok,
                 "servidores_warning": servidores_warning,
                 "servidores_error": servidores_error,
                 "servidores_stale": servidores_stale,
+                "servidores_sin_sla": servidores_sin_sla,
+                "servidores_sin_telemetria": servidores_sin_telemetria,
                 "total_errores_24h": total_errores_24h,
                 "total_records_24h": total_records_24h,
                 "total_runs_24h": total_runs_24h,
@@ -467,5 +476,14 @@ def get_sync_monitor_data() -> Dict[str, Any]:
             "procesos": [],
             "errores": [],
             "ultimos_syncs": [],
+            "sync_logs_genericos": [],
+            "universo": {
+                "server_catalog": "dbo.Servidores_Conexiones",
+                "process_sources": ["dbo.Compras_Sync_Log", "dbo.Comercial_SyncLog_v2"],
+                "generic_telemetry_source": "dbo.Sync_Logs",
+                "generic_telemetry_scope": "GLOBAL_UNSCOPED_NO_SERVER_ID",
+                "sla_config_status": "SIN_SLA_THRESHOLD_CONFIGURADO",
+                "sla_evidence": SYNC_SLA_EVIDENCE,
+            },
             "kpis": {},
         }

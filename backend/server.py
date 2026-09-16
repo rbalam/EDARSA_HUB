@@ -120,6 +120,14 @@ logger.info("[DB] Sistema funcionando 100% SQL Server - MongoDB ELIMINADO (usand
 app = FastAPI(title="EDARSA HUB API")
 api_router = APIRouter(prefix="/api")
 
+# CAVAS CORPORATIVAS GATE 5 - API backend B2B separada y RBAC SQL explicito
+from modules.cavas_corporativas.routes import router as cavas_corporativas_router
+api_router.include_router(cavas_corporativas_router)
+
+# CATALOGO AMPLIADO GATE 4 - Gobierno corporativo SQL-first
+from modules.catalogo_ampliado.routes import router as catalogo_ampliado_router
+api_router.include_router(catalogo_ampliado_router)
+
 # Montar archivos estáticos para descargas
 STATIC_DIR = ROOT_DIR / "static"
 if STATIC_DIR.exists():

@@ -96,7 +96,16 @@ def _extract_softrestaurant(cfg, fi, ff):
             SELECT CONVERT(VARCHAR(64), cp.folio) AS folio,
                    CONVERT(VARCHAR(40), cp.idformadepago) AS codigo,
                    fp.descripcion AS forma,
-                   cp.importe AS importe, cp.propina AS propina,
+                   CAST(
+                       ISNULL(cp.importe, 0)
+                       * COALESCE(NULLIF(cp.tipodecambio, 0), NULLIF(fp.tipodecambio, 0), 1)
+                       AS decimal(18,4)
+                   ) AS importe,
+                   CAST(
+                       ISNULL(cp.propina, 0)
+                       * COALESCE(NULLIF(cp.tipodecambio, 0), NULLIF(fp.tipodecambio, 0), 1)
+                       AS decimal(18,4)
+                   ) AS propina,
                    cp.referencia AS referencia, t.apertura AS fecha
             FROM chequespagos cp
             INNER JOIN cheques ch ON ch.folio = cp.folio
@@ -285,3 +294,86 @@ def enrich_unidad(unidad_codigo, fecha_inicio, fecha_fin, dry_run=False):
     base.update(metrics)
     base["tiempo_total_s"] = round(time.time() - t0, 1)
     return base
+
+
+def _write_payments_only(unidad_codigo, sistema, pagos, fi, ff):
+    """Re-escribe SOLO Finanzas_CortesCaja_DetallePagos del rango.
+
+    No toca Sync_Sales ni ninguna tabla de Cuentas/Comandas/Cortes.
+    """
+    metrics = {"pagos_extraidos": len(pagos), "pagos_insertados": 0}
+    conn = get_sql_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "DELETE FROM dbo.Finanzas_CortesCaja_DetallePagos "
+            "WHERE UnidadNegocio=%s AND FechaHora >= %s AND FechaHora < %s",
+            (unidad_codigo, fi, ff),
+        )
+        metrics["pagos_eliminados"] = cur.rowcount if cur.rowcount and cur.rowcount > 0 else 0
+        now = datetime.now()
+        rows = []
+        for p in pagos:
+            folio = str(p.get("folio"))
+            codigo = (p.get("codigo") or "").strip()
+            forma = (p.get("forma") or codigo or "SIN_FORMA").strip()
+            importe = float(p.get("importe") or 0)
+            propina = float(p.get("propina") or 0)
+            referencia = (p.get("referencia") or "").strip() or None
+            fecha = p.get("fecha")
+            h = _hash_pago(sistema, unidad_codigo, folio, codigo, importe, propina, referencia)
+            rows.append((None, forma, codigo or None, importe, referencia, sistema,
+                         h, 1, unidad_codigo, folio, fecha, propina, now))
+        if rows:
+            prefix = (
+                "INSERT INTO dbo.Finanzas_CortesCaja_DetallePagos "
+                "(CorteCajaID, FormaPago, FormaPagoCodigo, Importe, Referencia, SistemaOrigen, "
+                " HashOrigen, Activo, UnidadNegocio, NumeroTicket, FechaHora, Propina, FechaAlta)"
+            )
+            metrics["pagos_insertados"] = _bulk_insert(cur, prefix, 13, rows)
+        cur.close()
+        conn.commit()
+        return metrics
+    except Exception as e:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        metrics["error"] = f"{type(e).__name__}: {e}"
+        return metrics
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+def resync_pagos_unidad(unidad_codigo, fecha_inicio, fecha_fin, dry_run=False):
+    """Resincroniza SOLO pagos por ticket para SoftRestaurant en [fi, ff)."""
+    unidades = get_unidades_negocio_pos([unidad_codigo])
+    if not unidades:
+        return {"unidad": unidad_codigo, "error": "unidad no encontrada en canonico"}
+    unidad_row = unidades[0]
+    cfg = get_pos_config_for_unidad(unidad_row)
+    if not cfg or not cfg.get("host"):
+        return {"unidad": unidad_codigo, "error": "config POS no resuelta"}
+    system = (cfg.get("system_type") or "").upper()
+    if "MPRO" in system:
+        return {"unidad": unidad_codigo, "error": "payments-only R56 autorizado solo para SoftRestaurant"}
+    codigo = unidad_row.get("unidad_codigo")
+    try:
+        _tipos, pagos = _extract_softrestaurant(cfg, fecha_inicio, fecha_fin)
+    except Exception as e:
+        return {"unidad": codigo, "sistema": "SoftRestaurant", "error": f"extraccion: {type(e).__name__}: {e}"}
+    result = {
+        "unidad": codigo,
+        "sistema": "SoftRestaurant",
+        "periodo": f"{fecha_inicio}..{fecha_fin}",
+        "pagos_extraidos": len(pagos),
+        "dry_run": dry_run,
+    }
+    if dry_run:
+        result["mensaje"] = "DRY RUN: pagos extraidos; no se escribio en EDARSAHUB."
+        return result
+    result.update(_write_payments_only(codigo, "SoftRestaurant", pagos, fecha_inicio, fecha_fin))
+    return result

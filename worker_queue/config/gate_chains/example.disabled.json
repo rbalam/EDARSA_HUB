@@ -1,0 +1,12 @@
+{
+  "schema": "edarsahub.gate-chain.v1",
+  "chain_id": "EXAMPLE-DISABLED",
+  "enabled": false,
+  "max_hops": 10,
+  "start_gate_id": "GATE1",
+  "adopt_existing_job_ids": [],
+  "gates": [
+    {"gate_id":"GATE1","job_id":"example-gate1","mutation_class":"READ_ONLY","next_gate_ids":["GATE2"]},
+    {"gate_id":"GATE2","job_id":"example-gate2","mutation_class":"CODE_MUTATION","authorization_class":"PREAUTHORIZED_CODE_MUTATION","next_gate_ids":[]}
+  ]
+}
