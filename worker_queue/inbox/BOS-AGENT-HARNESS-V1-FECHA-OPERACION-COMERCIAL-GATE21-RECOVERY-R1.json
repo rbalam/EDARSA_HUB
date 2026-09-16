@@ -1,0 +1,63 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENT-HARNESS-V1-FECHA-OPERACION-COMERCIAL-GATE21-RECOVERY-R1",
+  "created_at_utc": "2026-09-16T00:06:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2bf8bd202469aecb771ee8256660ecad5267bcff",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Recovery quirurgico unico de Gate21. Corregir exclusivamente el contrato obsoleto del test SoftRestaurant en backend/tests/test_mpro_fecha_operacion_contract.py. No modificar logica productiva. El contrato vigente del agrupador es: MPRO conserva Vn_Fecha como fecha comercial; SoftRestaurant usa la fecha calendario de fecha_hora proveniente de turnos.apertura y no debe invocar core.utils.operational_window.get_fecha_operacion en este agrupador. Preservar ajustes productivos posteriores como el offset especifico de ESTELAR en la query. No tocar SQL, Scheduler, NetPay, RBAC, permisos, Agent Reach, secretos ni Production. Exito solo con el unico archivo de test cambiado, regresiones PASS, quality_gate PASS, blockers=[], production_touched=false y certificacion terminal.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_mpro_fecha_operacion_contract.py",
+      "old": "def test_softrestaurant_conserva_calculo_por_timestamp_operativo(\n    monkeypatch,\n):\n    \"\"\"\n    SoftRestaurant sí entrega timestamp real y debe continuar usando la\n    configuración canónica de turnos para resolver fecha_operacion.\n    \"\"\"\n\n    def fecha_operativa_simulada(_unidad_pk, _timestamp):\n        return date(2026, 7, 10)\n\n    monkeypatch.setattr(\n        \"core.utils.operational_window.get_fecha_operacion\",\n        fecha_operativa_simulada,\n    )\n\n    rows = [\n        {\n            \"fecha_hora\": datetime(2026, 7, 11, 1, 30, 0),\n            \"folio\": \"CHEQUE-1\",\n            \"ventas_total\": 1000.00,\n            \"propinas\": 100.00,\n            \"num_personas\": 4,\n        }\n    ]\n\n    result = sync._agrupar_ventas_cerradas_por_fecha_operacion(\n        rows,\n        _config(SistemaOrigen.SOFTRESTAURANT),\n        fecha_inicio=date(2026, 7, 10),\n        fecha_fin=date(2026, 7, 10),\n    )\n\n    assert len(result) == 1\n    assert result[0][\"fecha_operacion\"] == date(2026, 7, 10)\n",
+      "new": "def test_softrestaurant_usa_fecha_calendario_de_turnos_apertura(\n    monkeypatch,\n):\n    \"\"\"\n    SoftRestaurant agrupa por la fecha calendario de fecha_hora proveniente\n    de turnos.apertura. Este agrupador no debe aplicar operational_window.\n    \"\"\"\n\n    def operational_window_no_debe_usarse(*_args, **_kwargs):\n        raise AssertionError(\n            \"SoftRestaurant no debe aplicar operational_window en este agrupador\"\n        )\n\n    monkeypatch.setattr(\n        \"core.utils.operational_window.get_fecha_operacion\",\n        operational_window_no_debe_usarse,\n    )\n\n    rows = [\n        {\n            \"fecha_hora\": datetime(2026, 7, 11, 1, 30, 0),\n            \"folio\": \"CHEQUE-1\",\n            \"ventas_total\": 1000.00,\n            \"propinas\": 100.00,\n            \"num_personas\": 4,\n        }\n    ]\n\n    result = sync._agrupar_ventas_cerradas_por_fecha_operacion(\n        rows,\n        _config(SistemaOrigen.SOFTRESTAURANT),\n        fecha_inicio=date(2026, 7, 11),\n        fecha_fin=date(2026, 7, 11),\n    )\n\n    assert len(result) == 1\n    assert result[0][\"fecha_operacion\"] == date(2026, 7, 11)\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/tests/test_mpro_fecha_operacion_contract.py",
+        "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+        "backend/modules/agent_harness/planner.py",
+        "backend/modules/agent_harness/router.py",
+        "backend/modules/agent_harness/worker_compiler.py",
+        "backend/modules/agent_harness/evidence.py",
+        "backend/modules/agent_harness/control_plane.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_mpro_fecha_operacion_contract.py",
+        "backend/tests/test_softrestaurant_closed_sales_report_contract.py",
+        "backend/tests/test_bos_agent_harness_planner_router.py",
+        "backend/tests/test_bos_agent_harness_worker_compiler.py",
+        "backend/tests/test_bos_agent_harness_evidence.py",
+        "backend/tests/test_bos_agent_harness_control_plane.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "harness_context": {
+    "plan_step_id": "gate21-softrestaurant-contract-recovery-r1",
+    "domain": "comercial",
+    "procedure": "repo-change",
+    "risk": "R1",
+    "data_classification": "INTERNAL",
+    "agent_id": "bos-backend",
+    "agent_version": "1",
+    "skill_id": "repo-change",
+    "skill_version": "1",
+    "executor": "worker"
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
