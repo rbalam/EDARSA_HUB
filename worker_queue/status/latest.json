@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "c03abca3e20b7a8e8e7afb54a9648f9048f26c05",
-  "generated_at_utc": "2026-09-17T18:38:11Z",
+  "generated_at_utc": "2026-09-17T18:39:30Z",
   "history": {
     "done_total_local": 526,
     "pending_total_local": 0,
@@ -13,91 +13,91 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1549,
+      "age_seconds": 1628,
       "job_id": "BOS-AGENT-HARNESS-V1-GATE22-DISCOVERY-READONLY-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2552,
+      "age_seconds": 2630,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE0B-SQL-CANONICAL-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1581,
+      "age_seconds": 1660,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE1-CANONICAL-DOMAIN-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1572,
+      "age_seconds": 1651,
       "job_id": "BOS-UNIVERSAL-WORKER-RUNTIME-DIAGNOSTIC-GATE22A-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 489,
+      "age_seconds": 567,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-SECURE-PROFILE-BRIDGE-R1-20260917T1830Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3060,
+      "age_seconds": 3139,
       "job_id": "EDARSA-LOGISTICS-GATE1B-CANONICAL-DOMAIN-CONTRACT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3366,
+      "age_seconds": 3445,
       "job_id": "EDARSAHUB-PRODUCTION-PROMOTION-CHANNEL-CLASSIFICATION-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2863,
+      "age_seconds": 2941,
       "job_id": "PRIMARY-INDUSTRIES-GATE0B-REPRODUCTION-CONTRACTS-DELTA-DISCOVERY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3115,
+      "age_seconds": 3193,
       "job_id": "RRR-GATE4E-CUSTOMER360-SALES-SEMANTICS-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2919,
+      "age_seconds": 2998,
       "job_id": "RRR-GATE4E-R1-METADATA-SEMANTICS-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2521,
+      "age_seconds": 2600,
       "job_id": "RRR-GATE4E-R2-CANONICAL-SALES-COMPARISON-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1568,
+      "age_seconds": 1647,
       "job_id": "RRR-GATE4E-R3-CUSTOMER-SALES-SOURCE-DISCOVERY-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 311,
+      "age_seconds": 390,
       "job_id": "RRR-GATE4E-R4-CUSTOMER-ATTRIBUTION-BRIDGE-DISCOVERY-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2586,
+      "age_seconds": 2665,
       "job_id": "UNIVERSAL-WORKER-COMBINED-READ-ONLY-AUDIT-CONTRACT-V1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 499,
+      "age_seconds": 577,
       "job_id": "UNIVERSAL-WORKER-COMBINED-READ-ONLY-AUDIT-CONTRACT-V1-RETRY1",
       "reason": null,
       "state": "RESULT_READY"
@@ -115,8 +115,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-17T18:38:10Z",
-    "last_receive_utc": "2026-09-17T18:38:05Z",
+    "last_cycle_utc": "2026-09-17T18:39:29Z",
+    "last_receive_utc": "2026-09-17T18:39:24Z",
     "last_terminal_utc": "2026-09-17T18:33:00Z",
     "pid": "38836"
   },
