@@ -1,0 +1,34 @@
+{
+  "base_sha": "7850b569bc0c12c077180ef2f6a27630bab56c23",
+  "blockers": [
+    "check_failed:frontend_build"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-17T14:42:12Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/database/migrations/20260915_001_bos_agents_ia_menu_rbac.sql",
+    "backend/modules/agent_harness/marketing_public_research.py",
+    "backend/modules/agent_harness/module_agent_reach_adapter.py",
+    "backend/tests/test_bos_gate6b_agent_reach.py",
+    "frontend/src/App.js",
+    "frontend/src/config/enterpriseNavigationRegistry.json",
+    "frontend/src/pages/AgentesIAHub.jsx",
+    "frontend/src/pages/CentroAgentes.jsx"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "WORKER-BOS-AGENTS-IA-GATE6B-R5-V3-PYTEST-PATH-FIX-20260917",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-17T14:43:23Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-17T14:42:05Z",
+  "status": "GIT_TESTS_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
