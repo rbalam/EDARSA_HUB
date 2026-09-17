@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "7850b569bc0c12c077180ef2f6a27630bab56c23",
-  "generated_at_utc": "2026-09-17T18:14:43Z",
+  "generated_at_utc": "2026-09-17T18:16:07Z",
   "history": {
     "done_total_local": 523,
     "pending_total_local": 0,
@@ -13,73 +13,73 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 141,
+      "age_seconds": 224,
       "job_id": "BOS-AGENT-HARNESS-V1-GATE22-DISCOVERY-READONLY-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1143,
+      "age_seconds": 1227,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE0B-SQL-CANONICAL-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 172,
+      "age_seconds": 256,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE1-CANONICAL-DOMAIN-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 163,
+      "age_seconds": 247,
       "job_id": "BOS-UNIVERSAL-WORKER-RUNTIME-DIAGNOSTIC-GATE22A-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1652,
+      "age_seconds": 1736,
       "job_id": "EDARSA-LOGISTICS-GATE1B-CANONICAL-DOMAIN-CONTRACT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1958,
+      "age_seconds": 2042,
       "job_id": "EDARSAHUB-PRODUCTION-PROMOTION-CHANNEL-CLASSIFICATION-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1454,
+      "age_seconds": 1538,
       "job_id": "PRIMARY-INDUSTRIES-GATE0B-REPRODUCTION-CONTRACTS-DELTA-DISCOVERY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1706,
+      "age_seconds": 1790,
       "job_id": "RRR-GATE4E-CUSTOMER360-SALES-SEMANTICS-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1511,
+      "age_seconds": 1594,
       "job_id": "RRR-GATE4E-R1-METADATA-SEMANTICS-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1113,
+      "age_seconds": 1196,
       "job_id": "RRR-GATE4E-R2-CANONICAL-SALES-COMPARISON-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 159,
+      "age_seconds": 243,
       "job_id": "RRR-GATE4E-R3-CUSTOMER-SALES-SOURCE-DISCOVERY-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1178,
+      "age_seconds": 1262,
       "job_id": "UNIVERSAL-WORKER-COMBINED-READ-ONLY-AUDIT-CONTRACT-V1",
       "reason": null,
       "state": "RESULT_READY"
@@ -97,8 +97,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-17T18:14:38Z",
-    "last_receive_utc": "2026-09-17T18:14:40Z",
+    "last_cycle_utc": "2026-09-17T18:16:02Z",
+    "last_receive_utc": "2026-09-17T18:16:05Z",
     "last_terminal_utc": "2026-09-17T18:12:22Z",
     "pid": "64"
   },
