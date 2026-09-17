@@ -1,0 +1,78 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CORPORATIVAS-GATE12I-WRITER-PRINCIPAL-AUDIT-20260917",
+  "created_at_utc": "2026-09-17T18:49:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Auditar exclusivamente en READ_ONLY_SQL, usando HRLectura, los principals SQL ya existentes en EDARSAHUB para identificar si existe un writer canónico reutilizable que tenga capacidad efectiva para ALTER sobre dbo.CavaSocios_Socios y REFERENCES sobre dbo.Gobierno_Persona. No crear logins, usuarios, roles, grants, secrets ni modificar esquema. Producir evidencia suficiente para decidir qué principal existente puede alimentar los aliases EDARSAHUB_SQL_MIGRATION_USER / EDARSAHUB_SQL_MIGRATION_PASSWORD sin ampliar privilegios. Si HRLectura no tiene visibilidad suficiente para certificar permisos efectivos de otros principals, devolver BLOCKED_VISIBILITY con evidencia exacta en vez de inferir.",
+  "acceptance": [
+    "confirmar identidad de conexión DB_NAME/SUSER_SNAME/USER_NAME = EDARSAHUB/HRLectura/HRLectura",
+    "inventariar principals de base de datos visibles, su tipo, login asociado cuando sea visible, roles y membresías",
+    "inventariar grants/denies relevantes a nivel DATABASE, SCHEMA dbo y OBJECT para dbo.CavaSocios_Socios y dbo.Gobierno_Persona",
+    "resolver membresías de roles relevantes y distinguir permisos directos de heredados",
+    "clasificar candidatos existentes para writer como CERTIFIED_CANDIDATE, INSUFFICIENT_PERMISSION o NOT_DETERMINABLE",
+    "no considerar HRLectura como writer",
+    "no considerar GptLectura, GptEscritura, gptread, gptwrite o GPTWRITE como writer canónico salvo evidencia SQL explícita y además documentar que el repositorio los trata como perfiles alternativos/no canónicos",
+    "cero DDL, cero DML, cero GRANT, cero DENY, cero CREATE/ALTER/DROP LOGIN/USER/ROLE",
+    "production_touched=false"
+  ],
+  "constraints": [
+    "EDARSAHUB SQL Server es la única fuente canónica",
+    "usar exclusivamente HRLectura para la auditoría SQL",
+    "no usar GptLectura, GptEscritura, gptread, gptwrite, GPTWRITE ni sa para ejecutar la auditoría",
+    "no tocar GitHub secrets",
+    "no crear ni modificar credenciales",
+    "no ejecutar Gate12I ni la migración",
+    "no tocar Producción",
+    "si la visibilidad de metadata es insuficiente, bloquear con evidencia en vez de adivinar"
+  ],
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "identity_guard",
+          "sql": "SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS db_user, ORIGINAL_LOGIN() AS original_login;"
+        },
+        {
+          "name": "target_objects_guard",
+          "sql": "SELECT OBJECT_SCHEMA_NAME(o.object_id) AS schema_name, o.name AS object_name, o.type_desc FROM sys.objects o WHERE o.object_id IN (OBJECT_ID(N'dbo.CavaSocios_Socios'), OBJECT_ID(N'dbo.Gobierno_Persona')) ORDER BY o.name;"
+        },
+        {
+          "name": "visible_database_principals",
+          "sql": "SELECT dp.principal_id, dp.name AS principal_name, dp.type_desc, dp.authentication_type_desc, dp.default_schema_name, SUSER_SNAME(dp.sid) AS mapped_login_name, dp.create_date, dp.modify_date FROM sys.database_principals dp WHERE dp.principal_id > 4 AND dp.type IN ('S','U','G','R','E','X') ORDER BY dp.type_desc, dp.name;"
+        },
+        {
+          "name": "database_role_memberships",
+          "sql": "SELECT rolep.name AS role_name, rolep.type_desc AS role_type, memberp.name AS member_name, memberp.type_desc AS member_type FROM sys.database_role_members rm JOIN sys.database_principals rolep ON rolep.principal_id=rm.role_principal_id JOIN sys.database_principals memberp ON memberp.principal_id=rm.member_principal_id ORDER BY rolep.name, memberp.name;"
+        },
+        {
+          "name": "relevant_explicit_permissions",
+          "sql": "SELECT grantee.name AS grantee_name, grantee.type_desc AS grantee_type, perm.state_desc, perm.permission_name, perm.class_desc, perm.major_id, CASE WHEN perm.class_desc='DATABASE' THEN DB_NAME() WHEN perm.class_desc='SCHEMA' THEN SCHEMA_NAME(perm.major_id) WHEN perm.class_desc='OBJECT_OR_COLUMN' THEN QUOTENAME(OBJECT_SCHEMA_NAME(perm.major_id))+'.'+QUOTENAME(OBJECT_NAME(perm.major_id)) ELSE CONVERT(nvarchar(128),perm.major_id) END AS securable_name FROM sys.database_permissions perm JOIN sys.database_principals grantee ON grantee.principal_id=perm.grantee_principal_id WHERE (perm.class_desc='DATABASE' AND perm.permission_name IN ('CONTROL','ALTER','REFERENCES','ALTER ANY SCHEMA')) OR (perm.class_desc='SCHEMA' AND perm.major_id=SCHEMA_ID(N'dbo') AND perm.permission_name IN ('CONTROL','ALTER','REFERENCES')) OR (perm.class_desc='OBJECT_OR_COLUMN' AND perm.major_id IN (OBJECT_ID(N'dbo.CavaSocios_Socios'),OBJECT_ID(N'dbo.Gobierno_Persona')) AND perm.permission_name IN ('CONTROL','ALTER','REFERENCES')) ORDER BY grantee.name, perm.class_desc, securable_name, perm.permission_name, perm.state_desc;"
+        },
+        {
+          "name": "db_owner_members",
+          "sql": "SELECT memberp.name AS member_name, memberp.type_desc AS member_type, SUSER_SNAME(memberp.sid) AS mapped_login_name FROM sys.database_role_members rm JOIN sys.database_principals rolep ON rolep.principal_id=rm.role_principal_id JOIN sys.database_principals memberp ON memberp.principal_id=rm.member_principal_id WHERE rolep.name=N'db_owner' ORDER BY memberp.name;"
+        },
+        {
+          "name": "target_object_owners",
+          "sql": "SELECT s.name AS schema_name, USER_NAME(s.principal_id) AS schema_owner, o.name AS object_name, USER_NAME(o.principal_id) AS object_owner FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.object_id IN (OBJECT_ID(N'dbo.CavaSocios_Socios'), OBJECT_ID(N'dbo.Gobierno_Persona')) ORDER BY o.name;"
+        },
+        {
+          "name": "server_principals_visible_mapping",
+          "sql": "SELECT sp.principal_id, sp.name AS server_principal_name, sp.type_desc, sp.is_disabled, sp.default_database_name, sp.create_date, sp.modify_date FROM sys.server_principals sp WHERE sp.type IN ('S','U','G') ORDER BY sp.type_desc, sp.name;"
+        },
+        {
+          "name": "current_hrlectura_permissions_sanity",
+          "sql": "SELECT HAS_PERMS_BY_NAME(N'dbo.CavaSocios_Socios',N'OBJECT',N'ALTER') AS hrlectura_can_alter_socios, HAS_PERMS_BY_NAME(N'dbo.Gobierno_Persona',N'OBJECT',N'REFERENCES') AS hrlectura_can_reference_persona, IS_ROLEMEMBER(N'db_owner') AS hrlectura_is_db_owner;"
+        }
+      ]
+    }
+  ]
+}
