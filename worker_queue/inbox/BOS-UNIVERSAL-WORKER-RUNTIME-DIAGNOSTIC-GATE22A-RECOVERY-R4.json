@@ -1,0 +1,72 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-UNIVERSAL-WORKER-RUNTIME-DIAGNOSTIC-GATE22A-RECOVERY-R4",
+  "created_at_utc": "2026-09-17T20:43:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b4fa368e2b8e50797da85922825687b27a47dfde",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Recovery Gate22A-R4 quirurgico. Corregir exclusivamente tools/mirror_sync/tests/test_universal_worker_runtime.py sustituyendo la expectativa obsoleta del loop unico por el contrato vigente de loops independientes. Corregir tambien el alcance de validacion del gate: el dispatcher ejecuta pytest con cwd=backend, por lo que no debe intentar ejecutar directamente tests bajo tools/. Validar el test modificado con py_compile, validar las mismas propiedades de runtime mediante backend/tests/test_worker_three_properties_contract.py y auditar por repository_contract_audit la presencia de las cinco cadencias actuales. No modificar universal_job_worker.sh, mirror_sync_supervisor_entrypoint.sh, mirror_sync_worker.sh, dispatcher, cola, Scheduler, NetPay, RBAC, SQL, secretos ni Production.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/tests/test_universal_worker_runtime.py",
+      "old": "    assert 'UNIVERSAL_WORKER_LOOP_SECONDS:-10' in body\n",
+      "new": "    assert 'UNIVERSAL_WORKER_INTAKE_SECONDS:-10' in body\n    assert 'UNIVERSAL_WORKER_RESULT_SECONDS:-10' in body\n    assert 'UNIVERSAL_WORKER_HEALTH_SECONDS:-30' in body\n    assert 'UNIVERSAL_WORKER_RECONCILE_SECONDS:-30' in body\n    assert 'UNIVERSAL_WORKER_DISPATCH_IDLE_SECONDS:-2' in body\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/tests/test_universal_worker_runtime.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_three_properties_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/tests/test_universal_worker_runtime.py",
+          "tools/mirror_sync/universal_job_worker.sh",
+          "backend/tests/test_worker_three_properties_contract.py"
+        ],
+        "search_terms": [
+          "UNIVERSAL_WORKER_INTAKE_SECONDS",
+          "UNIVERSAL_WORKER_RESULT_SECONDS",
+          "UNIVERSAL_WORKER_HEALTH_SECONDS",
+          "UNIVERSAL_WORKER_RECONCILE_SECONDS",
+          "UNIVERSAL_WORKER_DISPATCH_IDLE_SECONDS"
+        ],
+        "include_patterns": ["*.py", "*.sh"],
+        "exclude_patterns": ["*.pyc", "__pycache__/*"],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "harness_context": {
+    "plan_step_id": "gate22a-recovery-r4-corrected-validation-scope",
+    "domain": "engineering",
+    "procedure": "surgical-test-contract-recovery",
+    "risk": "R1",
+    "data_classification": "INTERNAL",
+    "agent_id": "bos-backend",
+    "agent_version": "1",
+    "skill_id": "repository-contract-audit",
+    "skill_version": "1",
+    "executor": "worker"
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
