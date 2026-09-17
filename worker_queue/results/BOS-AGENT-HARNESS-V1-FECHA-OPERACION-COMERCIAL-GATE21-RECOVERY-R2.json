@@ -1,0 +1,28 @@
+{
+  "base_sha": "6177b3a769ed36e6afb9b5d3ac99b1147ff0a377",
+  "blockers": [],
+  "candidate_sha": "7850b569bc0c12c077180ef2f6a27630bab56c23",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-17T14:41:44Z",
+  "development_sha": "7850b569bc0c12c077180ef2f6a27630bab56c23",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_mpro_fecha_operacion_contract.py",
+    "backend/tests/test_softrestaurant_closed_sales_report_contract.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-AGENT-HARNESS-V1-FECHA-OPERACION-COMERCIAL-GATE21-RECOVERY-R2",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-17T14:41:58Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-17T14:41:27Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
