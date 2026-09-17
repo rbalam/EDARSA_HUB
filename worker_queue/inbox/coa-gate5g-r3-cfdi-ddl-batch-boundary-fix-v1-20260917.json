@@ -1,0 +1,41 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate5g-r3-cfdi-ddl-batch-boundary-fix-v1-20260917",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "93a2f07d33e0bd57291a024dfed7b9fe49e4faf6",
+  "objective": "COA Gate 5G-R3: corregir exclusivamente el defecto de batch-boundary en backend/database/migrations/20260910_coa_cfdi_emitidos.sql que produjo SQL Server error 207 Invalid column name VentaID en run 34567510668. Evidencia post-failure CERTIFIED_READ_ONLY confirma rollback limpio: 0 tablas fiscales nuevas, 0 columnas nuevas, 0 FKs/indices nuevos, CHECK original intacto y FK DocumentoFiscalID->Compras_DocumentosFiscales preservado. No cambiar modelo funcional, nombres, tipos, FKs, indices, CHECK ni semantica. Usar la capacidad canonica del edarsahub_sql_runner de separar batches por GO manteniendo la misma conexion/transaccion: reemplazar TRY/CATCH monobatch por BEGIN TRANSACTION, insertar GO inmediatamente despues de ALTER TABLE dbo.COA_ExpedienteReferencias ADD VentaID/DocumentoFiscalEmitidoID, y dejar FKs/indices/reemplazo del CHECK en el batch siguiente; finalizar con COMMIT TRANSACTION. Si un batch posterior falla, el runner canonico hace conn.rollback(). No tocar rollback script en este Gate. No modificar workflow ni trigger. No ejecutar SQL en este Gate. No Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/database/migrations/20260910_coa_cfdi_emitidos.sql",
+      "expected_count": 1,
+      "old": "BEGIN TRY\n    BEGIN TRANSACTION;",
+      "new": "BEGIN TRANSACTION;"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/database/migrations/20260910_coa_cfdi_emitidos.sql",
+      "expected_count": 1,
+      "old": "    ALTER TABLE dbo.COA_ExpedienteReferencias ADD\n        VentaID bigint NULL,\n        DocumentoFiscalEmitidoID bigint NULL;\n\n    ALTER TABLE dbo.COA_ExpedienteReferencias ADD",
+      "new": "    ALTER TABLE dbo.COA_ExpedienteReferencias ADD\n        VentaID bigint NULL,\n        DocumentoFiscalEmitidoID bigint NULL;\n\nGO\n\n    ALTER TABLE dbo.COA_ExpedienteReferencias ADD"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/database/migrations/20260910_coa_cfdi_emitidos.sql",
+      "expected_count": 1,
+      "old": "    COMMIT TRANSACTION;\nEND TRY\nBEGIN CATCH\n    IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;\n    THROW;\nEND CATCH;",
+      "new": "    COMMIT TRANSACTION;"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
