@@ -51,18 +51,34 @@ def test_bridge_requires_actions_to_be_exact_empty_list():
     assert 'READ_ONLY_ACTIONS_MUST_BE_EMPTY_LIST' in bridge.validate(mutated)
 
 
-def test_bridge_rejects_non_readonly_checks_and_production():
+def test_bridge_rejects_mutating_readonly_checks_and_production():
     bridge = load_module(BRIDGE, 'generic_readonly_bridge_checks')
-    for check in (
-        {'type': 'frontend_build', 'directory': 'frontend'},
-        {'type': 'sql_readonly_audit', 'queries': [{'name': 'x', 'sql': 'SELECT 1'}]},
-    ):
-        job = base_job()
-        job['checks'] = [check]
-        assert 'READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED' in bridge.validate(job)
+    job = base_job()
+    job['checks'] = [{'type': 'frontend_build', 'directory': 'frontend'}]
+    assert 'READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED' in bridge.validate(job)
     prod = base_job()
     prod['production_allowed'] = True
     assert 'PRODUCTION_MUST_BE_FALSE' in bridge.validate(prod)
+
+
+def test_bridge_accepts_combined_repository_and_sql_readonly_checks():
+    bridge = load_module(BRIDGE, 'generic_readonly_bridge_combined')
+    job = base_job()
+    job['checks'] = [
+        {
+            'type': 'repository_contract_audit',
+            'request': {
+                'paths': ['backend', 'tools/mirror_sync'],
+                'search_terms': ['worker', 'sql'],
+                'max_results': 10,
+            },
+        },
+        {
+            'type': 'sql_readonly_audit',
+            'queries': [{'name': 'identity', 'sql': 'SELECT DB_NAME() AS db_name'}],
+        },
+    ]
+    assert bridge.validate(job) == []
 
 
 def load_dispatcher():
