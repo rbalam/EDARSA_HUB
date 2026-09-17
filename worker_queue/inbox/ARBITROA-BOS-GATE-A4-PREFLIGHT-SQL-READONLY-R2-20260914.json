@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "ARBITROA-BOS-GATE-A4-PREFLIGHT-SQL-READONLY-R2-20260914",
+  "created_at_utc": "2026-09-17T18:32:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "A4 preflight SQL READ ONLY R2 quirurgico para ARBITROA BOS. Repetir exactamente A4_00-A4_05 del preflight V1 y corregir exclusivamente A4_06 dividiendolo en cuatro SELECT independientes para cumplir el contrato single-statement de sql_readonly_audit. Confirmar identidad canonica HRLectura, contratos exactos de RBAC/menu y detectar colisiones o existencia previa de las siete tablas de fundacion A4. No modificar datos, no ejecutar DDL, no tocar Production.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "A4_00_CANONICAL_IDENTITY",
+          "sql": "SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS database_user;"
+        },
+        {
+          "name": "A4_01_FOUNDATION_COLLISION_SCAN",
+          "sql": "SELECT o.name, o.type_desc FROM sys.objects o WHERE o.name IN ('ARBITROA_Deportes','ARBITROA_Organizaciones','ARBITROA_Afiliaciones','ARBITROA_OrganizacionPersonas','ARBITROA_Sedes','ARBITROA_Canchas','ARBITROA_Reglamentos') ORDER BY o.name;"
+        },
+        {
+          "name": "A4_02_RBAC_MENU_COLUMNS",
+          "sql": "SELECT t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS type_name, c.max_length, c.precision, c.scale, c.is_nullable, c.is_identity FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Sistema_Modulos','Sistema_ModulosMenus','Sistema_ModulosPermisos','Sistema_CatalogosPermisos') ORDER BY t.name,c.column_id;"
+        },
+        {
+          "name": "A4_03_CANONICAL_FK_TYPES",
+          "sql": "SELECT t.name AS table_name, c.name AS column_name, ty.name AS type_name, c.max_length, c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (t.name='Gobierno_Persona' AND c.name='PersonaID') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID') OR (t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Cliente_Catalogo' AND c.name='ClienteID') OR (t.name='Gobierno_Documento' AND c.name='DocumentoID') ORDER BY t.name;"
+        },
+        {
+          "name": "A4_04_MODULE_MENU_COLLISIONS",
+          "sql": "SELECT 'MODULO' AS kind, CAST(ModuloID AS varchar(40)) AS id_value, Codigo, Nombre, NULL AS Ruta, NULL AS RequierePermiso FROM dbo.Sistema_Modulos WHERE UPPER(Codigo) LIKE '%ARBITRO%' OR UPPER(Nombre) LIKE '%ARBITRO%' UNION ALL SELECT 'MENU', CAST(MenuID AS varchar(40)), Codigo, Nombre, Ruta, RequierePermiso FROM dbo.Sistema_ModulosMenus WHERE UPPER(Codigo) LIKE '%ARBITRO%' OR UPPER(Nombre) LIKE '%ARBITRO%' OR LOWER(ISNULL(Ruta,'')) LIKE '%arbitro%';"
+        },
+        {
+          "name": "A4_05_PERMISSION_COLLISIONS",
+          "sql": "SELECT TOP (200) * FROM dbo.Sistema_CatalogosPermisos WHERE UPPER(CAST(Codigo AS nvarchar(200))) LIKE '%ARBITRO%' OR UPPER(CAST(Nombre AS nvarchar(200))) LIKE '%ARBITRO%';"
+        },
+        {
+          "name": "A4_06A_RBAC_SAMPLE_MODULOS",
+          "sql": "SELECT TOP (20) * FROM dbo.Sistema_Modulos ORDER BY ModuloID DESC;"
+        },
+        {
+          "name": "A4_06B_RBAC_SAMPLE_MENUS",
+          "sql": "SELECT TOP (20) * FROM dbo.Sistema_ModulosMenus ORDER BY MenuID DESC;"
+        },
+        {
+          "name": "A4_06C_RBAC_SAMPLE_MODULO_PERMISOS",
+          "sql": "SELECT TOP (20) * FROM dbo.Sistema_ModulosPermisos ORDER BY ModuloPermisoID DESC;"
+        },
+        {
+          "name": "A4_06D_RBAC_SAMPLE_CATALOGO_PERMISOS",
+          "sql": "SELECT TOP (20) * FROM dbo.Sistema_CatalogosPermisos ORDER BY PermisoID DESC;"
+        }
+      ]
+    }
+  ]
+}
