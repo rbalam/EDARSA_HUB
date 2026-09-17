@@ -1,0 +1,73 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SERVICES-GATE2-CERT-READONLY-R2",
+  "created_at_utc": "2026-09-17T20:59:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3dfbd728a8641d244a5b913cc63a5dbe3c42bd80",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "READ_ONLY",
+  "objective": "Certificar exclusivamente Gate 2 Domain Data Contract de EDARSAHUB Services ya integrado en SHA 3dfbd728a8641d244a5b913cc63a5dbe3c42bd80. Validar por evidencia del repositorio que el dossier existe, permanece limitado a contrato logico, respeta ownership/fronteras de Gate 1, no introduce DDL ejecutado ni implementacion funcional, no duplica capacidades BOS y no toca Production. No modificar archivos ni publicar Gate 3.",
+  "constraints": [
+    "READ_ONLY estricto",
+    "actions debe permanecer vacio",
+    "No DDL ni DML",
+    "No ejecutar migraciones",
+    "No crear ni modificar archivos",
+    "No tocar Production",
+    "No modificar backend/core",
+    "No tocar Scheduler ni NetPay",
+    "No publicar ni ejecutar Gate 3"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "docs/BOS",
+          "backend/modules/catalogo_ampliado",
+          "backend/core"
+        ],
+        "search_terms": [
+          "EDARSAHUB_SERVICES_GATE2_DOMAIN_DATA_CONTRACT_R1",
+          "EDARSAHUB_SERVICES_GATE1_CAPABILITY_OWNERSHIP_MAP_R1",
+          "Gobierno_Persona",
+          "Gobierno_PersonaVinculo",
+          "Cliente_Catalogo",
+          "Proveedor_Catalogo",
+          "Sistema_RBAC",
+          "COA_ReglasComision",
+          "COA_ComisionAplicada",
+          "ActivoFijo_OrdenesTrabajo",
+          "Inventario",
+          "Services_Provider",
+          "Services_Profession",
+          "Services_Specialty",
+          "Services_Credential",
+          "Services_ServiceCatalog",
+          "Services_Resource",
+          "Land_Parcel",
+          "Land_ParcelEvent",
+          "Construction_Project",
+          "Fabrication_BOM",
+          "Interiors_Space",
+          "backend/core"
+        ],
+        "include_patterns": [
+          "*.md",
+          "*.py"
+        ],
+        "exclude_patterns": [
+          "**/.git/**",
+          "**/node_modules/**",
+          "**/__pycache__/**"
+        ],
+        "max_results": 300
+      }
+    }
+  ]
+}
