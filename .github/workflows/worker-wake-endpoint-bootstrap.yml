@@ -1,5 +1,5 @@
 name: Worker Wake Endpoint Bootstrap
-# Manual retrigger 2026-09-17T09:57-06:00: restore missing /api/internal/worker/wake mount after Gate22 runtime 404.
+# Manual retrigger 2026-09-17T13:14-06:00: restore missing /api/internal/worker/wake mount after D1.2 runtime 404.
 
 on:
   push:
