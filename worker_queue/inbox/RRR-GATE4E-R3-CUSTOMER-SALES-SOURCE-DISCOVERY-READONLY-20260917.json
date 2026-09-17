@@ -1,0 +1,30 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"RRR-GATE4E-R3-CUSTOMER-SALES-SOURCE-DISCOVERY-READONLY-20260917",
+  "created_at_utc":"2026-09-17T17:59:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"da5b1168ba7cf32711b4fb7753fd64172ef6607a",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Descubrir la fuente canonica existente para actividad comercial por cliente necesaria por Customer360: debe permitir relacionar ClienteID con fecha operativa y monto/venta sin duplicar catalogos ni usar KPIs agregados sin cliente. Solo discovery SQL de metadatos y definiciones; no modificar vistas, tablas, codigo ni Produccion.",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {"name":"g4e_r3_identity","sql":"SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS user_name"},
+        {"name":"g4e_r3_objects_with_clienteid","sql":"SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.type IN ('U','V') AND EXISTS (SELECT 1 FROM sys.columns c WHERE c.object_id=o.object_id AND LOWER(c.name)='clienteid') ORDER BY s.name,o.name"},
+        {"name":"g4e_r3_objects_cliente_fecha","sql":"SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.type IN ('U','V') AND EXISTS (SELECT 1 FROM sys.columns c WHERE c.object_id=o.object_id AND LOWER(c.name)='clienteid') AND EXISTS (SELECT 1 FROM sys.columns c WHERE c.object_id=o.object_id AND LOWER(c.name) LIKE '%fecha%') ORDER BY s.name,o.name"},
+        {"name":"g4e_r3_objects_cliente_operational_date","sql":"SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.type IN ('U','V') AND EXISTS (SELECT 1 FROM sys.columns c WHERE c.object_id=o.object_id AND LOWER(c.name)='clienteid') AND EXISTS (SELECT 1 FROM sys.columns c WHERE c.object_id=o.object_id AND (LOWER(c.name) LIKE '%fecha%oper%' OR LOWER(c.name) IN ('fechaoperacion','fecha_operacion','fecha_operativa'))) ORDER BY s.name,o.name"},
+        {"name":"g4e_r3_objects_cliente_amount","sql":"SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.type IN ('U','V') AND EXISTS (SELECT 1 FROM sys.columns c WHERE c.object_id=o.object_id AND LOWER(c.name)='clienteid') AND EXISTS (SELECT 1 FROM sys.columns c WHERE c.object_id=o.object_id AND (LOWER(c.name) LIKE '%total%' OR LOWER(c.name) LIKE '%venta%' OR LOWER(c.name) LIKE '%importe%' OR LOWER(c.name) LIKE '%monto%')) ORDER BY s.name,o.name"},
+        {"name":"g4e_r3_candidate_columns","sql":"SELECT s.name AS schema_name,o.name AS object_name,o.type_desc,c.column_id,c.name AS column_name,t.name AS data_type FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id JOIN sys.columns c ON c.object_id=o.object_id JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE o.type IN ('U','V') AND (o.name IN ('Venta_Encabezado','Comercial_Inteligencia_VentasDetalleProducto','Sync_Ticket_Perfecto','Sync_Ventas_Historicas','RRR_Eventos') OR (EXISTS (SELECT 1 FROM sys.columns x WHERE x.object_id=o.object_id AND LOWER(x.name)='clienteid') AND EXISTS (SELECT 1 FROM sys.columns y WHERE y.object_id=o.object_id AND (LOWER(y.name) LIKE '%fecha%oper%' OR LOWER(y.name) IN ('fechaoperacion','fecha_operacion','fecha_operativa'))))) ORDER BY s.name,o.name,c.column_id"},
+        {"name":"g4e_r3_candidate_view_definitions","sql":"SELECT s.name AS schema_name,o.name AS object_name,OBJECT_DEFINITION(o.object_id) AS definition FROM sys.views o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name IN ('Comercial_Inteligencia_VentasDetalleProducto','vw_RRR_ClienteActividadComercial','vw_RRR_Customer360') OR (EXISTS (SELECT 1 FROM sys.columns x WHERE x.object_id=o.object_id AND LOWER(x.name)='clienteid') AND EXISTS (SELECT 1 FROM sys.columns y WHERE y.object_id=o.object_id AND (LOWER(y.name) LIKE '%fecha%oper%' OR LOWER(y.name) IN ('fechaoperacion','fecha_operacion','fecha_operativa')))) ORDER BY s.name,o.name"},
+        {"name":"g4e_r3_object_row_counts_candidates","sql":"SELECT o.name AS object_name,p.rows AS approx_rows FROM sys.objects o LEFT JOIN (SELECT object_id,SUM(rows) AS rows FROM sys.partitions WHERE index_id IN (0,1) GROUP BY object_id) p ON p.object_id=o.object_id WHERE o.name IN ('Venta_Encabezado','Comercial_Inteligencia_VentasDetalleProducto','Sync_Ticket_Perfecto','Sync_Ventas_Historicas','RRR_Eventos') ORDER BY o.name"}
+      ]
+    }
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
