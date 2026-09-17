@@ -1,49 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "6679ca009ac5fe813cf51d8c4d18a2fad133994b",
-  "generated_at_utc": "2026-09-17T20:37:50Z",
+  "generated_at_utc": "2026-09-17T20:39:37Z",
   "history": {
-    "done_total_local": 531,
-    "pending_total_local": 5,
-    "processing_total_local": 1,
-    "rejected_total_local": 545,
-    "results_total_local": 936
+    "done_total_local": 535,
+    "pending_total_local": 0,
+    "processing_total_local": 0,
+    "rejected_total_local": 547,
+    "results_total_local": 942
   },
-  "intake_sla_breached": true,
+  "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 33,
-      "job_id": "BOS-UNIVERSAL-WORKER-RUNTIME-DIAGNOSTIC-GATE22A-RECOVERY-R3",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 32,
-      "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-TRIGGER-R1-20260917T1840Z",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 30,
-      "job_id": "EDARSAHUB-RH-GLOBAL-HCM-GATE0-ASIS-CANONICAL-DISCOVERY-R1",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 30,
-      "job_id": "EDARSAHUB-SERVICES-GATE0-ASIS-CANONICAL-DISCOVERY-R1",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 30,
-      "job_id": "RRR-GATE4E-R5-CUSTOMER-ATTRIBUTION-CONTRACT-DESIGN-V1-20260917",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 32,
+      "age_seconds": 138,
       "job_id": "EDARSAHUB-CRM-CALENDAR-CANONICAL-EVENTS-GATE1-R1",
       "reasons": [
         "INVALID_SCHEMA",
@@ -53,45 +23,75 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 30,
+      "age_seconds": 136,
       "job_id": "ARBITROA-BOS-GATE-A4-PREFLIGHT-SQL-READONLY-R2-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 26,
+      "age_seconds": 132,
       "job_id": "ARBITROA-BOS-GATE-A4-PREFLIGHT-SQL-READONLY-R2B-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 23,
+      "age_seconds": 130,
       "job_id": "BOS-ENTERPRISE-CAPABILITY-MAP-GATE1-DOSSIER-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 33,
+      "age_seconds": 94,
       "job_id": "BOS-GLOBALIZATION-MASTERDATA-GATE0-ASIS-CANONICAL-DISCOVERY-R1",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 77,
+      "job_id": "BOS-UNIVERSAL-WORKER-RUNTIME-DIAGNOSTIC-GATE22A-RECOVERY-R3",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 66,
+      "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-TRIGGER-R1-20260917T1840Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 53,
+      "job_id": "EDARSAHUB-RH-GLOBAL-HCM-GATE0-ASIS-CANONICAL-DISCOVERY-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 27,
+      "job_id": "EDARSAHUB-SERVICES-GATE0-ASIS-CANONICAL-DISCOVERY-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 8,
+      "job_id": "RRR-GATE4E-R5-CUSTOMER-ATTRIBUTION-CONTRACT-DESIGN-V1-20260917",
+      "reason": null,
+      "state": "RESULT_READY"
     }
   ],
-  "oldest_pending_age_seconds": 33,
+  "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 6,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
-  "queue_pending": 5,
+  "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 3,
-  "queue_running": 1,
+  "queue_result_ready_recent": 9,
+  "queue_running": 0,
   "runtime": {
-    "current_job_id": "BOS-GLOBALIZATION-MASTERDATA-GATE0-ASIS-CANONICAL-DISCOVERY-R1",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-17T20:37:47Z",
-    "last_receive_utc": "2026-09-17T20:37:42Z",
-    "last_terminal_utc": "2026-09-17T20:37:26Z",
+    "last_cycle_utc": "2026-09-17T20:39:36Z",
+    "last_receive_utc": "2026-09-17T20:39:31Z",
+    "last_terminal_utc": "2026-09-17T20:39:28Z",
     "pid": "59"
   },
   "schema": "edarsahub.worker-health.v3",
