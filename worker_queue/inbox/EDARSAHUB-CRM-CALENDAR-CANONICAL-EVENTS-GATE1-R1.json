@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "EDARSAHUB-CRM-CALENDAR-CANONICAL-EVENTS-GATE1-R1",
+  "created_at_utc": "2026-09-17T18:40:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Ejecutar GATE 1 exclusivamente READ_ONLY para auditar la implementacion real existente del CRM/calendario de EDARSA HUB y determinar, con evidencia, como reutilizarlo como fuente canonica de eventos especiales para CRM, Comercial, Tablero Ejecutivo e IA/chat. Debe localizar tablas, vistas, campos, PK/FK, servicios, endpoints, componentes frontend, RBAC y relaciones con empresa/unidad/sucursal; evaluar soporte de fecha unica, inicio/fin, eventos multidia, recurrencia, alcance, categorias/tags y auditoria; analizar especificamente impacto y reutilizacion en Comercial y Tablero Ejecutivo; evaluar si la estructura actual se reutiliza sin cambio, requiere ampliacion minima o una tabla hija canonica de instancias anuales para eventos moviles como Semana Santa; y proponer el siguiente Gate sin ejecutarlo. No implementar cambios.",
+  "acceptance": [
+    "Estado terminal READ_ONLY_COMPLETE o BLOCKED con blocker explicito y evidencia suficiente.",
+    "production_touched=false.",
+    "files_changed=[].",
+    "Sin DDL, DML ni modificaciones de codigo.",
+    "Inventario de tablas/vistas CRM-calendario encontradas con schema, proposito, PK, FK y campos principales.",
+    "Inventario de backend, endpoints, frontend y RBAC existentes relacionados con calendario/eventos.",
+    "Matriz por capacidad/objeto con EXISTE_REUTILIZAR, EXISTE_AMPLIAR, NUEVO_NECESARIO, NO_CREAR o NO_CONFIRMADO.",
+    "Analisis especifico del impacto futuro en Comercial y Tablero Ejecutivo, identificando filtros/logica compartida y riesgo de regresion.",
+    "Evaluacion de identidad de evento vs instancia anual para eventos moviles, sin crear DDL.",
+    "Arquitectura futura de IA/chat usando la misma fuente canonica y sin inventar fechas.",
+    "Resultado debe incluir status, quality_gate, tests, certification, production_touched, files_changed, blockers, source_branch y head_sha.",
+    "Debe proponer Gate 2 pero no ejecutarlo."
+  ],
+  "constraints": [
+    "EDARSA HUB SQL Server es el cerebro y la fuente canonica.",
+    "No usar MongoDB como fuente operativa o de verdad.",
+    "No crear calendarios, catalogos o logica paralela si existe una estructura canonica reutilizable.",
+    "No modificar Produccion.",
+    "No tocar formulas de ventas, Ventas del Dia, Proyeccion de Cierre del Dia, Proyeccion del Mes, Proyeccion del Ano, Venta Periodo, multi-mes, multi-ano, comparativos actuales, fuentes por sucursal, APIs de ventas del dia ni tabla temporal de cheques.",
+    "No modificar permisos/RBAC; solo auditarlos.",
+    "No hardcodear IDs, empresas, sucursales, fechas ni eventos.",
+    "No asumir nombres de tablas, columnas o relaciones sin evidencia del repositorio/SQL.",
+    "No hacer DDL, DML, commits funcionales ni cambios de archivos en este Gate.",
+    "Preservar completamente lo ya validado y congelado.",
+    "Si falta evidencia, cerrar BLOCKED y reportar exactamente lo que falta en vez de inferir."
+  ],
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
