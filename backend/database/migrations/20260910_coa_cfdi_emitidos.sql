@@ -5,8 +5,7 @@ Base: Gates 5C + 5D.
 */
 SET XACT_ABORT ON;
 
-BEGIN TRY
-    BEGIN TRANSACTION;
+BEGIN TRANSACTION;
 
     IF OBJECT_ID('dbo.Fiscal_DocumentosEmitidosEstatus','U') IS NOT NULL
         THROW 51000, 'COLLISION: dbo.Fiscal_DocumentosEmitidosEstatus ya existe', 1;
@@ -98,6 +97,8 @@ BEGIN TRY
         VentaID bigint NULL,
         DocumentoFiscalEmitidoID bigint NULL;
 
+GO
+
     ALTER TABLE dbo.COA_ExpedienteReferencias ADD
         CONSTRAINT FK_COA_ExpedienteReferencias_Venta FOREIGN KEY (VentaID) REFERENCES dbo.Venta_Encabezado(VentaID),
         CONSTRAINT FK_COA_ExpedienteReferencias_DocumentoFiscalEmitido FOREIGN KEY (DocumentoFiscalEmitidoID) REFERENCES dbo.Fiscal_DocumentosEmitidos(DocumentoFiscalEmitidoID);
@@ -123,8 +124,3 @@ BEGIN TRY
     );
 
     COMMIT TRANSACTION;
-END TRY
-BEGIN CATCH
-    IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
-    THROW;
-END CATCH;
