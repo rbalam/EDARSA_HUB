@@ -1,0 +1,29 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"RRR-GATE4E-R4-CUSTOMER-ATTRIBUTION-BRIDGE-DISCOVERY-READONLY-20260917",
+  "created_at_utc":"2026-09-17T18:15:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"da5b1168ba7cf32711b4fb7753fd64172ef6607a",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Descubrir si existe un puente canonico reutilizable entre cliente y ticket/transaccion/venta para atribuir actividad comercial Customer360 sin joins inventados. Solo SQL READ_ONLY; no modificar vistas, tablas, codigo ni Produccion.",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {"name":"g4e_r4_identity","sql":"SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS user_name"},
+        {"name":"g4e_r4_cliente_ticket_objects","sql":"SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.type IN ('U','V') AND EXISTS (SELECT 1 FROM sys.columns c WHERE c.object_id=o.object_id AND LOWER(c.name)='clienteid') AND EXISTS (SELECT 1 FROM sys.columns c WHERE c.object_id=o.object_id AND (LOWER(c.name) LIKE '%ticket%' OR LOWER(c.name) LIKE '%transaccion%' OR LOWER(c.name)='ventaid' OR LOWER(c.name) LIKE '%folio%')) ORDER BY s.name,o.name"},
+        {"name":"g4e_r4_cliente_sourcekey_objects","sql":"SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.type IN ('U','V') AND EXISTS (SELECT 1 FROM sys.columns c WHERE c.object_id=o.object_id AND LOWER(c.name)='clienteid') AND EXISTS (SELECT 1 FROM sys.columns c WHERE c.object_id=o.object_id AND LOWER(c.name) IN ('sourcekey','referenciaexterna','uuidfactura','numerofactura')) ORDER BY s.name,o.name"},
+        {"name":"g4e_r4_ticket_key_objects","sql":"SELECT s.name AS schema_name,o.name AS object_name,o.type_desc,c.name AS column_name FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id JOIN sys.columns c ON c.object_id=o.object_id WHERE o.type IN ('U','V') AND (LOWER(c.name) LIKE '%ticket%' OR LOWER(c.name) LIKE '%transaccion%' OR LOWER(c.name)='ventaid' OR LOWER(c.name) LIKE '%folio%') ORDER BY s.name,o.name,c.column_id"},
+        {"name":"g4e_r4_rrr_eventos_columns","sql":"SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.is_nullable FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.RRR_Eventos') ORDER BY c.column_id"},
+        {"name":"g4e_r4_candidate_bridge_columns","sql":"SELECT s.name AS schema_name,o.name AS object_name,o.type_desc,c.column_id,c.name AS column_name,t.name AS data_type FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id JOIN sys.columns c ON c.object_id=o.object_id JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE o.type IN ('U','V') AND EXISTS (SELECT 1 FROM sys.columns x WHERE x.object_id=o.object_id AND LOWER(x.name)='clienteid') AND EXISTS (SELECT 1 FROM sys.columns y WHERE y.object_id=o.object_id AND (LOWER(y.name) LIKE '%ticket%' OR LOWER(y.name) LIKE '%transaccion%' OR LOWER(y.name)='ventaid' OR LOWER(y.name) LIKE '%folio%' OR LOWER(y.name) IN ('sourcekey','referenciaexterna','uuidfactura','numerofactura'))) ORDER BY s.name,o.name,c.column_id"},
+        {"name":"g4e_r4_candidate_bridge_rowcounts","sql":"SELECT o.name AS object_name,ISNULL(p.rows,0) AS approx_rows FROM sys.objects o LEFT JOIN (SELECT object_id,SUM(rows) AS rows FROM sys.partitions WHERE index_id IN (0,1) GROUP BY object_id) p ON p.object_id=o.object_id WHERE o.type='U' AND EXISTS (SELECT 1 FROM sys.columns x WHERE x.object_id=o.object_id AND LOWER(x.name)='clienteid') AND EXISTS (SELECT 1 FROM sys.columns y WHERE y.object_id=o.object_id AND (LOWER(y.name) LIKE '%ticket%' OR LOWER(y.name) LIKE '%transaccion%' OR LOWER(y.name)='ventaid' OR LOWER(y.name) LIKE '%folio%' OR LOWER(y.name) IN ('sourcekey','referenciaexterna','uuidfactura','numerofactura'))) ORDER BY o.name"}
+      ]
+    }
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
