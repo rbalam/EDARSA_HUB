@@ -1,5 +1,5 @@
 name: Universal Worker Wake Now
-# recovery trigger 2026-09-09T17:12Z gate5a intake
+# recovery trigger 2026-09-17T20:52Z crm-calendar-gate1 pickup
 
 on:
   push:
