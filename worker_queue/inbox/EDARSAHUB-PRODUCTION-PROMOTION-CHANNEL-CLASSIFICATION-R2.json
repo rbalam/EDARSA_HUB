@@ -1,0 +1,53 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PRODUCTION-PROMOTION-CHANNEL-CLASSIFICATION-R2",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "base_sha": "7850b569bc0c12c077180ef2f6a27630bab56c23",
+  "mode": "READ_ONLY",
+  "objective": "R2 READ_ONLY de clasificacion sobre la evidencia de R1. Auditar exclusivamente los contratos que realmente pueden gobernar promociones Development -> Production y determinar, a partir de evidencia textual exacta, si existe un canal canonico activo de promocion. No modificar archivos, no tocar Produccion, no cambiar agent-guard y no crear todavia ningun workflow. La evidencia debe permitir clasificar: reglas activas, pre-push/agent_guard, governance de divergencia, publishers Git, workflows workflow_dispatch/deploy/release/promotion y cualquier canal explicito de actualizacion de Edarsahub_Produccion. Debe permitir concluir de forma verificable PROMOTION_CHANNEL_EXISTS=YES/NO, mecanismo exacto si existe, autorizacion requerida, politica fast-forward/force-push, source/target branch y blockers. Si no existe, identificar GAP=CANONICAL_PRODUCTION_PROMOTION_CHANNEL y los requisitos minimos de un futuro gate especifico sin acceso general del Universal Worker a Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "AGENTS.md",
+          ".github/workflows",
+          ".github/agents",
+          ".github/copilot-instructions.md",
+          ".agents/rules",
+          ".agents/skills",
+          "tools/agent_guard",
+          "tools/mirror_sync",
+          "scripts/agent_guardrails",
+          "docs/architecture/GIT_DIVERGENCE_GUARD_R1.md",
+          "docs/agent-governance"
+        ],
+        "search_terms": [
+          "Edarsahub_Produccion",
+          "Edarsahub_Desarrollo",
+          "push a Produccion prohibido",
+          "EDARSA_ALLOW_PUSH",
+          "workflow_dispatch",
+          "promotion",
+          "promote",
+          "deploy",
+          "release",
+          "fast-forward",
+          "force push",
+          "git push",
+          "agent_guard",
+          "required reviewers",
+          "environment"
+        ],
+        "include_patterns": ["*.md", "*.py", "*.sh", "*.yml", "*.yaml", "*.json"],
+        "exclude_patterns": ["node_modules/**", "build/**", "dist/**", ".git/**", "docs/EKS/**"],
+        "max_results": 300
+      }
+    },
+    {"type": "git_diff_check"}
+  ]
+}
