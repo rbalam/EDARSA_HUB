@@ -1,0 +1,40 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE0B-SQL-CANONICAL-DISCOVERY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "da5b1168ba7cf32711b4fb7753fd64172ef6607a",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Gate 0B SQL Canonical Discovery de BOS Marketing Intelligence & Content Factory. Ejecutar exclusivamente auditoria SQL de solo lectura sobre EDARSAHUB para inventariar objetos, columnas y relaciones ya existentes relacionados con Marketing, Comercial, CRM, clientes, leads, oportunidades, competidores, campanas, contenido, publicaciones, activos/media, presupuestos/costos, atribucion/ROI y catalogos empresariales. No crear tablas, no modificar datos, no ejecutar DDL/DML, no tocar Produccion, no asumir capacidades inexistentes y no avanzar a Gate 1.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "marketing_candidate_objects",
+          "sql": "SELECT TOP (1000) s.name AS schema_name, o.name AS object_name, o.type_desc, o.create_date, o.modify_date FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id = o.schema_id WHERE o.is_ms_shipped = 0 AND (LOWER(o.name) LIKE '%marketing%' OR LOWER(o.name) LIKE '%comercial%' OR LOWER(o.name) LIKE '%crm%' OR LOWER(o.name) LIKE '%cliente%' OR LOWER(o.name) LIKE '%lead%' OR LOWER(o.name) LIKE '%oportun%' OR LOWER(o.name) LIKE '%competidor%' OR LOWER(o.name) LIKE '%campan%' OR LOWER(o.name) LIKE '%contenido%' OR LOWER(o.name) LIKE '%publica%' OR LOWER(o.name) LIKE '%social%' OR LOWER(o.name) LIKE '%media%' OR LOWER(o.name) LIKE '%asset%' OR LOWER(o.name) LIKE '%marca%' OR LOWER(o.name) LIKE '%audiencia%' OR LOWER(o.name) LIKE '%segment%' OR LOWER(o.name) LIKE '%cotiza%' OR LOWER(o.name) LIKE '%pedido%' OR LOWER(o.name) LIKE '%presup%' OR LOWER(o.name) LIKE '%costo%' OR LOWER(o.name) LIKE '%atrib%' OR LOWER(o.name) LIKE '%roi%') ORDER BY s.name, o.name;"
+        },
+        {
+          "name": "marketing_candidate_columns",
+          "sql": "SELECT TOP (3000) s.name AS schema_name, t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.precision, c.scale, c.is_nullable FROM sys.tables t INNER JOIN sys.schemas s ON s.schema_id = t.schema_id INNER JOIN sys.columns c ON c.object_id = t.object_id INNER JOIN sys.types ty ON ty.user_type_id = c.user_type_id WHERE (LOWER(t.name) LIKE '%marketing%' OR LOWER(t.name) LIKE '%comercial%' OR LOWER(t.name) LIKE '%crm%' OR LOWER(t.name) LIKE '%cliente%' OR LOWER(t.name) LIKE '%lead%' OR LOWER(t.name) LIKE '%oportun%' OR LOWER(t.name) LIKE '%competidor%' OR LOWER(t.name) LIKE '%campan%' OR LOWER(t.name) LIKE '%contenido%' OR LOWER(t.name) LIKE '%publica%' OR LOWER(t.name) LIKE '%social%' OR LOWER(t.name) LIKE '%media%' OR LOWER(t.name) LIKE '%asset%' OR LOWER(t.name) LIKE '%marca%' OR LOWER(t.name) LIKE '%audiencia%' OR LOWER(t.name) LIKE '%segment%' OR LOWER(t.name) LIKE '%cotiza%' OR LOWER(t.name) LIKE '%pedido%' OR LOWER(t.name) LIKE '%presup%' OR LOWER(t.name) LIKE '%costo%' OR LOWER(t.name) LIKE '%atrib%' OR LOWER(t.name) LIKE '%roi%') ORDER BY s.name, t.name, c.column_id;"
+        },
+        {
+          "name": "marketing_candidate_foreign_keys",
+          "sql": "SELECT TOP (2000) sch1.name AS parent_schema, t1.name AS parent_table, c1.name AS parent_column, fk.name AS fk_name, sch2.name AS referenced_schema, t2.name AS referenced_table, c2.name AS referenced_column FROM sys.foreign_key_columns fkc INNER JOIN sys.foreign_keys fk ON fk.object_id = fkc.constraint_object_id INNER JOIN sys.tables t1 ON t1.object_id = fkc.parent_object_id INNER JOIN sys.schemas sch1 ON sch1.schema_id = t1.schema_id INNER JOIN sys.columns c1 ON c1.object_id = t1.object_id AND c1.column_id = fkc.parent_column_id INNER JOIN sys.tables t2 ON t2.object_id = fkc.referenced_object_id INNER JOIN sys.schemas sch2 ON sch2.schema_id = t2.schema_id INNER JOIN sys.columns c2 ON c2.object_id = t2.object_id AND c2.column_id = fkc.referenced_column_id WHERE (LOWER(t1.name) LIKE '%marketing%' OR LOWER(t1.name) LIKE '%comercial%' OR LOWER(t1.name) LIKE '%crm%' OR LOWER(t1.name) LIKE '%cliente%' OR LOWER(t1.name) LIKE '%lead%' OR LOWER(t1.name) LIKE '%oportun%' OR LOWER(t1.name) LIKE '%competidor%' OR LOWER(t1.name) LIKE '%campan%' OR LOWER(t1.name) LIKE '%contenido%' OR LOWER(t1.name) LIKE '%marca%' OR LOWER(t1.name) LIKE '%cotiza%' OR LOWER(t1.name) LIKE '%pedido%' OR LOWER(t2.name) LIKE '%marketing%' OR LOWER(t2.name) LIKE '%comercial%' OR LOWER(t2.name) LIKE '%crm%' OR LOWER(t2.name) LIKE '%cliente%' OR LOWER(t2.name) LIKE '%lead%' OR LOWER(t2.name) LIKE '%oportun%' OR LOWER(t2.name) LIKE '%competidor%' OR LOWER(t2.name) LIKE '%campan%' OR LOWER(t2.name) LIKE '%contenido%' OR LOWER(t2.name) LIKE '%marca%' OR LOWER(t2.name) LIKE '%cotiza%' OR LOWER(t2.name) LIKE '%pedido%') ORDER BY sch1.name, t1.name, fk.name;"
+        },
+        {
+          "name": "known_commercial_crm_objects",
+          "sql": "SELECT s.name AS schema_name, o.name AS object_name, o.type_desc FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id = o.schema_id WHERE o.is_ms_shipped = 0 AND o.name IN ('Comercial_Competidores','Comercial_CompetidoresCatalogo','Comercial_CompetidoresListas','Comercial_CompetidoresListasDetalle','Comercial_CompetidoresMenuItems','Comercial_CompetidoresUnidad','Comercial_Ingesta_Competencia','Cliente_Catalogo','Cliente_Contactos','Cliente_Direcciones','Venta_Cotizaciones','Venta_Pedidos','CRM_Leads','CRM_Oportunidades') ORDER BY o.name;"
+        },
+        {
+          "name": "company_unit_scope_columns",
+          "sql": "SELECT TOP (2000) s.name AS schema_name, t.name AS table_name, c.name AS column_name, ty.name AS data_type FROM sys.tables t INNER JOIN sys.schemas s ON s.schema_id = t.schema_id INNER JOIN sys.columns c ON c.object_id = t.object_id INNER JOIN sys.types ty ON ty.user_type_id = c.user_type_id WHERE LOWER(c.name) IN ('id_empresa','empresa_id','unidad_negocio_id','unidad_negocio_pk','sucursal_id','almacen_id','fechaoperacion','fecha_operacion') AND (LOWER(t.name) LIKE '%marketing%' OR LOWER(t.name) LIKE '%comercial%' OR LOWER(t.name) LIKE '%crm%' OR LOWER(t.name) LIKE '%cliente%' OR LOWER(t.name) LIKE '%lead%' OR LOWER(t.name) LIKE '%oportun%' OR LOWER(t.name) LIKE '%competidor%' OR LOWER(t.name) LIKE '%campan%' OR LOWER(t.name) LIKE '%contenido%' OR LOWER(t.name) LIKE '%cotiza%' OR LOWER(t.name) LIKE '%pedido%') ORDER BY s.name, t.name, c.column_id;"
+        }
+      ]
+    }
+  ]
+}
