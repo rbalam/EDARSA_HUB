@@ -1,81 +1,99 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "7850b569bc0c12c077180ef2f6a27630bab56c23",
-  "generated_at_utc": "2026-09-17T18:10:37Z",
+  "generated_at_utc": "2026-09-17T18:12:00Z",
   "history": {
     "done_total_local": 521,
-    "pending_total_local": 0,
+    "pending_total_local": 1,
     "processing_total_local": 0,
-    "rejected_total_local": 536,
-    "results_total_local": 921
+    "rejected_total_local": 538,
+    "results_total_local": 923
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 897,
+      "age_seconds": 3,
+      "job_id": "RRR-GATE4E-R3-CUSTOMER-SALES-SOURCE-DISCOVERY-READONLY-20260917",
+      "reason": null,
+      "state": "PENDING"
+    },
+    {
+      "age_seconds": 980,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE0B-SQL-CANONICAL-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1406,
+      "age_seconds": 9,
+      "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE1-CANONICAL-DOMAIN-DESIGN-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 0,
+      "job_id": "BOS-UNIVERSAL-WORKER-RUNTIME-DIAGNOSTIC-GATE22A-R2",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1489,
       "job_id": "EDARSA-LOGISTICS-GATE1B-CANONICAL-DOMAIN-CONTRACT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1711,
+      "age_seconds": 1795,
       "job_id": "EDARSAHUB-PRODUCTION-PROMOTION-CHANNEL-CLASSIFICATION-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1208,
+      "age_seconds": 1291,
       "job_id": "PRIMARY-INDUSTRIES-GATE0B-REPRODUCTION-CONTRACTS-DELTA-DISCOVERY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1460,
+      "age_seconds": 1543,
       "job_id": "RRR-GATE4E-CUSTOMER360-SALES-SEMANTICS-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1264,
+      "age_seconds": 1347,
       "job_id": "RRR-GATE4E-R1-METADATA-SEMANTICS-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 866,
+      "age_seconds": 949,
       "job_id": "RRR-GATE4E-R2-CANONICAL-SALES-COMPARISON-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 931,
+      "age_seconds": 1014,
       "job_id": "UNIVERSAL-WORKER-COMBINED-READ-ONLY-AUDIT-CONTRACT-V1",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "oldest_pending_age_seconds": 0,
+  "oldest_pending_age_seconds": 3,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
-  "queue_pending": 0,
+  "queue_pending": 1,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 8,
+  "queue_result_ready_recent": 10,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-17T18:10:31Z",
-    "last_receive_utc": "2026-09-17T18:10:34Z",
-    "last_terminal_utc": "2026-09-17T17:56:10Z",
+    "last_cycle_utc": "2026-09-17T18:11:53Z",
+    "last_receive_utc": "2026-09-17T18:11:57Z",
+    "last_terminal_utc": "2026-09-17T18:11:59Z",
     "pid": "64"
   },
   "schema": "edarsahub.worker-health.v3",
