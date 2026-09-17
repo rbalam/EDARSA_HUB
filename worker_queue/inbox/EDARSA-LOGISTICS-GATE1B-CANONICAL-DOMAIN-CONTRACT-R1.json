@@ -1,0 +1,34 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSA-LOGISTICS-GATE1B-CANONICAL-DOMAIN-CONTRACT-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "da5b1168ba7cf32711b4fb7753fd64172ef6607a",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Definir y certificar en READ ONLY el contrato canonico de dominio de EDARSA Logistics usando Gate 0 y Gate 1A como entrada. Debe fijar bounded contexts, ownership y source of truth para freight, passenger mobility, fleet, dispatch/trips, shipments/delivery, warehouse operations/WMS delta, maintenance/workshop, parts/tires/fuel-energy, telematics/GPS, rates/carrier contracts, safety/compliance/claims e international/multimodal. Preservar como owners BOS los contratos existentes de organizacion, Gobierno/Personas/Documentos, Usuarios/RBAC, Clientes, Proveedores, Compras, Inventarios, Finanzas, Scheduler, Communications y helpers operativos. Aplicar SHARED_CAPABILITY_FIRST y ZERO_RECAPTURE: capacidades transversales de campo descubiertas en Gate 1A (mobile/offline, camera/photo/file capture, voice/audio/transcription, OCR/document extraction, QR/barcode/scan, location/GPS, signature/evidence, push/notifications, AI assistance, human confirmation) deben reutilizarse o ampliarse en su owner canonico, nunca duplicarse en Logistics. UX obligatoriamente simple y amigable para personas sin experiencia en sistemas y especialmente para operacion de campo. Para cada agregado candidato definir bounded_context, canonical_owner, source_of_truth, write_owner, references_to_BOS, lifecycle, idempotency, audit, timezone/currency/country policy y consumers. Producir evidencia para matrices DOMAIN->OWNER, AGGREGATE->SOURCE_OF_TRUTH, LOGISTICS_ENTITY->BOS_REFERENCE, EVENT->PRODUCER->CONSUMER y REUSE|EXTEND|SHARE|DECOUPLE|NEW. Bloquear maestros paralelos de empresas, usuarios, roles, clientes, proveedores, productos, almacenes, inventarios, documentos, finanzas, scheduler y communications. Bloquear Mongo como runtime source of truth. No crear tablas, endpoints, migraciones ni codigo funcional; no implementar Gate 2; no tocar Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": ["backend", "frontend", "tools", "docs", "memory"],
+        "search_terms": [
+          "Sistema_Empresas", "Sistema_Sucursales", "Unidades_Negocio", "Gobierno_Persona", "Gobierno_PersonaVinculo", "Gobierno_Documento", "Usuario_Catalogo", "Sistema_RBAC", "Cliente_Catalogo", "Proveedor_Catalogo", "Compras_", "Inventario_Almacenes", "Inventario_Existencias", "Inventario_Movimientos", "Producto_Catalogo", "Finanzas", "scheduler", "NotificationDispatcher", "operational_window", "ActivoFijo",
+          "vehicle", "vehiculo", "fleet", "driver", "operador", "carrier", "transportista", "freight", "shipment", "embarque", "delivery", "dispatch", "trip", "viaje", "route", "ruta", "stop", "parada", "passenger", "pasajero", "mobility", "warehouse", "wms", "picking", "packing", "staging", "cross-dock", "maintenance", "mantenimiento", "workshop", "taller", "inspection", "part", "refaccion", "tire", "llanta", "fuel", "combustible", "telematics", "gps", "geofence", "eta", "pod", "rate", "tarifa", "toll", "peaje", "incident", "claim", "insurance", "compliance", "multimodal", "customs", "aduana",
+          "mobile", "offline", "camera", "photo", "foto", "voice", "voz", "audio", "transcription", "ocr", "barcode", "qr", "scan", "location", "geolocation", "signature", "firma", "confirmacion humana", "pymongo", "MongoClient", "mongodb"
+        ],
+        "include_patterns": ["*.py", "*.js", "*.jsx", "*.ts", "*.tsx", "*.sql", "*.md", "*.json", "*.yaml", "*.yml"],
+        "exclude_patterns": ["node_modules/*", "dist/*", "build/*", "coverage/*", "*.min.js", "*.map", "*backup*"],
+        "max_results": 5000
+      }
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS / EDARSA Logistics",
+    "chat": "EDARSA Logistics Gate1B canonical domain contract"
+  },
+  "human_summary_language": "es"
+}
