@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-GLOBALIZATION-MASTERDATA-GATE0-ASIS-CANONICAL-DISCOVERY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Auditar el estado AS-IS canónico de capacidades de globalización/localización y master data en EDARSAHUB para países, monedas, tipos de cambio, idiomas/locales, zonas horarias, unidades de medida, conversiones, calendarios, horarios operativos, formatos, impuestos, direcciones, identificadores fiscales e identificadores bancarios. SQL Server EDARSAHUB permanece como fuente canónica. No modificar código, datos, esquema, RBAC, menús, Layout, Scheduler, NetPay ni Production; no crear duplicados ni crecer Core.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": ["backend", "frontend", "tools"],
+        "search_terms": ["country", "countries", "pais", "país", "currency", "currencies", "moneda", "exchange rate", "tipo de cambio", "locale", "language", "idioma", "timezone", "zona horaria", "unit of measure", "unidad de medida", "conversion", "calendar", "calendario", "operating hours", "horario", "format", "formato", "tax", "impuesto", "address", "direccion", "dirección", "fiscal", "bank identifier", "CLABE", "IBAN", "SWIFT"],
+        "include_patterns": ["*.py", "*.js", "*.jsx", "*.ts", "*.tsx", "*.sql", "*.json"],
+        "exclude_patterns": ["node_modules/**", ".git/**"],
+        "max_results": 2000
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "globalization_schema_inventory",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND (LOWER(TABLE_NAME) LIKE '%pais%' OR LOWER(TABLE_NAME) LIKE '%country%' OR LOWER(TABLE_NAME) LIKE '%moneda%' OR LOWER(TABLE_NAME) LIKE '%currency%' OR LOWER(TABLE_NAME) LIKE '%cambio%' OR LOWER(TABLE_NAME) LIKE '%exchange%' OR LOWER(TABLE_NAME) LIKE '%idioma%' OR LOWER(TABLE_NAME) LIKE '%locale%' OR LOWER(TABLE_NAME) LIKE '%zona%' OR LOWER(TABLE_NAME) LIKE '%time%' OR LOWER(TABLE_NAME) LIKE '%unidad%' OR LOWER(TABLE_NAME) LIKE '%measure%' OR LOWER(TABLE_NAME) LIKE '%conversion%' OR LOWER(TABLE_NAME) LIKE '%calendar%' OR LOWER(TABLE_NAME) LIKE '%calendario%' OR LOWER(TABLE_NAME) LIKE '%horario%' OR LOWER(TABLE_NAME) LIKE '%format%' OR LOWER(TABLE_NAME) LIKE '%impuesto%' OR LOWER(TABLE_NAME) LIKE '%tax%' OR LOWER(TABLE_NAME) LIKE '%direccion%' OR LOWER(TABLE_NAME) LIKE '%address%' OR LOWER(TABLE_NAME) LIKE '%fiscal%' OR LOWER(TABLE_NAME) LIKE '%banco%' OR LOWER(TABLE_NAME) LIKE '%bank%') ORDER BY TABLE_SCHEMA, TABLE_NAME"
+        },
+        {
+          "name": "globalization_column_inventory",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE LOWER(COLUMN_NAME) LIKE '%pais%' OR LOWER(COLUMN_NAME) LIKE '%country%' OR LOWER(COLUMN_NAME) LIKE '%moneda%' OR LOWER(COLUMN_NAME) LIKE '%currency%' OR LOWER(COLUMN_NAME) LIKE '%tipo_cambio%' OR LOWER(COLUMN_NAME) LIKE '%exchange%' OR LOWER(COLUMN_NAME) LIKE '%idioma%' OR LOWER(COLUMN_NAME) LIKE '%locale%' OR LOWER(COLUMN_NAME) LIKE '%timezone%' OR LOWER(COLUMN_NAME) LIKE '%zona_horaria%' OR LOWER(COLUMN_NAME) LIKE '%unidad_medida%' OR LOWER(COLUMN_NAME) LIKE '%impuesto%' OR LOWER(COLUMN_NAME) LIKE '%direccion%' OR LOWER(COLUMN_NAME) LIKE '%fiscal%' OR LOWER(COLUMN_NAME) LIKE '%clabe%' OR LOWER(COLUMN_NAME) LIKE '%iban%' OR LOWER(COLUMN_NAME) LIKE '%swift%' ORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION"
+        }
+      ]
+    }
+  ]
+}
