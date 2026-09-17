@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-RH-GLOBAL-HCM-GATE0-ASIS-CANONICAL-DISCOVERY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Auditar el estado AS-IS canónico de RH/HCM en EDARSAHUB, preservando SQL Server como fuente de verdad y cubriendo reclutamiento, plantilla/vacantes, contratación, expedientes y documentos, empleados, nómina, incidencias, autorizaciones, roles/permisos e integraciones relacionadas. No modificar código, datos, esquema, RBAC, menús, Scheduler, NetPay ni Production.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": ["backend", "frontend", "tools"],
+        "search_terms": ["RH", "HCM", "recutamiento", "reclutamiento", "vacante", "plantilla", "empleado", "nomina", "nómina", "contratacion", "contratación", "expediente", "infonavit", "fonacot", "pension", "pensión"],
+        "include_patterns": ["*.py", "*.js", "*.jsx", "*.ts", "*.tsx", "*.sql", "*.json"],
+        "exclude_patterns": ["node_modules/**", ".git/**"],
+        "max_results": 1500
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "rh_hcm_schema_inventory",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND (LOWER(TABLE_NAME) LIKE '%rh%' OR LOWER(TABLE_NAME) LIKE '%emple%' OR LOWER(TABLE_NAME) LIKE '%nomina%' OR LOWER(TABLE_NAME) LIKE '%vacant%' OR LOWER(TABLE_NAME) LIKE '%reclut%' OR LOWER(TABLE_NAME) LIKE '%contrat%' OR LOWER(TABLE_NAME) LIKE '%expedient%' OR LOWER(TABLE_NAME) LIKE '%incidenc%' OR LOWER(TABLE_NAME) LIKE '%infonavit%' OR LOWER(TABLE_NAME) LIKE '%fonacot%') ORDER BY TABLE_SCHEMA, TABLE_NAME"
+        },
+        {
+          "name": "rh_hcm_column_inventory",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE LOWER(TABLE_NAME) LIKE '%rh%' OR LOWER(TABLE_NAME) LIKE '%emple%' OR LOWER(TABLE_NAME) LIKE '%nomina%' OR LOWER(TABLE_NAME) LIKE '%vacant%' OR LOWER(TABLE_NAME) LIKE '%reclut%' OR LOWER(TABLE_NAME) LIKE '%contrat%' OR LOWER(TABLE_NAME) LIKE '%expedient%' ORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION"
+        }
+      ]
+    }
+  ]
+}
