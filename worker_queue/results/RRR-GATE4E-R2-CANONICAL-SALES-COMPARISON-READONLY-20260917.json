@@ -1,0 +1,654 @@
+{
+  "base_sha": "da5b1168ba7cf32711b4fb7753fd64172ef6607a",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-17T17:56:10Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "RRR-GATE4E-R2-CANONICAL-SALES-COMPARISON-READONLY-20260917",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-17T17:56:17Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "user_name"
+            ],
+            "name": "g4e_r2_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EstatusVentaID",
+              "Descripcion",
+              "Activo"
+            ],
+            "name": "g4e_r2_venta_estatus_catalog",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                1,
+                "BORRADOR",
+                true
+              ],
+              [
+                2,
+                "PENDIENTE",
+                true
+              ],
+              [
+                3,
+                "CONFIRMADA",
+                true
+              ],
+              [
+                4,
+                "PARCIAL",
+                true
+              ],
+              [
+                5,
+                "PAGADA",
+                true
+              ],
+              [
+                6,
+                "CANCELADA",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EstatusVentaID",
+              "Descripcion",
+              "Activo",
+              "venta_rows",
+              "min_fecha_venta",
+              "max_fecha_venta",
+              "total_importe"
+            ],
+            "name": "g4e_r2_venta_distribution_by_status",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable"
+            ],
+            "name": "g4e_r2_runtime_columns",
+            "row_count_returned": 36,
+            "rows": [
+              [
+                1,
+                "id",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                true
+              ],
+              [
+                2,
+                "unidad_negocio_pk",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                true
+              ],
+              [
+                3,
+                "unidad_id",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                false
+              ],
+              [
+                4,
+                "unidad_negocio_id",
+                "nvarchar",
+                100,
+                0,
+                0,
+                false
+              ],
+              [
+                5,
+                "unidad_negocio_nombre",
+                "nvarchar",
+                200,
+                0,
+                0,
+                false
+              ],
+              [
+                6,
+                "UnidadNegocio",
+                "nvarchar",
+                100,
+                0,
+                0,
+                false
+              ],
+              [
+                7,
+                "unidad_codigo",
+                "nvarchar",
+                100,
+                0,
+                0,
+                false
+              ],
+              [
+                8,
+                "unidad_nombre_catalogo",
+                "nvarchar",
+                200,
+                0,
+                0,
+                false
+              ],
+              [
+                9,
+                "server_id",
+                "nvarchar",
+                100,
+                0,
+                0,
+                false
+              ],
+              [
+                10,
+                "sucursal_id",
+                "nvarchar",
+                100,
+                0,
+                0,
+                false
+              ],
+              [
+                11,
+                "sucursal_nombre",
+                "nvarchar",
+                200,
+                0,
+                0,
+                true
+              ],
+              [
+                12,
+                "sistema_origen",
+                "nvarchar",
+                40,
+                0,
+                0,
+                false
+              ],
+              [
+                13,
+                "fecha_operacion",
+                "date",
+                3,
+                10,
+                0,
+                false
+              ],
+              [
+                14,
+                "anio",
+                "int",
+                4,
+                10,
+                0,
+                true
+              ],
+              [
+                15,
+                "mes",
+                "int",
+                4,
+                10,
+                0,
+                true
+              ],
+              [
+                16,
+                "dia",
+                "int",
+                4,
+                10,
+                0,
+                true
+              ],
+              [
+                17,
+                "ventas_total",
+                "decimal",
+                9,
+                18,
+                2,
+                true
+              ],
+              [
+                18,
+                "ventas_sin_propina",
+                "decimal",
+                9,
+                18,
+                2,
+                true
+              ],
+              [
+                19,
+                "propinas_total",
+                "decimal",
+                9,
+                18,
+                2,
+                true
+              ],
+              [
+                20,
+                "tickets_total",
+                "int",
+                4,
+                10,
+                0,
+                true
+              ],
+              [
+                21,
+                "pax_total",
+                "int",
+                4,
+                10,
+                0,
+                true
+              ],
+              [
+                22,
+                "ticket_promedio",
+                "decimal",
+                17,
+                29,
+                13,
+                true
+              ],
+              [
+                23,
+                "pax_promedio",
+                "decimal",
+                17,
+                29,
+                13,
+                true
+              ],
+              [
+                24,
+                "ventas_cerradas",
+                "decimal",
+                9,
+                18,
+                2,
+                true
+              ],
+              [
+                25,
+                "ventas_abiertas",
+                "decimal",
+                9,
+                18,
+                2,
+                true
+              ],
+              [
+                26,
+                "total_estimado_dia",
+                "decimal",
+                9,
+                18,
+                2,
+                true
+              ],
+              [
+                27,
+                "es_venta_abierta",
+                "bit",
+                1,
+                1,
+                0,
+                true
+              ],
+              [
+                28,
+                "es_corte_cerrado",
+                "bit",
+                1,
+                1,
+                0,
+                true
+              ],
+              [
+                29,
+                "fuente_original",
+                "nvarchar",
+                100,
+                0,
+                0,
+                false
+              ],
+              [
+                30,
+                "id_origen",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                true
+              ],
+              [
+                31,
+                "hash_origen",
+                "nvarchar",
+                128,
+                0,
+                0,
+                true
+              ],
+              [
+                32,
+                "sync_run_id",
+                "nvarchar",
+                100,
+                0,
+                0,
+                true
+              ],
+              [
+                33,
+                "fecha_sincronizacion",
+                "datetime2",
+                8,
+                27,
+                7,
+                true
+              ],
+              [
+                34,
+                "fecha_alta",
+                "datetime2",
+                8,
+                27,
+                7,
+                true
+              ],
+              [
+                35,
+                "fecha_ultima_actualizacion",
+                "datetime2",
+                8,
+                27,
+                7,
+                true
+              ],
+              [
+                36,
+                "version",
+                "int",
+                4,
+                10,
+                0,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "definition"
+            ],
+            "name": "g4e_r2_runtime_definition",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "-- EDARSAHUB V1.0\n-- Forward migration.\n-- ticket_promedio = ventas / tickets\n-- pax_promedio    = ventas / pax\n-- Fuente: definición SQL materializada vigente.\n-- No modifica migraciones históricas.\n-- Ejecución explícita únicamente.\n\nCREATE   VIEW dbo.vw_Comercial_KPIs_Diarios_v2_Runtime AS\nWITH snapshot_fecha AS (\n    SELECT MAX(fecha_operacion) AS fecha_operacion\n    FROM dbo.Comercial_Ventas_Dia_Abiertas_v2\n    WHERE ISNULL(total_estimado_dia, 0) > 0\n),\nsnapshot_ranked AS (\n    SELECT\n        a.*,\n        ROW_NUMBER() OVER (\n            PARTITION BY a.fecha_operacion, a.unidad_negocio_id\n            ORDER BY a.snapshot_timestamp DESC, a.fecha_ultima_actualizacion DESC\n        ) AS rn\n    FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 a\n    INNER JOIN snapshot_fecha sf\n        ON sf.fecha_operacion = a.fecha_operacion\n),\nsnapshot AS (\n    SELECT *\n    FROM snapshot_ranked\n    WHERE rn = 1\n),\nbase_overlay AS (\n    SELECT\n        k.id,\n        k.unidad_negocio_pk,\n        u.id AS unidad_id,\n\n        k.unidad_negocio_id,\n        k.unidad_negocio_nombre,\n        u.codigo AS UnidadNegocio,\n        u.codigo AS unidad_codigo,\n        u.nombre AS unidad_nombre_catalogo,\n\n        k.server_id,\n        k.sucursal_id,\n        k.sucursal_nombre,\n        k.sistema_origen,\n        k.fecha_operacion,\n        k.anio,\n        k.mes,\n        k.dia,\n\n        CASE WHEN s.unidad_negocio_id IS NOT NULL THEN ISNULL(s.total_estimado_dia, 0) ELSE k.ventas_total END AS ventas_total,\n        CASE WHEN s.unidad_negocio_id IS NOT NULL THEN ISNULL(s.total_estimado_dia, 0) ELSE k.ventas_sin_propina END AS ventas_sin_propina,\n        CASE WHEN s.unidad_negocio_id IS NOT NULL THEN ISNULL(s.propinas_total, 0) ELSE k.propinas_total END AS propinas_total,\n\n        CASE\n            WHEN s.unidad_negocio_id IS NOT NULL THEN ISNULL(s.tickets_abiertos, 0) + ISNULL(s.tickets_cerrados_dia, 0)\n            ELSE k.tickets_total\n        END AS tickets_total,\n\n        CASE\n            WHEN s.unidad_negocio_id IS NOT NULL THEN ISNULL(s.pax_abiertos, 0) + ISNULL(s.pax_cerrados_dia, 0)\n            ELSE k.pax_total\n        END AS pax_total,\n\n        CASE\n            WHEN s.unidad_negocio_id IS NOT NULL\n             AND (ISNULL(s.tickets_abiertos, 0) + ISNULL(s.tickets_cerrados_dia, 0)) > 0\n                THEN CAST(ISNULL(s.total_estimado_dia, 0) AS decimal(18,2))\n                     / NULLIF((ISNULL(s.tickets_abiertos, 0) + ISNULL(s.tickets_cerrados_dia, 0)), 0)\n            ELSE k.ticket_promedio\n        END AS ticket_promedio,\n\n        CASE\n            WHEN s.unidad_negocio_id IS NOT NULL\n             AND (ISNULL(s.pax_abiertos, 0) + ISNULL(s.pax_cerrados_dia, 0)) > 0\n                THEN CAST(ISNULL(s.total_estimado_dia, 0) AS decimal(18,2))\n                     / NULLIF((ISNULL(s.pax_abiertos, 0) + ISNULL(s.pax_cerrados_dia, 0)), 0)\n            ELSE k.pax_promedio\n        END AS pax_promedio,\n\n        CASE WHEN s.unidad_negocio_id IS NOT NULL THEN ISNULL(s.ventas_cerradas_dia, 0) ELSE k.ventas_cerradas END AS ventas_cerradas,\n        CASE WHEN s.unidad_negocio_id IS NOT NULL THEN ISNULL(s.ventas_abiertas, 0) ELSE k.ventas_abiertas END AS ventas_abiertas,\n        CASE WHEN s.unidad_negocio_id IS NOT NULL THEN ISNULL(s.total_estimado_dia, 0) ELSE k.total_estimado_dia END AS total_estimado_dia,\n\n        CASE\n            WHEN s.unidad_negocio_id IS NOT NULL AND ISNULL(s.ventas_abiertas, 0) > 0 THEN CAST(1 AS bit)\n            ELSE k.es_venta_abierta\n        END AS es_venta_abierta,\n\n        CASE\n            WHEN s.unidad_negocio_id IS NOT NULL AND ISNULL(s.ventas_abiertas, 0) > 0 THEN CAST(0 AS bit)\n            ELSE k.es_corte_cerrado\n        END AS es_corte_cerrado,\n\n        CASE\n            WHEN s.unidad_negocio_id IS NOT NULL THEN 'Comercial_Ventas_Dia_Abiertas_v2'\n            ELSE k.fuente_original\n        END AS fuente_original,\n\n        k.id_origen,\n        k.hash_origen,\n        k.sync_run_id,\n\n        CASE\n            WHEN s.unidad_negocio_id IS NOT NULL THEN s.fecha_ultima_actualizacion\n            ELSE k.fecha_sincronizacion\n        END AS fecha_sincronizacion,\n\n        k.fecha_alta,\n\n        CASE\n            WHEN s.unidad_negocio_id IS NOT NULL THEN s.fecha_ultima_actualizacion\n            ELSE k.fecha_ultima_actualizacion\n        END AS fecha_ultima_actualizacion,\n\n        k.version\n    FROM dbo.Comercial_KPIs_Diarios_v2 k\n    INNER JOIN dbo.Unidades_Negocio u\n        ON u.id = k.unidad_negocio_pk\n    LEFT JOIN snapshot s\n        ON s.fecha_operacion = k.fecha_operacion\n       AND s.unidad_negocio_id = k.unidad_negocio_id\n    WHERE ISNULL(k.activo, 1) = 1\n      AND ISNULL(k.es_demo, 0) = 0\n),\nsnapshot_only AS (\n    SELECT\n        NEWID() AS id,\n        u.id AS unidad_negocio_pk,\n        u.id AS unidad_id,\n\n        s.unidad_negocio_id,\n        s.unidad_negocio_nombre,\n        u.codigo AS UnidadNegocio,\n        u.codigo AS unidad_codigo,\n        u.nombre AS unidad_nombre_catalogo,\n\n        s.server_id,\n        s.sucursal_id,\n        s.sucursal_nombre,\n        s.sistema_origen,\n        s.fecha_operacion,\n        YEAR(s.fecha_operacion) AS anio,\n        MONTH(s.fecha_operacion) AS mes,\n        DAY(s.fecha_operacion) AS dia,\n\n        ISNULL(s.total_estimado_dia, 0) AS ventas_total,\n        ISNULL(s.total_estimado_dia, 0) AS ventas_sin_propina,\n        ISNULL(s.propinas_total, 0) AS propinas_total,\n\n        ISNULL(s.tickets_abiertos, 0) + ISNULL(s.tickets_cerrados_dia, 0) AS tickets_total,\n        ISNULL(s.pax_abiertos, 0) + ISNULL(s.pax_cerrados_dia, 0) AS pax_total,\n\n        CASE\n            WHEN (ISNULL(s.tickets_abiertos, 0) + ISNULL(s.tickets_cerrados_dia, 0)) > 0\n                THEN CAST(ISNULL(s.total_estimado_dia, 0) AS decimal(18,2))\n                     / NULLIF((ISNULL(s.tickets_abiertos, 0) + ISNULL(s.tickets_cerrados_dia, 0)), 0)\n            ELSE CAST(0 AS decimal(18,2))\n        END AS ticket_promedio,\n\n        CASE\n            WHEN (ISNULL(s.pax_abiertos, 0) + ISNULL(s.pax_cerrados_dia, 0)) > 0\n                THEN CAST(ISNULL(s.total_estimado_dia, 0) AS decimal(18,2))\n                     / NULLIF((ISNULL(s.pax_abiertos, 0) + ISNULL(s.pax_cerrados_dia, 0)), 0)\n            ELSE CAST(0 AS decimal(18,2))\n        END AS pax_promedio,\n\n        ISNULL(s.ventas_cerradas_dia, 0) AS ventas_cerradas,\n        ISNULL(s.ventas_abiertas, 0) AS ventas_abiertas,\n        ISNULL(s.total_estimado_dia, 0) AS total_estimado_dia,\n\n        CASE WHEN ISNULL(s.ventas_abiertas, 0) > 0 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS es_venta_abierta,\n        CASE WHEN ISNULL(s.ventas_abiertas, 0) > 0 THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS es_corte_cerrado,\n\n        'Comercial_Ventas_Dia_Abiertas_v2' AS fuente_original,\n        s.id AS id_origen,\n        s.sync_run_id AS hash_origen,\n        s.sync_run_id,\n\n        s.fecha_ultima_actualizacion AS fecha_sincronizacion,\n        s.snapshot_timestamp AS fecha_alta,\n        s.fecha_ultima_actualizacion,\n        CAST(1 AS int) AS version\n    FROM snapshot s\n    INNER JOIN dbo.Unidades_Negocio u\n        ON u.codigo = s.unidad_negocio_id\n    WHERE NOT EXISTS (\n        SELECT 1\n        FROM dbo.Comercial_KPIs_Diarios_v2 k\n        WHERE k.fecha_operacion = s.fecha_operacion\n          AND k.unidad_negocio_id = s.unidad_negocio_id\n          AND ISNULL(k.activo, 1) = 1\n          AND ISNULL(k.es_demo, 0) = 0\n    )\n)\nSELECT * FROM base_overlay\nUNION ALL\nSELECT * FROM snapshot_only;"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "definition"
+            ],
+            "name": "g4e_r2_canonica_definition",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "\nCREATE   VIEW dbo.vw_Comercial_KPIs_Diarios_v2_Canonica\nAS\nSELECT\n    k.unidad_negocio_pk,\n    k.unidad_id,\n    k.unidad_codigo,\n    k.unidad_nombre_catalogo AS unidad_nombre,\n    k.unidad_negocio_id AS unidad_codigo_legacy,\n    k.unidad_negocio_nombre AS unidad_nombre_legacy,\n    k.fecha_operacion,\n    k.ventas_sin_propina AS VentaNeta,\n    k.tickets_total AS Cheques,\n    k.pax_total AS PAX,\n    k.ticket_promedio AS TicketPromedio,\n    k.pax_promedio AS PaxPromedio\nFROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime k;\n"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "definition"
+            ],
+            "name": "g4e_r2_activity_definition",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "/* RRR GATE 4 CUSTOMER360 VIEWS V2 - SQL SERVER BATCH SAFE */\n\nCREATE VIEW dbo.vw_RRR_ClienteActividadComercial AS\nSELECT\n    v.ClienteID,\n    COUNT_BIG(*) AS VentasCount,\n    MIN(v.FechaVenta) AS FechaPrimeraVenta,\n    MAX(v.FechaVenta) AS FechaUltimaVenta,\n    SUM(v.Total) AS VentasTotal\nFROM dbo.Venta_Encabezado v\nGROUP BY v.ClienteID;"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "is_nullable"
+            ],
+            "name": "g4e_r2_rrr_eventos_columns",
+            "row_count_returned": 15,
+            "rows": [
+              [
+                1,
+                "EventoID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                2,
+                "ClienteID",
+                "int",
+                4,
+                false
+              ],
+              [
+                3,
+                "EmpresaID",
+                "int",
+                4,
+                true
+              ],
+              [
+                4,
+                "UnidadNegocioID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                5,
+                "VentaID",
+                "bigint",
+                8,
+                true
+              ],
+              [
+                6,
+                "TipoEvento",
+                "varchar",
+                60,
+                false
+              ],
+              [
+                7,
+                "SourceSystem",
+                "varchar",
+                60,
+                false
+              ],
+              [
+                8,
+                "SourceKey",
+                "varchar",
+                200,
+                false
+              ],
+              [
+                9,
+                "FechaOperacion",
+                "date",
+                3,
+                false
+              ],
+              [
+                10,
+                "OcurridoAtUtc",
+                "datetime2",
+                7,
+                false
+              ],
+              [
+                11,
+                "PayloadHash",
+                "varchar",
+                64,
+                true
+              ],
+              [
+                12,
+                "EstadoValidacion",
+                "varchar",
+                30,
+                false
+              ],
+              [
+                13,
+                "EstadoAntifraude",
+                "varchar",
+                30,
+                false
+              ],
+              [
+                14,
+                "MotivoRechazo",
+                "nvarchar",
+                1000,
+                true
+              ],
+              [
+                15,
+                "FechaCreacion",
+                "datetime2",
+                7,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ClienteID",
+              "EstatusVentaID",
+              "Descripcion",
+              "venta_rows",
+              "total_importe",
+              "primera_fecha",
+              "ultima_fecha"
+            ],
+            "name": "g4e_r2_sales_by_client_status",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "venta_rows",
+              "venta_rows_activo",
+              "activity_rows",
+              "cliente_catalogo_rows"
+            ],
+            "name": "g4e_r2_activity_vs_raw_counts",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0",
+                "0",
+                "0",
+                "2"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "activity_null_cliente"
+            ],
+            "name": "g4e_r2_activity_null_cliente",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-17T17:56:09Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
