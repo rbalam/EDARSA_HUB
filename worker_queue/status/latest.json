@@ -1,97 +1,106 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "c03abca3e20b7a8e8e7afb54a9648f9048f26c05",
-  "generated_at_utc": "2026-09-17T18:44:36Z",
+  "generated_at_utc": "2026-09-17T18:45:53Z",
   "history": {
     "done_total_local": 526,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 538,
+    "rejected_total_local": 539,
     "results_total_local": 928
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1934,
+      "age_seconds": 5,
+      "job_id": "EDARSAHUB-INVENTARIOS-TARGETED-RECOVERY-CERT-R2B-20260915T181200Z",
+      "reasons": [
+        "ACTIONS_REQUIRED"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 2011,
       "job_id": "BOS-AGENT-HARNESS-V1-GATE22-DISCOVERY-READONLY-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2936,
+      "age_seconds": 3014,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE0B-SQL-CANONICAL-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1966,
+      "age_seconds": 2043,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE1-CANONICAL-DOMAIN-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1957,
+      "age_seconds": 2034,
       "job_id": "BOS-UNIVERSAL-WORKER-RUNTIME-DIAGNOSTIC-GATE22A-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 873,
+      "age_seconds": 951,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-SECURE-PROFILE-BRIDGE-R1-20260917T1830Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3445,
+      "age_seconds": 3522,
       "job_id": "EDARSA-LOGISTICS-GATE1B-CANONICAL-DOMAIN-CONTRACT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3247,
+      "age_seconds": 3325,
       "job_id": "PRIMARY-INDUSTRIES-GATE0B-REPRODUCTION-CONTRACTS-DELTA-DISCOVERY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3499,
+      "age_seconds": 3577,
       "job_id": "RRR-GATE4E-CUSTOMER360-SALES-SEMANTICS-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3304,
+      "age_seconds": 3381,
       "job_id": "RRR-GATE4E-R1-METADATA-SEMANTICS-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2906,
+      "age_seconds": 2983,
       "job_id": "RRR-GATE4E-R2-CANONICAL-SALES-COMPARISON-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1953,
+      "age_seconds": 2030,
       "job_id": "RRR-GATE4E-R3-CUSTOMER-SALES-SOURCE-DISCOVERY-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 696,
+      "age_seconds": 773,
       "job_id": "RRR-GATE4E-R4-CUSTOMER-ATTRIBUTION-BRIDGE-DISCOVERY-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2971,
+      "age_seconds": 3048,
       "job_id": "UNIVERSAL-WORKER-COMBINED-READ-ONLY-AUDIT-CONTRACT-V1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 883,
+      "age_seconds": 961,
       "job_id": "UNIVERSAL-WORKER-COMBINED-READ-ONLY-AUDIT-CONTRACT-V1-RETRY1",
       "reason": null,
       "state": "RESULT_READY"
@@ -103,14 +112,14 @@
   "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 0,
+  "queue_rejected_recent": 1,
   "queue_result_ready_recent": 14,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-17T18:44:34Z",
-    "last_receive_utc": "2026-09-17T18:44:35Z",
+    "last_cycle_utc": "2026-09-17T18:45:53Z",
+    "last_receive_utc": "2026-09-17T18:45:48Z",
     "last_terminal_utc": "2026-09-17T18:33:00Z",
     "pid": "38836"
   },
