@@ -1,11 +1,11 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "b22fcd921a3d219ab0b209409c8df36b174c0f56",
-  "generated_at_utc": "2026-09-17T20:56:55Z",
+  "generated_at_utc": "2026-09-17T20:58:34Z",
   "history": {
     "done_total_local": 539,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 549,
     "results_total_local": 948
   },
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1177,
+      "age_seconds": 1276,
       "job_id": "EDARSAHUB-CRM-CALENDAR-CANONICAL-EVENTS-GATE1-R1",
       "reasons": [
         "INVALID_SCHEMA",
@@ -23,110 +23,116 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1175,
+      "age_seconds": 1274,
       "job_id": "ARBITROA-BOS-GATE-A4-PREFLIGHT-SQL-READONLY-R2-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1171,
+      "age_seconds": 1269,
       "job_id": "ARBITROA-BOS-GATE-A4-PREFLIGHT-SQL-READONLY-R2B-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1168,
+      "age_seconds": 1267,
       "job_id": "BOS-ENTERPRISE-CAPABILITY-MAP-GATE1-DOSSIER-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 100,
+      "age_seconds": 198,
       "job_id": "BOS-ENTERPRISE-CAPABILITY-MAP-GATE1-DOSSIER-R2-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1132,
+      "age_seconds": 1231,
       "job_id": "BOS-GLOBALIZATION-MASTERDATA-GATE0-ASIS-CANONICAL-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1116,
+      "age_seconds": 1214,
       "job_id": "BOS-UNIVERSAL-WORKER-RUNTIME-DIAGNOSTIC-GATE22A-RECOVERY-R3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 695,
+      "age_seconds": 794,
       "job_id": "BOS-UNIVERSAL-WORKER-RUNTIME-DIAGNOSTIC-GATE22A-RECOVERY-R4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 149,
+      "age_seconds": 248,
       "job_id": "BOS-V1-MASTER-STATUS-GLOBAL-PROGRESS-R5",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1105,
+      "age_seconds": 1204,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-TRIGGER-R1-20260917T1840Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1092,
+      "age_seconds": 1190,
       "job_id": "EDARSAHUB-RH-GLOBAL-HCM-GATE0-ASIS-CANONICAL-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1066,
+      "age_seconds": 1165,
       "job_id": "EDARSAHUB-SERVICES-GATE0-ASIS-CANONICAL-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 96,
+      "age_seconds": 195,
       "job_id": "GATE5D-HARDENING-SQL-MIGRATION-EXEC-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 348,
+      "age_seconds": 446,
       "job_id": "RRHH-CUSTODIA-GATE2B-SQL-FK-TYPE-PREFLIGHT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1047,
+      "age_seconds": 1146,
       "job_id": "RRR-GATE4E-R5-CUSTOMER-ATTRIBUTION-CONTRACT-DESIGN-V1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 140,
+      "age_seconds": 239,
       "job_id": "coa-gate5g-r3-cfdi-ddl-batch-boundary-fix-v1-20260917",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 61,
+      "job_id": "WORKER-BOS-AGENTS-IA-GATE6B-R5-V5-LOCK-FREE-RETRY-20260917",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
   "queue_result_ready_recent": 15,
-  "queue_running": 0,
+  "queue_running": 1,
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "WORKER-BOS-AGENTS-IA-GATE6B-R5-V5-LOCK-FREE-RETRY-20260917",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-17T20:56:51Z",
-    "last_receive_utc": "2026-09-17T20:56:55Z",
+    "last_cycle_utc": "2026-09-17T20:58:33Z",
+    "last_receive_utc": "2026-09-17T20:58:28Z",
     "last_terminal_utc": "2026-09-17T20:55:18Z",
     "pid": "55815"
   },
