@@ -1,0 +1,32 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-TRIGGER-R1-20260917T1840Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c03abca3e20b7a8e8e7afb54a9648f9048f26c05",
+  "production_allowed": false,
+  "objective": "Disparar una sola vez el workflow seguro P5 Runtime E2E ya certificado, tocando exclusivamente el trigger canonico sin cambiar logica, secretos ni backend. El workflow resolvera P5_E2E_SUPERADMIN mediante GitHub Environment development y publicara evidencia sanitizada. No tocar Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "ops/e2e/requests/CENTRO-CONTROL-SYNC-MONITOR-P5-RUNTIME-SECURE-R1.execute",
+      "old": "P5_E2E_SUPERADMIN\n",
+      "new": "P5_E2E_SUPERADMIN\n\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "pytest", "paths": ["backend/tests/test_control_sync_p5_secure_profile_contract.py"]}
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL writes",
+    "No RBAC mutation",
+    "No secret values in job or repository",
+    "Only trigger file may change",
+    "Do not modify workflow or backend logic"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "technical"
+}
