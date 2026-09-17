@@ -1,0 +1,52 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-UNIVERSAL-WORKER-RUNTIME-DIAGNOSTIC-GATE22A-R1",
+  "created_at_utc": "2026-09-17T16:00:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "7850b569bc0c12c077180ef2f6a27630bab56c23",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Gate tecnico READ_ONLY de diagnostico del Universal Worker antes de cualquier recovery de Gate22. Determinar con evidencia si el incidente corresponde a: A) worker vivo con intake detenido, B) worker/runtime detenido o reiniciado, C) job previo bloqueando cola, D) health/result publishers detenidos, o E) Gate22 localmente pendiente/huerfano sin publicacion remota. Auditar exclusivamente la infraestructura existente del Universal Worker: universal_job_worker.sh, universal_job_bridge.py, universal_job_dispatcher.py, universal_job_result_publisher.py, runtime_health_publisher.py, worker_runtime_reconciler.py, worker_control_plane.py y sus contratos de prueba. No reintentar Gate22, no crear job funcional sustituto, no mutar archivos, no tocar SQL, Scheduler, NetPay, RBAC, permisos, secretos ni Production. Exito solo con checks no mutantes PASS, files_changed=[], production_touched=false y certificacion READ_ONLY. Si el runtime no puede ingerir este gate, la ausencia persistente del terminal junto con health/results congelados se considera evidencia operativa para recovery del runtime, no para duplicar Gate22.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "tools/mirror_sync/runtime_health_publisher.py",
+        "tools/mirror_sync/worker_runtime_reconciler.py",
+        "tools/mirror_sync/worker_control_plane.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_three_properties_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "harness_context": {
+    "plan_step_id": "gate22a-universal-worker-runtime-diagnostic-r1",
+    "domain": "engineering",
+    "procedure": "repository-contract-audit",
+    "risk": "R0",
+    "data_classification": "INTERNAL",
+    "agent_id": "bos-backend",
+    "agent_version": "1",
+    "skill_id": "repository-contract-audit",
+    "skill_version": "1",
+    "executor": "worker"
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
