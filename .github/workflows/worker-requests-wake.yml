@@ -1,4 +1,5 @@
 name: Worker Requests Wake
+# Technical retrigger 2026-09-17: validate restored wake endpoint against current queue HEAD; no business job created.
 
 on:
   push:
