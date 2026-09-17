@@ -1,0 +1,77 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "WORKER-BOS-AGENTS-IA-GATE6B-R5-V3-PYTEST-PATH-FIX-20260917",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6177b3a769ed36e6afb9b5d3ac99b1147ff0a377",
+  "production_allowed": false,
+  "objective": "Reproducir exactamente Gate 6B-R4 sobre HEAD fresco. Implementar BOS Agentes e IA sin ejecutar SQL: migracion SQL idempotente de menu/RBAC, rutas y pantallas, adaptador modular RBAC/Scope/Budget -> Agent Harness -> Execution Gate -> Agent Reach, y primer consumidor Marketing/CX PUBLIC R1 con una llamada externa. La unica correccion respecto de R4 es la ruta relativa del test: Path('modules/agent_harness/module_agent_reach_adapter.py') en lugar de Path('backend/modules/agent_harness/module_agent_reach_adapter.py'). No tocar Layout, Worker, Supervisor, watchdog, runtime interno ni Produccion.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/database/migrations/20260915_001_bos_agents_ia_menu_rbac.sql",
+      "content": "SET NOCOUNT ON;\nSET XACT_ABORT ON;\nBEGIN TRY\nBEGIN TRANSACTION;\nIF OBJECT_ID(N'dbo.Sistema_Modulos',N'U') IS NULL OR OBJECT_ID(N'dbo.Sistema_ModulosMenus',N'U') IS NULL OR OBJECT_ID(N'dbo.Usuario_Modulos',N'U') IS NULL OR OBJECT_ID(N'dbo.Usuario_Acciones',N'U') IS NULL OR OBJECT_ID(N'dbo.Usuario_Roles',N'U') IS NULL OR OBJECT_ID(N'dbo.Usuario_PermisosRolModulo',N'U') IS NULL THROW 51200,'Faltan tablas canonicas de menu/RBAC.',1;\nDECLARE @sm INT,@um INT,@ver INT,@padre INT,@centro INT;\nSELECT @sm=ModuloID FROM dbo.Sistema_Modulos WHERE Codigo=N'BOS';\nIF @sm IS NULL BEGIN INSERT dbo.Sistema_Modulos(Codigo,Nombre,Descripcion,Icono,Orden,EsPrincipal,EsSatelite,EsPortal,URLExterna,Activo,FechaCreacion) SELECT N'BOS',N'BOS',N'Business Operating System EDARSAHUB',N'Bot',ISNULL(MAX(Orden),0)+1,1,0,0,NULL,1,GETDATE() FROM dbo.Sistema_Modulos; SET @sm=CONVERT(INT,SCOPE_IDENTITY()); END;\nIF NOT EXISTS(SELECT 1 FROM dbo.Usuario_Modulos WHERE CodigoModulo=N'BOS_AGENTES') INSERT dbo.Usuario_Modulos(CodigoModulo,NombreModulo,Descripcion,Icono,Ruta,Activo) VALUES(N'BOS_AGENTES',N'Agentes e IA',N'Gobierno de agentes BOS',N'Bot',N'/bos/agentes-ia',1);\nSELECT @um=ModuloID FROM dbo.Usuario_Modulos WHERE CodigoModulo=N'BOS_AGENTES';\nSELECT TOP(1) @ver=AccionID FROM dbo.Usuario_Acciones WHERE CodigoAccion=N'VER' AND Activo=1 ORDER BY AccionID;\nIF @um IS NULL OR @ver IS NULL THROW 51201,'No fue posible resolver BOS_AGENTES/VER.',1;\nINSERT dbo.Usuario_PermisosRolModulo(RolID,ModuloID,AccionID,Permitido,RestriccionPropietario,RestriccionSucursal,RequiereAutorizacion,Activo,FechaAlta,CreatedBy) SELECT r.RolID,@um,@ver,1,0,0,0,1,SYSDATETIME(),N'BOS_GATE6B' FROM dbo.Usuario_Roles r WHERE r.Activo=1 AND r.CodigoRol IN(N'SUPERADMIN',N'SUPERADMINISTRADOR',N'ADMIN',N'ADMINISTRADOR') AND NOT EXISTS(SELECT 1 FROM dbo.Usuario_PermisosRolModulo p WHERE p.RolID=r.RolID AND p.ModuloID=@um AND p.AccionID=@ver);\nSELECT @padre=MenuID FROM dbo.Sistema_ModulosMenus WHERE Codigo=N'bos.agentes_ia';\nIF @padre IS NULL BEGIN INSERT dbo.Sistema_ModulosMenus(ModuloID,MenuPadreID,Codigo,Nombre,Descripcion,Icono,Ruta,Orden,RequierePermiso,Activo,FechaCreacion) VALUES(@sm,NULL,N'bos.agentes_ia',N'Agentes e IA',N'Gobierno y operacion de agentes BOS',N'Bot',N'/bos/agentes-ia',10,N'BOS_AGENTES',1,GETDATE()); SET @padre=CONVERT(INT,SCOPE_IDENTITY()); END;\nSELECT @centro=MenuID FROM dbo.Sistema_ModulosMenus WHERE Codigo=N'bos.centro_agentes';\nIF @centro IS NULL INSERT dbo.Sistema_ModulosMenus(ModuloID,MenuPadreID,Codigo,Nombre,Descripcion,Icono,Ruta,Orden,RequierePermiso,Activo,FechaCreacion) VALUES(@sm,@padre,N'bos.centro_agentes',N'Centro de Agentes',N'Catalogo y estado de agentes BOS',N'Bot',N'/bos/agentes-ia/centro-agentes',20,N'BOS_AGENTES',1,GETDATE());\nCOMMIT TRANSACTION;\nSELECT N'BOS_AGENTES_IA_MIGRATION_READY' AS resultado;\nEND TRY BEGIN CATCH IF @@TRANCOUNT>0 ROLLBACK TRANSACTION; THROW; END CATCH;\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/modules/agent_harness/module_agent_reach_adapter.py",
+      "content": "from __future__ import annotations\nfrom dataclasses import dataclass\nfrom typing import Mapping\nfrom core.agent_capability_policy import BudgetRequest,DataClassification,PolicyContext,PolicyRequest,RiskLevel\nfrom core.agent_execution_gate import authorize_external_research_execution\nfrom core.agent_external_research_service import execute_external_research\nfrom core.agent_runtime_activation import RuntimeEnvironment\n\nclass ModuleAgentReachError(ValueError): pass\n\n@dataclass(frozen=True)\nclass ModuleExternalResearchRequest:\n    request_id:str; module_code:str; permission:str; empresa_id:int; unidad_id:int; query:str; external_calls_budget:int=1\n    def __post_init__(self):\n        if not all(str(x).strip() for x in (self.request_id,self.module_code,self.permission,self.query)): raise ModuleAgentReachError('REQUIRED_FIELD_MISSING')\n        if self.empresa_id<=0 or self.unidad_id<=0: raise ModuleAgentReachError('BUSINESS_SCOPE_INVALID')\n        if self.external_calls_budget!=1: raise ModuleAgentReachError('EXTERNAL_CALL_BUDGET_MUST_EQUAL_ONE')\n\ndef _auth(req,auth:Mapping[str,object]):\n    if not isinstance(auth,Mapping) or auth.get('allowed') is not True: raise ModuleAgentReachError('REQUESTER_RBAC_DENIED')\n    if str(auth.get('module_code'))!=req.module_code or str(auth.get('permission'))!=req.permission: raise ModuleAgentReachError('REQUESTER_PERMISSION_MISMATCH')\n    if int(auth.get('empresa_id') or 0)!=req.empresa_id or int(auth.get('unidad_id') or 0)!=req.unidad_id: raise ModuleAgentReachError('REQUESTER_BUSINESS_SCOPE_MISMATCH')\n\ndef authorize_module_external_research(req:ModuleExternalResearchRequest,auth:Mapping[str,object],context:PolicyContext):\n    _auth(req,auth)\n    scopes=frozenset({'external:web',f'empresa:{req.empresa_id}',f'unidad:{req.unidad_id}'})\n    policy=PolicyRequest(capabilities=frozenset({'EXTERNAL_RESEARCH'}),scopes=scopes,risk=RiskLevel.R1,data_classification=DataClassification.PUBLIC,budgets=BudgetRequest(external_calls=1),external_egress=True,production_allowed=False,privilege_expansion=False,procedure='agent-reach-external-research')\n    gate=authorize_external_research_execution(dict(auth),req.query,policy,context)\n    return gate,policy\n\ndef execute_module_external_research(req:ModuleExternalResearchRequest,auth:Mapping[str,object],context:PolicyContext,versions_lock_path:str,*,environment=RuntimeEnvironment.DEVELOPMENT,timeout_seconds:int=20):\n    gate,policy=authorize_module_external_research(req,auth,context)\n    if not gate.allowed: raise ModuleAgentReachError(gate.reasons[0] if gate.reasons else 'EXECUTION_GATE_DENIED')\n    return execute_external_research(dict(auth),req.query,policy,context,versions_lock_path,environment=environment,timeout_seconds=timeout_seconds)\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/modules/agent_harness/marketing_public_research.py",
+      "content": "from core.agent_capability_policy import PolicyContext\nfrom .module_agent_reach_adapter import ModuleExternalResearchRequest,authorize_module_external_research\n\ndef authorize_marketing_public_research(*,request_id:str,empresa_id:int,unidad_id:int,query:str,requester_authorization:dict[str,object],context:PolicyContext):\n    req=ModuleExternalResearchRequest(request_id,'MARKETING','MARKETING',empresa_id,unidad_id,query,1)\n    return authorize_module_external_research(req,requester_authorization,context)\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_bos_gate6b_agent_reach.py",
+      "content": "from pathlib import Path\nimport pytest\nfrom core.agent_capability_policy import PolicyContext\nfrom modules.agent_harness.module_agent_reach_adapter import ModuleAgentReachError,ModuleExternalResearchRequest,authorize_module_external_research\nfrom modules.agent_harness.marketing_public_research import authorize_marketing_public_research\n\ndef ctx():\n    caps=frozenset({'EXTERNAL_RESEARCH'}); scopes=frozenset({'external:web','empresa:1','unidad:2'})\n    limits={'runtime_seconds':30,'files_changed':0,'lines_changed':0,'external_calls':1,'sql_rows':0,'inference_cost_usd':0.0}\n    return PolicyContext(caps,caps,caps,caps,scopes,scopes,scopes,scopes,limits)\n\ndef auth(allowed=True,unidad=2): return {'allowed':allowed,'module_code':'MARKETING','permission':'MARKETING','empresa_id':1,'unidad_id':unidad}\n\ndef test_marketing_authorized_through_execution_gate():\n    gate,policy=authorize_marketing_public_research(request_id='m1',empresa_id=1,unidad_id=2,query='tendencias publicas restaurantes mexico',requester_authorization=auth(),context=ctx())\n    assert gate.allowed is True\n    assert gate.downstream is not None\n    assert policy.production_allowed is False\n    assert policy.budgets.external_calls==1\n\ndef test_fail_closed_rbac_scope_budget():\n    req=ModuleExternalResearchRequest('x','MARKETING','MARKETING',1,2,'consulta publica')\n    with pytest.raises(ModuleAgentReachError,match='REQUESTER_RBAC_DENIED'): authorize_module_external_research(req,auth(False),ctx())\n    with pytest.raises(ModuleAgentReachError,match='REQUESTER_BUSINESS_SCOPE_MISMATCH'): authorize_module_external_research(req,auth(True,99),ctx())\n    with pytest.raises(ModuleAgentReachError,match='EXTERNAL_CALL_BUDGET_MUST_EQUAL_ONE'): ModuleExternalResearchRequest('x','MARKETING','MARKETING',1,2,'q',2)\n\ndef test_no_direct_runtime_executor_dependency():\n    text=Path('modules/agent_harness/module_agent_reach_adapter.py').read_text()\n    assert 'agent_reach_public_search_executor' not in text\n    assert 'agent_reach_runtime_executor' not in text\n    assert 'execute_agent_reach_public_search' not in text\n"
+    },
+    {
+      "type": "write_file",
+      "path": "frontend/src/pages/AgentesIAHub.jsx",
+      "content": "import React from 'react';\nimport { Link } from 'react-router-dom';\nexport default function AgentesIAHub(){return <div className=\"space-y-4\"><h1 className=\"text-2xl font-bold\">Agentes e IA</h1><p>Gobierno BOS de agentes, capacidades, scopes, riesgos y budgets.</p><Link className=\"underline\" to=\"/bos/agentes-ia/centro-agentes\">Centro de Agentes</Link></div>}\n"
+    },
+    {
+      "type": "write_file",
+      "path": "frontend/src/pages/CentroAgentes.jsx",
+      "content": "import React from 'react';\nexport default function CentroAgentes(){return <div className=\"space-y-4\"><h1 className=\"text-2xl font-bold\">Centro de Agentes</h1><p>Marketing / Investigacion publica: PUBLIC, external:web, R1, budget de una llamada externa. La ejecucion pasa por RBAC, Agent Harness y Execution Gate.</p></div>}\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/App.js",
+      "old": "import AdminHub from './pages/AdminHub';\nimport IAAsistente from './pages/IAAsistente';\n",
+      "new": "import AdminHub from './pages/AdminHub';\nimport IAAsistente from './pages/IAAsistente';\nimport AgentesIAHub from './pages/AgentesIAHub';\nimport CentroAgentes from './pages/CentroAgentes';\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/App.js",
+      "old": "              <Route path=\"ia\" element={<IAAsistente />} />\n              <Route path=\"compras\" element={<Compras />} />\n",
+      "new": "              <Route path=\"ia\" element={<IAAsistente />} />\n              <Route path=\"bos/agentes-ia\" element={<AgentesIAHub />} />\n              <Route path=\"bos/agentes-ia/centro-agentes\" element={<CentroAgentes />} />\n              <Route path=\"compras\" element={<Compras />} />\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/config/enterpriseNavigationRegistry.json",
+      "old": "    \"IA\": {\n      \"groupId\": \"direccion-inteligencia\",\n      \"sectionId\": \"inteligencia-artificial\",\n      \"label\": \"Inteligencia Artificial\",\n      \"status\": \"active\"\n    },\n    \"CALIDAD\": {",
+      "new": "    \"IA\": {\n      \"groupId\": \"direccion-inteligencia\",\n      \"sectionId\": \"inteligencia-artificial\",\n      \"label\": \"Inteligencia Artificial\",\n      \"status\": \"active\"\n    },\n    \"BOS\": {\n      \"groupId\": \"direccion-inteligencia\",\n      \"sectionId\": \"inteligencia-artificial\",\n      \"label\": \"Agentes e IA\",\n      \"status\": \"active\"\n    },\n    \"CALIDAD\": {",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/config/enterpriseNavigationRegistry.json",
+      "old": "    \"ia.assistant\": {\n      \"groupId\": \"direccion-inteligencia\",\n      \"sectionId\": \"inteligencia-artificial\",\n      \"label\": \"Asistente IA\",\n      \"expectedPath\": \"/ia\",\n      \"order\": 10,\n      \"status\": \"active\",\n      \"legacy\": true\n    },\n    \"bi.reportes\": {",
+      "new": "    \"ia.assistant\": {\n      \"groupId\": \"direccion-inteligencia\",\n      \"sectionId\": \"inteligencia-artificial\",\n      \"label\": \"Asistente IA\",\n      \"expectedPath\": \"/ia\",\n      \"order\": 10,\n      \"status\": \"active\",\n      \"legacy\": true\n    },\n    \"bos.agentes_ia\": {\n      \"groupId\": \"direccion-inteligencia\",\n      \"sectionId\": \"inteligencia-artificial\",\n      \"label\": \"Agentes e IA\",\n      \"expectedPath\": \"/bos/agentes-ia\",\n      \"order\": 20,\n      \"status\": \"active\"\n    },\n    \"bos.centro_agentes\": {\n      \"groupId\": \"direccion-inteligencia\",\n      \"sectionId\": \"inteligencia-artificial\",\n      \"label\": \"Centro de Agentes\",\n      \"expectedPath\": \"/bos/agentes-ia/centro-agentes\",\n      \"order\": 30,\n      \"status\": \"active\"\n    },\n    \"bi.reportes\": {",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {"type":"py_compile","paths":["backend/modules/agent_harness/module_agent_reach_adapter.py","backend/modules/agent_harness/marketing_public_research.py","backend/tests/test_bos_gate6b_agent_reach.py"]},
+    {"type":"pytest","paths":["backend/tests/test_bos_gate6b_agent_reach.py","backend/tests/test_bos_agent_harness_planner_router.py"]},
+    {"type":"frontend_build"},
+    {"type":"git_diff_check"}
+  ]
+}
