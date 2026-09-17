@@ -1,0 +1,56 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENT-HARNESS-V1-FECHA-OPERACION-COMERCIAL-GATE21-R2",
+  "created_at_utc": "2026-09-17T14:45:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "7850b569bc0c12c077180ef2f6a27630bab56c23",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Gate21-R2 de certificacion READ_ONLY para FechaOperacion Comercial despues del recovery R2 integrado y certificado. Validar sin mutaciones el contrato vigente: MPRO conserva Venta_Encabezado.Vn_Fecha como fecha comercial sin desplazamiento; SoftRestaurant agrupa por fecha calendario de fecha_hora proveniente de turnos.apertura en _agrupar_ventas_cerradas_por_fecha_operacion y no debe aplicar operational_window en ese agrupador; el query oficial SoftRestaurant usa alias tr, DATEADD(hour, -offset_hours, tr.apertura), ch.cancelado=0, sin dependencia de cierre ni idempresa, preservando el offset especifico ESTELAR ya integrado. No tocar SQL, Mongo, Scheduler, NetPay, RBAC, permisos, secretos, Agent Reach ni Production. Exito solo con tests PASS, quality_gate PASS, certification=CERTIFIED_READ_ONLY, work_completion=COMPLETE, percent_complete=100, blockers=[], files_changed=[] y production_touched=false.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/tests/test_mpro_fecha_operacion_contract.py",
+        "backend/tests/test_softrestaurant_closed_sales_report_contract.py",
+        "backend/modules/comercial_v2/sync_comercial_edarsahub.py",
+        "backend/modules/agent_harness/planner.py",
+        "backend/modules/agent_harness/router.py",
+        "backend/modules/agent_harness/worker_compiler.py",
+        "backend/modules/agent_harness/evidence.py",
+        "backend/modules/agent_harness/control_plane.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_mpro_fecha_operacion_contract.py",
+        "backend/tests/test_softrestaurant_closed_sales_report_contract.py",
+        "backend/tests/test_bos_agent_harness_planner_router.py",
+        "backend/tests/test_bos_agent_harness_worker_compiler.py",
+        "backend/tests/test_bos_agent_harness_evidence.py",
+        "backend/tests/test_bos_agent_harness_control_plane.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "harness_context": {
+    "plan_step_id": "gate21-r2-fecha-operacion-comercial-readonly-certification",
+    "domain": "comercial",
+    "procedure": "repository-contract-audit",
+    "risk": "R0",
+    "data_classification": "INTERNAL",
+    "agent_id": "bos-backend",
+    "agent_version": "1",
+    "skill_id": "repository-contract-audit",
+    "skill_version": "1",
+    "executor": "worker"
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
