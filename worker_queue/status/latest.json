@@ -1,20 +1,32 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "7850b569bc0c12c077180ef2f6a27630bab56c23",
-  "generated_at_utc": "2026-09-17T17:46:05Z",
+  "generated_at_utc": "2026-09-17T17:47:26Z",
   "history": {
-    "done_total_local": 516,
+    "done_total_local": 517,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 534,
-    "results_total_local": 914
+    "rejected_total_local": 535,
+    "results_total_local": 916
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 240,
+      "age_seconds": 15,
+      "job_id": "EDARSA-LOGISTICS-GATE1B-CANONICAL-DOMAIN-CONTRACT-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 321,
       "job_id": "EDARSAHUB-PRODUCTION-PROMOTION-CHANNEL-CLASSIFICATION-R2",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 69,
+      "job_id": "RRR-GATE4E-CUSTOMER360-SALES-SEMANTICS-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -26,14 +38,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-17T17:45:58Z",
-    "last_receive_utc": "2026-09-17T17:46:01Z",
-    "last_terminal_utc": "2026-09-17T17:42:04Z",
+    "last_cycle_utc": "2026-09-17T17:47:23Z",
+    "last_receive_utc": "2026-09-17T17:47:25Z",
+    "last_terminal_utc": "2026-09-17T17:47:10Z",
     "pid": "64"
   },
   "schema": "edarsahub.worker-health.v3",
