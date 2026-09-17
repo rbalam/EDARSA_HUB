@@ -1,0 +1,27 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"GATE5D-HARDENING-SQL-MIGRATION-EXEC-R2-20260917",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"b22fcd921a3d219ab0b209409c8df36b174c0f56",
+  "production_allowed":false,
+  "mode":"SQL_MIGRATION_DEVELOPMENT",
+  "objective":"Retry quirurgico del Gate 5D hardening, exclusivamente porque R1 fue bloqueado por avance concurrente de Edarsahub_Desarrollo antes de ejecutar SQL. Ejecutar la misma migracion versionada 20260917_001_sql_principals_least_privilege.sql por SQL_MIGRATION_DEVELOPMENT, con el mismo SHA-256 exacto, preflight READ_ONLY y post-audit READ_ONLY. No SQL inline, no shell, no Production.",
+  "actions":[],
+  "migration_path":"backend/database/migrations/20260917_001_sql_principals_least_privilege.sql",
+  "migration_sha256":"425022fb95a6acadf0e1009c87b8f2f69bdc10f5b180fc0f3c115f11e79c5722",
+  "confirm_sql_migration":true,
+  "preflight_checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"preflight_identity","sql":"SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user"},
+    {"name":"preflight_hrlectura_roles","sql":"SELECT rp.name AS role_name FROM sys.database_role_members drm JOIN sys.database_principals rp ON rp.principal_id=drm.role_principal_id JOIN sys.database_principals mp ON mp.principal_id=drm.member_principal_id WHERE mp.name='HRLectura' ORDER BY rp.name"},
+    {"name":"preflight_hub_escritura_roles","sql":"SELECT rp.name AS role_name FROM sys.database_role_members drm JOIN sys.database_principals rp ON rp.principal_id=drm.role_principal_id JOIN sys.database_principals mp ON mp.principal_id=drm.member_principal_id WHERE mp.name='HUB_Escritura' ORDER BY rp.name"},
+    {"name":"preflight_required_objects","sql":"SELECT name FROM sys.objects WHERE object_id IN (OBJECT_ID('dbo.Sistema_RBAC_Permisos'),OBJECT_ID('dbo.Sistema_RBAC_Roles'),OBJECT_ID('dbo.Sistema_RBAC_RolesPermisos')) ORDER BY name"}
+  ]}],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"post_hrlectura_roles","sql":"SELECT rp.name AS role_name FROM sys.database_role_members drm JOIN sys.database_principals rp ON rp.principal_id=drm.role_principal_id JOIN sys.database_principals mp ON mp.principal_id=drm.member_principal_id WHERE mp.name='HRLectura' ORDER BY rp.name"},
+    {"name":"post_hrlectura_effective_write_permissions","sql":"SELECT HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE TABLE') AS can_create_table,HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER') AS can_alter_dbo,HAS_PERMS_BY_NAME('dbo.Sistema_RBAC_Permisos','OBJECT','INSERT') AS can_insert_rbac,HAS_PERMS_BY_NAME('dbo.Sistema_RBAC_Permisos','OBJECT','UPDATE') AS can_update_rbac,HAS_PERMS_BY_NAME('dbo.Sistema_RBAC_RolesPermisos','OBJECT','INSERT') AS can_insert_role_links"},
+    {"name":"post_hub_escritura_roles","sql":"SELECT rp.name AS role_name FROM sys.database_role_members drm JOIN sys.database_principals rp ON rp.principal_id=drm.role_principal_id JOIN sys.database_principals mp ON mp.principal_id=drm.member_principal_id WHERE mp.name='HUB_Escritura' ORDER BY rp.name"},
+    {"name":"post_hub_escritura_explicit_permissions","sql":"SELECT pe.state_desc,pe.permission_name,pe.class_desc,CASE WHEN pe.class=3 THEN SCHEMA_NAME(pe.major_id) WHEN pe.class=1 THEN OBJECT_SCHEMA_NAME(pe.major_id) END AS schema_name,CASE WHEN pe.class=1 THEN OBJECT_NAME(pe.major_id) END AS object_name FROM sys.database_permissions pe JOIN sys.database_principals pr ON pr.principal_id=pe.grantee_principal_id WHERE pr.name='HUB_Escritura' ORDER BY pe.class_desc,schema_name,object_name,pe.permission_name"}
+  ]}],
+  "human_summary_language":"es"
+}
