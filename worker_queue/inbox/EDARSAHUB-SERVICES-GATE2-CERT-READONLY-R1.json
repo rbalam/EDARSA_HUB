@@ -1,0 +1,41 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SERVICES-GATE2-CERT-READONLY-R1",
+  "created_at_utc": "2026-09-17T18:54:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3dfbd728a8641d244a5b913cc63a5dbe3c42bd80",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "READ_ONLY",
+  "objective": "Certificar exclusivamente Gate 2 Domain Data Contract de EDARSAHUB Services ya integrado en SHA 3dfbd728a8641d244a5b913cc63a5dbe3c42bd80. Validar por evidencia del repositorio que el dossier existe, permanece limitado a contrato logico, respeta los ownership y fronteras certificados en Gate 1, no introduce DDL ejecutado ni implementacion funcional, no duplica capacidades BOS y no toca Production. No modificar archivos ni publicar Gate 3.",
+  "constraints": [
+    "READ_ONLY estricto",
+    "actions debe permanecer vacio",
+    "No DDL ni DML",
+    "No ejecutar migraciones",
+    "No crear ni modificar archivos",
+    "No tocar Production",
+    "No modificar backend/core",
+    "No tocar Scheduler ni NetPay",
+    "No publicar ni ejecutar Gate 3",
+    "Validar el dossier docs/BOS/EDARSAHUB_SERVICES_GATE2_DOMAIN_DATA_CONTRACT_R1.md contra el repositorio real",
+    "Confirmar que Gobierno_Persona, RBAC, CRM, Cliente, Proveedor, Documentos, Inventarios, Finanzas, Scheduler, ActivoFijo y COA siguen siendo capacidades reutilizadas y no duplicadas",
+    "Confirmar que el contrato distingue Profession, Specialty, Credential, Service y Provider",
+    "Confirmar que LandParcel mantiene jerarquia/lineage y que Fabrication/Construction/Interiors respetan las invariantes de Gate 1"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "paths": [
+        "docs/BOS/EDARSAHUB_SERVICES_GATE2_DOMAIN_DATA_CONTRACT_R1.md",
+        "docs/BOS/EDARSAHUB_SERVICES_GATE1_CAPABILITY_OWNERSHIP_MAP_R1.md",
+        "backend/core",
+        "backend/modules/catalogo_ampliado"
+      ]
+    }
+  ]
+}
