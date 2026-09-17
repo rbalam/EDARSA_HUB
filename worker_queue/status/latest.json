@@ -1,33 +1,52 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "6177b3a769ed36e6afb9b5d3ac99b1147ff0a377",
-  "generated_at_utc": "2026-09-16T01:33:24Z",
+  "development_sha": "7850b569bc0c12c077180ef2f6a27630bab56c23",
+  "generated_at_utc": "2026-09-17T14:42:06Z",
   "history": {
-    "done_total_local": 512,
+    "done_total_local": 513,
     "pending_total_local": 0,
-    "processing_total_local": 0,
-    "rejected_total_local": 529,
-    "results_total_local": 907
+    "processing_total_local": 1,
+    "rejected_total_local": 530,
+    "results_total_local": 909
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [],
+  "jobs": [
+    {
+      "age_seconds": 21,
+      "job_id": "BOS-AGENT-HARNESS-V1-FECHA-OPERACION-COMERCIAL-GATE21-RECOVERY-R2",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3,
+      "job_id": "WORKER-BOS-AGENTS-IA-GATE6B-R5-V2-PYTEST-PATH-FIX-20260915",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 36,
+      "job_id": "WORKER-BOS-AGENTS-IA-GATE6B-R5-V3-PYTEST-PATH-FIX-20260917",
+      "reason": null,
+      "state": "RUNNING"
+    }
+  ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 0,
-  "queue_running": 0,
+  "queue_result_ready_recent": 2,
+  "queue_running": 1,
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "WORKER-BOS-AGENTS-IA-GATE6B-R5-V3-PYTEST-PATH-FIX-20260917",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-16T01:33:23Z",
-    "last_receive_utc": "2026-09-16T01:33:18Z",
-    "last_terminal_utc": "2026-09-16T00:16:55Z",
-    "pid": "772"
+    "last_cycle_utc": "2026-09-17T14:41:57Z",
+    "last_receive_utc": "2026-09-17T14:42:01Z",
+    "last_terminal_utc": "2026-09-17T14:42:03Z",
+    "pid": "706"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
