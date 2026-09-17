@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SERVICES-GATE0-ASIS-CANONICAL-DISCOVERY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Auditar el estado AS-IS canónico del dominio Services/Prestadores de Servicios en EDARSAHUB, identificando capacidades existentes, bounded contexts, tablas SQL, endpoints, frontend, workflows, autorizaciones, RBAC, integraciones y dependencias. No crear tablas, endpoints, frontend, migraciones ni refactors; no tocar RBAC, menús, Scheduler, Universal Worker, NetPay ni Production; no crecer Core ni duplicar capacidades existentes.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": ["backend", "frontend", "tools"],
+        "search_terms": ["services", "service", "servicios", "prestador", "prestadores", "proveedor", "proveedores", "contrato", "contratos", "orden de servicio", "orden_servicio", "workflow", "autorizacion", "autorización"],
+        "include_patterns": ["*.py", "*.js", "*.jsx", "*.ts", "*.tsx", "*.sql", "*.json"],
+        "exclude_patterns": ["node_modules/**", ".git/**"],
+        "max_results": 1500
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "services_schema_inventory",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND (LOWER(TABLE_NAME) LIKE '%servic%' OR LOWER(TABLE_NAME) LIKE '%prestador%' OR LOWER(TABLE_NAME) LIKE '%proveedor%' OR LOWER(TABLE_NAME) LIKE '%contrat%' OR LOWER(TABLE_NAME) LIKE '%orden%' OR LOWER(TABLE_NAME) LIKE '%workflow%' OR LOWER(TABLE_NAME) LIKE '%autoriz%') ORDER BY TABLE_SCHEMA, TABLE_NAME"
+        },
+        {
+          "name": "services_column_inventory",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE LOWER(TABLE_NAME) LIKE '%servic%' OR LOWER(TABLE_NAME) LIKE '%prestador%' OR LOWER(TABLE_NAME) LIKE '%proveedor%' OR LOWER(TABLE_NAME) LIKE '%contrat%' OR LOWER(TABLE_NAME) LIKE '%orden%' OR LOWER(TABLE_NAME) LIKE '%workflow%' ORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION"
+        }
+      ]
+    }
+  ]
+}
