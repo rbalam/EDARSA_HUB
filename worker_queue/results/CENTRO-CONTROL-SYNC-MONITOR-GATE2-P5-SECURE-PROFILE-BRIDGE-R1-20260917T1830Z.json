@@ -1,0 +1,30 @@
+{
+  "base_sha": "1b5765176aa7530472e5163bfa78877dedc560f6",
+  "blockers": [],
+  "candidate_sha": "c03abca3e20b7a8e8e7afb54a9648f9048f26c05",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-17T18:30:02Z",
+  "development_sha": "c03abca3e20b7a8e8e7afb54a9648f9048f26c05",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    ".github/workflows/centro-control-sync-monitor-p5-runtime-e2e.yml",
+    "backend/tests/test_control_sync_p5_runtime_secure_e2e.py",
+    "backend/tests/test_control_sync_p5_secure_profile_contract.py",
+    "ops/e2e/requests/CENTRO-CONTROL-SYNC-MONITOR-P5-RUNTIME-SECURE-R1.execute"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-SECURE-PROFILE-BRIDGE-R1-20260917T1830Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-17T18:30:07Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-17T18:29:56Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
