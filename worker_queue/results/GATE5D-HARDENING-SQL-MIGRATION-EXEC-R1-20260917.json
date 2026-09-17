@@ -1,0 +1,22 @@
+{
+  "blockers": [
+    "dispatcher_exception:RuntimeError:CONCURRENT_SCOPE_CONFLICT:expected=3dfbd728a8641d244a5b913cc63a5dbe3c42bd80:actual=b22fcd921a3d219ab0b209409c8df36b174c0f56:paths="
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-17T20:55:18Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "GATE5D-HARDENING-SQL-MIGRATION-EXEC-R1-20260917",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-17T20:56:13Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-17T20:55:17Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
