@@ -1,0 +1,34 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"RRR-GATE4E-CUSTOMER360-SALES-SEMANTICS-READONLY-20260917",
+  "created_at_utc":"2026-09-17T17:46:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"da5b1168ba7cf32711b4fb7753fd64172ef6607a",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Auditar exclusivamente la semantica comercial de dbo.vw_RRR_ClienteActividadComercial y dbo.vw_RRR_Customer360 despues de Gate4D. Determinar con evidencia si V2 respeta las reglas canonicas EDARSAHUB para ventas validas y fecha operativa, o si requiere V3. No modificar vistas, tablas, codigo ni Produccion.",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {"name":"g4e_identity","sql":"SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS user_name"},
+        {"name":"g4e_view_def_activity","sql":"SELECT OBJECT_DEFINITION(OBJECT_ID('dbo.vw_RRR_ClienteActividadComercial')) AS definition"},
+        {"name":"g4e_view_def_customer360","sql":"SELECT OBJECT_DEFINITION(OBJECT_ID('dbo.vw_RRR_Customer360')) AS definition"},
+        {"name":"g4e_venta_encabezado_columns","sql":"SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Venta_Encabezado') ORDER BY c.column_id"},
+        {"name":"g4e_venta_status_columns","sql":"SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Venta_Estatus') ORDER BY c.column_id"},
+        {"name":"g4e_operational_date_candidates","sql":"SELECT s.name AS schema_name,o.name AS object_name,o.type_desc,c.name AS column_name FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id JOIN sys.columns c ON c.object_id=o.object_id WHERE o.type IN ('U','V') AND (LOWER(c.name) LIKE '%fecha%oper%' OR LOWER(c.name) IN ('fechaoperacion','fecha_operacion','fecha_operativa')) ORDER BY s.name,o.name,c.column_id"},
+        {"name":"g4e_comercial_canonical_objects","sql":"SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.type IN ('U','V') AND (LOWER(o.name) LIKE '%comercial%' OR LOWER(o.name) LIKE '%kpi%' OR LOWER(o.name) LIKE '%venta%valid%') ORDER BY s.name,o.name"},
+        {"name":"g4e_venta_status_distribution","sql":"SELECT TOP (100) CAST(Estado AS nvarchar(200)) AS estado,COUNT_BIG(*) AS rows_count,SUM(CASE WHEN ClienteID IS NULL THEN 1 ELSE 0 END) AS cliente_nulls,MIN(FechaVenta) AS min_fecha,MAX(FechaVenta) AS max_fecha FROM dbo.Venta_Encabezado GROUP BY CAST(Estado AS nvarchar(200)) ORDER BY rows_count DESC"},
+        {"name":"g4e_activity_sample","sql":"SELECT TOP (50) * FROM dbo.vw_RRR_ClienteActividadComercial ORDER BY ClienteID"},
+        {"name":"g4e_customer360_sample","sql":"SELECT TOP (50) * FROM dbo.vw_RRR_Customer360 ORDER BY ClienteID"},
+        {"name":"g4e_raw_vs_activity_totals","sql":"SELECT (SELECT COUNT_BIG(*) FROM dbo.Venta_Encabezado WHERE ClienteID IS NOT NULL) AS raw_rows_with_cliente,(SELECT COUNT_BIG(*) FROM dbo.vw_RRR_ClienteActividadComercial) AS activity_customer_rows,(SELECT COUNT_BIG(*) FROM dbo.vw_RRR_Customer360) AS customer360_rows"},
+        {"name":"g4e_null_cliente_distribution","sql":"SELECT COUNT_BIG(*) AS total_ventas,SUM(CASE WHEN ClienteID IS NULL THEN 1 ELSE 0 END) AS cliente_nulls,SUM(CASE WHEN ClienteID IS NOT NULL THEN 1 ELSE 0 END) AS cliente_present FROM dbo.Venta_Encabezado"}
+      ]
+    }
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
