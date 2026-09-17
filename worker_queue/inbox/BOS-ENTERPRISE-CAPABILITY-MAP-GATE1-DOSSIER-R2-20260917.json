@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-ENTERPRISE-CAPABILITY-MAP-GATE1-DOSSIER-R2-20260917",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "abe575c592263147b9725d812549d27d16686608",
+  "production_allowed": false,
+  "objective": "Reintentar exclusivamente la materializacion documental ya certificada del Enterprise Capability Map Gate 1. R1 termino en GIT_LOCK_BUSY sin modificar archivos. No ejecutar nuevo discovery, no modificar runtime, no tocar SQL/Mongo/LIVE/Produccion y no crear capacidades paralelas.",
+  "acceptance": [
+    "Crear solamente docs/BOS/BOS_ENTERPRISE_CAPABILITY_MAP_GATE1_DOSSIER_V1.md.",
+    "El dossier referencia como fuente certificada EDARSAHUB-ENTERPRISE-CAPABILITY-MAP-GATE1-R2-20260914.",
+    "Persistir matriz capability-owner-clasificacion-decision y reglas vinculantes para siguientes Gates.",
+    "No modificar codigo, tests, SQL, configuracion ni otros documentos.",
+    "git_diff_check debe pasar y production_touched=false."
+  ],
+  "constraints": [
+    "EDARSAHUB SQL Server sigue siendo cerebro y fuente canonica.",
+    "No Mongo operativo.",
+    "No LIVE para dashboards administrativos.",
+    "No crear RBAC, scheduler, capability registry, connection resolver o integration runtime paralelos.",
+    "Prioridad arquitectonica: REUSE -> CONSOLIDATE -> EXTRACT -> EXTEND -> CREATE_ONLY_WHEN_PROVEN_MISSING.",
+    "No crecer backend/core con capacidades de dominio o provider-specific.",
+    "Produccion prohibida."
+  ],
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/BOS/BOS_ENTERPRISE_CAPABILITY_MAP_GATE1_DOSSIER_V1.md",
+      "content": "# BOS Enterprise Capability Map - Gate 1\n\nEstado: CERTIFIED / DOCUMENTAL CLOSURE\nFecha de materializacion: 2026-09-17\nFuente de evidencia certificada: `EDARSAHUB-ENTERPRISE-CAPABILITY-MAP-GATE1-R2-20260914`\nCertificacion fuente: `CERTIFIED_READ_ONLY`\nQuality gate fuente: `PASS`\nProduction touched en discovery: `false`\nFiles changed en discovery: `[]`\n\n## 1. Objetivo\n\nEste dossier materializa la interpretacion arquitectonica del Enterprise Capability Map de EDARSAHUB BOS a partir de la evidencia READ_ONLY ya certificada. No agrega discovery adicional.\n\n## 2. Principio rector\n\n`REUSE -> CONSOLIDATE -> EXTRACT -> EXTEND -> CREATE_ONLY_WHEN_PROVEN_MISSING`\n\nCrear una capacidad paralela queda prohibido cuando ya existe infraestructura canonica suficiente.\n\n## 3. Matriz de capacidades\n\n| Capability | Owner / implementacion observada | Estado | Decision vinculante |\n|---|---|---|---|\n| Identity / Auth | `backend/modules/auth` | CANONICAL | REUSE |\n| RBAC / Effective permissions | Auth + RBAC middleware + `menu-permissions` | CANONICAL | REUSE |\n| Enterprise menus | SQL + protected frontend layout | EXISTS | CONSOLIDATE |\n| Empresa / unidad / sucursal context | Auth context + resolvers | TRANSVERSAL | REUSE |\n| Connection resolution | `core.connection_resolver`, server registry, SQL-first factories | CANONICAL_INFRA | EXTEND/SLIM |\n| Scheduler | `core/scheduler/scheduler_manager.py` | CANONICAL_INFRA | REUSE |\n| Jobs / resync / backfill | Scheduler + administrative APIs | EXISTS | CONSOLIDATE_ON_SCHEDULER |\n| System / capability registry | `catalogos_sistemas.py` + capability resolver | EXISTS_PARTIAL | EXTEND_EXISTING |\n| SoftRestaurant | Integration adapter/pattern | EXISTS | ADAPTER |\n| MPRO | Integration adapter/pattern | EXISTS | ADAPTER |\n| NetPay | Scheduler/resync integration | EXISTS | ADAPTER |\n| vtiger | CRM external integration references | EXISTS_PARTIAL | EXTEND |\n| Twilio | Notification provider | EXISTS | REUSE_PROVIDER |\n| SAP / Oracle / Dynamics | Enterprise connector references | PARTIAL | ADAPTER_PATTERN |\n| BBVA / Banorte | Banking integrations | PARTIAL | UNIVERSAL_BANKING_ADAPTERS |\n| Dashboards / KPIs | Multiple consumers over backend services | EXISTS | CONSOLIDATE_METRIC_TRUTH |\n| Workflows | Multiple domain implementations | EXISTS_FRAGMENTED | CONSOLIDATE_PRIMITIVES |\n| Audit / evidence | APIs, tests, dossiers and Worker evidence | EXISTS | REUSE_COMMON_PATTERN |\n| Agent runtime | Multiple `core.agent_*` capabilities | EXISTS_CORE_HEAVY | EXTRACT_PROGRESSIVELY |\n| Universal Worker | `tools/mirror_sync` | CANONICAL_EXTERNAL_EXECUTION | KEEP_OUTSIDE_CORE |\n| Repository READ_ONLY audit | `READ_ONLY` + `repository_contract_audit` | CANONICAL | REUSE |\n\n## 4. Binding rules\n\n1. EDARSAHUB SQL Server remains the canonical operational brain.\n2. MongoDB may not be introduced as operational truth or fallback.\n3. Administrative dashboards may not depend directly on LIVE sources.\n4. Reuse canonical Auth/RBAC; no domain RBAC forks.\n5. Reuse canonical Scheduler; no parallel schedulers.\n6. Extend the existing capability registry before creating a new registry or catalog.\n7. Integration providers must be adapters of shared infrastructure, not independent subsystems.\n8. BBVA and Banorte are adapters of a Universal Banking Connector.\n9. KPI consumers must share canonical metric definitions and sources.\n10. Domain workflows must reuse common primitives when repetition is proven.\n11. New files under `backend/core` require explicit evidence that the capability is truly transversal.\n12. Universal Worker remains outside application Core.\n13. Any CREATE decision must document why REUSE, CONSOLIDATE, EXTRACT and EXTEND were insufficient.\n14. Production changes require explicit authorization.\n\n## 5. Gate 1 closure\n\n`GATE_1=PASS`\n`SOURCE_CERTIFICATION=CERTIFIED_READ_ONLY`\n`EXISTING_CAPABILITIES=MANY`\n`REUSABLE_INFRASTRUCTURE=HIGH`\n`TRUE_GREENFIELD_NEED=LOW`\n`DUPLICATION_RISK=MEDIUM_HIGH`\n`ORPHAN_CAPABILITIES=PRESENT`\n`CORE_OVERGROWTH=CONFIRMED`\n`NEW_CORE_CAPABILITIES_REQUIRED=NO`\n`NEW_PARALLEL_SYSTEMS_REQUIRED=NO`\n\nGate 1 queda documentalmente cerrado cuando este dossier sea integrado como unico cambio funcionalmente neutro, con `git_diff_check=PASS`, `production_touched=false` y sin DDL/DML.\n"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"}
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
