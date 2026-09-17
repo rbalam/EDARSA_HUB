@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "c03abca3e20b7a8e8e7afb54a9648f9048f26c05",
-  "generated_at_utc": "2026-09-17T18:49:50Z",
+  "development_sha": "f9d9467142021b30a34e183287e26ae4a074dff2",
+  "generated_at_utc": "2026-09-17T18:51:11Z",
   "history": {
-    "done_total_local": 528,
+    "done_total_local": 529,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 540,
-    "results_total_local": 930
+    "results_total_local": 931
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 187,
+      "age_seconds": 267,
       "job_id": "BOS-V1-MASTER-STATUS-GLOBAL-PROGRESS-R4",
       "reasons": [
         "INVALID_JSON"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 242,
+      "age_seconds": 323,
       "job_id": "EDARSAHUB-INVENTARIOS-TARGETED-RECOVERY-CERT-R2B-20260915T181200Z",
       "reasons": [
         "ACTIONS_REQUIRED"
@@ -31,79 +31,79 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2248,
+      "age_seconds": 2329,
       "job_id": "BOS-AGENT-HARNESS-V1-GATE22-DISCOVERY-READONLY-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3251,
+      "age_seconds": 3331,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE0B-SQL-CANONICAL-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2280,
+      "age_seconds": 2361,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE1-CANONICAL-DOMAIN-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2271,
+      "age_seconds": 2352,
       "job_id": "BOS-UNIVERSAL-WORKER-RUNTIME-DIAGNOSTIC-GATE22A-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1188,
+      "age_seconds": 1268,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-SECURE-PROFILE-BRIDGE-R1-20260917T1830Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 123,
+      "age_seconds": 204,
       "job_id": "CXP-GATE3E-B-R1-MPRO-SIDE-EFFECT-CONTRACT-READONLY-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 81,
+      "age_seconds": 162,
       "job_id": "CXP-GATE3E-C-R1-SOFTRESTAURANT-SIDE-EFFECT-CONTRACT-READONLY-20260914",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3562,
-      "job_id": "PRIMARY-INDUSTRIES-GATE0B-REPRODUCTION-CONTRACTS-DELTA-DISCOVERY-20260917",
+      "age_seconds": 55,
+      "job_id": "GATE5D-MINIMUM-PRIVILEGE-MIGRATION-READINESS-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3220,
+      "age_seconds": 3301,
       "job_id": "RRR-GATE4E-R2-CANONICAL-SALES-COMPARISON-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2267,
+      "age_seconds": 2348,
       "job_id": "RRR-GATE4E-R3-CUSTOMER-SALES-SOURCE-DISCOVERY-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1010,
+      "age_seconds": 1091,
       "job_id": "RRR-GATE4E-R4-CUSTOMER-ATTRIBUTION-BRIDGE-DISCOVERY-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3285,
+      "age_seconds": 3366,
       "job_id": "UNIVERSAL-WORKER-COMBINED-READ-ONLY-AUDIT-CONTRACT-V1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1198,
+      "age_seconds": 1279,
       "job_id": "UNIVERSAL-WORKER-COMBINED-READ-ONLY-AUDIT-CONTRACT-V1-RETRY1",
       "reason": null,
       "state": "RESULT_READY"
@@ -121,9 +121,9 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-17T18:49:17Z",
-    "last_receive_utc": "2026-09-17T18:49:12Z",
-    "last_terminal_utc": "2026-09-17T18:48:28Z",
+    "last_cycle_utc": "2026-09-17T18:51:09Z",
+    "last_receive_utc": "2026-09-17T18:51:11Z",
+    "last_terminal_utc": "2026-09-17T18:50:15Z",
     "pid": "38836"
   },
   "schema": "edarsahub.worker-health.v3",
