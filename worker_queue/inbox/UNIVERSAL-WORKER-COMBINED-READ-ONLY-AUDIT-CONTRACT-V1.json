@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "UNIVERSAL-WORKER-COMBINED-READ-ONLY-AUDIT-CONTRACT-V1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Permitir que mode=READ_ONLY ejecute conjuntamente repository_contract_audit y sql_readonly_audit sin mutaciones, preservando el contrato fail-closed, sin crear un modo nuevo, sin tocar Production y sin modificar el lifecycle de jobs.",
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "READ_ONLY_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"repository_contract_audit\"}",
+      "new": "READ_ONLY_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"sql_readonly_audit\", \"repository_contract_audit\"}",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "READ_ONLY_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"repository_contract_audit\"}",
+      "new": "READ_ONLY_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"sql_readonly_audit\", \"repository_contract_audit\"}",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_generic_readonly.py",
+      "old": "def test_bridge_rejects_non_readonly_checks_and_production():\n    bridge = load_module(BRIDGE, 'generic_readonly_bridge_checks')\n    for check in (\n        {'type': 'frontend_build', 'directory': 'frontend'},\n        {'type': 'sql_readonly_audit', 'queries': [{'name': 'x', 'sql': 'SELECT 1'}]},\n    ):\n        job = base_job()\n        job['checks'] = [check]\n        assert 'READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED' in bridge.validate(job)\n    prod = base_job()\n    prod['production_allowed'] = True\n    assert 'PRODUCTION_MUST_BE_FALSE' in bridge.validate(prod)\n",
+      "new": "def test_bridge_rejects_mutating_readonly_checks_and_production():\n    bridge = load_module(BRIDGE, 'generic_readonly_bridge_checks')\n    job = base_job()\n    job['checks'] = [{'type': 'frontend_build', 'directory': 'frontend'}]\n    assert 'READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED' in bridge.validate(job)\n    prod = base_job()\n    prod['production_allowed'] = True\n    assert 'PRODUCTION_MUST_BE_FALSE' in bridge.validate(prod)\n\n\ndef test_bridge_accepts_combined_repository_and_sql_readonly_checks():\n    bridge = load_module(BRIDGE, 'generic_readonly_bridge_combined')\n    job = base_job()\n    job['checks'] = [\n        {\n            'type': 'repository_contract_audit',\n            'request': {\n                'paths': ['backend', 'tools/mirror_sync'],\n                'search_terms': ['worker', 'sql'],\n                'max_results': 10,\n            },\n        },\n        {\n            'type': 'sql_readonly_audit',\n            'queries': [{'name': 'identity', 'sql': 'SELECT DB_NAME() AS db_name'}],\n        },\n    ]\n    assert bridge.validate(job) == []\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_generic_readonly.py",
+        "backend/tests/test_worker_sql_readonly_audit.py"
+      ]
+    }
+  ]
+}
