@@ -1,0 +1,31 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "RRHH-CUSTODIA-GATE2B-SQL-FK-TYPE-PREFLIGHT-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "93a2f07d33e0bd57291a024dfed7b9fe49e4faf6",
+  "production_allowed": false,
+  "objective": "Certificar en solo lectura los nombres fisicos, tipos PK/FK y contratos canonicos necesarios para el bounded context Custodia/Resguardos de RRHH, con foco en dbo.ActivoFijo_Activos y dbo.RH_Nomina_Detalle. No modificar datos, esquema, codigo, frontend ni Produccion. Confirmar tambien los contratos ya inferidos de colaboradores, productos, empresas, unidades, sucursales, usuarios y Gobierno Documental antes de generar cualquier DDL.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "custodia_column_contracts",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.precision, c.scale, c.is_nullable, c.is_identity FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND t.name IN ('ActivoFijo_Activos','RH_Nomina_Detalle','RH_Nomina','RH_Cat_ConceptosNomina','RH_Colaboradores_Expediente','Producto_Catalogo','Sistema_Empresas','Unidades_Negocio','Sistema_Sucursales','Usuario_Catalogo','Gobierno_Documento') ORDER BY t.name,c.column_id"
+        },
+        {
+          "name": "custodia_primary_keys",
+          "sql": "SELECT OBJECT_SCHEMA_NAME(kc.parent_object_id) AS schema_name, OBJECT_NAME(kc.parent_object_id) AS table_name, kc.name AS pk_name, c.name AS column_name, ty.name AS data_type, ic.key_ordinal FROM sys.key_constraints kc JOIN sys.index_columns ic ON ic.object_id=kc.parent_object_id AND ic.index_id=kc.unique_index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE kc.type='PK' AND OBJECT_NAME(kc.parent_object_id) IN ('ActivoFijo_Activos','RH_Nomina_Detalle','RH_Nomina','RH_Cat_ConceptosNomina','RH_Colaboradores_Expediente','Producto_Catalogo','Sistema_Empresas','Unidades_Negocio','Sistema_Sucursales','Usuario_Catalogo','Gobierno_Documento') ORDER BY table_name,ic.key_ordinal"
+        },
+        {
+          "name": "custodia_foreign_keys_focus",
+          "sql": "SELECT OBJECT_SCHEMA_NAME(fk.parent_object_id) AS child_schema, OBJECT_NAME(fk.parent_object_id) AS child_table, pc.name AS child_column, OBJECT_SCHEMA_NAME(fk.referenced_object_id) AS parent_schema, OBJECT_NAME(fk.referenced_object_id) AS parent_table, rc.name AS parent_column, fk.name AS fk_name FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE OBJECT_NAME(fk.parent_object_id) IN ('ActivoFijo_Activos','RH_Nomina_Detalle') ORDER BY child_table,fk.name,child_column"
+        }
+      ]
+    }
+  ]
+}
