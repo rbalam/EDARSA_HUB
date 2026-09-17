@@ -1,0 +1,38 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-TARGETED-RECOVERY-CERT-R2C-20260917T125100Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Certificar en modo READ_ONLY el código integrado de recuperación quirúrgica de un único inventario ERROR antes de ejecutar el canario ID 373. Validar contrato del repositorio, compilación, pruebas funcionales y precondición SQL exacta de ID 373. No ejecutar endpoint, no mutar SQL, no habilitar email y no tocar Producción.",
+  "mode":"READ_ONLY",
+  "actions":[],
+  "checks":[
+    {
+      "type":"repository_contract_audit",
+      "request":{
+        "paths":[
+          "backend/core/scheduler/sql_repository.py",
+          "backend/core/scheduler/jobs/inventarios_detector_job.py",
+          "backend/core/scheduler/scheduler_manager.py",
+          "backend/core/scheduler/routes.py",
+          "backend/tests/test_inventarios_detector_system_types.py"
+        ],
+        "search_terms":[
+          "get_inventario_error_by_id",
+          "retry_error_by_id",
+          "retry_inventario_error_by_id",
+          "/inventarios/retry-error/{record_id}",
+          "SCHEDULER_INVENTARIOS_EMAIL_ENABLED",
+          "SCHEDULER_ADMIN"
+        ],
+        "max_results":50
+      }
+    },
+    {"type":"py_compile","paths":["backend/core/scheduler/sql_repository.py","backend/core/scheduler/jobs/inventarios_detector_job.py","backend/core/scheduler/scheduler_manager.py","backend/core/scheduler/routes.py","backend/tests/test_inventarios_detector_system_types.py"]},
+    {"type":"pytest","paths":["backend/tests/test_inventarios_detector_system_types.py"]},
+    {"type":"sql_readonly_audit","queries":[{"name":"canary_373_precondition","sql":"SELECT ID, Estado, Intentos, FolioInventario, ErrorMensaje FROM dbo.Scheduler_InventariosProcesados WHERE ID = 373"}]}
+  ],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
