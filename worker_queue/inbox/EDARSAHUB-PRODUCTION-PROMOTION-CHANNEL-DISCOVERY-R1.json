@@ -1,0 +1,66 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PRODUCTION-PROMOTION-CHANNEL-DISCOVERY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "base_sha": "7850b569bc0c12c077180ef2f6a27630bab56c23",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exhaustivamente y sin mutaciones como debe autorizarse una promocion de Edarsahub_Desarrollo hacia Edarsahub_Produccion. Determinar si ya existe un canal canonico de promocion, que guardas lo gobiernan y por que agent-guard bloquea pushes directos a Produccion. Clasificar evidencia por reglas activas, workflows activos, scripts/publishers, governance y legacy/historico. No modificar agent-guard, no crear workflows, no hacer push/merge/rebase/cherry-pick, no tocar Produccion. El resultado debe declarar PROMOTION_CHANNEL_EXISTS=YES/NO; mecanismo exacto si existe; blockers; required_authorization; politica fast_forward_only/force_push; reglas source/target; y, si no existe canal, proponer un contrato minimo y especifico para un futuro Production Promotion Gate que no otorgue permiso general al Universal Worker y que requiera SHA exacto, CAS contra production actual, fast-forward-only, gates certificados y postcheck de topologia.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "AGENTS.md",
+          ".github",
+          ".agents",
+          "tools",
+          "scripts",
+          "ops",
+          "docs/agent-governance",
+          "docs/architecture",
+          "docs/BOS"
+        ],
+        "search_terms": [
+          "Edarsahub_Produccion",
+          "Edarsahub_Desarrollo",
+          "push a Produccion prohibido",
+          "production",
+          "promotion",
+          "promote",
+          "deploy",
+          "release",
+          "agent_guard",
+          "EDARSA_ALLOW_PUSH",
+          "force push",
+          "fast-forward",
+          "workflow_dispatch",
+          "environment",
+          "required reviewers"
+        ],
+        "include_patterns": [
+          "*.md",
+          "*.py",
+          "*.sh",
+          "*.yml",
+          "*.yaml",
+          "*.json"
+        ],
+        "exclude_patterns": [
+          "node_modules/**",
+          "build/**",
+          "dist/**",
+          ".git/**",
+          "docs/EKS/**"
+        ],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
