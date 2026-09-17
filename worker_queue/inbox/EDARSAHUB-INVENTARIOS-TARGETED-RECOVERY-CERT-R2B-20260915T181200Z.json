@@ -1,0 +1,17 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-TARGETED-RECOVERY-CERT-R2B-20260915T181200Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Certificar el código ya integrado para recuperación quirúrgica de un único inventario ERROR antes de ejecutar el canario ID 373. Validar compilación, pruebas funcionales del detector y precondición SQL exacta ID=373 Estado=ERROR Intentos=3. No ejecutar el endpoint, no mutar SQL, no habilitar email y no tocar Producción.",
+  "mode":"CODE_CHANGE",
+  "actions":[],
+  "checks":[
+    {"type":"py_compile","paths":["backend/core/scheduler/sql_repository.py","backend/core/scheduler/jobs/inventarios_detector_job.py","backend/core/scheduler/scheduler_manager.py","backend/core/scheduler/routes.py","backend/tests/test_inventarios_detector_system_types.py"]},
+    {"type":"pytest","paths":["backend/tests/test_inventarios_detector_system_types.py"]},
+    {"type":"sql_readonly_audit","queries":[{"name":"canary_373_precondition","sql":"SELECT ID, Estado, Intentos, FolioInventario, ErrorMensaje FROM dbo.Scheduler_InventariosProcesados WHERE ID = 373"}]}
+  ],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
