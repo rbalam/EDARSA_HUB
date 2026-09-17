@@ -1,0 +1,84 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENT-HARNESS-V1-GATE22-DISCOVERY-READONLY-R2",
+  "created_at_utc": "2026-09-17T17:49:30Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "7850b569bc0c12c077180ef2f6a27630bab56c23",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Abrir Gate22 exclusivamente como discovery READ_ONLY corregido. Auditar el estado canonico del BOS Agent Harness V1 y la secuencia cerrada hasta Gate21 para identificar, sin inventar ni mutar, el siguiente dominio/capacidad pendiente que debe convertirse en Gate22 funcional. La evidencia debe determinar: dominio siguiente, contrato a certificar, archivos y tests exactos relacionados, si el siguiente gate puede ser READ_ONLY o requiere mutation previa, y prerrequisitos heredados de Gate21. No modificar archivos. No tocar SQL, Mongo, Scheduler, NetPay, RBAC, permisos, secretos, integraciones externas ni Production.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/agent_harness/registry.py",
+        "backend/modules/agent_harness/planner.py",
+        "backend/modules/agent_harness/router.py",
+        "backend/modules/agent_harness/worker_compiler.py",
+        "backend/modules/agent_harness/evidence.py",
+        "backend/modules/agent_harness/control_plane.py",
+        "backend/modules/agent_harness/e2e_simulation.py",
+        "backend/modules/agent_harness/local_runtime.py",
+        "backend/modules/agent_harness/redteam.py",
+        "backend/modules/agent_harness/marketing_cx.py",
+        "backend/modules/agent_harness/mobile.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_bos_agent_harness_planner_router.py",
+        "backend/tests/test_bos_agent_harness_worker_compiler.py",
+        "backend/tests/test_bos_agent_harness_evidence.py",
+        "backend/tests/test_bos_agent_harness_control_plane.py",
+        "backend/tests/test_bos_agent_harness_e2e_simulation.py",
+        "backend/tests/test_bos_agent_harness_local_runtime.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/agent_harness",
+          "backend/tests"
+        ],
+        "search_terms": [
+          "Gate21",
+          "Gate22",
+          "agent_harness",
+          "registry",
+          "planner",
+          "router",
+          "worker_compiler",
+          "evidence",
+          "control_plane",
+          "marketing_cx",
+          "mobile"
+        ],
+        "include_patterns": ["*.py", "*.json", "*.md"],
+        "exclude_patterns": ["*.pyc", "__pycache__/*"],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "harness_context": {
+    "plan_step_id": "gate22-discovery-readonly-r2",
+    "domain": "engineering",
+    "procedure": "repository-contract-audit",
+    "risk": "R0",
+    "data_classification": "INTERNAL",
+    "agent_id": "bos-backend",
+    "agent_version": "1",
+    "skill_id": "repository-contract-audit",
+    "skill_version": "1",
+    "executor": "worker"
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
