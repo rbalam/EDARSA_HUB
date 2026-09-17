@@ -1,0 +1,33 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"RRR-GATE4E-R2-CANONICAL-SALES-COMPARISON-READONLY-20260917",
+  "created_at_utc":"2026-09-17T17:54:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"da5b1168ba7cf32711b4fb7753fd64172ef6607a",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Gate4E-R2. Comparar la semantica real de vw_RRR_ClienteActividadComercial V2 contra las fuentes y reglas comerciales canonicas existentes. Determinar si V2 puede certificarse o requiere V3. Solo SELECT; sin DDL/DML ni cambios de codigo o Produccion.",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {"name":"g4e_r2_identity","sql":"SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS user_name"},
+        {"name":"g4e_r2_venta_estatus_catalog","sql":"SELECT EstatusVentaID,Descripcion,Activo FROM dbo.Venta_Estatus ORDER BY EstatusVentaID"},
+        {"name":"g4e_r2_venta_distribution_by_status","sql":"SELECT v.EstatusVentaID,e.Descripcion,e.Activo,COUNT_BIG(*) AS venta_rows,MIN(v.FechaVenta) AS min_fecha_venta,MAX(v.FechaVenta) AS max_fecha_venta,SUM(v.Total) AS total_importe FROM dbo.Venta_Encabezado v LEFT JOIN dbo.Venta_Estatus e ON e.EstatusVentaID=v.EstatusVentaID GROUP BY v.EstatusVentaID,e.Descripcion,e.Activo ORDER BY v.EstatusVentaID"},
+        {"name":"g4e_r2_runtime_columns","sql":"SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.vw_Comercial_KPIs_Diarios_v2_Runtime') ORDER BY c.column_id"},
+        {"name":"g4e_r2_runtime_definition","sql":"SELECT OBJECT_DEFINITION(OBJECT_ID('dbo.vw_Comercial_KPIs_Diarios_v2_Runtime')) AS definition"},
+        {"name":"g4e_r2_canonica_definition","sql":"SELECT OBJECT_DEFINITION(OBJECT_ID('dbo.vw_Comercial_KPIs_Diarios_v2_Canonica')) AS definition"},
+        {"name":"g4e_r2_activity_definition","sql":"SELECT OBJECT_DEFINITION(OBJECT_ID('dbo.vw_RRR_ClienteActividadComercial')) AS definition"},
+        {"name":"g4e_r2_rrr_eventos_columns","sql":"SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.RRR_Eventos') ORDER BY c.column_id"},
+        {"name":"g4e_r2_sales_by_client_status","sql":"SELECT TOP (100) v.ClienteID,v.EstatusVentaID,e.Descripcion,COUNT_BIG(*) AS venta_rows,SUM(v.Total) AS total_importe,MIN(v.FechaVenta) AS primera_fecha,MAX(v.FechaVenta) AS ultima_fecha FROM dbo.Venta_Encabezado v LEFT JOIN dbo.Venta_Estatus e ON e.EstatusVentaID=v.EstatusVentaID GROUP BY v.ClienteID,v.EstatusVentaID,e.Descripcion ORDER BY venta_rows DESC,v.ClienteID"},
+        {"name":"g4e_r2_activity_vs_raw_counts","sql":"SELECT (SELECT COUNT_BIG(*) FROM dbo.Venta_Encabezado) AS venta_rows,(SELECT COUNT_BIG(*) FROM dbo.Venta_Encabezado WHERE Activo=1) AS venta_rows_activo,(SELECT COUNT_BIG(*) FROM dbo.vw_RRR_ClienteActividadComercial) AS activity_rows,(SELECT COUNT_BIG(*) FROM dbo.Cliente_Catalogo) AS cliente_catalogo_rows"},
+        {"name":"g4e_r2_activity_null_cliente","sql":"SELECT COUNT_BIG(*) AS activity_null_cliente FROM dbo.vw_RRR_ClienteActividadComercial WHERE ClienteID IS NULL"}
+      ]
+    }
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
