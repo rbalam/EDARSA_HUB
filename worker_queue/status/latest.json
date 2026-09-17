@@ -1,10 +1,10 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "c03abca3e20b7a8e8e7afb54a9648f9048f26c05",
-  "generated_at_utc": "2026-09-17T18:31:40Z",
+  "generated_at_utc": "2026-09-17T18:32:58Z",
   "history": {
     "done_total_local": 525,
-    "pending_total_local": 0,
+    "pending_total_local": 1,
     "processing_total_local": 0,
     "rejected_total_local": 538,
     "results_total_local": 927
@@ -13,85 +13,91 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1158,
+      "age_seconds": 0,
+      "job_id": "RRR-GATE4E-R4-CUSTOMER-ATTRIBUTION-BRIDGE-DISCOVERY-READONLY-20260917",
+      "reason": null,
+      "state": "PENDING"
+    },
+    {
+      "age_seconds": 1235,
       "job_id": "BOS-AGENT-HARNESS-V1-GATE22-DISCOVERY-READONLY-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2160,
+      "age_seconds": 2238,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE0B-SQL-CANONICAL-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1190,
+      "age_seconds": 1267,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE1-CANONICAL-DOMAIN-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1181,
+      "age_seconds": 1258,
       "job_id": "BOS-UNIVERSAL-WORKER-RUNTIME-DIAGNOSTIC-GATE22A-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 97,
+      "age_seconds": 175,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-SECURE-PROFILE-BRIDGE-R1-20260917T1830Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2669,
+      "age_seconds": 2747,
       "job_id": "EDARSA-LOGISTICS-GATE1B-CANONICAL-DOMAIN-CONTRACT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2975,
+      "age_seconds": 3053,
       "job_id": "EDARSAHUB-PRODUCTION-PROMOTION-CHANNEL-CLASSIFICATION-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2471,
+      "age_seconds": 2549,
       "job_id": "PRIMARY-INDUSTRIES-GATE0B-REPRODUCTION-CONTRACTS-DELTA-DISCOVERY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2723,
+      "age_seconds": 2801,
       "job_id": "RRR-GATE4E-CUSTOMER360-SALES-SEMANTICS-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2528,
+      "age_seconds": 2605,
       "job_id": "RRR-GATE4E-R1-METADATA-SEMANTICS-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2130,
+      "age_seconds": 2207,
       "job_id": "RRR-GATE4E-R2-CANONICAL-SALES-COMPARISON-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1177,
+      "age_seconds": 1254,
       "job_id": "RRR-GATE4E-R3-CUSTOMER-SALES-SOURCE-DISCOVERY-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2195,
+      "age_seconds": 2273,
       "job_id": "UNIVERSAL-WORKER-COMBINED-READ-ONLY-AUDIT-CONTRACT-V1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 107,
+      "age_seconds": 185,
       "job_id": "UNIVERSAL-WORKER-COMBINED-READ-ONLY-AUDIT-CONTRACT-V1-RETRY1",
       "reason": null,
       "state": "RESULT_READY"
@@ -100,17 +106,17 @@
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
-  "queue_pending": 0,
+  "queue_pending": 1,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 14,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-17T18:31:37Z",
-    "last_receive_utc": "2026-09-17T18:31:38Z",
+    "last_cycle_utc": "2026-09-17T18:32:19Z",
+    "last_receive_utc": "2026-09-17T18:32:57Z",
     "last_terminal_utc": "2026-09-17T18:30:02Z",
     "pid": "38836"
   },
