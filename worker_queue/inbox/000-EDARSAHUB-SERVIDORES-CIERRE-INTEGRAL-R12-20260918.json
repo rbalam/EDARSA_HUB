@@ -1,0 +1,84 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "000-EDARSAHUB-SERVIDORES-CIERRE-INTEGRAL-R12-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Alta a servidores"
+  },
+  "supersedes": [
+    "EDARSAHUB-SERVIDORES-API-HEALTH-TIMEOUT-R11A-FRONTEND-FIX"
+  ],
+  "objective": "CIERRE INTEGRAL del modulo SERVIDORES / Conexiones API en Desarrollo. Mantener el fix ya integrado que permite listar API_LOCAL activas/visibles. Corregir los falsos estados rojos provocados porque el backend test-connectivity puede tardar 30s mientras Axios global corta a 15s, aplicando timeout de 40s solo a ese request. Verificar por SQL read-only que CIENFUEGOS CAVAS y las API_LOCAL activas existan y sus flags de visibilidad. Verificar por auditoria de repositorio que la API key se descifra internamente y se envia como x-api-key. Ejecutar build frontend. No tocar Produccion, datos, secretos, RBAC ni otros modulos.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "      // Usar endpoint que obtiene api_key internamente y no requiere permisos estrictos\n      const response = await api.post(`/api-connections/${apiConn.id}/test-connectivity`);",
+      "new": "      // El backend de test-connectivity puede esperar hasta 30s. Este request usa\n      // un margen propio para no heredar el timeout global de 15s y marcar falsos Error.\n      const response = await api.post(\n        `/api-connections/${apiConn.id}/test-connectivity`,\n        {},\n        { timeout: 40000 }\n      );"
+    }
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "api_local_activas_y_visibilidad",
+          "sql": "SELECT id, nombre, system_type, tipo_conexion, api_url, activo, visible_en_listado, visible_en_operaciones, EmpresaID FROM dbo.Servidores_Conexiones WHERE tipo_conexion = 'API_LOCAL' ORDER BY id"
+        },
+        {
+          "name": "cienfuegos_cavas",
+          "sql": "SELECT id, nombre, system_type, tipo_conexion, api_url, activo, visible_en_listado, visible_en_operaciones, EmpresaID FROM dbo.Servidores_Conexiones WHERE UPPER(nombre) LIKE '%CIENFUEGOS%' AND UPPER(nombre) LIKE '%CAVAS%'"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/Servidores.js",
+          "frontend/src/lib/api.js",
+          "backend/modules/api_connections/universal_test_routes.py",
+          "backend/core/server_registry.py"
+        ],
+        "search_terms": [
+          "/api-connections/${apiConn.id}/test-connectivity",
+          "timeout: 40000",
+          "timeout = 30",
+          "headers['x-api-key'] = api_key",
+          "decrypt_secret",
+          "tipo_conexion = 'API_LOCAL'",
+          "visible_en_listado",
+          "get_visible_servers_for_operaciones"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx"
+        ],
+        "exclude_patterns": [
+          ".git/*",
+          "node_modules/*",
+          "__pycache__/*",
+          "*.pyc",
+          "dist/*",
+          "build/*"
+        ],
+        "max_results": 300
+      }
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
