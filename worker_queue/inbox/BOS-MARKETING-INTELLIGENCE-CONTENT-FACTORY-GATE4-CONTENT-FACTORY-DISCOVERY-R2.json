@@ -1,0 +1,63 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE4-CONTENT-FACTORY-DISCOVERY-R2",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "31db7e340782c722543b0bce94649040500363c5",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "objective": "Gate 4 R2 quirurgico READ_ONLY. R1 fue CERTIFIED_READ_ONLY pero truncated=true (300 matched files). Auditar exclusivamente contratos concretos reutilizables para Content Factory: object storage/media/assets; workflow/approvals; scheduler/jobs; Marketing/CX activation; AI generation callers/contracts; campaign/content/brief/publishing/rights/experiments existentes. Clasificar REUSE/ALIGN/EXTEND/NEW_REQUIRED con evidencia exacta. No implementar, no crear tablas/endpoints/jobs/UI, no tocar Produccion y no crecer Core.",
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/object_storage.py",
+          "backend/core/scheduler",
+          "backend/modules/agent_harness/marketing_cx.py",
+          "backend/modules/workflows",
+          "backend/modules/tareas",
+          "backend/modules/ia_assistant",
+          "backend/modules/comercial",
+          "docs/ARCHITECTURE/BOS_MARKETING_INTELLIGENCE_CONTENT_FACTORY_GATE1_CANONICAL_DOMAIN_DESIGN.md",
+          "docs/ARCHITECTURE/BOS_MARKETING_INTELLIGENCE_CONTENT_FACTORY_GATE2_DATA_INTEGRATION_ARCHITECTURE.md",
+          "docs/ARCHITECTURE/BOS_MARKETING_INTELLIGENCE_CONTENT_FACTORY_GATE3_AI_PROVIDER_ROUTING_CONTRACT.md"
+        ],
+        "search_terms": [
+          "object_storage",
+          "put_object",
+          "get_object",
+          "asset",
+          "media",
+          "workflow",
+          "approval",
+          "scheduler",
+          "job",
+          "MarketingActivationRequest",
+          "content",
+          "campaign",
+          "brief",
+          "prompt",
+          "publish",
+          "rights",
+          "license",
+          "variant",
+          "experiment",
+          "generation",
+          "llm",
+          "image",
+          "video",
+          "audio"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.md"
+        ],
+        "exclude_patterns": [],
+        "max_results": 180
+      }
+    }
+  ]
+}
