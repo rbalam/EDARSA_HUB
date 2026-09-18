@@ -1,0 +1,29 @@
+{
+  "base_sha": "3ea717f1c26365551518edb89d98e4abb07096d2",
+  "blockers": [
+    "check_failed:frontend_build"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-18T22:07:35Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "frontend/src/App.js",
+    "frontend/src/config/enterpriseMenuConfig.js",
+    "frontend/src/pages/tablajeria/LotesProveedorPage.jsx"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R2-FRONTEND-LOTE-PROVEEDOR-RECOVERY",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T22:07:46Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-18T22:07:33Z",
+  "status": "GIT_TESTS_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
