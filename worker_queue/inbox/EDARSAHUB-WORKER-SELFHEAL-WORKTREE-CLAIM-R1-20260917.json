@@ -1,0 +1,58 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-SELFHEAL-WORKTREE-CLAIM-R1-20260917",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "5b15ee193c331614d010422f64e658266fb97855",
+  "production_allowed": false,
+  "objective": "Hardening quirurgico del reconciliador del Universal Worker para recuperar claims huerfanos almacenados en .git/agent-guard/state/worktrees que no traen task_id ni heartbeat, sin tocar SQL, Produccion, Supervisor ni watchdog. Debe resolver job_id desde branch/agent_id, aceptar registered_at solo como evidencia temporal complementaria, exigir trabajo terminal o rama integrada, ausencia de proceso vivo y worktree limpio, liberar via agent_guard.py, remover el worktree residual y eliminar la rama local solo con git branch -d si ya esta integrada.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/worker_runtime_reconciler.py",
+      "old": "GUARD = ROOT / \".git\" / \"agent-guard\" / \"bin\" / \"agent_guard.py\"\nPYTHON = Path(\"/root/.venv/bin/python\")",
+      "new": "GUARD = ROOT / \".git\" / \"agent-guard\" / \"bin\" / \"agent_guard.py\"\nGUARD_STATE_WORKTREES = ROOT / \".git\" / \"agent-guard\" / \"state\" / \"worktrees\"\nPYTHON = Path(\"/root/.venv/bin/python\")",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/worker_runtime_reconciler.py",
+      "old": "def guard_claims() -> list[dict[str, Any]]:\n    if not GUARD.is_file() or not PYTHON.is_file(): return []\n    for command in ([str(PYTHON), str(GUARD), \"status\"], [str(PYTHON), str(GUARD), \"claims\"]):\n        try: result = run(command, timeout=20)\n        except Exception: continue\n        claims = parse_guard_claims(result.stdout)\n        if claims: return claims\n    return []",
+      "new": "def guard_claims() -> list[dict[str, Any]]:\n    claims: list[dict[str, Any]] = []\n    if GUARD.is_file() and PYTHON.is_file():\n        for command in ([str(PYTHON), str(GUARD), \"status\"], [str(PYTHON), str(GUARD), \"claims\"]):\n            try: result = run(command, timeout=20)\n            except Exception: continue\n            claims.extend(parse_guard_claims(result.stdout))\n            if claims: break\n    if GUARD_STATE_WORKTREES.is_dir():\n        for path in sorted(GUARD_STATE_WORKTREES.glob(\"*.json\")):\n            try: value = json.loads(path.read_text(encoding=\"utf-8\"))\n            except Exception: continue\n            if isinstance(value, dict):\n                value = dict(value)\n                value.setdefault(\"claim_file\", str(path))\n                claims.append(value)\n    deduped: list[dict[str, Any]] = []\n    seen: set[tuple[str, str, str]] = set()\n    for claim in claims:\n        key = (str(claim.get(\"agent_id\") or \"\"), str(claim.get(\"branch\") or \"\"), str(claim.get(\"worktree\") or \"\"))\n        if key in seen: continue\n        seen.add(key); deduped.append(claim)\n    return deduped",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/worker_runtime_reconciler.py",
+      "old": "def claim_terminal(claim: dict[str, Any]) -> bool:\n    task_id = str(claim.get(\"task_id\") or \"\")\n    if task_id and ((DONE / f\"{task_id}.json\").exists() or (REJECTED / f\"{task_id}.json\").exists() or (RESULTS / f\"{task_id}.json\").exists()): return True\n    return branch_is_integrated(str(claim.get(\"branch\") or \"\"))\n\ndef safe_releasable(claim: dict[str, Any]) -> tuple[bool, str]:\n    heartbeat = parse_iso(claim.get(\"heartbeat\"))\n    if heartbeat is None: return False, \"NO_HEARTBEAT_EVIDENCE\"\n    if time.time() - heartbeat < CLAIM_STALE_SECONDS: return False, \"CLAIM_NOT_STALE\"\n    worktree = Path(str(claim.get(\"worktree\") or \"\"))\n    if not claim_terminal(claim): return False, \"WORK_NOT_TERMINAL_OR_INTEGRATED\"\n    if process_references(worktree): return False, \"LIVE_PROCESS_REFERENCES_WORKTREE\"\n    if not worktree_clean(worktree): return False, \"WORKTREE_NOT_CLEAN\"\n    return True, \"SAFE_TERMINAL_RECONCILIATION\"\n\ndef release_claim(claim: dict[str, Any]) -> tuple[bool, str]:\n    if not GUARD.is_file() or not PYTHON.is_file(): return False, \"AGENT_GUARD_UNAVAILABLE\"\n    agent_id = str(claim.get(\"agent_id\") or \"\"); task_id = str(claim.get(\"task_id\") or \"\")\n    if not agent_id or not task_id: return False, \"CLAIM_IDENTITY_INCOMPLETE\"\n    last = \"\"\n    for command in ([str(PYTHON), str(GUARD), \"claim-release\", \"--agent-id\", agent_id, \"--task-id\", task_id], [str(PYTHON), str(GUARD), \"release\", \"--agent-id\", agent_id, \"--task-id\", task_id]):\n        result = run(command, timeout=20); last = result.stdout[-800:]\n        if result.returncode == 0:\n            worktree = Path(str(claim.get(\"worktree\") or \"\"))\n            if worktree.exists(): git(\"worktree\", \"remove\", \"--force\", str(worktree)); shutil.rmtree(worktree, ignore_errors=True)\n            return True, \"CLAIM_RELEASED\"\n    return False, \"CLAIM_RELEASE_FAILED:\" + last",
+      "new": "def claim_task_id(claim: dict[str, Any]) -> str:\n    task_id = str(claim.get(\"task_id\") or \"\").strip()\n    if task_id: return task_id\n    branch = str(claim.get(\"branch\") or \"\").strip()\n    prefix = \"agent/worker/\"\n    if branch.startswith(prefix) and len(branch) > len(prefix): return branch[len(prefix):]\n    agent_id = str(claim.get(\"agent_id\") or \"\").strip()\n    if agent_id.startswith(\"worker-\") and len(agent_id) > len(\"worker-\"): return agent_id[len(\"worker-\"):]\n    return \"\"\n\ndef claim_terminal(claim: dict[str, Any]) -> bool:\n    task_id = claim_task_id(claim)\n    if task_id and ((DONE / f\"{task_id}.json\").exists() or (REJECTED / f\"{task_id}.json\").exists() or (RESULTS / f\"{task_id}.json\").exists()): return True\n    return branch_is_integrated(str(claim.get(\"branch\") or \"\"))\n\ndef safe_releasable(claim: dict[str, Any]) -> tuple[bool, str]:\n    claim_time = parse_iso(claim.get(\"heartbeat\"))\n    if claim_time is None: claim_time = parse_iso(claim.get(\"registered_at\"))\n    if claim_time is None: return False, \"NO_CLAIM_TIME_EVIDENCE\"\n    if time.time() - claim_time < CLAIM_STALE_SECONDS: return False, \"CLAIM_NOT_STALE\"\n    worktree = Path(str(claim.get(\"worktree\") or \"\"))\n    if not claim_terminal(claim): return False, \"WORK_NOT_TERMINAL_OR_INTEGRATED\"\n    if process_references(worktree): return False, \"LIVE_PROCESS_REFERENCES_WORKTREE\"\n    if not worktree_clean(worktree): return False, \"WORKTREE_NOT_CLEAN\"\n    return True, \"SAFE_TERMINAL_RECONCILIATION\"\n\ndef release_claim(claim: dict[str, Any]) -> tuple[bool, str]:\n    if not GUARD.is_file() or not PYTHON.is_file(): return False, \"AGENT_GUARD_UNAVAILABLE\"\n    agent_id = str(claim.get(\"agent_id\") or \"\").strip(); task_id = claim_task_id(claim)\n    if not agent_id: return False, \"CLAIM_IDENTITY_INCOMPLETE\"\n    commands = []\n    if task_id:\n        commands.extend(([str(PYTHON), str(GUARD), \"claim-release\", \"--agent-id\", agent_id, \"--task-id\", task_id], [str(PYTHON), str(GUARD), \"release\", \"--agent-id\", agent_id, \"--task-id\", task_id]))\n    commands.extend(([str(PYTHON), str(GUARD), \"claim-release\", \"--agent-id\", agent_id], [str(PYTHON), str(GUARD), \"release\", \"--agent-id\", agent_id]))\n    last = \"\"\n    for command in commands:\n        result = run(command, timeout=20); last = result.stdout[-800:]\n        if result.returncode == 0:\n            worktree = Path(str(claim.get(\"worktree\") or \"\"))\n            if worktree.exists():\n                git(\"worktree\", \"remove\", \"--force\", str(worktree)); shutil.rmtree(worktree, ignore_errors=True)\n            branch = str(claim.get(\"branch\") or \"\").strip()\n            if branch and branch_is_integrated(branch): git(\"branch\", \"-d\", branch)\n            return True, \"CLAIM_RELEASED\"\n    return False, \"CLAIM_RELEASE_FAILED:\" + last",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nTARGET = ROOT / 'tools/mirror_sync/worker_runtime_reconciler.py'\n\n\ndef test_reconciler_covers_state_worktree_claims():\n    text = TARGET.read_text(encoding='utf-8')\n    assert 'GUARD_STATE_WORKTREES' in text\n    assert 'glob(\"*.json\")' in text\n    assert 'registered_at' in text\n\n\ndef test_reconciler_derives_job_id_without_task_id():\n    text = TARGET.read_text(encoding='utf-8')\n    assert 'def claim_task_id' in text\n    assert 'agent/worker/' in text\n    assert 'worker-' in text\n\n\ndef test_reconciler_keeps_surgical_safety_guards():\n    text = TARGET.read_text(encoding='utf-8')\n    assert 'WORK_NOT_TERMINAL_OR_INTEGRATED' in text\n    assert 'LIVE_PROCESS_REFERENCES_WORKTREE' in text\n    assert 'WORKTREE_NOT_CLEAN' in text\n    assert 'git(\"branch\", \"-d\", branch)' in text\n    assert 'git(\"branch\", \"-D\", branch)' not in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/worker_runtime_reconciler.py",
+        "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
