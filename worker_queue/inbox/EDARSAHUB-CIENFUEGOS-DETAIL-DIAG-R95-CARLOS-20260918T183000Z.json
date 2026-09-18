@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-CIENFUEGOS-DETAIL-DIAG-R95-CARLOS-20260918T183000Z",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "EDARSAHUB-CONCILIACIONES"
+  },
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "aa57b944342f7e7efda0397ebfa64358c8c99a61",
+  "production_allowed": false,
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "objective": "Diagnosticar sin escribir por que el detalle ISCAM de CIENFUEGOS del 2026-09-01 al 2026-09-14 no concilia contra Runtime V2. Debe devolver por fecha ventas/tickets/pax Runtime vs POS y el error exacto del ticket que bloquee. No tocar Produccion.",
+  "actions": [],
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "fecha_inicio": "2026-09-01",
+  "fecha_fin": "2026-09-15",
+  "dry_run": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_header_sep_for_diag",
+          "sql": "SELECT CAST(fecha_operacion AS date) AS fecha_operacion, CAST(ventas_total AS decimal(18,2)) AS ventas_total, tickets_total, pax_total FROM dbo.Comercial_KPIs_Diarios_v2 WHERE unidad_negocio_id='CIENFUEGOS' AND CAST(fecha_operacion AS date) BETWEEN '2026-09-01' AND '2026-09-14' AND ISNULL(activo,1)=1 ORDER BY CAST(fecha_operacion AS date)"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
