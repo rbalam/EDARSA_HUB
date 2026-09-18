@@ -5,6 +5,7 @@ on:
     branches: [Edarsahub_Desarrollo]
     paths:
       - ops/e2e/requests/CENTRO-CONTROL-SYNC-MONITOR-P5-RUNTIME-SECURE-R1.execute
+      - .github/workflows/centro-control-sync-monitor-p5-runtime-e2e.yml
 
 permissions:
   contents: read
@@ -20,7 +21,7 @@ jobs:
       TEST_BASE_URL: ${{ vars.TEST_BASE_URL }}
       TEST_SUPERADMIN_EMAIL: ${{ secrets.TEST_SUPERADMIN_EMAIL }}
       TEST_SUPERADMIN_PASSWORD: ${{ secrets.TEST_SUPERADMIN_PASSWORD }}
-      P5_EVIDENCE_FILE: ${{ runner.temp }}/p5/evidence.json
+      P5_EVIDENCE_FILE: .tmp/p5/evidence.json
     steps:
       - uses: actions/checkout@v4
 
@@ -46,7 +47,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/p5"
+          mkdir -p "$(dirname "$P5_EVIDENCE_FILE")"
           python -m pytest -q backend/tests/test_control_sync_p5_runtime_secure_e2e.py
 
       - name: Validate sanitized evidence
@@ -73,6 +74,6 @@ jobs:
         if: always()
         with:
           name: centro-control-sync-monitor-p5-${{ github.run_id }}
-          path: ${{ runner.temp }}/p5/evidence.json
+          path: .tmp/p5/evidence.json
           if-no-files-found: error
           retention-days: 30
