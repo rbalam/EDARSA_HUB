@@ -1,0 +1,27 @@
+{
+  "base_sha": "843bb29250fd9d82a7740ba6400ede653da458a9",
+  "blockers": [
+    "check_failed:sql_readonly_audit"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-18T23:06:38Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "frontend/src/pages/Servidores.js"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "000-EDARSAHUB-SERVIDORES-CIERRE-INTEGRAL-R12-20260918",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T23:06:39Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-18T23:06:35Z",
+  "status": "GIT_TESTS_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
