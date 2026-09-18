@@ -1,0 +1,695 @@
+{
+  "base_sha": "25834c62cd6a67a0ac5d892ee978f140acf69aa7",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T19:46:24Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE12K-BOS-PERSONA-LINK-BACKEND-IMPLEMENTATION-READINESS-R1-20260918",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T19:46:33Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.auth.sql_user_identity",
+              "core.rbac",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "logging",
+              "modules.rbac_context_sql.context_service",
+              "notification_service",
+              "pydantic",
+              "report_service",
+              "service",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "cava_socios_crear",
+              "cava_socios_editar",
+              "cava_socios_ver",
+              "enrich_current_user_with_sql_id",
+              "sql_user_id",
+              "sql_user_identity"
+            ],
+            "path": "backend/modules/cava_socios/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/botellas/{botella_id}/consumo",
+              "/botellas/{botella_id}/etiqueta",
+              "/clientes-canonicos",
+              "/clientes-canonicos/sync",
+              "/consumos",
+              "/dashboard",
+              "/inventario",
+              "/inventario-fisico/aplicar",
+              "/inventario-fisico/hoja",
+              "/inventario-inicial",
+              "/kardex",
+              "/reportes/socio/{socio_id}/consumos",
+              "/reportes/socio/{socio_id}/estado-cuenta",
+              "/reportes/socio/{socio_id}/ficha",
+              "/socios",
+              "/socios/promover-cliente",
+              "/socios/{socio_id}",
+              "/socios/{socio_id}/botellas",
+              "/socios/{socio_id}/enviar-reporte",
+              "/socios/{socio_id}/enviar-todos-reportes"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BotellaCreate",
+              "ConsumoCreate",
+              "EnvioReporteRequest",
+              "InventarioFisicoAplicarRequest",
+              "InventarioFisicoItem",
+              "InventarioInicialBotellaItem",
+              "InventarioInicialCreate",
+              "PromoverClienteCreate",
+              "SincronizarClientesRequest",
+              "SocioCreate",
+              "SocioUpdate",
+              "_resolve_cava_scope",
+              "actualizar_socio",
+              "aplicar_ajustes_inventario_fisico",
+              "crear_socio",
+              "descargar_estado_cuenta",
+              "descargar_ficha_socio",
+              "descargar_historial_consumos",
+              "enviar_reporte_socio",
+              "enviar_todos_reportes_socio",
+              "get_dashboard",
+              "listar_clientes_canonicos",
+              "listar_socios",
+              "obtener_consumos",
+              "obtener_etiqueta_botella",
+              "obtener_hoja_inventario_fisico",
+              "obtener_inventario",
+              "obtener_kardex",
+              "obtener_socio",
+              "promover_cliente_canonico",
+              "registrar_botella",
+              "registrar_consumo",
+              "registrar_inventario_inicial",
+              "sincronizar_clientes_canonicos"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.connection_factory",
+              "datetime",
+              "logging",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cliente_catalogo",
+              "clientecrmid",
+              "commit",
+              "rollback",
+              "socioid",
+              "sql_connection"
+            ],
+            "path": "backend/modules/cava_socios/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CavaSociosService",
+              "_crear_cargo",
+              "_generar_numero_socio",
+              "_get_connection",
+              "actualizar_socio",
+              "aplicar_ajustes_inventario_fisico",
+              "crear_socio",
+              "get_cava_socios_service",
+              "listar_clientes_canonicos",
+              "listar_socios",
+              "obtener_cargos_socio",
+              "obtener_dashboard",
+              "obtener_etiqueta_botella",
+              "obtener_historial_consumos_global",
+              "obtener_hoja_inventario_fisico",
+              "obtener_inventario_global",
+              "obtener_kardex",
+              "obtener_movimientos_socio",
+              "obtener_socio",
+              "promover_cliente_canonico",
+              "registrar_botella",
+              "registrar_consumo",
+              "registrar_inventario_inicial",
+              "sincronizar_clientes_canonicos"
+            ],
+            "tables_referenced": [
+              "CavaSocios_Socios",
+              "Cliente_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogo_ampliado",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.db",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "commit",
+              "create_persona",
+              "create_vinculo",
+              "gobierno_persona",
+              "gobierno_personavinculo",
+              "personaid",
+              "sql_connection",
+              "usuarioid"
+            ],
+            "path": "backend/modules/catalogo_ampliado/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_insert_one",
+              "create_alerta_regla",
+              "create_documento",
+              "create_documento_version",
+              "create_empresa_rol",
+              "create_persona",
+              "create_vinculo",
+              "empresa_existe",
+              "ensure_canonical_task_for_alert",
+              "get_empresa_configuracion",
+              "get_kardex",
+              "list_alerta_eventos",
+              "list_alerta_reglas",
+              "list_documentos",
+              "list_due_alert_events",
+              "list_personas",
+              "list_roles_catalogo",
+              "list_tipos_documento",
+              "list_vencimientos",
+              "plan_alerta_eventos",
+              "upsert_empresa_configuracion"
+            ],
+            "tables_referenced": [
+              "Gobierno_AlertaEvento",
+              "Gobierno_AlertaRegla",
+              "Gobierno_Documento",
+              "Gobierno_DocumentoMovimiento",
+              "Gobierno_DocumentoVersion",
+              "Gobierno_EmpresaConfiguracion",
+              "Gobierno_Persona",
+              "Gobierno_PersonaEmpresaRol",
+              "Gobierno_PersonaVinculo",
+              "Gobierno_RolCorporativoCatalogo",
+              "Gobierno_TipoDocumento",
+              "Sistema_Empresas",
+              "Sistema_Tareas"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogo_ampliado",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.rbac_helper_sql",
+              "core.security",
+              "fastapi",
+              "schemas"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "create_persona",
+              "create_vinculo",
+              "usuarioid"
+            ],
+            "path": "backend/modules/catalogo_ampliado/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/documentos/{documento_id}/kardex",
+              "/documentos/{documento_id}/versiones",
+              "/empresas/{empresa_id}/alertas/eventos",
+              "/empresas/{empresa_id}/alertas/reglas",
+              "/empresas/{empresa_id}/configuracion",
+              "/empresas/{empresa_id}/documentos",
+              "/empresas/{empresa_id}/roles",
+              "/empresas/{empresa_id}/vencimientos",
+              "/personas",
+              "/personas/{persona_id}/vinculos",
+              "/roles-corporativos",
+              "/tipos-documento"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_assert_empresa",
+              "_gobierno_admin",
+              "_usuario_id",
+              "actualizar_configuracion",
+              "asignar_rol",
+              "crear_documento",
+              "crear_persona",
+              "crear_regla_alerta",
+              "crear_version",
+              "crear_vinculo",
+              "documentos",
+              "empresa_configuracion",
+              "eventos_alerta",
+              "kardex",
+              "personas",
+              "reglas_alerta",
+              "roles",
+              "tipos_documento",
+              "vencimientos"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.auth",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.sql_first.db",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "enrich_current_user_with_sql_id",
+              "get_sql_connection",
+              "sql_connection",
+              "sql_user_id",
+              "sql_user_identity",
+              "usuarioid"
+            ],
+            "path": "backend/core/auth/sql_user_identity.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "SystemPrincipalResolutionError",
+              "enrich_current_user_with_sql_id",
+              "resolve_alertas_scheduler_current_user",
+              "resolve_sql_usuario_id",
+              "resolve_system_principal_current_user"
+            ],
+            "tables_referenced": [
+              "Usuario_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.sql_first",
+            "connections": [
+              "pyodbc",
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.db",
+              "pymssql",
+              "pyodbc"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "commit",
+              "sql_connection"
+            ],
+            "path": "backend/core/sql_first/connection_factory.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_connect_edarsahub_pymssql",
+              "get_edarsahub_connection",
+              "get_edarsahub_pymssql_connection",
+              "get_external_sql_connection"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.sql_first",
+            "connections": [
+              "get_sql_connection",
+              "readonly_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection",
+              "readonly_sql_connection"
+            ],
+            "imports": [
+              "contextlib",
+              "core.connections.edarsahub_readonly_repository",
+              "core.connections.hrlectura_connection_factory",
+              "core.sql_first.connection_factory"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "commit",
+              "get_sql_connection",
+              "sql_connection"
+            ],
+            "path": "backend/core/sql_first/db.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_rows_to_dicts",
+              "execute_sql",
+              "fetch_all_dict",
+              "fetch_all_dict_readonly",
+              "fetch_one_dict",
+              "fetch_one_dict_readonly",
+              "get_sql_connection",
+              "readonly_sql_connection",
+              "sql_connection"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "fastapi",
+              "modules.cava_socios.routes",
+              "modules.cava_socios.service",
+              "pydantic",
+              "pytest",
+              "server",
+              "unittest.mock"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "commit",
+              "enrich_current_user_with_sql_id",
+              "rollback"
+            ],
+            "path": "backend/tests/test_cava_socios.py",
+            "rbac_contracts": [],
+            "routes": [
+              "modules.cava_socios.routes.context_service.get_user_context",
+              "modules.cava_socios.routes.enrich_current_user_with_sql_id"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TestCavaScopeResolution",
+              "TestCavaSociosRouterRegistration",
+              "TestCavaSociosSchemas",
+              "TestCavaSociosService",
+              "test_actualizar_socio_not_found",
+              "test_actualizar_socio_success",
+              "test_botella_create_valid",
+              "test_consumo_create_valid",
+              "test_resolve_cava_scope_missing_empresa",
+              "test_resolve_cava_scope_success",
+              "test_resolve_cava_scope_unauthorized_unit",
+              "test_routes_registered_in_app",
+              "test_socio_create_invalid_nombre",
+              "test_socio_create_valid",
+              "test_socio_update_valid"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "cliente_catalogo",
+              "clientecrmid",
+              "gobierno_persona",
+              "gobierno_personavinculo",
+              "personaid",
+              "socioid"
+            ],
+            "path": "docs/CAVAS/CAVAS_CORPORATIVAS_GATE12C_BOS_ENTITY_ROLE_ALIGNMENT.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "commit",
+              "gobierno_persona",
+              "personaid",
+              "rollback",
+              "socioid",
+              "transaction"
+            ],
+            "path": "backend/database/migrations/20260910_cavas_socios_persona_link.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "CavaSocios_Socios",
+              "Gobierno_Persona"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 10,
+          "scanned_files": 10,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "db_user",
+              "original_login"
+            ],
+            "name": "identity_guard",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_socios",
+              "sin_persona",
+              "con_persona"
+            ],
+            "name": "cava_persona_link_state",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2",
+                2,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_personas"
+            ],
+            "name": "persona_population",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_vinculos"
+            ],
+            "name": "persona_vinculo_population",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_clientes"
+            ],
+            "name": "cliente_population",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "parent_table",
+              "referenced_table",
+              "is_disabled",
+              "is_not_trusted"
+            ],
+            "name": "persona_link_fk",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "FK_CavaSocios_Socios_GobiernoPersona",
+                "CavaSocios_Socios",
+                "Gobierno_Persona",
+                false,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_name",
+              "is_unique",
+              "has_filter",
+              "filter_definition",
+              "column_name"
+            ],
+            "name": "persona_vinculo_uniqueness",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                "PK_Gobierno_PersonaVinculo",
+                true,
+                false,
+                null,
+                "VinculoID"
+              ],
+              [
+                "UX_GobPV_Cliente",
+                true,
+                true,
+                "([ClienteID] IS NOT NULL)",
+                "ClienteID"
+              ],
+              [
+                "UX_GobPV_ContactoCliente",
+                true,
+                true,
+                "([ContactoClienteID] IS NOT NULL)",
+                "ContactoClienteID"
+              ],
+              [
+                "UX_GobPV_ContactoProveedor",
+                true,
+                true,
+                "([ContactoProveedorID] IS NOT NULL)",
+                "ContactoProveedorID"
+              ],
+              [
+                "UX_GobPV_Proveedor",
+                true,
+                true,
+                "([ProveedorID] IS NOT NULL)",
+                "ProveedorID"
+              ],
+              [
+                "UX_GobPV_Usuario",
+                true,
+                true,
+                "([UsuarioID] IS NOT NULL)",
+                "UsuarioID"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_name",
+              "type_name",
+              "is_nullable"
+            ],
+            "name": "usuario_catalogo_identity_types",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "UsuarioID",
+                "int",
+                false
+              ],
+              [
+                "PublicUUID",
+                "uniqueidentifier",
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T19:46:23Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
