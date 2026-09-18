@@ -1,0 +1,58 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SERVIDORES-CONEXIONES-API-LISTADO-FILTRO-R10B-POSTCHECK-READONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "objective": "Validar en modo solo lectura que el fix R10A-R2 permite que el listado administrativo incluya API_LOCAL cuando visible_en_listado=true, mantiene CORE excluido del listado administrativo normal y conserva get_visible_servers_for_operaciones separado para Operaciones. No modificar codigo, datos, secretos, permisos ni Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/server_registry.py"
+        ],
+        "search_terms": [
+          "R10A: El listado administrativo debe incluir API_LOCAL",
+          "tipo_conexion != 'API_LOCAL'",
+          "tipo_conexion != 'CORE'",
+          "visible_en_listado",
+          "visible_en_operaciones",
+          "get_visible_servers_for_operaciones",
+          "def _get_servers_from_sql",
+          "def list_servers",
+          "def list_operational_servers"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [
+          ".git/*",
+          "__pycache__/*",
+          "*.pyc"
+        ],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "admin_visible_api_local_candidates",
+          "sql": "SELECT nombre, system_type, tipo_conexion, database_name, activo, visible_en_listado, visible_en_operaciones FROM dbo.Servidores_Conexiones WHERE (visible_en_listado = 1 OR visible_en_listado IS NULL) AND (tipo_conexion != 'CORE' OR tipo_conexion IS NULL) AND tipo_conexion = 'API_LOCAL' ORDER BY nombre"
+        },
+        {
+          "name": "admin_visible_datasource_candidates",
+          "sql": "SELECT nombre, system_type, tipo_conexion, database_name, activo, visible_en_listado, visible_en_operaciones FROM dbo.Servidores_Conexiones WHERE (visible_en_listado = 1 OR visible_en_listado IS NULL) AND (tipo_conexion != 'CORE' OR tipo_conexion IS NULL) AND tipo_conexion = 'DATA_SOURCE' ORDER BY nombre"
+        },
+        {
+          "name": "operaciones_visible_candidates",
+          "sql": "SELECT nombre, system_type, tipo_conexion, database_name, activo, visible_en_listado, visible_en_operaciones FROM dbo.Servidores_Conexiones WHERE activo = 1 AND visible_en_operaciones = 1 ORDER BY nombre"
+        }
+      ]
+    }
+  ]
+}
