@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "f7c2f81f10dca497c387974a8d28d629a6e673e7",
-  "generated_at_utc": "2026-09-18T00:54:16Z",
+  "development_sha": "c1f95a719f900f8f6f40c11a032fb6bf342ae78d",
+  "generated_at_utc": "2026-09-18T00:57:49Z",
   "history": {
-    "done_total_local": 551,
+    "done_total_local": 554,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 553,
-    "results_total_local": 963
+    "results_total_local": 966
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 255,
+      "age_seconds": 468,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-TRIGGER-R2-20260917T2048Z",
       "reasons": [
         "ACTION_1_INVALID_SHA256"
@@ -22,91 +22,109 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 267,
+      "age_seconds": 479,
       "job_id": "ARBITROA-BOS-GATE-A4-PREFLIGHT-SQL-READONLY-R3-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 139,
+      "age_seconds": 352,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE1-CANONICAL-DOMAIN-DESIGN-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 253,
+      "age_seconds": 14,
+      "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE2-DATA-INTEGRATION-ARCHITECTURE-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 465,
       "job_id": "BOS-UNIVERSAL-WORKER-RUNTIME-DIAGNOSTIC-GATE22A-CERT-READONLY-R5",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 366,
+      "age_seconds": 578,
       "job_id": "BOS-V1-GATE-E-EXECUTIVE-BOS-CERTIFICATION-R2-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 357,
+      "age_seconds": 569,
       "job_id": "BOS-V1-MASTER-STATUS-GLOBAL-PROGRESS-R6",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1961,
+      "age_seconds": 2174,
       "job_id": "CAVAS-CORPORATIVAS-GATE12I-WRITER-PRINCIPAL-AUDIT-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 527,
+      "age_seconds": 739,
       "job_id": "CAVAS-GATE12I-CANONICAL-SQL-WRITER-POLICY-CERT-READONLY-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 514,
+      "age_seconds": 726,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-373-POSTAUDIT-20260917T182800Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1966,
+      "age_seconds": 2179,
       "job_id": "EDARSAHUB-SERVICES-GATE2-CERT-READONLY-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1957,
+      "age_seconds": 2170,
       "job_id": "GATE5D-HARDENING-SQL-MIGRATION-EXEC-R2-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1183,
+      "age_seconds": 1395,
       "job_id": "GATE5D-HARDENING-SQL-MIGRATION-EXEC-R3-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1274,
+      "age_seconds": 1486,
       "job_id": "GATE5D-SQL-MIGRATION-SAFE-DIAGNOSTIC-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 318,
+      "age_seconds": 531,
       "job_id": "RRHH-CUSTODIA-GATE2C-PUESTO-PRODUCT-VARIANTS-PREFLIGHT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 274,
+      "age_seconds": 487,
       "job_id": "RRR-GATE4E-R6-CUSTOMER-ATTRIBUTION-PRODUCERS-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1954,
+      "age_seconds": 161,
+      "job_id": "RRR-GATE4E-R6-R1-CUSTOMER-ATTRIBUTION-PRODUCERS-SOURCE-READONLY-20260917",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 177,
+      "job_id": "UNIVERSAL-WORKER-D2-RUNTIME-CONVERGENCE-GUARD-GATE0-READONLY-AUDIT-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2167,
       "job_id": "WORKER-BOS-AGENTS-IA-GATE6B-R5-V5-LOCK-FREE-RETRY-20260917",
       "reason": null,
       "state": "RESULT_READY"
@@ -119,15 +137,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 15,
+  "queue_result_ready_recent": 18,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-18T00:54:10Z",
-    "last_receive_utc": "2026-09-18T00:54:14Z",
-    "last_terminal_utc": "2026-09-18T00:51:56Z",
-    "pid": "139141"
+    "last_cycle_utc": "2026-09-18T00:57:44Z",
+    "last_receive_utc": "2026-09-18T00:57:48Z",
+    "last_terminal_utc": "2026-09-18T00:57:34Z",
+    "pid": "401"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
