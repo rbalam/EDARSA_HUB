@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "aa57b944342f7e7efda0397ebfa64358c8c99a61",
-  "generated_at_utc": "2026-09-18T18:47:59Z",
+  "generated_at_utc": "2026-09-18T18:49:14Z",
   "history": {
     "done_total_local": 626,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 153,
+      "age_seconds": 228,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-LEGACY-DB-DISCOVERY-GATE0A-READONLY-R1",
       "reasons": [
         "ACTIONS_REQUIRED",
@@ -24,7 +24,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 58,
+      "age_seconds": 132,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-LEGACY-DB-DISCOVERY-GATE0A-READONLY-R2",
       "reasons": [
         "REQUESTER_EMAIL_INVALID",
@@ -35,31 +35,31 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3402,
+      "age_seconds": 3477,
       "job_id": "CAVAS-GATE12J-PERSONA-LINK-FUNCTIONAL-FLOW-DISCOVERY-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 109,
+      "age_seconds": 184,
       "job_id": "CAVAS-GATE12J-PERSONA-LINK-FUNCTIONAL-FLOW-DISCOVERY-READONLY-R2-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 251,
+      "age_seconds": 325,
       "job_id": "CAVAS-GATE12J-SQL-AUDIT-FAILURE-DIAGNOSTIC-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1629,
+      "age_seconds": 1704,
       "job_id": "EDARSAHUB-CIENFUEGOS-SEPT-REAL-R94-CARLOS-20260918T182000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2494,
+      "age_seconds": 2568,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-R85-ESTELAR-20260914-CARLOS-20260918T180700Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -77,8 +77,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-18T18:47:55Z",
-    "last_receive_utc": "2026-09-18T18:47:57Z",
+    "last_cycle_utc": "2026-09-18T18:49:14Z",
+    "last_receive_utc": "2026-09-18T18:49:09Z",
     "last_terminal_utc": "2026-09-18T18:46:10Z",
     "pid": "63"
   },
