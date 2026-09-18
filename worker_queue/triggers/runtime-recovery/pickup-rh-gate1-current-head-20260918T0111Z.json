@@ -1,0 +1,5 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Retrigger wake against the current worker/requests HEAD so the already-published job RH-RECLUTAMIENTO-ARQUITECTURA-GATE1-20260909T0802Z can be received under the canonical edarsahub.worker-job.v2 contract. Do not create, clone, rename, or re-emit the business job. Preserve the same job_id. If a terminal result already exists, do not execute again. Do not touch Production. READ_ONLY only.",
+  "production_touched": false
+}
