@@ -1446,3 +1446,92 @@ async def exportar_costeo(
     except Exception as e:
         logger.error(f"[Reportes] Error exportando costeo: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+# ============================================================================
+# R24: RENDIMIENTO POR LOTE PROVEEDOR Y RECLAMOS
+# ============================================================================
+
+from .lote_proveedor_service import get_tablajeria_lote_proveedor_service
+
+
+class ReclamoProveedorCreateRequest(BaseModel):
+    motivo: str
+    descripcion: Optional[str] = None
+    prioridad: str = "MEDIA"
+    evidencia: Optional[Dict] = None
+
+
+@router.get("/lotes-proveedor/rendimientos")
+async def listar_rendimientos_lote_proveedor(
+    empresa_id: Optional[str] = None,
+    proveedor_id: Optional[str] = None,
+    lote: Optional[str] = None,
+    semaforo: Optional[str] = None,
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista rendimientos de tablajeria por lote proveedor."""
+    try:
+        service = get_tablajeria_lote_proveedor_service()
+        return service.listar_rendimientos_lote(empresa_id, proveedor_id, lote, semaforo, limit, offset)
+    except Exception as e:
+        logger.error(f"[R24] Error listando rendimientos por lote proveedor: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+@router.get("/lotes-proveedor/{lote_rendimiento_id}/drilldown")
+async def obtener_drilldown_lote_proveedor(
+    lote_rendimiento_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Drilldown lote -> proveedor -> compra -> recepcion -> tablajeria -> reclamos."""
+    try:
+        service = get_tablajeria_lote_proveedor_service()
+        return service.obtener_drilldown_lote(lote_rendimiento_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"[R24] Error obteniendo drilldown de lote proveedor: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+@router.post("/lotes-proveedor/{lote_rendimiento_id}/reclamos")
+async def crear_reclamo_lote_proveedor(
+    lote_rendimiento_id: str,
+    data: ReclamoProveedorCreateRequest,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Abre reclamo proveedor ligado a rendimiento de lote."""
+    try:
+        usuario_id = current_user.get('public_uuid') or current_user.get('id') or str(current_user.get('_id', ''))
+        service = get_tablajeria_lote_proveedor_service()
+        return service.crear_reclamo_proveedor(
+            lote_rendimiento_id=lote_rendimiento_id,
+            motivo=data.motivo,
+            descripcion=data.descripcion,
+            prioridad=data.prioridad,
+            evidencia=data.evidencia,
+            usuario_id=usuario_id
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"[R24] Error creando reclamo proveedor: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+@router.get("/reclamos-proveedor")
+async def listar_reclamos_proveedor(
+    estatus: Optional[str] = None,
+    limit: int = Query(100, ge=1, le=500),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista reclamos proveedor de tablajeria."""
+    try:
+        service = get_tablajeria_lote_proveedor_service()
+        return service.listar_reclamos(estatus=estatus, limit=limit)
+    except Exception as e:
+        logger.error(f"[R24] Error listando reclamos proveedor: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
