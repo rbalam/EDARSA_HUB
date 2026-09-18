@@ -1,0 +1,96 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "RRR-GATE4E-R8-IMPLEMENTATION-PREFLIGHT-READONLY-20260917",
+  "created_at_utc": "2026-09-18T03:19:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "31db7e340782c722543b0bce94649040500363c5",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Gate4E-R8 preflight READ_ONLY del diseño R7 antes de cualquier mutacion. Auditar los puntos exactos de implementacion para ClienteID explicito, UUID Comandero estable, transporte por rafagas, receptor HUB /v1/sync/transaccion, resolucion canonica Empresa/Unidad/Sucursal, correlacion POS nativa hacia Comercial_Inteligencia_VentasDetalleProducto y contrato fisico de dbo.RRR_Eventos. Clasificar REUSE/EXTEND/ADD/DO_NOT_TOUCH y detectar cualquier colision arquitectonica. No modificar codigo, no DDL, no DML, no Customer360 V3, no Production.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/edge/comandero_local_core.py",
+          "backend/modules/edge/gestor_sincronizacion_rafagas.py",
+          "backend/api",
+          "backend/routes",
+          "backend/modules",
+          "backend/core",
+          "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+          "backend/server.py",
+          "docs/RRR/RRR_GATE4E_R7_MINIMAL_ATTRIBUTION_ADAPTER_DESIGN_V1.md"
+        ],
+        "search_terms": [
+          "/v1/sync/transaccion",
+          "sync/transaccion",
+          "registrar_comanda_offline",
+          "id_transaccion_global",
+          "ClienteID",
+          "cliente_id",
+          "SourceKey",
+          "SourceSystem",
+          "RRR_Eventos",
+          "get_server_by_unidad_codigo",
+          "UnidadesService",
+          "CorporateFilterService",
+          "EmpresaID",
+          "UnidadNegocioID",
+          "SucursalID",
+          "numero_ticket",
+          "id_transaccion",
+          "folio_origen",
+          "fecha_operacion",
+          "es_kpi_valido",
+          "cancelado_origen",
+          "SOFTRESTAURANT",
+          "MPRO"
+        ],
+        "max_results": 250
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "r8_identity",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS user_name"
+        },
+        {
+          "name": "r8_rrr_eventos_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.RRR_Eventos') ORDER BY c.column_id"
+        },
+        {
+          "name": "r8_rrr_eventos_indexes",
+          "sql": "SELECT i.name AS index_name,i.is_unique,c.name AS column_name,ic.key_ordinal FROM sys.indexes i JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID('dbo.RRR_Eventos') ORDER BY i.index_id,ic.key_ordinal"
+        },
+        {
+          "name": "r8_rrr_eventos_fk",
+          "sql": "SELECT fk.name AS fk_name,OBJECT_NAME(fkc.parent_object_id) AS parent_table,pc.name AS parent_column,OBJECT_NAME(fkc.referenced_object_id) AS referenced_table,rc.name AS referenced_column FROM sys.foreign_key_columns fkc JOIN sys.foreign_keys fk ON fk.object_id=fkc.constraint_object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fkc.parent_object_id=OBJECT_ID('dbo.RRR_Eventos') ORDER BY fk.name"
+        },
+        {
+          "name": "r8_comercial_detail_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto') AND LOWER(c.name) IN ('numero_ticket','id_transaccion','folio_origen','documento_origen','fecha_operacion','cancelado_origen','es_kpi_valido','sistema_origen','unidad_negocio_id','unidad_negocio_pk','sucursal_id','empresa_id') ORDER BY c.column_id"
+        },
+        {
+          "name": "r8_comercial_native_key_sample",
+          "sql": "SELECT TOP (50) sistema_origen,numero_ticket,id_transaccion,folio_origen,fecha_operacion,cancelado_origen,es_kpi_valido FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE es_kpi_valido=1 ORDER BY fecha_operacion DESC"
+        },
+        {
+          "name": "r8_cliente_pk",
+          "sql": "SELECT c.name AS column_name,t.name AS data_type FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Cliente_Catalogo') AND c.name='ClienteID'"
+        },
+        {
+          "name": "r8_canonical_org_keys",
+          "sql": "SELECT OBJECT_NAME(c.object_id) AS object_name,c.name AS column_name,t.name AS data_type FROM sys.columns c JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE (c.object_id=OBJECT_ID('dbo.Sistema_Empresas') AND c.name='EmpresaID') OR (c.object_id=OBJECT_ID('dbo.Unidades_Negocio') AND c.name='id') OR (c.object_id=OBJECT_ID('dbo.Sistema_Sucursales') AND c.name='SucursalID') ORDER BY object_name,column_name"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
