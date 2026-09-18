@@ -1,0 +1,63 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12I-R2-FAILURE-ROOTCAUSE-READONLY-R1-20260917",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "747abf292c6aa088714f36a93d04d27f18fc1a3e",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar exclusivamente en READ_ONLY la causa tecnica probable del rc=1 de Gate12I R2 despues de certificar rollback completo. Revisar contrato del runner, estructura de batches, compatibilidad SQL Server y el patron ALTER ADD columna seguido de FK/INDEX sobre la columna nueva en el mismo batch. Comparar con migraciones canonicas que usan sp_executesql para DDL dependiente. No ejecutar DDL, no modificar migracion, no tocar secrets ni Produccion.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "sql_engine_version",
+          "sql": "SELECT CAST(SERVERPROPERTY('ProductVersion') AS nvarchar(128)) AS product_version, CAST(SERVERPROPERTY('ProductLevel') AS nvarchar(128)) AS product_level, CAST(SERVERPROPERTY('Edition') AS nvarchar(128)) AS edition;"
+        },
+        {
+          "name": "database_compatibility",
+          "sql": "SELECT name, compatibility_level, is_read_committed_snapshot_on, snapshot_isolation_state_desc FROM sys.databases WHERE name=DB_NAME();"
+        },
+        {
+          "name": "target_metadata",
+          "sql": "SELECT OBJECT_ID(N'dbo.CavaSocios_Socios') AS socios_object_id, OBJECT_ID(N'dbo.Gobierno_Persona') AS persona_object_id, COL_LENGTH(N'dbo.CavaSocios_Socios',N'PersonaID') AS persona_col_length;"
+        },
+        {
+          "name": "permissions_sanity",
+          "sql": "SELECT HAS_PERMS_BY_NAME(N'dbo.CavaSocios_Socios','OBJECT','ALTER') AS can_alter_socios, HAS_PERMS_BY_NAME(N'dbo.Gobierno_Persona','OBJECT','REFERENCES') AS can_reference_persona, HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE TABLE') AS can_create_table, IS_MEMBER('db_owner') AS is_db_owner, IS_MEMBER('db_ddladmin') AS is_db_ddladmin;"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/database/migrations/20260910_cavas_socios_persona_link.sql",
+          "backend/tools/edarsahub_sql_runner.py",
+          "tools/mirror_sync/sql_migration_development.py",
+          "backend/database/migrations/20260813_026_compras_unidad_negocio_uuid_canonica.sql",
+          "backend/database/migrations/20260909_001_servidores_integraciones_universal_infra.sql"
+        ],
+        "search_terms": [
+          "ADD PersonaID bigint NULL",
+          "FOREIGN KEY (PersonaID)",
+          "CREATE INDEX IX_CavaSocios_Socios_PersonaID",
+          "split_sql_batches",
+          "sp_executesql",
+          "BEGIN TRANSACTION",
+          "XACT_ABORT",
+          "rollback"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sql"
+        ],
+        "exclude_patterns": [],
+        "max_results": 300
+      }
+    }
+  ]
+}
