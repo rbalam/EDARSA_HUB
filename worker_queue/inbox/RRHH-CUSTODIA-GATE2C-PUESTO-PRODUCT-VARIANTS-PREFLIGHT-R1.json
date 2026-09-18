@@ -1,0 +1,35 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "RRHH-CUSTODIA-GATE2C-PUESTO-PRODUCT-VARIANTS-PREFLIGHT-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "cf16fe1cc2b9d56c8c3c30ec8cd50aae13ea521f",
+  "production_allowed": false,
+  "objective": "Certificar en solo lectura el contrato fisico de dbo.RH_Cat_Puestos y auditar si el modelo canonico de Producto ya soporta talla/color/variantes suficientes para Uniformes. No modificar datos, esquema, codigo, frontend ni Produccion. El objetivo es evitar crear RH_Uniforme_Tallas o atributos paralelos si Producto ya los resuelve.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "rh_puestos_columns",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND t.name='RH_Cat_Puestos' ORDER BY c.column_id"
+        },
+        {
+          "name": "rh_puestos_pk_fk",
+          "sql": "SELECT 'PK' AS relation_type,OBJECT_NAME(kc.parent_object_id) AS table_name,c.name AS column_name,ty.name AS data_type,kc.name AS constraint_name,NULL AS referenced_table,NULL AS referenced_column FROM sys.key_constraints kc JOIN sys.index_columns ic ON ic.object_id=kc.parent_object_id AND ic.index_id=kc.unique_index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE kc.type='PK' AND OBJECT_NAME(kc.parent_object_id)='RH_Cat_Puestos' UNION ALL SELECT 'FK',OBJECT_NAME(fk.parent_object_id),pc.name,pty.name,fk.name,OBJECT_NAME(fk.referenced_object_id),rc.name FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.types pty ON pty.user_type_id=pc.user_type_id JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE OBJECT_NAME(fk.parent_object_id)='RH_Cat_Puestos'"
+        },
+        {
+          "name": "producto_variant_candidate_tables",
+          "sql": "SELECT t.name AS table_name,COUNT(*) AS column_count FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id WHERE s.name='dbo' AND (t.name LIKE 'Producto%' OR t.name LIKE '%Variante%' OR t.name LIKE '%Atributo%' OR t.name LIKE '%Talla%' OR t.name LIKE '%Color%') GROUP BY t.name ORDER BY t.name"
+        },
+        {
+          "name": "producto_variant_candidate_columns",
+          "sql": "SELECT TOP 300 t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND (t.name LIKE 'Producto%' OR t.name LIKE '%Variante%' OR t.name LIKE '%Atributo%' OR t.name LIKE '%Talla%' OR t.name LIKE '%Color%' OR c.name LIKE '%Talla%' OR c.name LIKE '%Color%' OR c.name LIKE '%Variante%' OR c.name LIKE '%Atributo%') ORDER BY t.name,c.column_id"
+        }
+      ]
+    }
+  ]
+}
