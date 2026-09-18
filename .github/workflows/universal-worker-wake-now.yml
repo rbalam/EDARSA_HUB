@@ -1,5 +1,5 @@
 name: Universal Worker Wake Now
-# recovery trigger 2026-09-17T20:52Z crm-calendar-gate1 pickup
+# recovery trigger 2026-09-17T18:49-06:00 crm-calendar-gate1-r2 after queue-head fallback
 
 on:
   push:
