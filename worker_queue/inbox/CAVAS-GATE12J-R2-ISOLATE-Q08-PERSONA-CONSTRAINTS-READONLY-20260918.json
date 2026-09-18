@@ -1,0 +1,23 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12J-R2-ISOLATE-Q08-PERSONA-CONSTRAINTS-READONLY-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "aa57b944342f7e7efda0397ebfa64358c8c99a61",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Aislar exclusivamente la consulta Q08-PERSONA-CONSTRAINTS que formaba parte del sql_readonly_audit de Gate12J-R2. Ejecutar una sola consulta READ_ONLY_SQL. No modificar codigo, SQL, RBAC, secrets, workflows ni Produccion. No avanzar a Gate12K.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "q08_persona_constraints",
+          "sql": "SELECT kc.name AS constraint_name,kc.type_desc FROM sys.key_constraints kc WHERE kc.parent_object_id=OBJECT_ID(N'dbo.Gobierno_Persona') UNION ALL SELECT fk.name,'FOREIGN_KEY' FROM sys.foreign_keys fk WHERE fk.parent_object_id=OBJECT_ID(N'dbo.Gobierno_Persona') ORDER BY constraint_name;"
+        }
+      ]
+    }
+  ]
+}
