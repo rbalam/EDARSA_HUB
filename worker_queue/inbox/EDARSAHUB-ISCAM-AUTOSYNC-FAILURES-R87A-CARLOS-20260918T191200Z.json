@@ -1,0 +1,20 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-ISCAM-AUTOSYNC-FAILURES-R87A-CARLOS-20260918T191200Z",
+  "created_at_utc":"2026-09-18T19:12:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"aa57b944342f7e7efda0397ebfa64358c8c99a61",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Extraer correctamente los errores por unidad y fecha del autosincronizador sync_comercial_v2 desde metadata.result_summary.detalles_unidades de las ultimas corridas parciales. Solo lectura.",
+  "actions":[],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"scheduler_latest_detalles_unidades","sql":"SELECT TOP 3 FechaAccion,RunID,JSON_VALUE(DetallesJSON,'$.metadata.result_summary.estatus_general') AS estatus_general,JSON_VALUE(DetallesJSON,'$.metadata.result_summary.detalle_producto_fallidos') AS detalle_fallidos,JSON_QUERY(DetallesJSON,'$.metadata.result_summary.detalles_unidades') AS detalles_unidades FROM dbo.Scheduler_BitacoraJobs WHERE JobName='sync_comercial_v2' AND Accion='FINISH' AND JSON_VALUE(DetallesJSON,'$.metadata.result_summary.estatus_general')='PARCIAL' ORDER BY FechaAccion DESC"},
+    {"name":"scheduler_latest_detalle_errors_flat","sql":"WITH last_run AS (SELECT TOP 1 FechaAccion,RunID,DetallesJSON FROM dbo.Scheduler_BitacoraJobs WHERE JobName='sync_comercial_v2' AND Accion='FINISH' ORDER BY FechaAccion DESC) SELECT l.FechaAccion,l.RunID,JSON_VALUE(u.value,'$.unidad_negocio_id') AS unidad,JSON_VALUE(u.value,'$.sistema') AS sistema,JSON_VALUE(d.value,'$.fecha_operacion') AS fecha_operacion,JSON_VALUE(d.value,'$.status') AS status,JSON_VALUE(d.value,'$.error') AS error_detalle,JSON_VALUE(u.value,'$.detalle_producto_error') AS error_unidad FROM last_run l CROSS APPLY OPENJSON(l.DetallesJSON,'$.metadata.result_summary.detalles_unidades') u OUTER APPLY OPENJSON(u.value,'$.detalle_producto_dias') d WHERE ISNULL(JSON_VALUE(d.value,'$.status'),'') NOT IN ('OK_HEADER_CANONICO','NO_PROBAR_ABIERTO_REAL') ORDER BY unidad,fecha_operacion"}
+  ]}],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
