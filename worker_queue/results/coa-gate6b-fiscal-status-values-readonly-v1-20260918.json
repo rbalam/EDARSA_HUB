@@ -1,0 +1,194 @@
+{
+  "base_sha": "920638ce165f3bb5135c89fb78803836d3dc28fd",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T03:57:04Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "coa-gate6b-fiscal-status-values-readonly-v1-20260918",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T03:57:12Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "EstatusDocumentoFiscalID",
+              "Descripcion",
+              "Activo"
+            ],
+            "name": "gate6b_compras_documentos_estatus_values",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                1,
+                "PENDIENTE_DESCARGA",
+                true
+              ],
+              [
+                2,
+                "DESCARGADO_XML",
+                true
+              ],
+              [
+                3,
+                "DESCARGADO_XML_PDF",
+                true
+              ],
+              [
+                4,
+                "XML_INVALIDO",
+                true
+              ],
+              [
+                5,
+                "CANCELADO_SAT",
+                true
+              ],
+              [
+                6,
+                "CONCILIADO",
+                true
+              ],
+              [
+                7,
+                "DIFERENCIAS",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EstatusConciliacionSATID",
+              "Descripcion",
+              "Activo"
+            ],
+            "name": "gate6b_compras_conciliacion_sat_values",
+            "row_count_returned": 11,
+            "rows": [
+              [
+                1,
+                "PENDIENTE",
+                true
+              ],
+              [
+                2,
+                "COINCIDE",
+                true
+              ],
+              [
+                3,
+                "DIFERENCIA_MONTO",
+                true
+              ],
+              [
+                4,
+                "DIFERENCIA_CANTIDAD",
+                true
+              ],
+              [
+                5,
+                "DIFERENCIA_PROVEEDOR",
+                true
+              ],
+              [
+                6,
+                "DIFERENCIA_RECEPTOR",
+                true
+              ],
+              [
+                7,
+                "DIFERENCIA_FECHA",
+                true
+              ],
+              [
+                8,
+                "XML_SIN_COMPRA",
+                true
+              ],
+              [
+                9,
+                "COMPRA_SIN_XML",
+                true
+              ],
+              [
+                10,
+                "CANCELADO_SAT",
+                true
+              ],
+              [
+                11,
+                "REVISADO_MANUAL",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EstatusSATID",
+              "Descripcion",
+              "Activo"
+            ],
+            "name": "gate6b_proveedor_estatus_sat_values",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                1,
+                "PENDIENTE",
+                true
+              ],
+              [
+                2,
+                "OK",
+                true
+              ],
+              [
+                3,
+                "OBSERVADO",
+                true
+              ],
+              [
+                4,
+                "BLOQUEADO",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "rows_count"
+            ],
+            "name": "gate6b_target_status_still_empty",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T03:57:03Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
