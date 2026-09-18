@@ -1,0 +1,59 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE3-AI-PROVIDER-ROUTING-DISCOVERY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d0188293f98e618b96dec196fe38dca5930cf2fd",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Gate 3 discovery/contract para AI Provider Routing de BOS Marketing Intelligence & Content Factory. Ejecutar exclusivamente auditoria READ_ONLY del repositorio para identificar infraestructura AI/provider/router ya existente, ownership, secret management, adapters, usage/cost tracking, fallback, policy, scheduler/event integration y riesgos de duplicacion. No crear un segundo router, no modificar runtime, no crear tablas/endpoints/jobs/UI, no tocar Produccion. El resultado debe clasificar REUSE/ALIGN/EXTEND/NEW_REQUIRED con evidencia exacta.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "tools/mirror_sync",
+          "docs/ARCHITECTURE"
+        ],
+        "search_terms": [
+          "provider",
+          "router",
+          "model",
+          "llm",
+          "openai",
+          "anthropic",
+          "gemini",
+          "ai",
+          "secret_manager",
+          "secret",
+          "credential",
+          "usage",
+          "cost",
+          "token",
+          "fallback",
+          "policy",
+          "capability",
+          "adapter",
+          "integration",
+          "scheduler",
+          "event",
+          "webhook",
+          "agent_harness",
+          "marketing_cx"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.md",
+          "*.json",
+          "*.yml",
+          "*.yaml"
+        ],
+        "exclude_patterns": [],
+        "max_results": 300
+      }
+    }
+  ]
+}
