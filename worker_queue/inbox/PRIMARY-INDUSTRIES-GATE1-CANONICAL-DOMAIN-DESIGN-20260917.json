@@ -1,0 +1,95 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "PRIMARY-INDUSTRIES-GATE1-CANONICAL-DOMAIN-DESIGN-20260917",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Definir el Canonical Domain Design de PRIMARY INDUSTRIES para dos bounded contexts: Reproduction & Genetics y Partnerships & Contracts, usando como premisa certificada Gate 0A y Gate 0B. Gate 0B certifico cero objetos SQL especificos para reproduccion/genetica y encontro como capacidades relacionadas CavasCorporativas_Convenios, CavasCorporativas_ConvenioUnidades, CRM_Cat_EstatusContrato, CRM_Contratos, RH_Cat_TiposContrato y RH_Contratos, ademas de infraestructura canonica existente de clientes, proveedores, productos, inventarios, activos, documentos, finanzas y autorizaciones. El Worker debe auditar el repositorio real para evitar colisiones y producir en el resultado un contrato de dominio canonico, sin implementar, sin DDL, sin DML y sin modificar archivos.",
+  "acceptance": [
+    "resultado READ_ONLY con quality_gate PASS o blockers explicitos con evidencia",
+    "definir ownership y fronteras de Reproduction & Genetics",
+    "definir ownership y fronteras de Partnerships & Contracts",
+    "clasificar cada capacidad en REUTILIZAR, EXTENDER o HUECO_REAL con evidencia",
+    "definir entidades conceptuales nuevas solo cuando no dupliquen capacidades existentes",
+    "definir relaciones canonicas con empresa, unidad, cliente, proveedor, producto, almacen, inventario, lote, activo, documento, CxP/CxC, CRM_Contratos, usuario y autorizaciones cuando corresponda",
+    "definir lifecycle conceptual para animal, material genetico, servicio reproductivo, gestacion, nacimiento, acuerdo productivo y liquidacion",
+    "definir reglas de trazabilidad para semen, pajuelas y embriones sin crear inventario paralelo",
+    "definir integracion conceptual con Finanzas sin duplicar obligaciones, pagos ni contabilidad",
+    "definir eventos de dominio propuestos sin crear event bus ni scheduler paralelo",
+    "identificar colisiones con CRM_Contratos, RH_Contratos y CavasCorporativas_Convenios y preservar su ownership actual",
+    "no crear ni modificar tablas, migraciones, endpoints, frontend, permisos, menus ni scheduler",
+    "files_changed=[]",
+    "production_touched=false"
+  ],
+  "constraints": [
+    "EDARSAHUB SQL Server es el cerebro y fuente canonica",
+    "Gate 0A y Gate 0B ya estan certificados y no deben repetirse",
+    "No Mongo como fuente operativa o de verdad",
+    "No LIVE",
+    "No hardcodear IDs, empresas, unidades, especies, razas, reglas geneticas, reglas contractuales, porcentajes ni alias",
+    "No crear inventario, terceros, documentos, finanzas, CRM, RH, RBAC o workflows paralelos",
+    "RH_Contratos conserva ownership exclusivo de contratos laborales",
+    "CRM_Contratos conserva ownership de contratos comerciales CRM; PRIMARY puede referenciar o extender semanticamente, no apropiarse de la tabla",
+    "CavasCorporativas_Convenios conserva ownership de convenios corporativos de Cavas",
+    "Material genetico debe modelarse como identidad biologica/genetica enlazada al inventario canonico, no como inventario paralelo",
+    "Finanzas conserva ownership de CxP, CxC, pagos, contabilidad e impacto economico canonico",
+    "No crecer backend/core",
+    "Aplicar descubrir -> reutilizar -> extender -> crear solo huecos reales",
+    "Respetar multiempresa, RBAC, autorizaciones y relaciones oficiales",
+    "No tocar Scheduler, NetPay ni Produccion"
+  ],
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules",
+          "backend/database",
+          "docs"
+        ],
+        "search_terms": [
+          "CRM_Contratos",
+          "RH_Contratos",
+          "CavasCorporativas_Convenios",
+          "Cliente_Catalogo",
+          "Proveedor_Catalogo",
+          "Producto_Catalogo",
+          "Inventario_Almacenes",
+          "Inventario_Existencias",
+          "Inventario_Movimientos",
+          "ActivoFijo_Activos",
+          "Gobierno_Documento",
+          "Finanzas_CuentasPorPagar",
+          "Usuario_Autorizaciones",
+          "animal",
+          "reproduccion",
+          "genetica",
+          "semen",
+          "inseminacion",
+          "embrion",
+          "gestacion",
+          "pedigree",
+          "aparceria",
+          "medieria",
+          "arrendamiento",
+          "participacion",
+          "liquidacion",
+          "contrato productivo"
+        ],
+        "include_patterns": [],
+        "exclude_patterns": [
+          ".git/**",
+          "node_modules/**",
+          "dist/**",
+          "build/**"
+        ],
+        "max_results": 800
+      }
+    }
+  ]
+}
