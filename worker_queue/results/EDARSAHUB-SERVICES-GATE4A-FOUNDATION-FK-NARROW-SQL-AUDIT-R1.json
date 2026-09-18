@@ -1,0 +1,433 @@
+{
+  "base_sha": "920638ce165f3bb5135c89fb78803836d3dc28fd",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T03:54:19Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SERVICES-GATE4A-FOUNDATION-FK-NARROW-SQL-AUDIT-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T03:54:26Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "database_user"
+            ],
+            "name": "SVC4A_NARROW_00_IDENTITY",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "table_name",
+              "column_name",
+              "data_type",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable",
+              "is_identity",
+              "pk_name"
+            ],
+            "name": "SVC4A_NARROW_01_TARGET_PK_COLUMNS",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "dbo",
+                "Cliente_Catalogo",
+                "ClienteID",
+                "int",
+                4,
+                10,
+                0,
+                false,
+                true,
+                "PK_Cliente_Catalogo"
+              ],
+              [
+                "dbo",
+                "Gobierno_Documento",
+                "DocumentoID",
+                "bigint",
+                8,
+                19,
+                0,
+                false,
+                true,
+                "PK_Gobierno_Documento"
+              ],
+              [
+                "dbo",
+                "Gobierno_Persona",
+                "PersonaID",
+                "bigint",
+                8,
+                19,
+                0,
+                false,
+                true,
+                "PK_Gobierno_Persona"
+              ],
+              [
+                "dbo",
+                "Proveedor_Catalogo",
+                "ProveedorID",
+                "int",
+                4,
+                10,
+                0,
+                false,
+                true,
+                "PK_Cat_Proveedores"
+              ],
+              [
+                "dbo",
+                "Sistema_Empresas",
+                "EmpresaID",
+                "int",
+                4,
+                10,
+                0,
+                false,
+                true,
+                "PK_Sistema_Empresas"
+              ],
+              [
+                "dbo",
+                "Sistema_Sucursales",
+                "SucursalID",
+                "int",
+                4,
+                10,
+                0,
+                false,
+                true,
+                "PK__Sistema___6CB482819D69E291"
+              ],
+              [
+                "dbo",
+                "Usuario_Catalogo",
+                "UsuarioID",
+                "int",
+                4,
+                10,
+                0,
+                false,
+                true,
+                "PK_Usuario_Catalogo"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc"
+            ],
+            "name": "SVC4A_NARROW_02_UNIT_BUSINESS_OBJECTS",
+            "row_count_returned": 13,
+            "rows": [
+              [
+                "dbo",
+                "DF_Usuario_TiposAutorizacion_RequiereUnidadNegocio",
+                "DEFAULT_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_Compras_CFDI_RutasIngesta_UnidadNegocio",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_Compras_DocFiscalRel_UnidadNegocio",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_Compras_Ordenes_UnidadNegocio",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_Compras_Pedidos_UnidadNegocio",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_Compras_Recepciones_UnidadNegocio",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_Finanzas_Comprobaciones_UnidadNegocio",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_Finanzas_CxP_DecisionesPago_UnidadNegocio",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_Finanzas_CxP_PagosOrigenQueue_UnidadNegocio",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_Finanzas_Presupuestos_UnidadNegocio",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_RRR_Eventos_UnidadNegocio",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "Sistema_UnidadesNegocioPerfilDigital",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Unidades_Negocio",
+                "USER_TABLE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable",
+              "is_identity",
+              "default_definition"
+            ],
+            "name": "SVC4A_NARROW_03_GOBIERNO_PERSONA_COLUMNS",
+            "row_count_returned": 13,
+            "rows": [
+              [
+                1,
+                "PersonaID",
+                "bigint",
+                8,
+                19,
+                0,
+                false,
+                true,
+                null
+              ],
+              [
+                2,
+                "PublicUUID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                false,
+                false,
+                "(newsequentialid())"
+              ],
+              [
+                3,
+                "Nombre",
+                "nvarchar",
+                300,
+                0,
+                0,
+                false,
+                false,
+                null
+              ],
+              [
+                4,
+                "ApellidoPaterno",
+                "nvarchar",
+                200,
+                0,
+                0,
+                true,
+                false,
+                null
+              ],
+              [
+                5,
+                "ApellidoMaterno",
+                "nvarchar",
+                200,
+                0,
+                0,
+                true,
+                false,
+                null
+              ],
+              [
+                6,
+                "RFC",
+                "varchar",
+                13,
+                0,
+                0,
+                true,
+                false,
+                null
+              ],
+              [
+                7,
+                "CURP",
+                "varchar",
+                18,
+                0,
+                0,
+                true,
+                false,
+                null
+              ],
+              [
+                8,
+                "FechaNacimiento",
+                "date",
+                3,
+                10,
+                0,
+                true,
+                false,
+                null
+              ],
+              [
+                9,
+                "Nacionalidad",
+                "nvarchar",
+                160,
+                0,
+                0,
+                true,
+                false,
+                null
+              ],
+              [
+                10,
+                "Activo",
+                "bit",
+                1,
+                1,
+                0,
+                false,
+                false,
+                "((1))"
+              ],
+              [
+                11,
+                "FechaAlta",
+                "datetime2",
+                6,
+                19,
+                0,
+                false,
+                false,
+                "(sysutcdatetime())"
+              ],
+              [
+                12,
+                "FechaActualizacion",
+                "datetime2",
+                6,
+                19,
+                0,
+                true,
+                false,
+                null
+              ],
+              [
+                13,
+                "UsuarioActualizacionID",
+                "int",
+                4,
+                10,
+                0,
+                true,
+                false,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable",
+              "is_identity"
+            ],
+            "name": "SVC4A_NARROW_04_PROVIDER_CLIENT_COLUMNS",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "Cliente_Catalogo",
+                1,
+                "ClienteID",
+                "int",
+                4,
+                10,
+                0,
+                false,
+                true
+              ],
+              [
+                "Proveedor_Catalogo",
+                1,
+                "ProveedorID",
+                "int",
+                4,
+                10,
+                0,
+                false,
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T03:54:18Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
