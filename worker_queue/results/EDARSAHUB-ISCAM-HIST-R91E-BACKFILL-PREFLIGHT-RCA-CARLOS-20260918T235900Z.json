@@ -1,0 +1,178 @@
+{
+  "base_sha": "252ca168e6081d33afae52aa502d8b69c6f38eb8",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T23:50:41Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-HIST-R91E-BACKFILL-PREFLIGHT-RCA-CARLOS-20260918T235900Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T23:50:42Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_codigo",
+              "cantidad"
+            ],
+            "name": "active_unit_code_duplicates",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_pk",
+              "unidad_codigo",
+              "unidad_nombre",
+              "server_id",
+              "unidad_system_type",
+              "servidor_system_type",
+              "tipo_conexion",
+              "estado"
+            ],
+            "name": "active_unit_required_fields_health",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "130MID",
+                "130° MERIDA",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "SoftRestaurant",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                "SYSTEM_TYPE_DIFERENTE"
+              ],
+              [
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                "130QRO",
+                "130° QUERETARO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "MPRO",
+                "MPRO",
+                "DATA_SOURCE",
+                "OK"
+              ],
+              [
+                "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "SoftRestaurant",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                "SYSTEM_TYPE_DIFERENTE"
+              ],
+              [
+                "DFB86008-1B81-472A-9E50-8A0821DEC4B2",
+                "ESTELAR",
+                "LA ESTELAR",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "SoftRestaurant",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                "SYSTEM_TYPE_DIFERENTE"
+              ],
+              [
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "ORIGEN",
+                "ORIGEN",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "MPRO",
+                "MPRO",
+                "DATA_SOURCE",
+                "OK"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_pk",
+              "unidad_codigo",
+              "unidad_nombre",
+              "server_id",
+              "unidad_system_type",
+              "servidor_system_type",
+              "tipo_conexion",
+              "sucursal_origen_id",
+              "tiene_host",
+              "tiene_port",
+              "tiene_database",
+              "tiene_username",
+              "tiene_password"
+            ],
+            "name": "config_130mid",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "130MID",
+                "130° MERIDA",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "SoftRestaurant",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                null,
+                1,
+                1,
+                1,
+                1,
+                "[REDACTED]"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "folio",
+              "header_total",
+              "detalle_total",
+              "delta"
+            ],
+            "name": "extractor_exact_ticket_rollup_20260911",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "idproducto",
+              "filas_productos"
+            ],
+            "name": "duplicate_product_keys_referenced_20260911",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T23:50:38Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
