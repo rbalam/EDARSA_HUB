@@ -1,0 +1,25 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "RRR-GATE4E-R6-CUSTOMER-ATTRIBUTION-PRODUCERS-READONLY-20260917",
+  "created_at_utc": "2026-09-17T20:48:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ef9fcfe1adbb8331fb2ed4b04d06f0e0a195436a",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Gate4E-R6 READ_ONLY. Auditar el repositorio real para localizar productores, adapters, endpoints, POS/Comandero, CRM o pipelines existentes que ya capturen identidad determinista de cliente junto con ticket/venta/transaccion y que puedan poblar o alimentar dbo.RRR_Eventos conforme a docs/RRR/RRR_GATE4E_CUSTOMER_ATTRIBUTION_CONTRACT_V1.md. Clasificar cada candidato con evidencia exacta como REUSE, EXTEND o DO_NOT_USE. Para cada candidato documentar path/simbolo/ruta, identidad disponible, ticket/transaccion/SourceKey disponible, FechaOperacion, empresa/unidad/sucursal, validez/cancelacion/reversa, idempotencia y llave estable hacia Comercial_Inteligencia_VentasDetalleProducto cuando exista. Prohibido fuzzy matching, crear DDL, modificar Customer360, crear maestro de clientes/ventas, usar MongoDB como verdad o tocar Produccion. Si no existe productor valido, concluir explicitamente que procede disenar el adapter minimo en el siguiente gate.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": ["backend", "frontend", "tools", "docs"],
+        "search_terms": ["ClienteID", "RRR_Eventos", "SourceKey", "FechaOperacion", "ticket", "transaccion", "comandero", "POS", "CRM", "cliente", "venta", "Comercial_Inteligencia_VentasDetalleProducto", "es_kpi_valido", "cancelado_origen", "SourceSystem"],
+        "max_results": 120
+      }
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
