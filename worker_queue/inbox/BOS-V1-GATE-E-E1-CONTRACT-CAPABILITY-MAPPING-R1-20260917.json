@@ -1,0 +1,191 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E1-CONTRACT-CAPABILITY-MAPPING-R1-20260917",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9820a62a939755373981f68846bcb02571bc8fde",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Mapear exclusivamente los cuatro contratos funcionales de Gate E contra capacidades reales existentes del repositorio y clasificar cada campo/flujo como REUSE, EXTEND o MISSING. No implementar, no crear tablas/endpoints/jobs/permisos y no ejecutar discovery general.",
+  "acceptance": [
+    "Mapear CAUSAL_EXPLANATION_LAYER contra KPIs, drilldowns, auditoria, provenance, freshness, eventos y servicios existentes.",
+    "Mapear EXECUTIVE_PRIORITY_AGGREGATION contra workflows, SLA, prioridades, tareas, responsables y reglas de impacto existentes.",
+    "Mapear BOS_RECOMMENDATION_CONTRACT contra IA Assistant, inteligencia, reglas deterministas, evidencia, risk/confidence y recomendaciones existentes.",
+    "Mapear RECOMMENDATION_TO_AUTHORIZED_ACTION_BRIDGE contra RBAC, capability/procedure policy, workflows, Universal Worker, confirmaciones, idempotencia y auditoria existentes.",
+    "Cada hallazgo debe permitir clasificacion posterior REUSE, EXTEND o MISSING con rutas/simbolos verificables.",
+    "No modificar archivos; files_changed=[] y production_touched=false.",
+    "quality_gate=PASS y certification=CERTIFIED_READ_ONLY para cerrar E1 discovery mapping."
+  ],
+  "constraints": [
+    "READ ONLY estricto.",
+    "No nuevo discovery general.",
+    "No actions de mutacion.",
+    "No SQL DDL/DML.",
+    "No Mongo operativo.",
+    "No LIVE administrativo.",
+    "No Produccion.",
+    "No crecer backend/core.",
+    "No inventar equivalencias: ausencia de evidencia debe quedar como MISSING/NOT_PROVEN."
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "frontend",
+          "docs/BOS"
+        ],
+        "search_terms": [
+          "decision-dashboard",
+          "drilldown",
+          "root cause",
+          "causa",
+          "explain",
+          "explicacion",
+          "evidence",
+          "provenance",
+          "freshness",
+          "stale",
+          "fecha_operacion",
+          "auditoria",
+          "trace",
+          "trazabilidad"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.md",
+          "*.json"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1400
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "frontend",
+          "docs/BOS"
+        ],
+        "search_terms": [
+          "workflow",
+          "sla",
+          "prioridad",
+          "priority",
+          "pendiente",
+          "task",
+          "tarea",
+          "responsable",
+          "severity",
+          "severidad",
+          "impacto",
+          "vencimiento",
+          "due_at",
+          "escalamiento",
+          "escalation"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.md",
+          "*.json"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1400
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "frontend",
+          "docs/BOS"
+        ],
+        "search_terms": [
+          "recommendation",
+          "recomendacion",
+          "recommend",
+          "ia_assistant",
+          "intelligence",
+          "forecast",
+          "opportunity",
+          "oportunidad",
+          "risk",
+          "riesgo",
+          "confidence",
+          "expected_impact",
+          "rationale",
+          "eligible_actions",
+          "human_confirmation_required"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.md",
+          "*.json"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1400
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "tools",
+          "frontend",
+          "docs/BOS"
+        ],
+        "search_terms": [
+          "require_explicit_permission",
+          "capability policy",
+          "procedure policy",
+          "authorized",
+          "autoriz",
+          "idempotency",
+          "confirmacion",
+          "confirmation",
+          "universal worker",
+          "audit_ref",
+          "action_type",
+          "dry_run",
+          "policy",
+          "rbac",
+          "scope"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.md",
+          "*.json"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1400
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
