@@ -1,0 +1,50 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SERVICES-GATE4A-FOUNDATION-FK-NARROW-SQL-AUDIT-R1",
+  "created_at_utc": "2026-09-18T03:47:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "920638ce165f3bb5135c89fb78803836d3dc28fd",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditoria SQL READ_ONLY estrecha para cerrar tipos fisicos exactos y claves destino requeridos por Services Gate4A-R2 Foundation: Gobierno_Persona.PersonaID, Proveedor_Catalogo PK, Cliente_Catalogo PK, Sistema_Empresas.EmpresaID, Sistema_Sucursales.SucursalID, Usuario_Catalogo PK y Gobierno_Documento PK; ademas validar nombres reales de Unidades de Negocio. No DDL/DML/EXEC ni Production.",
+  "constraints": [
+    "READ_ONLY_SQL",
+    "No DDL/DML/EXEC",
+    "No Production",
+    "No cambios de repositorio",
+    "No hardcodear tipos: medirlos",
+    "HRLectura solo lectura"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "SVC4A_NARROW_00_IDENTITY",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user;"
+        },
+        {
+          "name": "SVC4A_NARROW_01_TARGET_PK_COLUMNS",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity,i.name AS pk_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.indexes i ON i.object_id=t.object_id AND i.is_primary_key=1 JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Gobierno_Persona','Proveedor_Catalogo','Cliente_Catalogo','Sistema_Empresas','Sistema_Sucursales','Usuario_Catalogo','Gobierno_Documento') ORDER BY t.name,ic.key_ordinal;"
+        },
+        {
+          "name": "SVC4A_NARROW_02_UNIT_BUSINESS_OBJECTS",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.is_ms_shipped=0 AND (LOWER(o.name) LIKE '%unidad%negocio%' OR LOWER(o.name) LIKE '%unidades%negocio%') ORDER BY o.type_desc,o.name;"
+        },
+        {
+          "name": "SVC4A_NARROW_03_GOBIERNO_PERSONA_COLUMNS",
+          "sql": "SELECT c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity,dc.definition AS default_definition FROM sys.columns c JOIN sys.types ty ON ty.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id WHERE c.object_id=OBJECT_ID('dbo.Gobierno_Persona') ORDER BY c.column_id;"
+        },
+        {
+          "name": "SVC4A_NARROW_04_PROVIDER_CLIENT_COLUMNS",
+          "sql": "SELECT t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Proveedor_Catalogo','Cliente_Catalogo') AND (c.is_identity=1 OR c.name IN ('ProveedorID','ClienteID','EmpresaID','SucursalID')) ORDER BY t.name,c.column_id;"
+        }
+      ]
+    }
+  ]
+}
