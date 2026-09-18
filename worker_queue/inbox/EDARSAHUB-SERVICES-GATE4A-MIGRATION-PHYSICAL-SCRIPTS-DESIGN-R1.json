@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SERVICES-GATE4A-MIGRATION-PHYSICAL-SCRIPTS-DESIGN-R1",
+  "created_at_utc": "2026-09-18T03:30:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9820a62a939755373981f68846bcb02571bc8fde",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "objective": "Gate 4A de EDARSAHUB Services. Materializar exclusivamente los scripts SQL forward/rollback propuestos para Development como artefactos versionados de diseño, derivados de Gate4 certificado y Gate3B certificado. No ejecutar SQL, no disparar workflows de migracion, no tocar Production. Mantener additive-first, idempotencia, XACT_ABORT/transaccion, prechecks/postchecks y rollback seguro.",
+  "constraints": [
+    "Gate4 CERTIFIED 100 PASS",
+    "No ejecutar DDL ni DML",
+    "No ejecutar SQL_MIGRATION_DEVELOPMENT en este Gate",
+    "No tocar Production",
+    "HRLectura nunca writer",
+    "No usar credenciales inline ni hardcodear secretos",
+    "No duplicar capacidades BOS",
+    "No crear Fabrication_WorkOrders",
+    "No crear Land_Notaries ni Land_NotaryOffices",
+    "No extender COA hasta cerrar gap fisico especifico",
+    "Scripts deben fallar cerrado si DB_NAME()!=EDARSAHUB",
+    "Scripts deben ser additive-first e idempotentes",
+    "Rollback destructivo bloqueado si existen datos oficiales",
+    "No modificar backend/core Scheduler NetPay"
+  ],
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/database/migrations/20260918_001_services_foundation.sql",
+      "content": "SET NOCOUNT ON;\nSET XACT_ABORT ON;\n\nIF DB_NAME() <> 'EDARSAHUB'\n    THROW 51000, 'ABORT_WRONG_DATABASE', 1;\n\nIF SUSER_SNAME() = 'HRLectura'\n    THROW 51001, 'ABORT_READONLY_LOGIN_NOT_WRITER', 1;\n\nBEGIN TRY\n    BEGIN TRANSACTION;\n\n    IF OBJECT_ID('dbo.Services_Professions','U') IS NULL\n    BEGIN\n        CREATE TABLE dbo.Services_Professions(\n            ProfessionID bigint IDENTITY(1,1) NOT NULL CONSTRAINT PK_Services_Professions PRIMARY KEY,\n            Codigo varchar(50) NOT NULL,\n            Nombre nvarchar(150) NOT NULL,\n            Activo bit NOT NULL CONSTRAINT DF_Services_Professions_Activo DEFAULT(1),\n            CreatedAt datetime2(0) NOT NULL CONSTRAINT DF_Services_Professions_CreatedAt DEFAULT(SYSUTCDATETIME()),\n            UpdatedAt datetime2(0) NULL,\n            CONSTRAINT UQ_Services_Professions_Codigo UNIQUE(Codigo)\n        );\n    END;\n\n    IF OBJECT_ID('dbo.Services_Specialties','U') IS NULL\n    BEGIN\n        CREATE TABLE dbo.Services_Specialties(\n            SpecialtyID bigint IDENTITY(1,1) NOT NULL CONSTRAINT PK_Services_Specialties PRIMARY KEY,\n            ParentSpecialtyID bigint NULL,\n            Codigo varchar(50) NOT NULL,\n            Nombre nvarchar(150) NOT NULL,\n            Activo bit NOT NULL CONSTRAINT DF_Services_Specialties_Activo DEFAULT(1),\n            CreatedAt datetime2(0) NOT NULL CONSTRAINT DF_Services_Specialties_CreatedAt DEFAULT(SYSUTCDATETIME()),\n            UpdatedAt datetime2(0) NULL,\n            CONSTRAINT UQ_Services_Specialties_Codigo UNIQUE(Codigo),\n            CONSTRAINT CK_Services_Specialties_NoSelfParent CHECK (ParentSpecialtyID IS NULL OR ParentSpecialtyID <> SpecialtyID),\n            CONSTRAINT FK_Services_Specialties_Parent FOREIGN KEY(ParentSpecialtyID) REFERENCES dbo.Services_Specialties(SpecialtyID)\n        );\n    END;\n\n    COMMIT;\nEND TRY\nBEGIN CATCH\n    IF XACT_STATE() <> 0 ROLLBACK;\n    THROW;\nEND CATCH;\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/database/migrations/20260918_001_services_foundation_rollback.sql",
+      "content": "SET NOCOUNT ON;\nSET XACT_ABORT ON;\n\nIF DB_NAME() <> 'EDARSAHUB'\n    THROW 51000, 'ABORT_WRONG_DATABASE', 1;\n\nIF EXISTS (SELECT 1 FROM sys.tables WHERE object_id = OBJECT_ID('dbo.Services_Providers'))\n    THROW 51010, 'ABORT_DEPENDENT_SERVICES_OBJECTS_EXIST', 1;\n\nIF OBJECT_ID('dbo.Services_Specialties','U') IS NOT NULL\nAND EXISTS (SELECT 1 FROM dbo.Services_Specialties)\n    THROW 51011, 'ABORT_ROLLBACK_DATA_PRESENT_SERVICES_SPECIALTIES', 1;\n\nIF OBJECT_ID('dbo.Services_Professions','U') IS NOT NULL\nAND EXISTS (SELECT 1 FROM dbo.Services_Professions)\n    THROW 51012, 'ABORT_ROLLBACK_DATA_PRESENT_SERVICES_PROFESSIONS', 1;\n\nBEGIN TRY\n    BEGIN TRANSACTION;\n    IF OBJECT_ID('dbo.Services_Specialties','U') IS NOT NULL DROP TABLE dbo.Services_Specialties;\n    IF OBJECT_ID('dbo.Services_Professions','U') IS NOT NULL DROP TABLE dbo.Services_Professions;\n    COMMIT;\nEND TRY\nBEGIN CATCH\n    IF XACT_STATE() <> 0 ROLLBACK;\n    THROW;\nEND CATCH;\n"
+    },
+    {
+      "type": "write_file",
+      "path": "docs/BOS/EDARSAHUB_SERVICES_GATE4A_MIGRATION_PHYSICAL_SCRIPTS_DESIGN_R1.md",
+      "content": "# EDARSAHUB Services - Gate 4A Physical Migration Scripts Design R1\n\n## Estado\nEste Gate materializa exclusivamente el primer par forward/rollback versionado para Services Foundation. No ejecuta SQL ni workflows de migracion.\n\n## Alcance R1\nSe materializan solo:\n- Services_Professions\n- Services_Specialties\n\nNo se materializan aun Providers, Credentials, Engagements, Construction, Fabrication, Interiors ni Land porque requieren un cierre adicional de tipos exactos de FK y/o subgates condicionales antes de generar DDL seguro.\n\n## Reglas del script\n- DB_NAME debe ser EDARSAHUB.\n- HRLectura aborta como writer.\n- XACT_ABORT + transaccion + TRY/CATCH.\n- CREATE solo si el objeto no existe.\n- rollback bloqueado si hay datos.\n- rollback bloqueado si ya existen dependencias Services.\n- no Production.\n\n## Validacion pendiente antes de cualquier ejecucion\n1. certificar writer canonico Development;\n2. certificar environment development;\n3. certificar backup/restore point;\n4. auditar naming/auditoria contra vecinos actuales;\n5. probar sintaxis/idempotencia en dry-run;\n6. revisar si CreatedAt/UpdatedAt deben usar helpers/convenciones fisicas diferentes antes de ejecutar.\n\n## Siguiente paso\nGate 4A CERT READ_ONLY sobre estos artefactos. Solo despues se autoriza Gate 4A-R2 para ampliar Foundation con Providers/Credentials/ServiceCatalog/Resources, siempre con tipos exactos de FK medidos. Ningun script se ejecuta en este Gate.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
