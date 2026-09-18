@@ -610,6 +610,15 @@
       "status": "active",
       "legacy": true
     },
+    "tablajeria.lotes_proveedor": {
+      "groupId": "operaciones-abasto",
+      "sectionId": "produccion",
+      "label": "Lotes proveedor",
+      "expectedPath": "/tablajeria/lotes-proveedor",
+      "order": 60,
+      "status": "active",
+      "releasedAt": "2026-09-18"
+    },
     "cava.dashboard": {
       "groupId": "portales-satelites",
       "sectionId": "aplicaciones-satelite",

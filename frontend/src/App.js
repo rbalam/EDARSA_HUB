@@ -60,6 +60,7 @@ import TablajeriaDashboard from '@/pages/tablajeria/TablajeriaDashboard';
 import PlantillasPage from '@/pages/tablajeria/PlantillasPage';
 import OrdenesPage from '@/pages/tablajeria/OrdenesPage';
 import CapturaDirectaPage from '@/pages/tablajeria/CapturaDirectaPage';
+import LotesProveedorPage from '@/pages/tablajeria/LotesProveedorPage';
 
 // Cava de Socios
 import { CavaSociosDashboard, SociosList, SocioDetail, SocioForm, InventarioCava, ConsumosCava } from '@/pages/cava-socios';
@@ -177,6 +178,7 @@ function App() {
               <Route path="tablajeria/ordenes" element={<OrdenesPage />} />
               <Route path="tablajeria/captura-directa" element={<CapturaDirectaPage />} />
               <Route path="tablajeria/plantillas" element={<PlantillasPage />} />
+              <Route path="tablajeria/lotes-proveedor" element={<LotesProveedorPage />} />
               {/* Cava de Socios */}
               <Route path="cava-socios" element={<CavaSociosDashboard />} />
               <Route path="cava-socios/socios" element={<SociosList />} />
