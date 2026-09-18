@@ -1,0 +1,92 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12N-UAT-OPERATIONAL-READINESS-READONLY-R2-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3ea717f1c26365551518edb89d98e4abb07096d2",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Gate12N R2 quirurgico READ_ONLY. Corregir exclusivamente la evidencia RBAC fallida de R1 usando las tablas canonicas existentes Usuario_Catalogo, Usuario_RolesContexto, Usuario_Roles, Usuario_PermisosRolModulo, Usuario_Modulos y Usuario_Acciones. Verificar que existen los permisos efectivos equivalentes a CAVA_SOCIOS_VER y CAVA_SOCIOS_EDITAR y localizar que usuarios activos, unidades y empresas reales poseen simultaneamente ambos permisos en el mismo contexto. No modificar permisos, usuarios, roles, unidades, SQL, codigo ni Produccion. No ejecutar UAT ni mutaciones Persona-Link.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/rbac/repository_sql.py",
+          "backend/core/rbac/middleware.py",
+          "backend/modules/rbac_context_sql/context_service.py",
+          "backend/scripts/create_cava_socios_rbac.py",
+          "backend/modules/cava_socios/routes.py"
+        ],
+        "search_terms": [
+          "Usuario_Catalogo",
+          "Usuario_RolesContexto",
+          "Usuario_Roles",
+          "Usuario_PermisosRolModulo",
+          "Usuario_Modulos",
+          "Usuario_Acciones",
+          "CodigoModulo",
+          "CodigoAccion",
+          "CAVA_SOCIOS_VER",
+          "CAVA_SOCIOS_EDITAR",
+          "cava_socios",
+          "VER",
+          "EDITAR",
+          "require_explicit_permission"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 400
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "identity_guard",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS db_user,ORIGINAL_LOGIN() AS original_login;"
+        },
+        {
+          "name": "cava_rbac_catalog",
+          "sql": "SELECT m.ModuloID,m.CodigoModulo,m.NombreModulo,a.AccionID,a.CodigoAccion,a.NombreAccion FROM dbo.Usuario_Modulos m CROSS JOIN dbo.Usuario_Acciones a WHERE LOWER(LTRIM(RTRIM(m.CodigoModulo)))=N'cava_socios' AND UPPER(LTRIM(RTRIM(a.CodigoAccion))) IN (N'VER',N'EDITAR') AND ISNULL(m.Activo,1)=1 AND ISNULL(a.Activo,1)=1 ORDER BY a.CodigoAccion;"
+        },
+        {
+          "name": "roles_with_cava_ver_editar",
+          "sql": "SELECT r.RolID,r.CodigoRol,r.NombreRol,m.CodigoModulo,a.CodigoAccion,prm.Permitido,prm.Activo FROM dbo.Usuario_PermisosRolModulo prm INNER JOIN dbo.Usuario_Roles r ON r.RolID=prm.RolID INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID WHERE LOWER(LTRIM(RTRIM(m.CodigoModulo)))=N'cava_socios' AND UPPER(LTRIM(RTRIM(a.CodigoAccion))) IN (N'VER',N'EDITAR') AND prm.Activo=1 AND prm.Permitido=1 AND r.Activo=1 ORDER BY r.CodigoRol,a.CodigoAccion;"
+        },
+        {
+          "name": "uat_users_units_with_both_permissions",
+          "sql": "WITH Effective AS (SELECT DISTINCT u.UsuarioID,CONVERT(varchar(36),u.PublicUUID) AS PublicUUID,u.Email,u.NombreCompleto,urc.UnidadNegocioID,urc.EmpresaID,r.RolID,r.CodigoRol,UPPER(LTRIM(RTRIM(a.CodigoAccion))) AS CodigoAccion FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesContexto urc ON urc.UsuarioID=u.UsuarioID AND urc.Activo=1 INNER JOIN dbo.Usuario_Roles r ON r.RolID=urc.RolID AND r.Activo=1 INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID=r.RolID AND prm.Activo=1 AND prm.Permitido=1 INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID AND ISNULL(m.Activo,1)=1 INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID AND ISNULL(a.Activo,1)=1 WHERE u.Activo=1 AND u.PublicUUID IS NOT NULL AND LOWER(LTRIM(RTRIM(m.CodigoModulo)))=N'cava_socios' AND UPPER(LTRIM(RTRIM(a.CodigoAccion))) IN (N'VER',N'EDITAR')) SELECT UsuarioID,PublicUUID,Email,NombreCompleto,CONVERT(varchar(100),UnidadNegocioID) AS UnidadNegocioID,CONVERT(varchar(36),EmpresaID) AS EmpresaID,COUNT(DISTINCT CASE WHEN CodigoAccion=N'VER' THEN N'VER' END) AS TieneVer,COUNT(DISTINCT CASE WHEN CodigoAccion=N'EDITAR' THEN N'EDITAR' END) AS TieneEditar,STRING_AGG(CONVERT(varchar(max),CodigoRol),N',') AS Roles FROM Effective GROUP BY UsuarioID,PublicUUID,Email,NombreCompleto,UnidadNegocioID,EmpresaID HAVING COUNT(DISTINCT CASE WHEN CodigoAccion=N'VER' THEN N'VER' END)=1 AND COUNT(DISTINCT CASE WHEN CodigoAccion=N'EDITAR' THEN N'EDITAR' END)=1 ORDER BY Email,UnidadNegocioID;"
+        },
+        {
+          "name": "uat_context_integrity",
+          "sql": "SELECT COUNT_BIG(*) AS active_contexts_with_empresa FROM dbo.Usuario_RolesContexto urc INNER JOIN dbo.Usuario_Catalogo u ON u.UsuarioID=urc.UsuarioID WHERE urc.Activo=1 AND u.Activo=1 AND urc.UnidadNegocioID IS NOT NULL AND urc.EmpresaID IS NOT NULL;"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "Gate12J remains closed",
+    "Gate12K remains closed",
+    "Gate12L remains closed",
+    "Gate12M remains closed and certified",
+    "Gate12N R1 remains historical evidence and must not be modified",
+    "READ_ONLY only",
+    "Development only",
+    "No UAT mutation",
+    "No permission changes",
+    "No user role changes",
+    "No unit or company changes",
+    "No DDL or DML",
+    "No Production",
+    "No new RBAC permissions",
+    "No hardcoded user IDs or company IDs",
+    "Use canonical Usuario_* RBAC tables only",
+    "EDARSAHUB SQL Server remains canonical source",
+    "MongoDB prohibited"
+  ]
+}
