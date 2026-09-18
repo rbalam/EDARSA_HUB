@@ -1,0 +1,279 @@
+{
+  "base_sha": "c85ab15705196c85ef7e4bf7fc3847d3f13e6960",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T00:45:29Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE12I-CANONICAL-SQL-WRITER-POLICY-CERT-READONLY-R1-20260917",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T00:45:51Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "argparse",
+              "hashlib",
+              "json",
+              "os",
+              "pathlib",
+              "subprocess",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "allow_canonical_sql_writer",
+              "edarsahub_migration_credential_source",
+              "hrlectura_cannot_be_migration_writer"
+            ],
+            "path": "tools/mirror_sync/sql_migration_development.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "MigrationContractError",
+              "build_child_env",
+              "execute_migration",
+              "main",
+              "resolve_migration_path",
+              "sha256_file",
+              "validate_request"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "fcntl",
+              "git_divergence_guard",
+              "hashlib",
+              "json",
+              "os",
+              "pathlib",
+              "re",
+              "shutil",
+              "subprocess",
+              "sys",
+              "tempfile",
+              "typing",
+              "worker_concurrency"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "confirm_use_existing_sql_writer"
+            ],
+            "path": "tools/mirror_sync/universal_job_dispatcher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "apply_action",
+              "changed_files",
+              "create_commit",
+              "dispatch",
+              "ensure_dirs",
+              "git",
+              "git_changed_paths",
+              "git_is_ancestor",
+              "integrate",
+              "load_backend_runtime_env",
+              "load_envelope",
+              "main",
+              "now",
+              "prepare_worktree",
+              "process_one",
+              "release_agent_guard_claim",
+              "resolve_canonical_python",
+              "resolve_repository_credential_helper",
+              "run",
+              "run_check",
+              "safe_path",
+              "sha256_file",
+              "summarize_softrestaurant_output",
+              "validate_scope",
+              "verify_expected_hash",
+              "write_json"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "hashlib",
+              "pathlib",
+              "pytest",
+              "sys",
+              "tools.mirror_sync.sql_migration_development"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "allow_canonical_sql_writer",
+              "edarsahub_migration_credential_source",
+              "hrlectura_cannot_be_migration_writer"
+            ],
+            "path": "backend/tests/test_worker_sql_migration_development_capability.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "R",
+              "digest",
+              "env",
+              "fake_run",
+              "make_sql",
+              "test_child_env_reuses_host_db_and_overrides_only_credentials",
+              "test_confirmation_required",
+              "test_dedicated_credentials_required",
+              "test_execute_uses_argv_no_shell",
+              "test_existing_canonical_writer_requires_explicit_opt_in",
+              "test_explicit_canonical_writer_reuses_existing_sql_credentials",
+              "test_hash_must_match",
+              "test_hrlectura_forbidden_as_dedicated_writer",
+              "test_path_must_be_under_canonical_migrations",
+              "test_production_forbidden"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "importlib.util",
+              "pathlib"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "confirm_use_existing_sql_writer"
+            ],
+            "path": "backend/tests/test_worker_sql_migration_integration_gate6.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "load_bridge",
+              "test_bridge_accepts_closed_migration_contract",
+              "test_bridge_rejects_inline_sql_and_command",
+              "test_bridge_rejects_noncanonical_path_and_bad_hash",
+              "test_bridge_requires_pre_and_post_readonly_audits",
+              "test_dispatcher_contract_is_closed_and_ordered",
+              "test_dispatcher_does_not_touch_production_contract",
+              "valid_job"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "hrlectura_writer_forbidden",
+              "migration_writer_status=unconfigured"
+            ],
+            "path": "backend/tests/test_global_credentials_publishing_canonization_r3e.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_active_workflows_use_only_readonly_canonical_secret_and_fail_closed"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "hrlectura_writer_forbidden",
+              "migration_writer_status=unconfigured"
+            ],
+            "path": ".github/workflows/cavas-gate12i-persona-link-development-migration.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "CavaSocios_Socios",
+              "Gobierno_Persona"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.connections",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.config.edarsahub_config",
+              "core.sql_first.connection_factory",
+              "dataclasses"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "canonical_profile = \"default\"",
+              "expected_login = \"hrlectura\""
+            ],
+            "path": "backend/core/connections/edarsahub_writer_connection.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "SQLWriterIdentity",
+              "_normalized",
+              "_read_identity",
+              "open_validated_writer_connection",
+              "validate_writer_config",
+              "validate_writer_identity"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 7,
+          "scanned_files": 9,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-18T00:45:28Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
