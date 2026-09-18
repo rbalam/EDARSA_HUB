@@ -1,49 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "e0015bd34132801fe5aa2943eceb5d898bb17b12",
-  "generated_at_utc": "2026-09-18T03:02:50Z",
+  "development_sha": "d0188293f98e618b96dec196fe38dca5930cf2fd",
+  "generated_at_utc": "2026-09-18T03:04:08Z",
   "history": {
-    "done_total_local": 572,
-    "pending_total_local": 5,
-    "processing_total_local": 1,
-    "rejected_total_local": 572,
-    "results_total_local": 1002
+    "done_total_local": 576,
+    "pending_total_local": 0,
+    "processing_total_local": 0,
+    "rejected_total_local": 574,
+    "results_total_local": 1008
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 14,
-      "job_id": "CXP-GATE3F-B-MPRO-PCID-AUTHORITATIVE-PATTERN-READONLY-20260917",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 14,
-      "job_id": "EDARSAHUB-INVENTARIOS-403-RBAC-TRACE-R2-20260917T203100Z",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 14,
-      "job_id": "EDARSAHUB-P3-COA-NAVIGATION-RBAC-CANARY-R1",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 14,
-      "job_id": "EDARSAHUB-WORKER-SELFHEAL-WORKTREE-CLAIM-R1-20260917",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 13,
-      "job_id": "coa-gate6a-fiscal-status-semantics-readonly-v1-20260918",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 3178,
+      "age_seconds": 3256,
       "job_id": "GATE5D-DEDICATED-MIGRATION-WRITER-CONTRACT-R2-20260917",
       "reasons": [
         "INVALID_SCHEMA",
@@ -53,69 +23,93 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 14,
+      "age_seconds": 92,
       "job_id": "BOS-V1-GATE-E-EXECUTIVE-BOS-DESIGN-CONTRACT-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 9,
+      "age_seconds": 86,
       "job_id": "CATALOGO-AMPLIADO-GATE8G-SQL-MIGRATION-CANONICAL-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3547,
-      "job_id": "CAVAS-GATE12I-R2-FAILURE-POSTAUDIT-READONLY-R1-20260917",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3433,
+      "age_seconds": 3510,
       "job_id": "CAVAS-GATE12I-R2-FAILURE-POSTAUDIT-READONLY-R2-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3171,
+      "age_seconds": 3249,
       "job_id": "CAVAS-GATE12I-R2-FAILURE-ROOTCAUSE-READONLY-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1986,
+      "age_seconds": 73,
+      "job_id": "CAVAS-GATE12I-R3-MIGRATION-COMPILE-FIX-R1-20260917",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 70,
+      "job_id": "CXP-GATE3F-B-MPRO-PCID-AUTHORITATIVE-PATTERN-READONLY-20260917",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 67,
+      "job_id": "EDARSAHUB-INVENTARIOS-403-RBAC-TRACE-R2-20260917T203100Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 65,
+      "job_id": "EDARSAHUB-P3-COA-NAVIGATION-RBAC-CANARY-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 51,
+      "job_id": "EDARSAHUB-WORKER-SELFHEAL-WORKTREE-CLAIM-R1-20260917",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2063,
       "job_id": "GATE5D-DEDICATED-MIGRATION-WRITER-CONTRACT-R3-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3402,
+      "age_seconds": 3480,
       "job_id": "coa-gate5g-r4-cfdi-physical-rerun-v1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 15,
-      "job_id": "CAVAS-GATE12I-R3-MIGRATION-COMPILE-FIX-R1-20260917",
+      "age_seconds": 48,
+      "job_id": "coa-gate6a-fiscal-status-semantics-readonly-v1-20260918",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
     }
   ],
-  "oldest_pending_age_seconds": 14,
+  "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 6,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
-  "queue_pending": 5,
+  "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 7,
-  "queue_running": 1,
+  "queue_result_ready_recent": 12,
+  "queue_running": 0,
   "runtime": {
-    "current_job_id": "CAVAS-GATE12I-R3-MIGRATION-COMPILE-FIX-R1-20260917",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-18T03:02:48Z",
-    "last_receive_utc": "2026-09-18T03:02:43Z",
-    "last_terminal_utc": "2026-09-18T03:02:41Z",
+    "last_cycle_utc": "2026-09-18T03:04:03Z",
+    "last_receive_utc": "2026-09-18T03:04:06Z",
+    "last_terminal_utc": "2026-09-18T03:03:19Z",
     "pid": "64"
   },
   "schema": "edarsahub.worker-health.v3",
