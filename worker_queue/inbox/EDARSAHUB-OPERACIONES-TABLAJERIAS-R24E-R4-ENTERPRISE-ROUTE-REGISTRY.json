@@ -1,0 +1,41 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R4-ENTERPRISE-ROUTE-REGISTRY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "human_summary_language": "es",
+  "objective": "Corregir R24E-R3 agregando clasificacion Enterprise para /tablajeria/lotes-proveedor en enterpriseNavigationRegistry.json y conservar frontend minimo de lotes proveedor.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+      "content": "import React, { useEffect, useState } from 'react';\nimport api from '@/lib/api';\n\nexport default function LotesProveedorPage() {\n  const [rows, setRows] = useState([]);\n  const [claims, setClaims] = useState([]);\n  const [loading, setLoading] = useState(false);\n  const [error, setError] = useState('');\n\n  async function loadData() {\n    setLoading(true);\n    setError('');\n    try {\n      const lotesRes = await api.get('/tablajeria/lotes-proveedor/rendimientos?limit=100&offset=0');\n      const reclamosRes = await api.get('/tablajeria/reclamos-proveedor?limit=100');\n      setRows(lotesRes.data && lotesRes.data.rendimientos ? lotesRes.data.rendimientos : []);\n      setClaims(reclamosRes.data && reclamosRes.data.reclamos ? reclamosRes.data.reclamos : []);\n    } catch (err) {\n      setError(err && err.response && err.response.data && err.response.data.detail ? err.response.data.detail : 'No fue posible cargar lotes proveedor.');\n    } finally {\n      setLoading(false);\n    }\n  }\n\n  useEffect(() => {\n    loadData();\n  }, []);\n\n  function fmt(value) {\n    const n = Number(value || 0);\n    return n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\n  }\n\n  return (\n    <div className=\"p-6 space-y-6\" data-testid=\"tablajeria-lotes-proveedor\">\n      <div className=\"flex items-center justify-between\">\n        <div>\n          <h1 className=\"text-2xl font-bold\">Lotes proveedor</h1>\n          <p className=\"text-sm text-muted-foreground\">Rendimiento, desviaciones, impacto economico y reclamos por lote de compra.</p>\n        </div>\n        <button className=\"px-4 py-2 rounded border text-sm\" type=\"button\" onClick={loadData} disabled={loading}>{loading ? 'Cargando...' : 'Actualizar'}</button>\n      </div>\n      {error ? <div className=\"p-4 rounded bg-red-50 text-red-700\">{error}</div> : null}\n      <section className=\"bg-white rounded-lg border overflow-hidden\">\n        <div className=\"px-4 py-3 border-b\"><h2 className=\"font-semibold\">Rendimientos por lote</h2></div>\n        <div className=\"overflow-x-auto\">\n          <table className=\"w-full text-sm\">\n            <thead className=\"bg-gray-50\"><tr><th className=\"text-left p-3\">Lote</th><th className=\"text-left p-3\">Proveedor</th><th className=\"text-right p-3\">Rendimiento</th><th className=\"text-right p-3\">Desviacion</th><th className=\"text-right p-3\">Impacto</th><th className=\"text-left p-3\">Semaforo</th></tr></thead>\n            <tbody>\n              {rows.map((row, index) => (\n                <tr key={row.LoteRendimientoID || index} className=\"border-t\"><td className=\"p-3\">{row.LoteProveedor || row.LoteInterno || '-'}</td><td className=\"p-3\">{row.ProveedorNombre || '-'}</td><td className=\"p-3 text-right\">{fmt(row.RendimientoRealPorcentaje)}%</td><td className=\"p-3 text-right\">{fmt(row.DesviacionPorcentaje)}%</td><td className=\"p-3 text-right\">${fmt(row.ImpactoEconomico)}</td><td className=\"p-3\">{row.Semaforo || 'SIN_DATOS'}</td></tr>\n              ))}\n              {!rows.length && !loading ? <tr><td className=\"p-6 text-center text-muted-foreground\" colSpan=\"6\">Sin registros.</td></tr> : null}\n            </tbody>\n          </table>\n        </div>\n      </section>\n      <section className=\"bg-white rounded-lg border overflow-hidden\">\n        <div className=\"px-4 py-3 border-b\"><h2 className=\"font-semibold\">Reclamos proveedor</h2></div>\n        <div className=\"overflow-x-auto\">\n          <table className=\"w-full text-sm\">\n            <thead className=\"bg-gray-50\"><tr><th className=\"text-left p-3\">Folio</th><th className=\"text-left p-3\">Proveedor</th><th className=\"text-left p-3\">Motivo</th><th className=\"text-left p-3\">Estatus</th><th className=\"text-right p-3\">Impacto</th></tr></thead>\n            <tbody>\n              {claims.map((claim, index) => (\n                <tr key={claim.ReclamoProveedorID || index} className=\"border-t\"><td className=\"p-3\">{claim.FolioReclamo || '-'}</td><td className=\"p-3\">{claim.ProveedorNombre || '-'}</td><td className=\"p-3\">{claim.Motivo || '-'}</td><td className=\"p-3\">{claim.Estatus || '-'}</td><td className=\"p-3 text-right\">${fmt(claim.ImpactoEconomico)}</td></tr>\n              ))}\n              {!claims.length && !loading ? <tr><td className=\"p-6 text-center text-muted-foreground\" colSpan=\"5\">Sin reclamos.</td></tr> : null}\n            </tbody>\n          </table>\n        </div>\n      </section>\n    </div>\n  );\n}\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/App.js",
+      "old": "import CapturaDirectaPage from '@/pages/tablajeria/CapturaDirectaPage';",
+      "new": "import CapturaDirectaPage from '@/pages/tablajeria/CapturaDirectaPage';\nimport LotesProveedorPage from '@/pages/tablajeria/LotesProveedorPage';"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/App.js",
+      "old": "              <Route path=\"tablajeria/plantillas\" element={<PlantillasPage />} />",
+      "new": "              <Route path=\"tablajeria/plantillas\" element={<PlantillasPage />} />\n              <Route path=\"tablajeria/lotes-proveedor\" element={<LotesProveedorPage />} />"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/config/enterpriseNavigationRegistry.json",
+      "old": "    \"tablajeria.plantillas\": {\n      \"groupId\": \"operaciones-abasto\",\n      \"sectionId\": \"produccion\",\n      \"label\": \"Plantillas\",\n      \"expectedPath\": \"/tablajeria/plantillas\",\n      \"order\": 30,\n      \"status\": \"active\",\n      \"legacy\": true\n    },\n    \"cava.dashboard\": {",
+      "new": "    \"tablajeria.plantillas\": {\n      \"groupId\": \"operaciones-abasto\",\n      \"sectionId\": \"produccion\",\n      \"label\": \"Plantillas\",\n      \"expectedPath\": \"/tablajeria/plantillas\",\n      \"order\": 30,\n      \"status\": \"active\",\n      \"legacy\": true\n    },\n    \"tablajeria.lotes_proveedor\": {\n      \"groupId\": \"operaciones-abasto\",\n      \"sectionId\": \"produccion\",\n      \"label\": \"Lotes proveedor\",\n      \"expectedPath\": \"/tablajeria/lotes-proveedor\",\n      \"order\": 60,\n      \"status\": \"active\",\n      \"releasedAt\": \"2026-09-18\"\n    },\n    \"cava.dashboard\": {"
+    }
+  ],
+  "checks": [
+    {"type":"frontend_build","path":"frontend"},
+    {"type":"repository_contract_audit","request":{"paths":["frontend/src/pages/tablajeria/LotesProveedorPage.jsx","frontend/src/App.js","frontend/src/config/enterpriseNavigationRegistry.json"],"search_terms":["LotesProveedorPage","/tablajeria/lotes-proveedor","tablajeria.lotes_proveedor","ENTERPRISE_NAVIGATION_GUARDIAN=PASS"],"include_patterns":["*.js","*.jsx","*.json"],"exclude_patterns":["node_modules/*","build/*","dist/*"],"max_results":300}},
+    {"type":"git_diff_check","allowed_paths":["frontend/src/pages/tablajeria/LotesProveedorPage.jsx","frontend/src/App.js","frontend/src/config/enterpriseNavigationRegistry.json"],"forbidden_paths":["backend/server.py","backend/modules/tablajeria/routes.py","backend/core/scheduler/scheduler_manager.py","backend/core/centro_control/email_notifications.py","backend/core/centro_control/whatsapp_notifications.py"]}
+  ],
+  "expected_result": {"quality_gate":"PASS","production_touched":false}
+}
