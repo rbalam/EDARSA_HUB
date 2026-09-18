@@ -1,0 +1,28 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-403-ENDPOINT-BODY-R3R2-20260917T222500Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Auditar únicamente backend/server.py para localizar la función generate_inventory_analysis y documentar la condición exacta que devuelve 403 por acceso a server_id, incluyendo el helper llamado y los campos de current_user que intervienen. Solo lectura; sin SQL ni mutaciones.",
+  "mode":"READ_ONLY",
+  "actions":[],
+  "checks":[
+    {
+      "type":"repository_contract_audit",
+      "request":{
+        "paths":["backend/server.py"],
+        "search_terms":[
+          "generate_inventory_analysis",
+          "No tiene acceso a este servidor",
+          "Sin acceso a este servidor",
+          "user_has_server_access",
+          "current_user",
+          "server_id"
+        ],
+        "max_results":100
+      }
+    }
+  ],
+  "human_summary_language":"es"
+}
