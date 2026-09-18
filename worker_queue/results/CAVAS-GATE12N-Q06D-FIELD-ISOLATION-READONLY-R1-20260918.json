@@ -1,0 +1,372 @@
+{
+  "base_sha": "3ea717f1c26365551518edb89d98e4abb07096d2",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T22:40:15Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE12N-Q06D-FIELD-ISOLATION-READONLY-R1-20260918",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T22:40:24Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "is_nullable"
+            ],
+            "name": "Q06D01_cava_column_types",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                1,
+                "SocioID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                2,
+                "EmpresaID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                12,
+                "Estatus",
+                "varchar",
+                30,
+                true
+              ],
+              [
+                13,
+                "Activo",
+                "bit",
+                1,
+                true
+              ],
+              [
+                19,
+                "PersonaID",
+                "bigint",
+                8,
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "field_name",
+              "data_type",
+              "max_length",
+              "is_nullable"
+            ],
+            "name": "Q06D02_empresa_domain_types",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "Sistema_Empresas.EmpresaID",
+                "int",
+                4,
+                false
+              ],
+              [
+                "Unidades_Negocio.id",
+                "uniqueidentifier",
+                16,
+                false
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "SocioID",
+              "EmpresaID_Text",
+              "Estatus",
+              "Activo",
+              "PersonaID_Text"
+            ],
+            "name": "Q06D03_cava_sample_identity_values",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "2C08DC5C-D050-4377-8D92-E31E6F5F53B9",
+                "D290F1EE-6C54-4B01-90E6-D701748F0851",
+                "ACTIVO",
+                true,
+                null
+              ],
+              [
+                "62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58",
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "ACTIVO",
+                true,
+                null
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "total_rows",
+              "activo_1",
+              "activo_0",
+              "activo_null"
+            ],
+            "name": "Q06D04_predicate_activo_only",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2",
+                2,
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "Estatus",
+              "total"
+            ],
+            "name": "Q06D05_predicate_estatus_only",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "ACTIVO",
+                "2"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "total_rows",
+              "persona_null",
+              "persona_not_null"
+            ],
+            "name": "Q06D06_predicate_persona_only",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2",
+                2,
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "matched_rows"
+            ],
+            "name": "Q06D07_cava_empresa_matches_unit_uuid",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "1"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "matched_rows"
+            ],
+            "name": "Q06D08_cava_empresa_matches_empresa_int_safely",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "CavaEmpresaID",
+              "socios_activos",
+              "socios_sin_persona"
+            ],
+            "name": "Q06D09_groupby_having_native_cava_domain",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "1",
+                1
+              ],
+              [
+                "D290F1EE-6C54-4B01-90E6-D701748F0851",
+                "1",
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "UsuarioID",
+              "Email",
+              "UnidadNegocioID",
+              "UnidadCodigo",
+              "CavaEmpresaID",
+              "SocioID",
+              "Estatus",
+              "Activo",
+              "PersonaID"
+            ],
+            "name": "Q06D10_candidate_unit_uuid_join_without_group",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                4,
+                "noxte@alpyc.com",
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "130MID",
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58",
+                "ACTIVO",
+                true,
+                null
+              ],
+              [
+                4,
+                "noxte@alpyc.com",
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                "130QRO",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                4,
+                "noxte@alpyc.com",
+                "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+                "CIENFUEGOS",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                4,
+                "noxte@alpyc.com",
+                "DFB86008-1B81-472A-9E50-8A0821DEC4B2",
+                "ESTELAR",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                4,
+                "noxte@alpyc.com",
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "ORIGEN",
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T22:40:09Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
