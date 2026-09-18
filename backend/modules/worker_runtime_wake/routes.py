@@ -34,13 +34,14 @@ LOCK_PATH = Path("/tmp/edarsahub-universal-worker-wake.lock")
 COOLDOWN_PATH = Path("/tmp/edarsahub-universal-worker-wake.last")
 WORKER_TREE_STATE = RUNTIME_DIR / "active_worker_code_tree_sha"
 WORKER_CODE_TREE_SPEC = "HEAD:tools/mirror_sync"
-WAKE_ROUTE_VERSION = "r31-active-job-guard"
+WAKE_ROUTE_VERSION = "r32-queue-head-diagnostic"
 _SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 
 
 def _remote_queue_sha() -> str:
     last_error: Exception | None = None
-    for remote in ("origin", CANONICAL_QUEUE_REMOTE):
+    attempts: list[str] = []
+    for label, remote in (("origin", "origin"), ("canonical", CANONICAL_QUEUE_REMOTE)):
         try:
             completed = subprocess.run(
                 ["git", "ls-remote", remote, QUEUE_REF],
@@ -51,8 +52,13 @@ def _remote_queue_sha() -> str:
                 timeout=15,
                 env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
             )
-        except (OSError, subprocess.SubprocessError) as exc:
+        except subprocess.TimeoutExpired as exc:
             last_error = exc
+            attempts.append(f"{label}=timeout")
+            continue
+        except OSError as exc:
+            last_error = exc
+            attempts.append(f"{label}=oserror")
             continue
 
         fields = completed.stdout.strip().split()
@@ -63,10 +69,12 @@ def _remote_queue_sha() -> str:
             and _SHA_RE.fullmatch(fields[0])
         ):
             return fields[0].lower()
+        attempts.append(f"{label}=rc{completed.returncode}")
 
+    diagnostic = ",".join(attempts) if attempts else "no-attempt"
     raise HTTPException(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail="worker queue head unavailable",
+        detail=f"worker queue head unavailable [{diagnostic}]",
     ) from last_error
 
 
