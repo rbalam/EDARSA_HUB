@@ -1,0 +1,106 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12M-PERSONA-LINK-E2E-CANARY-READINESS-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e28da4d31a55ad5251db5400ebadd6f4e5466375",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Abrir Gate12M despues del cierre certificado de Gate12L, sin reabrir 12J/12K/12L. Auditar exclusivamente la readiness para un canario E2E controlado en Development del flujo Persona-Link: UI -> API -> servicio -> SQL. Determinar precondiciones, datos de prueba permitidos, estrategia de rollback/cleanup, RBAC, empresa/unidad autorizada, endpoints exactos, asserts antes/despues y evidencia requerida. No ejecutar todavia ninguna mutacion, no crear Persona, no vincular socio, no borrar datos, no DDL, no Production.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/cava-socios/PersonaLinkCard.jsx",
+          "frontend/src/pages/cava-socios/SocioDetail.jsx",
+          "frontend/src/pages/cava-socios/SociosList.jsx",
+          "backend/modules/cava_socios/routes.py",
+          "backend/modules/cava_socios/persona_link_service.py",
+          "backend/modules/cava_socios/service.py",
+          "backend/tests/test_cava_socios_persona_link.py",
+          "backend/tests/test_cava_socios.py"
+        ],
+        "search_terms": [
+          "personas-canonicas",
+          "persona-link",
+          "crear-persona",
+          "vincular_persona_existente",
+          "crear_persona_y_vincular",
+          "desvincular_persona",
+          "CAVA_SOCIOS_VER",
+          "CAVA_SOCIOS_EDITAR",
+          "unidad_negocio_pk",
+          "UPDLOCK",
+          "HOLDLOCK",
+          "commit",
+          "rollback",
+          "PersonaID",
+          "ClienteCRMID",
+          "SocioID"
+        ],
+        "include_patterns": [
+          "*.jsx",
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "identity_guard",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS db_user,ORIGINAL_LOGIN() AS original_login;"
+        },
+        {
+          "name": "candidate_socios",
+          "sql": "SELECT TOP (20) CONVERT(varchar(36),SocioID) AS SocioID,CONVERT(varchar(36),EmpresaID) AS EmpresaID,NumeroSocio,NombreCompleto,PersonaID,Activo,Estatus FROM dbo.CavaSocios_Socios ORDER BY FechaCreacion,SocioID;"
+        },
+        {
+          "name": "persona_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_personas FROM dbo.Gobierno_Persona;"
+        },
+        {
+          "name": "persona_vinculo_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_vinculos FROM dbo.Gobierno_PersonaVinculo;"
+        },
+        {
+          "name": "cliente_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_clientes FROM dbo.Cliente_Catalogo;"
+        },
+        {
+          "name": "persona_fk",
+          "sql": "SELECT fk.name AS fk_name,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk WHERE fk.parent_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND fk.name=N'FK_CavaSocios_Socios_GobiernoPersona';"
+        },
+        {
+          "name": "child_fk_integrity",
+          "sql": "SELECT COUNT_BIG(*) AS trusted_child_fks FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fk.referenced_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND OBJECT_NAME(fk.parent_object_id) IN (N'CavaSocios_Botellas',N'CavaSocios_Cargos',N'CavaSocios_Movimientos') AND pc.name=N'SocioID' AND rc.name=N'SocioID' AND fk.is_disabled=0 AND fk.is_not_trusted=0;"
+        },
+        {
+          "name": "existing_persona_links",
+          "sql": "SELECT COUNT_BIG(*) AS linked_socios FROM dbo.CavaSocios_Socios WHERE PersonaID IS NOT NULL;"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "Gate12J remains closed",
+    "Gate12K remains closed",
+    "Gate12L remains closed",
+    "READ_ONLY only",
+    "No E2E mutation yet",
+    "No create Persona",
+    "No link or unlink Socio",
+    "No DDL or DML",
+    "No Production",
+    "No new RBAC permissions",
+    "No automatic matching",
+    "SocioID remains membership identity",
+    "ClienteCRMID remains legacy-compatible",
+    "Use canonical unidad_negocio_pk and existing RBAC"
+  ]
+}
