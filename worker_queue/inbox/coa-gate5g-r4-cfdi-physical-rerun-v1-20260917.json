@@ -1,0 +1,27 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate5g-r4-cfdi-physical-rerun-v1-20260917",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "511c3ab9b0f856104d977c9f0e85ea123c9f3c0e",
+  "objective": "COA Gate 5G-R4: disparar una nueva ejecucion fisica controlada en Development del CFDI Emitidos usando el DDL R3 ya certificado en SHA 55ec0fd18630e1c5403ee24c80c55b3799670411. No modificar workflow, DDL, rollback ni modelo. Cambiar exclusivamente ops/migrations/requests/COA-CFDI-EMITIDOS-20260910.execute para producir un push en Edarsahub_Desarrollo que active el workflow COA existente. El workflow debera realizar preflight, validar EDARSAHUB/HRLectura y permisos DDL, ejecutar la migracion, postcheck y artifact. No Produccion. No certificar la migracion fisica en este Worker job; la certificacion requiere revisar run, steps, logs y artifact posteriores.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "ops/migrations/requests/COA-CFDI-EMITIDOS-20260910.execute",
+      "expected_count": 1,
+      "old": "GATE=5G-R2\nMIGRATION_KIND=CFDI_EMITIDOS\nSOURCE_GATE5E_SHA=0c32b93cee5d4ef54c4845850b6fedc937a63cb3\nSOURCE_GATE5F_RESULT=coa-gate5f-cfdi-emitidos-readonly-preflight-v1-20260910\nRECOVERY_REASON=SHALLOW_TRIGGER_RESOLUTION_HARDENING\nPRODUCTION=false",
+      "new": "GATE=5G-R4\nMIGRATION_KIND=CFDI_EMITIDOS\nSOURCE_GATE5E_SHA=0c32b93cee5d4ef54c4845850b6fedc937a63cb3\nSOURCE_GATE5F_RESULT=coa-gate5f-cfdi-emitidos-readonly-preflight-v1-20260910\nSOURCE_GATE5G_R3_SHA=55ec0fd18630e1c5403ee24c80c55b3799670411\nEXECUTION_INTENT=PHYSICAL_RERUN_AFTER_BATCH_BOUNDARY_FIX\nPRODUCTION=false"
+    }
+  ],
+  "checks": [
+    {"type":"git_diff_check"}
+  ],
+  "human_summary_language": "es"
+}
