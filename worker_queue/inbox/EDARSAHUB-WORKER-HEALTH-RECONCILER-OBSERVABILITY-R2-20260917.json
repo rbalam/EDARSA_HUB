@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-HEALTH-RECONCILER-OBSERVABILITY-R2-20260917",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "920638ce165f3bb5135c89fb78803836d3dc28fd",
+  "production_allowed": false,
+  "objective": "Reintento unico del gate de observabilidad del reconciliador tras GIT_LOCK_BUSY transitorio. Exponer en worker/health un resumen seguro de runtime/reconciler.json para certificar desde GitHub la limpieza de claims/worktrees/ramas huerfanas. Mismo alcance de R1; no tocar Supervisor, watchdog, SQL, Produccion ni logica de dispatch.",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/runtime_health_publisher.py",
+      "old": "def runtime_summary() -> dict[str, str | None]:\n    return {\n        \"pid\": read_text(RUNTIME / \"pid\"),\n        \"generation\": read_text(RUNTIME / \"generation\"),\n        \"last_cycle_utc\": read_text(RUNTIME / \"last_cycle_utc\"),\n        \"last_receive_utc\": read_text(RUNTIME / \"last_receive_utc\"),\n        \"current_job_id\": read_text(RUNTIME / \"current_job_id\"),\n        \"last_terminal_utc\": read_text(RUNTIME / \"last_terminal_utc\"),\n    }\n",
+      "new": "def runtime_summary() -> dict[str, str | None]:\n    return {\n        \"pid\": read_text(RUNTIME / \"pid\"),\n        \"generation\": read_text(RUNTIME / \"generation\"),\n        \"last_cycle_utc\": read_text(RUNTIME / \"last_cycle_utc\"),\n        \"last_receive_utc\": read_text(RUNTIME / \"last_receive_utc\"),\n        \"current_job_id\": read_text(RUNTIME / \"current_job_id\"),\n        \"last_terminal_utc\": read_text(RUNTIME / \"last_terminal_utc\"),\n    }\n\n\ndef reconciler_summary() -> dict:\n    path = RUNTIME / \"reconciler.json\"\n    try:\n        data = json.loads(path.read_text(encoding=\"utf-8\"))\n    except Exception:\n        return {\"available\": False, \"generated_at_utc\": None, \"claims\": [], \"orphan_processing\": []}\n    claims = []\n    for row in data.get(\"claims\") or []:\n        if not isinstance(row, dict):\n            continue\n        claims.append({\n            \"agent_id\": row.get(\"agent_id\"),\n            \"task_id\": row.get(\"task_id\"),\n            \"worktree\": row.get(\"worktree\"),\n            \"decision\": row.get(\"decision\"),\n            \"released\": bool(row.get(\"released\")),\n            \"release_reason\": row.get(\"release_reason\"),\n        })\n    orphan_processing = []\n    for row in data.get(\"orphan_processing\") or []:\n        if not isinstance(row, dict):\n            continue\n        orphan_processing.append({\"job_id\": row.get(\"job_id\"), \"action\": row.get(\"action\")})\n    return {\n        \"available\": True,\n        \"generated_at_utc\": data.get(\"generated_at_utc\"),\n        \"claims\": claims,\n        \"orphan_processing\": orphan_processing,\n        \"production_touched\": bool(data.get(\"production_touched\", False)),\n    }\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/runtime_health_publisher.py",
+      "old": "        \"history\": history_summary(),\n        \"runtime\": runtime_summary(),\n        \"summary_es\": (",
+      "new": "        \"history\": history_summary(),\n        \"runtime\": runtime_summary(),\n        \"reconciler\": reconciler_summary(),\n        \"summary_es\": (",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_health_reconciler_observability_contract.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nTARGET = ROOT / 'tools/mirror_sync/runtime_health_publisher.py'\n\n\ndef test_health_publishes_reconciler_summary():\n    text = TARGET.read_text(encoding='utf-8')\n    assert 'def reconciler_summary()' in text\n    assert '\"reconciler\": reconciler_summary()' in text\n    assert 'RUNTIME / \"reconciler.json\"' in text\n\n\ndef test_health_reconciler_summary_is_sanitized():\n    text = TARGET.read_text(encoding='utf-8')\n    assert 'agent_id' in text\n    assert 'task_id' in text\n    assert 'decision' in text\n    assert 'release_reason' in text\n    assert 'password' not in text.lower()\n    assert 'token' not in text.lower()\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/runtime_health_publisher.py",
+        "backend/tests/test_worker_health_reconciler_observability_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_health_reconciler_observability_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
