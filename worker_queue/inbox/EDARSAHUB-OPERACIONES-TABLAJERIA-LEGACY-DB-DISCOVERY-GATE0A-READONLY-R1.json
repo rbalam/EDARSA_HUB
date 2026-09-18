@@ -1,0 +1,19 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-LEGACY-DB-DISCOVERY-GATE0A-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar en modo solo lectura las bases legadas de Tablajeria existentes para Cienfuegos y MPRO. Identificar modelo real, tablas, columnas, relaciones, procesos, datos operativos y posibilidades de mapeo hacia EDARSAHUB como fuente canonica final. No modificar base de datos, no ejecutar migraciones, no crear tablas, no crear endpoints, no crear UI, no activar visibilidad operativa y no convertir bases legadas en fuente canonica. EDARSAHUB conserva usuarios, RBAC, inventarios, auditoria, workflow, eventos y contabilidad como autoridad final.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "allowed_paths": []
+}
