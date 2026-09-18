@@ -1,0 +1,92 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CXP-GATE3F-A-MPRO-CANARY-DESIGN-DISCOVERY-READONLY-20260917",
+  "created_at_utc": "2026-09-18T00:36:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c85ab15705196c85ef7e4bf7fc3847d3f13e6960",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "GATE 3F-A MPRO CANARY DESIGN DISCOVERY. Resolver exclusivamente los bloqueadores de diseno previos a un canary: mecanismo observable de Pc_ID, mapping real de forma de pago y estado, obligatoriedad condicional de Pago_Cxp_Comprobante/Pago_CXP_Impuesto, lookup post-write determinista y fuente observable de saldo. Solo READ ONLY. No ejecutar canary, no escribir, no implementar Payment Executor.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN",
+        "130QRO"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "f3a_mpro_runtime_identity",
+          "sql": "SELECT @@SERVERNAME AS server_name,DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user"
+        },
+        {
+          "name": "f3a_mpro_pc_id_shape",
+          "sql": "SELECT COUNT_BIG(*) AS total,COUNT_BIG(DISTINCT Pc_ID) AS pc_id_distintos,SUM(CASE WHEN Pc_ID IS NULL THEN 1 ELSE 0 END) AS pc_id_nulls,MIN(LEN(Pc_ID)) AS min_len,MAX(LEN(Pc_ID)) AS max_len,SUM(CASE WHEN TRY_CONVERT(bigint,Pc_ID) IS NOT NULL THEN 1 ELSE 0 END) AS numeric_like FROM dbo.Pago_CXP"
+        },
+        {
+          "name": "f3a_mpro_pc_id_frequency",
+          "sql": "SELECT Pc_ID,COUNT_BIG(*) AS total FROM dbo.Pago_CXP GROUP BY Pc_ID ORDER BY total DESC,Pc_ID"
+        },
+        {
+          "name": "f3a_mpro_pc_id_by_folio_multiplicity",
+          "sql": "SELECT COUNT_BIG(*) AS folios_con_multiples FROM (SELECT Cxp_Folio FROM dbo.Pago_CXP GROUP BY Cxp_Folio HAVING COUNT_BIG(*)>1) q"
+        },
+        {
+          "name": "f3a_mpro_form_state_shape",
+          "sql": "SELECT Fp_Cve_Forma_Pago,Es_Cve_Estado,COUNT_BIG(*) AS total FROM dbo.Pago_CXP GROUP BY Fp_Cve_Forma_Pago,Es_Cve_Estado ORDER BY Fp_Cve_Forma_Pago,Es_Cve_Estado"
+        },
+        {
+          "name": "f3a_mpro_form_catalog",
+          "sql": "SELECT fp.Fp_Cve_Forma_Pago,COUNT_BIG(p.Cxp_Folio) AS pagos_observados FROM dbo.Forma_Pago fp LEFT JOIN dbo.Pago_CXP p ON p.Fp_Cve_Forma_Pago=fp.Fp_Cve_Forma_Pago GROUP BY fp.Fp_Cve_Forma_Pago ORDER BY fp.Fp_Cve_Forma_Pago"
+        },
+        {
+          "name": "f3a_mpro_state_catalog",
+          "sql": "SELECT e.Es_Cve_Estado,COUNT_BIG(p.Cxp_Folio) AS pagos_observados FROM dbo.Estado e LEFT JOIN dbo.Pago_CXP p ON p.Es_Cve_Estado=e.Es_Cve_Estado GROUP BY e.Es_Cve_Estado ORDER BY e.Es_Cve_Estado"
+        },
+        {
+          "name": "f3a_mpro_child_presence",
+          "sql": "SELECT COUNT_BIG(*) AS total_pagos,SUM(CASE WHEN EXISTS (SELECT 1 FROM dbo.Pago_Cxp_Comprobante c WHERE c.Cxp_Folio=p.Cxp_Folio AND c.Pc_ID=p.Pc_ID) THEN 1 ELSE 0 END) AS con_comprobante,SUM(CASE WHEN EXISTS (SELECT 1 FROM dbo.Pago_CXP_Impuesto i WHERE i.Cxp_Folio=p.Cxp_Folio AND i.Pc_ID=p.Pc_ID) THEN 1 ELSE 0 END) AS con_impuesto FROM dbo.Pago_CXP p"
+        },
+        {
+          "name": "f3a_mpro_child_by_form",
+          "sql": "SELECT p.Fp_Cve_Forma_Pago,COUNT_BIG(*) AS pagos,SUM(CASE WHEN c.Cxp_Folio IS NOT NULL THEN 1 ELSE 0 END) AS con_comprobante,SUM(CASE WHEN i.Cxp_Folio IS NOT NULL THEN 1 ELSE 0 END) AS con_impuesto FROM dbo.Pago_CXP p LEFT JOIN (SELECT DISTINCT Cxp_Folio,Pc_ID FROM dbo.Pago_Cxp_Comprobante) c ON c.Cxp_Folio=p.Cxp_Folio AND c.Pc_ID=p.Pc_ID LEFT JOIN (SELECT DISTINCT Cxp_Folio,Pc_ID FROM dbo.Pago_CXP_Impuesto) i ON i.Cxp_Folio=p.Cxp_Folio AND i.Pc_ID=p.Pc_ID GROUP BY p.Fp_Cve_Forma_Pago ORDER BY p.Fp_Cve_Forma_Pago"
+        },
+        {
+          "name": "f3a_mpro_cxp_columns_for_confirmation",
+          "sql": "SELECT c.column_id,c.name AS column_name,ty.name AS data_type,c.is_nullable FROM sys.columns c INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID(N'dbo.Cuenta_X_Pagar') AND (c.name LIKE N'%Saldo%' OR c.name LIKE N'%Import%' OR c.name LIKE N'%Pago%' OR c.name LIKE N'%Estado%' OR c.name=N'Cxp_Folio') ORDER BY c.column_id"
+        },
+        {
+          "name": "f3a_mpro_pago_lookup_index",
+          "sql": "SELECT i.name AS index_name,i.is_unique,i.is_primary_key,ic.key_ordinal,c.name AS column_name FROM sys.indexes i INNER JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id INNER JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.Pago_CXP') ORDER BY i.index_id,ic.key_ordinal"
+        },
+        {
+          "name": "f3a_mpro_pc_id_generators_metadata",
+          "sql": "SELECT TOP 200 s.name AS schema_name,o.name AS object_name,o.type_desc,OBJECT_DEFINITION(o.object_id) AS definition FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE OBJECT_DEFINITION(o.object_id) LIKE N'%Pc_ID%' OR OBJECT_DEFINITION(o.object_id) LIKE N'%Pago_CXP%' ORDER BY o.type_desc,s.name,o.name"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ ONLY SQL ONLY",
+    "actions must remain empty",
+    "NO INSERT UPDATE DELETE MERGE EXEC EXECUTE DDL SELECT INTO OR MULTI-STATEMENT SQL",
+    "NO procedure execution",
+    "NO individual provider, invoice or payment business rows except bounded code/catalog values required to resolve form/state/Pc_ID design",
+    "NO Production",
+    "NO code or file mutation",
+    "Connections only through PosRuntimeResolver and get_external_sql_connection",
+    "Do not invent Pc_ID generation if no authoritative mechanism is found",
+    "Do not authorize child-table writes from correlation alone",
+    "Do not authorize any canary or Payment Executor writer",
+    "Payment Executor writer remains 0 percent"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
