@@ -1,0 +1,27 @@
+{
+  "base_sha": "2cf69ee09beb0b3fc415aa817bb8b6ae1c31ade1",
+  "blockers": [],
+  "candidate_sha": "075671be834bb2662c2a45a3ade0717d84b5248b",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-18T03:16:06Z",
+  "development_sha": "075671be834bb2662c2a45a3ade0717d84b5248b",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "docs/ARCHITECTURE/EDARSA_LOGISTICS_GATE2_DATA_INTEGRATION_ARCHITECTURE.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSA-LOGISTICS-GATE2-DATA-INTEGRATION-ARCHITECTURE-R2",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T03:17:11Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-18T03:16:00Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
