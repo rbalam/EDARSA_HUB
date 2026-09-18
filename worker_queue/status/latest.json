@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "2970b25462610c1ecb17a70aa5597cfdba28385d",
-  "generated_at_utc": "2026-09-18T21:29:44Z",
+  "generated_at_utc": "2026-09-18T21:31:01Z",
   "history": {
     "done_total_local": 678,
     "pending_total_local": 1,
@@ -13,13 +13,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 461,
+      "age_seconds": 538,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R22-R23-REPORTES-LOTE-RECLAMOS-PROVEEDOR-READONLY",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 525,
+      "age_seconds": 603,
       "job_id": "CAVAS-GATE12L-UI-POSTCHECK-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
@@ -37,8 +37,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-18T21:29:43Z",
-    "last_receive_utc": "2026-09-18T21:29:44Z",
+    "last_cycle_utc": "2026-09-18T21:31:00Z",
+    "last_receive_utc": "2026-09-18T21:30:55Z",
     "last_terminal_utc": "2026-09-18T21:20:58Z",
     "pid": "736"
   },
