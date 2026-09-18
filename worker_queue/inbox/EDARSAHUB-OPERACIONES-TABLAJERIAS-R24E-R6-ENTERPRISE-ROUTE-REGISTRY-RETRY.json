@@ -1,0 +1,40 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R6-ENTERPRISE-ROUTE-REGISTRY-RETRY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "human_summary_language": "es",
+  "objective": "Retry quirurgico despues de recovery de processing orphan y git-writer stale lock. Integrar pagina frontend minima de lotes proveedor y registrar la ruta /tablajeria/lotes-proveedor en enterpriseNavigationRegistry.json. No tocar backend ni Produccion.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+      "content": "import React, { useEffect, useState } from 'react';\nimport api from '@/lib/api';\n\nexport default function LotesProveedorPage() {\n  const [rows, setRows] = useState([]);\n  const [claims, setClaims] = useState([]);\n  const [loading, setLoading] = useState(false);\n  const [error, setError] = useState('');\n\n  async function loadData() {\n    setLoading(true);\n    setError('');\n\n    try {\n      const lotesRes = await api.get('/tablajeria/lotes-proveedor/rendimientos?limit=100&offset=0');\n      const reclamosRes = await api.get('/tablajeria/reclamos-proveedor?limit=100');\n      const nextRows = lotesRes.data && lotesRes.data.rendimientos ? lotesRes.data.rendimientos : [];\n      const nextClaims = reclamosRes.data && reclamosRes.data.reclamos ? reclamosRes.data.reclamos : [];\n      setRows(nextRows);\n      setClaims(nextClaims);\n    } catch (err) {\n      setError('No fue posible cargar lotes proveedor.');\n    } finally {\n      setLoading(false);\n    }\n  }\n\n  useEffect(function init() {\n    loadData();\n  }, []);\n\n  return (\n    <div data-testid=\"tablajeria-lotes-proveedor\" style={{ padding: 24 }}>\n      <header>\n        <h1>Lotes proveedor</h1>\n        <p>Rendimiento, desviaciones, impacto economico y reclamos por lote de compra.</p>\n        <button type=\"button\" onClick={loadData} disabled={loading}>Actualizar</button>\n      </header>\n\n      {error ? <p role=\"alert\">{error}</p> : null}\n\n      <section>\n        <h2>Rendimientos por lote</h2>\n        <p>Total de lotes: {rows.length}</p>\n        <ul>\n          {rows.map(function renderRow(row, index) {\n            const key = row.LoteRendimientoID || row.LoteProveedor || index;\n            return (\n              <li key={key}>\n                <strong>{row.LoteProveedor || row.LoteInterno || 'Sin lote'}</strong>\n                <span> - {row.ProveedorNombre || 'Sin proveedor'} - {row.Semaforo || 'SIN_DATOS'}</span>\n              </li>\n            );\n          })}\n        </ul>\n        {!rows.length && !loading ? <p>Sin registros.</p> : null}\n      </section>\n\n      <section>\n        <h2>Reclamos proveedor</h2>\n        <p>Total de reclamos: {claims.length}</p>\n        <ul>\n          {claims.map(function renderClaim(claim, index) {\n            const key = claim.ReclamoProveedorID || claim.FolioReclamo || index;\n            return (\n              <li key={key}>\n                <strong>{claim.FolioReclamo || 'Sin folio'}</strong>\n                <span> - {claim.ProveedorNombre || 'Sin proveedor'} - {claim.Estatus || 'SIN_ESTATUS'}</span>\n              </li>\n            );\n          })}\n        </ul>\n        {!claims.length && !loading ? <p>Sin reclamos.</p> : null}\n      </section>\n    </div>\n  );\n}\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/App.js",
+      "old": "import CapturaDirectaPage from '@/pages/tablajeria/CapturaDirectaPage';",
+      "new": "import CapturaDirectaPage from '@/pages/tablajeria/CapturaDirectaPage';\nimport LotesProveedorPage from '@/pages/tablajeria/LotesProveedorPage';"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/App.js",
+      "old": "              <Route path=\"tablajeria/plantillas\" element={<PlantillasPage />} />",
+      "new": "              <Route path=\"tablajeria/plantillas\" element={<PlantillasPage />} />\n              <Route path=\"tablajeria/lotes-proveedor\" element={<LotesProveedorPage />} />"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/config/enterpriseNavigationRegistry.json",
+      "old": "    \"tablajeria.plantillas\": {\n      \"groupId\": \"operaciones-abasto\",\n      \"sectionId\": \"produccion\",\n      \"label\": \"Plantillas\",\n      \"expectedPath\": \"/tablajeria/plantillas\",\n      \"order\": 30,\n      \"status\": \"active\",\n      \"legacy\": true\n    },\n    \"cava.dashboard\": {",
+      "new": "    \"tablajeria.plantillas\": {\n      \"groupId\": \"operaciones-abasto\",\n      \"sectionId\": \"produccion\",\n      \"label\": \"Plantillas\",\n      \"expectedPath\": \"/tablajeria/plantillas\",\n      \"order\": 30,\n      \"status\": \"active\",\n      \"legacy\": true\n    },\n    \"tablajeria.lotes_proveedor\": {\n      \"groupId\": \"operaciones-abasto\",\n      \"sectionId\": \"produccion\",\n      \"label\": \"Lotes proveedor\",\n      \"expectedPath\": \"/tablajeria/lotes-proveedor\",\n      \"order\": 60,\n      \"status\": \"active\",\n      \"releasedAt\": \"2026-09-18\"\n    },\n    \"cava.dashboard\": {"
+    }
+  ],
+  "checks": [
+    {"type":"frontend_build","path":"frontend"},
+    {"type":"git_diff_check","allowed_paths":["frontend/src/pages/tablajeria/LotesProveedorPage.jsx","frontend/src/App.js","frontend/src/config/enterpriseNavigationRegistry.json"],"forbidden_paths":["backend/server.py","backend/modules/tablajeria/routes.py","backend/core/scheduler/scheduler_manager.py","backend/core/centro_control/email_notifications.py","backend/core/centro_control/whatsapp_notifications.py"]}
+  ],
+  "expected_result": {"quality_gate":"PASS","production_touched":false}
+}
