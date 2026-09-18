@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "RRR-GATE4E-R7-R2-DESIGN-CERT-READONLY-20260917",
+  "created_at_utc": "2026-09-18T03:16:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4cd17ed44a4b595b9145f64c0497d6aa3ea7b576",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Certificar exclusivamente el diseño materializado de Gate4E-R7 en docs/RRR/RRR_GATE4E_R7_MINIMAL_ATTRIBUTION_ADAPTER_DESIGN_V1.md. Verificar que el archivo existe en el SHA integrado, conserva ClienteID explicito, UUID Comandero como SourceKey candidato, join determinista via acknowledgement POS nativo, prohibicion de fuzzy matching, VentaID nullable hasta mapping certificado, no nuevo DDL, no Customer360 V3, no implementacion y no Production. No modificar archivos.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "docs/RRR/RRR_GATE4E_R7_MINIMAL_ATTRIBUTION_ADAPTER_DESIGN_V1.md"
+        ],
+        "search_terms": [
+          "ClienteID",
+          "SourceKey",
+          "id_transaccion_global",
+          "certified native POS acknowledgement",
+          "VentaID",
+          "fuzzy",
+          "No new SQL table",
+          "Customer360 V3",
+          "READ_ONLY preflight"
+        ],
+        "max_results": 50
+      }
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
