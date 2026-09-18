@@ -76,6 +76,10 @@ def test_dispatcher_contract_is_closed_and_ordered():
     assert 'CERTIFIED_OPERATIONAL' in block
     assert 'check_failed:sql_migration_preflight' in block
     assert 'sql_migration_failed:rc=' in block
+    assert 'safe_migration_summary' in block
+    assert 'result["operation_summary"] = safe_migration_summary' in block
+    assert 'MigrationContractError:' in block
+    assert 'credential_source' in block
     assert 'check_failed:sql_migration_post_audit' in block
 
 def test_dispatcher_does_not_touch_production_contract():

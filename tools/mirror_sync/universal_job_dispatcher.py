@@ -845,7 +845,31 @@ def process_one(path: Path) -> int:
                 timeout=MAX_SECONDS,
                 env_extra={**load_backend_runtime_env(), "PYTHONPATH": str(backend)},
             )
-            result["operation_output"] = (execution.stdout or "")[-12000:]
+            raw_migration_output = execution.stdout or ""
+            result["operation_output"] = raw_migration_output[-12000:]
+            safe_migration_summary = {"returncode": execution.returncode}
+            for raw_line in reversed(raw_migration_output.splitlines()):
+                try:
+                    payload = json.loads(raw_line)
+                except (json.JSONDecodeError, TypeError):
+                    continue
+                if not isinstance(payload, dict):
+                    continue
+                status = str(payload.get("status") or "").upper()
+                if status in {"PASS", "FAIL"}:
+                    safe_migration_summary["status"] = status
+                credential_source = str(payload.get("credential_source") or "").strip().lower()
+                if credential_source in {"dedicated", "canonical"}:
+                    safe_migration_summary["credential_source"] = credential_source
+                error = str(payload.get("error") or "")
+                if error.startswith("MigrationContractError:"):
+                    error_code = error.split(":", 1)[1].split(":", 1)[0]
+                    if re.fullmatch(r"[A-Z0-9_]+", error_code):
+                        safe_migration_summary["error_code"] = error_code
+                if isinstance(payload.get("returncode"), int):
+                    safe_migration_summary["returncode"] = payload["returncode"]
+                break
+            result["operation_summary"] = safe_migration_summary
             if execution.returncode != 0:
                 result["blockers"].append(f"sql_migration_failed:rc={execution.returncode}")
             check_results = []
