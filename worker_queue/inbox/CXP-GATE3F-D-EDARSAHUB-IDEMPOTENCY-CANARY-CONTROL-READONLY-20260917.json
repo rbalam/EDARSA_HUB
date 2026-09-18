@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CXP-GATE3F-D-EDARSAHUB-IDEMPOTENCY-CANARY-CONTROL-READONLY-20260917",
+  "created_at_utc": "2026-09-18T04:07:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "920638ce165f3bb5135c89fb78803836d3dc28fd",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "GATE 3F-D EDARSAHUB IDEMPOTENCY AND CANARY CONTROL. Auditar exclusivamente si las tablas canónicas de cola de pagos y evidencia de pagos ya proporcionan una protección durable y determinista contra doble ejecución para un futuro canary. No migrar, no alterar esquema, no ejecutar pagos. Determinar constraints, indexes, duplicate guards estructurales y campos disponibles para correlacionar DecisionPagoID, PagoOrigenQueueID, HashOrigen, importe y evidencia ERP.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "f3d_runtime_identity",
+          "sql": "SELECT @@SERVERNAME AS server_name,DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user"
+        },
+        {
+          "name": "f3d_queue_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable,c.is_identity,c.is_computed,dc.definition AS default_definition FROM sys.columns c INNER JOIN sys.types t ON t.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id WHERE c.object_id=OBJECT_ID(N'dbo.Finanzas_CxP_PagosOrigenQueue') ORDER BY c.column_id"
+        },
+        {
+          "name": "f3d_queue_indexes",
+          "sql": "SELECT i.index_id,i.name AS index_name,i.is_unique,i.is_primary_key,i.is_unique_constraint,ic.key_ordinal,c.name AS column_name FROM sys.indexes i LEFT JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id LEFT JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.Finanzas_CxP_PagosOrigenQueue') ORDER BY i.index_id,ic.index_column_id"
+        },
+        {
+          "name": "f3d_queue_constraints",
+          "sql": "SELECT o.name AS constraint_name,o.type_desc FROM sys.objects o WHERE o.parent_object_id=OBJECT_ID(N'dbo.Finanzas_CxP_PagosOrigenQueue') AND o.type IN ('PK','UQ','C','F','D') ORDER BY o.type_desc,o.name"
+        },
+        {
+          "name": "f3d_pagos_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable,c.is_identity,c.is_computed,dc.definition AS default_definition FROM sys.columns c INNER JOIN sys.types t ON t.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id WHERE c.object_id=OBJECT_ID(N'dbo.Finanzas_Pagos') ORDER BY c.column_id"
+        },
+        {
+          "name": "f3d_pagos_indexes",
+          "sql": "SELECT i.index_id,i.name AS index_name,i.is_unique,i.is_primary_key,i.is_unique_constraint,ic.key_ordinal,c.name AS column_name FROM sys.indexes i LEFT JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id LEFT JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.Finanzas_Pagos') ORDER BY i.index_id,ic.index_column_id"
+        },
+        {
+          "name": "f3d_pagos_constraints",
+          "sql": "SELECT o.name AS constraint_name,o.type_desc FROM sys.objects o WHERE o.parent_object_id=OBJECT_ID(N'dbo.Finanzas_Pagos') AND o.type IN ('PK','UQ','C','F','D') ORDER BY o.type_desc,o.name"
+        },
+        {
+          "name": "f3d_queue_state_shape",
+          "sql": "SELECT EstadoEnvio,Activo,COUNT_BIG(*) AS total FROM dbo.Finanzas_CxP_PagosOrigenQueue GROUP BY EstadoEnvio,Activo ORDER BY EstadoEnvio,Activo"
+        },
+        {
+          "name": "f3d_queue_duplicate_decision_hash",
+          "sql": "SELECT COUNT_BIG(*) AS grupos_duplicados FROM (SELECT DecisionPagoID,HashOrigen,COUNT_BIG(*) AS n FROM dbo.Finanzas_CxP_PagosOrigenQueue WHERE Activo=1 GROUP BY DecisionPagoID,HashOrigen HAVING COUNT_BIG(*)>1) q"
+        },
+        {
+          "name": "f3d_queue_duplicate_active_hash_amount",
+          "sql": "SELECT COUNT_BIG(*) AS grupos_duplicados FROM (SELECT HashOrigen,ImporteAPagar,COUNT_BIG(*) AS n FROM dbo.Finanzas_CxP_PagosOrigenQueue WHERE Activo=1 GROUP BY HashOrigen,ImporteAPagar HAVING COUNT_BIG(*)>1) q"
+        },
+        {
+          "name": "f3d_pagos_rowcount",
+          "sql": "SELECT COUNT_BIG(*) AS total FROM dbo.Finanzas_Pagos"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ ONLY SQL ONLY",
+    "actions must remain empty",
+    "NO INSERT UPDATE DELETE MERGE EXEC EXECUTE DDL SELECT INTO OR MULTI-STATEMENT SQL",
+    "NO procedure execution",
+    "NO Production",
+    "NO code or file mutation",
+    "Do not infer durable idempotency from application checks alone if no unique structural guard exists",
+    "Do not propose or execute a migration in this gate",
+    "If EDARSAHUB lacks a durable unique idempotency guard, classify CANARY_EXECUTION as BLOCKED_PENDING_IDEMPOTENCY_GUARD",
+    "Do not authorize any canary or Payment Executor writer",
+    "Payment Executor writer remains 0 percent"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
