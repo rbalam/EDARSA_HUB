@@ -1,0 +1,115 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12K-BACKEND-POSTCHECK-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d295093ee080c058f55e03a4536d272d20135449",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar en READ_ONLY la implementacion backend integrada de Gate12K sin reabrir Gate12J. Validar rutas registradas, contrato de servicio Persona-Link, compilacion, pruebas unitarias especificas y estado SQL fisico sin mutar datos. Confirmar que SocioID sigue siendo identidad operacional, PersonaID sigue sin backfill automatico, ClienteCRMID no fue reemplazado, Gobierno_Persona/Gobierno_PersonaVinculo permanecen sin mutacion por el postcheck y Produccion no fue tocada.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/cava_socios/persona_link_service.py",
+        "backend/modules/cava_socios/routes.py",
+        "backend/modules/cava_socios/service.py",
+        "backend/tests/test_cava_socios_persona_link.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios_persona_link.py",
+        "backend/tests/test_cava_socios.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/persona_link_service.py",
+          "backend/modules/cava_socios/routes.py",
+          "backend/modules/cava_socios/service.py",
+          "backend/tests/test_cava_socios_persona_link.py",
+          "backend/tests/test_cava_socios.py"
+        ],
+        "search_terms": [
+          "/personas-canonicas",
+          "/socios/{socio_id}/persona-link",
+          "/socios/{socio_id}/persona-link/crear-persona",
+          "desvincular_persona",
+          "vincular_persona_existente",
+          "crear_persona_y_vincular",
+          "Gobierno_Persona",
+          "Gobierno_PersonaVinculo",
+          "Cliente_Catalogo",
+          "PersonaID",
+          "ClienteCRMID",
+          "UPDLOCK",
+          "HOLDLOCK",
+          "commit",
+          "rollback",
+          "CAVA_SOCIOS_VER",
+          "CAVA_SOCIOS_EDITAR",
+          "canonical_records_deleted"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "identity_guard",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS db_user,ORIGINAL_LOGIN() AS original_login;"
+        },
+        {
+          "name": "cava_socios_persona_state",
+          "sql": "SELECT COUNT_BIG(*) AS total_socios,SUM(CASE WHEN PersonaID IS NULL THEN 1 ELSE 0 END) AS socios_sin_persona,SUM(CASE WHEN PersonaID IS NOT NULL THEN 1 ELSE 0 END) AS socios_con_persona FROM dbo.CavaSocios_Socios;"
+        },
+        {
+          "name": "cava_fk",
+          "sql": "SELECT fk.name AS fk_name,OBJECT_NAME(fk.parent_object_id) AS parent_table,OBJECT_NAME(fk.referenced_object_id) AS referenced_table,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk WHERE fk.parent_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND fk.name=N'FK_CavaSocios_Socios_GobiernoPersona';"
+        },
+        {
+          "name": "persona_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_personas FROM dbo.Gobierno_Persona;"
+        },
+        {
+          "name": "persona_vinculo_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_vinculos FROM dbo.Gobierno_PersonaVinculo;"
+        },
+        {
+          "name": "cliente_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_clientes FROM dbo.Cliente_Catalogo;"
+        },
+        {
+          "name": "legacy_clientecrm_presence",
+          "sql": "SELECT COUNT_BIG(*) AS total_socios,SUM(CASE WHEN ClienteCRMID IS NULL THEN 1 ELSE 0 END) AS clientecrm_null,SUM(CASE WHEN ClienteCRMID IS NOT NULL THEN 1 ELSE 0 END) AS clientecrm_present FROM dbo.CavaSocios_Socios;"
+        },
+        {
+          "name": "child_fk_integrity",
+          "sql": "SELECT COUNT_BIG(*) AS trusted_child_fks FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fk.referenced_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND OBJECT_NAME(fk.parent_object_id) IN (N'CavaSocios_Botellas',N'CavaSocios_Cargos',N'CavaSocios_Movimientos') AND pc.name=N'SocioID' AND rc.name=N'SocioID' AND fk.is_disabled=0 AND fk.is_not_trusted=0;"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "Gate12J remains closed",
+    "READ_ONLY only",
+    "No DDL or DML",
+    "No Production",
+    "No new tables or permissions",
+    "No automatic Persona matching",
+    "SocioID remains membership identity",
+    "ClienteCRMID remains legacy-compatible",
+    "Botellas Cargos Movimientos remain linked by SocioID"
+  ]
+}
