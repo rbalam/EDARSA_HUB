@@ -56,6 +56,7 @@ def build_child_env(source_env: dict[str, str] | None = None, *, allow_canonical
     source = dict(source_env or os.environ)
     dedicated_user = str(source.get('EDARSAHUB_MIGRATION_USER') or '').strip()
     dedicated_password = str(source.get('EDARSAHUB_MIGRATION_PASSWORD') or '')
+    expected_user = str(source.get('EDARSAHUB_MIGRATION_EXPECTED_USER') or '').strip()
     if bool(dedicated_user) != bool(dedicated_password):
         raise MigrationContractError('MIGRATION_CREDENTIALS_INCOMPLETE')
     selected_source = 'dedicated'
@@ -71,6 +72,8 @@ def build_child_env(source_env: dict[str, str] | None = None, *, allow_canonical
         raise MigrationContractError('MIGRATION_CREDENTIALS_REQUIRED')
     if selected_source == 'dedicated' and user.lower() == 'hrlectura':
         raise MigrationContractError('HRLECTURA_CANNOT_BE_MIGRATION_WRITER')
+    if selected_source == 'dedicated' and expected_user and user != expected_user:
+        raise MigrationContractError('MIGRATION_WRITER_IDENTITY_MISMATCH')
     for required in ('EDARSAHUB_SQL_HOST','EDARSAHUB_SQL_DATABASE'):
         if not str(source.get(required) or '').strip():
             raise MigrationContractError(f'CANONICAL_SQL_CONFIG_REQUIRED:{required}')

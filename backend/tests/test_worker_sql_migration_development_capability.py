@@ -36,6 +36,14 @@ def test_dedicated_credentials_required():
 def test_hrlectura_forbidden_as_dedicated_writer():
     with pytest.raises(mod.MigrationContractError,match='HRLECTURA_CANNOT_BE_MIGRATION_WRITER'): mod.build_child_env(env('HRLectura'))
 
+def test_expected_dedicated_writer_identity_matches():
+    source=env('GptEscritura'); source['EDARSAHUB_MIGRATION_EXPECTED_USER']='GptEscritura'
+    child=mod.build_child_env(source); assert child['EDARSAHUB_SQL_USER']=='GptEscritura'; assert child['EDARSAHUB_MIGRATION_CREDENTIAL_SOURCE']=='dedicated'
+
+def test_expected_dedicated_writer_identity_mismatch_fails_closed():
+    source=env('OtherWriter'); source['EDARSAHUB_MIGRATION_EXPECTED_USER']='GptEscritura'
+    with pytest.raises(mod.MigrationContractError,match='MIGRATION_WRITER_IDENTITY_MISMATCH'): mod.build_child_env(source)
+
 def test_existing_canonical_writer_requires_explicit_opt_in():
     source={'EDARSAHUB_SQL_HOST':'db','EDARSAHUB_SQL_DATABASE':'EDARSAHUB','EDARSAHUB_SQL_USER':'HRLectura','EDARSAHUB_SQL_PASSWORD':'existing'}
     with pytest.raises(mod.MigrationContractError,match='MIGRATION_CREDENTIALS_REQUIRED'): mod.build_child_env(source)
