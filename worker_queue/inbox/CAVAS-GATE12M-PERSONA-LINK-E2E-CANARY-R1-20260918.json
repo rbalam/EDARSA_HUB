@@ -1,0 +1,75 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12M-PERSONA-LINK-E2E-CANARY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e28da4d31a55ad5251db5400ebadd6f4e5466375",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Ejecutar un unico canario E2E controlado en Development para Gate12M, sin reabrir 12J/12K/12L. El canario selecciona dinamicamente un socio ACTIVO con PersonaID NULL y un actor SQL activo; pasa por los handlers API de Cava Persona-Link, servicio transaccional y SQL real para crear una Persona canaria sin Cliente, verificar el vinculo, consultar, desvincular y limpiar completamente la Persona de prueba en finally. Debe dejar los conteos de Gobierno_Persona, Gobierno_PersonaVinculo y socios vinculados exactamente como estaban antes. No hardcodear IDs, no tocar Produccion, no DDL, no dejar datos residuales.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_cava_socios_persona_link_gate12m_canary.py",
+      "content": "import os\nimport uuid\n\nimport pytest\n\nfrom core.sql_first.connection_factory import get_edarsahub_pymssql_connection\nfrom modules.cava_socios import routes\n\n\nCANARY_JOB_ID = \"CAVAS-GATE12M-PERSONA-LINK-E2E-CANARY-R1-20260918\"\n\n\ndef _enabled_here() -> bool:\n    return CANARY_JOB_ID in os.getcwd()\n\n\npytestmark = [\n    pytest.mark.integration,\n    pytest.mark.skipif(\n        not _enabled_here(),\n        reason=\"Gate12M canary only runs inside its dedicated Universal Worker worktree\",\n    ),\n]\n\n\ndef _fetch_canary_context():\n    conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)\n    try:\n        cur = conn.cursor(as_dict=True)\n        cur.execute(\n            \"\"\"\n            SELECT TOP (1)\n                CONVERT(varchar(36), SocioID) AS SocioID,\n                CONVERT(varchar(36), EmpresaID) AS EmpresaID,\n                NumeroSocio,\n                PersonaID\n            FROM dbo.CavaSocios_Socios\n            WHERE Activo = 1\n              AND Estatus = 'ACTIVO'\n              AND PersonaID IS NULL\n            ORDER BY FechaCreacion, SocioID\n            \"\"\"\n        )\n        socio = cur.fetchone()\n        if not socio:\n            raise AssertionError(\"GATE12M_NO_ELIGIBLE_SOCIO\")\n\n        cur.execute(\n            \"\"\"\n            SELECT TOP (1)\n                UsuarioID,\n                CONVERT(varchar(36), PublicUUID) AS PublicUUID\n            FROM dbo.Usuario_Catalogo\n            WHERE Activo = 1\n              AND PublicUUID IS NOT NULL\n            ORDER BY UsuarioID\n            \"\"\"\n        )\n        actor = cur.fetchone()\n        if not actor:\n            raise AssertionError(\"GATE12M_NO_ELIGIBLE_SQL_ACTOR\")\n\n        cur.execute(\"SELECT COUNT_BIG(*) AS n FROM dbo.Gobierno_Persona\")\n        personas_before = int(cur.fetchone()[\"n\"])\n        cur.execute(\"SELECT COUNT_BIG(*) AS n FROM dbo.Gobierno_PersonaVinculo\")\n        vinculos_before = int(cur.fetchone()[\"n\"])\n        cur.execute(\n            \"\"\"\n            SELECT COUNT_BIG(*) AS n\n            FROM dbo.CavaSocios_Socios\n            WHERE PersonaID IS NOT NULL\n            \"\"\"\n        )\n        linked_before = int(cur.fetchone()[\"n\"])\n\n        return {\n            \"socio\": dict(socio),\n            \"actor\": dict(actor),\n            \"personas_before\": personas_before,\n            \"vinculos_before\": vinculos_before,\n            \"linked_before\": linked_before,\n        }\n    finally:\n        conn.close()\n\n\ndef _cleanup_canary(*, socio_id: str, empresa_id: str, rfc: str):\n    conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)\n    try:\n        cur = conn.cursor(as_dict=True)\n\n        cur.execute(\n            \"\"\"\n            SELECT PersonaID\n            FROM dbo.Gobierno_Persona\n            WHERE RFC = %s\n            \"\"\",\n            (rfc,),\n        )\n        row = cur.fetchone()\n        persona_id = int(row[\"PersonaID\"]) if row else None\n\n        if persona_id is not None:\n            cur.execute(\n                \"\"\"\n                UPDATE dbo.CavaSocios_Socios\n                SET PersonaID = NULL\n                WHERE SocioID = %s\n                  AND EmpresaID = %s\n                  AND PersonaID = %s\n                \"\"\",\n                (socio_id, empresa_id, persona_id),\n            )\n            cur.execute(\n                \"DELETE FROM dbo.Gobierno_PersonaVinculo WHERE PersonaID = %s\",\n                (persona_id,),\n            )\n            cur.execute(\n                \"DELETE FROM dbo.Gobierno_Persona WHERE PersonaID = %s\",\n                (persona_id,),\n            )\n\n        conn.commit()\n    except Exception:\n        conn.rollback()\n        raise\n    finally:\n        conn.close()\n\n\n@pytest.mark.asyncio\nasync def test_gate12m_single_controlled_persona_link_canary(monkeypatch):\n    ctx = _fetch_canary_context()\n    socio = ctx[\"socio\"]\n    actor = ctx[\"actor\"]\n\n    unit_code = \"GATE12M-CANARY\"\n    rfc = (\"CAN\" + uuid.uuid4().hex[:10]).upper()\n    curp = (\"CANARY\" + uuid.uuid4().hex[:12]).upper()\n\n    fake_user = {\n        \"id\": str(actor[\"PublicUUID\"]),\n        \"PublicUUID\": str(actor[\"PublicUUID\"]),\n        \"UsuarioID\": int(actor[\"UsuarioID\"]),\n        \"email\": \"gate12m-canary@edarsahub.local\",\n    }\n\n    def fake_get_user_context(_user):\n        return {\n            \"unidad_activa\": unit_code,\n            \"unidades_permitidas\": [\n                {\n                    \"UnidadNegocioID\": unit_code,\n                    \"EmpresaID\": socio[\"EmpresaID\"],\n                }\n            ],\n        }\n\n    def fake_enrich(user):\n        enriched = dict(user)\n        enriched[\"UsuarioID\"] = int(actor[\"UsuarioID\"])\n        enriched[\"_sql_usuario_id\"] = int(actor[\"UsuarioID\"])\n        enriched[\"PublicUUID\"] = str(actor[\"PublicUUID\"])\n        return enriched\n\n    monkeypatch.setattr(routes.context_service, \"get_user_context\", fake_get_user_context)\n    monkeypatch.setattr(routes, \"enrich_current_user_with_sql_id\", fake_enrich)\n\n    created_persona_id = None\n    try:\n        before = await routes.obtener_persona_link(\n            socio_id=socio[\"SocioID\"],\n            unidad_negocio_pk=unit_code,\n            current_user=fake_user,\n        )\n        assert before[\"persona_id\"] is None\n\n        create_payload = routes.PersonaCreateLinkRequest(\n            nombre=\"Canary Gate12M\",\n            apellido_paterno=\"EDARSAHUB\",\n            rfc=rfc,\n            curp=curp,\n            nacionalidad=\"MX\",\n            cliente_id=None,\n        )\n        created = await routes.crear_persona_y_vincular(\n            socio_id=socio[\"SocioID\"],\n            data=create_payload,\n            unidad_negocio_pk=unit_code,\n            current_user=fake_user,\n        )\n\n        assert created[\"created_persona\"] is True\n        assert created[\"cliente_id\"] is None\n        created_persona_id = int(created[\"persona_id\"])\n\n        linked = await routes.obtener_persona_link(\n            socio_id=socio[\"SocioID\"],\n            unidad_negocio_pk=unit_code,\n            current_user=fake_user,\n        )\n        assert int(linked[\"persona_id\"]) == created_persona_id\n        assert int(linked[\"persona\"][\"persona_id\"]) == created_persona_id\n        assert linked[\"vinculos\"] == []\n\n        unlinked = await routes.desvincular_persona(\n            socio_id=socio[\"SocioID\"],\n            unidad_negocio_pk=unit_code,\n            current_user=fake_user,\n        )\n        assert int(unlinked[\"persona_id_anterior\"]) == created_persona_id\n        assert unlinked[\"canonical_records_deleted\"] is False\n\n        after_unlink = await routes.obtener_persona_link(\n            socio_id=socio[\"SocioID\"],\n            unidad_negocio_pk=unit_code,\n            current_user=fake_user,\n        )\n        assert after_unlink[\"persona_id\"] is None\n\n    finally:\n        _cleanup_canary(\n            socio_id=socio[\"SocioID\"],\n            empresa_id=socio[\"EmpresaID\"],\n            rfc=rfc,\n        )\n\n    conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)\n    try:\n        cur = conn.cursor(as_dict=True)\n\n        cur.execute(\"SELECT COUNT_BIG(*) AS n FROM dbo.Gobierno_Persona\")\n        assert int(cur.fetchone()[\"n\"]) == ctx[\"personas_before\"]\n\n        cur.execute(\"SELECT COUNT_BIG(*) AS n FROM dbo.Gobierno_PersonaVinculo\")\n        assert int(cur.fetchone()[\"n\"]) == ctx[\"vinculos_before\"]\n\n        cur.execute(\n            \"\"\"\n            SELECT COUNT_BIG(*) AS n\n            FROM dbo.CavaSocios_Socios\n            WHERE PersonaID IS NOT NULL\n            \"\"\"\n        )\n        assert int(cur.fetchone()[\"n\"]) == ctx[\"linked_before\"]\n\n        cur.execute(\n            \"\"\"\n            SELECT PersonaID\n            FROM dbo.CavaSocios_Socios\n            WHERE SocioID = %s AND EmpresaID = %s\n            \"\"\",\n            (socio[\"SocioID\"], socio[\"EmpresaID\"]),\n        )\n        final_socio = cur.fetchone()\n        assert final_socio is not None\n        assert final_socio[\"PersonaID\"] is None\n\n        cur.execute(\n            \"SELECT COUNT_BIG(*) AS n FROM dbo.Gobierno_Persona WHERE RFC = %s\",\n            (rfc,),\n        )\n        assert int(cur.fetchone()[\"n\"]) == 0\n    finally:\n        conn.close()\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/tests/test_cava_socios_persona_link_gate12m_canary.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios_persona_link_gate12m_canary.py"
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "post_canary_personas",
+          "sql": "SELECT COUNT_BIG(*) AS total_personas FROM dbo.Gobierno_Persona;"
+        },
+        {
+          "name": "post_canary_vinculos",
+          "sql": "SELECT COUNT_BIG(*) AS total_vinculos FROM dbo.Gobierno_PersonaVinculo;"
+        },
+        {
+          "name": "post_canary_linked_socios",
+          "sql": "SELECT COUNT_BIG(*) AS linked_socios FROM dbo.CavaSocios_Socios WHERE PersonaID IS NOT NULL;"
+        },
+        {
+          "name": "post_canary_fk",
+          "sql": "SELECT fk.name AS fk_name,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk WHERE fk.parent_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND fk.name=N'FK_CavaSocios_Socios_GobiernoPersona';"
+        },
+        {
+          "name": "post_canary_child_fks",
+          "sql": "SELECT COUNT_BIG(*) AS trusted_child_fks FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fk.referenced_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND OBJECT_NAME(fk.parent_object_id) IN (N'CavaSocios_Botellas',N'CavaSocios_Cargos',N'CavaSocios_Movimientos') AND pc.name=N'SocioID' AND rc.name=N'SocioID' AND fk.is_disabled=0 AND fk.is_not_trusted=0;"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "Gate12J remains closed",
+    "Gate12K remains closed",
+    "Gate12L remains closed",
+    "Development only",
+    "Production forbidden",
+    "Exactly one controlled E2E canary",
+    "No hardcoded SocioID EmpresaID UsuarioID or PersonaID",
+    "No Cliente link in canary",
+    "No DDL",
+    "Cleanup must run in finally",
+    "No residual Persona or PersonaVinculo",
+    "Socio must end with PersonaID NULL",
+    "Pre/post counts must match",
+    "SocioID remains membership identity",
+    "No automatic matching",
+    "No Mongo runtime"
+  ]
+}
