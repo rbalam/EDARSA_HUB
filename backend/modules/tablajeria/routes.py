@@ -30,6 +30,7 @@ from .sync_service import TablajeriaSyncService
 from .ordenes_service import TablajeriaOrdenesService
 from core.security import get_current_user
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 
 logger = logging.getLogger(__name__)
 
