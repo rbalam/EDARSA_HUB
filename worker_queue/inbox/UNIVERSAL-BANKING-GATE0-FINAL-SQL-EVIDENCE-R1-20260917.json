@@ -1,0 +1,52 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "UNIVERSAL-BANKING-GATE0-FINAL-SQL-EVIDENCE-R1-20260917",
+  "created_at_utc": "2026-09-18T01:15:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c0a2e3983f6c4888050e0949101fb5647d01036b",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Cerrar exclusivamente la evidencia SQL pendiente de UNIVERSAL-BANKING-0. Confirmar en EDARSAHUB, solo lectura, si existen estructuras equivalentes para PaymentRail/ClearingSystem, BankingChannel/Host-to-Host/SFTP, BankFile, BankExecution/ExternalExecution, BankEvent/ExternalEvent e identificadores IBAN/ABA/SWIFT/BIC/UETR. No auditar nuevamente Finanzas_Pagos salvo referencias necesarias. No crear ni modificar nada.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "ubg0_runtime_identity",
+          "sql": "SELECT @@SERVERNAME AS server_name, DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS database_user"
+        },
+        {
+          "name": "ubg0_candidate_objects",
+          "sql": "SELECT s.name AS schema_name, o.name AS object_name, o.type_desc FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.type IN ('U','V') AND (o.name LIKE '%Rail%' OR o.name LIKE '%Clearing%' OR o.name LIKE '%SPEI%' OR o.name LIKE '%ACH%' OR o.name LIKE '%SEPA%' OR o.name LIKE '%Fedwire%' OR o.name LIKE '%Bank%' OR o.name LIKE '%Banco%' OR o.name LIKE '%HostToHost%' OR o.name LIKE '%Host_To_Host%' OR o.name LIKE '%SFTP%' OR o.name LIKE '%SWIFT%' OR o.name LIKE '%File%' OR o.name LIKE '%Archivo%' OR o.name LIKE '%Execution%' OR o.name LIKE '%Ejecucion%' OR o.name LIKE '%Event%' OR o.name LIKE '%Evento%') ORDER BY s.name,o.name"
+        },
+        {
+          "name": "ubg0_candidate_columns",
+          "sql": "SELECT s.name AS schema_name, o.name AS object_name, c.name AS column_name, t.name AS data_type FROM sys.columns c INNER JOIN sys.objects o ON o.object_id=c.object_id INNER JOIN sys.schemas s ON s.schema_id=o.schema_id INNER JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE o.type IN ('U','V') AND (c.name LIKE '%IBAN%' OR c.name LIKE '%ABA%' OR c.name LIKE '%SWIFT%' OR c.name LIKE '%BIC%' OR c.name LIKE '%UETR%' OR c.name LIKE '%Routing%' OR c.name LIKE '%Rail%' OR c.name LIKE '%Clearing%' OR c.name LIKE '%SPEI%' OR c.name LIKE '%ACH%' OR c.name LIKE '%SEPA%' OR c.name LIKE '%Fedwire%' OR c.name LIKE '%HostToHost%' OR c.name LIKE '%SFTP%' OR c.name LIKE '%BankFile%' OR c.name LIKE '%ArchivoBanco%' OR c.name LIKE '%ExternalExecution%' OR c.name LIKE '%ExternalEvent%') ORDER BY s.name,o.name,c.column_id"
+        },
+        {
+          "name": "ubg0_sql_modules_references",
+          "sql": "SELECT s.name AS schema_name, o.name AS object_name, o.type_desc FROM sys.sql_modules m INNER JOIN sys.objects o ON o.object_id=m.object_id INNER JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE m.definition LIKE '%IBAN%' OR m.definition LIKE '%SWIFT%' OR m.definition LIKE '%UETR%' OR m.definition LIKE '%SPEI%' OR m.definition LIKE '%ACH%' OR m.definition LIKE '%SEPA%' OR m.definition LIKE '%Fedwire%' OR m.definition LIKE '%HostToHost%' OR m.definition LIKE '%SFTP%' OR m.definition LIKE '%PaymentRail%' OR m.definition LIKE '%BankFile%' OR m.definition LIKE '%ExternalExecution%' OR m.definition LIKE '%ExternalEvent%' ORDER BY s.name,o.name"
+        },
+        {
+          "name": "ubg0_finanzas_pagos_related_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.is_nullable FROM sys.columns c INNER JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID(N'dbo.Finanzas_Pagos') AND (c.name LIKE '%Banco%' OR c.name LIKE '%Cuenta%' OR c.name LIKE '%Referencia%' OR c.name LIKE '%FormaPago%' OR c.name LIKE '%Rail%' OR c.name LIKE '%Canal%' OR c.name LIKE '%SWIFT%' OR c.name LIKE '%IBAN%' OR c.name LIKE '%UETR%') ORDER BY c.column_id"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ ONLY SQL ONLY",
+    "actions must remain empty",
+    "NO INSERT UPDATE DELETE MERGE EXEC EXECUTE DDL SELECT INTO OR MULTI-STATEMENT SQL",
+    "NO code or file mutations in Edarsahub_Desarrollo",
+    "NO Production",
+    "NO .env or credential changes",
+    "Do not expose secrets",
+    "Do not infer missing runtime evidence",
+    "If a concept is not demonstrated by SQL evidence, report it as NOT_FOUND_IN_AUDIT rather than REALMENTE_NUEVO"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
