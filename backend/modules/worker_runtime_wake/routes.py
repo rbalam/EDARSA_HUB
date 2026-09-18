@@ -34,6 +34,9 @@ DEV_BRANCH = "Edarsahub_Desarrollo"
 WORKER_SERVICE = "edarsahub-universal-worker"
 LOCK_PATH = Path("/tmp/edarsahub-universal-worker-wake.lock")
 COOLDOWN_PATH = Path("/tmp/edarsahub-universal-worker-wake.last")
+PREFERRED_JOB_PATH = RUNTIME_DIR / "preferred_job.json"
+PREFERRED_JOB_TTL_SECONDS = 300
+_JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 WORKER_TREE_STATE = RUNTIME_DIR / "active_worker_code_tree_sha"
 WORKER_CODE_TREE_SPEC = "HEAD:tools/mirror_sync"
 GIT_GUARD_PATH = REPO_ROOT / "tools" / "mirror_sync" / "git_divergence_guard.py"
@@ -216,6 +219,28 @@ def _active_job_id() -> str | None:
     return value or None
 
 
+def _register_preferred_job(job_id: str, queue_sha: str) -> str | None:
+    value = (job_id or "").strip()
+    if not value:
+        return None
+    if not _JOB_ID_RE.fullmatch(value):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="invalid preferred worker job id",
+        )
+    RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "job_id": value,
+        "queue_sha": queue_sha,
+        "registered_at_utc": datetime.now(timezone.utc).isoformat(),
+        "expires_at_epoch": time.time() + PREFERRED_JOB_TTL_SECONDS,
+    }
+    temporary = PREFERRED_JOB_PATH.with_suffix(".tmp")
+    temporary.write_text(json.dumps(payload, ensure_ascii=False) + "\n", encoding="utf-8")
+    os.replace(temporary, PREFERRED_JOB_PATH)
+    return value
+
+
 def _restart_worker() -> None:
     try:
         completed = subprocess.run(
@@ -242,6 +267,7 @@ def _restart_worker() -> None:
 @router.post("/internal/worker/wake", status_code=status.HTTP_202_ACCEPTED)
 def wake_worker(
     x_worker_queue_sha: str | None = Header(default=None, alias="X-Worker-Queue-Sha"),
+    x_worker_preferred_job_id: str | None = Header(default=None, alias="X-Worker-Preferred-Job-Id"),
 ):
     supplied = (x_worker_queue_sha or "").strip()
     if not _SHA_RE.fullmatch(supplied):
@@ -257,6 +283,7 @@ def wake_worker(
             detail="stale worker queue proof",
         )
 
+    preferred_job_id = _register_preferred_job(x_worker_preferred_job_id or "", current)
     heartbeat_age = _heartbeat_age_seconds()
     active_job_id = _active_job_id()
     if active_job_id and heartbeat_age is not None and heartbeat_age <= 90:
@@ -265,6 +292,7 @@ def wake_worker(
             "action": "active_job_preserved",
             "queue_sha": current,
             "active_job_id": active_job_id,
+            "preferred_job_id": preferred_job_id,
             "heartbeat_age_seconds": round(heartbeat_age, 3),
             "runtime_convergence": {"state": "DEFERRED_ACTIVE_JOB"},
             "wake_route_version": WAKE_ROUTE_VERSION,
@@ -281,6 +309,7 @@ def wake_worker(
             "action": "already_healthy",
             "queue_sha": current,
             "heartbeat_age_seconds": round(heartbeat_age, 3),
+            "preferred_job_id": preferred_job_id,
             "worker_code_tree": current_worker_tree,
             "runtime_convergence": convergence,
             "wake_route_version": WAKE_ROUTE_VERSION,
@@ -322,6 +351,7 @@ def wake_worker(
             "service": WORKER_SERVICE,
             "queue_sha": current,
             "heartbeat_age_seconds": round(heartbeat_age, 3) if heartbeat_age is not None else None,
+            "preferred_job_id": preferred_job_id,
             "worker_code_tree": current_worker_tree,
             "worker_code_changed": not worker_code_current,
             "runtime_convergence": convergence,

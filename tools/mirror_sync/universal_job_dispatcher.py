@@ -38,6 +38,7 @@ RESULTS = STATE / "results"
 RUNTIME = STATE / "runtime"
 WORKTREES = Path(os.environ.get("EDARSAHUB_JOB_WORKTREES", "/tmp/edarsahub-worker-jobs"))
 LOCK_FILE = STATE / "dispatcher.lock"
+PREFERRED_JOB_PATH = RUNTIME / "preferred_job.json"
 REMOTE = os.environ.get("EDARSAHUB_QUEUE_REMOTE", "origin")
 DEV_BRANCH = "Edarsahub_Desarrollo"
 MAX_SECONDS = int(os.environ.get("EDARSAHUB_JOB_MAX_SECONDS", "1800"))
@@ -1117,6 +1118,40 @@ def process_one(path: Path) -> int:
     return 0
 
 
+def _load_preferred_job() -> dict[str, Any] | None:
+    try:
+        payload = json.loads(PREFERRED_JOB_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, TypeError):
+        return None
+    job_id = str(payload.get("job_id") or "").strip()
+    try:
+        expires_at = float(payload.get("expires_at_epoch") or 0)
+    except (TypeError, ValueError):
+        expires_at = 0
+    if not JOB_ID_RE.fullmatch(job_id) or expires_at <= datetime.now(timezone.utc).timestamp():
+        try:
+            PREFERRED_JOB_PATH.unlink()
+        except OSError:
+            pass
+        return None
+    return payload
+
+
+def _select_pending_job(jobs: list[Path]) -> tuple[Path | None, bool]:
+    preferred = _load_preferred_job()
+    if preferred is not None:
+        preferred_id = str(preferred["job_id"])
+        for path in jobs:
+            if path.stem == preferred_id:
+                print(f"UNIVERSAL_DISPATCHER=PREFERRED_JOB_SELECTED JOB_ID={preferred_id}")
+                return path, True
+        print(f"UNIVERSAL_DISPATCHER=WAITING_PREFERRED_JOB JOB_ID={preferred_id}")
+        return None, True
+    if not jobs:
+        return None, False
+    return jobs[0], False
+
+
 def dispatch() -> int:
     ensure_dirs()
     with LOCK_FILE.open("a+") as lock:
@@ -1126,10 +1161,19 @@ def dispatch() -> int:
             print("UNIVERSAL_DISPATCHER=BUSY")
             return 0
         jobs = sorted(PENDING.glob("*.json"))
-        if not jobs:
+        selected, is_preferred = _select_pending_job(jobs)
+        if selected is None:
+            if is_preferred:
+                return 0
             print("UNIVERSAL_DISPATCHER=NO_PENDING_JOBS")
             return 0
-        return process_one(jobs[0])
+        rc = process_one(selected)
+        if is_preferred:
+            try:
+                PREFERRED_JOB_PATH.unlink()
+            except OSError:
+                pass
+        return rc
 
 
 def main() -> int:

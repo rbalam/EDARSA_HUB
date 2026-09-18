@@ -34,6 +34,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Resolve preferred job from runtime-recovery trigger
+        id: preferred
+        shell: bash
+        run: |
+          set -euo pipefail
+          TRIGGER="$(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep '^worker_queue/triggers/runtime-recovery/' | tail -n 1 || true)"
+          JOB_ID=""
+          if [ -n "$TRIGGER" ] && [ -r "$TRIGGER" ]; then
+            JOB_ID="$(jq -r '.existing_job_id // empty' "$TRIGGER")"
+          fi
+          if [ -n "$JOB_ID" ] && ! [[ "$JOB_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$ ]]; then
+            echo 'INVALID_PREFERRED_JOB_ID'
+            exit 14
+          fi
+          echo "preferred_job_id=$JOB_ID" >> "$GITHUB_OUTPUT"
+          echo "PREFERRED_JOB_ID=${JOB_ID:-none}"
+
       - name: Resolve worker queue head
         id: queue
         shell: bash
@@ -70,6 +87,7 @@ jobs:
         env:
           QUEUE_SHA: ${{ steps.queue.outputs.queue_sha }}
           RUNTIME_URL: ${{ steps.runtime.outputs.runtime_url }}
+          PREFERRED_JOB_ID: ${{ steps.preferred.outputs.preferred_job_id }}
         run: |
           set -euo pipefail
           FINAL_HTTP=000
@@ -83,6 +101,7 @@ jobs:
               -o /tmp/wake-body.txt -w '%{http_code}' \
               -X POST \
               -H "X-Worker-Queue-Sha: ${QUEUE_SHA}" \
+              -H "X-Worker-Preferred-Job-Id: ${PREFERRED_JOB_ID:-}" \
               "$RUNTIME_URL/api/internal/worker/wake" || true)"
 
             FINAL_HTTP="$HTTP_CODE"
