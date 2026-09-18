@@ -1,0 +1,81 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CXP-GATE3F-B-MPRO-PCID-AUTHORITATIVE-PATTERN-READONLY-20260917",
+  "created_at_utc": "2026-09-18T02:31:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "5b15ee193c331614d010422f64e658266fb97855",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "GATE 3F-B MPRO. Determinar exclusivamente si el historial runtime permite certificar una regla determinista de asignacion de Pc_ID dentro de cada Cxp_Folio, sin asumir que frecuencia implica autoridad. Auditar continuidad, inicio, maximo, huecos y relacion de Pc_ID con numero ordinal de pagos por folio usando solo agregados. Si no puede demostrarse una regla autoritativa segura, emitir blocker explicito y mantener canary bloqueado.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN",
+        "130QRO"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "f3b_runtime_identity",
+          "sql": "SELECT @@SERVERNAME AS server_name,DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user"
+        },
+        {
+          "name": "f3b_folio_payment_count_shape",
+          "sql": "SELECT COUNT_BIG(*) AS folios,MIN(total_pagos) AS min_pagos,MAX(total_pagos) AS max_pagos,SUM(CASE WHEN total_pagos>1 THEN 1 ELSE 0 END) AS folios_multipago FROM (SELECT Cxp_Folio,COUNT_BIG(*) AS total_pagos FROM dbo.Pago_CXP GROUP BY Cxp_Folio) q"
+        },
+        {
+          "name": "f3b_pc_id_numeric_shape",
+          "sql": "SELECT COUNT_BIG(*) AS total,SUM(CASE WHEN TRY_CONVERT(int,Pc_ID) IS NULL THEN 1 ELSE 0 END) AS no_numericos,MIN(TRY_CONVERT(int,Pc_ID)) AS min_pc_id,MAX(TRY_CONVERT(int,Pc_ID)) AS max_pc_id FROM dbo.Pago_CXP"
+        },
+        {
+          "name": "f3b_first_pc_id_by_folio",
+          "sql": "SELECT MIN(TRY_CONVERT(int,Pc_ID)) AS first_pc_id,COUNT_BIG(*) AS folios FROM dbo.Pago_CXP GROUP BY Cxp_Folio HAVING MIN(TRY_CONVERT(int,Pc_ID)) IS NOT NULL ORDER BY first_pc_id"
+        },
+        {
+          "name": "f3b_contiguity_summary",
+          "sql": "SELECT COUNT_BIG(*) AS folios_total,SUM(CASE WHEN min_id=1 AND max_id=total_pagos THEN 1 ELSE 0 END) AS folios_contiguos_desde_1,SUM(CASE WHEN NOT (min_id=1 AND max_id=total_pagos) THEN 1 ELSE 0 END) AS folios_no_contiguos FROM (SELECT Cxp_Folio,COUNT_BIG(*) AS total_pagos,MIN(TRY_CONVERT(int,Pc_ID)) AS min_id,MAX(TRY_CONVERT(int,Pc_ID)) AS max_id FROM dbo.Pago_CXP GROUP BY Cxp_Folio) q"
+        },
+        {
+          "name": "f3b_duplicate_pc_id_within_folio",
+          "sql": "SELECT COUNT_BIG(*) AS duplicate_groups FROM (SELECT Cxp_Folio,Pc_ID,COUNT_BIG(*) AS n FROM dbo.Pago_CXP GROUP BY Cxp_Folio,Pc_ID HAVING COUNT_BIG(*)>1) q"
+        },
+        {
+          "name": "f3b_pc_id_vs_count_distribution",
+          "sql": "SELECT total_pagos,max_id,COUNT_BIG(*) AS folios FROM (SELECT Cxp_Folio,COUNT_BIG(*) AS total_pagos,MAX(TRY_CONVERT(int,Pc_ID)) AS max_id FROM dbo.Pago_CXP GROUP BY Cxp_Folio) q GROUP BY total_pagos,max_id ORDER BY total_pagos,max_id"
+        },
+        {
+          "name": "f3b_pk_shape",
+          "sql": "SELECT i.name AS index_name,i.is_unique,i.is_primary_key,ic.key_ordinal,c.name AS column_name FROM sys.indexes i INNER JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id INNER JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.Pago_CXP') AND i.is_primary_key=1 ORDER BY ic.key_ordinal"
+        },
+        {
+          "name": "f3b_sequences",
+          "sql": "SELECT s.name AS schema_name,q.name AS sequence_name,q.current_value FROM sys.sequences q INNER JOIN sys.schemas s ON s.schema_id=q.schema_id WHERE q.name LIKE N'%Pago%' OR q.name LIKE N'%CXP%' OR q.name LIKE N'%Pc%' ORDER BY s.name,q.name"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ ONLY SQL ONLY",
+    "actions must remain empty",
+    "NO INSERT UPDATE DELETE MERGE EXEC EXECUTE DDL SELECT INTO OR MULTI-STATEMENT SQL",
+    "NO procedure execution",
+    "NO individual provider, invoice or payment business rows",
+    "Only aggregate historical patterns and metadata",
+    "NO Production",
+    "NO code or file mutation",
+    "Connections only through PosRuntimeResolver and get_external_sql_connection",
+    "Historical contiguity alone does not prove vendor-authoritative generation; distinguish observed deterministic pattern from authoritative mechanism",
+    "If authority is not proven, classify Pc_ID mechanism as NOT_PROVEN and keep MPRO canary blocked",
+    "Do not authorize any canary or Payment Executor writer",
+    "Payment Executor writer remains 0 percent"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
