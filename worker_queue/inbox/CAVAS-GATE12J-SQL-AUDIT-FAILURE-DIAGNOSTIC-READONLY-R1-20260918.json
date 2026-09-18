@@ -1,0 +1,85 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12J-SQL-AUDIT-FAILURE-DIAGNOSTIC-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "aa57b944342f7e7efda0397ebfa64358c8c99a61",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Diagnosticar exclusivamente en READ_ONLY por que fallo sql_readonly_audit del Gate12J R1. No reemitir 12J funcional, no avanzar a 12K, no modificar SQL/codigo/RBAC/secrets. Auditar existencia y columnas fisicas de CavaSocios_Socios, Gobierno_Persona, Gobierno_PersonaVinculo y Cliente_Catalogo, y luego ejecutar solo consultas compatibles con las columnas realmente presentes.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "identity_guard",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS db_user,ORIGINAL_LOGIN() AS original_login;"
+        },
+        {
+          "name": "required_tables",
+          "sql": "SELECT s.name AS schema_name,o.name AS table_name,o.object_id FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.type='U' AND o.name IN (N'CavaSocios_Socios',N'Gobierno_Persona',N'Gobierno_PersonaVinculo',N'Cliente_Catalogo') ORDER BY o.name;"
+        },
+        {
+          "name": "cava_socios_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,TYPE_NAME(c.user_type_id) AS type_name,c.is_nullable FROM sys.columns c WHERE c.object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') ORDER BY c.column_id;"
+        },
+        {
+          "name": "gobierno_persona_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,TYPE_NAME(c.user_type_id) AS type_name,c.is_nullable FROM sys.columns c WHERE c.object_id=OBJECT_ID(N'dbo.Gobierno_Persona') ORDER BY c.column_id;"
+        },
+        {
+          "name": "gobierno_personavinculo_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,TYPE_NAME(c.user_type_id) AS type_name,c.is_nullable FROM sys.columns c WHERE c.object_id=OBJECT_ID(N'dbo.Gobierno_PersonaVinculo') ORDER BY c.column_id;"
+        },
+        {
+          "name": "cliente_catalogo_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,TYPE_NAME(c.user_type_id) AS type_name,c.is_nullable FROM sys.columns c WHERE c.object_id=OBJECT_ID(N'dbo.Cliente_Catalogo') ORDER BY c.column_id;"
+        },
+        {
+          "name": "cava_socios_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_socios,SUM(CASE WHEN PersonaID IS NULL THEN 1 ELSE 0 END) AS sin_persona,SUM(CASE WHEN PersonaID IS NOT NULL THEN 1 ELSE 0 END) AS con_persona FROM dbo.CavaSocios_Socios;"
+        },
+        {
+          "name": "persona_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_personas FROM dbo.Gobierno_Persona;"
+        },
+        {
+          "name": "persona_vinculo_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_vinculos FROM dbo.Gobierno_PersonaVinculo;"
+        },
+        {
+          "name": "cliente_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_clientes FROM dbo.Cliente_Catalogo;"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/service.py",
+          "backend/modules/catalogo_ampliado/repository.py",
+          "backend/database/migrations/20260908_catalogo_ampliado_gobierno_core.sql",
+          "backend/database/migrations/20260910_cavas_socios_persona_link.sql"
+        ],
+        "search_terms": [
+          "CavaSocios_Socios",
+          "Gobierno_Persona",
+          "Gobierno_PersonaVinculo",
+          "Cliente_Catalogo",
+          "PersonaID",
+          "ClienteCRMID",
+          "SELECT ClienteID, Nombre, RFC, Telefono, Email, Activo"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sql"
+        ],
+        "exclude_patterns": [],
+        "max_results": 300
+      }
+    }
+  ]
+}
