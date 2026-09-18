@@ -1,0 +1,47 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-403-RBAC-TRACE-R1-20260917T183200Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Trazar en modo READ_ONLY la causa exacta del 403 del ID 373 desde InventariosDetectorJob hacia InventoryAnalysisCore y el endpoint/referencia de análisis, identificando la identidad interna usada, la validación RBAC/server-scope que rechaza el ServerID A5547321-1139-4D2B-9D53-182CA737B6B6 y el punto mínimo de corrección. No modificar código, SQL, permisos, email ni Producción.",
+  "mode":"READ_ONLY",
+  "actions":[],
+  "checks":[
+    {
+      "type":"repository_contract_audit",
+      "request":{
+        "paths":[
+          "backend/core/scheduler/jobs/inventarios_detector_job.py",
+          "backend/core/inventory_analysis_core.py",
+          "backend/core/rbac",
+          "backend/core/security.py"
+        ],
+        "search_terms":[
+          "_inventory_analysis_endpoint_ref",
+          "system@edarsa.hub",
+          "Administrador",
+          "No tiene acceso a este servidor",
+          "server_id",
+          "almacen_id",
+          "current_user",
+          "require_explicit_permission_dual",
+          "access-context",
+          "allowed_servers"
+        ],
+        "max_results":100
+      }
+    },
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {
+          "name":"server_target_373",
+          "sql":"SELECT TOP (5) id, name, system_type, active FROM dbo.Servidores WHERE LOWER(CAST(id AS varchar(64))) = LOWER('A5547321-1139-4D2B-9D53-182CA737B6B6')"
+        }
+      ]
+    }
+  ],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
