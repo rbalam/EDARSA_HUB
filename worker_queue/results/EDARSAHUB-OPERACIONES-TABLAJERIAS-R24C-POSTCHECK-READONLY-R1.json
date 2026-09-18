@@ -1,0 +1,848 @@
+{
+  "base_sha": "0f2c95b372bf32a34ae3a7537797f5160d952571",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T21:48:39Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24C-POSTCHECK-READONLY-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T21:49:05Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.tablajeria",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "core.sql_first.db",
+              "datetime",
+              "decimal",
+              "json",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "crear_reclamo_proveedor",
+              "get_tablajeria_lote_proveedor_service",
+              "listar_reclamos",
+              "listar_rendimientos_lote",
+              "obtener_drilldown_lote",
+              "tablajeria_lotesproveedorrendimiento",
+              "tablajeria_notificacioneslote",
+              "tablajeria_reclamosproveedor"
+            ],
+            "path": "backend/modules/tablajeria/lote_proveedor_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "TablajeriaLoteProveedorService",
+              "_row_to_dict",
+              "_to_float",
+              "_to_str",
+              "crear_reclamo_proveedor",
+              "get_tablajeria_lote_proveedor_service",
+              "listar_reclamos",
+              "listar_rendimientos_lote",
+              "obtener_drilldown_lote"
+            ],
+            "tables_referenced": [
+              "Tablajeria_LotesProveedorRendimiento",
+              "Tablajeria_NotificacionesLote",
+              "Tablajeria_ReclamosProveedor"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.tablajeria",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.security",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "csv",
+              "dashboard_service",
+              "datetime",
+              "decimal",
+              "fase6_service",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "json",
+              "logging",
+              "lote_proveedor_service",
+              "ordenes_service",
+              "os",
+              "pydantic",
+              "pymssql",
+              "schemas",
+              "sync_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "crear_reclamo_proveedor",
+              "get_tablajeria_lote_proveedor_service",
+              "listar_reclamos",
+              "listar_rendimientos_lote",
+              "lotes-proveedor/rendimientos",
+              "lotes-proveedor/{lote_rendimiento_id}/drilldown",
+              "lotes-proveedor/{lote_rendimiento_id}/reclamos",
+              "obtener_drilldown_lote",
+              "reclamos-proveedor"
+            ],
+            "path": "backend/modules/tablajeria/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/dashboard/alertas",
+              "/dashboard/kpis",
+              "/dashboard/rendimientos-plantilla",
+              "/dashboard/resumen-costeo",
+              "/dashboard/tendencia",
+              "/dashboard/top-mermas",
+              "/fase6/config-contable/{empresa_id}",
+              "/lotes-proveedor/rendimientos",
+              "/lotes-proveedor/{lote_rendimiento_id}/drilldown",
+              "/lotes-proveedor/{lote_rendimiento_id}/reclamos",
+              "/ordenes",
+              "/ordenes-stats",
+              "/ordenes/captura-directa",
+              "/ordenes/{orden_id}",
+              "/ordenes/{orden_id}/autorizar",
+              "/ordenes/{orden_id}/cancelar",
+              "/ordenes/{orden_id}/cerrar",
+              "/ordenes/{orden_id}/fase6/afectar-inventario",
+              "/ordenes/{orden_id}/fase6/calcular-costeo",
+              "/ordenes/{orden_id}/fase6/generar-poliza",
+              "/ordenes/{orden_id}/fase6/procesar-cierre",
+              "/ordenes/{orden_id}/iniciar",
+              "/ordenes/{orden_id}/resultados",
+              "/plantillas",
+              "/plantillas/{plantilla_id}",
+              "/plantillas/{plantilla_id}/publicar",
+              "/reclamos-proveedor",
+              "/reportes/costeo",
+              "/reportes/mermas",
+              "/reportes/ordenes",
+              "/stats",
+              "/sync/ejecutar",
+              "/sync/log",
+              "/sync/servidores"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AutorizarOrdenRequest",
+              "CancelarOrdenRequest",
+              "CerrarOrdenRequest",
+              "ReclamoProveedorCreateRequest",
+              "ResultadosOrdenRequest",
+              "_get_ordenes_service",
+              "afectar_inventario",
+              "autorizar_orden",
+              "calcular_costeo",
+              "cancelar_orden",
+              "cerrar_orden",
+              "crear_orden",
+              "crear_orden_captura_directa",
+              "crear_reclamo_lote_proveedor",
+              "ejecutar_sincronizacion",
+              "exportar_costeo",
+              "exportar_mermas",
+              "exportar_ordenes",
+              "generar_poliza",
+              "get_alertas_rendimiento",
+              "get_connection",
+              "get_dashboard_kpis",
+              "get_rendimientos_por_plantilla",
+              "get_resumen_costeo",
+              "get_tendencia_rendimientos",
+              "get_top_mermas",
+              "guardar_config_contable",
+              "iniciar_ejecucion_orden",
+              "listar_ordenes",
+              "listar_plantillas",
+              "listar_reclamos_proveedor",
+              "listar_rendimientos_lote_proveedor",
+              "listar_servidores_tablajeria",
+              "obtener_config_contable",
+              "obtener_drilldown_lote_proveedor",
+              "obtener_estadisticas",
+              "obtener_estadisticas_ordenes",
+              "obtener_orden",
+              "obtener_plantilla",
+              "obtener_sync_log",
+              "procesar_cierre_fase6",
+              "publicar_plantilla",
+              "registrar_resultados_orden"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.tablajeria",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "tablajeria_lotesproveedorrendimiento",
+              "tablajeria_notificacioneslote",
+              "tablajeria_reclamosproveedor",
+              "tablajeria_reporteslote"
+            ],
+            "path": "backend/modules/tablajeria/sql/r24_lote_proveedor.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Tablajeria_LotesProveedorRendimiento",
+              "Tablajeria_NotificacionesLote",
+              "Tablajeria_ReclamosProveedor",
+              "Tablajeria_ReportesLote"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "config",
+              "importlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "scheduler_manager"
+            ],
+            "path": "backend/core/scheduler/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [
+              "__dir__",
+              "__getattr__"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.sql_first.db",
+              "datetime",
+              "json",
+              "logging",
+              "pydantic",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "scheduler_manager"
+            ],
+            "path": "backend/core/scheduler/job_logger.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [
+              "Config",
+              "JobExecutionLog",
+              "JobLogger",
+              "__init__",
+              "_ensure_indexes_noop",
+              "_insert_bitacora",
+              "_is_success_status",
+              "_log_execution_compat",
+              "cleanup_old_logs",
+              "finish_execution",
+              "get_job_logger",
+              "get_last_execution",
+              "get_logs",
+              "get_stats",
+              "log_skipped",
+              "start_execution"
+            ],
+            "tables_referenced": [
+              "Scheduler_BitacoraJobs"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.auth.sql_user_identity",
+              "core.centro_control.email_notifications",
+              "core.centro_control.whatsapp_notifications",
+              "core.config.edarsahub_sql",
+              "datetime",
+              "logging",
+              "modules.alertas_estrategicas.service",
+              "os",
+              "typing"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "send_critical_alert_email",
+              "send_critical_alert_whatsapp"
+            ],
+            "path": "backend/core/scheduler/jobs/alertas_excepciones_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_build_digest_alerta",
+              "_excepcion_key",
+              "_keys_ya_gestionadas",
+              "_marcar_notificada",
+              "_obtener_excepciones_por_severidad",
+              "_severidades_configuradas",
+              "enviar_prueba_canales",
+              "execute_alertas_excepciones_notifier",
+              "marcar_excepcion_revisada_estado",
+              "obtener_excepciones_revisadas",
+              "silenciar_backlog_excepciones"
+            ],
+            "tables_referenced": [
+              "Sistema_Excepciones_Estado"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.centro_control.email_notifications",
+              "core.inventory_analysis_core",
+              "core.mongo_stub",
+              "core.system_type_utils",
+              "dataclasses",
+              "datetime",
+              "io",
+              "job_logger",
+              "json",
+              "logging",
+              "modules.compras.sync_service",
+              "modules.fase2_operativo.services.orquestador_service",
+              "openpyxl",
+              "os",
+              "sql_repository",
+              "traceback",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "send_critical_alert_email"
+            ],
+            "path": "backend/core/scheduler/jobs/inventarios_detector_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "ClaveIdempotencia",
+              "InventarioDetectado",
+              "InventariosDetectorJob",
+              "__init__",
+              "_detectar_desde_sync",
+              "_detectar_mpro",
+              "_detectar_soft",
+              "_ejecutar_analisis",
+              "_ejecutar_orquestacion",
+              "_ensure_index",
+              "_enviar_reporte_analisis_email",
+              "_es_consolidado",
+              "_escanear_servidor",
+              "_fecha_key",
+              "_generar_excel_analisis",
+              "_generar_resumen",
+              "_is_stub_db",
+              "_marcar_error",
+              "_normalizar_system_type",
+              "_obtener_servidores",
+              "_preferir_inventario_fecha",
+              "_procesar_inventario",
+              "_procesar_inventario_desde_registro",
+              "_procesar_reintentos",
+              "_rehidratar_registro_reintento",
+              "create_inventarios_detector_job",
+              "retry_error_by_id",
+              "run",
+              "to_dict",
+              "to_query"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "config",
+              "core.centro_control.routes",
+              "core.rbac.middleware",
+              "datetime",
+              "fastapi",
+              "job_logger",
+              "jobs.netpay_sync_job",
+              "locks",
+              "logging",
+              "pydantic",
+              "scheduler_manager",
+              "typing"
+            ],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "scheduler_manager"
+            ],
+            "path": "backend/core/scheduler/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/config",
+              "/inventarios/retry-error/{record_id}",
+              "/jobs/{job_id}",
+              "/jobs/{job_id}/pause",
+              "/jobs/{job_id}/resume",
+              "/jobs/{job_id}/run",
+              "/locks",
+              "/locks/{job_name}",
+              "/logs",
+              "/logs/stats",
+              "/netpay/run",
+              "/status"
+            ],
+            "scheduler_contracts": [
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [
+              "NetPayManualRunRequest",
+              "_run_netpay_manual_background",
+              "force_release_lock",
+              "get_active_locks",
+              "get_db",
+              "get_job_info",
+              "get_job_logs",
+              "get_job_stats",
+              "get_scheduler_config",
+              "get_scheduler_status",
+              "init_scheduler_routes",
+              "is_mongo_available",
+              "pause_job",
+              "resume_job",
+              "retry_inventario_error",
+              "run_job_now",
+              "run_netpay_manual"
+            ],
+            "tables_referenced": [
+              "Sys_Scheduler_JobConfig"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "apscheduler.events",
+              "apscheduler.schedulers.asyncio",
+              "apscheduler.triggers.cron",
+              "apscheduler.triggers.interval",
+              "asyncio",
+              "config",
+              "core.mongo_stub",
+              "datetime",
+              "job_logger",
+              "jobs.alertas_excepciones_job",
+              "jobs.auditorias_job",
+              "jobs.bos_direction_status_job",
+              "jobs.catalogo_ampliado_alertas_job",
+              "jobs.cava_socios_monthly_job",
+              "jobs.crm_sync_job",
+              "jobs.cxp_sync_job",
+              "jobs.inteligencia_comercial_sync_job",
+              "jobs.inventarios_detector_job",
+              "jobs.netpay_sync_job",
+              "jobs.notifications_job",
+              "jobs.pedidos_detector_job",
+              "jobs.resumen_diario_excepciones_job",
+              "jobs.sla_job",
+              "jobs.sync_comercial_abiertas_v2_job",
+              "jobs.sync_comercial_v2_job",
+              "jobs.sync_compras_job",
+              "jobs.sync_ingresos_job",
+              "jobs.sync_nightly_comercial_job",
+              "jobs.sync_propinas_tpv_job",
+              "jobs.sync_short_comercial_job",
+              "jobs.vtiger_sync_job",
+              "locks",
+              "logging",
+              "modules.economia.service",
+              "os",
+              "persistent_state_repository",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "netpay",
+              "sap",
+              "softrestaurant",
+              "twilio",
+              "vtiger"
+            ],
+            "matched_terms": [
+              "scheduler_manager"
+            ],
+            "path": "backend/core/scheduler/scheduler_manager.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "APScheduler",
+              "AsyncIOScheduler",
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [
+              "SchedulerManager",
+              "__init__",
+              "__new__",
+              "_create_scheduler",
+              "_normalize_comercial_sync_status",
+              "_on_job_error",
+              "_on_job_executed",
+              "_on_job_missed",
+              "_run_alertas_excepciones_notifier_job",
+              "_run_auditorias_job",
+              "_run_bos_direction_status_job",
+              "_run_catalogo_ampliado_alertas_job",
+              "_run_cava_socios_monthly_job",
+              "_run_crm_actividades_vencidas_job",
+              "_run_crm_sla_check_job",
+              "_run_crm_sync_job",
+              "_run_economia_sync_job",
+              "_run_inteligencia_comercial_sync_job",
+              "_run_inventarios_detector_job",
+              "_run_netpay_sync_diario_job",
+              "_run_notifications_job",
+              "_run_pedidos_detector_job",
+              "_run_resumen_diario_excepciones_job",
+              "_run_sla_job",
+              "_run_sync_comercial_abiertas_v2_job",
+              "_run_sync_comercial_v2_job",
+              "_run_sync_compras_job",
+              "_run_sync_cxp_facturas_job",
+              "_run_sync_ingresos_incremental_job",
+              "_run_sync_nightly_comercial_job",
+              "_run_sync_propinas_tpv_incremental_job",
+              "_run_sync_short_comercial_job",
+              "_run_vtiger_sync_job",
+              "get_job_info",
+              "get_scheduler_manager",
+              "get_status",
+              "pause_job",
+              "register_jobs",
+              "reset_scheduler_manager",
+              "resume_job",
+              "retry_inventario_error_by_id",
+              "run_job_now",
+              "start",
+              "start_scheduler",
+              "stop",
+              "stop_scheduler"
+            ],
+            "tables_referenced": [
+              "Finanzas_CxP_Sync"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.centro_control",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "concurrent.futures",
+              "core.centro_control.recipients_manager",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "email.mime.application",
+              "email.mime.multipart",
+              "email.mime.text",
+              "logging",
+              "os",
+              "smtplib",
+              "ssl",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "send_critical_alert_email"
+            ],
+            "path": "backend/core/centro_control/email_notifications.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_send_email_sync",
+              "generate_alert_html",
+              "get_email_config_status",
+              "get_email_recipients",
+              "is_email_configured",
+              "send_critical_alert_email",
+              "send_test_email"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.centro_control",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.centro_control",
+              "core.centro_control.email_notifications",
+              "core.centro_control.recipients_manager",
+              "core.centro_control.websocket",
+              "core.centro_control.whatsapp_notifications",
+              "core.connection_resolver",
+              "core.corporate_filters.service",
+              "core.health_checker",
+              "core.rbac.middleware",
+              "core.regression_checker",
+              "core.scheduler.scheduler_manager",
+              "core.security",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "json",
+              "logging",
+              "os",
+              "pydantic",
+              "re",
+              "subprocess",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "netpay",
+              "sap",
+              "softrestaurant",
+              "twilio"
+            ],
+            "matched_terms": [
+              "scheduler_manager",
+              "send_critical_alert_email",
+              "send_critical_alert_whatsapp"
+            ],
+            "path": "backend/core/centro_control/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/alertas",
+              "/alertas/acknowledge",
+              "/bitacora",
+              "/blindaje/modulos",
+              "/destinatarios",
+              "/destinatarios/resumen",
+              "/destinatarios/{recipient_id}",
+              "/email/alerta-critica",
+              "/email/config",
+              "/email/test",
+              "/estado",
+              "/fuentes",
+              "/historial",
+              "/jobs",
+              "/jobs/{job_id}/run",
+              "/matriz-resolucion",
+              "/metricas",
+              "/notificaciones/config",
+              "/notificar/alerta-critica",
+              "/notificar/test",
+              "/ping",
+              "/regresiones",
+              "/regresiones/{modulo}",
+              "/salud",
+              "/salud/resumen",
+              "/whatsapp/alerta-critica",
+              "/whatsapp/config",
+              "/whatsapp/test",
+              "/ws/status"
+            ],
+            "scheduler_contracts": [
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [
+              "AlertAcknowledgeRequest",
+              "BitacoraEntryRequest",
+              "RecipientCreateRequest",
+              "RecipientUpdateRequest",
+              "RegressionCheckRequest",
+              "SchedulerJobCreateRequest",
+              "SchedulerJobRunRequest",
+              "_cc_execute",
+              "_cc_fetchall",
+              "_cc_sql_connection",
+              "_crear_alerta",
+              "_ensure_scheduler_job_config_table",
+              "_enviar_email_alerta_critica",
+              "_enviar_whatsapp_alerta_critica",
+              "_registrar_evento",
+              "_run_netpay_backfill_sync",
+              "_safe_job_id",
+              "_validate_handler",
+              "actualizar_destinatario",
+              "crear_destinatario",
+              "crear_scheduler_job",
+              "ejecutar_checks_regresion",
+              "ejecutar_scheduler_job_manual",
+              "eliminar_destinatario",
+              "enviar_alerta_critica_email",
+              "enviar_alerta_critica_whatsapp",
+              "enviar_email_prueba",
+              "enviar_whatsapp_prueba",
+              "listar_destinatarios",
+              "notificar_alerta_critica",
+              "notificar_test",
+              "obtener_alertas",
+              "obtener_bitacora",
+              "obtener_config_email",
+              "obtener_config_notificaciones",
+              "obtener_config_whatsapp",
+              "obtener_estado_fuentes",
+              "obtener_estado_general",
+              "obtener_estado_jobs",
+              "obtener_historial",
+              "obtener_matriz_resolucion",
+              "obtener_metricas_estabilidad",
+              "obtener_modulos_blindados",
+              "obtener_regresiones_modulo",
+              "obtener_resumen_ejecutivo",
+              "obtener_salud_sistema",
+              "ping_centro_control",
+              "reconocer_alerta",
+              "registrar_cambio_bitacora",
+              "resumen_destinatarios",
+              "websocket_endpoint",
+              "websocket_status"
+            ],
+            "tables_referenced": [
+              "Scheduler_BitacoraJobs",
+              "Sys_Scheduler_JobConfig",
+              "Sys_Scheduler_Jobs"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.centro_control",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "concurrent.futures",
+              "core.centro_control.recipients_manager",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "os",
+              "twilio.base.exceptions",
+              "twilio.rest",
+              "typing"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "send_critical_alert_whatsapp"
+            ],
+            "path": "backend/core/centro_control/whatsapp_notifications.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_twilio_client",
+              "_send_whatsapp_sync",
+              "generate_alert_message",
+              "get_whatsapp_config_status",
+              "get_whatsapp_recipients",
+              "is_whatsapp_configured",
+              "send_critical_alert_whatsapp",
+              "send_test_whatsapp"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 12,
+          "scanned_files": 51,
+          "skipped_sensitive": 41
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-18T21:48:38Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
