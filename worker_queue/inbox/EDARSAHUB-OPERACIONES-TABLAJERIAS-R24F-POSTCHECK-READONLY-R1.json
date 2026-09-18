@@ -1,0 +1,17 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-POSTCHECK-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "objective": "Postcheck formal READ_ONLY de R24B/R24E: confirmar que la integracion de lotes proveedor y reclamos proveedor quedo en backend y frontend, que la ruta /tablajeria/lotes-proveedor esta clasificada en enterpriseNavigationRegistry.json, que frontend_build pasa y que Produccion no fue tocada.",
+  "actions": [],
+  "checks": [
+    {"type":"frontend_build","path":"frontend"},
+    {"type":"repository_contract_audit","paths":["frontend/src/pages/tablajeria/LotesProveedorPage.jsx","frontend/src/App.js","frontend/src/config/enterpriseNavigationRegistry.json","backend/modules/tablajeria/lote_proveedor_service.py","backend/modules/tablajeria/routes.py","backend/modules/tablajeria/sql/r24_lote_proveedor.sql"],"search_terms":["LotesProveedorPage","/tablajeria/lotes-proveedor","tablajeria.lotes_proveedor","/tablajeria/lotes-proveedor/rendimientos","/tablajeria/reclamos-proveedor","Tablajeria_LotesProveedorRendimiento","Tablajeria_ReclamosProveedor","Tablajeria_ReportesLote","Tablajeria_NotificacionesLote"],"include":["frontend/src/pages/tablajeria/LotesProveedorPage.jsx","frontend/src/App.js","frontend/src/config/enterpriseNavigationRegistry.json","backend/modules/tablajeria/lote_proveedor_service.py","backend/modules/tablajeria/routes.py","backend/modules/tablajeria/sql/r24_lote_proveedor.sql"],"exclude":["mongodb","mongo","LIVE","backend/server.py","backend/core/scheduler/scheduler_manager.py","backend/core/centro_control/email_notifications.py","backend/core/centro_control/whatsapp_notifications.py"],"max_results":80},
+    {"type":"git_diff_check","allowed_paths":[],"forbidden_paths":["backend/server.py","backend/modules/tablajeria/routes.py","backend/core/scheduler/scheduler_manager.py","backend/core/centro_control/email_notifications.py","backend/core/centro_control/whatsapp_notifications.py"]}
+  ],
+  "expected_result": {"quality_gate":"PASS","tests":"PASS","production_touched":false,"files_changed":[]}
+}
