@@ -1,0 +1,41 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-MASTER-STATUS-CANONICAL-EVIDENCE-R7-READONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente, sin mutaciones, el mapa canonico de evidencia BOS V1 Gates A-G. Verificar que backend/core/bos_program_manifest.py y docs/BOS/BOS_V1_STATUS_MANIFEST.md definen IDs formales explicitos para Gates A-G y localizar dossiers/certificaciones relacionadas. No usar matching heuristico por tokens amplios, no modificar archivos, no tocar SQL, Mongo, Produccion, Worker, Supervisor ni watchdog. La evidencia debe servir para contrastar el Master Status R6 contra los job IDs canonicos formales.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "worker-audit@edarsahub.local",
+    "source": "chatgpt"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core",
+          "docs/BOS"
+        ],
+        "search_terms": [
+          "BOS-V1-GATE-A-FOUNDATION-CERTIFICATION",
+          "BOS-V1-GATE-B-AUTONOMOUS-OPERATIONS-CERTIFICATION",
+          "BOS-V1-GATE-C-FUNCTIONAL-COVERAGE-CERTIFICATION",
+          "BOS-V1-GATE-D-GOVERNANCE-CERTIFICATION",
+          "BOS-V1-GATE-E-EXECUTIVE-BOS-CERTIFICATION",
+          "BOS-V1-GATE-F-INTELLIGENCE-CERTIFICATION",
+          "BOS-V1-GATE-G-V1-FINAL-CERTIFICATION"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.md"
+        ],
+        "exclude_patterns": [],
+        "max_results": 100
+      }
+    }
+  ]
+}
