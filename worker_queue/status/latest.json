@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "bb6453f33e31158e6b88af064ca64d8e0cefcfc7",
-  "generated_at_utc": "2026-09-18T02:21:29Z",
+  "generated_at_utc": "2026-09-18T02:22:45Z",
   "history": {
     "done_total_local": 571,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 697,
+      "age_seconds": 773,
       "job_id": "GATE5D-DEDICATED-MIGRATION-WRITER-CONTRACT-R2-20260917",
       "reasons": [
         "INVALID_SCHEMA",
@@ -23,121 +23,121 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2011,
+      "age_seconds": 2087,
       "job_id": "ARBITROA-BOS-GATE-A4-FOUNDATION-REPO-IMPLEMENTATION-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2004,
+      "age_seconds": 2080,
       "job_id": "BOS-AGENT-HARNESS-V1-RH-CANONICAL-READINESS-GATE25-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1233,
+      "age_seconds": 1309,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE1-CANONICAL-DOMAIN-DESIGN-RECOVERY-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2114,
+      "age_seconds": 2190,
       "job_id": "BOS-V1-GATE-E-EXECUTIVE-BOS-GAP-MATRIX-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1065,
+      "age_seconds": 1141,
       "job_id": "CAVAS-GATE12I-R2-FAILURE-POSTAUDIT-READONLY-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 951,
+      "age_seconds": 1028,
       "job_id": "CAVAS-GATE12I-R2-FAILURE-POSTAUDIT-READONLY-R2-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 690,
+      "age_seconds": 766,
       "job_id": "CAVAS-GATE12I-R2-FAILURE-ROOTCAUSE-READONLY-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2344,
+      "age_seconds": 2421,
       "job_id": "CAVAS-GATE12I-SQL-MIGRATION-DEVELOPMENT-CANONICAL-WRITER-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1370,
+      "age_seconds": 1446,
       "job_id": "CAVAS-GATE12I-SQL-MIGRATION-DEVELOPMENT-CANONICAL-WRITER-R2-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3436,
+      "age_seconds": 3512,
       "job_id": "CXP-GATE3F-A-MPRO-CANARY-DESIGN-DISCOVERY-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3222,
+      "age_seconds": 3298,
       "job_id": "CXP-GATE3F-A-R1-MPRO-CANARY-DESIGN-DISCOVERY-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2339,
+      "age_seconds": 2416,
       "job_id": "CXP-GATE3F-A-R2-MPRO-CANARY-DESIGN-DISCOVERY-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3428,
+      "age_seconds": 3504,
       "job_id": "CXP-GATE3F-A-SOFTRESTAURANT-CANARY-DESIGN-DISCOVERY-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3360,
+      "age_seconds": 3436,
       "job_id": "EDARSAHUB-INVENTARIOS-403-RBAC-TRACE-R1-20260917T183200Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2608,
+      "age_seconds": 2684,
       "job_id": "EDARSAHUB-SERVICES-GATE3A-PHYSICAL-SCHEMA-SQL-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2336,
+      "age_seconds": 2412,
       "job_id": "EDARSAHUB-SERVICES-GATE3B-PHYSICAL-SCHEMA-DDL-DOSSIER-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3047,
+      "age_seconds": 3123,
       "job_id": "GATE5D-DEDICATED-MIGRATION-WRITER-CONTRACT-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3425,
+      "age_seconds": 3501,
       "job_id": "GATE5D-HUB-ESCRITURA-LOGIN-BOOTSTRAP-READONLY-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2704,
+      "age_seconds": 2780,
       "job_id": "PRIMARY-INDUSTRIES-GATE1-CANONICAL-DOMAIN-DESIGN-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 921,
+      "age_seconds": 997,
       "job_id": "coa-gate5g-r4-cfdi-physical-rerun-v1-20260917",
       "reason": null,
       "state": "RESULT_READY"
@@ -155,8 +155,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-18T02:21:27Z",
-    "last_receive_utc": "2026-09-18T02:21:28Z",
+    "last_cycle_utc": "2026-09-18T02:22:44Z",
+    "last_receive_utc": "2026-09-18T02:22:39Z",
     "last_terminal_utc": "2026-09-18T02:09:59Z",
     "pid": "1423"
   },
