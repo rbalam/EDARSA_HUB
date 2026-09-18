@@ -1,0 +1,23 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12J-R2-ISOLATE-Q07-PERSONA-VINCULO-UNIQUE-INDEXES-READONLY-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "aa57b944342f7e7efda0397ebfa64358c8c99a61",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Aislar exclusivamente la consulta Q07-PERSONA-VINCULO-UNIQUE-INDEXES que formaba parte del sql_readonly_audit de Gate12J-R2. Ejecutar una sola consulta READ_ONLY_SQL. No modificar codigo, SQL, RBAC, secrets, workflows ni Produccion. No avanzar a Gate12K.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "q07_persona_vinculo_unique_indexes",
+          "sql": "SELECT i.name AS index_name,i.is_unique,i.has_filter,i.filter_definition,c.name AS column_name,ic.key_ordinal FROM sys.indexes i JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.Gobierno_PersonaVinculo') AND i.is_hypothetical=0 ORDER BY i.index_id,ic.key_ordinal;"
+        }
+      ]
+    }
+  ]
+}
