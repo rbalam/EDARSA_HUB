@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate6a-fiscal-status-semantics-readonly-v1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "5b15ee193c331614d010422f64e658266fb97855",
+  "mode": "READ_ONLY_SQL",
+  "objective": "COA Gate 6A. Auditar en modo READ_ONLY_SQL los patrones reales de estados fiscales/documentales/comerciales existentes en EDARSAHUB para definir posteriormente, sin hardcode ni duplicacion semantica, el catalogo dbo.Fiscal_DocumentosEmitidosEstatus. No insertar seeds, no DDL, no DML, no EXEC y no tocar Produccion. Identificar catalogos de estatus relacionados con facturacion, CFDI, documentos fiscales, ventas, cancelacion, timbrado, SAT y ciclos documentales; inspeccionar sus nombres de columnas, tipos y valores existentes cuando sea seguro; confirmar que Fiscal_DocumentosEmitidosEstatus existe y esta vacia despues de Gate 5G-R4; y distinguir estados fiscales canonicos de estados operativos/comerciales que no deben reutilizarse.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate6a_database_identity",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user"
+        },
+        {
+          "name": "gate6a_target_status_table",
+          "sql": "SELECT t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.object_id=OBJECT_ID('dbo.Fiscal_DocumentosEmitidosEstatus') ORDER BY c.column_id"
+        },
+        {
+          "name": "gate6a_target_status_rows",
+          "sql": "SELECT EstatusDocumentoFiscalEmitidoID,Codigo,Nombre,Descripcion,EsFinal,Activo FROM dbo.Fiscal_DocumentosEmitidosEstatus ORDER BY EstatusDocumentoFiscalEmitidoID"
+        },
+        {
+          "name": "gate6a_status_catalog_candidates",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,p.rows AS approx_rows FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id LEFT JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE (t.name LIKE '%Estatus%' OR t.name LIKE '%Estado%' OR t.name LIKE '%Status%' OR t.name LIKE '%Fiscal%' OR t.name LIKE '%CFDI%' OR t.name LIKE '%Factura%') GROUP BY s.name,t.name,p.rows ORDER BY t.name"
+        },
+        {
+          "name": "gate6a_candidate_status_columns",
+          "sql": "SELECT t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (t.name LIKE '%Estatus%' OR t.name LIKE '%Estado%' OR t.name LIKE '%Status%' OR t.name LIKE '%Fiscal%' OR t.name LIKE '%CFDI%' OR t.name LIKE '%Factura%') AND (c.name LIKE '%Estatus%' OR c.name LIKE '%Estado%' OR c.name LIKE '%Status%' OR c.name LIKE '%Codigo%' OR c.name LIKE '%Nombre%' OR c.name LIKE '%Descripcion%' OR c.name LIKE '%Activo%' OR c.name LIKE '%Final%' OR c.name LIKE '%Cancel%' OR c.name LIKE '%Timbr%' OR c.name LIKE '%SAT%') ORDER BY t.name,c.column_id"
+        },
+        {
+          "name": "gate6a_fiscal_document_columns",
+          "sql": "SELECT t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Fiscal_DocumentosEmitidos','Compras_DocumentosFiscales','Venta_Encabezado') AND (c.name LIKE '%Estatus%' OR c.name LIKE '%Estado%' OR c.name LIKE '%Factura%' OR c.name LIKE '%UUID%' OR c.name LIKE '%Cancel%' OR c.name LIKE '%Timbr%' OR c.name LIKE '%SAT%' OR c.name LIKE '%Fecha%') ORDER BY t.name,c.column_id"
+        },
+        {
+          "name": "gate6a_existing_fiscal_values",
+          "sql": "SELECT TOP (100) DocumentoFiscalID,UUID,EstatusSAT,FechaTimbrado,FechaCancelacion FROM dbo.Compras_DocumentosFiscales WHERE UUID IS NOT NULL OR EstatusSAT IS NOT NULL OR FechaTimbrado IS NOT NULL OR FechaCancelacion IS NOT NULL ORDER BY DocumentoFiscalID DESC"
+        },
+        {
+          "name": "gate6a_sales_invoice_values",
+          "sql": "SELECT TOP (100) VentaID,NumeroFactura,UUIDFactura FROM dbo.Venta_Encabezado WHERE NumeroFactura IS NOT NULL OR UUIDFactura IS NOT NULL ORDER BY VentaID DESC"
+        },
+        {
+          "name": "gate6a_new_fiscal_table_rows",
+          "sql": "SELECT COUNT_BIG(*) AS documentos_emitidos_rows FROM dbo.Fiscal_DocumentosEmitidos"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
