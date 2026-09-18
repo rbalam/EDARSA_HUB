@@ -1,0 +1,23 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12J-R2-ISOLATE-Q09-CAVA-PERSONA-FK-READONLY-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "aa57b944342f7e7efda0397ebfa64358c8c99a61",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Aislar exclusivamente la consulta Q09-CAVA-PERSONA-FK que formaba parte del sql_readonly_audit de Gate12J-R2. Ejecutar una sola consulta READ_ONLY_SQL. No modificar codigo, SQL, RBAC, secrets, workflows ni Produccion. No avanzar a Gate12K.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "q09_cava_persona_fk",
+          "sql": "SELECT fk.name AS fk_name,OBJECT_NAME(fk.parent_object_id) AS parent_table,OBJECT_NAME(fk.referenced_object_id) AS referenced_table,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk WHERE fk.parent_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND fk.name=N'FK_CavaSocios_Socios_GobiernoPersona';"
+        }
+      ]
+    }
+  ]
+}
