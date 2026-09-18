@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "RRR-GATE4E-R6-R1-CUSTOMER-ATTRIBUTION-PRODUCERS-SOURCE-READONLY-20260917",
+  "created_at_utc": "2026-09-18T00:52:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "f7c2f81f10dca497c387974a8d28d629a6e673e7",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Gate4E-R6-R1 READ_ONLY source-only. Repetir el discovery de productores de atribucion cliente-venta excluyendo caches, coverage, outputs, tests y artefactos generados. Auditar solo codigo fuente runtime real para localizar productores/adapters/endpoints/POS/Comandero/CRM/pipelines que capturen ClienteID junto con ticket/venta/transaccion y puedan alimentar dbo.RRR_Eventos conforme a docs/RRR/RRR_GATE4E_CUSTOMER_ATTRIBUTION_CONTRACT_V1.md. Clasificar candidatos REUSE, EXTEND o DO_NOT_USE con path, simbolo/ruta, ClienteID, ticket/transaccion/SourceKey, FechaOperacion, empresa/unidad/sucursal, cancelacion/reversa, idempotencia y llave determinista hacia Comercial_Inteligencia_VentasDetalleProducto. Si no existe productor valido, concluir explicitamente ADAPTER_MINIMO_REQUERIDO. No DDL, no DML, no cambios, no Customer360 V3, no Mongo como verdad, no Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/api",
+          "backend/modules",
+          "backend/routes",
+          "backend/core",
+          "backend/tools",
+          "backend/utils",
+          "backend/server.py"
+        ],
+        "search_terms": [
+          "ClienteID",
+          "RRR_Eventos",
+          "SourceKey",
+          "SourceSystem",
+          "FechaOperacion",
+          "fecha_operacion",
+          "ticket",
+          "transaccion",
+          "VentaID",
+          "comandero",
+          "POS",
+          "CRM",
+          "Comercial_Inteligencia_VentasDetalleProducto",
+          "es_kpi_valido",
+          "cancelado_origen",
+          "softrestaurant",
+          "mpro"
+        ],
+        "max_results": 200
+      }
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
