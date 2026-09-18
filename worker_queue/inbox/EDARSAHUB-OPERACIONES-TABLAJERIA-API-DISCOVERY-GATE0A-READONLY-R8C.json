@@ -1,0 +1,42 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-API-DISCOVERY-GATE0A-READONLY-R8C",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "human_summary_language": "es",
+  "objective": "Auditar en modo solo lectura la estructura real de dbo.Servidores_Conexiones sin SELECT *, sin UUID crudo, sin exponer secretos, sin tocar TABLAJERIA.sys.*, sin modificar datos.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "servidores_conexiones_exists",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'Servidores_Conexiones'"
+        },
+        {
+          "name": "servidores_conexiones_columns_real",
+          "sql": "SELECT ORDINAL_POSITION, COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'Servidores_Conexiones' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "servidores_conexiones_total_count",
+          "sql": "SELECT COUNT(1) AS total_rows FROM dbo.Servidores_Conexiones"
+        },
+        {
+          "name": "servidores_conexiones_log_exists",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'Servidores_Conexiones_Log'"
+        },
+        {
+          "name": "servidores_conexiones_log_columns_real",
+          "sql": "SELECT ORDINAL_POSITION, COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'Servidores_Conexiones_Log' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "servidores_related_tables",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE '%Servidor%' OR TABLE_NAME LIKE '%Conexion%' OR TABLE_NAME LIKE '%Conex%' OR TABLE_NAME LIKE '%API%' OR TABLE_NAME LIKE '%Sistema%' ORDER BY TABLE_SCHEMA, TABLE_NAME"
+        }
+      ]
+    }
+  ]
+}
