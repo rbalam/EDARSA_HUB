@@ -1,157 +1,163 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "31db7e340782c722543b0bce94649040500363c5",
-  "generated_at_utc": "2026-09-18T03:21:17Z",
+  "generated_at_utc": "2026-09-18T03:22:29Z",
   "history": {
-    "done_total_local": 589,
+    "done_total_local": 590,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 576,
-    "results_total_local": 1023
+    "results_total_local": 1024
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 72,
+      "age_seconds": 144,
       "job_id": "BOS-AGENT-HARNESS-V1-RH-CANONICAL-BLOCKERS-DISCOVERY-GATE27-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 277,
+      "age_seconds": 349,
       "job_id": "BOS-AGENT-HARNESS-V1-RH-READONLY-SAFE-SLICE-GATE26-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 213,
+      "age_seconds": 285,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE3-AI-PROVIDER-ROUTING-CONTRACT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 409,
+      "age_seconds": 481,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE3-AI-PROVIDER-ROUTING-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 295,
+      "age_seconds": 367,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE3-AI-PROVIDER-ROUTING-DISCOVERY-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 59,
+      "age_seconds": 131,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE4-CONTENT-FACTORY-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1120,
+      "age_seconds": 51,
+      "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE4-CONTENT-FACTORY-DISCOVERY-R2",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1193,
       "job_id": "BOS-V1-GATE-E-EXECUTIVE-BOS-DESIGN-CONTRACT-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1115,
+      "age_seconds": 1187,
       "job_id": "CATALOGO-AMPLIADO-GATE8G-SQL-MIGRATION-CANONICAL-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1101,
+      "age_seconds": 1173,
       "job_id": "CAVAS-GATE12I-R3-MIGRATION-COMPILE-FIX-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 354,
+      "age_seconds": 426,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-WORKFLOW-PREJOB-FIX-R1-20260918T0315Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1098,
+      "age_seconds": 1170,
       "job_id": "CXP-GATE3F-B-MPRO-PCID-AUTHORITATIVE-PATTERN-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 310,
+      "age_seconds": 383,
       "job_id": "EDARSA-LOGISTICS-GATE2-DATA-INTEGRATION-ARCHITECTURE-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 13,
+      "age_seconds": 86,
       "job_id": "EDARSA-LOGISTICS-GATE3A-REPOSITORY-SCHEMA-CONTRACT-VALIDATION-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1096,
+      "age_seconds": 1168,
       "job_id": "EDARSAHUB-INVENTARIOS-403-RBAC-TRACE-R2-20260917T203100Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1093,
+      "age_seconds": 1166,
       "job_id": "EDARSAHUB-P3-COA-NAVIGATION-RBAC-CANARY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 139,
+      "age_seconds": 211,
       "job_id": "EDARSAHUB-SERVICES-GATE3B-PHYSICAL-SCHEMA-DDL-DOSSIER-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1080,
+      "age_seconds": 1152,
       "job_id": "EDARSAHUB-WORKER-SELFHEAL-WORKTREE-CLAIM-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3092,
+      "age_seconds": 3164,
       "job_id": "GATE5D-DEDICATED-MIGRATION-WRITER-CONTRACT-R3-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 352,
+      "age_seconds": 424,
       "job_id": "PRIMARY-INDUSTRIES-GATE1-CANONICAL-DOMAIN-DESIGN-R2-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 412,
+      "age_seconds": 484,
       "job_id": "RRR-GATE4E-R7-R1-MINIMAL-ATTRIBUTION-ADAPTER-DESIGN-V1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 241,
+      "age_seconds": 313,
       "job_id": "RRR-GATE4E-R7-R2-DESIGN-CERT-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3,
+      "age_seconds": 75,
       "job_id": "RRR-GATE4E-R8-IMPLEMENTATION-PREFLIGHT-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 211,
+      "age_seconds": 283,
       "job_id": "UNIVERSAL-WORKER-D2-RUNTIME-CONVERGENCE-GUARD-D2.1-IMPLEMENTATION-R1-RETRY1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1077,
+      "age_seconds": 1149,
       "job_id": "coa-gate6a-fiscal-status-semantics-readonly-v1-20260918",
       "reason": null,
       "state": "RESULT_READY"
@@ -164,14 +170,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 24,
+  "queue_result_ready_recent": 25,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-18T03:21:13Z",
-    "last_receive_utc": "2026-09-18T03:21:15Z",
-    "last_terminal_utc": "2026-09-18T03:21:13Z",
+    "last_cycle_utc": "2026-09-18T03:22:28Z",
+    "last_receive_utc": "2026-09-18T03:22:23Z",
+    "last_terminal_utc": "2026-09-18T03:21:37Z",
     "pid": "90403"
   },
   "schema": "edarsahub.worker-health.v3",
