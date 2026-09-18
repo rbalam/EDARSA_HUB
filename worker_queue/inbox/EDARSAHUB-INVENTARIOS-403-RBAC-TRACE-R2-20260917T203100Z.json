@@ -1,0 +1,35 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-403-RBAC-TRACE-R2-20260917T203100Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Completar en READ_ONLY la trazabilidad exacta del 403 del canario ID 373. Localizar en server.py la función usada por el core de análisis de inventarios, la condición exacta que niega acceso al servidor y el contrato de contexto de usuario requerido. Determinar el cambio mínimo correcto sin bypass ni cambios de permisos.",
+  "mode":"READ_ONLY",
+  "actions":[],
+  "checks":[
+    {
+      "type":"repository_contract_audit",
+      "request":{
+        "paths":[
+          "backend/server.py",
+          "backend/core/inventory_analysis_core.py",
+          "backend/core/security.py",
+          "backend/core/rbac_helper_sql.py",
+          "backend/core/access_context",
+          "backend/core/corporate_filters"
+        ],
+        "search_terms":[
+          "_inventory_analysis_endpoint_ref",
+          "No tiene acceso a este servidor",
+          "user_has_server_access",
+          "has_full_access",
+          "allowed_servers",
+          "current_user"
+        ],
+        "max_results":150
+      }
+    }
+  ],
+  "human_summary_language":"es"
+}
