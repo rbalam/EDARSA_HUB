@@ -1,0 +1,354 @@
+{
+  "base_sha": "7bdb1cdb00d7fa296c909b1db70223ba52b04f27",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T01:03:47Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-AGENT-HARNESS-V1-FINANZAS-TESORERIA-READONLY-DOMAIN-CANARY-GATE24-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T01:03:53Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "collections",
+              "core.rbac_sql.service",
+              "core.unidades_service",
+              "fastapi",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "permission",
+              "rbac",
+              "require_finanzas_permission",
+              "resolve_finanzas_unit_filter"
+            ],
+            "path": "backend/modules/finanzas/access.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_branch_pairs",
+              "_context_values",
+              "_get_sql_usuario_id",
+              "_normalize",
+              "_normalize_key",
+              "filter_unidades_for_finanzas",
+              "get_finanzas_allowed_unidad_pks",
+              "require_any_finanzas_permission",
+              "require_finanzas_permission",
+              "resolve_finanzas_unit_filter"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.finanzas",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.auditoria_helpers",
+              "core.security",
+              "core.sql_first.db",
+              "datetime",
+              "decimal",
+              "fastapi",
+              "modules.finanzas.access",
+              "pydantic",
+              "typing",
+              "urllib.parse"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "finanzas_cxp_decisionespago",
+              "finanzas_cxp_pagosorigenqueue",
+              "permission",
+              "rbac",
+              "resolve_finanzas_unit_filter",
+              "sql_first",
+              "usuario_autorizaciones"
+            ],
+            "path": "backend/modules/finanzas/cuentas_por_pagar.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/decision-dashboard",
+              "/decision-dashboard/drilldown",
+              "/decision-pago-masivo",
+              "/proveedores",
+              "/resumen",
+              "/sucursales",
+              "/{factura_id}",
+              "/{factura_id}/decision-pago",
+              "/{factura_id}/decision-pago/autorizacion"
+            ],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "ActualizarDecisionPago",
+              "ActualizarDecisionPagoMasivo",
+              "AutorizarDecisionPago",
+              "_cxp_authorization_entity_id",
+              "_cxp_authorization_visibility",
+              "_cxp_block_if_pago_origen_locked",
+              "_cxp_cancel_queue_pendiente",
+              "_cxp_create_canonical_authorization",
+              "_cxp_decision_projection",
+              "_cxp_decision_row_for_hash",
+              "_cxp_decisiones_schema_ready",
+              "_cxp_enqueue_pago_origen",
+              "_cxp_factura_dict",
+              "_cxp_get_canonical_authorization",
+              "_cxp_listar_canonico",
+              "_cxp_project_authorization_state",
+              "_cxp_proveedores_canonico",
+              "_cxp_queue_estados_for_decision",
+              "_cxp_queue_schema_ready",
+              "_cxp_require_decisiones_schema",
+              "_cxp_require_queue_schema",
+              "_cxp_resolve_canonical_authorization",
+              "_cxp_resumen_canonico",
+              "_cxp_row_for_ref",
+              "_cxp_rows_canonico",
+              "_cxp_rows_for_refs",
+              "_cxp_sucursales_canonico",
+              "_cxp_update_autorizacion",
+              "_cxp_upsert_decision",
+              "_decision_dashboard_canonico",
+              "_decision_dashboard_compras",
+              "_decision_dashboard_drilldown",
+              "_decision_dashboard_period",
+              "_get_cxp_usuario_id",
+              "_month_span_inclusive",
+              "_normalizar_importe_decision",
+              "_parse_cxp_factura_ref",
+              "_validar_fecha_corte",
+              "actualizar_decision_pago",
+              "actualizar_decision_pago_masivo",
+              "autorizar_decision_pago",
+              "get_decision_dashboard",
+              "get_decision_dashboard_drilldown",
+              "get_factura_detalle",
+              "get_resumen_cuentas_por_pagar",
+              "listar_facturas_pendientes",
+              "listar_proveedores_con_saldo",
+              "listar_sucursales_cxp",
+              "set_finanzas_repository",
+              "set_mpro_repository",
+              "set_softrestaurant_repository"
+            ],
+            "tables_referenced": [
+              "Compras_Recepciones",
+              "Finanzas_CxP_DecisionesPago",
+              "Finanzas_CxP_PagosOrigenQueue",
+              "Finanzas_CxP_Sync",
+              "Proveedor_Catalogo",
+              "Unidades_Negocio",
+              "Usuario_Autorizaciones",
+              "Usuario_AutorizacionesDetalle",
+              "Usuario_TiposAutorizacion",
+              "sp_Usuario_CrearAutorizacion",
+              "sp_Usuario_ResolverAutorizacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "fastapi",
+              "modules.finanzas",
+              "os",
+              "pathlib",
+              "pytest",
+              "subprocess",
+              "sys"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "fail_closed",
+              "permission",
+              "rbac"
+            ],
+            "path": "backend/tests/test_tesoreria_access_fail_closed.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_context",
+              "_unit",
+              "fail_context",
+              "fail_permission",
+              "has_global_access",
+              "test_empresa_asignada_limita_a_sus_unidades",
+              "test_fallo_lookup_permiso_funcional_falla_cerrado",
+              "test_fallo_sql_rbac_cierra_acceso",
+              "test_filtrado_es_exacto_y_no_por_substring",
+              "test_import_no_requiere_configuracion_sql",
+              "test_permiso_funcional_incompleto_falla_cerrado",
+              "test_permiso_restringido_no_otorga_alcance_global",
+              "test_permiso_sin_restriccion_otorga_alcance_global",
+              "test_permission_code_se_propaga_al_scope",
+              "test_record_no_autorizado_no_coincide_por_empresa",
+              "test_record_solo_con_empresa_se_deniega",
+              "test_rol_superadmin_sin_permiso_funcional_se_deniega",
+              "test_scope_global_con_decision_funcional",
+              "test_server_compartido_acepta_alcance_completo",
+              "test_server_compartido_requiere_alcance_completo",
+              "test_server_id_fuera_del_alcance_se_deniega",
+              "test_servidor_compartido_exige_sucursal_exacta",
+              "test_servidor_compartido_solo_por_servidor_se_deniega",
+              "test_sucursales_exponen_id_unico_de_unidad",
+              "test_tesoreria_routes_usan_permiso_por_operacion",
+              "test_usuario_sin_asignaciones_no_obtiene_acceso_global"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib",
+              "re"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "fail_closed",
+              "permission",
+              "rbac",
+              "usuario_matrizautorizacion"
+            ],
+            "path": "backend/tests/test_tes_pagos_rbac_matriz_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_migration_source",
+              "_rollback_source",
+              "_validation_source",
+              "test_admin_superadmin_excluded_from_operational_matrix",
+              "test_migration_defines_exact_11_permissions_and_2_matrix_rows",
+              "test_migration_has_no_hardcoded_numeric_ids_or_users",
+              "test_migration_is_pure_dml_without_schema_mutations",
+              "test_rollback_is_surgical_and_transactional",
+              "test_transactional_integrity_and_fail_closed_guards",
+              "test_validation_strictly_verifies_contract"
+            ],
+            "tables_referenced": [
+              "Usuario_MatrizAutorizacion",
+              "Usuario_PermisosRolModulo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "finanzas_cxp_decisionespago"
+            ],
+            "path": "backend/tests/test_cxp_canonical_authorization_integration.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/decision-pago-masivo",
+              "/{factura_id}/decision-pago/autorizacion"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "source",
+              "test_create_uses_canonical_engine",
+              "test_cxp_uses_aut_tes_pagos",
+              "test_cxp_uses_existing_polymorphic_link",
+              "test_endpoint_no_longer_calls_legacy_direct_authorization",
+              "test_legacy_helper_explicitly_deprecated",
+              "test_mark_for_payment_creates_authorization",
+              "test_no_schema_parallel_link_added",
+              "test_queue_only_after_final_authorized",
+              "test_resolve_uses_canonical_engine"
+            ],
+            "tables_referenced": [
+              "Finanzas_CxP_DecisionesPago",
+              "sp_Usuario_CrearAutorizacion",
+              "sp_Usuario_ResolverAutorizacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "ast",
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "permission",
+              "usuario_autorizaciones"
+            ],
+            "path": "backend/tests/test_cxp_authorizer_visibility_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "function_source",
+              "source",
+              "test_factura_dict_exposes_visibility",
+              "test_no_generic_admin_logic_inside_visibility",
+              "test_no_parallel_authorization_schema",
+              "test_visibility_is_user_specific",
+              "test_visibility_requires_open_authorization",
+              "test_visibility_uses_canonical_detail_table",
+              "test_visibility_uses_real_pending_column"
+            ],
+            "tables_referenced": [
+              "Usuario_AutorizacionesDetalle"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 6,
+          "scanned_files": 6,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-18T01:03:45Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
