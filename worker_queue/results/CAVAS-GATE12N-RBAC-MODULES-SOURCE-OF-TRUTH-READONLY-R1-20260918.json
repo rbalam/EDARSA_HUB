@@ -1,0 +1,1688 @@
+{
+  "base_sha": "3ea717f1c26365551518edb89d98e4abb07096d2",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T22:06:34Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE12N-RBAC-MODULES-SOURCE-OF-TRUTH-READONLY-R1-20260918",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T22:06:39Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "codigo",
+              "codigomodulo",
+              "usuario_acciones",
+              "usuario_modulos",
+              "usuario_permisosrolmodulo"
+            ],
+            "path": "backend/core/rbac/repository_sql.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACRepositorySQL",
+              "__init__",
+              "_get_connection",
+              "_invalidate_cache",
+              "_is_cache_valid",
+              "asignar_rol",
+              "create_rol",
+              "delete_rol",
+              "get_all_permisos",
+              "get_all_roles",
+              "get_audit_logs",
+              "get_nivel_jerarquia_usuario",
+              "get_permiso_by_codigo",
+              "get_permisos_usuario",
+              "get_rbac_repository_sql",
+              "get_rol_by_id",
+              "get_rol_by_nombre",
+              "get_roles_usuario",
+              "log_verificacion",
+              "revocar_rol",
+              "seed_permisos",
+              "seed_roles",
+              "update_rol"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.rbac_helper_sql",
+              "core.security",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "fastapi",
+              "fastapi.security",
+              "functools",
+              "logging",
+              "service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "codigo",
+              "codigomodulo",
+              "require_explicit_permission",
+              "usuario_acciones",
+              "usuario_modulos",
+              "usuario_permisosrolmodulo"
+            ],
+            "path": "backend/core/rbac/middleware.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "get_current_user"
+            ],
+            "routes": [
+              "/cargos/{id}/aplicar",
+              "/endpoint"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACAllDependency",
+              "RBACAnyDependency",
+              "RBACDependency",
+              "RBACExplicitDependency",
+              "RBACExplicitDualDependency",
+              "__call__",
+              "__init__",
+              "_get_db",
+              "get_current_user_from_token",
+              "get_current_user_with_permissions",
+              "require_all_permissions",
+              "require_any_permission",
+              "require_explicit_permission",
+              "require_explicit_permission_dual",
+              "require_permission"
+            ],
+            "tables_referenced": [
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.rbac_context_sql",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.auth.sql_user_identity",
+              "core.sql_first.db",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "codigo",
+              "codigomodulo",
+              "sistema_modulos",
+              "usuario_permisosrolmodulo"
+            ],
+            "path": "backend/modules/rbac_context_sql/context_service.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "Usuario_RolesContexto"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACContextService",
+              "get_user_context"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.sistema",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.connection_factory",
+              "fastapi",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "_obtener_menus_usuario_resuelto",
+              "_obtener_modulos_permitidos_usuario",
+              "codigo",
+              "codigomodulo",
+              "obtener_permisos_usuario_por_unidad",
+              "sistema_modulos",
+              "usuario_acciones",
+              "usuario_modulos",
+              "usuario_permisosrolmodulo"
+            ],
+            "path": "backend/modules/sistema/menu_service.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "Usuario_RolesContexto"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "MenuService",
+              "_es_superadmin_from_current_user",
+              "_es_superadmin_from_roles",
+              "_get_connection",
+              "_get_usuario_catalogo_columns",
+              "_leer_favoritos_usuario_resuelto",
+              "_menu_autorizado",
+              "_norm",
+              "_norm_ruta_permiso",
+              "_normalizar_rutas_favoritas",
+              "_obtener_menus_usuario_resuelto",
+              "_obtener_modulos_permitidos_usuario",
+              "_obtener_roles_usuario",
+              "_resolver_usuario_id_canonico",
+              "_rutas_menu_permitidas_usuario",
+              "_tabla_favoritos_existe",
+              "actualizar_favoritos_current_user",
+              "es_superadmin",
+              "get_menu_service",
+              "obtener_favoritos_current_user",
+              "obtener_menus_current_user",
+              "obtener_menus_usuario",
+              "obtener_permisos_usuario",
+              "obtener_permisos_usuario_por_unidad",
+              "obtener_roles_usuario",
+              "resolver_usuario_id_canonico"
+            ],
+            "tables_referenced": [
+              "Sistema_Modulos",
+              "Sistema_ModulosMenus",
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_MenuFavoritos",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion",
+              "Usuario_RolesContexto"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "os",
+              "pymssql"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios",
+              "codigo",
+              "codigomodulo",
+              "usuario_modulos",
+              "usuario_permisosrolmodulo"
+            ],
+            "path": "backend/scripts/create_cava_socios_rbac.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "create_cava_socios_modules",
+              "create_cava_socios_permissions",
+              "get_connection",
+              "main"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "codigo",
+              "codigomodulo",
+              "usuario_acciones",
+              "usuario_modulos",
+              "usuario_permisosrolmodulo"
+            ],
+            "path": "docs/architecture/rbac/02_tablas_sql.md",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_LogRBACVerificacion",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_RBAC_Asignacion",
+              "Usuario_RBAC_Bitacora",
+              "Usuario_Roles"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 6,
+          "scanned_files": 6,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "schema_name",
+              "name",
+              "type_desc"
+            ],
+            "name": "objects_exist",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "dbo",
+                "Sistema_Modulos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Usuario_Acciones",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Usuario_Modulos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Usuario_PermisosRolModulo",
+                "USER_TABLE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type"
+            ],
+            "name": "usuario_modulos_columns",
+            "row_count_returned": 14,
+            "rows": [
+              [
+                1,
+                "ModuloID",
+                "int"
+              ],
+              [
+                2,
+                "ModuloPadreID",
+                "int"
+              ],
+              [
+                3,
+                "CodigoModulo",
+                "varchar"
+              ],
+              [
+                4,
+                "NombreModulo",
+                "varchar"
+              ],
+              [
+                5,
+                "Descripcion",
+                "varchar"
+              ],
+              [
+                6,
+                "TipoModulo",
+                "varchar"
+              ],
+              [
+                7,
+                "Ruta",
+                "varchar"
+              ],
+              [
+                8,
+                "Icono",
+                "varchar"
+              ],
+              [
+                9,
+                "OrdenMenu",
+                "int"
+              ],
+              [
+                10,
+                "EsVisibleMenu",
+                "bit"
+              ],
+              [
+                11,
+                "RequiereAutorizacion",
+                "bit"
+              ],
+              [
+                12,
+                "Activo",
+                "bit"
+              ],
+              [
+                13,
+                "FechaAlta",
+                "datetime2"
+              ],
+              [
+                14,
+                "FechaModificacion",
+                "datetime2"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type"
+            ],
+            "name": "sistema_modulos_columns",
+            "row_count_returned": 12,
+            "rows": [
+              [
+                1,
+                "ModuloID",
+                "int"
+              ],
+              [
+                2,
+                "Codigo",
+                "nvarchar"
+              ],
+              [
+                3,
+                "Nombre",
+                "nvarchar"
+              ],
+              [
+                4,
+                "Descripcion",
+                "nvarchar"
+              ],
+              [
+                5,
+                "Icono",
+                "nvarchar"
+              ],
+              [
+                6,
+                "Orden",
+                "int"
+              ],
+              [
+                7,
+                "EsPrincipal",
+                "bit"
+              ],
+              [
+                8,
+                "EsSatelite",
+                "bit"
+              ],
+              [
+                9,
+                "EsPortal",
+                "bit"
+              ],
+              [
+                10,
+                "URLExterna",
+                "nvarchar"
+              ],
+              [
+                11,
+                "Activo",
+                "bit"
+              ],
+              [
+                12,
+                "FechaCreacion",
+                "datetime"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "parent_schema",
+              "parent_table",
+              "parent_column",
+              "referenced_schema",
+              "referenced_table",
+              "referenced_column",
+              "is_disabled",
+              "is_not_trusted"
+            ],
+            "name": "permiso_fk_targets",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "FK_Usuario_PermisosRolModulo_Usuario_Acciones",
+                "dbo",
+                "Usuario_PermisosRolModulo",
+                "AccionID",
+                "dbo",
+                "Usuario_Acciones",
+                "AccionID",
+                false,
+                false
+              ],
+              [
+                "FK_Usuario_PermisosRolModulo_Usuario_Modulos",
+                "dbo",
+                "Usuario_PermisosRolModulo",
+                "ModuloID",
+                "dbo",
+                "Usuario_Modulos",
+                "ModuloID",
+                false,
+                false
+              ],
+              [
+                "FK_Usuario_PermisosRolModulo_Usuario_Roles",
+                "dbo",
+                "Usuario_PermisosRolModulo",
+                "RolID",
+                "dbo",
+                "Usuario_Roles",
+                "RolID",
+                false,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ModuloID",
+              "CodigoModulo",
+              "NombreModulo",
+              "Ruta",
+              "Activo"
+            ],
+            "name": "cava_in_usuario_modulos",
+            "row_count_returned": 9,
+            "rows": [
+              [
+                50,
+                "cava_socios",
+                "Cava de Socios",
+                "/cava-socios",
+                true
+              ],
+              [
+                53,
+                "cava_socios.botellas",
+                "Botellas",
+                "/cava-socios/botellas",
+                true
+              ],
+              [
+                56,
+                "cava_socios.cargos",
+                "Cargos",
+                "/cava-socios/cargos",
+                true
+              ],
+              [
+                58,
+                "cava_socios.config",
+                "Configuración",
+                "/cava-socios/config",
+                true
+              ],
+              [
+                55,
+                "cava_socios.consumos",
+                "Consumos",
+                "/cava-socios/consumos",
+                true
+              ],
+              [
+                51,
+                "cava_socios.dashboard",
+                "Dashboard Cava",
+                "/cava-socios/dashboard",
+                true
+              ],
+              [
+                54,
+                "cava_socios.movimientos",
+                "Movimientos",
+                "/cava-socios/movimientos",
+                true
+              ],
+              [
+                57,
+                "cava_socios.reportes",
+                "Reportes",
+                "/cava-socios/reportes",
+                true
+              ],
+              [
+                52,
+                "cava_socios.socios",
+                "Socios",
+                "/cava-socios/socios",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ModuloID",
+              "Codigo",
+              "Nombre",
+              "URLExterna",
+              "Activo"
+            ],
+            "name": "cava_in_sistema_modulos",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                7,
+                "CAVA_SOCIOS",
+                "Cava de Socios",
+                null,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "PermisoRolModuloID",
+              "RolID",
+              "ModuloID",
+              "CodigoModulo",
+              "CodigoAccion",
+              "Permitido",
+              "Activo"
+            ],
+            "name": "permission_join_usuario_modulos",
+            "row_count_returned": 100,
+            "rows": [
+              [
+                "335",
+                1,
+                50,
+                "cava_socios",
+                "AUTORIZAR",
+                false,
+                false
+              ],
+              [
+                "332",
+                1,
+                50,
+                "cava_socios",
+                "CREAR",
+                false,
+                false
+              ],
+              [
+                "333",
+                1,
+                50,
+                "cava_socios",
+                "EDITAR",
+                false,
+                false
+              ],
+              [
+                "334",
+                1,
+                50,
+                "cava_socios",
+                "EXPORTAR",
+                false,
+                false
+              ],
+              [
+                "331",
+                1,
+                50,
+                "cava_socios",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "343",
+                1,
+                53,
+                "cava_socios.botellas",
+                "CREAR",
+                false,
+                false
+              ],
+              [
+                "344",
+                1,
+                53,
+                "cava_socios.botellas",
+                "EDITAR",
+                false,
+                false
+              ],
+              [
+                "345",
+                1,
+                53,
+                "cava_socios.botellas",
+                "EXPORTAR",
+                false,
+                false
+              ],
+              [
+                "342",
+                1,
+                53,
+                "cava_socios.botellas",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "356",
+                1,
+                56,
+                "cava_socios.cargos",
+                "AUTORIZAR",
+                false,
+                false
+              ],
+              [
+                "354",
+                1,
+                56,
+                "cava_socios.cargos",
+                "CREAR",
+                false,
+                false
+              ],
+              [
+                "355",
+                1,
+                56,
+                "cava_socios.cargos",
+                "EDITAR",
+                false,
+                false
+              ],
+              [
+                "353",
+                1,
+                56,
+                "cava_socios.cargos",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "360",
+                1,
+                58,
+                "cava_socios.config",
+                "EDITAR",
+                false,
+                false
+              ],
+              [
+                "359",
+                1,
+                58,
+                "cava_socios.config",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "352",
+                1,
+                55,
+                "cava_socios.consumos",
+                "CANCELAR",
+                false,
+                false
+              ],
+              [
+                "350",
+                1,
+                55,
+                "cava_socios.consumos",
+                "CREAR",
+                false,
+                false
+              ],
+              [
+                "351",
+                1,
+                55,
+                "cava_socios.consumos",
+                "EDITAR",
+                false,
+                false
+              ],
+              [
+                "349",
+                1,
+                55,
+                "cava_socios.consumos",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "337",
+                1,
+                51,
+                "cava_socios.dashboard",
+                "EXPORTAR",
+                false,
+                false
+              ],
+              [
+                "336",
+                1,
+                51,
+                "cava_socios.dashboard",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "347",
+                1,
+                54,
+                "cava_socios.movimientos",
+                "CREAR",
+                false,
+                false
+              ],
+              [
+                "348",
+                1,
+                54,
+                "cava_socios.movimientos",
+                "EXPORTAR",
+                false,
+                false
+              ],
+              [
+                "346",
+                1,
+                54,
+                "cava_socios.movimientos",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "358",
+                1,
+                57,
+                "cava_socios.reportes",
+                "EXPORTAR",
+                false,
+                false
+              ],
+              [
+                "357",
+                1,
+                57,
+                "cava_socios.reportes",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "339",
+                1,
+                52,
+                "cava_socios.socios",
+                "CREAR",
+                false,
+                false
+              ],
+              [
+                "340",
+                1,
+                52,
+                "cava_socios.socios",
+                "EDITAR",
+                false,
+                false
+              ],
+              [
+                "341",
+                1,
+                52,
+                "cava_socios.socios",
+                "EXPORTAR",
+                false,
+                false
+              ],
+              [
+                "338",
+                1,
+                52,
+                "cava_socios.socios",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "365",
+                2,
+                50,
+                "cava_socios",
+                "AUTORIZAR",
+                false,
+                false
+              ],
+              [
+                "362",
+                2,
+                50,
+                "cava_socios",
+                "CREAR",
+                false,
+                false
+              ],
+              [
+                "363",
+                2,
+                50,
+                "cava_socios",
+                "EDITAR",
+                false,
+                false
+              ],
+              [
+                "364",
+                2,
+                50,
+                "cava_socios",
+                "EXPORTAR",
+                false,
+                false
+              ],
+              [
+                "361",
+                2,
+                50,
+                "cava_socios",
+                "VER",
+                false,
+                false
+              ],
+              [
+                "373",
+                2,
+                53,
+                "cava_socios.botellas",
+                "CREAR",
+                false,
+                false
+              ],
+              [
+                "374",
+                2,
+                53,
+                "cava_socios.botellas",
+                "EDITAR",
+                false,
+                false
+              ],
+              [
+                "375",
+                2,
+                53,
+                "cava_socios.botellas",
+                "EXPORTAR",
+                false,
+                false
+              ],
+              [
+                "372",
+                2,
+                53,
+                "cava_socios.botellas",
+                "VER",
+                false,
+                false
+              ],
+              [
+                "381",
+                2,
+                56,
+                "cava_socios.cargos",
+                "AUTORIZAR",
+                false,
+                false
+              ],
+              [
+                "380",
+                2,
+                56,
+                "cava_socios.cargos",
+                "VER",
+                false,
+                false
+              ],
+              [
+                "384",
+                2,
+                58,
+                "cava_socios.config",
+                "VER",
+                false,
+                false
+              ],
+              [
+                "379",
+                2,
+                55,
+                "cava_socios.consumos",
+                "CREAR",
+                false,
+                false
+              ],
+              [
+                "378",
+                2,
+                55,
+                "cava_socios.consumos",
+                "VER",
+                false,
+                false
+              ],
+              [
+                "367",
+                2,
+                51,
+                "cava_socios.dashboard",
+                "EXPORTAR",
+                false,
+                false
+              ],
+              [
+                "366",
+                2,
+                51,
+                "cava_socios.dashboard",
+                "VER",
+                false,
+                false
+              ],
+              [
+                "377",
+                2,
+                54,
+                "cava_socios.movimientos",
+                "EXPORTAR",
+                false,
+                false
+              ],
+              [
+                "376",
+                2,
+                54,
+                "cava_socios.movimientos",
+                "VER",
+                false,
+                false
+              ],
+              [
+                "383",
+                2,
+                57,
+                "cava_socios.reportes",
+                "EXPORTAR",
+                false,
+                false
+              ],
+              [
+                "382",
+                2,
+                57,
+                "cava_socios.reportes",
+                "VER",
+                false,
+                false
+              ],
+              [
+                "369",
+                2,
+                52,
+                "cava_socios.socios",
+                "CREAR",
+                false,
+                false
+              ],
+              [
+                "370",
+                2,
+                52,
+                "cava_socios.socios",
+                "EDITAR",
+                false,
+                false
+              ],
+              [
+                "371",
+                2,
+                52,
+                "cava_socios.socios",
+                "EXPORTAR",
+                false,
+                false
+              ],
+              [
+                "368",
+                2,
+                52,
+                "cava_socios.socios",
+                "VER",
+                false,
+                false
+              ],
+              [
+                "300",
+                6,
+                50,
+                "cava_socios",
+                "AUTORIZAR",
+                false,
+                false
+              ],
+              [
+                "301",
+                6,
+                50,
+                "cava_socios",
+                "CONFIGURAR",
+                false,
+                false
+              ],
+              [
+                "296",
+                6,
+                50,
+                "cava_socios",
+                "CREAR",
+                false,
+                false
+              ],
+              [
+                "297",
+                6,
+                50,
+                "cava_socios",
+                "EDITAR",
+                false,
+                false
+              ],
+              [
+                "298",
+                6,
+                50,
+                "cava_socios",
+                "ELIMINAR",
+                false,
+                false
+              ],
+              [
+                "299",
+                6,
+                50,
+                "cava_socios",
+                "EXPORTAR",
+                false,
+                false
+              ],
+              [
+                "295",
+                6,
+                50,
+                "cava_socios",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "310",
+                6,
+                53,
+                "cava_socios.botellas",
+                "CREAR",
+                false,
+                false
+              ],
+              [
+                "311",
+                6,
+                53,
+                "cava_socios.botellas",
+                "EDITAR",
+                false,
+                false
+              ],
+              [
+                "312",
+                6,
+                53,
+                "cava_socios.botellas",
+                "ELIMINAR",
+                false,
+                false
+              ],
+              [
+                "313",
+                6,
+                53,
+                "cava_socios.botellas",
+                "EXPORTAR",
+                false,
+                false
+              ],
+              [
+                "309",
+                6,
+                53,
+                "cava_socios.botellas",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "325",
+                6,
+                56,
+                "cava_socios.cargos",
+                "AUTORIZAR",
+                false,
+                false
+              ],
+              [
+                "324",
+                6,
+                56,
+                "cava_socios.cargos",
+                "CANCELAR",
+                false,
+                false
+              ],
+              [
+                "322",
+                6,
+                56,
+                "cava_socios.cargos",
+                "CREAR",
+                false,
+                false
+              ],
+              [
+                "323",
+                6,
+                56,
+                "cava_socios.cargos",
+                "EDITAR",
+                false,
+                false
+              ],
+              [
+                "321",
+                6,
+                56,
+                "cava_socios.cargos",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "330",
+                6,
+                58,
+                "cava_socios.config",
+                "CONFIGURAR",
+                false,
+                false
+              ],
+              [
+                "329",
+                6,
+                58,
+                "cava_socios.config",
+                "EDITAR",
+                false,
+                false
+              ],
+              [
+                "328",
+                6,
+                58,
+                "cava_socios.config",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "320",
+                6,
+                55,
+                "cava_socios.consumos",
+                "CANCELAR",
+                false,
+                false
+              ],
+              [
+                "318",
+                6,
+                55,
+                "cava_socios.consumos",
+                "CREAR",
+                false,
+                false
+              ],
+              [
+                "319",
+                6,
+                55,
+                "cava_socios.consumos",
+                "EDITAR",
+                false,
+                false
+              ],
+              [
+                "317",
+                6,
+                55,
+                "cava_socios.consumos",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "303",
+                6,
+                51,
+                "cava_socios.dashboard",
+                "EXPORTAR",
+                false,
+                false
+              ],
+              [
+                "302",
+                6,
+                51,
+                "cava_socios.dashboard",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "315",
+                6,
+                54,
+                "cava_socios.movimientos",
+                "CREAR",
+                false,
+                false
+              ],
+              [
+                "316",
+                6,
+                54,
+                "cava_socios.movimientos",
+                "EXPORTAR",
+                false,
+                false
+              ],
+              [
+                "314",
+                6,
+                54,
+                "cava_socios.movimientos",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "327",
+                6,
+                57,
+                "cava_socios.reportes",
+                "EXPORTAR",
+                false,
+                false
+              ],
+              [
+                "326",
+                6,
+                57,
+                "cava_socios.reportes",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "305",
+                6,
+                52,
+                "cava_socios.socios",
+                "CREAR",
+                false,
+                false
+              ],
+              [
+                "306",
+                6,
+                52,
+                "cava_socios.socios",
+                "EDITAR",
+                false,
+                false
+              ],
+              [
+                "307",
+                6,
+                52,
+                "cava_socios.socios",
+                "ELIMINAR",
+                false,
+                false
+              ],
+              [
+                "308",
+                6,
+                52,
+                "cava_socios.socios",
+                "EXPORTAR",
+                false,
+                false
+              ],
+              [
+                "304",
+                6,
+                52,
+                "cava_socios.socios",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "386",
+                7,
+                50,
+                "cava_socios",
+                "CREAR",
+                true,
+                true
+              ],
+              [
+                "387",
+                7,
+                50,
+                "cava_socios",
+                "EDITAR",
+                true,
+                true
+              ],
+              [
+                "385",
+                7,
+                50,
+                "cava_socios",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "393",
+                7,
+                53,
+                "cava_socios.botellas",
+                "CREAR",
+                true,
+                true
+              ],
+              [
+                "394",
+                7,
+                53,
+                "cava_socios.botellas",
+                "EDITAR",
+                true,
+                true
+              ],
+              [
+                "392",
+                7,
+                53,
+                "cava_socios.botellas",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "400",
+                7,
+                56,
+                "cava_socios.cargos",
+                "CREAR",
+                true,
+                true
+              ],
+              [
+                "399",
+                7,
+                56,
+                "cava_socios.cargos",
+                "VER",
+                true,
+                true
+              ],
+              [
+                "398",
+                7,
+                55,
+                "cava_socios.consumos",
+                "CREAR",
+                true,
+                true
+              ],
+              [
+                "397",
+                7,
+                55,
+                "cava_socios.consumos",
+                "VER",
+                true,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "PermisoRolModuloID",
+              "RolID",
+              "ModuloID",
+              "Codigo",
+              "Nombre",
+              "Permitido",
+              "Activo"
+            ],
+            "name": "permission_join_sistema_modulos_overlap",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                "10574",
+                1,
+                7,
+                "CAVA_SOCIOS",
+                "Cava de Socios",
+                true,
+                true
+              ],
+              [
+                "10646",
+                2,
+                7,
+                "CAVA_SOCIOS",
+                "Cava de Socios",
+                false,
+                false
+              ],
+              [
+                "575",
+                6,
+                7,
+                "CAVA_SOCIOS",
+                "Cava de Socios",
+                true,
+                true
+              ],
+              [
+                "10693",
+                12,
+                7,
+                "CAVA_SOCIOS",
+                "Cava de Socios",
+                true,
+                true
+              ],
+              [
+                "10946",
+                18,
+                7,
+                "CAVA_SOCIOS",
+                "Cava de Socios",
+                true,
+                true
+              ],
+              [
+                "10843",
+                25,
+                7,
+                "CAVA_SOCIOS",
+                "Cava de Socios",
+                false,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ModuloID",
+              "usuario_codigo",
+              "usuario_nombre",
+              "sistema_codigo",
+              "sistema_nombre"
+            ],
+            "name": "module_id_collision_check",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                7,
+                "VENTA_COT",
+                "Cotizaciones de venta",
+                "CAVA_SOCIOS",
+                "Cava de Socios"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T22:06:33Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
