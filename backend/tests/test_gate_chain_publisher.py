@@ -30,6 +30,10 @@ def test_arbitrary_sql_forbidden():
 def test_unsupported_action_rejected():
     t=template(); t['actions']=[{'type':'run_shell'}]
     with pytest.raises(ValueError,match='UNSUPPORTED_ACTION'): validate_template(t)
+def test_repository_contract_audit_supported():
+    t=template(); t['checks']=[{'type':'repository_contract_audit','request':{'paths':['backend'],'search_terms':['finanzas'],'max_results':10}}]
+    assert validate_template(t) is t
+
 def test_unsupported_check_rejected():
     t=template(); t['checks']=[{'type':'execute_sql'}]
     with pytest.raises(ValueError,match='UNSUPPORTED_CHECK'): validate_template(t)

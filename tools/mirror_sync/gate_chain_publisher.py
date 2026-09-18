@@ -13,7 +13,7 @@ if str(ROOT) not in sys.path: sys.path.insert(0,str(ROOT))
 from tools.mirror_sync.gate_chain_controller import validate_chain
 JOB_ID_RE=re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$')
 ALLOWED_ACTIONS={'replace_text','write_file','delete_file'}
-ALLOWED_CHECKS={'git_diff_check','py_compile','pytest','frontend_build','sql_readonly_audit'}
+ALLOWED_CHECKS={'git_diff_check','py_compile','pytest','frontend_build','sql_readonly_audit','repository_contract_audit'}
 FORBIDDEN_KEYS={'sql','command','commands','shell','script_body','password','passwd','secret','token','credential'}
 
 def _walk(value:Any):
