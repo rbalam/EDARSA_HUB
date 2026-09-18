@@ -1,0 +1,77 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-MENU-MODULO-R13-CANARIO-FUNCIONAL-READONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "objective": "Ejecutar canario funcional READ_ONLY del modulo Tablajeria despues de R12A-R2. Verificar que el backend registrado expone rutas reales de /api/tablajeria, que frontend/menu siguen alineados y que los objetos SQL necesarios existen. No modificar codigo, datos, secretos, permisos ni Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/server.py",
+          "backend/modules/tablajeria/routes.py",
+          "backend/modules/tablajeria/dashboard_service.py",
+          "backend/modules/tablajeria/ordenes_service.py",
+          "backend/modules/tablajeria/sync_service.py",
+          "frontend/src/App.js",
+          "frontend/src/pages/tablajeria",
+          "frontend/src/config/enterpriseMenuConfig.js"
+        ],
+        "search_terms": [
+          "from modules.tablajeria.routes import router as tablajeria_router",
+          "app.include_router(tablajeria_router)",
+          "router = APIRouter(prefix=\"/api/tablajeria\"",
+          "@router.get(\"/stats\")",
+          "@router.get(\"/sync/servidores\")",
+          "@router.get(\"/plantillas\")",
+          "@router.get(\"/ordenes\")",
+          "@router.get(\"/dashboard/kpis\")",
+          "api.get('/tablajeria/dashboard/kpis')",
+          "api.get(`/tablajeria/ordenes?",
+          "api.get(`/tablajeria/plantillas?",
+          "path: \"/tablajeria\"",
+          "produccion/tablajeria"
+        ],
+        "include_patterns": ["*.py", "*.js", "*.jsx", "*.json"],
+        "exclude_patterns": [".git/*", "node_modules/*", "__pycache__/*", "*.pyc", "dist/*", "build/*"],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "tablajeria_core_tables_exist",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME IN ('Operaciones_Tablaje_Plantillas','Operaciones_Tablaje_PlantillasDetalle','Operaciones_Tablaje_Ordenes','Operaciones_Tablaje_OrdenesDetalle','Operaciones_Tablaje_SyncLog') ORDER BY TABLE_SCHEMA, TABLE_NAME"
+        },
+        {
+          "name": "tablajeria_counts_safe",
+          "sql": "SELECT 'Operaciones_Tablaje_Plantillas' AS tabla, COUNT(*) AS total FROM dbo.Operaciones_Tablaje_Plantillas UNION ALL SELECT 'Operaciones_Tablaje_Ordenes' AS tabla, COUNT(*) AS total FROM dbo.Operaciones_Tablaje_Ordenes UNION ALL SELECT 'Operaciones_Tablaje_SyncLog' AS tabla, COUNT(*) AS total FROM dbo.Operaciones_Tablaje_SyncLog"
+        },
+        {
+          "name": "tablajeria_connections_safe",
+          "sql": "SELECT nombre, system_type, tipo_conexion, database_name, activo, visible_en_listado, visible_en_operaciones, queries_configured FROM dbo.Servidores_Conexiones WHERE nombre LIKE '%TABLAJERIA%' OR database_name LIKE '%tablajeria%' OR database_name = 'Tablajeria' ORDER BY nombre"
+        },
+        {
+          "name": "tablajeria_endpoint_table_columns_safe",
+          "sql": "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('Operaciones_Tablaje_Plantillas','Operaciones_Tablaje_Ordenes','Operaciones_Tablaje_SyncLog') AND COLUMN_NAME IN ('PlantillaID','OrdenID','Estatus','Activo','FechaOperacionMexico','ServidorID','ServidorNombre') ORDER BY TABLE_NAME, ORDINAL_POSITION"
+        }
+      ]
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/server.py",
+        "backend/modules/tablajeria/routes.py",
+        "backend/modules/tablajeria/dashboard_service.py",
+        "backend/modules/tablajeria/ordenes_service.py",
+        "backend/modules/tablajeria/sync_service.py"
+      ]
+    }
+  ]
+}
