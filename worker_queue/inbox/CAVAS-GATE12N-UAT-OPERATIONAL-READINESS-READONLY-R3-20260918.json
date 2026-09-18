@@ -1,0 +1,91 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12N-UAT-OPERATIONAL-READINESS-READONLY-R3-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3ea717f1c26365551518edb89d98e4abb07096d2",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Gate12N R3 READ_ONLY. Usar exclusivamente el modelo RBAC canonico de autorizacion: Usuario_Modulos + Usuario_Acciones + Usuario_PermisosRolModulo + Usuario_RolesContexto, apoyandose solo en Usuario_Catalogo para identificar al usuario y en relaciones de contexto para UnidadNegocioID/EmpresaID. Identificar usuarios activos que, dentro del mismo contexto unidad/empresa, tengan simultaneamente permisos efectivos CAVA_SOCIOS_VER y CAVA_SOCIOS_EDITAR derivados de modulo cava_socios y acciones VER/EDITAR. No usar Sistema_Modulos para autorizacion. No tocar permisos, menus, roles, usuarios, unidades, empresas, SQL ni Produccion. No ejecutar UAT.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/rbac/repository_sql.py",
+          "backend/modules/rbac_context_sql/context_service.py",
+          "backend/core/rbac/middleware.py",
+          "backend/modules/cava_socios/routes.py"
+        ],
+        "search_terms": [
+          "Usuario_Modulos",
+          "Usuario_Acciones",
+          "Usuario_PermisosRolModulo",
+          "Usuario_RolesContexto",
+          "Usuario_Catalogo",
+          "CodigoModulo",
+          "CodigoAccion",
+          "cava_socios",
+          "VER",
+          "EDITAR",
+          "require_explicit_permission",
+          "CAVA_SOCIOS_VER",
+          "CAVA_SOCIOS_EDITAR"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 400
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "identity_guard",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS db_user,ORIGINAL_LOGIN() AS original_login;"
+        },
+        {
+          "name": "cava_module_action_catalog",
+          "sql": "SELECT m.ModuloID,m.CodigoModulo,m.NombreModulo,a.AccionID,a.CodigoAccion,a.NombreAccion FROM dbo.Usuario_Modulos m CROSS JOIN dbo.Usuario_Acciones a WHERE LOWER(LTRIM(RTRIM(m.CodigoModulo)))=N'cava_socios' AND UPPER(LTRIM(RTRIM(a.CodigoAccion))) IN (N'VER',N'EDITAR') AND ISNULL(m.Activo,1)=1 AND ISNULL(a.Activo,1)=1 ORDER BY a.CodigoAccion;"
+        },
+        {
+          "name": "effective_context_users_ver_editar",
+          "sql": "WITH E AS (SELECT DISTINCT u.UsuarioID,CONVERT(varchar(36),u.PublicUUID) AS PublicUUID,u.Email,u.NombreCompleto,CONVERT(varchar(100),urc.UnidadNegocioID) AS UnidadNegocioID,CONVERT(varchar(36),urc.EmpresaID) AS EmpresaID,urc.RolID,UPPER(LTRIM(RTRIM(a.CodigoAccion))) AS CodigoAccion FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesContexto urc ON urc.UsuarioID=u.UsuarioID AND urc.Activo=1 INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID=urc.RolID AND prm.Activo=1 AND prm.Permitido=1 INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID AND ISNULL(m.Activo,1)=1 INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID AND ISNULL(a.Activo,1)=1 WHERE u.Activo=1 AND u.PublicUUID IS NOT NULL AND LOWER(LTRIM(RTRIM(m.CodigoModulo)))=N'cava_socios' AND UPPER(LTRIM(RTRIM(a.CodigoAccion))) IN (N'VER',N'EDITAR')) SELECT UsuarioID,PublicUUID,Email,NombreCompleto,UnidadNegocioID,EmpresaID,MAX(CASE WHEN CodigoAccion=N'VER' THEN 1 ELSE 0 END) AS CAVA_SOCIOS_VER,MAX(CASE WHEN CodigoAccion=N'EDITAR' THEN 1 ELSE 0 END) AS CAVA_SOCIOS_EDITAR,COUNT(DISTINCT RolID) AS RolesContexto FROM E GROUP BY UsuarioID,PublicUUID,Email,NombreCompleto,UnidadNegocioID,EmpresaID HAVING MAX(CASE WHEN CodigoAccion=N'VER' THEN 1 ELSE 0 END)=1 AND MAX(CASE WHEN CodigoAccion=N'EDITAR' THEN 1 ELSE 0 END)=1 ORDER BY Email,UnidadNegocioID,EmpresaID;"
+        },
+        {
+          "name": "effective_context_count",
+          "sql": "WITH E AS (SELECT DISTINCT u.UsuarioID,urc.UnidadNegocioID,urc.EmpresaID,UPPER(LTRIM(RTRIM(a.CodigoAccion))) AS CodigoAccion FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesContexto urc ON urc.UsuarioID=u.UsuarioID AND urc.Activo=1 INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID=urc.RolID AND prm.Activo=1 AND prm.Permitido=1 INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID AND ISNULL(m.Activo,1)=1 INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID AND ISNULL(a.Activo,1)=1 WHERE u.Activo=1 AND LOWER(LTRIM(RTRIM(m.CodigoModulo)))=N'cava_socios' AND UPPER(LTRIM(RTRIM(a.CodigoAccion))) IN (N'VER',N'EDITAR')) SELECT COUNT_BIG(*) AS eligible_user_contexts FROM (SELECT UsuarioID,UnidadNegocioID,EmpresaID FROM E GROUP BY UsuarioID,UnidadNegocioID,EmpresaID HAVING MAX(CASE WHEN CodigoAccion=N'VER' THEN 1 ELSE 0 END)=1 AND MAX(CASE WHEN CodigoAccion=N'EDITAR' THEN 1 ELSE 0 END)=1) q;"
+        },
+        {
+          "name": "eligible_socios_by_context",
+          "sql": "SELECT CONVERT(varchar(36),EmpresaID) AS EmpresaID,COUNT_BIG(*) AS socios_activos,SUM(CASE WHEN PersonaID IS NULL THEN 1 ELSE 0 END) AS socios_sin_persona FROM dbo.CavaSocios_Socios WHERE Activo=1 AND Estatus=N'ACTIVO' GROUP BY EmpresaID ORDER BY EmpresaID;"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "Gate12J remains closed",
+    "Gate12K remains closed",
+    "Gate12L remains closed",
+    "Gate12M remains closed and certified",
+    "Gate12N R1 and R2 remain historical evidence",
+    "READ_ONLY only",
+    "Development only",
+    "No UAT execution",
+    "No permission changes",
+    "No role changes",
+    "No menu changes",
+    "No user changes",
+    "No unit or company changes",
+    "No DDL or DML",
+    "No Production",
+    "Do not use Sistema_Modulos for authorization",
+    "Use Usuario_Modulos plus Usuario_Acciones plus Usuario_PermisosRolModulo plus Usuario_RolesContexto only for effective authorization",
+    "EDARSAHUB SQL Server remains canonical source",
+    "MongoDB prohibited"
+  ]
+}
