@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-P3-COA-NAVIGATION-RBAC-CANARY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "base_sha": "e0015bd34132801fe5aa2943eceb5d898bb17b12",
+  "mode": "READ_ONLY",
+  "objective": "Canario READ_ONLY previo a promocion P3. Auditar exclusivamente el commit candidato 33a65f0aa20be34052f8f3dbfb9781fc421c42ce y su integracion de COA en frontend. Verificar con evidencia exacta que /coa permanece bajo ProtectedRoute, que el registro de enterpriseMenuConfig y enterpriseNavigationRegistry es consistente, que COAHome no consume APIs ni SQL ni ejecuta movimientos financieros, que no introduce permisos hardcodeados ni modifica logica transversal de Layout, y que no existen cambios fuera de los cuatro archivos del candidato. No modificar archivos, no tocar Produccion y no promover P3.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/App.js",
+          "frontend/src/config/enterpriseMenuConfig.js",
+          "frontend/src/config/enterpriseNavigationRegistry.json",
+          "frontend/src/config/enterpriseNavigationRegistry.js",
+          "frontend/src/pages/satelites/COAHome.jsx",
+          "frontend/src/components/navigation/EnterpriseNavigationMenu.jsx",
+          "frontend/scripts/validate_enterprise_navigation.js",
+          "backend/tests/test_catalogo_ampliado_frontend_gate5_contract.py"
+        ],
+        "search_terms": [
+          "ProtectedRoute",
+          "path=\"coa\"",
+          "COAHome",
+          "coa.dashboard",
+          "COA - Operaciones Administrativas",
+          "permissions",
+          "roles",
+          "fetch(",
+          "axios",
+          "/api/",
+          "sql",
+          "Layout",
+          "active"
+        ],
+        "include_patterns": [
+          "*.js",
+          "*.jsx",
+          "*.json",
+          "*.py"
+        ],
+        "exclude_patterns": [
+          "node_modules/**",
+          "build/**",
+          "dist/**",
+          ".git/**"
+        ],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
