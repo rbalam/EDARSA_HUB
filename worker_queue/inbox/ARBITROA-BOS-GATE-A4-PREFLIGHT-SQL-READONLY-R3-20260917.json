@@ -1,0 +1,52 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "ARBITROA-BOS-GATE-A4-PREFLIGHT-SQL-READONLY-R3-20260917",
+  "created_at_utc": "2026-09-17T20:52:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "A4 preflight SQL READ ONLY R3 introspectivo para ARBITROA BOS. Sustituye las consultas R2B que asumian columnas inexistentes en Sistema_CatalogosPermisos por introspeccion de sys.columns y muestras SELECT TOP sin filtros ni ORDER BY sobre columnas no certificadas. Confirmar identidad HRLectura, ausencia/presencia de las siete tablas A4, contratos reales de RBAC/menu y filas de muestra para disenar la implementacion A4 sin inventar IDs ni columnas. No modificar datos, no ejecutar DDL, no tocar Production.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "A4R3_00_CANONICAL_IDENTITY",
+          "sql": "SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS database_user;"
+        },
+        {
+          "name": "A4R3_01_FOUNDATION_COLLISION_SCAN",
+          "sql": "SELECT o.name, o.type_desc FROM sys.objects o WHERE o.name IN ('ARBITROA_Deportes','ARBITROA_Organizaciones','ARBITROA_Afiliaciones','ARBITROA_OrganizacionPersonas','ARBITROA_Sedes','ARBITROA_Canchas','ARBITROA_Reglamentos') ORDER BY o.name;"
+        },
+        {
+          "name": "A4R3_02_RBAC_MENU_COLUMNS",
+          "sql": "SELECT t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS type_name, c.max_length, c.precision, c.scale, c.is_nullable, c.is_identity FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Sistema_Modulos','Sistema_ModulosMenus','Sistema_ModulosPermisos','Sistema_CatalogosPermisos') ORDER BY t.name,c.column_id;"
+        },
+        {
+          "name": "A4R3_03_CANONICAL_FK_TYPES",
+          "sql": "SELECT t.name AS table_name, c.name AS column_name, ty.name AS type_name, c.max_length, c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (t.name='Gobierno_Persona' AND c.name='PersonaID') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID') OR (t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Cliente_Catalogo' AND c.name='ClienteID') OR (t.name='Gobierno_Documento' AND c.name='DocumentoID') ORDER BY t.name;"
+        },
+        {
+          "name": "A4R3_04_SAMPLE_MODULOS",
+          "sql": "SELECT TOP (20) * FROM dbo.Sistema_Modulos;"
+        },
+        {
+          "name": "A4R3_05_SAMPLE_MENUS",
+          "sql": "SELECT TOP (20) * FROM dbo.Sistema_ModulosMenus;"
+        },
+        {
+          "name": "A4R3_06_SAMPLE_MODULOS_PERMISOS",
+          "sql": "SELECT TOP (20) * FROM dbo.Sistema_ModulosPermisos;"
+        },
+        {
+          "name": "A4R3_07_SAMPLE_CATALOGOS_PERMISOS",
+          "sql": "SELECT TOP (20) * FROM dbo.Sistema_CatalogosPermisos;"
+        }
+      ]
+    }
+  ]
+}
