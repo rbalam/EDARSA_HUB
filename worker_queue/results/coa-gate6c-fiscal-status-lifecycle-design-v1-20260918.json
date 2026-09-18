@@ -1,0 +1,28 @@
+{
+  "base_sha": "53dfe0b405553874f79223c429cfe319031f99d9",
+  "blockers": [
+    "REMOTE_MOVED_RETRY_REQUIRED"
+  ],
+  "candidate_sha": "ad67ab2998c6a164a1dbcdf0c7fc09ff0680e79b",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-18T15:31:54Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "docs/COA/COA_GATE6C_FISCAL_STATUS_LIFECYCLE.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "coa-gate6c-fiscal-status-lifecycle-design-v1-20260918",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T15:32:05Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-18T15:30:39Z",
+  "status": "REMOTE_MOVED_RETRY_REQUIRED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
