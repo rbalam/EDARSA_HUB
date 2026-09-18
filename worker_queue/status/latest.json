@@ -1,43 +1,55 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "e575a0c89160431a3fed66d7993ac2b4a1caee83",
-  "generated_at_utc": "2026-09-18T15:35:34Z",
+  "development_sha": "f2ef46227536ffd6f66ab871983ce7cfa19b7374",
+  "generated_at_utc": "2026-09-18T15:37:00Z",
   "history": {
-    "done_total_local": 619,
+    "done_total_local": 620,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 600,
-    "results_total_local": 1076
+    "rejected_total_local": 601,
+    "results_total_local": 1078
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 470,
+      "age_seconds": 556,
       "job_id": "ARBITROA-BOS-GATE-A5-PREFLIGHT-SQL-READONLY-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 366,
+      "age_seconds": 55,
+      "job_id": "BOS-AGENT-HARNESS-V1-RH-IMPORTADOR-SQLFIRST-RECOVERY-GATE29-R2",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 452,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE2-DATA-INTEGRATION-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 92,
+      "age_seconds": 178,
       "job_id": "UNIVERSAL-BANKING-GATE1-MATERIALIZE-CANONICAL-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 172,
+      "age_seconds": 72,
+      "job_id": "UNIVERSAL-WORKER-D2-RUNTIME-CONVERGENCE-GUARD-D2.1-IMPLEMENTATION-R1-RETRY3",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 257,
       "job_id": "UNIVERSAL-WORKER-PUBLISHER-REPO-AUDIT-ALIGNMENT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 220,
+      "age_seconds": 305,
       "job_id": "coa-gate6c-fiscal-status-lifecycle-design-v1-20260918",
       "reason": null,
       "state": "RESULT_READY"
@@ -50,15 +62,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 5,
+  "queue_result_ready_recent": 7,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-18T15:35:34Z",
-    "last_receive_utc": "2026-09-18T15:35:29Z",
-    "last_terminal_utc": "2026-09-18T15:34:01Z",
-    "pid": "67"
+    "last_cycle_utc": "2026-09-18T15:36:55Z",
+    "last_receive_utc": "2026-09-18T15:36:58Z",
+    "last_terminal_utc": "2026-09-18T15:36:04Z",
+    "pid": "48668"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
