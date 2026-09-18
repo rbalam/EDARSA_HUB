@@ -1,0 +1,81 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"BOS-AGENT-HARNESS-V1-RH-IMPORTADOR-SQLFIRST-RECOVERY-GATE29-R1",
+  "created_at_utc":"2026-09-18T03:36:00Z",
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"920638ce165f3bb5135c89fb78803836d3dc28fd",
+  "production_allowed":false,
+  "mode":"MUTATION",
+  "objective":"Recovery quirurgico Gate29 para eliminar exclusivamente la dependencia Mongo legacy del importador RH. Modificar solo backend/modules/rh/importador/repository.py. Reutilizar core.config.edarsahub_config.get_edarsahub_sql_config y el mismo shape EDARSAHUB_CONFIG ya usado por backend/modules/rh/repository.py. Eliminar get_db().servers.find_one y el server id hardcodeado como fuente operativa. Mantener init_importador_repository(database) como no-op compatible para no romper init_rh_module ni imports existentes. No cambiar staging, bitacora, queries funcionales, routes, service, DDL, Nomina, HCM, permisos, Scheduler ni Production. Exito solo con exactamente un archivo cambiado, py_compile PASS, tests contractuales PASS, git diff PASS y production_touched=false.",
+  "actions":[
+    {
+      "type":"replace_text",
+      "path":"backend/modules/rh/importador/repository.py",
+      "old":"from core.db import execute_sql_query\n\n# ============================================================================\n# CONSTANTES\n# ============================================================================\n\n# ID del servidor EDARSA HUB (mismo que en repository.py principal)\nEDARSA_HUB_SERVER_ID = \"bea40259-35f1-4693-bda2-d2d10e13e56a\"\n\n# ============================================================================\n# INYECCIÓN DE DEPENDENCIA\n# ============================================================================\n\n_db = None\n_server_cache = None\n\n\ndef init_importador_repository(database) -> None:\n    \"\"\"Inicializa el repositorio con la conexión a MongoDB.\"\"\"\n    global _db\n    _db = database\n    logging.info(\"Importador Repository inicializado\")\n\n\ndef get_db():\n    \"\"\"Obtiene la conexión a MongoDB inyectada.\"\"\"\n    if _db is None:\n        raise RuntimeError(\"Importador repository not initialized\")\n    return _db\n",
+      "new":"from core.db import execute_sql_query\nfrom core.config.edarsahub_config import get_edarsahub_sql_config\n\n# ============================================================================\n# CONFIGURACION CANONICA EDARSAHUB\n# ============================================================================\n\n_edarsa_cfg = get_edarsahub_sql_config()\n\nEDARSAHUB_CONFIG = {\n    'host': _edarsa_cfg.host,\n    'port': _edarsa_cfg.port,\n    'database': _edarsa_cfg.database,\n    'username': _edarsa_cfg.user,\n    'password': _edarsa_cfg.password,\n}\n\n_server_cache = None\n\n\ndef init_importador_repository(database) -> None:\n    \"\"\"Compatibilidad de inicializacion; el importador ya no depende de MongoDB.\"\"\"\n    logging.info(\"Importador Repository inicializado con configuracion SQL-first\")\n",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/modules/rh/importador/repository.py",
+      "old":"async def get_edarsa_hub_server() -> Optional[Dict]:\n    \"\"\"Obtiene la configuración del servidor EDARSA HUB.\"\"\"\n    global _server_cache\n    if _server_cache is not None:\n        return _server_cache\n    \n    server = await get_db().servers.find_one(\n        {\"id\": EDARSA_HUB_SERVER_ID, \"active\": True},\n        {\"_id\": 0}\n    )\n    if server:\n        _server_cache = server\n    return server\n",
+      "new":"async def get_edarsa_hub_server() -> Optional[Dict]:\n    \"\"\"Obtiene la configuracion SQL-first canonica de EDARSAHUB.\"\"\"\n    global _server_cache\n    if _server_cache is not None:\n        return _server_cache\n\n    if not EDARSAHUB_CONFIG.get('host') or not EDARSAHUB_CONFIG.get('database'):\n        logging.error(\"EDARSAHUB_CONFIG incompleto: falta host o database\")\n        return None\n\n    _server_cache = EDARSAHUB_CONFIG\n    return _server_cache\n",
+      "expected_count":1
+    }
+  ],
+  "checks":[
+    {
+      "type":"py_compile",
+      "paths":[
+        "backend/modules/rh/importador/repository.py",
+        "backend/modules/rh/importador/service.py",
+        "backend/modules/rh/importador/routes.py",
+        "backend/modules/rh/__init__.py"
+      ]
+    },
+    {
+      "type":"pytest",
+      "paths":[
+        "backend/tests/test_rbac_p1_hardening_gates.py"
+      ]
+    },
+    {
+      "type":"repository_contract_audit",
+      "request":{
+        "paths":[
+          "backend/modules/rh/importador/repository.py",
+          "backend/modules/rh/repository.py",
+          "backend/modules/rh/__init__.py"
+        ],
+        "search_terms":[
+          "get_edarsahub_sql_config",
+          "EDARSAHUB_CONFIG",
+          "get_edarsa_hub_server",
+          "get_db().servers.find_one",
+          "EDARSA_HUB_SERVER_ID",
+          "init_importador_repository"
+        ],
+        "include_patterns":["*.py"],
+        "exclude_patterns":["*.pyc","__pycache__/*"],
+        "max_results":100
+      }
+    },
+    {"type":"git_diff_check"}
+  ],
+  "harness_context":{
+    "plan_step_id":"gate29-rh-importador-sqlfirst-recovery-r1",
+    "domain":"rh",
+    "procedure":"surgical-refactor",
+    "risk":"R1",
+    "data_classification":"HR_PRIVATE",
+    "agent_id":"bos-backend",
+    "agent_version":"1",
+    "skill_id":"repo-change",
+    "skill_version":"1",
+    "executor":"worker"
+  },
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
