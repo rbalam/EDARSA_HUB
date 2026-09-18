@@ -79,7 +79,8 @@ class CavaSociosService:
                     "maximo_botellas": row['MaximoBotellas'],
                     "botellas_en_cava": row['botellas_en_cava'],
                     "estatus": row['Estatus'],
-                    "cliente_crm_id": str(row['ClienteCRMID']) if row['ClienteCRMID'] else None
+                    "cliente_crm_id": str(row['ClienteCRMID']) if row['ClienteCRMID'] else None,
+                    "persona_id": int(row['PersonaID']) if row.get('PersonaID') is not None else None
                 })
 
             return {"socios": socios, "total": total, "skip": skip, "limit": limit}
@@ -155,7 +156,8 @@ class CavaSociosService:
                 "total_botellas_en_cava": len([b for b in botellas if b['estatus'] == 'EN_CAVA']),
                 "valor_total_declarado": valor_total,
                 "saldo_pendiente": float(cargos['total_pendiente'] or 0),
-                "observaciones": socio['Observaciones']
+                "observaciones": socio['Observaciones'],
+                "persona_id": int(socio['PersonaID']) if socio.get('PersonaID') is not None else None
             }
 
         finally:

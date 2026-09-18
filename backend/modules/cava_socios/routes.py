@@ -14,6 +14,7 @@ import io
 import logging
 
 from .service import get_cava_socios_service
+from .persona_link_service import get_cava_socios_persona_link_service
 from core.auth.sql_user_identity import enrich_current_user_with_sql_id
 from core.rbac import require_explicit_permission
 from modules.rbac_context_sql.context_service import RBACContextService
@@ -60,6 +61,26 @@ def _resolve_cava_scope(
     return {"empresa_id": empresa_id, "unidad_negocio_pk": active_unit}
 
 
+def _resolve_cava_actor(current_user: Dict) -> Dict[str, Any]:
+    """Resuelve IDs canónicos del actor sin mezclar UsuarioID int con PublicUUID."""
+    enriched = enrich_current_user_with_sql_id(dict(current_user))
+    sql_user_id = enriched.get("UsuarioID") or enriched.get("_sql_usuario_id")
+    if sql_user_id is None:
+        raise HTTPException(status_code=403, detail="Usuario SQL canónico no resuelto")
+
+    public_uuid = (
+        enriched.get("PublicUUID")
+        or enriched.get("public_uuid")
+        or enriched.get("uuid")
+        or enriched.get("public_id")
+        or enriched.get("user_uuid")
+    )
+    return {
+        "usuario_sql_id": int(sql_user_id),
+        "usuario_public_uuid": str(public_uuid) if public_uuid else None,
+    }
+
+
 # ==================== SCHEMAS ====================
 
 class SocioCreate(BaseModel):
@@ -88,6 +109,24 @@ class SocioUpdate(BaseModel):
     maximo_botellas: Optional[int] = None
     estatus: Optional[str] = None
     observaciones: Optional[str] = None
+
+
+class PersonaExistingLinkRequest(BaseModel):
+    """Vincula una Persona BOS existente; nunca hace matching implícito."""
+    persona_id: int = Field(..., gt=0)
+    cliente_id: Optional[int] = Field(default=None, gt=0)
+
+
+class PersonaCreateLinkRequest(BaseModel):
+    """Crea una Persona BOS de forma explícita y la vincula al socio."""
+    nombre: str = Field(..., min_length=1, max_length=150)
+    apellido_paterno: Optional[str] = Field(default=None, max_length=100)
+    apellido_materno: Optional[str] = Field(default=None, max_length=100)
+    rfc: Optional[str] = Field(default=None, max_length=13)
+    curp: Optional[str] = Field(default=None, max_length=18)
+    fecha_nacimiento: Optional[str] = None
+    nacionalidad: Optional[str] = Field(default=None, max_length=80)
+    cliente_id: Optional[int] = Field(default=None, gt=0)
 
 
 
@@ -285,6 +324,120 @@ async def actualizar_socio(
         raise HTTPException(status_code=400, detail="Error interno del servidor")
     except Exception as e:
         logger.error(f"[CavaSocios] Error actualizando socio: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+@router.get("/personas-canonicas")
+async def listar_personas_canonicas(
+    search: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=100),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_VER")),
+):
+    """Búsqueda explícita de Personas BOS para selección humana."""
+    _resolve_cava_actor(current_user)
+    try:
+        service = get_cava_socios_persona_link_service()
+        return {"personas": service.buscar_personas(search=search, limit=limit)}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error buscando Personas BOS: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+@router.get("/socios/{socio_id}/persona-link")
+async def obtener_persona_link(
+    socio_id: str,
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_VER")),
+):
+    """Consulta el vínculo explícito entre una membresía Cava y BOS Persona."""
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
+    try:
+        service = get_cava_socios_persona_link_service()
+        return service.obtener_link(socio_id, scope["empresa_id"])
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error consultando Persona link: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+@router.post("/socios/{socio_id}/persona-link")
+async def vincular_persona_existente(
+    socio_id: str,
+    data: PersonaExistingLinkRequest,
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_EDITAR")),
+):
+    """Vincula una Persona existente; reemplazos requieren desvinculación explícita previa."""
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
+    actor = _resolve_cava_actor(current_user)
+    try:
+        service = get_cava_socios_persona_link_service()
+        return service.vincular_persona_existente(
+            socio_id=socio_id,
+            empresa_id=scope["empresa_id"],
+            persona_id=data.persona_id,
+            cliente_id=data.cliente_id,
+            usuario_sql_id=actor["usuario_sql_id"],
+            usuario_public_uuid=actor["usuario_public_uuid"],
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error vinculando Persona existente: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+@router.post("/socios/{socio_id}/persona-link/crear-persona")
+async def crear_persona_y_vincular(
+    socio_id: str,
+    data: PersonaCreateLinkRequest,
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_EDITAR")),
+):
+    """Crea Persona y vínculo en una única transacción; sin matching automático."""
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
+    actor = _resolve_cava_actor(current_user)
+    try:
+        service = get_cava_socios_persona_link_service()
+        payload = data.model_dump(exclude={"cliente_id"})
+        return service.crear_persona_y_vincular(
+            socio_id=socio_id,
+            empresa_id=scope["empresa_id"],
+            persona=payload,
+            cliente_id=data.cliente_id,
+            usuario_sql_id=actor["usuario_sql_id"],
+            usuario_public_uuid=actor["usuario_public_uuid"],
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error creando/vinculando Persona: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+@router.delete("/socios/{socio_id}/persona-link")
+async def desvincular_persona(
+    socio_id: str,
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_EDITAR")),
+):
+    """Desvincula solo la membresía; nunca elimina Persona ni Gobierno_PersonaVinculo."""
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
+    actor = _resolve_cava_actor(current_user)
+    try:
+        service = get_cava_socios_persona_link_service()
+        return service.desvincular_persona(
+            socio_id=socio_id,
+            empresa_id=scope["empresa_id"],
+            usuario_public_uuid=actor["usuario_public_uuid"],
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"[CavaSocios] Error desvinculando Persona: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
