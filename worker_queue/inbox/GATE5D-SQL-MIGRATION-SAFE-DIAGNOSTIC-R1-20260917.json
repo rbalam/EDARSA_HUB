@@ -1,0 +1,31 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"GATE5D-SQL-MIGRATION-SAFE-DIAGNOSTIC-R1-20260917",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"b22fcd921a3d219ab0b209409c8df36b174c0f56",
+  "production_allowed":false,
+  "objective":"Agregar observabilidad sanitizada al modo SQL_MIGRATION_DEVELOPMENT para distinguir fallos de contrato/credenciales de fallos del runner SQL sin publicar stdout crudo ni secretos. Limitar el cambio al dispatcher y a su test de contrato. operation_summary solo puede publicar returncode, status, credential_source dedicado/canonical y error_code de MigrationContractError con formato seguro. No tocar SQL, .env, core ni Production.",
+  "actions":[
+    {
+      "type":"replace_text",
+      "path":"tools/mirror_sync/universal_job_dispatcher.py",
+      "old":"            result[\"operation_output\"] = (execution.stdout or \"\")[-12000:]\n            if execution.returncode != 0:\n                result[\"blockers\"].append(f\"sql_migration_failed:rc={execution.returncode}\")",
+      "new":"            raw_migration_output = execution.stdout or \"\"\n            result[\"operation_output\"] = raw_migration_output[-12000:]\n            safe_migration_summary = {\"returncode\": execution.returncode}\n            for raw_line in reversed(raw_migration_output.splitlines()):\n                try:\n                    payload = json.loads(raw_line)\n                except (json.JSONDecodeError, TypeError):\n                    continue\n                if not isinstance(payload, dict):\n                    continue\n                status = str(payload.get(\"status\") or \"\").upper()\n                if status in {\"PASS\", \"FAIL\"}:\n                    safe_migration_summary[\"status\"] = status\n                credential_source = str(payload.get(\"credential_source\") or \"\").strip().lower()\n                if credential_source in {\"dedicated\", \"canonical\"}:\n                    safe_migration_summary[\"credential_source\"] = credential_source\n                error = str(payload.get(\"error\") or \"\")\n                if error.startswith(\"MigrationContractError:\"):\n                    error_code = error.split(\":\", 1)[1].split(\":\", 1)[0]\n                    if re.fullmatch(r\"[A-Z0-9_]+\", error_code):\n                        safe_migration_summary[\"error_code\"] = error_code\n                if isinstance(payload.get(\"returncode\"), int):\n                    safe_migration_summary[\"returncode\"] = payload[\"returncode\"]\n                break\n            result[\"operation_summary\"] = safe_migration_summary\n            if execution.returncode != 0:\n                result[\"blockers\"].append(f\"sql_migration_failed:rc={execution.returncode}\")",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/tests/test_worker_sql_migration_integration_gate6.py",
+      "old":"    assert 'sql_migration_failed:rc=' in block\n    assert 'check_failed:sql_migration_post_audit' in block",
+      "new":"    assert 'sql_migration_failed:rc=' in block\n    assert 'safe_migration_summary' in block\n    assert 'result[\"operation_summary\"] = safe_migration_summary' in block\n    assert 'MigrationContractError:' in block\n    assert 'credential_source' in block\n    assert 'check_failed:sql_migration_post_audit' in block",
+      "expected_count":1
+    }
+  ],
+  "checks":[
+    {"type":"py_compile","paths":["tools/mirror_sync/universal_job_dispatcher.py"]},
+    {"type":"pytest","paths":["backend/tests/test_worker_sql_migration_integration_gate6.py","backend/tests/test_worker_softrestaurant_sanitized_failure_evidence.py"]},
+    {"type":"git_diff_check"}
+  ],
+  "human_summary_language":"es"
+}
