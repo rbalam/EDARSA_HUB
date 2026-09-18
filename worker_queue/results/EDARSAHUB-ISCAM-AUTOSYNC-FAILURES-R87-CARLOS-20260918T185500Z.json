@@ -1,0 +1,204 @@
+{
+  "base_sha": "aa57b944342f7e7efda0397ebfa64358c8c99a61",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T19:10:24Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-AUTOSYNC-FAILURES-R87-CARLOS-20260918T185500Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T19:10:57Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "FechaAccion",
+              "RunID",
+              "Exito",
+              "status_logger",
+              "estatus_general",
+              "detalle_exitosos",
+              "detalle_fallidos",
+              "detalle_omitidos",
+              "detalle_resultados"
+            ],
+            "name": "scheduler_latest_payloads",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                "2026-09-18T18:23:51.137000",
+                "8e4e33f0e72e",
+                false,
+                "partial",
+                "PARCIAL",
+                "8",
+                "11",
+                "1",
+                null
+              ],
+              [
+                "2026-09-18T18:08:47.090000",
+                "f8cf213b5e93",
+                false,
+                "partial",
+                "PARCIAL",
+                "8",
+                "11",
+                "1",
+                null
+              ],
+              [
+                "2026-09-18T17:21:01.383000",
+                "eaf18983985a",
+                false,
+                "partial",
+                "PARCIAL",
+                "8",
+                "11",
+                "1",
+                null
+              ],
+              [
+                "2026-09-18T05:22:38.030000",
+                "77696d847e2c",
+                false,
+                "partial",
+                "PARCIAL",
+                "8",
+                "8",
+                "4",
+                null
+              ],
+              [
+                "2026-09-18T03:25:42.790000",
+                "3773e56831b2",
+                false,
+                "partial",
+                "PARCIAL",
+                "8",
+                "8",
+                "4",
+                null
+              ],
+              [
+                "2026-09-17T20:55:00.817000",
+                "95109892ddda",
+                false,
+                "partial",
+                "PARCIAL",
+                "8",
+                "8",
+                "4",
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "FechaAccion",
+              "RunID",
+              "prev_fecha",
+              "minutos_desde_anterior"
+            ],
+            "name": "scheduler_cadence_last_24h",
+            "row_count_returned": 12,
+            "rows": [
+              [
+                "2026-09-18T18:23:51.137000",
+                "8e4e33f0e72e",
+                "2026-09-18T18:08:47.090000",
+                15
+              ],
+              [
+                "2026-09-18T18:08:47.090000",
+                "f8cf213b5e93",
+                "2026-09-18T17:21:01.383000",
+                47
+              ],
+              [
+                "2026-09-18T17:21:01.383000",
+                "eaf18983985a",
+                "2026-09-18T05:22:38.030000",
+                719
+              ],
+              [
+                "2026-09-18T05:22:38.030000",
+                "77696d847e2c",
+                "2026-09-18T03:25:42.790000",
+                117
+              ],
+              [
+                "2026-09-18T03:25:42.790000",
+                "3773e56831b2",
+                "2026-09-17T20:55:00.817000",
+                390
+              ],
+              [
+                "2026-09-17T20:55:00.817000",
+                "95109892ddda",
+                "2026-09-17T14:37:41.223000",
+                378
+              ],
+              [
+                "2026-09-17T14:37:41.223000",
+                "49bbf6c8d9cd",
+                "2026-09-17T14:22:38.390000",
+                15
+              ],
+              [
+                "2026-09-17T14:22:38.390000",
+                "1694efce9d36",
+                "2026-09-17T14:05:10.657000",
+                17
+              ],
+              [
+                "2026-09-17T14:05:10.657000",
+                "e45900d82dde",
+                "2026-09-17T13:50:05.677000",
+                15
+              ],
+              [
+                "2026-09-17T13:50:05.677000",
+                "9dfc45d364a0",
+                "2026-09-17T13:35:03.923000",
+                15
+              ],
+              [
+                "2026-09-17T13:35:03.923000",
+                "818769ca49b7",
+                "2026-09-17T13:20:06.253000",
+                15
+              ],
+              [
+                "2026-09-17T13:20:06.253000",
+                "213fe1617439",
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T19:10:23Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
