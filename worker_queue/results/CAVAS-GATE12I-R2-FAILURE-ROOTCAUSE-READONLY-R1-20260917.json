@@ -1,0 +1,252 @@
+{
+  "base_sha": "bb6453f33e31158e6b88af064ca64d8e0cefcfc7",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T02:09:59Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE12I-R2-FAILURE-ROOTCAUSE-READONLY-R1-20260917",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T02:10:07Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "add personaid bigint null",
+              "begin transaction",
+              "create index ix_cavasocios_socios_personaid",
+              "foreign key (personaid)",
+              "rollback",
+              "xact_abort"
+            ],
+            "path": "backend/database/migrations/20260910_cavas_socios_persona_link.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "CavaSocios_Socios",
+              "Gobierno_Persona"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "argparse",
+              "core.config.edarsahub_config",
+              "core.config.env_bootstrap",
+              "core.connections.edarsahub_readonly_repository",
+              "core.connections.hrlectura_connection_factory",
+              "core.sql_first.connection_factory",
+              "datetime",
+              "os",
+              "pathlib",
+              "re",
+              "sys"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "rollback",
+              "split_sql_batches"
+            ],
+            "path": "backend/tools/edarsahub_sql_runner.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_load_readonly_profile",
+              "_open_readonly_profile",
+              "_strip_sql_comments_for_safety",
+              "execute_sql",
+              "get_connection",
+              "get_env",
+              "get_int_env",
+              "main",
+              "read_sql_file",
+              "split_sql_batches",
+              "validate_sql_safety",
+              "write_report"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "begin transaction",
+              "rollback",
+              "sp_executesql",
+              "xact_abort"
+            ],
+            "path": "backend/database/migrations/20260813_026_compras_unidad_negocio_uuid_canonica.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Compras_Ordenes",
+              "Compras_Pedidos",
+              "Compras_Recepciones",
+              "Inventario_Almacenes",
+              "Sistema_SucursalServidorMapeo",
+              "Sistema_Sucursales",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "begin transaction",
+              "rollback",
+              "xact_abort"
+            ],
+            "path": "backend/database/migrations/20260909_001_servidores_integraciones_universal_infra.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Servidores_ConexionEstado",
+              "Servidores_Conexiones",
+              "Sistema_Capacidades",
+              "Sistema_IdentificadoresExternos",
+              "Sistema_Sync_Capacidades",
+              "Sistema_Sync_Catalogo",
+              "Sistema_Tipos",
+              "Sistema_VersionesSistemas",
+              "Sync_Control_Ejecuciones",
+              "Sync_Control_Evidencias",
+              "Unidades_Negocio"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 4,
+          "scanned_files": 5,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "product_version",
+              "product_level",
+              "edition"
+            ],
+            "name": "sql_engine_version",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "16.0.1000.6",
+                "RTM",
+                "Standard Edition (64-bit)"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "name",
+              "compatibility_level",
+              "is_read_committed_snapshot_on",
+              "snapshot_isolation_state_desc"
+            ],
+            "name": "database_compatibility",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                160,
+                false,
+                "OFF"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "socios_object_id",
+              "persona_object_id",
+              "persona_col_length"
+            ],
+            "name": "target_metadata",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1351727918,
+                611585317,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "can_alter_socios",
+              "can_reference_persona",
+              "can_create_table",
+              "is_db_owner",
+              "is_db_ddladmin"
+            ],
+            "name": "permissions_sanity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1,
+                1,
+                1,
+                1,
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T02:09:58Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
