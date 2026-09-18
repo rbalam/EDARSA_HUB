@@ -1,0 +1,40 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "coa-gate6b-fiscal-status-values-readonly-v1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "base_sha": "920638ce165f3bb5135c89fb78803836d3dc28fd",
+  "mode": "READ_ONLY_SQL",
+  "objective": "COA Gate 6B. Auditar exclusivamente los valores reales y semantica observable de los catalogos fiscales existentes que pueden servir como referencia para el lifecycle de CFDI emitidos, sin reutilizarlos automaticamente: dbo.Compras_DocumentosFiscalesEstatus, dbo.Compras_ConciliacionSATEstatus y dbo.Proveedor_EstatusSAT. Confirmar tambien que dbo.Fiscal_DocumentosEmitidosEstatus continua vacia. No DDL, no DML, no seeds, no EXEC, no Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "COA"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate6b_compras_documentos_estatus_values",
+          "sql": "SELECT EstatusDocumentoFiscalID,Descripcion,Activo FROM dbo.Compras_DocumentosFiscalesEstatus ORDER BY EstatusDocumentoFiscalID"
+        },
+        {
+          "name": "gate6b_compras_conciliacion_sat_values",
+          "sql": "SELECT EstatusConciliacionSATID,Descripcion,Activo FROM dbo.Compras_ConciliacionSATEstatus ORDER BY EstatusConciliacionSATID"
+        },
+        {
+          "name": "gate6b_proveedor_estatus_sat_values",
+          "sql": "SELECT EstatusSATID,Descripcion,Activo FROM dbo.Proveedor_EstatusSAT ORDER BY EstatusSATID"
+        },
+        {
+          "name": "gate6b_target_status_still_empty",
+          "sql": "SELECT COUNT_BIG(*) AS rows_count FROM dbo.Fiscal_DocumentosEmitidosEstatus"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
