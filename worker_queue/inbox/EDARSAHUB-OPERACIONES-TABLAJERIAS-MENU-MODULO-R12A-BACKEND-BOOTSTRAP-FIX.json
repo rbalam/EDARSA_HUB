@@ -1,0 +1,66 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-MENU-MODULO-R12A-BACKEND-BOOTSTRAP-FIX",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "human_summary_language": "es",
+  "objective": "Activar de forma quirurgica el backend del modulo Tablajeria: registrar su router existente en backend/server.py y corregir el import faltante de get_sql_connection en backend/modules/tablajeria/routes.py. No crear tablas, no modificar datos, no tocar secretos, no tocar Produccion, no duplicar rutas frontend, no cambiar Inventarios ni Scheduler.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/tablajeria/routes.py",
+      "old": "from core.config.edarsahub_config import get_edarsahub_sql_config",
+      "new": "from core.config.edarsahub_config import get_edarsahub_sql_config\nfrom core.sql_first.db import get_sql_connection"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/server.py",
+      "old": "# CATALOGO AMPLIADO GATE 4 - Gobierno corporativo SQL-first\nfrom modules.catalogo_ampliado.routes import router as catalogo_ampliado_router\napi_router.include_router(catalogo_ampliado_router)\n",
+      "new": "# CATALOGO AMPLIADO GATE 4 - Gobierno corporativo SQL-first\nfrom modules.catalogo_ampliado.routes import router as catalogo_ampliado_router\napi_router.include_router(catalogo_ampliado_router)\n\n# TABLAJERIA - Operaciones / Produccion\n# Router existente con prefijo propio /api/tablajeria; se monta directo en app para evitar /api/api.\nfrom modules.tablajeria.routes import router as tablajeria_router\napp.include_router(tablajeria_router)\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/server.py",
+          "backend/modules/tablajeria/routes.py",
+          "backend/modules/tablajeria/sync_service.py",
+          "backend/modules/tablajeria/ordenes_service.py",
+          "frontend/src/App.js",
+          "frontend/src/pages/tablajeria",
+          "frontend/src/config/enterpriseMenuConfig.js"
+        ],
+        "search_terms": [
+          "from modules.tablajeria.routes import router as tablajeria_router",
+          "app.include_router(tablajeria_router)",
+          "from core.sql_first.db import get_sql_connection",
+          "router = APIRouter(prefix=\"/api/tablajeria\"",
+          "api.get('/tablajeria/dashboard/kpis')",
+          "api.get(`/tablajeria/ordenes?",
+          "api.post('/tablajeria/ordenes/captura-directa'",
+          "path: \"/tablajeria\"",
+          "produccion/tablajeria"
+        ],
+        "include_patterns": ["*.py", "*.js", "*.jsx", "*.json"],
+        "exclude_patterns": [".git/*", "node_modules/*", "__pycache__/*", "*.pyc", "dist/*", "build/*"],
+        "max_results": 300
+      }
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/server.py",
+        "backend/modules/tablajeria/routes.py",
+        "backend/modules/tablajeria/sync_service.py",
+        "backend/modules/tablajeria/ordenes_service.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
