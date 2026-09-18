@@ -1,0 +1,93 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R16-KPIS-ALERTAS-JUSTIFICACIONES-INFORMES-READONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "objective": "Auditar si Tablajeria soporta informes, alertas por merma o rendimiento fuera de estandar, parametros minimos y maximos por unidad de negocio, notificaciones y flujo de justificacion por roles operativos. No modificar codigo, datos, permisos ni Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/tablajeria",
+          "backend/modules/fase2_operativo",
+          "backend/modules/informes_auditoria",
+          "backend/modules/sistema",
+          "backend/core",
+          "frontend/src/pages/tablajeria",
+          "frontend/src/config/enterpriseMenuConfig.js",
+          "docs/modules"
+        ],
+        "search_terms": [
+          "dashboard/kpis",
+          "dashboard/alertas",
+          "top-mermas",
+          "rendimientos-plantilla",
+          "reporte",
+          "reportes/mermas",
+          "reportes/costeo",
+          "reportes/ordenes",
+          "MermaEsperadaPorcentaje",
+          "RendimientoEsperadoPorcentaje",
+          "DesviacionRendimiento",
+          "PENDIENTE_AUTORIZACION",
+          "MotivoAutorizacion",
+          "justificacion",
+          "Justificacion",
+          "alerta",
+          "Alerta",
+          "notificacion",
+          "Notificacion",
+          "UnidadNegocioID",
+          "EmpresaID",
+          "tolerancia",
+          "minimo",
+          "maximo",
+          "chef",
+          "gerente",
+          "auditor",
+          "director",
+          "TABLAJERIA_AUTORIZAR_MERMA",
+          "TABLAJERIA_VER_REPORTES"
+        ],
+        "include_patterns": ["*.py", "*.js", "*.jsx", "*.json", "*.md", "*.sql"],
+        "exclude_patterns": [".git/*", "node_modules/*", "__pycache__/*", "*.pyc", "dist/*", "build/*"],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "tablajeria_kpi_alert_tables_search",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE '%Tablaj%' OR TABLE_NAME LIKE '%Alerta%' OR TABLE_NAME LIKE '%Justificacion%' OR TABLE_NAME LIKE '%KPI%' OR TABLE_NAME LIKE '%Notificacion%' ORDER BY TABLE_SCHEMA, TABLE_NAME"
+        },
+        {
+          "name": "tablajeria_threshold_columns_search",
+          "sql": "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME LIKE '%Tablaj%' AND (COLUMN_NAME LIKE '%Merma%' OR COLUMN_NAME LIKE '%Rendimiento%' OR COLUMN_NAME LIKE '%Desviacion%' OR COLUMN_NAME LIKE '%Tolerancia%' OR COLUMN_NAME LIKE '%Min%' OR COLUMN_NAME LIKE '%Max%' OR COLUMN_NAME LIKE '%Justificacion%' OR COLUMN_NAME LIKE '%Autorizacion%' OR COLUMN_NAME LIKE '%UnidadNegocio%' OR COLUMN_NAME LIKE '%Rol%') ORDER BY TABLE_NAME, ORDINAL_POSITION"
+        },
+        {
+          "name": "tablajeria_sample_orders_deviation_safe",
+          "sql": "SELECT TOP 20 FolioOrden, UnidadNegocioID, EmpresaID, EstatusOrden, RendimientoEsperadoPorcentaje, RendimientoRealPorcentaje, MermaEsperadaPorcentaje, MermaRealPorcentaje, DesviacionRendimiento, RequiereAutorizacion, MotivoAutorizacion FROM dbo.Operaciones_Tablaje_Ordenes WHERE Activo = 1 ORDER BY FechaAltaUTC DESC"
+        },
+        {
+          "name": "tablajeria_role_permissions_search",
+          "sql": "SELECT TOP 100 * FROM dbo.Usuario_Modulos WHERE NombreModulo LIKE '%TABLAJ%' OR CodigoModulo LIKE '%TABLAJ%' ORDER BY NombreModulo"
+        }
+      ]
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/tablajeria/routes.py",
+        "backend/modules/tablajeria/dashboard_service.py",
+        "backend/modules/tablajeria/ordenes_service.py",
+        "backend/modules/tablajeria/fase6_service.py"
+      ]
+    }
+  ]
+}
