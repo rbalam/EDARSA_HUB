@@ -26,6 +26,7 @@ REPO_ROOT = Path("/app")
 RUNTIME_DIR = REPO_ROOT / ".git" / "universal-worker-queue" / "runtime"
 LAST_RECEIVE = RUNTIME_DIR / "last_receive_utc"
 QUEUE_REF = "refs/heads/worker/requests"
+CANONICAL_QUEUE_REMOTE = "https://github.com/rbalam/EDARSA_HUB.git"
 DEV_BRANCH = "Edarsahub_Desarrollo"
 WORKER_SERVICE = "edarsahub-universal-worker"
 LOCK_PATH = Path("/tmp/edarsahub-universal-worker-wake.lock")
@@ -37,34 +38,35 @@ _SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 
 
 def _remote_queue_sha() -> str:
-    try:
-        completed = subprocess.run(
-            ["git", "ls-remote", "origin", QUEUE_REF],
-            cwd=str(REPO_ROOT),
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=15,
-            env={"GIT_TERMINAL_PROMPT": "0"},
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="worker queue head unavailable",
-        ) from exc
+    last_error: Exception | None = None
+    for remote in ("origin", CANONICAL_QUEUE_REMOTE):
+        try:
+            completed = subprocess.run(
+                ["git", "ls-remote", remote, QUEUE_REF],
+                cwd=str(REPO_ROOT),
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=15,
+                env={"GIT_TERMINAL_PROMPT": "0"},
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            last_error = exc
+            continue
 
-    fields = completed.stdout.strip().split()
-    if (
-        completed.returncode != 0
-        or len(fields) < 2
-        or fields[1] != QUEUE_REF
-        or not _SHA_RE.fullmatch(fields[0])
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="worker queue head invalid",
-        )
-    return fields[0].lower()
+        fields = completed.stdout.strip().split()
+        if (
+            completed.returncode == 0
+            and len(fields) >= 2
+            and fields[1] == QUEUE_REF
+            and _SHA_RE.fullmatch(fields[0])
+        ):
+            return fields[0].lower()
+
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="worker queue head unavailable",
+    ) from last_error
 
 
 def _runtime_git(*args: str, timeout: int = 30) -> subprocess.CompletedProcess[str]:
