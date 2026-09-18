@@ -1,0 +1,34 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-API-DISCOVERY-GATE0A-READONLY-R8F",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "human_summary_language": "es",
+  "objective": "Auditar en modo solo lectura si la vista publica y las tablas de estado explican que SERVIDORES muestre menos conexiones y estados en rojo. Usar columnas explicitas y CAST. No exponer secretos, no modificar datos, no tocar TABLAJERIA.sys.*.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "public_view_visibility_summary",
+          "sql": "SELECT activo, visible_en_listado, visible_en_operaciones, system_type, tipo_conexion, COUNT(1) AS total_rows FROM dbo.Sistema_VW_Servidores_Conexiones_Publico GROUP BY activo, visible_en_listado, visible_en_operaciones, system_type, tipo_conexion ORDER BY total_rows DESC"
+        },
+        {
+          "name": "public_view_candidate_rows_safe",
+          "sql": "SELECT TOP 100 CAST(id AS varchar(36)) AS id, nombre, system_type, tipo_conexion, host, port, database_name, activo, visible_en_operaciones, visible_en_listado, es_editable_ui, es_eliminable_ui, empresa_id, EmpresaID, sucursales, categorias, departamentos, tipos_movimiento, date_calculation_method, queries_configured, CONVERT(varchar(19), fecha_ultima_sincronizacion, 120) AS fecha_ultima_sincronizacion, source_status, ultimo_error_sync, CONVERT(varchar(19), created_at, 120) AS created_at, CONVERT(varchar(19), updated_at, 120) AS updated_at, created_by, updated_by, mongodb_id FROM dbo.Sistema_VW_Servidores_Conexiones_Publico WHERE nombre LIKE '%TABLAJ%' OR nombre LIKE '%CAVA%' OR nombre LIKE '%MPRO%' OR nombre LIKE '%CIENFUEGOS%' OR nombre LIKE '%ORIGEN%' OR database_name LIKE '%tablaj%' OR system_type LIKE '%MPRO%' OR system_type LIKE '%SOFT%' OR system_type LIKE '%TABLAJ%' ORDER BY updated_at DESC, created_at DESC"
+        },
+        {
+          "name": "conexion_estado_candidate_rows_safe",
+          "sql": "SELECT TOP 100 CAST(Id AS varchar(36)) AS Id, CAST(ServidorID AS varchar(36)) AS ServidorID, ServerID, EstadoConexion, CONVERT(varchar(19), UltimoCheck, 120) AS UltimoCheck, ResponseTimeMs, MongoId, ColeccionOrigen, MigradoDesdeMongo, CONVERT(varchar(19), FechaMigracionMongo, 120) AS FechaMigracionMongo, Activo, CONVERT(varchar(19), FechaCreacion, 120) AS FechaCreacion, CONVERT(varchar(19), UltimaPruebaUTC, 120) AS UltimaPruebaUTC, CONVERT(varchar(19), UltimoExitoUTC, 120) AS UltimoExitoUTC, CONVERT(varchar(19), UltimoErrorUTC, 120) AS UltimoErrorUTC, UltimoErrorCodigo, UltimoErrorMensaje, LatenciaMs, CONVERT(varchar(19), UltimoSyncUTC, 120) AS UltimoSyncUTC, CONVERT(varchar(19), UltimoSyncExitosoUTC, 120) AS UltimoSyncExitosoUTC, CONVERT(varchar(19), FechaActualizacionUTC, 120) AS FechaActualizacionUTC FROM dbo.Servidores_ConexionEstado ORDER BY FechaActualizacionUTC DESC, UltimaPruebaUTC DESC"
+        },
+        {
+          "name": "consultas_sql_servidores_count_by_server",
+          "sql": "SELECT CAST(ServidorID AS varchar(36)) AS ServidorID, EmpresaID, SucursalID, Activo, COUNT(1) AS total_consultas FROM dbo.ConsultasSQL_Servidores GROUP BY CAST(ServidorID AS varchar(36)), EmpresaID, SucursalID, Activo ORDER BY total_consultas DESC"
+        }
+      ]
+    }
+  ]
+}
