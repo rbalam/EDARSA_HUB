@@ -1,0 +1,61 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE3-AI-PROVIDER-ROUTING-DISCOVERY-R2",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2cf69ee09beb0b3fc415aa817bb8b6ae1c31ade1",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Gate 3 R2 quirurgico READ_ONLY para decidir el contrato canonico de AI Provider Routing de BOS Marketing Intelligence & Content Factory. Auditar exclusivamente los componentes concretos encontrados en R1: backend/modules/agent_harness/router.py, registry.py, planner.py, worker_compiler.py, marketing_cx.py; core.secret_manager; system/capability resolvers; y las integraciones LLM existentes, especialmente backend/modules/comercial/services/ingesta_competencia_service.py. Determinar con evidencia exacta si el routing de IA debe REUSE, ALIGN, EXTEND o NEW_REQUIRED. No crear un segundo router, no modificar runtime, no crear tablas/endpoints/jobs/UI, no tocar Produccion.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/agent_harness",
+          "backend/core",
+          "backend/modules/comercial/services/ingesta_competencia_service.py",
+          "backend/api/catalogos_sistemas.py",
+          "docs/ARCHITECTURE"
+        ],
+        "search_terms": [
+          "Router",
+          "RouteDecision",
+          "route",
+          "registry",
+          "AgentRegistry",
+          "SkillRegistry",
+          "Planner",
+          "WorkerCompiler",
+          "MarketingActivationRequest",
+          "marketing_cx",
+          "secret_manager",
+          "SecretManager",
+          "system_capability_resolver",
+          "capability",
+          "emergentintegrations.llm.chat",
+          "llm",
+          "provider",
+          "model",
+          "usage",
+          "cost",
+          "fallback",
+          "policy",
+          "adapter",
+          "credential",
+          "token",
+          "api_key",
+          "secret"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.md"
+        ],
+        "exclude_patterns": [],
+        "max_results": 180
+      }
+    }
+  ]
+}
