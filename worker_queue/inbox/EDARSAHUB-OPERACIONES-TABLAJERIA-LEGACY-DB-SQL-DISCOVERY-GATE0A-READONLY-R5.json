@@ -1,0 +1,58 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-LEGACY-DB-SQL-DISCOVERY-GATE0A-READONLY-R5",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "human_summary_language": "es",
+  "objective": "Auditar en modo solo lectura las bases legacy TABLAJERIA y tablajeria_mpro. Inventariar tablas, columnas, llaves, indices, vistas, procedimientos, triggers y conteos aproximados para mapear hacia EDARSAHUB sin modificar datos ni estructura.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "legacy_tables_tablajeria",
+          "sql": "SELECT 'TABLAJERIA' AS database_name, s.name AS schema_name, t.name AS table_name, t.create_date, t.modify_date FROM TABLAJERIA.sys.tables t INNER JOIN TABLAJERIA.sys.schemas s ON s.schema_id = t.schema_id ORDER BY s.name, t.name"
+        },
+        {
+          "name": "legacy_tables_tablajeria_mpro",
+          "sql": "SELECT 'tablajeria_mpro' AS database_name, s.name AS schema_name, t.name AS table_name, t.create_date, t.modify_date FROM tablajeria_mpro.sys.tables t INNER JOIN tablajeria_mpro.sys.schemas s ON s.schema_id = t.schema_id ORDER BY s.name, t.name"
+        },
+        {
+          "name": "legacy_columns_tablajeria",
+          "sql": "SELECT 'TABLAJERIA' AS database_name, s.name AS schema_name, t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.precision, c.scale, c.is_nullable, c.is_identity FROM TABLAJERIA.sys.tables t INNER JOIN TABLAJERIA.sys.schemas s ON s.schema_id = t.schema_id INNER JOIN TABLAJERIA.sys.columns c ON c.object_id = t.object_id INNER JOIN TABLAJERIA.sys.types ty ON ty.user_type_id = c.user_type_id ORDER BY s.name, t.name, c.column_id"
+        },
+        {
+          "name": "legacy_columns_tablajeria_mpro",
+          "sql": "SELECT 'tablajeria_mpro' AS database_name, s.name AS schema_name, t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.precision, c.scale, c.is_nullable, c.is_identity FROM tablajeria_mpro.sys.tables t INNER JOIN tablajeria_mpro.sys.schemas s ON s.schema_id = t.schema_id INNER JOIN tablajeria_mpro.sys.columns c ON c.object_id = t.object_id INNER JOIN tablajeria_mpro.sys.types ty ON ty.user_type_id = c.user_type_id ORDER BY s.name, t.name, c.column_id"
+        },
+        {
+          "name": "legacy_indexes_tablajeria",
+          "sql": "SELECT 'TABLAJERIA' AS database_name, s.name AS schema_name, t.name AS table_name, i.name AS index_name, i.type_desc, i.is_unique, i.is_primary_key, i.is_unique_constraint FROM TABLAJERIA.sys.tables t INNER JOIN TABLAJERIA.sys.schemas s ON s.schema_id = t.schema_id INNER JOIN TABLAJERIA.sys.indexes i ON i.object_id = t.object_id WHERE i.index_id > 0 ORDER BY s.name, t.name, i.name"
+        },
+        {
+          "name": "legacy_indexes_tablajeria_mpro",
+          "sql": "SELECT 'tablajeria_mpro' AS database_name, s.name AS schema_name, t.name AS table_name, i.name AS index_name, i.type_desc, i.is_unique, i.is_primary_key, i.is_unique_constraint FROM tablajeria_mpro.sys.tables t INNER JOIN tablajeria_mpro.sys.schemas s ON s.schema_id = t.schema_id INNER JOIN tablajeria_mpro.sys.indexes i ON i.object_id = t.object_id WHERE i.index_id > 0 ORDER BY s.name, t.name, i.name"
+        },
+        {
+          "name": "legacy_programmability_tablajeria",
+          "sql": "SELECT 'TABLAJERIA' AS database_name, s.name AS schema_name, o.name AS object_name, o.type_desc, o.create_date, o.modify_date FROM TABLAJERIA.sys.objects o INNER JOIN TABLAJERIA.sys.schemas s ON s.schema_id = o.schema_id WHERE o.type IN ('V','P','TR','FN','IF','TF') ORDER BY s.name, o.type_desc, o.name"
+        },
+        {
+          "name": "legacy_programmability_tablajeria_mpro",
+          "sql": "SELECT 'tablajeria_mpro' AS database_name, s.name AS schema_name, o.name AS object_name, o.type_desc, o.create_date, o.modify_date FROM tablajeria_mpro.sys.objects o INNER JOIN tablajeria_mpro.sys.schemas s ON s.schema_id = o.schema_id WHERE o.type IN ('V','P','TR','FN','IF','TF') ORDER BY s.name, o.type_desc, o.name"
+        },
+        {
+          "name": "legacy_rowcounts_tablajeria",
+          "sql": "SELECT 'TABLAJERIA' AS database_name, s.name AS schema_name, t.name AS table_name, SUM(p.rows) AS approx_rows FROM TABLAJERIA.sys.tables t INNER JOIN TABLAJERIA.sys.schemas s ON s.schema_id = t.schema_id INNER JOIN TABLAJERIA.sys.partitions p ON p.object_id = t.object_id AND p.index_id IN (0,1) GROUP BY s.name, t.name ORDER BY approx_rows DESC, s.name, t.name"
+        },
+        {
+          "name": "legacy_rowcounts_tablajeria_mpro",
+          "sql": "SELECT 'tablajeria_mpro' AS database_name, s.name AS schema_name, t.name AS table_name, SUM(p.rows) AS approx_rows FROM tablajeria_mpro.sys.tables t INNER JOIN tablajeria_mpro.sys.schemas s ON s.schema_id = t.schema_id INNER JOIN tablajeria_mpro.sys.partitions p ON p.object_id = t.object_id AND p.index_id IN (0,1) GROUP BY s.name, t.name ORDER BY approx_rows DESC, s.name, t.name"
+        }
+      ]
+    }
+  ]
+}
