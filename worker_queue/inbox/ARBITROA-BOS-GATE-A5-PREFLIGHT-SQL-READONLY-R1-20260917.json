@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "ARBITROA-BOS-GATE-A5-PREFLIGHT-SQL-READONLY-R1-20260917",
+  "created_at_utc": "2026-09-18T05:29:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Gate A5 preflight SQL READ ONLY para ARBITROA BOS. Certificar ausencia de colisiones para Temporadas, Torneos, Equipos, TorneoEquipos y EquipoPersonas; verificar fundacion A4 materializada; introspectar tipos y columnas de ARBITROA_Organizaciones, ARBITROA_Deportes, Gobierno_Persona y Usuario_Catalogo necesarios para disenar A5 sin inventar FKs ni duplicar maestros. No modificar datos, no ejecutar DDL, no tocar Production.",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "A5_00_CANONICAL_IDENTITY",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user;"
+        },
+        {
+          "name": "A5_01_COLLISION_SCAN",
+          "sql": "SELECT o.name,o.type_desc FROM sys.objects o WHERE o.name IN ('ARBITROA_Temporadas','ARBITROA_Torneos','ARBITROA_Equipos','ARBITROA_TorneoEquipos','ARBITROA_EquipoPersonas') ORDER BY o.name;"
+        },
+        {
+          "name": "A5_02_A4_FOUNDATION_OBJECTS",
+          "sql": "SELECT t.name AS table_name FROM sys.tables t WHERE t.name IN ('ARBITROA_Deportes','ARBITROA_Organizaciones','ARBITROA_Afiliaciones','ARBITROA_OrganizacionPersonas','ARBITROA_Sedes','ARBITROA_Canchas','ARBITROA_Reglamentos') ORDER BY t.name;"
+        },
+        {
+          "name": "A5_03_CANONICAL_PARENT_COLUMNS",
+          "sql": "SELECT t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS type_name,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('ARBITROA_Organizaciones','ARBITROA_Deportes','Gobierno_Persona','Usuario_Catalogo') ORDER BY t.name,c.column_id;"
+        },
+        {
+          "name": "A5_04_A4_FK_METADATA",
+          "sql": "SELECT OBJECT_NAME(fk.parent_object_id) AS child_table,fk.name AS fk_name,OBJECT_NAME(fk.referenced_object_id) AS parent_table FROM sys.foreign_keys fk WHERE OBJECT_NAME(fk.parent_object_id) IN ('ARBITROA_Organizaciones','ARBITROA_Afiliaciones','ARBITROA_OrganizacionPersonas','ARBITROA_Sedes','ARBITROA_Canchas','ARBITROA_Reglamentos') ORDER BY child_table,fk.name;"
+        },
+        {
+          "name": "A5_05_A4_SEED_AND_MODULE",
+          "sql": "SELECT (SELECT COUNT(*) FROM dbo.ARBITROA_Deportes WHERE Activo=1) AS active_sports,(SELECT COUNT(*) FROM dbo.Sistema_Modulos WHERE Codigo='ARBITROA' AND ISNULL(Activo,1)=1) AS arbitroa_modules,(SELECT COUNT(*) FROM dbo.Sistema_ModulosMenus WHERE Codigo='arbitroa.inicio' AND Ruta='/arbitroa' AND ISNULL(Activo,1)=1) AS arbitroa_menus;"
+        }
+      ]
+    }
+  ]
+}
