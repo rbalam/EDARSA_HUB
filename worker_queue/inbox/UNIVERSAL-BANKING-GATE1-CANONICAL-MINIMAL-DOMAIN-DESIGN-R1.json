@@ -1,0 +1,90 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "UNIVERSAL-BANKING-GATE1-CANONICAL-MINIMAL-DOMAIN-DESIGN-R1",
+  "created_at_utc": "2026-09-18T03:28:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9820a62a939755373981f68846bcb02571bc8fde",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "UNIVERSAL-BANKING Gate 1. Diseñar documentalmente el dominio minimo canonico, sin crear codigo ni schema, reutilizando la evidencia certificada de Gate 0. Auditar exclusivamente infraestructura existente que pueda absorber ProviderConnection, BankingCapability, conexiones, capabilities registry, archivos/eventos/ejecuciones y adapter patterns. Regla: REUSE -> CONSOLIDATE -> EXTRACT -> EXTEND -> CREATE_ONLY_WHEN_PROVEN_MISSING. No duplicar pagos, cuentas, bancos, monedas, paises, timezone, RBAC, scheduler, conciliacion, secrets ni capabilities registry.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core",
+          "backend/modules/finanzas",
+          "backend/modules/integrations_center",
+          "backend/modules/sistema",
+          "backend/modules",
+          "docs/BOS"
+        ],
+        "search_terms": [
+          "catalogos_sistemas",
+          "capability",
+          "capabilities",
+          "connection_resolver",
+          "Servidores_Conexiones",
+          "secret_manager",
+          "provider",
+          "adapter",
+          "NetPay",
+          "Finanzas_NetPayRobotArchivos",
+          "Finanzas_NetPayRobotEjecuciones",
+          "Finanzas_NetPayRobotEventosLog",
+          "Finanzas_CxP_PagosOrigenQueue",
+          "Finanzas_Pagos",
+          "Finanzas_EstatusPago",
+          "Finanzas_Conciliacion",
+          "Global_Cat_Bancos",
+          "Proveedor_CuentasBancarias",
+          "PaymentRail",
+          "BankingChannel",
+          "BankFile",
+          "ExternalExecution",
+          "ExternalEvent",
+          "IBAN",
+          "SWIFT",
+          "BIC",
+          "ABA",
+          "UETR"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "exclude_patterns": [
+          "backups/**",
+          "node_modules/**",
+          ".vendor/**"
+        ],
+        "max_results": 2000
+      }
+    }
+  ],
+  "constraints": [
+    "READ ONLY ONLY",
+    "actions must remain empty",
+    "NO DDL",
+    "NO DML",
+    "NO migrations",
+    "NO new tables or columns",
+    "NO endpoints",
+    "NO adapters",
+    "NO bank connections",
+    "NO real payments",
+    "NO production",
+    "NO MongoDB",
+    "NO hardcodes",
+    "NO new core capability unless proven truly transversal",
+    "Extend existing system/capability registry instead of creating a parallel registry",
+    "Do not create a second payment, account, bank, currency, country, timezone, RBAC, scheduler, reconciliation or secrets model",
+    "Classify evidence as REUSE, EXTEND, CONSOLIDATE, LEGACY, or PROVEN_MISSING"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
