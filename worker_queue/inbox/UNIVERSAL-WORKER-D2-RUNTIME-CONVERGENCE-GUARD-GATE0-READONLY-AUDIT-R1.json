@@ -1,0 +1,66 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "UNIVERSAL-WORKER-D2-RUNTIME-CONVERGENCE-GUARD-GATE0-READONLY-AUDIT-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Auditar en modo estrictamente READ_ONLY el comportamiento AS-IS del runtime convergence guard del Universal Worker y todos los owners relacionados con la convergencia de /app. Determinar exactamente qué superficies clasifican staged, unstaged y untracked como dirty; qué rutas runtime legítimas bajo worker_queue/triggers o equivalentes pueden provocar falsos positivos; qué contratos de preservación local ya existen; y proponer un diseño canónico único que permita sólo artefactos runtime validados sin ocultar suciedad real. No modificar código, .gitignore, runtime, supervisor, watchdog, mirror-sync, queue, SQL, RBAC, Scheduler, NetPay ni Production. Debe priorizar anti-duplicación y reutilización de infraestructura existente.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/worker_runtime_wake",
+          "tools/mirror_sync",
+          "tools/bootstrap",
+          "backend/tests",
+          ".github/workflows",
+          "worker_queue",
+          ".gitignore",
+          "docs/architecture"
+        ],
+        "search_terms": [
+          "git status",
+          "porcelain=v1",
+          "untracked-files=all",
+          "worktree_dirty",
+          "LOCAL_WORK_DIRTY",
+          "DEFER_LOCAL_DIRTY",
+          "GIT_WORKTREE_NOT_CLEAN",
+          "worker_queue/triggers",
+          "runtime-recovery",
+          "shared_app_safety_guard",
+          "git_divergence_guard",
+          "worker_runtime_wake",
+          "worker_control_plane",
+          "bootstrap_watchdog",
+          "fast-forward",
+          "reset --hard",
+          "merge --ff-only",
+          "read-tree",
+          "update-ref",
+          "allowlist",
+          "gitignore"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.yml",
+          "*.yaml",
+          "*.json",
+          "*.md",
+          ".gitignore"
+        ],
+        "exclude_patterns": [
+          "node_modules/**",
+          "frontend/build/**",
+          ".git/**"
+        ],
+        "max_results": 2000
+      }
+    }
+  ]
+}
