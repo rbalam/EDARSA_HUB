@@ -28,3 +28,9 @@ def test_wake_preserves_active_job_before_runtime_convergence():
     assert active_pos < converge_pos
     assert '"action": "active_job_preserved"' in fn
     assert '"state": "DEFERRED_ACTIVE_JOB"' in fn
+
+
+def test_wake_git_calls_preserve_process_environment():
+    text = ROUTE.read_text(encoding='utf-8')
+    assert 'import os' in text
+    assert text.count('env={**os.environ, "GIT_TERMINAL_PROMPT": "0"}') >= 3
