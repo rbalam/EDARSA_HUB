@@ -1,0 +1,917 @@
+{
+  "base_sha": "57eb5fab7ac35ebfd6b56bb03eb076aa7c71c319",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T01:24:20Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CXP-GATE3F-A-SOFTRESTAURANT-CANARY-DESIGN-DISCOVERY-READONLY-20260917",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T01:24:38Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "server_name",
+              "database_name",
+              "login_name",
+              "database_user"
+            ],
+            "name": "f3a_soft_runtime_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "SVR-CIENFUEGOS\\NATIONALSOFT",
+                "softrestaurant95pro",
+                "CFLectura",
+                "dbo"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total",
+              "foliocompra_nulls",
+              "fecha_nulls",
+              "abono_nulls",
+              "referencia_vacia",
+              "enviadoacentral_nulls",
+              "con_foliogasto"
+            ],
+            "name": "f3a_soft_payment_shape",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "45934",
+                0,
+                0,
+                0,
+                196,
+                45934,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "min_fecha",
+              "max_fecha",
+              "fechas_distintas"
+            ],
+            "name": "f3a_soft_fecha_shape",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2019-05-24",
+                "7202-08-30",
+                "1469"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "enviadoacentral",
+              "total"
+            ],
+            "name": "f3a_soft_enviadoacentral_shape",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                null,
+                "45934"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total",
+              "referencias_distintas",
+              "min_len",
+              "max_len",
+              "referencia_vacia"
+            ],
+            "name": "f3a_soft_reference_shape",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "45934",
+                "5549",
+                0,
+                37,
+                196
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "grupos_duplicados"
+            ],
+            "name": "f3a_soft_reference_duplicate_groups",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2542"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "grupos_duplicados"
+            ],
+            "name": "f3a_soft_purchase_reference_duplicate_groups",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "153"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "grupos_duplicados"
+            ],
+            "name": "f3a_soft_exact_tuple_duplicate_groups",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_id",
+              "index_name",
+              "is_unique",
+              "is_primary_key",
+              "is_unique_constraint",
+              "key_ordinal",
+              "column_name"
+            ],
+            "name": "f3a_soft_payment_indexes",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                0,
+                null,
+                false,
+                false,
+                false,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "view_name",
+              "definition"
+            ],
+            "name": "f3a_soft_balance_views",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "AC_vwSaldoCxp",
+                "CREATE VIEW AC_vwSaldoCxp\r\nAS\r\nWITH ProvSaldo AS (\r\nSELECT 1 AS tipodecompra,\r\n       p.idproveedor,\r\n       p.nombre,\r\n       folio,\r\n       foliofactura,\r\n       fechafactura,\r\n\t   CONVERT(DATETIME, CONVERT(CHAR(10), c.fechaaplicacion, 102) + ' 00:00:00.00', 102) AS fechaaplicacion,\r\n       fechavencimiento,\r\n       CASE WHEN DATEDIFF(day,fechavencimiento,GETDATE())  <0 THEN 0 ELSE DATEDIFF(day,fechavencimiento,GETDATE()) END  AS diasvencidos,\r\n       CASE WHEN DATEDIFF(day,fechavencimiento,GETDATE())  >0 THEN 0 ELSE DATEDIFF(day,fechavencimiento,GETDATE()) END AS  diasvencimiento,\r\n\t   c.total,\r\n       ISNULL((SELECT SUM(abono) AS abono FROM pagosproveedores WHERE foliocompra =c.idcompra ),0) AS   abono,\r\n       descuento\r\nFROM proveedores  AS p\r\n    INNER JOIN compras AS c\r\n        ON p.idproveedor = c.idproveedor\r\nWHERE  CAST(ISNULL(cancelado, 0) AS INT) = 0\r\n), Cxp AS (\r\nSELECT '['+ p.idproveedor+'] '+p.nombre AS PROVEEDOR,\r\n       folio,\r\n       foliofactura,\r\n       fechafactura,\r\n       fechavencimiento,\r\n\t   p.diasvencidos,\r\n\t   p.diasvencimiento,\r\n\t   CASE WHEN p.diasvencidos+p.diasvencimiento <= 0 THEN SUM(p.total-p.abono) ELSE 0 END AS [POR VENCER],\r\n\t   CASE WHEN p.diasvencidos >= 1 AND p.diasvencidos <= 15  then  SUM(p.total-p.abono) ELSE 0 END  AS [01-15],\r\n\t   CASE WHEN p.diasvencidos >= 16 AND p.diasvencidos <= 30 then  SUM(p.total-p.abono) ELSE 0 END  AS [16-30],\r\n\t   CASE WHEN p.diasvencidos >= 31 AND p.diasvencidos <= 60 then  SUM(p.total-p.abono) ELSE 0 END  AS [31-60],\r\n\t   CASE WHEN p.diasvencidos >= 61 AND p.diasvencidos <= 90 then SUM(p.total-p.abono) ELSE 0 END  AS [61-90],\r\n\t   CASE WHEN p.diasvencidos >= 91 AND p.diasvencidos <= 120 then  SUM(p.total-p.abono) ELSE 0 END  AS [91-120],\r\n\t   CASE WHEN p.diasvencidos >= 121 AND p.diasvencidos <= 150 then  SUM(p.total-p.abono) ELSE 0 END  AS [121-150],\r\n\t   CASE WHEN p.diasvencidos >= 150 then  SUM(p.total-p.abono) ELSE 0 END  AS [+151],\r\n\t   p.fechaaplicacion\r\n  FROM ProvSaldo AS p\r\n  GROUP BY p.nombre,\r\n\t\t\tp.idproveedor,\r\n\t\t   p.diasvencidos,\r\n\t\tfolio,\r\n       foliofactura,\r\n       fechafactura,\r\n       fechavencimiento,\r\n\t\t   p.diasvencimiento,\r\n\t\t   p.fechaaplicacion\r\n HAVING SUM(p.total-p.abono)>0\r\n)\t\r\nSELECT Cxp.PROVEEDOR,\r\n\t   SUM(Cxp.[POR VENCER]) [POR VENCER],\r\n       SUM(Cxp.[01-15]) [01-15],\r\n       SUM(Cxp.[16-30]) [16-30],\r\n       SUM(Cxp.[31-60]) [31-60],\r\n       SUM(Cxp.[61-90]) [61-90],\r\n       SUM(Cxp.[91-120]) [91-120],\r\n       SUM(Cxp.[121-150]) [121-150],\r\n       SUM(Cxp.[+151]) [+151],\r\n\t   SUM(Cxp.[POR VENCER])+ SUM(Cxp.[01-15])+ SUM(Cxp.[16-30])+ SUM(Cxp.[31-60]) + SUM(Cxp.[61-90]) + SUM(Cxp.[91-120]) + SUM(Cxp.[121-150]) + SUM(Cxp.[+151]) AS [Total CXP],\r\n\t   Cxp.fechaaplicacion\r\nFROM Cxp\r\n--WHERE Cxp.fechaaplicacion  BETWEEN '01/01/2024 06:00:00 AM' AND '12/09/2024 05:59:59 AM'\r\nGROUP BY Cxp.PROVEEDOR,Cxp.fechaaplicacion;\r\n"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "view_name",
+              "column_id",
+              "column_name",
+              "data_type"
+            ],
+            "name": "f3a_soft_balance_view_columns",
+            "row_count_returned": 11,
+            "rows": [
+              [
+                "AC_vwSaldoCxp",
+                1,
+                "PROVEEDOR",
+                "varchar"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                2,
+                "POR VENCER",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                3,
+                "01-15",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                4,
+                "16-30",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                5,
+                "31-60",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                6,
+                "61-90",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                7,
+                "91-120",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                8,
+                "121-150",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                9,
+                "+151",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                10,
+                "Total CXP",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                11,
+                "fechaaplicacion",
+                "datetime"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "parent_object",
+              "trigger_name",
+              "is_disabled",
+              "is_instead_of_trigger",
+              "definition"
+            ],
+            "name": "f3a_soft_related_triggers",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "server_name",
+              "database_name",
+              "login_name",
+              "database_user"
+            ],
+            "name": "f3a_soft_runtime_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "SVR-ESTELAR\\SOFTRESTAURANT",
+                "softrestaurant12",
+                "SCedarsa",
+                "SCedarsa"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total",
+              "foliocompra_nulls",
+              "fecha_nulls",
+              "abono_nulls",
+              "referencia_vacia",
+              "enviadoacentral_nulls",
+              "con_foliogasto"
+            ],
+            "name": "f3a_soft_payment_shape",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "6452",
+                0,
+                0,
+                0,
+                108,
+                6452,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "min_fecha",
+              "max_fecha",
+              "fechas_distintas"
+            ],
+            "name": "f3a_soft_fecha_shape",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2025-04-05",
+                "2520-10-31",
+                "272"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "enviadoacentral",
+              "total"
+            ],
+            "name": "f3a_soft_enviadoacentral_shape",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                null,
+                "6452"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total",
+              "referencias_distintas",
+              "min_len",
+              "max_len",
+              "referencia_vacia"
+            ],
+            "name": "f3a_soft_reference_shape",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "6452",
+                "678",
+                0,
+                32,
+                108
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "grupos_duplicados"
+            ],
+            "name": "f3a_soft_reference_duplicate_groups",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "307"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "grupos_duplicados"
+            ],
+            "name": "f3a_soft_purchase_reference_duplicate_groups",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "48"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "grupos_duplicados"
+            ],
+            "name": "f3a_soft_exact_tuple_duplicate_groups",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_id",
+              "index_name",
+              "is_unique",
+              "is_primary_key",
+              "is_unique_constraint",
+              "key_ordinal",
+              "column_name"
+            ],
+            "name": "f3a_soft_payment_indexes",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                0,
+                null,
+                false,
+                false,
+                false,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "view_name",
+              "definition"
+            ],
+            "name": "f3a_soft_balance_views",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "AC_vwSaldoCxp",
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "view_name",
+              "column_id",
+              "column_name",
+              "data_type"
+            ],
+            "name": "f3a_soft_balance_view_columns",
+            "row_count_returned": 11,
+            "rows": [
+              [
+                "AC_vwSaldoCxp",
+                1,
+                "PROVEEDOR",
+                "varchar"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                2,
+                "POR VENCER",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                3,
+                "01-15",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                4,
+                "16-30",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                5,
+                "31-60",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                6,
+                "61-90",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                7,
+                "91-120",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                8,
+                "121-150",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                9,
+                "+151",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                10,
+                "Total CXP",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                11,
+                "fechaaplicacion",
+                "datetime"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "parent_object",
+              "trigger_name",
+              "is_disabled",
+              "is_instead_of_trigger",
+              "definition"
+            ],
+            "name": "f3a_soft_related_triggers",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "server_name",
+              "database_name",
+              "login_name",
+              "database_user"
+            ],
+            "name": "f3a_soft_runtime_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "WIN-0DGE74P3D56\\NATIONALSOFT",
+                "softrestaurant10",
+                "SCedarsa",
+                "SCedarsa"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total",
+              "foliocompra_nulls",
+              "fecha_nulls",
+              "abono_nulls",
+              "referencia_vacia",
+              "enviadoacentral_nulls",
+              "con_foliogasto"
+            ],
+            "name": "f3a_soft_payment_shape",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "47804",
+                0,
+                0,
+                0,
+                9971,
+                47804,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "min_fecha",
+              "max_fecha",
+              "fechas_distintas"
+            ],
+            "name": "f3a_soft_fecha_shape",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2015-01-01",
+                "2026-09-17",
+                "1945"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "enviadoacentral",
+              "total"
+            ],
+            "name": "f3a_soft_enviadoacentral_shape",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                null,
+                "47804"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total",
+              "referencias_distintas",
+              "min_len",
+              "max_len",
+              "referencia_vacia"
+            ],
+            "name": "f3a_soft_reference_shape",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "47804",
+                "613",
+                0,
+                40,
+                9971
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "grupos_duplicados"
+            ],
+            "name": "f3a_soft_reference_duplicate_groups",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "234"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "grupos_duplicados"
+            ],
+            "name": "f3a_soft_purchase_reference_duplicate_groups",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "513"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "grupos_duplicados"
+            ],
+            "name": "f3a_soft_exact_tuple_duplicate_groups",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_id",
+              "index_name",
+              "is_unique",
+              "is_primary_key",
+              "is_unique_constraint",
+              "key_ordinal",
+              "column_name"
+            ],
+            "name": "f3a_soft_payment_indexes",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                0,
+                null,
+                false,
+                false,
+                false,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "view_name",
+              "definition"
+            ],
+            "name": "f3a_soft_balance_views",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "AC_vwSaldoCxp",
+                null
+              ],
+              [
+                "vwSaldoCxp",
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "view_name",
+              "column_id",
+              "column_name",
+              "data_type"
+            ],
+            "name": "f3a_soft_balance_view_columns",
+            "row_count_returned": 22,
+            "rows": [
+              [
+                "AC_vwSaldoCxp",
+                1,
+                "PROVEEDOR",
+                "varchar"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                2,
+                "POR VENCER",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                3,
+                "01-15",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                4,
+                "16-30",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                5,
+                "31-60",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                6,
+                "61-90",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                7,
+                "91-120",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                8,
+                "121-150",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                9,
+                "+151",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                10,
+                "Total CXP",
+                "money"
+              ],
+              [
+                "AC_vwSaldoCxp",
+                11,
+                "fechaaplicacion",
+                "datetime"
+              ],
+              [
+                "vwSaldoCxp",
+                1,
+                "PROVEEDOR",
+                "varchar"
+              ],
+              [
+                "vwSaldoCxp",
+                2,
+                "POR VENCER",
+                "money"
+              ],
+              [
+                "vwSaldoCxp",
+                3,
+                "01-15",
+                "money"
+              ],
+              [
+                "vwSaldoCxp",
+                4,
+                "16-30",
+                "money"
+              ],
+              [
+                "vwSaldoCxp",
+                5,
+                "31-60",
+                "money"
+              ],
+              [
+                "vwSaldoCxp",
+                6,
+                "61-90",
+                "money"
+              ],
+              [
+                "vwSaldoCxp",
+                7,
+                "91-120",
+                "money"
+              ],
+              [
+                "vwSaldoCxp",
+                8,
+                "121-150",
+                "money"
+              ],
+              [
+                "vwSaldoCxp",
+                9,
+                "+151",
+                "money"
+              ],
+              [
+                "vwSaldoCxp",
+                10,
+                "Total CXP",
+                "money"
+              ],
+              [
+                "vwSaldoCxp",
+                11,
+                "fechaaplicacion",
+                "datetime"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "parent_object",
+              "trigger_name",
+              "is_disabled",
+              "is_instead_of_trigger",
+              "definition"
+            ],
+            "name": "f3a_soft_related_triggers",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "chequespagos",
+                "tr_nx_chequespagos_audit",
+                false,
+                false,
+                null
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T01:24:14Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
