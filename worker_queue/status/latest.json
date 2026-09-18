@@ -1,44 +1,56 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "e28da4d31a55ad5251db5400ebadd6f4e5466375",
-  "generated_at_utc": "2026-09-18T21:43:46Z",
+  "development_sha": "0f2c95b372bf32a34ae3a7537797f5160d952571",
+  "generated_at_utc": "2026-09-18T21:45:05Z",
   "history": {
-    "done_total_local": 681,
+    "done_total_local": 682,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 624,
-    "results_total_local": 1157
+    "rejected_total_local": 625,
+    "results_total_local": 1159
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1368,
+      "age_seconds": 1447,
       "job_id": "CAVAS-GATE12L-UI-POSTCHECK-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 344,
+      "age_seconds": 42,
+      "job_id": "CAVAS-GATE12M-PERSONA-LINK-E2E-CANARY-R1-20260918",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 423,
       "job_id": "CAVAS-GATE12M-PERSONA-LINK-E2E-CANARY-READINESS-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 334,
+      "age_seconds": 413,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R22-R23-R2-REPORTES-LOTE-RECLAMOS-PROVEEDOR-READONLY",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 546,
+      "age_seconds": 625,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R22-R23-REPORTES-LOTE-RECLAMOS-PROVEEDOR-READONLY",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 125,
+      "age_seconds": 204,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24A-IMPLEMENTATION-MAP-READONLY",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 45,
+      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24B-LOTE-PROVEEDOR-BACKEND-SQL-R1",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -50,14 +62,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 5,
+  "queue_result_ready_recent": 7,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-18T21:43:41Z",
-    "last_receive_utc": "2026-09-18T21:43:44Z",
-    "last_terminal_utc": "2026-09-18T21:41:41Z",
+    "last_cycle_utc": "2026-09-18T21:45:01Z",
+    "last_receive_utc": "2026-09-18T21:45:03Z",
+    "last_terminal_utc": "2026-09-18T21:44:22Z",
     "pid": "736"
   },
   "schema": "edarsahub.worker-health.v3",
