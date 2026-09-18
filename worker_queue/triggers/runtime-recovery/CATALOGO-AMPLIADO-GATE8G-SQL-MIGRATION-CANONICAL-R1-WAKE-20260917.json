@@ -1,0 +1,8 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker runtime to consume the existing CATALOGO-AMPLIADO-GATE8G-SQL-MIGRATION-CANONICAL-R1-20260917 request. Do not create, duplicate, modify or replace the functional job. Preserve fail-closed SQL migration contract and do not touch Production.",
+  "existing_job_id": "CATALOGO-AMPLIADO-GATE8G-SQL-MIGRATION-CANONICAL-R1-20260917",
+  "queue_branch": "worker/requests",
+  "queue_commit": "ce9b48031b60a199119a680238e08059609ac41a",
+  "production_touched": false
+}
