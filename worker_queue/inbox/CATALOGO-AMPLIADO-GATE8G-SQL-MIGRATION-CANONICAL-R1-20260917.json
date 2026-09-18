@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CATALOGO-AMPLIADO-GATE8G-SQL-MIGRATION-CANONICAL-R1-20260917",
+  "created_at_utc": "2026-09-18T02:35:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "5b15ee193c331614d010422f64e658266fb97855",
+  "production_allowed": false,
+  "objective": "Materializar exclusivamente la migracion versionada de configuraciones EMAIL/WhatsApp de Catalogo Ampliado Gate 8G usando el canal canonico SQL_MIGRATION_DEVELOPMENT y el writer SQL canonico existente con opt-in explicito. Fallar cerrado si HRLectura no conserva permiso INSERT. No tocar Gate 8F, workflow dedicado, secretos, permisos SQL, canary ni Produccion.",
+  "human_summary_language": "es",
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "actions": [],
+  "migration_path": "backend/database/migrations/20260910_003_catalogo_ampliado_notifications_config.sql",
+  "migration_sha256": "5a0788d606d540e38802c0dc6f0689bfa077580f1cc85ad52de98dff0442896b",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": true,
+  "preflight_checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate8g_identity_table_and_writer_insert_permission",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS user_name,CASE WHEN OBJECT_ID('dbo.Sistema_NotificacionesConfig','U') IS NULL THEN 0 ELSE 1 END AS config_table_present,COALESCE(HAS_PERMS_BY_NAME('dbo.Sistema_NotificacionesConfig','OBJECT','INSERT'),0) AS can_insert,1/CASE WHEN DB_NAME()='EDARSAHUB' AND SUSER_SNAME()='HRLectura' AND USER_NAME()='HRLectura' AND OBJECT_ID('dbo.Sistema_NotificacionesConfig','U') IS NOT NULL AND COALESCE(HAS_PERMS_BY_NAME('dbo.Sistema_NotificacionesConfig','OBJECT','INSERT'),0)=1 THEN 1 ELSE 0 END AS gate8g_preflight_assertion"
+        },
+        {
+          "name": "gate8g_baseline_counts",
+          "sql": "SELECT SUM(CASE WHEN ColeccionOrigen='notification_provider_config' AND LOWER(PayloadMongo) LIKE '%catalogo-ampliado%' THEN 1 ELSE 0 END) AS provider_count,SUM(CASE WHEN ColeccionOrigen='notification_templates' AND LOWER(PayloadMongo) LIKE '%catalogo_ampliado_documento_vencimiento%' THEN 1 ELSE 0 END) AS template_count,SUM(CASE WHEN ColeccionOrigen='notification_config' AND LOWER(PayloadMongo) LIKE '%catalogo_ampliado%' AND LOWER(PayloadMongo) LIKE '%documento_vencimiento%' THEN 1 ELSE 0 END) AS config_count FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate8g_materialization_2plus2plus2_exact",
+          "sql": "WITH c AS (SELECT SUM(CASE WHEN ColeccionOrigen='notification_provider_config' AND LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"email\\\"%' AND LOWER(PayloadMongo) LIKE '%\\\"provider\\\":\\\"smtp\\\"%' AND LOWER(PayloadMongo) LIKE '%\\\"token_ref\\\":\\\"email_password\\\"%' THEN 1 ELSE 0 END) AS email_provider,SUM(CASE WHEN ColeccionOrigen='notification_provider_config' AND LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"whatsapp\\\"%' AND LOWER(PayloadMongo) LIKE '%\\\"provider\\\":\\\"twilio\\\"%' AND LOWER(PayloadMongo) LIKE '%\\\"token_ref\\\":\\\"twilio_auth_token\\\"%' THEN 1 ELSE 0 END) AS whatsapp_provider,SUM(CASE WHEN ColeccionOrigen='notification_templates' AND LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"email\\\"%' AND LOWER(PayloadMongo) LIKE '%catalogo_ampliado_documento_vencimiento%' THEN 1 ELSE 0 END) AS email_template,SUM(CASE WHEN ColeccionOrigen='notification_templates' AND LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"whatsapp\\\"%' AND LOWER(PayloadMongo) LIKE '%catalogo_ampliado_documento_vencimiento%' THEN 1 ELSE 0 END) AS whatsapp_template,SUM(CASE WHEN ColeccionOrigen='notification_config' AND LOWER(PayloadMongo) LIKE '%\\\"modulo\\\":\\\"catalogo_ampliado\\\"%' AND LOWER(PayloadMongo) LIKE '%\\\"evento\\\":\\\"documento_vencimiento\\\"%' AND LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"email\\\"%' AND LOWER(PayloadMongo) LIKE '%\\\"provider\\\":\\\"smtp\\\"%' AND LOWER(PayloadMongo) LIKE '%\\\"modo_envio\\\":\\\"real\\\"%' AND LOWER(PayloadMongo) LIKE '%\\\"template_codigo\\\":\\\"catalogo_ampliado_documento_vencimiento\\\"%' THEN 1 ELSE 0 END) AS email_config,SUM(CASE WHEN ColeccionOrigen='notification_config' AND LOWER(PayloadMongo) LIKE '%\\\"modulo\\\":\\\"catalogo_ampliado\\\"%' AND LOWER(PayloadMongo) LIKE '%\\\"evento\\\":\\\"documento_vencimiento\\\"%' AND LOWER(PayloadMongo) LIKE '%\\\"canal\\\":\\\"whatsapp\\\"%' AND LOWER(PayloadMongo) LIKE '%\\\"provider\\\":\\\"twilio\\\"%' AND LOWER(PayloadMongo) LIKE '%\\\"modo_envio\\\":\\\"real\\\"%' AND LOWER(PayloadMongo) LIKE '%\\\"template_codigo\\\":\\\"catalogo_ampliado_documento_vencimiento\\\"%' THEN 1 ELSE 0 END) AS whatsapp_config FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1) SELECT email_provider+whatsapp_provider AS provider_count,email_template+whatsapp_template AS template_count,email_config+whatsapp_config AS config_count,email_provider,whatsapp_provider,email_template,whatsapp_template,email_config,whatsapp_config,1/CASE WHEN email_provider>=1 AND whatsapp_provider>=1 AND email_template>=1 AND whatsapp_template>=1 AND email_config>=1 AND whatsapp_config>=1 THEN 1 ELSE 0 END AS gate8g_postcheck_assertion FROM c"
+        }
+      ]
+    }
+  ]
+}
