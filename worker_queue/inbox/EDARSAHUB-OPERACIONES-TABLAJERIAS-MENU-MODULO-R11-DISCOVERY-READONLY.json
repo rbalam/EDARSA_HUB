@@ -1,0 +1,95 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-MENU-MODULO-R11-DISCOVERY-READONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "objective": "Auditar en modo solo lectura el estado real del menu/modulo Tablajerias o Transformacion-Produccion dentro de Operaciones. Identificar rutas frontend, configuracion de menu, componentes, endpoints backend, servicios, repositorios, tablas SQL existentes, permisos RBAC e integraciones con Servidores_Conexiones, MPRO TABLAJERIA, CIENFUEGOS TABLAJERIA e Inventarios. No modificar codigo, datos, permisos, secretos ni Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src",
+          "backend/api",
+          "backend/modules",
+          "backend/core",
+          "backend/routes",
+          "docs"
+        ],
+        "search_terms": [
+          "Tablajeria",
+          "Tablajerias",
+          "tablajeria",
+          "tablajerias",
+          "Transformacion",
+          "transformacion",
+          "Produccion",
+          "produccion",
+          "Operaciones",
+          "operaciones",
+          "Inventarios",
+          "inventarios",
+          "Rendimiento",
+          "Merma",
+          "merma",
+          "receta",
+          "subgrupo_insumos",
+          "MPRO TABLAJERIA",
+          "CIENFUEGOS TABLAJERIA",
+          "Servidores_Conexiones",
+          "visible_en_listado",
+          "visible_en_operaciones",
+          "transformacion_ver",
+          "transformacion_crear",
+          "transformacion_aplicar",
+          "tablajeria_ver",
+          "tablajeria_crear",
+          "/operaciones",
+          "/tablajeria",
+          "/tablajerias",
+          "/transformacion",
+          "/produccion"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.json",
+          "*.md"
+        ],
+        "exclude_patterns": [
+          ".git/*",
+          "node_modules/*",
+          "__pycache__/*",
+          "*.pyc",
+          "dist/*",
+          "build/*"
+        ],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "sql_tablajeria_related_objects",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE '%Tablaj%' OR TABLE_NAME LIKE '%Transformacion%' OR TABLE_NAME LIKE '%Produccion%' ORDER BY TABLE_SCHEMA, TABLE_NAME"
+        },
+        {
+          "name": "sql_tablajeria_columns",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME LIKE '%Tablaj%' OR TABLE_NAME LIKE '%Transformacion%' OR TABLE_NAME LIKE '%Produccion%' ORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION"
+        },
+        {
+          "name": "sql_tablajeria_connections",
+          "sql": "SELECT nombre, system_type, tipo_conexion, database_name, activo, visible_en_listado, visible_en_operaciones, queries_configured FROM dbo.Servidores_Conexiones WHERE nombre LIKE '%TABLAJERIA%' OR database_name LIKE '%tablajeria%' OR database_name = 'Tablajeria' ORDER BY nombre"
+        }
+      ]
+    }
+  ]
+}
