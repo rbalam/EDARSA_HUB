@@ -1,0 +1,68 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-API-DISCOVERY-GATE0A-READONLY-R8",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "objective": "Auditar en modo solo lectura la ruta canonica API para Tablajeria MPRO y Cienfuegos. No consultar TABLAJERIA.sys.*, no modificar permisos, no ejecutar GRANT, no activar Visible en Operaciones, no crear tablas, no crear endpoints, no exponer secretos. EDARSAHUB sigue siendo fuente canonica final; APIs locales son fuentes operativas externas.",
+  "actions": [],
+  "allowed_paths": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": ["backend", "frontend", "docs", "worker_queue"],
+        "search_terms": [
+          "Conexiones API",
+          "conexiones_api",
+          "Servidores_Conexiones",
+          "api_key",
+          "x-api-key",
+          "endpoint",
+          "tablas",
+          "query",
+          "health-check",
+          "timeout",
+          "visible_en_listado",
+          "visible_en_operaciones",
+          "MPRO TABLAJERIA",
+          "CIENFUEGOS TABLAJERIA",
+          "CIENFUEGOS CAVAS",
+          "tablajeria_mpro",
+          "subgrupo_insumos",
+          "receta"
+        ],
+        "include_patterns": ["*.py", "*.ts", "*.tsx", "*.js", "*.jsx", "*.sql", "*.md", "*.json"],
+        "exclude_patterns": [".git/*", "node_modules/*", "__pycache__/*", "*.pyc", "dist/*", "build/*"],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "servidores_conexiones_columns",
+          "sql": "SELECT c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.is_nullable FROM sys.tables t INNER JOIN sys.columns c ON c.object_id = t.object_id INNER JOIN sys.types ty ON ty.user_type_id = c.user_type_id WHERE t.name = 'Servidores_Conexiones' ORDER BY c.column_id"
+        },
+        {
+          "name": "servidores_conexiones_tablajeria_cavas_candidates",
+          "sql": "SELECT TOP 200 * FROM dbo.Servidores_Conexiones WHERE nombre LIKE '%TABLAJ%' OR nombre LIKE '%CAVA%' OR nombre LIKE '%MPRO%' OR nombre LIKE '%CIENFUEGOS%' OR nombre LIKE '%ORIGEN%' OR base_datos LIKE '%tablaj%' OR sistema LIKE '%MPRO%' OR sistema LIKE '%SOFT%' ORDER BY id DESC"
+        },
+        {
+          "name": "api_query_config_tables",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, t.create_date, t.modify_date FROM sys.tables t INNER JOIN sys.schemas s ON s.schema_id = t.schema_id WHERE t.name LIKE '%Consulta%' OR t.name LIKE '%Query%' OR t.name LIKE '%SQL%' OR t.name LIKE '%Filtro%' OR t.name LIKE '%API%' OR t.name LIKE '%Conexion%' ORDER BY s.name, t.name"
+        },
+        {
+          "name": "api_query_config_columns",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.is_nullable FROM sys.tables t INNER JOIN sys.schemas s ON s.schema_id = t.schema_id INNER JOIN sys.columns c ON c.object_id = t.object_id INNER JOIN sys.types ty ON ty.user_type_id = c.user_type_id WHERE t.name LIKE '%Consulta%' OR t.name LIKE '%Query%' OR t.name LIKE '%SQL%' OR t.name LIKE '%Filtro%' OR t.name LIKE '%API%' OR t.name LIKE '%Conexion%' ORDER BY s.name, t.name, c.column_id"
+        },
+        {
+          "name": "existing_tablajeria_edarsahub_objects",
+          "sql": "SELECT s.name AS schema_name, o.name AS object_name, o.type_desc, o.create_date, o.modify_date FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id = o.schema_id WHERE o.name LIKE '%Tablaj%' OR o.name LIKE '%tablaj%' OR o.name LIKE '%Transformacion%' OR o.name LIKE '%Produccion%' OR o.name LIKE '%Merma%' OR o.name LIKE '%Rendimiento%' ORDER BY s.name, o.name"
+        }
+      ]
+    }
+  ]
+}
