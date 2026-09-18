@@ -1,0 +1,31 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"GATE5D-DEDICATED-MIGRATION-WRITER-CONTRACT-R1-20260917",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"57eb5fab7ac35ebfd6b56bb03eb076aa7c71c319",
+  "production_allowed":false,
+  "objective":"Cerrar el contrato del writer dedicado de Gate 5D sin secretos y sin ejecutar SQL. El principal de base HUB_Escritura mapea historicamente al login SQL GptEscritura. Ajustar exclusivamente tools/mirror_sync/sql_migration_development.py y sus tests para permitir opcionalmente una identidad esperada dedicada mediante EDARSAHUB_MIGRATION_EXPECTED_USER=GptEscritura y fallar cerrado si EDARSAHUB_MIGRATION_USER no coincide. Mantener HRLectura prohibido como dedicated writer. No almacenar user/password reales en repo, no modificar .env, workflows activos, core ni Production.",
+  "actions":[
+    {
+      "type":"replace_text",
+      "path":"tools/mirror_sync/sql_migration_development.py",
+      "old":"    if selected_source == 'dedicated' and user.lower() == 'hrlectura':\n        raise MigrationContractError('HRLECTURA_CANNOT_BE_MIGRATION_WRITER')\n    for required in ('EDARSAHUB_SQL_HOST','EDARSAHUB_SQL_DATABASE'):",
+      "new":"    if selected_source == 'dedicated' and user.lower() == 'hrlectura':\n        raise MigrationContractError('HRLECTURA_CANNOT_BE_MIGRATION_WRITER')\n    expected_dedicated_user = str(source.get('EDARSAHUB_MIGRATION_EXPECTED_USER') or '').strip()\n    if selected_source == 'dedicated' and expected_dedicated_user and user.casefold() != expected_dedicated_user.casefold():\n        raise MigrationContractError('MIGRATION_WRITER_IDENTITY_MISMATCH')\n    for required in ('EDARSAHUB_SQL_HOST','EDARSAHUB_SQL_DATABASE'):",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/tests/test_worker_sql_migration_development_capability.py",
+      "old":"def test_hrlectura_forbidden_as_dedicated_writer():\n    with pytest.raises(mod.MigrationContractError,match='HRLECTURA_CANNOT_BE_MIGRATION_WRITER'): mod.build_child_env(env('HRLectura'))",
+      "new":"def test_hrlectura_forbidden_as_dedicated_writer():\n    with pytest.raises(mod.MigrationContractError,match='HRLECTURA_CANNOT_BE_MIGRATION_WRITER'): mod.build_child_env(env('HRLectura'))\n\ndef test_expected_dedicated_writer_identity_matches():\n    source=env('GptEscritura'); source['EDARSAHUB_MIGRATION_EXPECTED_USER']='GptEscritura'\n    child=mod.build_child_env(source)\n    assert child['EDARSAHUB_SQL_USER']=='GptEscritura'\n\ndef test_expected_dedicated_writer_identity_mismatch_fails_closed():\n    source=env('OtherWriter'); source['EDARSAHUB_MIGRATION_EXPECTED_USER']='GptEscritura'\n    with pytest.raises(mod.MigrationContractError,match='MIGRATION_WRITER_IDENTITY_MISMATCH'):\n        mod.build_child_env(source)",
+      "expected_count":1
+    }
+  ],
+  "checks":[
+    {"type":"py_compile","paths":["tools/mirror_sync/sql_migration_development.py"]},
+    {"type":"pytest","paths":["backend/tests/test_worker_sql_migration_development_capability.py","backend/tests/test_worker_sql_migration_integration_gate6.py"]},
+    {"type":"git_diff_check"}
+  ],
+  "human_summary_language":"es"
+}
