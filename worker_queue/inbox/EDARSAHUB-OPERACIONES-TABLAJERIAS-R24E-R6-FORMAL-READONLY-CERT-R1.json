@@ -1,0 +1,17 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R6-FORMAL-READONLY-CERT-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "objective": "Certificar formalmente R24E-R6 antes de considerar R24F valido: validar que la integracion frontend de lotes proveedor esta en Edarsahub_Desarrollo, que la ruta /tablajeria/lotes-proveedor esta registrada y que el frontend_build pasa. No mutar archivos, no tocar backend, no tocar Produccion.",
+  "actions": [],
+  "checks": [
+    {"type":"frontend_build","path":"frontend"},
+    {"type":"repository_contract_audit","paths":["frontend/src/pages/tablajeria/LotesProveedorPage.jsx","frontend/src/App.js","frontend/src/config/enterpriseNavigationRegistry.json"],"search_terms":["LotesProveedorPage","/tablajeria/lotes-proveedor","tablajeria.lotes_proveedor","/tablajeria/lotes-proveedor/rendimientos","/tablajeria/reclamos-proveedor","ENTERPRISE_NAVIGATION_GUARDIAN=PASS"],"max_results":80},
+    {"type":"git_diff_check","allowed_paths":[],"forbidden_paths":["backend/server.py","backend/modules/tablajeria/routes.py","backend/core/scheduler/scheduler_manager.py","backend/core/centro_control/email_notifications.py","backend/core/centro_control/whatsapp_notifications.py","frontend/src/pages/tablajeria/LotesProveedorPage.jsx","frontend/src/App.js","frontend/src/config/enterpriseNavigationRegistry.json"]}
+  ],
+  "expected_result": {"quality_gate":"PASS","tests":"PASS","production_touched":false,"files_changed":[]}
+}
