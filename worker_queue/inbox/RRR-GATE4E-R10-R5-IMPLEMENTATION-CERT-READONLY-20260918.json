@@ -1,0 +1,68 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "RRR-GATE4E-R10-R5-IMPLEMENTATION-CERT-READONLY-20260918",
+  "created_at_utc": "2026-09-18T17:05:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "cc0aa4513abbfd5220ba1599f48fee3166dc3808",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Certificar exclusivamente la implementacion materializada de Gate4E-R10 en SHA cc0aa4513abbfd5220ba1599f48fee3166dc3808. Verificar bounded context backend/modules/rrr, endpoint /api/rrr/attribution/transactions, reutilizacion de auth sync_agent, ClienteID explicito, SourceKey UUID Comandero, correlacion comercial exacta, VentaID nullable, ausencia de fuzzy matching, ausencia de DDL y ausencia de cambios Customer360. Reejecutar py_compile y pytest del contrato RRR. No modificar archivos ni tocar Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/rrr/__init__.py",
+          "backend/modules/rrr/schemas.py",
+          "backend/modules/rrr/attribution_service.py",
+          "backend/modules/rrr/routes.py",
+          "backend/modules/edge/comandero_local_core.py",
+          "backend/modules/edge/gestor_sincronizacion_rafagas.py",
+          "backend/server.py",
+          "backend/tests/test_rrr_attribution_contract.py"
+        ],
+        "search_terms": [
+          "/rrr/attribution",
+          "source_transaction_uuid",
+          "cliente_id",
+          "SourceKey",
+          "RRR_Eventos",
+          "VentaID",
+          "sync_agent",
+          "id_transaccion_global",
+          "native_transaction_id",
+          "native_ticket_number",
+          "native_folio",
+          "es_kpi_valido",
+          "cancelado_origen",
+          "fecha_operacion",
+          "EDARSAHUB_SYNC_AGENT_TOKEN",
+          "/api/rrr/attribution/transactions"
+        ],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/rrr/__init__.py",
+        "backend/modules/rrr/schemas.py",
+        "backend/modules/rrr/attribution_service.py",
+        "backend/modules/rrr/routes.py",
+        "backend/modules/edge/comandero_local_core.py",
+        "backend/modules/edge/gestor_sincronizacion_rafagas.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_rrr_attribution_contract.py"
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
