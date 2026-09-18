@@ -1,0 +1,481 @@
+{
+  "base_sha": "3ea717f1c26365551518edb89d98e4abb07096d2",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T22:09:45Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE12N-UAT-OPERATIONAL-READINESS-READONLY-R3-20260918",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T22:09:52Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "codigoaccion",
+              "codigomodulo",
+              "usuario_acciones",
+              "usuario_catalogo",
+              "usuario_modulos",
+              "usuario_permisosrolmodulo",
+              "ver"
+            ],
+            "path": "backend/core/rbac/repository_sql.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACRepositorySQL",
+              "__init__",
+              "_get_connection",
+              "_invalidate_cache",
+              "_is_cache_valid",
+              "asignar_rol",
+              "create_rol",
+              "delete_rol",
+              "get_all_permisos",
+              "get_all_roles",
+              "get_audit_logs",
+              "get_nivel_jerarquia_usuario",
+              "get_permiso_by_codigo",
+              "get_permisos_usuario",
+              "get_rbac_repository_sql",
+              "get_rol_by_id",
+              "get_rol_by_nombre",
+              "get_roles_usuario",
+              "log_verificacion",
+              "revocar_rol",
+              "seed_permisos",
+              "seed_roles",
+              "update_rol"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.rbac_context_sql",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.auth.sql_user_identity",
+              "core.sql_first.db",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "codigomodulo",
+              "usuario_catalogo",
+              "usuario_permisosrolmodulo",
+              "usuario_rolescontexto",
+              "ver"
+            ],
+            "path": "backend/modules/rbac_context_sql/context_service.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "Usuario_RolesContexto"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACContextService",
+              "get_user_context"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.rbac_helper_sql",
+              "core.security",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "fastapi",
+              "fastapi.security",
+              "functools",
+              "logging",
+              "service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "codigoaccion",
+              "codigomodulo",
+              "require_explicit_permission",
+              "usuario_acciones",
+              "usuario_catalogo",
+              "usuario_modulos",
+              "usuario_permisosrolmodulo",
+              "ver"
+            ],
+            "path": "backend/core/rbac/middleware.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "get_current_user"
+            ],
+            "routes": [
+              "/cargos/{id}/aplicar",
+              "/endpoint"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACAllDependency",
+              "RBACAnyDependency",
+              "RBACDependency",
+              "RBACExplicitDependency",
+              "RBACExplicitDualDependency",
+              "__call__",
+              "__init__",
+              "_get_db",
+              "get_current_user_from_token",
+              "get_current_user_with_permissions",
+              "require_all_permissions",
+              "require_any_permission",
+              "require_explicit_permission",
+              "require_explicit_permission_dual",
+              "require_permission"
+            ],
+            "tables_referenced": [
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.auth.sql_user_identity",
+              "core.rbac",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "logging",
+              "modules.rbac_context_sql.context_service",
+              "notification_service",
+              "persona_link_service",
+              "pydantic",
+              "report_service",
+              "service",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "cava_socios",
+              "cava_socios_editar",
+              "cava_socios_ver",
+              "editar",
+              "require_explicit_permission",
+              "ver"
+            ],
+            "path": "backend/modules/cava_socios/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/botellas/{botella_id}/consumo",
+              "/botellas/{botella_id}/etiqueta",
+              "/clientes-canonicos",
+              "/clientes-canonicos/sync",
+              "/consumos",
+              "/dashboard",
+              "/inventario",
+              "/inventario-fisico/aplicar",
+              "/inventario-fisico/hoja",
+              "/inventario-inicial",
+              "/kardex",
+              "/personas-canonicas",
+              "/reportes/socio/{socio_id}/consumos",
+              "/reportes/socio/{socio_id}/estado-cuenta",
+              "/reportes/socio/{socio_id}/ficha",
+              "/socios",
+              "/socios/promover-cliente",
+              "/socios/{socio_id}",
+              "/socios/{socio_id}/botellas",
+              "/socios/{socio_id}/enviar-reporte",
+              "/socios/{socio_id}/enviar-todos-reportes",
+              "/socios/{socio_id}/persona-link",
+              "/socios/{socio_id}/persona-link/crear-persona"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BotellaCreate",
+              "ConsumoCreate",
+              "EnvioReporteRequest",
+              "InventarioFisicoAplicarRequest",
+              "InventarioFisicoItem",
+              "InventarioInicialBotellaItem",
+              "InventarioInicialCreate",
+              "PersonaCreateLinkRequest",
+              "PersonaExistingLinkRequest",
+              "PromoverClienteCreate",
+              "SincronizarClientesRequest",
+              "SocioCreate",
+              "SocioUpdate",
+              "_resolve_cava_actor",
+              "_resolve_cava_scope",
+              "actualizar_socio",
+              "aplicar_ajustes_inventario_fisico",
+              "crear_persona_y_vincular",
+              "crear_socio",
+              "descargar_estado_cuenta",
+              "descargar_ficha_socio",
+              "descargar_historial_consumos",
+              "desvincular_persona",
+              "enviar_reporte_socio",
+              "enviar_todos_reportes_socio",
+              "get_dashboard",
+              "listar_clientes_canonicos",
+              "listar_personas_canonicas",
+              "listar_socios",
+              "obtener_consumos",
+              "obtener_etiqueta_botella",
+              "obtener_hoja_inventario_fisico",
+              "obtener_inventario",
+              "obtener_kardex",
+              "obtener_persona_link",
+              "obtener_socio",
+              "promover_cliente_canonico",
+              "registrar_botella",
+              "registrar_consumo",
+              "registrar_inventario_inicial",
+              "sincronizar_clientes_canonicos",
+              "vincular_persona_existente"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 4,
+          "scanned_files": 4,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "db_user",
+              "original_login"
+            ],
+            "name": "identity_guard",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ModuloID",
+              "CodigoModulo",
+              "NombreModulo",
+              "AccionID",
+              "CodigoAccion",
+              "NombreAccion"
+            ],
+            "name": "cava_module_action_catalog",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                50,
+                "cava_socios",
+                "Cava de Socios",
+                3,
+                "EDITAR",
+                "EDITAR"
+              ],
+              [
+                50,
+                "cava_socios",
+                "Cava de Socios",
+                1,
+                "VER",
+                "VER"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "PublicUUID",
+              "Email",
+              "NombreCompleto",
+              "UnidadNegocioID",
+              "EmpresaID",
+              "CAVA_SOCIOS_VER",
+              "CAVA_SOCIOS_EDITAR",
+              "RolesContexto"
+            ],
+            "name": "effective_context_users_ver_editar",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                4,
+                "A72B325B-662F-4777-83ED-4DDA6E8398A8",
+                "noxte@alpyc.com",
+                "Nestor Oxte",
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                null,
+                1,
+                1,
+                1
+              ],
+              [
+                4,
+                "A72B325B-662F-4777-83ED-4DDA6E8398A8",
+                "noxte@alpyc.com",
+                "Nestor Oxte",
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                null,
+                1,
+                1,
+                1
+              ],
+              [
+                4,
+                "A72B325B-662F-4777-83ED-4DDA6E8398A8",
+                "noxte@alpyc.com",
+                "Nestor Oxte",
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                null,
+                1,
+                1,
+                1
+              ],
+              [
+                4,
+                "A72B325B-662F-4777-83ED-4DDA6E8398A8",
+                "noxte@alpyc.com",
+                "Nestor Oxte",
+                "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+                null,
+                1,
+                1,
+                1
+              ],
+              [
+                4,
+                "A72B325B-662F-4777-83ED-4DDA6E8398A8",
+                "noxte@alpyc.com",
+                "Nestor Oxte",
+                "DFB86008-1B81-472A-9E50-8A0821DEC4B2",
+                null,
+                1,
+                1,
+                1
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "eligible_user_contexts"
+            ],
+            "name": "effective_context_count",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "5"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EmpresaID",
+              "socios_activos",
+              "socios_sin_persona"
+            ],
+            "name": "eligible_socios_by_context",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "1",
+                1
+              ],
+              [
+                "D290F1EE-6C54-4B01-90E6-D701748F0851",
+                "1",
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T22:09:44Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
