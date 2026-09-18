@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "ef25def3b8e9f68900556edd4349bbb19f6dee9e",
-  "generated_at_utc": "2026-09-18T04:51:47Z",
+  "generated_at_utc": "2026-09-18T04:53:09Z",
   "history": {
     "done_total_local": 610,
     "pending_total_local": 0,
@@ -13,121 +13,109 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 97,
+      "age_seconds": 179,
       "job_id": "ARBITROA-BOS-GATE-A4-SQL-MIGRATION-DEVELOPMENT-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 94,
+      "age_seconds": 176,
       "job_id": "CAVAS-GATE12I-SQL-MIGRATION-DEVELOPMENT-CANONICAL-WRITER-R4-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3537,
-      "job_id": "CXP-GATE3F-B-R1-MPRO-PCID-BLOCKER-CERT-READONLY-20260917",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3018,
+      "age_seconds": 3100,
       "job_id": "CXP-GATE3F-C-SOFTRESTAURANT-CANARY-PLAN-CERT-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2519,
+      "age_seconds": 2602,
       "job_id": "CXP-GATE3F-D-EDARSAHUB-IDEMPOTENCY-CANARY-CONTROL-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 90,
+      "age_seconds": 172,
       "job_id": "CXP-GATE3F-E-MINIMAL-IDEMPOTENCY-GUARD-DESIGN-READONLY-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2708,
+      "age_seconds": 2790,
       "job_id": "EDARSA-LOGISTICS-GATE3C-PHYSICAL-SCHEMA-DESIGN-DOSSIER-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 86,
+      "age_seconds": 168,
       "job_id": "EDARSAHUB-INVENTARIOS-403-ENDPOINT-BODY-R3-20260917T215500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 81,
+      "age_seconds": 163,
       "job_id": "EDARSAHUB-INVENTARIOS-403-ENDPOINT-BODY-R3R2-20260917T222500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3447,
+      "age_seconds": 3529,
       "job_id": "EDARSAHUB-SERVICES-GATE4A-FOUNDATION-FK-NARROW-SQL-AUDIT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2776,
+      "age_seconds": 2858,
       "job_id": "EDARSAHUB-SERVICES-GATE4A-FOUNDATION-R2-PHYSICAL-SCRIPTS-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2517,
+      "age_seconds": 2599,
       "job_id": "EDARSAHUB-SERVICES-GATE4A-FOUNDATION-R2-PHYSICAL-SCRIPTS-DESIGN-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3585,
-      "job_id": "EDARSAHUB-WORKER-HEALTH-RECONCILER-OBSERVABILITY-R1-20260917",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 78,
+      "age_seconds": 160,
       "job_id": "EDARSAHUB-WORKER-HEALTH-RECONCILER-OBSERVABILITY-R2-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 76,
+      "age_seconds": 158,
       "job_id": "EDARSAHUB-WORKER-HEALTH-WRITER-LOCK-OBSERVABILITY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 73,
+      "age_seconds": 156,
       "job_id": "GATE5D-PREVIEW-RUNTIME-DIAGNOSTIC-EVIDENCE-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2284,
+      "age_seconds": 2366,
       "job_id": "RRR-GATE4E-R10-MINIMAL-ATTRIBUTION-IMPLEMENTATION-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 71,
+      "age_seconds": 153,
       "job_id": "RRR-GATE4E-R10-R2-MINIMAL-ATTRIBUTION-IMPLEMENTATION-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3368,
+      "age_seconds": 3450,
       "job_id": "coa-gate6a-r2-fiscal-status-semantics-readonly-v1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3282,
+      "age_seconds": 3365,
       "job_id": "coa-gate6b-fiscal-status-values-readonly-v1-20260918",
       "reason": null,
       "state": "RESULT_READY"
@@ -140,13 +128,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 20,
+  "queue_result_ready_recent": 18,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-18T04:51:41Z",
-    "last_receive_utc": "2026-09-18T04:51:44Z",
+    "last_cycle_utc": "2026-09-18T04:53:04Z",
+    "last_receive_utc": "2026-09-18T04:53:07Z",
     "last_terminal_utc": "2026-09-18T04:50:35Z",
     "pid": "63"
   },
