@@ -1,0 +1,65 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENT-HARNESS-V1-RH-CANONICAL-BLOCKERS-DISCOVERY-GATE27-R1",
+  "created_at_utc": "2026-09-18T03:20:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "31db7e340782c722543b0bce94649040500363c5",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Gate27 discovery quirurgico READ_ONLY de los dos blockers canonicos detectados por Gate25/Gate26 en RH: (A) backend/modules/rh/solicitudes_catalogo.py usa estado runtime _solicitudes_db en memoria y (B) backend/modules/rh/importador/repository.py obtiene configuracion/servidor mediante dependencia Mongo legacy. Determinar, sin mutar, el reemplazo canonico minimo para cada blocker reutilizando exclusivamente tablas, repositorios, helpers SQL-first y RBAC ya existentes. Verificar si ya existe tabla/entidad SQL para solicitudes de catalogo antes de proponer cualquier DDL; no crear ni sugerir tabla duplicada si existe capacidad equivalente. Para importador, identificar el helper SQL-first existente que sustituye get_db().servers.find_one sin cambiar contratos funcionales. Entregar archivos exactos, simbolos exactos, tests existentes que deben proteger la correccion y clasificar si cada fix puede ser quirurgico/reversible. Mantener separado de RH Global HCM y Nomina. No SQL inline, no ejecutar SQL, no Mongo runtime, no Production, no cambios.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/rh/solicitudes_catalogo.py",
+          "backend/modules/rh/importador/repository.py",
+          "backend/modules/rh/repository.py",
+          "backend/modules/rh",
+          "backend/core",
+          "backend/tests"
+        ],
+        "search_terms": [
+          "_solicitudes_db",
+          "SolicitudCatalogo",
+          "solicitudes_catalogo",
+          "catalogos-disponibles",
+          "pendientes-notificacion",
+          "RH_Solicitudes",
+          "Solicitud_Catalogo",
+          "get_db().servers.find_one",
+          "get_edarsa_hub_server",
+          "get_edarsahub_sql_config",
+          "EDARSAHUB_CONFIG",
+          "execute_sql_query",
+          "execute_sql_query_params",
+          "resolve_user_access_context",
+          "get_current_user"
+        ],
+        "include_patterns": ["*.py", "*.sql", "*.md", "*.json"],
+        "exclude_patterns": ["*.pyc", "__pycache__/*"],
+        "max_results": 700
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "harness_context": {
+    "plan_step_id": "gate27-rh-canonical-blockers-discovery-r1",
+    "domain": "rh",
+    "procedure": "repository-contract-audit",
+    "risk": "R0",
+    "data_classification": "HR_PRIVATE",
+    "agent_id": "bos-backend",
+    "agent_version": "1",
+    "skill_id": "repository-contract-audit",
+    "skill_version": "1",
+    "executor": "worker"
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
