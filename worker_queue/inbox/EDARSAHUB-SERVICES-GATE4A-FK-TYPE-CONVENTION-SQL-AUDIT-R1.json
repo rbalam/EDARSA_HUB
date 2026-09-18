@@ -1,0 +1,63 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SERVICES-GATE4A-FK-TYPE-CONVENTION-SQL-AUDIT-R1",
+  "created_at_utc": "2026-09-18T03:42:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "920638ce165f3bb5135c89fb78803836d3dc28fd",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar exclusivamente SQL Server canonico para cerrar los tipos fisicos exactos, claves, nombres, defaults temporales y convenciones necesarias antes de ampliar Gate4A Services Foundation. No DDL, no DML, no EXEC, no Production. Debe cubrir Gobierno_Persona/Vinculo, Proveedor_Catalogo, Cliente_Catalogo, Sistema_Empresas/Sucursales/Unidades_Negocio, tablas cercanas ActivoFijo/COA/CRM y columnas de auditoria/fecha/empresa que sirven de precedente.",
+  "constraints": [
+    "EDARSAHUB SQL Server es fuente canonica",
+    "READ_ONLY_SQL estricto",
+    "No DDL/DML/EXEC",
+    "No LIVE",
+    "No Production",
+    "No modificar schema",
+    "No usar HRLectura como writer",
+    "No hardcodear tipos; medirlos",
+    "No crear tablas por profesion/oficio",
+    "No duplicar persona/proveedor/cliente/RBAC/empresa",
+    "No tocar Scheduler ni NetPay"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "SVC4A_00_IDENTITY",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user;"
+        },
+        {
+          "name": "SVC4A_01_EXACT_MASTER_COLUMNS",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity,dc.definition AS default_definition FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id WHERE t.name IN ('Gobierno_Persona','Gobierno_PersonaVinculo','Proveedor_Catalogo','Cliente_Catalogo','Sistema_Empresas','Sistema_Sucursales','Sistema_Unidades_Negocio','Usuario_Catalogo','ActivoFijo_Activos','COA_Expedientes','COA_ReglasComision','CRM_Leads','Venta_Cotizaciones') ORDER BY t.name,c.column_id;"
+        },
+        {
+          "name": "SVC4A_02_PRIMARY_UNIQUE_KEYS",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,i.name AS index_name,i.is_primary_key,i.is_unique,i.type_desc,c.name AS column_name,ic.key_ordinal FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.indexes i ON i.object_id=t.object_id JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE t.name IN ('Gobierno_Persona','Gobierno_PersonaVinculo','Proveedor_Catalogo','Cliente_Catalogo','Sistema_Empresas','Sistema_Sucursales','Sistema_Unidades_Negocio','Usuario_Catalogo','ActivoFijo_Activos','COA_Expedientes','COA_ReglasComision','CRM_Leads','Venta_Cotizaciones') AND i.index_id>0 ORDER BY t.name,i.index_id,ic.key_ordinal;"
+        },
+        {
+          "name": "SVC4A_03_FOREIGN_KEYS_EXACT",
+          "sql": "SELECT schp.name AS parent_schema,tp.name AS parent_table,cp.name AS parent_column,typ.name AS parent_type,cp.max_length AS parent_max_length,cp.precision AS parent_precision,cp.scale AS parent_scale,fk.name AS fk_name,schr.name AS ref_schema,tr.name AS ref_table,cr.name AS ref_column,tyr.name AS ref_type,cr.max_length AS ref_max_length,cr.precision AS ref_precision,cr.scale AS ref_scale FROM sys.foreign_key_columns fkc JOIN sys.foreign_keys fk ON fk.object_id=fkc.constraint_object_id JOIN sys.tables tp ON tp.object_id=fkc.parent_object_id JOIN sys.schemas schp ON schp.schema_id=tp.schema_id JOIN sys.columns cp ON cp.object_id=fkc.parent_object_id AND cp.column_id=fkc.parent_column_id JOIN sys.types typ ON typ.user_type_id=cp.user_type_id JOIN sys.tables tr ON tr.object_id=fkc.referenced_object_id JOIN sys.schemas schr ON schr.schema_id=tr.schema_id JOIN sys.columns cr ON cr.object_id=fkc.referenced_object_id AND cr.column_id=fkc.referenced_column_id JOIN sys.types tyr ON tyr.user_type_id=cr.user_type_id WHERE tp.name IN ('Gobierno_PersonaVinculo','ActivoFijo_Activos','COA_Expedientes','COA_ReglasComision','CRM_Leads','Venta_Cotizaciones') OR tr.name IN ('Gobierno_Persona','Proveedor_Catalogo','Cliente_Catalogo','Sistema_Empresas','Sistema_Sucursales','Sistema_Unidades_Negocio','Usuario_Catalogo') ORDER BY tp.name,fk.name;"
+        },
+        {
+          "name": "SVC4A_04_AUDIT_TIME_CONVENTIONS",
+          "sql": "SELECT TOP (500) t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,dc.definition AS default_definition FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id WHERE (LOWER(c.name) IN ('createdat','updatedat','created_at','updated_at','fechacreacion','fechamodificacion','fecha_creacion','fecha_modificacion','fechaoperacion','fecha_operacion','createdutc','updatedutc') OR LOWER(c.name) LIKE '%timezone%' OR LOWER(c.name) LIKE '%zona_hor%') AND (t.name LIKE 'Gobierno_%' OR t.name LIKE 'ActivoFijo_%' OR t.name LIKE 'COA_%' OR t.name LIKE 'Sistema_%' OR t.name LIKE 'CRM_%' OR t.name LIKE 'Venta_%') ORDER BY t.name,c.column_id;"
+        },
+        {
+          "name": "SVC4A_05_COMPANY_SCOPE_CONVENTIONS",
+          "sql": "SELECT TOP (500) t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE (LOWER(c.name) IN ('empresa_id','empresaid','id_empresa','sucursal_id','sucursalid','unidad_negocio_id','unidadnegocioid','unidad_id','unidadid')) AND (t.name LIKE 'Gobierno_%' OR t.name LIKE 'ActivoFijo_%' OR t.name LIKE 'COA_%' OR t.name LIKE 'Sistema_%' OR t.name LIKE 'CRM_%' OR t.name LIKE 'Venta_%' OR t.name LIKE 'Cliente_%' OR t.name LIKE 'Proveedor_%') ORDER BY t.name,c.column_id;"
+        },
+        {
+          "name": "SVC4A_06_COLLISION_SERVICES_FOUNDATION",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name IN ('Services_Professions','Services_Specialties','Services_Providers','Services_ProviderSpecialties','Services_Credentials','Services_ServiceCatalog','Services_Resources') OR LOWER(o.name) LIKE '%profession%' OR LOWER(o.name) LIKE '%specialt%' OR LOWER(o.name) LIKE '%credential%' ORDER BY o.name;"
+        }
+      ]
+    }
+  ]
+}
