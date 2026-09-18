@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE5-CAMPAIGN-ORCHESTRATOR-DISCOVERY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ef25def3b8e9f68900556edd4349bbb19f6dee9e",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "objective": "Gate 5 Campaign Orchestrator R1 READ_ONLY Discovery para BOS Marketing Intelligence & Content Factory, posterior a Gate 4 certificado. Auditar infraestructura existente para campañas, marketing activation, CRM automation, audiencias/segmentos, calendarios, presupuestos, workflows/approvals, scheduler, experimentos, canales y estados de orquestacion. Determinar REUSE/ALIGN/EXTEND/NEW_REQUIRED y evitar duplicar CRM, Finance, Scheduler, RBAC, workflow, Content Factory o AI Gateway. No implementar, no crear tablas/migraciones/endpoints/jobs/UI/conectores y no tocar Produccion.",
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/agent_harness",
+          "backend/modules/crm",
+          "backend/modules/comercial",
+          "backend/modules/finanzas",
+          "backend/core/scheduler",
+          "backend/core",
+          "docs/ARCHITECTURE"
+        ],
+        "search_terms": [
+          "campaign",
+          "campana",
+          "MarketingActivationRequest",
+          "marketing",
+          "activation",
+          "audience",
+          "segment",
+          "calendar",
+          "budget",
+          "presupuesto",
+          "workflow",
+          "approval",
+          "scheduler",
+          "experiment",
+          "variant",
+          "channel",
+          "canal",
+          "CRM_Leads",
+          "CRM_Oportunidades",
+          "Cliente_Catalogo",
+          "content",
+          "orchestrator",
+          "automation",
+          "trigger"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.md"
+        ],
+        "exclude_patterns": [],
+        "max_results": 250
+      }
+    }
+  ]
+}
