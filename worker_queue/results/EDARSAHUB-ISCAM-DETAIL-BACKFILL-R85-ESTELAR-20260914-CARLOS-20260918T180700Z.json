@@ -1,0 +1,73 @@
+{
+  "base_sha": "aa57b944342f7e7efda0397ebfa64358c8c99a61",
+  "blockers": [],
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-09-18T18:06:25Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-R85-ESTELAR-20260914-CARLOS-20260918T180700Z",
+  "operation": "ISCAM_DETAIL_BACKFILL",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T18:06:32Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "fecha",
+              "ventas_runtime",
+              "ventas_detalle",
+              "delta_ventas",
+              "tickets_runtime",
+              "tickets_detalle",
+              "delta_tickets",
+              "pax_runtime",
+              "pax_detalle",
+              "delta_pax",
+              "estado"
+            ],
+            "name": "estelar_20260914_post_repair",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-09-14",
+                "29925.0000",
+                "29925.0000",
+                "0.0000",
+                "23",
+                23,
+                "0",
+                "49",
+                "49",
+                "0",
+                "OK"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T18:06:23Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto el backfill cerrado de detalle ISCAM para las unidades y fechas autorizadas y certifico el resultado con SQL de solo lectura. No acepto shell, rutas ni comandos externos y no toco Produccion.",
+  "tests": "PASS",
+  "units": [
+    "ESTELAR"
+  ],
+  "work_completion": "COMPLETE"
+}
