@@ -1,0 +1,450 @@
+{
+  "base_sha": "ef25def3b8e9f68900556edd4349bbb19f6dee9e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T05:11:52Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CXP-GATE3F-F-IDEMPOTENCY-MIGRATION-DOSSIER-DESIGN-READONLY-20260917",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T05:13:21Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "server_name",
+              "database_name",
+              "login_name",
+              "database_user"
+            ],
+            "name": "f3f_runtime_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "ns559627",
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "grupos_duplicados"
+            ],
+            "name": "f3f_queue_active_by_decision",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "grupos_duplicados"
+            ],
+            "name": "f3f_queue_active_by_decision_hash",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "activos"
+            ],
+            "name": "f3f_queue_active_rows",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable",
+              "is_identity"
+            ],
+            "name": "f3f_queue_columns",
+            "row_count_returned": 16,
+            "rows": [
+              [
+                1,
+                "PagoOrigenQueueID",
+                "bigint",
+                8,
+                19,
+                0,
+                false,
+                true
+              ],
+              [
+                2,
+                "DecisionPagoID",
+                "bigint",
+                8,
+                19,
+                0,
+                false,
+                false
+              ],
+              [
+                3,
+                "HashOrigen",
+                "nvarchar",
+                128,
+                0,
+                0,
+                false,
+                false
+              ],
+              [
+                4,
+                "UnidadNegocioID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                false,
+                false
+              ],
+              [
+                5,
+                "CxpSyncID",
+                "bigint",
+                8,
+                19,
+                0,
+                true,
+                false
+              ],
+              [
+                6,
+                "ImporteAPagar",
+                "decimal",
+                9,
+                18,
+                2,
+                false,
+                false
+              ],
+              [
+                7,
+                "EstadoEnvio",
+                "nvarchar",
+                60,
+                0,
+                0,
+                false,
+                false
+              ],
+              [
+                8,
+                "Intentos",
+                "int",
+                4,
+                10,
+                0,
+                false,
+                false
+              ],
+              [
+                9,
+                "UltimoError",
+                "nvarchar",
+                2000,
+                0,
+                0,
+                true,
+                false
+              ],
+              [
+                10,
+                "FechaProgramada",
+                "datetime2",
+                6,
+                19,
+                0,
+                true,
+                false
+              ],
+              [
+                11,
+                "FechaUltimoIntento",
+                "datetime2",
+                6,
+                19,
+                0,
+                true,
+                false
+              ],
+              [
+                12,
+                "FechaEnviado",
+                "datetime2",
+                6,
+                19,
+                0,
+                true,
+                false
+              ],
+              [
+                13,
+                "UsuarioAutorizacionID",
+                "int",
+                4,
+                10,
+                0,
+                true,
+                false
+              ],
+              [
+                14,
+                "Activo",
+                "bit",
+                1,
+                1,
+                0,
+                false,
+                false
+              ],
+              [
+                15,
+                "FechaAlta",
+                "datetime2",
+                6,
+                19,
+                0,
+                false,
+                false
+              ],
+              [
+                16,
+                "FechaModificacion",
+                "datetime2",
+                6,
+                19,
+                0,
+                true,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable",
+              "is_identity"
+            ],
+            "name": "f3f_pagos_columns",
+            "row_count_returned": 10,
+            "rows": [
+              [
+                1,
+                "PagoID",
+                "bigint",
+                8,
+                19,
+                0,
+                false,
+                true
+              ],
+              [
+                2,
+                "CuentaPorPagarID",
+                "bigint",
+                8,
+                19,
+                0,
+                false,
+                false
+              ],
+              [
+                3,
+                "FechaPago",
+                "date",
+                3,
+                10,
+                0,
+                false,
+                false
+              ],
+              [
+                4,
+                "MontoPagado",
+                "decimal",
+                9,
+                18,
+                2,
+                false,
+                false
+              ],
+              [
+                5,
+                "FormaPagoID",
+                "int",
+                4,
+                10,
+                0,
+                true,
+                false
+              ],
+              [
+                6,
+                "CuentaBancariaID",
+                "int",
+                4,
+                10,
+                0,
+                true,
+                false
+              ],
+              [
+                7,
+                "NumeroReferencia",
+                "varchar",
+                50,
+                0,
+                0,
+                true,
+                false
+              ],
+              [
+                8,
+                "Observaciones",
+                "varchar",
+                500,
+                0,
+                0,
+                true,
+                false
+              ],
+              [
+                9,
+                "Activo",
+                "bit",
+                1,
+                1,
+                0,
+                false,
+                false
+              ],
+              [
+                10,
+                "FechaAlta",
+                "datetime2",
+                8,
+                27,
+                7,
+                false,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total"
+            ],
+            "name": "f3f_pagos_rows",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "child_schema",
+              "child_table",
+              "fk_name"
+            ],
+            "name": "f3f_pagos_incoming_fks",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "dbo",
+                "COA_ExpedienteReferencias",
+                "FK_COA_ExpedienteReferencias_Pago"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "child_schema",
+              "child_table",
+              "fk_name"
+            ],
+            "name": "f3f_queue_incoming_fks",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc"
+            ],
+            "name": "f3f_existing_idempotency_named_objects",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "dbo",
+                "UQ_CC_Aplicacion_Idempotencia",
+                "UNIQUE_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "UQ_RRR_Ledger_Idempotency",
+                "UNIQUE_CONSTRAINT"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T05:11:50Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
