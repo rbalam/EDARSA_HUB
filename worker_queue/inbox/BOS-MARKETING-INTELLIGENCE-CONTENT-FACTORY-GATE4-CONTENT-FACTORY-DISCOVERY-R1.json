@@ -1,0 +1,72 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE4-CONTENT-FACTORY-DISCOVERY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e0b35052ee5492b2585a9000f833d4dd210cb2f4",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Gate 4 R1 READ_ONLY Discovery para BOS Marketing Intelligence & Content Factory. Auditar exclusivamente infraestructura existente relacionada con content factory, media/assets, object storage, approvals/workflows, campañas, calendarios, publicaciones, derechos/licencias, variantes/experimentos, prompts/briefs y generación AI. Determinar REUSE/ALIGN/EXTEND/NEW_REQUIRED y fronteras de ownership antes de diseñar nuevas estructuras. No crear tablas, migraciones, endpoints, jobs, UI, conectores ni tocar Produccion. No crecer Core.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules",
+          "backend/core",
+          "backend/api",
+          "frontend",
+          "tools",
+          "docs/ARCHITECTURE"
+        ],
+        "search_terms": [
+          "content",
+          "asset",
+          "media",
+          "object_storage",
+          "storage",
+          "campaign",
+          "campana",
+          "brief",
+          "prompt",
+          "approval",
+          "workflow",
+          "publish",
+          "publication",
+          "social",
+          "rights",
+          "license",
+          "copyright",
+          "variant",
+          "experiment",
+          "ab_test",
+          "creative",
+          "image",
+          "video",
+          "audio",
+          "render",
+          "generation",
+          "marketing",
+          "calendar",
+          "scheduler",
+          "content_factory",
+          "brand",
+          "audience"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.md",
+          "*.json"
+        ],
+        "exclude_patterns": [],
+        "max_results": 300
+      }
+    }
+  ]
+}
