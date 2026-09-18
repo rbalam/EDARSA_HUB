@@ -720,6 +720,10 @@ init_sync_receiver(None)  # MongoDB eliminado
 init_kpis_repository(None)  # MongoDB eliminado
 api_router.include_router(sync_receiver_router)
 
+# RRR - atribucion determinista cliente <-> venta (Gate 4E)
+from modules.rrr.routes import router as rrr_attribution_router
+api_router.include_router(rrr_attribution_router)
+
 # ============================================================================
 # MÓDULO API CONNECTIONS: CRUD de conexiones a APIs locales
 # ============================================================================
