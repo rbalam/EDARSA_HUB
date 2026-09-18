@@ -1,0 +1,47 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12I-FINAL-PHYSICAL-CERT-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "cc0aa4513abbfd5220ba1599f48fee3166dc3808",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar en READ_ONLY el cierre fisico final de Gate12I despues de la migracion operacional R5: PersonaID bigint nullable presente en CavaSocios_Socios, FK confiable a Gobierno_Persona(PersonaID), indice filtrado activo, cero backfill automatico y las tres FK hijas originales intactas. No modificar SQL, repositorio, credenciales, workflows ni Produccion.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "identity_guard",
+          "sql": "SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS db_user, ORIGINAL_LOGIN() AS original_login;"
+        },
+        {
+          "name": "persona_column_final",
+          "sql": "SELECT c.name AS column_name, TYPE_NAME(c.user_type_id) AS type_name, c.max_length, c.is_nullable FROM sys.columns c WHERE c.object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND c.name=N'PersonaID';"
+        },
+        {
+          "name": "persona_fk_final",
+          "sql": "SELECT fk.name AS fk_name, OBJECT_SCHEMA_NAME(fk.parent_object_id) AS parent_schema, OBJECT_NAME(fk.parent_object_id) AS parent_table, OBJECT_SCHEMA_NAME(fk.referenced_object_id) AS referenced_schema, OBJECT_NAME(fk.referenced_object_id) AS referenced_table, fk.is_disabled, fk.is_not_trusted FROM sys.foreign_keys fk WHERE fk.parent_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND fk.name=N'FK_CavaSocios_Socios_GobiernoPersona';"
+        },
+        {
+          "name": "persona_index_final",
+          "sql": "SELECT i.name AS index_name, i.has_filter, i.filter_definition, i.is_disabled FROM sys.indexes i WHERE i.object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND i.name=N'IX_CavaSocios_Socios_PersonaID';"
+        },
+        {
+          "name": "no_backfill_final",
+          "sql": "SELECT COUNT_BIG(*) AS socios_rows, SUM(CASE WHEN PersonaID IS NOT NULL THEN 1 ELSE 0 END) AS persona_nonnull_rows FROM dbo.CavaSocios_Socios;"
+        },
+        {
+          "name": "child_fk_final",
+          "sql": "SELECT fk.name AS fk_name, OBJECT_NAME(fk.parent_object_id) AS child_table, fk.is_disabled, fk.is_not_trusted FROM sys.foreign_keys fk WHERE fk.referenced_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') ORDER BY fk.name;"
+        },
+        {
+          "name": "persona_pk_final",
+          "sql": "SELECT kc.name AS pk_name, c.name AS column_name, TYPE_NAME(c.user_type_id) AS type_name, c.is_nullable FROM sys.key_constraints kc JOIN sys.index_columns ic ON ic.object_id=kc.parent_object_id AND ic.index_id=kc.unique_index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE kc.parent_object_id=OBJECT_ID(N'dbo.Gobierno_Persona') AND kc.type='PK' AND c.name=N'PersonaID';"
+        }
+      ]
+    }
+  ]
+}
