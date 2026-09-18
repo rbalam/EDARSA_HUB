@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-API-DISCOVERY-GATE0A-READONLY-R8D",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "human_summary_language": "es",
+  "objective": "Auditar en modo solo lectura filas reales de dbo.Servidores_Conexiones relacionadas con Tablajeria, MPRO, Cienfuegos, Cavas y Origen usando columnas reales y CAST explicito. No exponer secretos, no leer valores cifrados, no tocar TABLAJERIA.sys.*, no modificar datos.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "servidores_conexiones_visibility_summary",
+          "sql": "SELECT activo, visible_en_listado, visible_en_operaciones, system_type, tipo_conexion, COUNT(1) AS total_rows FROM dbo.Servidores_Conexiones GROUP BY activo, visible_en_listado, visible_en_operaciones, system_type, tipo_conexion ORDER BY total_rows DESC"
+        },
+        {
+          "name": "servidores_conexiones_candidate_rows",
+          "sql": "SELECT TOP 100 CAST(id AS varchar(36)) AS id, nombre, system_type, tipo_conexion, host, port, database_name, username, CASE WHEN password_encrypted IS NULL THEN 0 ELSE 1 END AS has_password_encrypted, api_url, CASE WHEN api_key_encrypted IS NULL THEN 0 ELSE 1 END AS has_api_key_encrypted, activo, visible_en_operaciones, visible_en_listado, es_editable_ui, es_eliminable_ui, empresa_id, sucursales, categorias, departamentos, date_calculation_method, queries_configured, CASE WHEN query_ventas IS NULL THEN 0 ELSE 1 END AS has_query_ventas, CASE WHEN query_inventario IS NULL THEN 0 ELSE 1 END AS has_query_inventario, CASE WHEN query_movimientos IS NULL THEN 0 ELSE 1 END AS has_query_movimientos, created_at, updated_at, created_by, updated_by, mongodb_id, EmpresaID, tipos_movimiento, fecha_ultima_sincronizacion, source_status, ultimo_error_sync, CAST(sistema_version_id AS varchar(36)) AS sistema_version_id FROM dbo.Servidores_Conexiones WHERE nombre LIKE '%TABLAJ%' OR nombre LIKE '%CAVA%' OR nombre LIKE '%MPRO%' OR nombre LIKE '%CIENFUEGOS%' OR nombre LIKE '%ORIGEN%' OR database_name LIKE '%tablaj%' OR system_type LIKE '%MPRO%' OR system_type LIKE '%SOFT%' OR system_type LIKE '%TABLAJ%' ORDER BY updated_at DESC, created_at DESC"
+        },
+        {
+          "name": "servidores_conexiones_public_view_rows",
+          "sql": "SELECT TOP 100 * FROM dbo.Sistema_VW_Servidores_Conexiones_Publico WHERE nombre LIKE '%TABLAJ%' OR nombre LIKE '%CAVA%' OR nombre LIKE '%MPRO%' OR nombre LIKE '%CIENFUEGOS%' OR nombre LIKE '%ORIGEN%' ORDER BY nombre"
+        },
+        {
+          "name": "servidores_estado_candidates",
+          "sql": "SELECT TOP 100 * FROM dbo.Servidores_ConexionEstado ORDER BY 1 DESC"
+        },
+        {
+          "name": "consultas_sql_servidores_columns",
+          "sql": "SELECT ORDINAL_POSITION, COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'ConsultasSQL_Servidores' ORDER BY ORDINAL_POSITION"
+        }
+      ]
+    }
+  ]
+}
