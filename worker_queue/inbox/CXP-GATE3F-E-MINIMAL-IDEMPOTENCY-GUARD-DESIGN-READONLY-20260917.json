@@ -1,0 +1,74 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CXP-GATE3F-E-MINIMAL-IDEMPOTENCY-GUARD-DESIGN-READONLY-20260917",
+  "created_at_utc": "2026-09-18T04:14:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "920638ce165f3bb5135c89fb78803836d3dc28fd",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "GATE 3F-E MINIMAL IDEMPOTENCY GUARD DESIGN. Diseñar, sin ejecutar migraciones ni writes, el cambio mínimo y reversible requerido en EDARSAHUB para impedir doble ejecución de pagos y permitir un futuro canary fail-closed. Usar evidencia runtime de Finanzas_CxP_PagosOrigenQueue y Finanzas_Pagos. Determinar si el guard debe vivir en queue, pagos o ambos; qué clave determinista debe proteger; qué constraint/index sería necesario; y cómo preservar compatibilidad con estado actual. No implementar nada.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "f3e_runtime_identity",
+          "sql": "SELECT @@SERVERNAME AS server_name,DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user"
+        },
+        {
+          "name": "f3e_queue_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable,c.is_identity,c.is_computed FROM sys.columns c INNER JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID(N'dbo.Finanzas_CxP_PagosOrigenQueue') ORDER BY c.column_id"
+        },
+        {
+          "name": "f3e_queue_indexes",
+          "sql": "SELECT i.index_id,i.name AS index_name,i.is_unique,i.is_primary_key,i.has_filter,i.filter_definition,ic.key_ordinal,c.name AS column_name FROM sys.indexes i LEFT JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id LEFT JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.Finanzas_CxP_PagosOrigenQueue') ORDER BY i.index_id,ic.index_column_id"
+        },
+        {
+          "name": "f3e_pagos_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable,c.is_identity,c.is_computed FROM sys.columns c INNER JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID(N'dbo.Finanzas_Pagos') ORDER BY c.column_id"
+        },
+        {
+          "name": "f3e_pagos_indexes",
+          "sql": "SELECT i.index_id,i.name AS index_name,i.is_unique,i.is_primary_key,i.has_filter,i.filter_definition,ic.key_ordinal,c.name AS column_name FROM sys.indexes i LEFT JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id LEFT JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.Finanzas_Pagos') ORDER BY i.index_id,ic.index_column_id"
+        },
+        {
+          "name": "f3e_active_queue_count",
+          "sql": "SELECT COUNT_BIG(*) AS activos FROM dbo.Finanzas_CxP_PagosOrigenQueue WHERE Activo=1"
+        },
+        {
+          "name": "f3e_duplicate_decision_hash",
+          "sql": "SELECT COUNT_BIG(*) AS grupos_duplicados FROM (SELECT DecisionPagoID,HashOrigen,COUNT_BIG(*) AS n FROM dbo.Finanzas_CxP_PagosOrigenQueue WHERE Activo=1 GROUP BY DecisionPagoID,HashOrigen HAVING COUNT_BIG(*)>1) q"
+        },
+        {
+          "name": "f3e_duplicate_hash_amount",
+          "sql": "SELECT COUNT_BIG(*) AS grupos_duplicados FROM (SELECT HashOrigen,ImporteAPagar,COUNT_BIG(*) AS n FROM dbo.Finanzas_CxP_PagosOrigenQueue WHERE Activo=1 GROUP BY HashOrigen,ImporteAPagar HAVING COUNT_BIG(*)>1) q"
+        },
+        {
+          "name": "f3e_pagos_count",
+          "sql": "SELECT COUNT_BIG(*) AS total FROM dbo.Finanzas_Pagos"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ ONLY SQL ONLY",
+    "actions must remain empty",
+    "NO INSERT UPDATE DELETE MERGE EXEC EXECUTE DDL SELECT INTO OR MULTI-STATEMENT SQL",
+    "NO procedure execution",
+    "NO Production",
+    "NO code or file mutation",
+    "DO NOT execute migration",
+    "DO NOT add columns or indexes",
+    "Design only: identify minimum reversible schema guard",
+    "Prefer structural idempotency over application-only checks",
+    "Do not hardcode ERP-specific identifiers into generic EDARSAHUB schema unless strictly required",
+    "Do not authorize any canary or Payment Executor writer",
+    "Payment Executor writer remains 0 percent"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
