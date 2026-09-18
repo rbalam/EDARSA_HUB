@@ -1,0 +1,57 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SERVIDORES-CONEXIONES-API-LISTADO-FILTRO-R10A-R2-BACKEND-FIX",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "human_summary_language": "es",
+  "objective": "Aplicar fix quirurgico en backend/core/server_registry.py para que el listado administrativo de SERVIDORES / Conexiones API no excluya tipo_conexion='API_LOCAL'. Mantener CORE fuera del listado administrativo normal, respetar visible_en_listado y activo, conservar get_visible_servers_for_operaciones separado para Operaciones. No tocar datos, secretos, permisos, Tablajeria ni Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/server_registry.py",
+      "old": "        conditions.append(\"(tipo_conexion != 'API_LOCAL' OR tipo_conexion IS NULL)\")",
+      "new": "        # R10A: El listado administrativo debe incluir API_LOCAL cuando visible_en_listado=true.\n        # Operaciones conserva su filtro propio en get_visible_servers_for_operaciones()."
+    }
+  ],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/server_registry.py"
+        ],
+        "search_terms": [
+          "def _get_servers_from_sql",
+          "visible_en_listado",
+          "visible_en_operaciones",
+          "tipo_conexion != 'CORE'",
+          "tipo_conexion != 'API_LOCAL'",
+          "get_visible_servers_for_operaciones",
+          "API_LOCAL",
+          "DATA_SOURCE",
+          "Servidores_Conexiones"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [
+          ".git/*",
+          "__pycache__/*",
+          "*.pyc"
+        ],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/server_registry.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
