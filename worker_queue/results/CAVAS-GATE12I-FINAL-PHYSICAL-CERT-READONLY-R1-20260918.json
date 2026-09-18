@@ -1,0 +1,182 @@
+{
+  "base_sha": "cc0aa4513abbfd5220ba1599f48fee3166dc3808",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T17:18:03Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE12I-FINAL-PHYSICAL-CERT-READONLY-R1-20260918",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T17:18:07Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "db_user",
+              "original_login"
+            ],
+            "name": "identity_guard",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_name",
+              "type_name",
+              "max_length",
+              "is_nullable"
+            ],
+            "name": "persona_column_final",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "PersonaID",
+                "bigint",
+                8,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "parent_schema",
+              "parent_table",
+              "referenced_schema",
+              "referenced_table",
+              "is_disabled",
+              "is_not_trusted"
+            ],
+            "name": "persona_fk_final",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "FK_CavaSocios_Socios_GobiernoPersona",
+                "dbo",
+                "CavaSocios_Socios",
+                "dbo",
+                "Gobierno_Persona",
+                false,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "index_name",
+              "has_filter",
+              "filter_definition",
+              "is_disabled"
+            ],
+            "name": "persona_index_final",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "IX_CavaSocios_Socios_PersonaID",
+                true,
+                "([PersonaID] IS NOT NULL)",
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "socios_rows",
+              "persona_nonnull_rows"
+            ],
+            "name": "no_backfill_final",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2",
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fk_name",
+              "child_table",
+              "is_disabled",
+              "is_not_trusted"
+            ],
+            "name": "child_fk_final",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "FK_CavaSocios_Botellas_Socio",
+                "CavaSocios_Botellas",
+                false,
+                false
+              ],
+              [
+                "FK_CavaSocios_Cargos_Socio",
+                "CavaSocios_Cargos",
+                false,
+                false
+              ],
+              [
+                "FK_CavaSocios_Movimientos_Socio",
+                "CavaSocios_Movimientos",
+                false,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "pk_name",
+              "column_name",
+              "type_name",
+              "is_nullable"
+            ],
+            "name": "persona_pk_final",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "PK_Gobierno_Persona",
+                "PersonaID",
+                "bigint",
+                false
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T17:18:02Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
