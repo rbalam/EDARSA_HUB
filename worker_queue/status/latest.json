@@ -1,37 +1,43 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "e9a40542c420555e2bebd378d889e2829d37e225",
-  "generated_at_utc": "2026-09-18T15:32:54Z",
+  "development_sha": "e575a0c89160431a3fed66d7993ac2b4a1caee83",
+  "generated_at_utc": "2026-09-18T15:34:18Z",
   "history": {
-    "done_total_local": 618,
+    "done_total_local": 619,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 600,
-    "results_total_local": 1075
+    "results_total_local": 1076
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 310,
+      "age_seconds": 394,
       "job_id": "ARBITROA-BOS-GATE-A5-PREFLIGHT-SQL-READONLY-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 206,
+      "age_seconds": 290,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE2-DATA-INTEGRATION-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 11,
+      "age_seconds": 17,
+      "job_id": "UNIVERSAL-BANKING-GATE1-MATERIALIZE-CANONICAL-DESIGN-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 96,
       "job_id": "UNIVERSAL-WORKER-PUBLISHER-REPO-AUDIT-ALIGNMENT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 60,
+      "age_seconds": 144,
       "job_id": "coa-gate6c-fiscal-status-lifecycle-design-v1-20260918",
       "reason": null,
       "state": "RESULT_READY"
@@ -44,14 +50,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-18T15:32:44Z",
-    "last_receive_utc": "2026-09-18T15:32:51Z",
-    "last_terminal_utc": "2026-09-18T15:32:42Z",
+    "last_cycle_utc": "2026-09-18T15:34:13Z",
+    "last_receive_utc": "2026-09-18T15:34:16Z",
+    "last_terminal_utc": "2026-09-18T15:34:01Z",
     "pid": "67"
   },
   "schema": "edarsahub.worker-health.v3",
