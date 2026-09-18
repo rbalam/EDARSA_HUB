@@ -133,6 +133,11 @@ api_router.include_router(catalogo_ampliado_router)
 from modules.tablajeria.routes import router as tablajeria_router
 app.include_router(tablajeria_router)
 
+# TABLAJERIA - Operaciones / Produccion
+# Router existente con prefijo propio /api/tablajeria; se monta directo en app para evitar /api/api.
+from modules.tablajeria.routes import router as tablajeria_router
+app.include_router(tablajeria_router)
+
 # Montar archivos estáticos para descargas
 STATIC_DIR = ROOT_DIR / "static"
 if STATIC_DIR.exists():
