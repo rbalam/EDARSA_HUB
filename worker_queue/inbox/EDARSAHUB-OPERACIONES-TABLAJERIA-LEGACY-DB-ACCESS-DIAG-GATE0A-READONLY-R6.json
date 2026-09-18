@@ -1,0 +1,34 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-LEGACY-DB-ACCESS-DIAG-GATE0A-READONLY-R6",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "human_summary_language": "es",
+  "objective": "Diagnosticar en modo solo lectura si HRLectura tiene acceso a las bases legacy TABLAJERIA y tablajeria_mpro. No modificar permisos, no ejecutar GRANT, no crear usuarios, no tocar Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "current_security_context",
+          "sql": "SELECT DB_NAME() AS current_database, SYSTEM_USER AS system_user_name, USER_NAME() AS database_user_name, @@SERVERNAME AS server_name"
+        },
+        {
+          "name": "legacy_db_access_matrix",
+          "sql": "SELECT name AS database_name, state_desc, HAS_DBACCESS(name) AS has_dbaccess FROM sys.databases WHERE name IN ('TABLAJERIA','tablajeria_mpro','EDARSAHUB') ORDER BY name"
+        },
+        {
+          "name": "legacy_db_ids_visibility",
+          "sql": "SELECT DB_ID('TABLAJERIA') AS dbid_tablajeria, DB_ID('tablajeria_mpro') AS dbid_tablajeria_mpro, DB_ID('EDARSAHUB') AS dbid_edarsahub"
+        },
+        {
+          "name": "current_login_permissions",
+          "sql": "SELECT permission_name, state_desc, class_desc, major_id FROM sys.fn_my_permissions(NULL, 'SERVER') ORDER BY permission_name"
+        }
+      ]
+    }
+  ]
+}
