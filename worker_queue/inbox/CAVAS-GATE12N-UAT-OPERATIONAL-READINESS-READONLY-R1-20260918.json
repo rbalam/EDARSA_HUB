@@ -1,0 +1,142 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12N-UAT-OPERATIONAL-READINESS-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3ea717f1c26365551518edb89d98e4abb07096d2",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Abrir Gate12N exclusivamente como UAT/Operational Readiness READ_ONLY en Development, despues del cierre CERTIFIED 100% COMPLETE de Gate12M. Auditar con evidencia exacta que falta para ejecutar una UAT humana real desde la UI de Cava de Socios usando autenticacion, RBAC, unidad/empresa autorizada, frontend, API, servicio y SQL reales, sin mocks y sin realizar todavia ninguna mutacion. Debe producir un mapa GO/NO-GO por precondicion: ruta y navegacion UI, endpoint/base URL Development, sesion/autenticacion, permisos CAVA_SOCIOS_VER y CAVA_SOCIOS_EDITAR, usuario SQL canonico, unidad_negocio_pk y EmpresaID resolubles, socio elegible, estado Persona/PersonaVinculo, mensajes/confirmaciones UI, observabilidad/logs, estrategia de datos UAT y cleanup/rollback. No crear Persona, no vincular/desvincular socio, no DDL/DML, no Production, no ampliar arquitectura.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/cava-socios/SociosList.jsx",
+          "frontend/src/pages/cava-socios/SocioDetail.jsx",
+          "frontend/src/pages/cava-socios/PersonaLinkCard.jsx",
+          "frontend/src/lib/api.js",
+          "frontend/src/App.js",
+          "frontend/src/App.jsx",
+          "backend/modules/cava_socios/routes.py",
+          "backend/modules/cava_socios/persona_link_service.py",
+          "backend/modules/cava_socios/service.py",
+          "backend/modules/rbac_context_sql/context_service.py",
+          "backend/core/auth/sql_user_identity.py",
+          "backend/core/rbac/middleware.py",
+          "backend/tests/test_cava_socios_persona_link.py",
+          "backend/tests/test_cava_socios_persona_link_gate12m_canary.py"
+        ],
+        "search_terms": [
+          "/cava-socios",
+          "SocioDetail",
+          "PersonaLinkCard",
+          "Identidad BOS",
+          "Vincular existente",
+          "Crear Persona",
+          "Desvincular membresía",
+          "personas-canonicas",
+          "persona-link",
+          "crear-persona",
+          "CAVA_SOCIOS_VER",
+          "CAVA_SOCIOS_EDITAR",
+          "unidad_negocio_pk",
+          "EmpresaID",
+          "UsuarioID",
+          "PublicUUID",
+          "Authorization",
+          "Bearer",
+          "credentials",
+          "withCredentials",
+          "baseURL",
+          "toast",
+          "logger",
+          "UPDLOCK",
+          "HOLDLOCK",
+          "commit",
+          "rollback"
+        ],
+        "include_patterns": [
+          "*.jsx",
+          "*.js",
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 800
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "identity_guard",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS db_user,ORIGINAL_LOGIN() AS original_login;"
+        },
+        {
+          "name": "eligible_socios",
+          "sql": "SELECT CONVERT(varchar(36),SocioID) AS SocioID,CONVERT(varchar(36),EmpresaID) AS EmpresaID,NumeroSocio,NombreCompleto,PersonaID,Activo,Estatus FROM dbo.CavaSocios_Socios WHERE Activo=1 AND Estatus=N'ACTIVO' ORDER BY FechaCreacion,SocioID;"
+        },
+        {
+          "name": "persona_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_personas FROM dbo.Gobierno_Persona;"
+        },
+        {
+          "name": "persona_vinculo_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_vinculos FROM dbo.Gobierno_PersonaVinculo;"
+        },
+        {
+          "name": "cliente_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_clientes FROM dbo.Cliente_Catalogo;"
+        },
+        {
+          "name": "active_users_with_public_uuid",
+          "sql": "SELECT COUNT_BIG(*) AS active_users_with_public_uuid FROM dbo.Usuario_Catalogo WHERE Activo=1 AND PublicUUID IS NOT NULL;"
+        },
+        {
+          "name": "cava_permissions_catalog",
+          "sql": "SELECT PermisoID,Codigo,Nombre,Activo FROM dbo.RBAC_Permisos WHERE Codigo IN (N'CAVA_SOCIOS_VER',N'CAVA_SOCIOS_EDITAR') ORDER BY Codigo;"
+        },
+        {
+          "name": "persona_fk",
+          "sql": "SELECT fk.name AS fk_name,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk WHERE fk.parent_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND fk.name=N'FK_CavaSocios_Socios_GobiernoPersona';"
+        },
+        {
+          "name": "child_fk_integrity",
+          "sql": "SELECT COUNT_BIG(*) AS trusted_child_fks FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fk.referenced_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND OBJECT_NAME(fk.parent_object_id) IN (N'CavaSocios_Botellas',N'CavaSocios_Cargos',N'CavaSocios_Movimientos') AND pc.name=N'SocioID' AND rc.name=N'SocioID' AND fk.is_disabled=0 AND fk.is_not_trusted=0;"
+        }
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios_persona_link.py",
+        "backend/tests/test_cava_socios.py"
+      ]
+    }
+  ],
+  "constraints": [
+    "Gate12J remains closed",
+    "Gate12K remains closed",
+    "Gate12L remains closed",
+    "Gate12M remains closed and certified",
+    "READ_ONLY only",
+    "Development only",
+    "No UAT mutation yet",
+    "No create Persona",
+    "No link or unlink Socio",
+    "No DDL or DML",
+    "No Production",
+    "No mocks as UAT evidence",
+    "No new RBAC permissions",
+    "No automatic matching",
+    "No new tables columns migrations or sources",
+    "No hardcoded IDs",
+    "Use canonical unidad_negocio_pk and EmpresaID relationships",
+    "Use existing CAVA_SOCIOS_VER and CAVA_SOCIOS_EDITAR",
+    "EDARSAHUB SQL Server remains canonical source",
+    "MongoDB prohibited",
+    "Audit SQL only through canonical readonly connection"
+  ]
+}
