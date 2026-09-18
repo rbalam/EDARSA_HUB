@@ -1,0 +1,102 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE2-DATA-INTEGRATION-DISCOVERY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "53dfe0b405553874f79223c429cfe319031f99d9",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "objective": "Gate 2 Data & Integration Architecture discovery READ_ONLY para BOS Marketing Intelligence & Content Factory. Gate 1 ya esta CERTIFIED/INTEGRATED. Auditar infraestructura existente antes de crear cualquier objeto. Determinar ownership y clasificar cada capacidad como REUSE, ALIGN, CANONICALIZE, EXTEND o NEW_CAPABILITY_REQUIRED. No crear tablas, endpoints, migraciones, jobs runtime, UI, proveedores paralelos, routers AI duplicados, scheduler paralelo, RBAC paralelo ni fuentes de verdad nuevas. EDARSAHUB SQL Server permanece como cerebro canonico. No Mongo operativo. No tocar Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "frontend",
+          "tools",
+          "docs",
+          ".github"
+        ],
+        "search_terms": [
+          "Marketing",
+          "Content Factory",
+          "Campaign",
+          "Attribution",
+          "ROI",
+          "Audience",
+          "Brand",
+          "Trend",
+          "Social Listening",
+          "Publishing",
+          "Connector",
+          "Provider",
+          "AI Provider",
+          "Router",
+          "Asset",
+          "Media",
+          "CRM_Leads",
+          "CRM_Oportunidades",
+          "Cliente_Catalogo",
+          "Venta_Pedidos",
+          "Venta_Cotizaciones",
+          "Comercial_Competidores",
+          "Comercial_Ingesta_Competencia",
+          "Comercial_KPIs",
+          "Finanzas_Presupuestos",
+          "Scheduler",
+          "RBAC",
+          "outbox",
+          "workflow",
+          "idempotency"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.ts",
+          "*.tsx",
+          "*.js",
+          "*.jsx",
+          "*.sql",
+          "*.md",
+          "*.yml",
+          "*.yaml",
+          "*.json"
+        ],
+        "exclude_patterns": [
+          "node_modules/**",
+          ".venv/**",
+          ".vendor/**",
+          "**/__pycache__/**"
+        ],
+        "max_results": 1500
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "marketing_overlap_objects",
+          "sql": "\nSELECT\n    s.name AS schema_name,\n    o.name AS object_name,\n    o.type_desc\nFROM sys.objects o\nJOIN sys.schemas s ON s.schema_id = o.schema_id\nWHERE o.is_ms_shipped = 0\n  AND (\n       o.name LIKE '%Marketing%'\n    OR o.name LIKE '%Campaign%'\n    OR o.name LIKE '%Contenido%'\n    OR o.name LIKE '%Content%'\n    OR o.name LIKE '%Asset%'\n    OR o.name LIKE '%Media%'\n    OR o.name LIKE '%Atribu%'\n    OR o.name LIKE '%Attribution%'\n    OR o.name LIKE '%Audiencia%'\n    OR o.name LIKE '%Audience%'\n    OR o.name LIKE '%Competidor%'\n    OR o.name LIKE '%CRM%'\n  )\nORDER BY s.name, o.name;\n"
+        },
+        {
+          "name": "canonical_crm_commercial_objects",
+          "sql": "\nSELECT\n    s.name AS schema_name,\n    o.name AS object_name,\n    o.type_desc\nFROM sys.objects o\nJOIN sys.schemas s ON s.schema_id = o.schema_id\nWHERE s.name = 'dbo'\n  AND o.name IN (\n      'Cliente_Catalogo',\n      'Cliente_Contactos',\n      'Cliente_Direcciones',\n      'CRM_Leads',\n      'CRM_Oportunidades',\n      'Venta_Cotizaciones',\n      'Venta_Pedidos',\n      'Comercial_Competidores',\n      'Comercial_CompetidoresCatalogo',\n      'Comercial_CompetidoresListas',\n      'Comercial_CompetidoresListasDetalle',\n      'Comercial_CompetidoresMenuItems',\n      'Comercial_CompetidoresUnidad',\n      'Comercial_Ingesta_Competencia'\n  )\nORDER BY o.name;\n"
+        },
+        {
+          "name": "candidate_columns_and_types",
+          "sql": "\nSELECT\n    s.name AS schema_name,\n    t.name AS table_name,\n    c.column_id,\n    c.name AS column_name,\n    ty.name AS data_type,\n    c.max_length,\n    c.precision,\n    c.scale,\n    c.is_nullable\nFROM sys.tables t\nJOIN sys.schemas s\n  ON s.schema_id = t.schema_id\nJOIN sys.columns c\n  ON c.object_id = t.object_id\nJOIN sys.types ty\n  ON ty.user_type_id = c.user_type_id\nWHERE t.is_ms_shipped = 0\n  AND (\n       t.name LIKE '%Marketing%'\n    OR t.name LIKE '%Campaign%'\n    OR t.name LIKE '%Content%'\n    OR t.name LIKE '%Asset%'\n    OR t.name LIKE '%Media%'\n    OR t.name LIKE '%Competidor%'\n    OR t.name LIKE 'CRM_%'\n    OR t.name LIKE 'Cliente_%'\n  )\nORDER BY s.name, t.name, c.column_id;\n"
+        },
+        {
+          "name": "candidate_foreign_keys",
+          "sql": "\nSELECT\n    sch1.name AS parent_schema,\n    t1.name AS parent_table,\n    c1.name AS parent_column,\n    fk.name AS fk_name,\n    sch2.name AS referenced_schema,\n    t2.name AS referenced_table,\n    c2.name AS referenced_column\nFROM sys.foreign_key_columns fkc\nJOIN sys.foreign_keys fk\n  ON fk.object_id = fkc.constraint_object_id\nJOIN sys.tables t1\n  ON t1.object_id = fkc.parent_object_id\nJOIN sys.schemas sch1\n  ON sch1.schema_id = t1.schema_id\nJOIN sys.columns c1\n  ON c1.object_id = fkc.parent_object_id\n AND c1.column_id = fkc.parent_column_id\nJOIN sys.tables t2\n  ON t2.object_id = fkc.referenced_object_id\nJOIN sys.schemas sch2\n  ON sch2.schema_id = t2.schema_id\nJOIN sys.columns c2\n  ON c2.object_id = fkc.referenced_object_id\n AND c2.column_id = fkc.referenced_column_id\nWHERE\n       t1.name LIKE '%Marketing%'\n    OR t1.name LIKE '%Campaign%'\n    OR t1.name LIKE '%Content%'\n    OR t1.name LIKE '%Asset%'\n    OR t1.name LIKE '%Media%'\n    OR t1.name LIKE '%Competidor%'\n    OR t1.name LIKE 'CRM_%'\n    OR t2.name LIKE '%Marketing%'\n    OR t2.name LIKE '%Campaign%'\n    OR t2.name LIKE '%Content%'\n    OR t2.name LIKE '%Asset%'\n    OR t2.name LIKE '%Media%'\n    OR t2.name LIKE '%Competidor%'\n    OR t2.name LIKE 'CRM_%'\nORDER BY parent_schema, parent_table, fk_name;\n"
+        },
+        {
+          "name": "company_unit_scope_candidates",
+          "sql": "\nSELECT\n    s.name AS schema_name,\n    t.name AS table_name,\n    c.name AS column_name,\n    ty.name AS data_type\nFROM sys.tables t\nJOIN sys.schemas s\n  ON s.schema_id = t.schema_id\nJOIN sys.columns c\n  ON c.object_id = t.object_id\nJOIN sys.types ty\n  ON ty.user_type_id = c.user_type_id\nWHERE c.name IN (\n    'empresa_id',\n    'EmpresaID',\n    'id_empresa',\n    'unidad_negocio_id',\n    'unidad_negocio_pk',\n    'sucursal_id',\n    'SucursalID',\n    'fecha_operacion',\n    'FechaOperacion'\n)\nAND (\n       t.name LIKE '%Marketing%'\n    OR t.name LIKE '%Campaign%'\n    OR t.name LIKE '%Content%'\n    OR t.name LIKE '%Competidor%'\n    OR t.name LIKE 'CRM_%'\n    OR t.name LIKE 'Cliente_%'\n    OR t.name LIKE 'Venta_%'\n)\nORDER BY s.name, t.name, c.column_id;\n"
+        }
+      ]
+    }
+  ]
+}
