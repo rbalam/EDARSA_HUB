@@ -1,0 +1,91 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-CRM-CALENDAR-CANONICAL-EVENTS-GATE1-R2",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Auditar en modo estrictamente READ_ONLY la implementacion real existente del CRM/calendario de EDARSA HUB y determinar, con evidencia de repositorio y SQL Server, como reutilizarlo como fuente canonica de eventos especiales para CRM, Comercial, Tablero Ejecutivo e IA/chat. Localizar estructuras existentes, relaciones, endpoints, frontend, RBAC y capacidades de eventos/periodos; evaluar reutilizacion directa, ampliacion minima o necesidad de una tabla hija canonica de instancias anuales. No implementar cambios.",
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": ["backend", "frontend"],
+        "search_terms": [
+          "CRM",
+          "calendar",
+          "calendario",
+          "evento",
+          "eventos",
+          "actividad",
+          "actividades",
+          "campana",
+          "campaña",
+          "cita",
+          "recordatorio",
+          "fecha_inicio",
+          "fecha_fin",
+          "recurrencia",
+          "tag",
+          "etiqueta",
+          "Comercial",
+          "TableroEjecutivo"
+        ],
+        "include_patterns": ["*.py", "*.js", "*.jsx", "*.ts", "*.tsx"],
+        "exclude_patterns": ["node_modules/*", "dist/*", "build/*", "__pycache__/*"],
+        "max_results": 1500
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "crm_calendar_candidate_tables",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name LIKE '%CRM%' OR t.name LIKE '%Calend%' OR t.name LIKE '%Event%' OR t.name LIKE '%Actividad%' OR t.name LIKE '%Cita%' OR t.name LIKE '%Campan%' OR t.name LIKE '%Record%' ORDER BY s.name,t.name;"
+        },
+        {
+          "name": "crm_calendar_candidate_columns",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE '%CRM%' OR t.name LIKE '%Calend%' OR t.name LIKE '%Event%' OR t.name LIKE '%Actividad%' OR t.name LIKE '%Cita%' OR t.name LIKE '%Campan%' OR t.name LIKE '%Record%' OR c.name LIKE '%FechaInicio%' OR c.name LIKE '%FechaFin%' OR c.name LIKE '%Recurr%' OR c.name LIKE '%Evento%' OR c.name LIKE '%Tag%' OR c.name LIKE '%Etiquet%' ORDER BY s.name,t.name,c.column_id;"
+        },
+        {
+          "name": "crm_calendar_candidate_keys",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, kc.name AS key_name, kc.type_desc, c.name AS column_name, ic.key_ordinal FROM sys.key_constraints kc JOIN sys.tables t ON t.object_id=kc.parent_object_id JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.index_columns ic ON ic.object_id=t.object_id AND ic.index_id=kc.unique_index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE t.name LIKE '%CRM%' OR t.name LIKE '%Calend%' OR t.name LIKE '%Event%' OR t.name LIKE '%Actividad%' OR t.name LIKE '%Cita%' OR t.name LIKE '%Campan%' OR t.name LIKE '%Record%' ORDER BY s.name,t.name,kc.name,ic.key_ordinal;"
+        },
+        {
+          "name": "crm_calendar_candidate_foreign_keys",
+          "sql": "SELECT s1.name AS schema_name, t1.name AS table_name, fk.name AS fk_name, c1.name AS column_name, s2.name AS ref_schema_name, t2.name AS ref_table_name, c2.name AS ref_column_name FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.tables t1 ON t1.object_id=fk.parent_object_id JOIN sys.schemas s1 ON s1.schema_id=t1.schema_id JOIN sys.columns c1 ON c1.object_id=t1.object_id AND c1.column_id=fkc.parent_column_id JOIN sys.tables t2 ON t2.object_id=fk.referenced_object_id JOIN sys.schemas s2 ON s2.schema_id=t2.schema_id JOIN sys.columns c2 ON c2.object_id=t2.object_id AND c2.column_id=fkc.referenced_column_id WHERE t1.name LIKE '%CRM%' OR t1.name LIKE '%Calend%' OR t1.name LIKE '%Event%' OR t1.name LIKE '%Actividad%' OR t1.name LIKE '%Cita%' OR t1.name LIKE '%Campan%' OR t1.name LIKE '%Record%' ORDER BY s1.name,t1.name,fk.name;"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "acceptance": [
+    "status=READ_ONLY_COMPLETE o BLOCKED con blocker explicito",
+    "quality_gate=PASS si existe evidencia suficiente",
+    "production_touched=false",
+    "files_changed=[]",
+    "Sin DDL, DML ni cambios de codigo",
+    "Inventario de tablas/vistas/campos/PK/FK relacionados con CRM/calendario/eventos",
+    "Inventario de backend, endpoints, frontend y RBAC relacionados",
+    "Analisis especifico de impacto futuro en Comercial y Tablero Ejecutivo",
+    "Matriz EXISTE_REUTILIZAR / EXISTE_AMPLIAR / NUEVO_NECESARIO / NO_CREAR / NO_CONFIRMADO",
+    "Evaluacion de identidad de evento vs instancia anual para eventos moviles",
+    "Propuesta de Gate 2 sin ejecutarlo"
+  ],
+  "constraints": [
+    "EDARSA HUB SQL Server es el cerebro y la fuente canonica",
+    "No usar MongoDB como fuente operativa o de verdad",
+    "No crear calendarios, catalogos o logica paralela si existe estructura canonica reutilizable",
+    "No tocar Produccion",
+    "No tocar formulas de ventas, Ventas del Dia, Proyeccion de Cierre del Dia, Proyeccion del Mes, Proyeccion del Ano, Venta Periodo, multi-mes, multi-ano, comparativos actuales, fuentes por sucursal, APIs de ventas del dia ni tabla temporal de cheques",
+    "No modificar permisos/RBAC; solo auditarlos",
+    "No hardcodear IDs, empresas, sucursales, fechas ni eventos",
+    "No hacer DDL, DML ni commits funcionales",
+    "Preservar completamente lo ya validado y congelado"
+  ]
+}
