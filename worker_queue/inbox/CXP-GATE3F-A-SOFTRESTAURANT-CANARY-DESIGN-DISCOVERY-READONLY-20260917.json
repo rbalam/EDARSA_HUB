@@ -1,0 +1,95 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CXP-GATE3F-A-SOFTRESTAURANT-CANARY-DESIGN-DISCOVERY-READONLY-20260917",
+  "created_at_utc": "2026-09-18T00:37:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c85ab15705196c85ef7e4bf7fc3847d3f13e6960",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "GATE 3F-A SOFTRESTAURANT CANARY DESIGN DISCOVERY. Resolver exclusivamente el shape exacto candidato de pago de compra, semantica observable de fecha/enviadoacentral/referencia, lookup post-write determinista, confirmacion por saldo y diferencias entre instalaciones. Solo READ ONLY. No ejecutar canary, no escribir, no implementar Payment Executor.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "CIENFUEGOS",
+        "ESTELAR",
+        "130MID"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "queries": [
+        {
+          "name": "f3a_soft_runtime_identity",
+          "sql": "SELECT @@SERVERNAME AS server_name,DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user"
+        },
+        {
+          "name": "f3a_soft_payment_shape",
+          "sql": "SELECT COUNT_BIG(*) AS total,SUM(CASE WHEN foliocompra IS NULL THEN 1 ELSE 0 END) AS foliocompra_nulls,SUM(CASE WHEN fecha IS NULL THEN 1 ELSE 0 END) AS fecha_nulls,SUM(CASE WHEN abono IS NULL THEN 1 ELSE 0 END) AS abono_nulls,SUM(CASE WHEN referencia IS NULL OR LTRIM(RTRIM(referencia))='' THEN 1 ELSE 0 END) AS referencia_vacia,SUM(CASE WHEN enviadoacentral IS NULL THEN 1 ELSE 0 END) AS enviadoacentral_nulls,SUM(CASE WHEN foliogasto IS NOT NULL THEN 1 ELSE 0 END) AS con_foliogasto FROM dbo.pagosproveedores"
+        },
+        {
+          "name": "f3a_soft_fecha_shape",
+          "sql": "SELECT MIN(CAST(fecha AS date)) AS min_fecha,MAX(CAST(fecha AS date)) AS max_fecha,COUNT_BIG(DISTINCT CAST(fecha AS date)) AS fechas_distintas FROM dbo.pagosproveedores"
+        },
+        {
+          "name": "f3a_soft_enviadoacentral_shape",
+          "sql": "SELECT enviadoacentral,COUNT_BIG(*) AS total FROM dbo.pagosproveedores GROUP BY enviadoacentral ORDER BY enviadoacentral"
+        },
+        {
+          "name": "f3a_soft_reference_shape",
+          "sql": "SELECT COUNT_BIG(*) AS total,COUNT_BIG(DISTINCT referencia) AS referencias_distintas,MIN(LEN(referencia)) AS min_len,MAX(LEN(referencia)) AS max_len,SUM(CASE WHEN referencia IS NULL OR LTRIM(RTRIM(referencia))='' THEN 1 ELSE 0 END) AS referencia_vacia FROM dbo.pagosproveedores"
+        },
+        {
+          "name": "f3a_soft_reference_duplicate_groups",
+          "sql": "SELECT COUNT_BIG(*) AS grupos_duplicados FROM (SELECT referencia FROM dbo.pagosproveedores WHERE referencia IS NOT NULL AND LTRIM(RTRIM(referencia))<>'' GROUP BY referencia HAVING COUNT_BIG(*)>1) q"
+        },
+        {
+          "name": "f3a_soft_purchase_reference_duplicate_groups",
+          "sql": "SELECT COUNT_BIG(*) AS grupos_duplicados FROM (SELECT foliocompra,referencia FROM dbo.pagosproveedores WHERE foliocompra IS NOT NULL AND referencia IS NOT NULL AND LTRIM(RTRIM(referencia))<>'' GROUP BY foliocompra,referencia HAVING COUNT_BIG(*)>1) q"
+        },
+        {
+          "name": "f3a_soft_exact_tuple_duplicate_groups",
+          "sql": "SELECT COUNT_BIG(*) AS grupos_duplicados FROM (SELECT foliocompra,fecha,abono,referencia FROM dbo.pagosproveedores GROUP BY foliocompra,fecha,abono,referencia HAVING COUNT_BIG(*)>1) q"
+        },
+        {
+          "name": "f3a_soft_payment_indexes",
+          "sql": "SELECT i.index_id,i.name AS index_name,i.is_unique,i.is_primary_key,i.is_unique_constraint,ic.key_ordinal,c.name AS column_name FROM sys.indexes i LEFT JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id LEFT JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.pagosproveedores') ORDER BY i.index_id,ic.index_column_id"
+        },
+        {
+          "name": "f3a_soft_balance_views",
+          "sql": "SELECT o.name AS view_name,OBJECT_DEFINITION(o.object_id) AS definition FROM sys.objects o WHERE o.type='V' AND o.name IN (N'AC_vwSaldoCxp',N'vwSaldoCxp') ORDER BY o.name"
+        },
+        {
+          "name": "f3a_soft_balance_view_columns",
+          "sql": "SELECT OBJECT_NAME(c.object_id) AS view_name,c.column_id,c.name AS column_name,ty.name AS data_type FROM sys.columns c INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE c.object_id IN (OBJECT_ID(N'dbo.AC_vwSaldoCxp'),OBJECT_ID(N'dbo.vwSaldoCxp')) ORDER BY view_name,c.column_id"
+        },
+        {
+          "name": "f3a_soft_related_triggers",
+          "sql": "SELECT OBJECT_NAME(t.parent_id) AS parent_object,t.name AS trigger_name,t.is_disabled,t.is_instead_of_trigger,OBJECT_DEFINITION(t.object_id) AS definition FROM sys.triggers t WHERE OBJECT_NAME(t.parent_id) IN (N'pagosproveedores',N'compras',N'gastos',N'chequespagos',N'chequespagosf',N'tempchequespagos',N'movtoscaja') ORDER BY parent_object,t.name"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ ONLY SQL ONLY",
+    "actions must remain empty",
+    "NO INSERT UPDATE DELETE MERGE EXEC EXECUTE DDL SELECT INTO OR MULTI-STATEMENT SQL",
+    "NO procedure execution",
+    "NO individual provider, invoice or payment business rows",
+    "Only metadata, definitions, aggregate patterns and bounded runtime identity",
+    "NO Production",
+    "NO code or file mutation",
+    "Connections only through PosRuntimeResolver and get_external_sql_connection",
+    "Do not treat referencia as an idempotency key",
+    "Do not invent enviadoacentral semantics",
+    "Do not infer cheque, caja or accounting side effects without direct evidence",
+    "Do not authorize any canary or Payment Executor writer",
+    "Payment Executor writer remains 0 percent"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
