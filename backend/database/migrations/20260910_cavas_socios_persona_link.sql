@@ -40,10 +40,12 @@ BEGIN TRY
           AND name = N'FK_CavaSocios_Socios_GobiernoPersona'
     )
     BEGIN
-        ALTER TABLE dbo.CavaSocios_Socios
-        ADD CONSTRAINT FK_CavaSocios_Socios_GobiernoPersona
-        FOREIGN KEY (PersonaID)
-        REFERENCES dbo.Gobierno_Persona(PersonaID);
+        EXEC sys.sp_executesql N'
+            ALTER TABLE dbo.CavaSocios_Socios
+            ADD CONSTRAINT FK_CavaSocios_Socios_GobiernoPersona
+            FOREIGN KEY (PersonaID)
+            REFERENCES dbo.Gobierno_Persona(PersonaID);
+        ';
     END;
 
     IF NOT EXISTS (
@@ -53,9 +55,11 @@ BEGIN TRY
           AND name = N'IX_CavaSocios_Socios_PersonaID'
     )
     BEGIN
-        CREATE INDEX IX_CavaSocios_Socios_PersonaID
-        ON dbo.CavaSocios_Socios(PersonaID)
-        WHERE PersonaID IS NOT NULL;
+        EXEC sys.sp_executesql N'
+            CREATE INDEX IX_CavaSocios_Socios_PersonaID
+            ON dbo.CavaSocios_Socios(PersonaID)
+            WHERE PersonaID IS NOT NULL;
+        ';
     END;
 
     COMMIT TRANSACTION;
