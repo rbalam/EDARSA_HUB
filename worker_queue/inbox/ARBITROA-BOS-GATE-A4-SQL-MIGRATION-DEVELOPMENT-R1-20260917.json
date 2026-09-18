@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "ARBITROA-BOS-GATE-A4-SQL-MIGRATION-DEVELOPMENT-R1-20260917",
+  "created_at_utc": "2026-09-18T03:45:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "920638ce165f3bb5135c89fb78803836d3dc28fd",
+  "production_allowed": false,
+  "objective": "Materializar exclusivamente la migracion A4 fundacional de ARBITROA en Desarrollo mediante SQL_MIGRATION_DEVELOPMENT y el writer SQL canonico existente. Crear solo las siete tablas A4, seeds de deportes por Codigo y registro canonico de modulo/menu/permisos. No tocar Produccion, no usar HRLectura como writer, no crear tablas A5-A13.",
+  "human_summary_language": "es",
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "actions": [],
+  "migration_path": "backend/database/migrations/20260918_001_arbitroa_a4_foundation.sql",
+  "migration_sha256": "422ec8ea5f4fc02fcf68a45229118c2d3d13fcf4543a5ac44203997d8ee09868",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": true,
+  "preflight_checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "a4_preflight_identity_and_absence",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS user_name,(SELECT COUNT(*) FROM sys.tables WHERE name IN ('ARBITROA_Deportes','ARBITROA_Organizaciones','ARBITROA_Afiliaciones','ARBITROA_OrganizacionPersonas','ARBITROA_Sedes','ARBITROA_Canchas','ARBITROA_Reglamentos')) AS existing_a4_tables,1/CASE WHEN DB_NAME()='EDARSAHUB' AND SUSER_SNAME()='HRLectura' AND USER_NAME()='HRLectura' AND (SELECT COUNT(*) FROM sys.tables WHERE name IN ('ARBITROA_Deportes','ARBITROA_Organizaciones','ARBITROA_Afiliaciones','ARBITROA_OrganizacionPersonas','ARBITROA_Sedes','ARBITROA_Canchas','ARBITROA_Reglamentos'))=0 THEN 1 ELSE 0 END AS a4_preflight_assertion"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "a4_post_tables_seed_rbac",
+          "sql": "SELECT (SELECT COUNT(*) FROM sys.tables WHERE name IN ('ARBITROA_Deportes','ARBITROA_Organizaciones','ARBITROA_Afiliaciones','ARBITROA_OrganizacionPersonas','ARBITROA_Sedes','ARBITROA_Canchas','ARBITROA_Reglamentos')) AS a4_tables,(SELECT COUNT(*) FROM dbo.ARBITROA_Deportes WHERE Codigo IN ('FUTBOL','FUTBOL7','FUTBOL_RAPIDO','BASQUETBOL','VOLEIBOL','BEISBOL') AND Activo=1) AS deportes_seed,(SELECT COUNT(*) FROM dbo.Sistema_Modulos WHERE Codigo='ARBITROA' AND ISNULL(EsSatelite,0)=1 AND ISNULL(EsPortal,0)=0 AND ISNULL(Activo,1)=1) AS modulo_ok,(SELECT COUNT(*) FROM dbo.Sistema_ModulosMenus m INNER JOIN dbo.Sistema_Modulos s ON s.ModuloID=m.ModuloID WHERE s.Codigo='ARBITROA' AND m.Codigo='arbitroa.inicio' AND m.Ruta='/arbitroa' AND m.RequierePermiso='ARBITROA' AND ISNULL(m.Activo,1)=1) AS menu_ok,(SELECT COUNT(*) FROM dbo.Sistema_ModulosPermisos p INNER JOIN dbo.Sistema_Modulos s ON s.ModuloID=p.ModuloID WHERE s.Codigo='ARBITROA' AND p.Codigo IN ('arbitroa.ver','arbitroa.administrar') AND ISNULL(p.Activo,1)=1) AS permisos_ok,1/CASE WHEN (SELECT COUNT(*) FROM sys.tables WHERE name IN ('ARBITROA_Deportes','ARBITROA_Organizaciones','ARBITROA_Afiliaciones','ARBITROA_OrganizacionPersonas','ARBITROA_Sedes','ARBITROA_Canchas','ARBITROA_Reglamentos'))=7 AND (SELECT COUNT(*) FROM dbo.ARBITROA_Deportes WHERE Codigo IN ('FUTBOL','FUTBOL7','FUTBOL_RAPIDO','BASQUETBOL','VOLEIBOL','BEISBOL') AND Activo=1)=6 AND (SELECT COUNT(*) FROM dbo.Sistema_Modulos WHERE Codigo='ARBITROA' AND ISNULL(EsSatelite,0)=1 AND ISNULL(EsPortal,0)=0 AND ISNULL(Activo,1)=1)=1 AND (SELECT COUNT(*) FROM dbo.Sistema_ModulosMenus m INNER JOIN dbo.Sistema_Modulos s ON s.ModuloID=m.ModuloID WHERE s.Codigo='ARBITROA' AND m.Codigo='arbitroa.inicio' AND m.Ruta='/arbitroa' AND m.RequierePermiso='ARBITROA' AND ISNULL(m.Activo,1)=1)=1 AND (SELECT COUNT(*) FROM dbo.Sistema_ModulosPermisos p INNER JOIN dbo.Sistema_Modulos s ON s.ModuloID=p.ModuloID WHERE s.Codigo='ARBITROA' AND p.Codigo IN ('arbitroa.ver','arbitroa.administrar') AND ISNULL(p.Activo,1)=1)=2 THEN 1 ELSE 0 END AS a4_post_assertion"
+        },
+        {
+          "name": "a4_post_no_later_gate_tables",
+          "sql": "SELECT COUNT(*) AS forbidden_later_tables,1/CASE WHEN COUNT(*)=0 THEN 1 ELSE 0 END AS no_later_gate_tables_assertion FROM sys.tables WHERE name IN ('ARBITROA_Temporadas','ARBITROA_Torneos','ARBITROA_Equipos','ARBITROA_Jornadas','ARBITROA_Partidos','ARBITROA_PerfilesArbitrales','ARBITROA_Designaciones','ARBITROA_Cedulas','ARBITROA_Incidencias','ARBITROA_TiposEventoDeportivo','ARBITROA_TarifasArbitrales','ARBITROA_GeoSesiones','ARBITROA_SafeChecklists')"
+        }
+      ]
+    }
+  ]
+}
