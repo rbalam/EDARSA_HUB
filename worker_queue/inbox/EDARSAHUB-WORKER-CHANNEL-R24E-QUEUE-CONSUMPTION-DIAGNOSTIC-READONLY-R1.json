@@ -1,0 +1,63 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-CHANNEL-R24E-QUEUE-CONSUMPTION-DIAGNOSTIC-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "objective": "Auditoria READ_ONLY del canal Universal Worker para diagnosticar por que R24E y R24E-R2 fueron publicados en worker/requests pero no se observa commit de integracion en Edarsahub_Desarrollo. No ejecutar mutaciones. No reintentar frontend. No avanzar a R24F. No tocar Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          ".git/universal-worker-queue",
+          "worker_queue",
+          "backend",
+          "scripts",
+          ".github"
+        ],
+        "search_terms": [
+          "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-FRONTEND-LOTE-PROVEEDOR-R1",
+          "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R2-FRONTEND-LOTE-PROVEEDOR-RECOVERY",
+          "b65b955815fe8f0096825449cbbbbdcf87607615",
+          "ef42100dfdd218694d265d1f5429a9ac6d0eb49b",
+          "LotesProveedorPage",
+          "worker/requests",
+          "universal_job_dispatcher",
+          "universal_job_bridge",
+          "pending",
+          "processing",
+          "results",
+          "done",
+          "published",
+          "rejected",
+          "lifecycle",
+          "Agent Guard",
+          "frontend_build",
+          "replace_text",
+          "git_diff_check"
+        ],
+        "include_patterns": ["*.json", "*.py", "*.sh", "*.md", "*.yml", "*.yaml", "*.txt", "*.log"],
+        "exclude_patterns": ["node_modules/*", "frontend/node_modules/*", "build/*", "dist/*", ".git/objects/*"],
+        "max_results": 1200
+      }
+    }
+  ],
+  "diagnostic_questions": [
+    "Confirmar si los commits b65b955815fe8f0096825449cbbbbdcf87607615 y ef42100dfdd218694d265d1f5429a9ac6d0eb49b existen y estan en worker/requests.",
+    "Confirmar si el Worker/dispatcher consume worker/requests o espera otra ruta/carpeta/branch.",
+    "Confirmar si R24E o R24E-R2 aparecen en pending, processing, results, done, published, rejected o rejected_history.",
+    "Confirmar si existe lifecycle oficial para R24E/R24E-R2 y su estado terminal.",
+    "Confirmar si hubo rechazo por replace_text, frontend_build, repository_contract_audit, git_diff_check o Agent Guard.",
+    "Confirmar si existe commit de integracion en Edarsahub_Desarrollo que contenga LotesProveedorPage o /tablajeria/lotes-proveedor.",
+    "Confirmar si el dispatcher esta activo o si el canal de resultados no esta publicando de vuelta a GitHub."
+  ],
+  "expected_result": {
+    "quality_gate": "PASS",
+    "production_touched": false,
+    "files_changed_expected": []
+  }
+}
