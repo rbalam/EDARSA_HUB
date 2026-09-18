@@ -1,26 +1,32 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "53dfe0b405553874f79223c429cfe319031f99d9",
-  "generated_at_utc": "2026-09-18T15:29:27Z",
+  "generated_at_utc": "2026-09-18T15:30:50Z",
   "history": {
-    "done_total_local": 616,
+    "done_total_local": 617,
     "pending_total_local": 0,
     "processing_total_local": 1,
     "rejected_total_local": 599,
-    "results_total_local": 1072
+    "results_total_local": 1073
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 103,
+      "age_seconds": 186,
       "job_id": "ARBITROA-BOS-GATE-A5-PREFLIGHT-SQL-READONLY-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 17,
+      "age_seconds": 82,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE2-DATA-INTEGRATION-DISCOVERY-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 11,
+      "job_id": "coa-gate6c-fiscal-status-lifecycle-design-v1-20260918",
       "reason": null,
       "state": "RUNNING"
     }
@@ -32,14 +38,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
+  "queue_result_ready_recent": 2,
   "queue_running": 1,
   "runtime": {
-    "current_job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE2-DATA-INTEGRATION-DISCOVERY-R1",
+    "current_job_id": "coa-gate6c-fiscal-status-lifecycle-design-v1-20260918",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-18T15:29:22Z",
-    "last_receive_utc": "2026-09-18T15:29:25Z",
-    "last_terminal_utc": "2026-09-18T15:27:43Z",
+    "last_cycle_utc": "2026-09-18T15:30:43Z",
+    "last_receive_utc": "2026-09-18T15:30:47Z",
+    "last_terminal_utc": "2026-09-18T15:29:27Z",
     "pid": "67"
   },
   "schema": "edarsahub.worker-health.v3",
