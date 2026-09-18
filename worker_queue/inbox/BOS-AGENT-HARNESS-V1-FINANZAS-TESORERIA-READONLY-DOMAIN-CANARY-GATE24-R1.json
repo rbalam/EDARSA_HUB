@@ -1,0 +1,76 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENT-HARNESS-V1-FINANZAS-TESORERIA-READONLY-DOMAIN-CANARY-GATE24-R1",
+  "created_at_utc": "2026-09-18T01:02:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "cc278d33fa14566a6b196a3fe6175e7412949ab9",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Gate24 canary READ_ONLY del dominio Finanzas/Tesoreria seleccionado por Gate23. Certificar exclusivamente contratos existentes de acceso SQL-first, RBAC/fail-closed, matriz de permisos/autorizaciones de pagos y CxP, sin ejecutar pagos, sin llamadas bancarias, sin NetPay, sin Scheduler, sin mutaciones y sin Production. Confirmar que el dominio puede ser consumido por BOS Agent Harness como contexto de solo lectura manteniendo EDARSAHUB SQL Server como fuente canonica y respetando alcance por empresa/unidad.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/finanzas/access.py",
+        "backend/modules/finanzas/cuentas_por_pagar.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_tesoreria_access_fail_closed.py",
+        "backend/tests/test_tes_pagos_rbac_matriz_contract.py",
+        "backend/tests/test_cxp_canonical_authorization_integration.py",
+        "backend/tests/test_cxp_authorizer_visibility_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/finanzas/access.py",
+          "backend/modules/finanzas/cuentas_por_pagar.py",
+          "backend/tests/test_tesoreria_access_fail_closed.py",
+          "backend/tests/test_tes_pagos_rbac_matriz_contract.py",
+          "backend/tests/test_cxp_canonical_authorization_integration.py",
+          "backend/tests/test_cxp_authorizer_visibility_contract.py"
+        ],
+        "search_terms": [
+          "sql_first",
+          "rbac",
+          "permission",
+          "fail_closed",
+          "Usuario_Autorizaciones",
+          "Usuario_MatrizAutorizacion",
+          "Finanzas_CxP_DecisionesPago",
+          "Finanzas_CxP_PagosOrigenQueue",
+          "require_finanzas_permission",
+          "resolve_finanzas_unit_filter"
+        ],
+        "include_patterns": ["*.py"],
+        "exclude_patterns": ["*.pyc", "__pycache__/*"],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "harness_context": {
+    "plan_step_id": "gate24-finanzas-tesoreria-readonly-domain-canary-r1",
+    "domain": "finanzas",
+    "procedure": "repository-contract-audit",
+    "risk": "R0",
+    "data_classification": "FINANCIAL_PRIVATE",
+    "agent_id": "bos-backend",
+    "agent_version": "1",
+    "skill_id": "repository-contract-audit",
+    "skill_version": "1",
+    "executor": "worker"
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
