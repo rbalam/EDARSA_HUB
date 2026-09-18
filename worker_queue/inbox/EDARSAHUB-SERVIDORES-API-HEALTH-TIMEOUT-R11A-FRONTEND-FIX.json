@@ -1,0 +1,34 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SERVIDORES-API-HEALTH-TIMEOUT-R11A-FRONTEND-FIX",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Corregir falsos estados rojos en SERVIDORES > Conexiones API: el backend de test-connectivity puede esperar 30 segundos, pero el cliente Axios global corta a 15 segundos. Aplicar un timeout explicito de 40 segundos SOLO a la llamada test-connectivity del modulo Servidores, conservando autenticacion, RBAC, API key interna y el resto del cliente global sin cambios.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Alta a servidores"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "      // Usar endpoint que obtiene api_key internamente y no requiere permisos estrictos\n      const response = await api.post(`/api-connections/${apiConn.id}/test-connectivity`);",
+      "new": "      // El backend de test-connectivity puede esperar hasta 30s. Este request usa\n      // un margen propio para no heredar el timeout global de 15s y marcar falsos Error.\n      const response = await api.post(\n        `/api-connections/${apiConn.id}/test-connectivity`,\n        {},\n        { timeout: 40000 }\n      );",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
