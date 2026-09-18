@@ -1,0 +1,525 @@
+{
+  "base_sha": "83f648c992dd4f4f2cd3060ac6d07b85734dd9dc",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T01:14:45Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "UNIVERSAL-BANKING-GATE0-FINAL-SQL-EVIDENCE-R1-20260917",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T01:15:00Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "server_name",
+              "database_name",
+              "login_name",
+              "database_user"
+            ],
+            "name": "ubg0_runtime_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "ns559627",
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc"
+            ],
+            "name": "ubg0_candidate_objects",
+            "row_count_returned": 19,
+            "rows": [
+              [
+                "Comercial",
+                "TableroEjecutivoCache",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_Archivos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "automatizacion_inventarios_ejecuciones",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "COA_ExpedienteEventos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Comercial_AlertasMargenEventos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Comercial_Dashboard_Cache",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Comercial_KPIs_Cache",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_Eventos_Pendientes",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "ConsultasSQL_EjecucionesLog",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Finanzas_NetPayRobotArchivos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Finanzas_NetPayRobotEjecuciones",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Finanzas_NetPayRobotEventosLog",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Global_Cat_Bancos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Gobierno_AlertaEvento",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Operaciones_Tablaje_EventosContables",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_Bancos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "RRR_Eventos",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Sync_Control_Ejecuciones",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Sync_Response_Cache",
+                "USER_TABLE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "column_name",
+              "data_type"
+            ],
+            "name": "ubg0_candidate_columns",
+            "row_count_returned": 47,
+            "rows": [
+              [
+                "dbo",
+                "ActivoFijo_Activos",
+                "UbicacionActualID",
+                "int"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_Activos",
+                "UbicacionEspecifica",
+                "varchar"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_Alertas",
+                "OrdenTrabajoID",
+                "bigint"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_Autorizaciones",
+                "OrdenTrabajoID",
+                "bigint"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_BajasActivos",
+                "FechaBaja",
+                "date"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_Cotizaciones",
+                "OrdenTrabajoID",
+                "bigint"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_HistorialAsignaciones",
+                "UbicacionID",
+                "int"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_MovimientosActivo",
+                "UbicacionOrigenID",
+                "int"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_MovimientosActivo",
+                "UbicacionDestinoID",
+                "int"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_OrdenesTrabajo",
+                "OrdenTrabajoID",
+                "bigint"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_OrdenesTrabajo",
+                "UbicacionID",
+                "int"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_OrdenesTrabajo",
+                "TrabajoRealizado",
+                "varchar"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_OrdenTrabajoCostos",
+                "OrdenTrabajoCostoID",
+                "bigint"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_OrdenTrabajoCostos",
+                "OrdenTrabajoID",
+                "bigint"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_PlanesMantenimiento",
+                "UbicacionID",
+                "int"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_ReglasClaseLibro",
+                "CuentaBaja",
+                "varchar"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_TipoUbicacion",
+                "TipoUbicacionID",
+                "smallint"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_Ubicaciones",
+                "UbicacionID",
+                "int"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_Ubicaciones",
+                "CodigoUbicacion",
+                "varchar"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_Ubicaciones",
+                "NombreUbicacion",
+                "varchar"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_Ubicaciones",
+                "UbicacionPadreID",
+                "int"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_Ubicaciones",
+                "TipoUbicacionID",
+                "smallint"
+              ],
+              [
+                "dbo",
+                "BAK_Usuario_RolesContexto_RBAC_20260622_003529",
+                "FechaBaja",
+                "datetime2"
+              ],
+              [
+                "dbo",
+                "BAK_Usuario_RolesContexto_RBAC_20260622_003654",
+                "FechaBaja",
+                "datetime2"
+              ],
+              [
+                "dbo",
+                "CavaSocios_Botellas",
+                "UbicacionCava",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Comercial_Dashboard_Cache",
+                "CacheID",
+                "int"
+              ],
+              [
+                "dbo",
+                "Comercial_KPIs_Cache",
+                "CacheID",
+                "int"
+              ],
+              [
+                "dbo",
+                "Comercial_Metas",
+                "MetaCheques",
+                "int"
+              ],
+              [
+                "dbo",
+                "Economia_Series",
+                "MonedaBaseID",
+                "smallint"
+              ],
+              [
+                "dbo",
+                "Finanzas_Cat_CuentasBancarias",
+                "CuentaBancariaID",
+                "int"
+              ],
+              [
+                "dbo",
+                "Finanzas_ConfiguracionTPV_Sucursal",
+                "CuentaBancariaID",
+                "int"
+              ],
+              [
+                "dbo",
+                "Finanzas_Depositos",
+                "CuentaBancariaID",
+                "int"
+              ],
+              [
+                "dbo",
+                "Finanzas_Pagos",
+                "CuentaBancariaID",
+                "int"
+              ],
+              [
+                "dbo",
+                "Finanzas_SaldosBancarios",
+                "CuentaBancariaID",
+                "int"
+              ],
+              [
+                "dbo",
+                "Producto_Catalogo",
+                "PrecioVentaBase",
+                "decimal"
+              ],
+              [
+                "dbo",
+                "Proveedor_CuentasBancarias",
+                "CuentaBancariaID",
+                "int"
+              ],
+              [
+                "dbo",
+                "RH_Colaboradores_Expediente",
+                "FechaBaja",
+                "date"
+              ],
+              [
+                "dbo",
+                "RH_Finiquitos",
+                "FechaBaja",
+                "date"
+              ],
+              [
+                "dbo",
+                "RH_Nomina_Dispersion",
+                "ReferenciaBanco",
+                "varchar"
+              ],
+              [
+                "dbo",
+                "Servidores_Conexiones",
+                "database_name",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Servidores_Conexiones_backup_tipos_mov_20260513_0729",
+                "database_name",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Sistema_VW_Servidores_Conexiones_Publico",
+                "database_name",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Sync_Response_Cache",
+                "ResponsePayload",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "Sync_Response_Cache",
+                "CacheDurationMinutes",
+                "int"
+              ],
+              [
+                "dbo",
+                "Usuario_RolesContexto",
+                "FechaBaja",
+                "datetime2"
+              ],
+              [
+                "dbo",
+                "vw_Servidores_Conexiones_Versiones",
+                "database_name",
+                "nvarchar"
+              ],
+              [
+                "dbo",
+                "vw_Usuario_RolesContexto",
+                "FechaBaja",
+                "datetime2"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc"
+            ],
+            "name": "ubg0_sql_modules_references",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "Comercial",
+                "sp_RefreshTableroComercial",
+                "SQL_STORED_PROCEDURE"
+              ],
+              [
+                "Comercial",
+                "v_TableroComercialConsolidado",
+                "VIEW"
+              ],
+              [
+                "dbo",
+                "sp_CheckAndRetrieveCache",
+                "SQL_STORED_PROCEDURE"
+              ],
+              [
+                "dbo",
+                "sp_RegisterResponseAndCache",
+                "SQL_STORED_PROCEDURE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "is_nullable"
+            ],
+            "name": "ubg0_finanzas_pagos_related_columns",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                2,
+                "CuentaPorPagarID",
+                "bigint",
+                false
+              ],
+              [
+                5,
+                "FormaPagoID",
+                "int",
+                true
+              ],
+              [
+                6,
+                "CuentaBancariaID",
+                "int",
+                true
+              ],
+              [
+                7,
+                "NumeroReferencia",
+                "varchar",
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T01:14:38Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
