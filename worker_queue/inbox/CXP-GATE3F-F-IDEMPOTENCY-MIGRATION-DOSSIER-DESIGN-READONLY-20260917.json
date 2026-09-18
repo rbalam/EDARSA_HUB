@@ -1,0 +1,81 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CXP-GATE3F-F-IDEMPOTENCY-MIGRATION-DOSSIER-DESIGN-READONLY-20260917",
+  "created_at_utc": "2026-09-18T05:05:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ef25def3b8e9f68900556edd4349bbb19f6dee9e",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "GATE 3F-F IDEMPOTENCY MIGRATION DOSSIER DESIGN. Sin ejecutar DDL ni writes, producir evidencia suficiente para fijar un diseño de migracion minimo, reversible y SQL-first que proteja contra doble cola y doble evidencia de pago. El diseño objetivo debe evaluar: (1) unique filtered guard de una sola queue activa por DecisionPagoID y/o DecisionPagoID+HashOrigen; (2) correlacion durable de Finanzas_Pagos con PagoOrigenQueueID/DecisionPagoID/HashOrigen o una clave de idempotencia generica; (3) compatibilidad con datos actuales; (4) rollback exacto; (5) no incorporar identificadores ERP especificos al esquema generico. No implementar ni autorizar canary.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "f3f_runtime_identity",
+          "sql": "SELECT @@SERVERNAME AS server_name,DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user"
+        },
+        {
+          "name": "f3f_queue_active_by_decision",
+          "sql": "SELECT COUNT_BIG(*) AS grupos_duplicados FROM (SELECT DecisionPagoID,COUNT_BIG(*) AS n FROM dbo.Finanzas_CxP_PagosOrigenQueue WHERE Activo=1 GROUP BY DecisionPagoID HAVING COUNT_BIG(*)>1) q"
+        },
+        {
+          "name": "f3f_queue_active_by_decision_hash",
+          "sql": "SELECT COUNT_BIG(*) AS grupos_duplicados FROM (SELECT DecisionPagoID,HashOrigen,COUNT_BIG(*) AS n FROM dbo.Finanzas_CxP_PagosOrigenQueue WHERE Activo=1 GROUP BY DecisionPagoID,HashOrigen HAVING COUNT_BIG(*)>1) q"
+        },
+        {
+          "name": "f3f_queue_active_rows",
+          "sql": "SELECT COUNT_BIG(*) AS activos FROM dbo.Finanzas_CxP_PagosOrigenQueue WHERE Activo=1"
+        },
+        {
+          "name": "f3f_queue_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.columns c INNER JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID(N'dbo.Finanzas_CxP_PagosOrigenQueue') ORDER BY c.column_id"
+        },
+        {
+          "name": "f3f_pagos_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.columns c INNER JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID(N'dbo.Finanzas_Pagos') ORDER BY c.column_id"
+        },
+        {
+          "name": "f3f_pagos_rows",
+          "sql": "SELECT COUNT_BIG(*) AS total FROM dbo.Finanzas_Pagos"
+        },
+        {
+          "name": "f3f_pagos_incoming_fks",
+          "sql": "SELECT OBJECT_SCHEMA_NAME(fk.parent_object_id) AS child_schema,OBJECT_NAME(fk.parent_object_id) AS child_table,fk.name AS fk_name FROM sys.foreign_keys fk WHERE fk.referenced_object_id=OBJECT_ID(N'dbo.Finanzas_Pagos') ORDER BY child_schema,child_table,fk.name"
+        },
+        {
+          "name": "f3f_queue_incoming_fks",
+          "sql": "SELECT OBJECT_SCHEMA_NAME(fk.parent_object_id) AS child_schema,OBJECT_NAME(fk.parent_object_id) AS child_table,fk.name AS fk_name FROM sys.foreign_keys fk WHERE fk.referenced_object_id=OBJECT_ID(N'dbo.Finanzas_CxP_PagosOrigenQueue') ORDER BY child_schema,child_table,fk.name"
+        },
+        {
+          "name": "f3f_existing_idempotency_named_objects",
+          "sql": "SELECT s.name AS schema_name,o.name AS object_name,o.type_desc FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id=o.schema_id WHERE o.name LIKE N'%Idempot%' OR o.name LIKE N'%PagoOrigenQueue%' ORDER BY s.name,o.name"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ ONLY SQL ONLY",
+    "actions must remain empty",
+    "NO INSERT UPDATE DELETE MERGE EXEC EXECUTE DDL SELECT INTO OR MULTI-STATEMENT SQL",
+    "NO procedure execution",
+    "NO Production",
+    "NO code or file mutation",
+    "DO NOT execute migration",
+    "DO NOT add columns/indexes/constraints",
+    "Design dossier only",
+    "Prefer one active queue per authorized decision unless runtime evidence disproves compatibility",
+    "A successful ERP write must never be retried blindly after ambiguous result",
+    "Finanzas_Pagos durable correlation must be generic and must not hardcode MPRO or SoftRestaurant identifiers",
+    "Any proposed unique guard must have a deterministic rollback",
+    "If structural guard cannot be safely designed from current evidence, keep CANARY_EXECUTION blocked",
+    "Do not authorize any canary or Payment Executor writer",
+    "Payment Executor writer remains 0 percent"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
