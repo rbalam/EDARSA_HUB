@@ -1,0 +1,23 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-CANARY-373-POSTAUDIT-20260917T182800Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Auditar inmediatamente en solo lectura el estado posterior del canario quirúrgico ID 373. Determinar si quedó COMPLETADO o ERROR y capturar Intentos, FechaUltimoIntento, ErrorMensaje, WorkflowID y DetallesJSON sin modificar datos, código ni Producción.",
+  "mode":"READ_ONLY",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {
+          "name":"canary_373_post_state",
+          "sql":"SELECT ID, Estado, Intentos, FechaUltimoIntento, ErrorMensaje, WorkflowID, DetallesJSON FROM dbo.Scheduler_InventariosProcesados WHERE ID = 373"
+        }
+      ]
+    }
+  ],
+  "requester":{"email":"ricardo@edarsa.com.mx","source":"chatgpt-classic","project":"EDARSAHUB BOS V1.0"},
+  "human_summary_language":"es"
+}
