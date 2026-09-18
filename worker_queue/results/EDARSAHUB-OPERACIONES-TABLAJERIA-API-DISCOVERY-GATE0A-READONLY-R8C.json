@@ -1,0 +1,870 @@
+{
+  "base_sha": "aa57b944342f7e7efda0397ebfa64358c8c99a61",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T19:24:59Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-API-DISCOVERY-GATE0A-READONLY-R8C",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T19:25:00Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "TABLE_SCHEMA",
+              "TABLE_NAME",
+              "TABLE_TYPE"
+            ],
+            "name": "servidores_conexiones_exists",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "dbo",
+                "Servidores_Conexiones",
+                "BASE TABLE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ORDINAL_POSITION",
+              "COLUMN_NAME",
+              "DATA_TYPE",
+              "CHARACTER_MAXIMUM_LENGTH",
+              "IS_NULLABLE"
+            ],
+            "name": "servidores_conexiones_columns_real",
+            "row_count_returned": 36,
+            "rows": [
+              [
+                1,
+                "id",
+                "uniqueidentifier",
+                null,
+                "NO"
+              ],
+              [
+                2,
+                "nombre",
+                "nvarchar",
+                100,
+                "NO"
+              ],
+              [
+                3,
+                "system_type",
+                "nvarchar",
+                50,
+                "NO"
+              ],
+              [
+                4,
+                "tipo_conexion",
+                "nvarchar",
+                20,
+                "NO"
+              ],
+              [
+                5,
+                "host",
+                "nvarchar",
+                255,
+                "YES"
+              ],
+              [
+                6,
+                "port",
+                "int",
+                null,
+                "YES"
+              ],
+              [
+                7,
+                "database_name",
+                "nvarchar",
+                100,
+                "YES"
+              ],
+              [
+                8,
+                "username",
+                "nvarchar",
+                100,
+                "YES"
+              ],
+              [
+                9,
+                "password_encrypted",
+                "nvarchar",
+                500,
+                "YES"
+              ],
+              [
+                10,
+                "api_url",
+                "nvarchar",
+                500,
+                "YES"
+              ],
+              [
+                11,
+                "api_key_encrypted",
+                "nvarchar",
+                500,
+                "YES"
+              ],
+              [
+                12,
+                "activo",
+                "bit",
+                null,
+                "YES"
+              ],
+              [
+                13,
+                "visible_en_operaciones",
+                "bit",
+                null,
+                "YES"
+              ],
+              [
+                14,
+                "visible_en_listado",
+                "bit",
+                null,
+                "YES"
+              ],
+              [
+                15,
+                "es_editable_ui",
+                "bit",
+                null,
+                "YES"
+              ],
+              [
+                16,
+                "es_eliminable_ui",
+                "bit",
+                null,
+                "YES"
+              ],
+              [
+                17,
+                "empresa_id",
+                "nvarchar",
+                100,
+                "YES"
+              ],
+              [
+                18,
+                "sucursales",
+                "nvarchar",
+                -1,
+                "YES"
+              ],
+              [
+                19,
+                "categorias",
+                "nvarchar",
+                -1,
+                "YES"
+              ],
+              [
+                20,
+                "departamentos",
+                "nvarchar",
+                -1,
+                "YES"
+              ],
+              [
+                21,
+                "date_calculation_method",
+                "nvarchar",
+                50,
+                "YES"
+              ],
+              [
+                22,
+                "queries_configured",
+                "bit",
+                null,
+                "YES"
+              ],
+              [
+                23,
+                "query_ventas",
+                "nvarchar",
+                -1,
+                "YES"
+              ],
+              [
+                24,
+                "query_inventario",
+                "nvarchar",
+                -1,
+                "YES"
+              ],
+              [
+                25,
+                "query_movimientos",
+                "nvarchar",
+                -1,
+                "YES"
+              ],
+              [
+                26,
+                "created_at",
+                "datetime",
+                null,
+                "YES"
+              ],
+              [
+                27,
+                "updated_at",
+                "datetime",
+                null,
+                "YES"
+              ],
+              [
+                28,
+                "created_by",
+                "nvarchar",
+                100,
+                "YES"
+              ],
+              [
+                29,
+                "updated_by",
+                "nvarchar",
+                100,
+                "YES"
+              ],
+              [
+                30,
+                "mongodb_id",
+                "nvarchar",
+                100,
+                "YES"
+              ],
+              [
+                31,
+                "EmpresaID",
+                "int",
+                null,
+                "YES"
+              ],
+              [
+                32,
+                "tipos_movimiento",
+                "nvarchar",
+                -1,
+                "YES"
+              ],
+              [
+                33,
+                "fecha_ultima_sincronizacion",
+                "datetime2",
+                null,
+                "YES"
+              ],
+              [
+                34,
+                "source_status",
+                "varchar",
+                50,
+                "YES"
+              ],
+              [
+                35,
+                "ultimo_error_sync",
+                "nvarchar",
+                500,
+                "YES"
+              ],
+              [
+                36,
+                "sistema_version_id",
+                "uniqueidentifier",
+                null,
+                "YES"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_rows"
+            ],
+            "name": "servidores_conexiones_total_count",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                27
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "TABLE_SCHEMA",
+              "TABLE_NAME",
+              "TABLE_TYPE"
+            ],
+            "name": "servidores_conexiones_log_exists",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "dbo",
+                "Servidores_Conexiones_Log",
+                "BASE TABLE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ORDINAL_POSITION",
+              "COLUMN_NAME",
+              "DATA_TYPE",
+              "CHARACTER_MAXIMUM_LENGTH",
+              "IS_NULLABLE"
+            ],
+            "name": "servidores_conexiones_log_columns_real",
+            "row_count_returned": 8,
+            "rows": [
+              [
+                1,
+                "log_id",
+                "bigint",
+                null,
+                "NO"
+              ],
+              [
+                2,
+                "servidor_id",
+                "uniqueidentifier",
+                null,
+                "YES"
+              ],
+              [
+                3,
+                "accion",
+                "nvarchar",
+                20,
+                "YES"
+              ],
+              [
+                4,
+                "datos_anteriores",
+                "nvarchar",
+                -1,
+                "YES"
+              ],
+              [
+                5,
+                "datos_nuevos",
+                "nvarchar",
+                -1,
+                "YES"
+              ],
+              [
+                6,
+                "usuario",
+                "nvarchar",
+                100,
+                "YES"
+              ],
+              [
+                7,
+                "fecha",
+                "datetime",
+                null,
+                "YES"
+              ],
+              [
+                8,
+                "ip_origen",
+                "nvarchar",
+                50,
+                "YES"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "TABLE_SCHEMA",
+              "TABLE_NAME",
+              "TABLE_TYPE"
+            ],
+            "name": "servidores_related_tables",
+            "row_count_returned": 88,
+            "rows": [
+              [
+                "dbo",
+                "Alertas_Sistema",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Backup_P4_14_20260606_Dups_Usuario_ServidoresAsignacion",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Backup_P4_14_20260606_Orphans_Usuario_ServidoresAsignacion",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "BAK_Sistema_ModulosMenus_ComanderoSubmenus_20260623_120400",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "BAK_Sistema_ModulosMenus_InteligenciaComercial_20260623_125007",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "BAK_Sistema_ModulosMenus_MissingSafe_20260623_110406",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "BAK_Sistema_ModulosMenus_ProveedoresAdmin_20260623_113403",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "BAK_Sistema_ModulosMenus_RBAC_20260622_003529",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "BAK_Sistema_ModulosMenus_RBAC_20260622_003654",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "BAK_Sistema_ModulosMenus_SchedulerMove_20260623_120031",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "BAK_Sistema_ModulosMenus_SyncMonitor_20260623_102721",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "ConsultasSQL_Servidores",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "P4_14_Backup_Dups_Usuario_ServidoresAsignacion_20260606_P4_14",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "P4_14_Backup_Orphans_Usuario_ServidoresAsignacion_20260606_P4_14",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_SistemasIntegracion",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Servidores_Conexiones",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Servidores_Conexiones_backup_tipos_enriq_20260513_0840",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Servidores_Conexiones_backup_tipos_mov_20260513_0729",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Servidores_Conexiones_Log",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Servidores_ConexionEstado",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Servidores_Status",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_AlertasDestinatarios",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_CambiosHorarioOperativo",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_Capacidades",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_Catalogo",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_CatalogoMotivosCambioHorario",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_CatalogosConfig",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_CatalogosPermisos",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_CatalogosSolicitudes",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_CatalogosSolicitudesHistorial",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_ConfiguracionOperativa",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_ConsultasCustom",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_ConsultasSQL",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_CorreccionesDatosHorario",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_DeudaTecnica_TablasDuplicadas",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_Empresas",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_EmpresasAlias",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_EmpresasMongoMap",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_EmpresasServidores",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_Excepciones_Estado",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_Gobierno_Tablas",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_HorariosServicioUnidad",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_IdentificadoresExternos",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_MapeoColumnasVersion",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_MapeoTablasVersion",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_Migracion_MongoSQL_Mapeo",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_MigracionMongoColecciones",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_Modulos",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_ModulosMenus",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_ModulosPermisos",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_ModulosVisibilidad",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_MongoSunset_Auditoria",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_NotificacionesConfig",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_Queries",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_RBAC_PerfilCatalogo",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_RBAC_Permisos",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_RBAC_Roles",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_RBAC_RolesPermisos",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_ScriptsPendientes",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_Seguridad_Bitacora",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_Seguridad_LoginIntentos",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_ServidoresConexionEstado",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_ServidoresEstado",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_ServidoresSucursalesConfig",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_ServidorSucursalesConfig",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_Sucursales",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_SucursalServidorConfig",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_SucursalServidorMapeo",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_Sync_Capacidades",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_Sync_Catalogo",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_Sync_ResyncLog",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_SyncPOS_Bitacora",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_SyncPOS_Config",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_SyncPOS_EstadoUnidad",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_SyncPOS_Faltantes",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_Tareas",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_Tipos",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_TiposVariantes",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_TurnosOperativosUnidad",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_TurnosOperativosUnidad_Versiones",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_UnidadesNegocioPerfilDigital",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_VersionesSistemas",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Sistema_VW_Gobierno_Tablas_Resumen",
+                "VIEW"
+              ],
+              [
+                "dbo",
+                "Sistema_VW_PosiblesDuplicidadesTablas",
+                "VIEW"
+              ],
+              [
+                "dbo",
+                "Sistema_VW_Servidores_Conexiones_Publico",
+                "VIEW"
+              ],
+              [
+                "dbo",
+                "Usuario_ServidoresAsignacion",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "vw_Servidores_Conexiones_Versiones",
+                "VIEW"
+              ],
+              [
+                "dbo",
+                "vw_Sistema_MigracionMongoColecciones_Control",
+                "VIEW"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T19:24:57Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
