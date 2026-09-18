@@ -1,0 +1,47 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-LEGACY-DB-DISCOVERY-GATE0A-READONLY-R2",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar en modo solo lectura las bases legadas de Tablajeria existentes para Cienfuegos y MPRO, identificar modelo real, tablas, columnas, relaciones, procesos, datos operativos y posibilidades de mapeo hacia EDARSAHUB como fuente canonica final. No modificar base de datos, no ejecutar migraciones fisicas, no crear tablas operativas, no crear endpoints, no crear UI y no convertir bases legadas en fuente canonica.",
+  "requester": {
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "operaciones-transformacion-produccion-tablaje"
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/reports/TABLAJERIA_LEGACY_DB_DISCOVERY_GATE0A_R2_REQUEST.md",
+      "content": "# Tablajeria Legacy DB Discovery Gate0A R2\n\nModo: READ_ONLY.\n\nObjetivo: auditar bases legadas de Tablajeria Cienfuegos y MPRO para mapearlas hacia EDARSAHUB como fuente canonica final.\n\nReglas:\n- No tocar Produccion.\n- No escribir en bases legadas.\n- No crear tablas operativas.\n- No modificar Inventarios, Kardex, Costeo, RBAC, Auditoria, Workflow ni Contabilidad.\n- EDARSAHUB conserva la autoridad final.\n\nBases conocidas:\n- CIENFUEGOS TABLAJERIA / SOFTRESTAURANT_PRO / Tablajeria.\n- MPRO TABLAJERIA / MPRO / tablajeria_mpro / incluye 130 Queretaro y Origen.\n"
+    }
+  ],
+  "allowed_paths": [
+    "docs/reports/TABLAJERIA_LEGACY_DB_DISCOVERY_GATE0A_R2_REQUEST.md"
+  ],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": "Auditar contratos existentes del repositorio relacionados con Operaciones, Inventarios, Tablajeria, Transformacion, Produccion, Kardex, Costeo, RBAC, Auditoria, Workflow, Eventos Contables y conectores legacy. Identificar archivos, rutas, servicios, modelos y documentacion reutilizable sin modificar codigo."
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "legacy_tablajeria_database_discovery",
+          "request": "En modo solo lectura, descubrir si existen conexiones registradas o accesibles para bases legadas llamadas Tablajeria y tablajeria_mpro. No exponer secretos. Reportar nombres de base, tablas, vistas, procedimientos, triggers, columnas, llaves, indices, volumen aproximado y ultima fecha operativa si es posible."
+        },
+        {
+          "name": "edarsahub_canonical_inventory_mapping_discovery",
+          "request": "En modo solo lectura, descubrir tablas canonicas de EDARSAHUB para empresas, sucursales, almacenes, insumos, unidades de medida, movimientos de inventario, kardex, costos, usuarios, RBAC, auditoria, workflow y eventos contables. Reportar candidatos de mapeo para Transformacion Produccion Tablaje."
+        },
+        {
+          "name": "tablajeria_collision_and_gap_analysis",
+          "request": "En modo solo lectura, comparar lo descubierto contra EDARSAHUB para determinar riesgos de duplicar Inventarios, Kardex, Costeo, RBAC, Auditoria, Workflow o Contabilidad. Reportar huecos reales, datos candidatos a historico, datos candidatos a sync read_only y datos que deben capturarse nuevo en EDARSAHUB."
+        }
+      ]
+    }
+  ]
+}
