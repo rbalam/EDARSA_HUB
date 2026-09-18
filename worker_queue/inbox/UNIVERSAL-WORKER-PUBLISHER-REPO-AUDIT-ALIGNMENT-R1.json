@@ -1,0 +1,57 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "UNIVERSAL-WORKER-PUBLISHER-REPO-AUDIT-ALIGNMENT-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d0188293f98e618b96dec196fe38dca5930cf2fd",
+  "production_allowed": false,
+  "objective": "Alinear quirurgicamente gate_chain_publisher con el contrato ya certificado del Universal Worker para aceptar repository_contract_audit y agregar cobertura de regresion, sin tocar Produccion ni otros componentes del Worker.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS",
+    "chat": "UNIVERSAL-BANKING"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/gate_chain_publisher.py",
+      "expected_sha256": "7975bd01d32fa286e306e6fc10e01e2dd86837737de53cd09e6fe9a7a02cf00a",
+      "expected_count": 1,
+      "old": "ALLOWED_CHECKS={'git_diff_check','py_compile','pytest','frontend_build','sql_readonly_audit'}",
+      "new": "ALLOWED_CHECKS={'git_diff_check','py_compile','pytest','frontend_build','sql_readonly_audit','repository_contract_audit'}"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_gate_chain_publisher.py",
+      "expected_sha256": "61d36509c88c32e8656f8fa1c58ae654ad286c2428ef8cf54efd7ae63150c688",
+      "expected_count": 1,
+      "old": "def test_unsupported_check_rejected():\n    t=template(); t['checks']=[{'type':'execute_sql'}]\n    with pytest.raises(ValueError,match='UNSUPPORTED_CHECK'): validate_template(t)",
+      "new": "def test_repository_contract_audit_supported():\n    t=template(); t['checks']=[{'type':'repository_contract_audit','request':{'paths':['backend'],'search_terms':['finanzas'],'max_results':10}}]\n    assert validate_template(t) is t\n\ndef test_unsupported_check_rejected():\n    t=template(); t['checks']=[{'type':'execute_sql'}]\n    with pytest.raises(ValueError,match='UNSUPPORTED_CHECK'): validate_template(t)"
+    }
+  ],
+  "allowed_paths": [
+    "tools/mirror_sync/gate_chain_publisher.py",
+    "backend/tests/test_gate_chain_publisher.py"
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/gate_chain_publisher.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_gate_chain_publisher.py",
+        "backend/tests/test_worker_repository_contract_audit.py",
+        "backend/tests/test_worker_generic_readonly.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
