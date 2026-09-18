@@ -1,0 +1,178 @@
+{
+  "base_sha": "57eb5fab7ac35ebfd6b56bb03eb076aa7c71c319",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T01:24:23Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "GATE5D-HUB-ESCRITURA-LOGIN-BOOTSTRAP-READONLY-R1-20260917",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T01:24:58Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "database_user"
+            ],
+            "name": "database_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "name",
+              "type_desc",
+              "authentication_type_desc",
+              "default_schema_name"
+            ],
+            "name": "database_principals",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "HRLectura",
+                "SQL_USER",
+                "INSTANCE",
+                "dbo"
+              ],
+              [
+                "HUB_Escritura",
+                "SQL_USER",
+                "INSTANCE",
+                "dbo"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "database_user",
+              "server_login",
+              "server_type",
+              "is_disabled"
+            ],
+            "name": "server_login_mapping",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "HRLectura",
+                "HRLectura",
+                "SQL_LOGIN",
+                false
+              ],
+              [
+                "HUB_Escritura",
+                null,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "name",
+              "type_desc",
+              "is_disabled"
+            ],
+            "name": "named_server_principals",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "HRLectura",
+                "SQL_LOGIN",
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "member_name",
+              "role_name"
+            ],
+            "name": "database_roles_snapshot",
+            "row_count_returned": 12,
+            "rows": [
+              [
+                "HRLectura",
+                "db_accessadmin"
+              ],
+              [
+                "HRLectura",
+                "db_backupoperator"
+              ],
+              [
+                "HRLectura",
+                "db_datareader"
+              ],
+              [
+                "HRLectura",
+                "db_datawriter"
+              ],
+              [
+                "HRLectura",
+                "db_ddladmin"
+              ],
+              [
+                "HRLectura",
+                "db_owner"
+              ],
+              [
+                "HRLectura",
+                "db_securityadmin"
+              ],
+              [
+                "HUB_Escritura",
+                "db_accessadmin"
+              ],
+              [
+                "HUB_Escritura",
+                "db_datawriter"
+              ],
+              [
+                "HUB_Escritura",
+                "db_ddladmin"
+              ],
+              [
+                "HUB_Escritura",
+                "db_owner"
+              ],
+              [
+                "HUB_Escritura",
+                "db_securityadmin"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T01:24:23Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
