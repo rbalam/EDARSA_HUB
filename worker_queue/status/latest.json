@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "3ab825fe85f938941af963f2ebd26db4c233a217",
-  "generated_at_utc": "2026-09-18T20:01:36Z",
+  "generated_at_utc": "2026-09-18T20:02:54Z",
   "history": {
     "done_total_local": 671,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1130,
+      "age_seconds": 1208,
       "job_id": "EDARSAHUB-SERVIDORES-CONEXIONES-API-LISTADO-FILTRO-R10A-BACKEND-FIX",
       "reasons": [
         "ACTION_1_OLD_REQUIRED",
@@ -24,163 +24,151 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1478,
+      "age_seconds": 1556,
       "job_id": "CAVAS-GATE12J-PERSONA-LINK-FUNCTIONAL-FLOW-DISCOVERY-READONLY-R3-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3333,
+      "age_seconds": 3411,
       "job_id": "CAVAS-GATE12J-R2-Q02-EMPRESAID-AS-TEXT-READONLY-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3341,
+      "age_seconds": 3419,
       "job_id": "CAVAS-GATE12J-R2-Q02-SOCIOID-AS-TEXT-READONLY-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3492,
+      "age_seconds": 3570,
       "job_id": "CAVAS-GATE12J-R2-Q06-FIELD-ACTIVO-READONLY-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3487,
+      "age_seconds": 3565,
       "job_id": "CAVAS-GATE12J-R2-Q06-FIELD-PUBLICUUID-READONLY-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3599,
-      "job_id": "CAVAS-GATE12J-R2-Q06-FIELD-TELEFONOPRINCIPAL-READONLY-20260918",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3328,
+      "age_seconds": 3406,
       "job_id": "CAVAS-GATE12J-R2-Q06-PUBLICUUID-AS-TEXT-READONLY-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 512,
+      "age_seconds": 590,
       "job_id": "CAVAS-GATE12K-BOS-PERSONA-LINK-BACKEND-IMPLEMENTATION-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 912,
+      "age_seconds": 990,
       "job_id": "CAVAS-GATE12K-BOS-PERSONA-LINK-BACKEND-IMPLEMENTATION-READINESS-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3060,
+      "age_seconds": 3138,
       "job_id": "EDARSAHUB-CIENFUEGOS-DETAIL-DIAG-R95-CARLOS-20260918T183000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3071,
+      "age_seconds": 3149,
       "job_id": "EDARSAHUB-ISCAM-AUTOSYNC-FAILURES-R87-CARLOS-20260918T185500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 680,
+      "age_seconds": 758,
       "job_id": "EDARSAHUB-ISCAM-AUTOSYNC-FAILURES-R87A-CARLOS-20260918T191200Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2486,
+      "age_seconds": 2564,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-API-DISCOVERY-GATE0A-READONLY-R8",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2327,
+      "age_seconds": 2405,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-API-DISCOVERY-GATE0A-READONLY-R8B",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2197,
+      "age_seconds": 2275,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-API-DISCOVERY-GATE0A-READONLY-R8C",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2086,
+      "age_seconds": 2164,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-API-DISCOVERY-GATE0A-READONLY-R8D",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1998,
+      "age_seconds": 2076,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-API-DISCOVERY-GATE0A-READONLY-R8E",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1860,
+      "age_seconds": 1938,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-API-DISCOVERY-GATE0A-READONLY-R8F",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3449,
+      "age_seconds": 3527,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-LEGACY-DB-ACCESS-DIAG-GATE0A-READONLY-R6",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3380,
+      "age_seconds": 3458,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-LEGACY-DB-ACCESS-DIAG-GATE0A-READONLY-R7",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3537,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-LEGACY-DB-SQL-DISCOVERY-GATE0A-READONLY-R5",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 575,
+      "age_seconds": 653,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-MENU-MODULO-R11-DISCOVERY-READONLY",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 40,
+      "age_seconds": 118,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-MENU-MODULO-R12A-BACKEND-BOOTSTRAP-FIX",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1061,
+      "age_seconds": 1139,
       "job_id": "EDARSAHUB-SERVIDORES-CONEXIONES-API-LISTADO-FILTRO-R10A-R2-BACKEND-FIX",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 993,
+      "age_seconds": 1071,
       "job_id": "EDARSAHUB-SERVIDORES-CONEXIONES-API-LISTADO-FILTRO-R10B-POSTCHECK-READONLY",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1732,
+      "age_seconds": 1810,
       "job_id": "EDARSAHUB-SERVIDORES-CONEXIONES-API-LISTADO-FILTRO-R9-READONLY",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1614,
+      "age_seconds": 1692,
       "job_id": "EDARSAHUB-SERVIDORES-CONEXIONES-API-LISTADO-FILTRO-R9B-READONLY",
       "reason": null,
       "state": "RESULT_READY"
@@ -193,13 +181,13 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 27,
+  "queue_result_ready_recent": 25,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-18T20:01:33Z",
-    "last_receive_utc": "2026-09-18T20:01:36Z",
+    "last_cycle_utc": "2026-09-18T20:02:48Z",
+    "last_receive_utc": "2026-09-18T20:02:52Z",
     "last_terminal_utc": "2026-09-18T20:00:56Z",
     "pid": "728"
   },
