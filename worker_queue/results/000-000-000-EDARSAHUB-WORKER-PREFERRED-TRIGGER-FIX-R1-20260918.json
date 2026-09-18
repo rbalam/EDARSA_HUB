@@ -1,0 +1,62 @@
+{
+  "base_sha": "252ca168e6081d33afae52aa502d8b69c6f38eb8",
+  "blockers": [],
+  "candidate_sha": "316baa6bb760fd39f97e0003d38bf51c631fd094",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-18T23:55:11Z",
+  "development_sha": "316baa6bb760fd39f97e0003d38bf51c631fd094",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    ".github/workflows/worker-runtime-recovery-probe.yml"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "000-000-000-EDARSAHUB-WORKER-PREFERRED-TRIGGER-FIX-R1-20260918",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T23:55:24Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "existing_job_id",
+              "fetch-depth: 2",
+              "resolve preferred job from runtime-recovery trigger",
+              "x-worker-preferred-job-id"
+            ],
+            "path": ".github/workflows/worker-runtime-recovery-probe.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 1,
+          "scanned_files": 1,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-18T23:55:07Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
