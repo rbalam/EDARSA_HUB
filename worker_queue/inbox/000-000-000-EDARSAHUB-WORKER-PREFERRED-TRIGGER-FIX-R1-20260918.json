@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "000-000-000-EDARSAHUB-WORKER-PREFERRED-TRIGGER-FIX-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Alta a servidores"
+  },
+  "objective": "Corregir el protocolo de preferred-job del Universal Worker. El workflow worker-runtime-recovery-probe.yml usa git diff-tree para obtener el trigger, pero checkout@v4 usa fetch-depth=1 y el commit padre no esta disponible, provocando PREFERRED_JOB_ID=none. Configurar fetch-depth: 2 en Checkout para que la deteccion de existing_job_id funcione. No tocar Produccion ni otros modulos.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/worker-runtime-recovery-probe.yml",
+      "old": "      - name: Checkout\n        uses: actions/checkout@v4\n",
+      "new": "      - name: Checkout\n        uses: actions/checkout@v4\n        with:\n          fetch-depth: 2\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          ".github/workflows/worker-runtime-recovery-probe.yml"
+        ],
+        "search_terms": [
+          "fetch-depth: 2",
+          "Resolve preferred job from runtime-recovery trigger",
+          "existing_job_id",
+          "X-Worker-Preferred-Job-Id"
+        ],
+        "include_patterns": [
+          "*.yml",
+          "*.yaml"
+        ],
+        "exclude_patterns": [
+          ".git/*"
+        ],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
