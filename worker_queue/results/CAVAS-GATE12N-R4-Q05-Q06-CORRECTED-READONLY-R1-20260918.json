@@ -1,0 +1,115 @@
+{
+  "base_sha": "3ea717f1c26365551518edb89d98e4abb07096d2",
+  "blockers": [
+    "check_failed:sql_readonly_audit"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-18T22:23:38Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE12N-R4-Q05-Q06-CORRECTED-READONLY-R1-20260918",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T22:24:17Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "UsuarioID",
+              "UnidadNegocioID",
+              "UnidadCodigo",
+              "UnidadNombre",
+              "server_id",
+              "ResolvedEmpresaID",
+              "NombreEmpresa"
+            ],
+            "name": "Q05_unit_to_empresa_resolution_corrected",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                4,
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "130MID",
+                "130° MERIDA",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "5",
+                "130 MID"
+              ],
+              [
+                4,
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                "130QRO",
+                "130° QUERETARO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "2",
+                "130 QRO"
+              ],
+              [
+                4,
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                "130QRO",
+                "130° QUERETARO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "1",
+                "ORIGEN"
+              ],
+              [
+                4,
+                "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "3",
+                "CIENFUEGOS"
+              ],
+              [
+                4,
+                "DFB86008-1B81-472A-9E50-8A0821DEC4B2",
+                "ESTELAR",
+                "LA ESTELAR",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "4",
+                "LA ESTELAR"
+              ],
+              [
+                4,
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "ORIGEN",
+                "ORIGEN",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "2",
+                "130 QRO"
+              ],
+              [
+                4,
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "ORIGEN",
+                "ORIGEN",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "1",
+                "ORIGEN"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T22:23:36Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
