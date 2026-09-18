@@ -1,0 +1,64 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CXP-GATE3F-B-R1-MPRO-PCID-BLOCKER-CERT-READONLY-20260917",
+  "created_at_utc": "2026-09-18T03:06:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "920638ce165f3bb5135c89fb78803836d3dc28fd",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "GATE 3F-B-R1 MPRO. Certificar de forma minima y determinista si existe evidencia runtime suficiente para considerar autoritativo el mecanismo de Pc_ID. Reusar solo consultas simples ya aprobadas en 3F-A R2: metadata de Pc_ID, distribucion observada, PK compuesta y ausencia/presencia de sequences. Si no aparece generador autoritativo, certificar BLOCKED_NOT_READY para canary MPRO. No escribir ni implementar Payment Executor.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN",
+        "130QRO"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "f3b_r1_runtime_identity",
+          "sql": "SELECT @@SERVERNAME AS server_name,DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user"
+        },
+        {
+          "name": "f3b_r1_pc_id_column",
+          "sql": "SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable,c.is_identity,c.is_computed,dc.definition AS default_definition FROM sys.columns c INNER JOIN sys.types t ON t.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id WHERE c.object_id=OBJECT_ID(N'dbo.Pago_CXP') AND c.name=N'Pc_ID'"
+        },
+        {
+          "name": "f3b_r1_pc_id_frequency",
+          "sql": "SELECT Pc_ID,COUNT_BIG(*) AS total FROM dbo.Pago_CXP GROUP BY Pc_ID ORDER BY total DESC,Pc_ID"
+        },
+        {
+          "name": "f3b_r1_pk_shape",
+          "sql": "SELECT i.name AS index_name,i.is_unique,i.is_primary_key,ic.key_ordinal,c.name AS column_name FROM sys.indexes i INNER JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id INNER JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.Pago_CXP') AND i.is_primary_key=1 ORDER BY ic.key_ordinal"
+        },
+        {
+          "name": "f3b_r1_sequences",
+          "sql": "SELECT s.name AS schema_name,q.name AS sequence_name,q.current_value FROM sys.sequences q INNER JOIN sys.schemas s ON s.schema_id=q.schema_id WHERE q.name LIKE N'%Pago%' OR q.name LIKE N'%CXP%' OR q.name LIKE N'%Pc%' ORDER BY s.name,q.name"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ ONLY SQL ONLY",
+    "actions must remain empty",
+    "NO INSERT UPDATE DELETE MERGE EXEC EXECUTE DDL SELECT INTO OR MULTI-STATEMENT SQL",
+    "NO procedure execution",
+    "NO individual provider, invoice or payment business rows beyond bounded Pc_ID code frequency",
+    "NO Production",
+    "NO code or file mutation",
+    "Connections only through PosRuntimeResolver and get_external_sql_connection",
+    "Historical frequency does not prove authoritative generation",
+    "If no authoritative generator is proven, classify Pc_ID authority as NOT_PROVEN and MPRO canary as BLOCKED_NOT_READY",
+    "Do not authorize any canary or Payment Executor writer",
+    "Payment Executor writer remains 0 percent"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
