@@ -1,0 +1,242 @@
+{
+  "base_sha": "3ea717f1c26365551518edb89d98e4abb07096d2",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T21:54:03Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-HISTORICAL-COVERAGE-R89-CARLOS-20260918T220500Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T21:54:21Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad",
+              "dias_runtime",
+              "dias_detalle",
+              "dias_conciliados",
+              "primer_dia_runtime",
+              "ultimo_dia_runtime",
+              "primer_dia_detalle",
+              "ultimo_dia_detalle"
+            ],
+            "name": "historical_coverage_by_unit",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                1345,
+                774,
+                81,
+                "2023-01-02",
+                "2026-09-12",
+                "2023-03-05",
+                "2026-09-10"
+              ],
+              [
+                "130QRO",
+                1344,
+                958,
+                259,
+                "2023-01-02",
+                "2026-09-12",
+                "2023-01-02",
+                "2026-09-12"
+              ],
+              [
+                "CIENFUEGOS",
+                1340,
+                691,
+                62,
+                "2023-01-02",
+                "2026-09-12",
+                "2023-02-12",
+                "2026-09-10"
+              ],
+              [
+                "ESTELAR",
+                449,
+                375,
+                236,
+                "2025-06-12",
+                "2026-09-12",
+                "2025-06-16",
+                "2026-09-12"
+              ],
+              [
+                "ORIGEN",
+                1342,
+                777,
+                48,
+                "2023-01-02",
+                "2026-09-12",
+                "2024-06-01",
+                "2026-09-12"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad",
+              "anio",
+              "dias_runtime",
+              "dias_detalle",
+              "dias_conciliados"
+            ],
+            "name": "historical_coverage_by_year",
+            "row_count_returned": 18,
+            "rows": [
+              [
+                "130MID",
+                2023,
+                363,
+                9,
+                9
+              ],
+              [
+                "130MID",
+                2024,
+                363,
+                218,
+                24
+              ],
+              [
+                "130MID",
+                2025,
+                364,
+                363,
+                30
+              ],
+              [
+                "130MID",
+                2026,
+                255,
+                184,
+                18
+              ],
+              [
+                "130QRO",
+                2023,
+                363,
+                211,
+                211
+              ],
+              [
+                "130QRO",
+                2024,
+                364,
+                212,
+                0
+              ],
+              [
+                "130QRO",
+                2025,
+                363,
+                332,
+                0
+              ],
+              [
+                "130QRO",
+                2026,
+                254,
+                203,
+                48
+              ],
+              [
+                "CIENFUEGOS",
+                2023,
+                363,
+                12,
+                12
+              ],
+              [
+                "CIENFUEGOS",
+                2024,
+                362,
+                211,
+                1
+              ],
+              [
+                "CIENFUEGOS",
+                2025,
+                363,
+                363,
+                5
+              ],
+              [
+                "CIENFUEGOS",
+                2026,
+                252,
+                105,
+                44
+              ],
+              [
+                "ESTELAR",
+                2025,
+                194,
+                159,
+                80
+              ],
+              [
+                "ESTELAR",
+                2026,
+                255,
+                216,
+                156
+              ],
+              [
+                "ORIGEN",
+                2023,
+                363,
+                0,
+                0
+              ],
+              [
+                "ORIGEN",
+                2024,
+                362,
+                211,
+                0
+              ],
+              [
+                "ORIGEN",
+                2025,
+                363,
+                363,
+                0
+              ],
+              [
+                "ORIGEN",
+                2026,
+                254,
+                203,
+                48
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T21:53:46Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
