@@ -1,11 +1,11 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "53dfe0b405553874f79223c429cfe319031f99d9",
-  "generated_at_utc": "2026-09-18T15:28:05Z",
+  "generated_at_utc": "2026-09-18T15:29:27Z",
   "history": {
     "done_total_local": 616,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 599,
     "results_total_local": 1072
   },
@@ -13,26 +13,32 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 21,
+      "age_seconds": 103,
       "job_id": "ARBITROA-BOS-GATE-A5-PREFLIGHT-SQL-READONLY-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 17,
+      "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE2-DATA-INTEGRATION-DISCOVERY-R1",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 1,
-  "queue_running": 0,
+  "queue_running": 1,
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE2-DATA-INTEGRATION-DISCOVERY-R1",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-18T15:27:56Z",
-    "last_receive_utc": "2026-09-18T15:28:01Z",
+    "last_cycle_utc": "2026-09-18T15:29:22Z",
+    "last_receive_utc": "2026-09-18T15:29:25Z",
     "last_terminal_utc": "2026-09-18T15:27:43Z",
     "pid": "67"
   },
