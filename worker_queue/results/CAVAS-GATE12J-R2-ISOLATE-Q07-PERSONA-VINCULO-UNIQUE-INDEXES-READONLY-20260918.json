@@ -1,0 +1,98 @@
+{
+  "base_sha": "aa57b944342f7e7efda0397ebfa64358c8c99a61",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T18:52:11Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE12J-R2-ISOLATE-Q07-PERSONA-VINCULO-UNIQUE-INDEXES-READONLY-20260918",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T18:54:05Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "index_name",
+              "is_unique",
+              "has_filter",
+              "filter_definition",
+              "column_name",
+              "key_ordinal"
+            ],
+            "name": "q07_persona_vinculo_unique_indexes",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                "PK_Gobierno_PersonaVinculo",
+                true,
+                false,
+                null,
+                "VinculoID",
+                1
+              ],
+              [
+                "UX_GobPV_Usuario",
+                true,
+                true,
+                "([UsuarioID] IS NOT NULL)",
+                "UsuarioID",
+                1
+              ],
+              [
+                "UX_GobPV_Cliente",
+                true,
+                true,
+                "([ClienteID] IS NOT NULL)",
+                "ClienteID",
+                1
+              ],
+              [
+                "UX_GobPV_Proveedor",
+                true,
+                true,
+                "([ProveedorID] IS NOT NULL)",
+                "ProveedorID",
+                1
+              ],
+              [
+                "UX_GobPV_ContactoCliente",
+                true,
+                true,
+                "([ContactoClienteID] IS NOT NULL)",
+                "ContactoClienteID",
+                1
+              ],
+              [
+                "UX_GobPV_ContactoProveedor",
+                true,
+                true,
+                "([ContactoProveedorID] IS NOT NULL)",
+                "ContactoProveedorID",
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T18:52:10Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
