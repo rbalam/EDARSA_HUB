@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "GATE5D-DEDICATED-MIGRATION-WRITER-CONTRACT-R2-20260917",
+  "created_at_utc": "2026-09-18T02:07:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "Reemitir y completar exactamente el mismo contrato Gate 5D para dedicated migration writer que R1 no pudo ejecutar por NEEDS_FAST_FORWARD_REFRESH. Extender quirurgicamente tools/mirror_sync/sql_migration_development.py para admitir validacion opcional de identidad esperada mediante EDARSAHUB_MIGRATION_EXPECTED_USER=GptEscritura, exigir que EDARSAHUB_MIGRATION_USER coincida cuando esa variable este definida y fallar con MIGRATION_WRITER_IDENTITY_MISMATCH si no coincide. Mantener HRLectura explicitamente prohibido como migration writer. No almacenar passwords, secretos, .env ni credenciales en Git. No ejecutar ninguna migracion SQL en este job.",
+  "acceptance": [
+    "Mismo alcance funcional de GATE5D-DEDICATED-MIGRATION-WRITER-CONTRACT-R1-20260917; no crear capacidades adicionales.",
+    "Anclar la ejecucion al HEAD esperado 747abf292c6aa088714f36a93d04d27f18fc1a3e o bloquear fail-closed si Desarrollo diverge antes de aplicar cambios.",
+    "EDARSAHUB_MIGRATION_EXPECTED_USER es opcional y, cuando exista, valida identidad exacta del writer.",
+    "Identidad esperada canonica para Gate 5D: GptEscritura.",
+    "HRLectura continua prohibido como dedicated migration writer.",
+    "Nuevo error contractual MIGRATION_WRITER_IDENTITY_MISMATCH cuando usuario real y esperado no coinciden.",
+    "No passwords, connection strings, secrets ni credenciales persistidas en repositorio.",
+    "No SQL inline y no ejecucion fisica SQL.",
+    "Tests relevantes PASS y quality gate PASS.",
+    "production_touched=false.",
+    "Resultado terminal CERTIFIED/PASS si el contrato queda integrado sin blockers."
+  ],
+  "constraints": [
+    "EDARSAHUB SQL Server sigue siendo la fuente canonica.",
+    "No tocar Produccion.",
+    "No usar HRLectura como writer.",
+    "No ejecutar hardening SQL ni Communications migration en este job.",
+    "No modificar permisos SQL.",
+    "No tocar Scheduler ni NetPay.",
+    "No Mongo operativo.",
+    "No LIVE administrativo.",
+    "No hardcodear passwords o secretos.",
+    "Cambio minimo, reversible y compatible con consumidores actuales.",
+    "Respetar Universal Worker y fail-closed governance.",
+    "Referencia R1 terminal: GIT_DIVERGENCE_BLOCKED / NEEDS_FAST_FORWARD_REFRESH; este R2 es recuperacion del mismo contrato, no un nuevo Gate 5D funcional."
+  ],
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
