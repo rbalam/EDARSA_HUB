@@ -1,0 +1,31 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "GATE5D-PREVIEW-RUNTIME-DIAGNOSTIC-EVIDENCE-R1-20260917",
+  "created_at_utc": "2026-09-18T03:53:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "920638ce165f3bb5135c89fb78803836d3dc28fd",
+  "objective": "Capturar evidencia viva y sanitizada del runtime Preview para diagnosticar exclusivamente la falta de convergencia que bloquea la certificacion de Gate 5D. Reutilizar backend/tests/test_preview_diag_iscam_estelar_r3.py para leer branch/head/topology/worktree flags y supervisor status. No modificar codigo de aplicacion, no reiniciar servicios, no ejecutar SQL y no tocar Produccion. El unico artefacto permitido es actualizar el archivo de evidencia existente backend/tests/preview_diag_iscam_estelar_r3_evidence.json con la salida real del diagnostico.",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/tests/preview_diag_iscam_estelar_r3_evidence.json",
+      "old": "\"schema\": \"edarsahub.preview-diagnostic.v3\"",
+      "new": "\"schema\": \"edarsahub.preview-diagnostic.v3-pending\"",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_preview_diag_iscam_estelar_r3.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
