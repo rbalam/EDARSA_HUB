@@ -1,0 +1,98 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12K-BOS-PERSONA-LINK-BACKEND-IMPLEMENTATION-READINESS-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "25834c62cd6a67a0ac5d892ee978f140acf69aa7",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Abrir Gate12K sin reabrir Gate12J. Auditar exclusivamente la readiness de implementacion backend para vincular CavaSocios_Socios.PersonaID con Gobierno_Persona y, cuando corresponda, Gobierno_PersonaVinculo/Cliente_Catalogo. Definir contrato exacto de servicio, transaccion, identidad SQL de usuario, endpoints, RBAC, idempotencia, desvinculacion controlada y compatibilidad legacy antes de cualquier MUTATION. No crear tablas, no DDL/DML, no modificar codigo, no crear permisos nuevos, no matching automatico por NombreCompleto/Email/Telefono, no tocar Produccion.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/routes.py",
+          "backend/modules/cava_socios/service.py",
+          "backend/modules/catalogo_ampliado/repository.py",
+          "backend/modules/catalogo_ampliado/routes.py",
+          "backend/core/auth/sql_user_identity.py",
+          "backend/core/sql_first/connection_factory.py",
+          "backend/core/sql_first/db.py",
+          "backend/tests/test_cava_socios.py",
+          "backend/tests/test_catalogo_ampliado.py",
+          "docs/CAVAS/CAVAS_CORPORATIVAS_GATE12C_BOS_ENTITY_ROLE_ALIGNMENT.md",
+          "backend/database/migrations/20260910_cavas_socios_persona_link.sql"
+        ],
+        "search_terms": [
+          "PersonaID",
+          "Gobierno_Persona",
+          "Gobierno_PersonaVinculo",
+          "Cliente_Catalogo",
+          "ClienteCRMID",
+          "SocioID",
+          "create_persona",
+          "create_vinculo",
+          "sql_user_identity",
+          "enrich_current_user_with_sql_id",
+          "sql_user_id",
+          "UsuarioID",
+          "sql_connection",
+          "get_sql_connection",
+          "transaction",
+          "commit",
+          "rollback",
+          "CAVA_SOCIOS_VER",
+          "CAVA_SOCIOS_CREAR",
+          "CAVA_SOCIOS_EDITAR"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sql",
+          "*.md"
+        ],
+        "exclude_patterns": [],
+        "max_results": 600
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "identity_guard",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS db_user,ORIGINAL_LOGIN() AS original_login;"
+        },
+        {
+          "name": "cava_persona_link_state",
+          "sql": "SELECT COUNT_BIG(*) AS total_socios,SUM(CASE WHEN PersonaID IS NULL THEN 1 ELSE 0 END) AS sin_persona,SUM(CASE WHEN PersonaID IS NOT NULL THEN 1 ELSE 0 END) AS con_persona FROM dbo.CavaSocios_Socios;"
+        },
+        {
+          "name": "persona_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_personas FROM dbo.Gobierno_Persona;"
+        },
+        {
+          "name": "persona_vinculo_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_vinculos FROM dbo.Gobierno_PersonaVinculo;"
+        },
+        {
+          "name": "cliente_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_clientes FROM dbo.Cliente_Catalogo;"
+        },
+        {
+          "name": "persona_link_fk",
+          "sql": "SELECT fk.name AS fk_name,OBJECT_NAME(fk.parent_object_id) AS parent_table,OBJECT_NAME(fk.referenced_object_id) AS referenced_table,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk WHERE fk.parent_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND fk.name=N'FK_CavaSocios_Socios_GobiernoPersona';"
+        },
+        {
+          "name": "persona_vinculo_uniqueness",
+          "sql": "SELECT i.name AS index_name,i.is_unique,i.has_filter,i.filter_definition,c.name AS column_name FROM sys.indexes i JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.Gobierno_PersonaVinculo') AND i.is_unique=1 ORDER BY i.name;"
+        },
+        {
+          "name": "usuario_catalogo_identity_types",
+          "sql": "SELECT c.name AS column_name,TYPE_NAME(c.user_type_id) AS type_name,c.is_nullable FROM sys.columns c WHERE c.object_id=OBJECT_ID(N'dbo.Usuario_Catalogo') AND c.name IN (N'UsuarioID',N'PublicUUID') ORDER BY c.column_id;"
+        }
+      ]
+    }
+  ]
+}
