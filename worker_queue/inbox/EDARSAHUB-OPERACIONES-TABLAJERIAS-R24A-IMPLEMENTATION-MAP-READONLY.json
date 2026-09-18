@@ -1,0 +1,113 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24A-IMPLEMENTATION-MAP-READONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "objective": "Preparar mapa exacto de implementacion R24 para integrar Rendimiento por Lote Proveedor y Reclamos en Tablajeria, reutilizando Compras, Inventarios, Proveedor_Catalogo, Centro de Control, Scheduler y auditoria existentes. Debe identificar archivos exactos a modificar, tablas existentes a reutilizar, tablas faltantes a crear mediante migracion, endpoints requeridos, servicios requeridos, componentes frontend requeridos, jobs scheduler requeridos, permisos RBAC requeridos, y pruebas minimas. No modificar codigo, datos, permisos ni Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/tablajeria",
+          "backend/modules/compras",
+          "backend/modules/inventarios",
+          "backend/modules/proveedores",
+          "backend/core/centro_control",
+          "backend/core/scheduler",
+          "backend/core/rbac",
+          "backend/core/user_access_context.py",
+          "frontend/src/pages/tablajeria",
+          "frontend/src/config/enterpriseMenuConfig.js",
+          "docs/modules"
+        ],
+        "search_terms": [
+          "Operaciones_Tablaje_Ordenes",
+          "Operaciones_Tablaje_OrdenesDetalle",
+          "Tablajeria_CosteoProduccion",
+          "Tablajeria_CosteoDetalle",
+          "Tablajeria_MovimientosInventario",
+          "Compras_Recepciones",
+          "Compras_RecepcionesDetalle",
+          "OrdenCompra",
+          "Factura",
+          "Proveedor_Catalogo",
+          "resolver_proveedor_edarsahub",
+          "sync_recepciones_from_server",
+          "send_critical_alert_email",
+          "send_critical_alert_whatsapp",
+          "get_email_recipients",
+          "get_whatsapp_recipients",
+          "Scheduler_BitacoraJobs",
+          "Sys_Scheduler_JobConfig",
+          "Sys_Scheduler_Jobs",
+          "TABLAJERIA",
+          "reporte",
+          "reclamo",
+          "lote",
+          "rendimiento",
+          "drilldown",
+          "RBAC",
+          "permission",
+          "permiso"
+        ],
+        "include_patterns": ["*.py", "*.js", "*.jsx", "*.json", "*.md", "*.sql"],
+        "exclude_patterns": [".git/*", "node_modules/*", "__pycache__/*", "*.pyc", "dist/*", "build/*"],
+        "max_results": 1500
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "r24_existing_tablajeria_tables",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE '%Tablaj%' ORDER BY TABLE_SCHEMA, TABLE_NAME"
+        },
+        {
+          "name": "r24_existing_compras_lote_proveedor_tables",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE '%Compra%' OR TABLE_NAME LIKE '%Recepcion%' OR TABLE_NAME LIKE '%Proveedor%' OR TABLE_NAME LIKE '%Factura%' OR TABLE_NAME LIKE '%Lote%' ORDER BY TABLE_SCHEMA, TABLE_NAME"
+        },
+        {
+          "name": "r24_tablajeria_order_columns_safe",
+          "sql": "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('Operaciones_Tablaje_Ordenes','Operaciones_Tablaje_OrdenesDetalle','Tablajeria_CosteoProduccion','Tablajeria_CosteoDetalle','Tablajeria_MovimientosInventario') ORDER BY TABLE_NAME, ORDINAL_POSITION"
+        },
+        {
+          "name": "r24_compras_trace_columns_safe",
+          "sql": "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE (TABLE_NAME LIKE '%Compra%' OR TABLE_NAME LIKE '%Recepcion%' OR TABLE_NAME LIKE '%Proveedor%' OR TABLE_NAME LIKE '%Factura%' OR TABLE_NAME LIKE '%Lote%') AND (COLUMN_NAME LIKE '%ID%' OR COLUMN_NAME LIKE '%Lote%' OR COLUMN_NAME LIKE '%Proveedor%' OR COLUMN_NAME LIKE '%Factura%' OR COLUMN_NAME LIKE '%Orden%' OR COLUMN_NAME LIKE '%Recepcion%' OR COLUMN_NAME LIKE '%Producto%' OR COLUMN_NAME LIKE '%Insumo%' OR COLUMN_NAME LIKE '%Cantidad%' OR COLUMN_NAME LIKE '%Peso%' OR COLUMN_NAME LIKE '%Costo%' OR COLUMN_NAME LIKE '%Importe%' OR COLUMN_NAME LIKE '%Fecha%') ORDER BY TABLE_NAME, ORDINAL_POSITION"
+        },
+        {
+          "name": "r24_missing_target_tables_probe",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME IN ('Tablajeria_LotesProveedorRendimiento','Tablajeria_ReclamosProveedor','Tablajeria_ReportesLote','Tablajeria_ReportesLoteDestinatarios','Tablajeria_NotificacionesLote','Tablajeria_KPIsProveedorLote','Tablajeria_LoteDrilldown') ORDER BY TABLE_SCHEMA, TABLE_NAME"
+        }
+      ]
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/tablajeria/routes.py",
+        "backend/modules/tablajeria/dashboard_service.py",
+        "backend/modules/tablajeria/ordenes_service.py",
+        "backend/modules/tablajeria/fase6_service.py",
+        "backend/modules/tablajeria/sync_service.py",
+        "backend/core/centro_control/email_notifications.py",
+        "backend/core/centro_control/whatsapp_notifications.py",
+        "backend/core/scheduler/scheduler_manager.py"
+      ]
+    }
+  ],
+  "expected_findings": [
+    "Mapa de archivos exactos para R24B mutation.",
+    "Tablas existentes a reutilizar de Tablajeria, Compras, Inventarios y Proveedores.",
+    "Tablas faltantes para rendimiento por lote, reportes automaticos, reclamos y notificaciones.",
+    "Endpoints backend requeridos sin duplicar rutas existentes.",
+    "Servicios backend requeridos para calculo de rendimiento, impacto economico y reclamo.",
+    "Componentes frontend requeridos para tablero, drilldown, reclamos y reportes.",
+    "Scheduler job requerido reutilizando scheduler existente.",
+    "Permisos RBAC requeridos.",
+    "Pruebas minimas para R24B."
+  ]
+}
