@@ -1,0 +1,96 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R14-AUTONOMIA-PROCESO-COMPLETO-READONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "objective": "Auditar si Tablajeria puede operar de forma autonoma dentro de EDARSAHUB, sin depender de sistemas legacy. Revisar proceso completo: alta y edicion de plantillas, insumo base, derivados, publicacion, autorizacion, ordenes, resultados, cierre, entradas y salidas, costeo, poliza, RBAC y flujo de autorizacion. No modificar codigo, datos, permisos ni Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/tablajeria",
+          "frontend/src/pages/tablajeria",
+          "frontend/src/config/enterpriseMenuConfig.js",
+          "docs/modules"
+        ],
+        "search_terms": [
+          "@router.post(\"/plantillas\")",
+          "@router.put(\"/plantillas",
+          "@router.patch(\"/plantillas",
+          "PlantillaCreate",
+          "PlantillaUpdate",
+          "Operaciones_Tablaje_PlantillasDetalle",
+          "InsumoBaseCodigo",
+          "ProductoDerivadoCodigo",
+          "PorcentajeCostoAsignado",
+          "CostoUnitarioFijo",
+          "NoProrratea",
+          "ExcluirProrrateo",
+          "GeneraMovimiento",
+          "publicar_plantilla",
+          "PENDIENTE_AUTORIZACION",
+          "autorizar_orden",
+          "TABLAJERIA_AUTORIZAR_MERMA",
+          "TABLAJERIA_CREAR_ORDEN",
+          "TABLAJERIA_CERRAR_ORDEN",
+          "TABLAJERIA_EJECUTAR_ORDEN",
+          "TABLAJERIA_VER",
+          "Depends(get_current_user)",
+          "require_permission",
+          "check_permission",
+          "has_permission",
+          "afectar_inventario_orden",
+          "calcular_costeo_orden",
+          "generar_poliza_produccion",
+          "procesar_cierre_completo",
+          "SALIDA_INSUMO",
+          "ENTRADA_DERIVADO",
+          "SALIDA_MERMA"
+        ],
+        "include_patterns": ["*.py", "*.js", "*.jsx", "*.json", "*.sql", "*.md"],
+        "exclude_patterns": [".git/*", "node_modules/*", "__pycache__/*", "*.pyc", "dist/*", "build/*"],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "tablajeria_autonomy_columns",
+          "sql": "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('Operaciones_Tablaje_Plantillas','Operaciones_Tablaje_PlantillasDetalle','Operaciones_Tablaje_Ordenes','Operaciones_Tablaje_OrdenesDetalle','Tablajeria_MovimientosInventario','Tablajeria_CosteoProduccion','Tablajeria_CosteoDetalle','Tablajeria_ConfigContable','Tablajeria_PolizasContables','Tablajeria_PolizasDetalle') ORDER BY TABLE_NAME, ORDINAL_POSITION"
+        },
+        {
+          "name": "tablajeria_status_distribution",
+          "sql": "SELECT 'plantillas' AS entidad, Estatus AS estatus, COUNT(*) AS total FROM dbo.Operaciones_Tablaje_Plantillas GROUP BY Estatus UNION ALL SELECT 'ordenes' AS entidad, EstatusOrden AS estatus, COUNT(*) AS total FROM dbo.Operaciones_Tablaje_Ordenes GROUP BY EstatusOrden ORDER BY entidad, estatus"
+        },
+        {
+          "name": "tablajeria_costing_flags_search",
+          "sql": "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME LIKE '%Tablaj%' AND (COLUMN_NAME LIKE '%Costo%' OR COLUMN_NAME LIKE '%Prorrat%' OR COLUMN_NAME LIKE '%Fijo%' OR COLUMN_NAME LIKE '%Movimiento%' OR COLUMN_NAME LIKE '%Inventariable%' OR COLUMN_NAME LIKE '%Merma%' OR COLUMN_NAME LIKE '%Autoriz%') ORDER BY TABLE_NAME, COLUMN_NAME"
+        },
+        {
+          "name": "tablajeria_rbac_schema_candidates",
+          "sql": "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME LIKE 'Usuario_%' AND (COLUMN_NAME LIKE '%Modulo%' OR COLUMN_NAME LIKE '%Permiso%' OR COLUMN_NAME LIKE '%Accion%' OR COLUMN_NAME LIKE '%Rol%' OR COLUMN_NAME LIKE '%Clave%') ORDER BY TABLE_NAME, ORDINAL_POSITION"
+        },
+        {
+          "name": "tablajeria_permissions_candidates",
+          "sql": "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME LIKE '%Permis%' OR TABLE_NAME LIKE '%Modulo%' OR TABLE_NAME LIKE '%Rol%' ORDER BY TABLE_NAME, ORDINAL_POSITION"
+        }
+      ]
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/tablajeria/routes.py",
+        "backend/modules/tablajeria/ordenes_service.py",
+        "backend/modules/tablajeria/fase6_service.py",
+        "backend/modules/tablajeria/sync_service.py",
+        "backend/modules/tablajeria/schemas.py"
+      ]
+    }
+  ]
+}
