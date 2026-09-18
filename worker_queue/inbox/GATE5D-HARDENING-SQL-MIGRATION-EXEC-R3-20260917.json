@@ -1,0 +1,24 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"GATE5D-HARDENING-SQL-MIGRATION-EXEC-R3-20260917",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"c85ab15705196c85ef7e4bf7fc3847d3f13e6960",
+  "production_allowed":false,
+  "mode":"SQL_MIGRATION_DEVELOPMENT",
+  "objective":"Retry diagnostico del Gate 5D hardening despues de integrar observabilidad sanitizada. Ejecutar exactamente la misma migracion 20260917_001_sql_principals_least_privilege.sql con SHA-256 inmutable, sin SQL inline ni shell, para obtener operation_summary seguro si falla. No usar HRLectura como writer ni tocar Production.",
+  "actions":[],
+  "migration_path":"backend/database/migrations/20260917_001_sql_principals_least_privilege.sql",
+  "migration_sha256":"425022fb95a6acadf0e1009c87b8f2f69bdc10f5b180fc0f3c115f11e79c5722",
+  "confirm_sql_migration":true,
+  "preflight_checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"preflight_identity","sql":"SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user"},
+    {"name":"preflight_hrlectura_roles","sql":"SELECT rp.name AS role_name FROM sys.database_role_members drm JOIN sys.database_principals rp ON rp.principal_id=drm.role_principal_id JOIN sys.database_principals mp ON mp.principal_id=drm.member_principal_id WHERE mp.name='HRLectura' ORDER BY rp.name"},
+    {"name":"preflight_hub_escritura_roles","sql":"SELECT rp.name AS role_name FROM sys.database_role_members drm JOIN sys.database_principals rp ON rp.principal_id=drm.role_principal_id JOIN sys.database_principals mp ON mp.principal_id=drm.member_principal_id WHERE mp.name='HUB_Escritura' ORDER BY rp.name"}
+  ]}],
+  "checks":[{"type":"sql_readonly_audit","queries":[
+    {"name":"post_hrlectura_roles","sql":"SELECT rp.name AS role_name FROM sys.database_role_members drm JOIN sys.database_principals rp ON rp.principal_id=drm.role_principal_id JOIN sys.database_principals mp ON mp.principal_id=drm.member_principal_id WHERE mp.name='HRLectura' ORDER BY rp.name"},
+    {"name":"post_hub_escritura_roles","sql":"SELECT rp.name AS role_name FROM sys.database_role_members drm JOIN sys.database_principals rp ON rp.principal_id=drm.role_principal_id JOIN sys.database_principals mp ON mp.principal_id=drm.member_principal_id WHERE mp.name='HUB_Escritura' ORDER BY rp.name"}
+  ]}],
+  "human_summary_language":"es"
+}
