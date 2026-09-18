@@ -1,76 +1,46 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "f2ef46227536ffd6f66ab871983ce7cfa19b7374",
-  "generated_at_utc": "2026-09-18T16:06:32Z",
+  "development_sha": "4e8f327d092c1f32f8b01e7dc6e82d3fa834c6e1",
+  "generated_at_utc": "2026-09-18T17:03:14Z",
   "history": {
     "done_total_local": 620,
     "pending_total_local": 0,
-    "processing_total_local": 0,
-    "rejected_total_local": 601,
-    "results_total_local": 1078
+    "processing_total_local": 1,
+    "rejected_total_local": 602,
+    "results_total_local": 1079
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2328,
-      "job_id": "ARBITROA-BOS-GATE-A5-PREFLIGHT-SQL-READONLY-R1-20260917",
+      "age_seconds": 16,
+      "job_id": "PRIMARY-INDUSTRIES-GATE1-CANONICAL-DOMAIN-DESIGN-R4-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1827,
-      "job_id": "BOS-AGENT-HARNESS-V1-RH-IMPORTADOR-SQLFIRST-RECOVERY-GATE29-R2",
+      "age_seconds": 18,
+      "job_id": "RRR-GATE4E-R10-R4-MINIMAL-ATTRIBUTION-IMPLEMENTATION-20260918",
       "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2224,
-      "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE2-DATA-INTEGRATION-DISCOVERY-R1",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1950,
-      "job_id": "UNIVERSAL-BANKING-GATE1-MATERIALIZE-CANONICAL-DESIGN-R1",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1844,
-      "job_id": "UNIVERSAL-WORKER-D2-RUNTIME-CONVERGENCE-GUARD-D2.1-IMPLEMENTATION-R1-RETRY3",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2029,
-      "job_id": "UNIVERSAL-WORKER-PUBLISHER-REPO-AUDIT-ALIGNMENT-R1",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2077,
-      "job_id": "coa-gate6c-fiscal-status-lifecycle-design-v1-20260918",
-      "reason": null,
-      "state": "RESULT_READY"
+      "state": "RUNNING"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 7,
-  "queue_running": 0,
+  "queue_result_ready_recent": 1,
+  "queue_running": 1,
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "RRR-GATE4E-R10-R4-MINIMAL-ATTRIBUTION-IMPLEMENTATION-20260918",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-18T16:06:29Z",
-    "last_receive_utc": "2026-09-18T16:06:31Z",
-    "last_terminal_utc": "2026-09-18T15:36:04Z",
-    "pid": "48668"
+    "last_cycle_utc": "2026-09-18T17:03:10Z",
+    "last_receive_utc": "2026-09-18T17:03:14Z",
+    "last_terminal_utc": "2026-09-18T17:02:58Z",
+    "pid": "63"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
