@@ -1,0 +1,106 @@
+{
+  "base_sha": "252ca168e6081d33afae52aa502d8b69c6f38eb8",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T23:41:42Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-HIST-R91C-130MID-20260911-RCA-CARLOS-20260918T235000Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T23:41:50Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "fecha",
+              "ventas_total",
+              "tickets_total",
+              "pax_total",
+              "ventas_abiertas",
+              "es_venta_abierta",
+              "es_corte_cerrado",
+              "fuente_original"
+            ],
+            "name": "runtime_flags_130mid_20260911_12",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "2026-09-11",
+                "133674.00",
+                36,
+                85,
+                "0.00",
+                false,
+                true,
+                "API_LOCAL"
+              ],
+              [
+                "2026-09-12",
+                "147501.00",
+                34,
+                99,
+                "0.00",
+                false,
+                true,
+                "API_LOCAL"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "folio",
+              "rows_folio",
+              "ventas_sum",
+              "venta_max",
+              "pax_sum",
+              "pax_max"
+            ],
+            "name": "duplicate_folios_130mid_20260911",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "folio",
+              "header_total",
+              "detalle_total",
+              "delta",
+              "descuento_indicador"
+            ],
+            "name": "ticket_header_detail_130mid_20260911",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T23:41:39Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
