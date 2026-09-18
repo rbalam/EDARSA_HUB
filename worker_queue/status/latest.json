@@ -1,167 +1,20 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "2970b25462610c1ecb17a70aa5597cfdba28385d",
-  "generated_at_utc": "2026-09-18T20:22:53Z",
+  "generated_at_utc": "2026-09-18T21:21:26Z",
   "history": {
-    "done_total_local": 677,
+    "done_total_local": 678,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 623,
-    "results_total_local": 1152
+    "results_total_local": 1153
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2407,
-      "job_id": "EDARSAHUB-SERVIDORES-CONEXIONES-API-LISTADO-FILTRO-R10A-BACKEND-FIX",
-      "reasons": [
-        "ACTION_1_OLD_REQUIRED",
-        "ACTION_1_NEW_REQUIRED",
-        "CHECK_2_INVALID_PATHS"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 1119,
-      "job_id": "EDARSAHUB-WORKER-CANARY-SERVIDORES-20260918T1943Z",
-      "reasons": [
-        "INVALID_SCHEMA",
-        "ACTIONS_REQUIRED"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 2755,
-      "job_id": "CAVAS-GATE12J-PERSONA-LINK-FUNCTIONAL-FLOW-DISCOVERY-READONLY-R3-20260918",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 979,
-      "job_id": "CAVAS-GATE12K-BACKEND-POSTCHECK-READONLY-R1-20260918",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1789,
-      "job_id": "CAVAS-GATE12K-BOS-PERSONA-LINK-BACKEND-IMPLEMENTATION-R1-20260918",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2188,
-      "job_id": "CAVAS-GATE12K-BOS-PERSONA-LINK-BACKEND-IMPLEMENTATION-READINESS-R1-20260918",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 460,
-      "job_id": "CAVAS-GATE12L-PERSONA-LINK-UI-OPERATION-INTEGRATION-R1-20260918",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1957,
-      "job_id": "EDARSAHUB-ISCAM-AUTOSYNC-FAILURES-R87A-CARLOS-20260918T191200Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3474,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-API-DISCOVERY-GATE0A-READONLY-R8C",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3363,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-API-DISCOVERY-GATE0A-READONLY-R8D",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3275,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-API-DISCOVERY-GATE0A-READONLY-R8E",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3137,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-API-DISCOVERY-GATE0A-READONLY-R8F",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1852,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-MENU-MODULO-R11-DISCOVERY-READONLY",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1316,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-MENU-MODULO-R12A-BACKEND-BOOTSTRAP-FIX",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1184,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-MENU-MODULO-R12A-R2-BACKEND-BOOTSTRAP-FIX",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 952,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-MENU-MODULO-R13-CANARIO-FUNCIONAL-READONLY",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 407,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R14-AUTONOMIA-PROCESO-COMPLETO-READONLY",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 362,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R15-ARQUITECTURA-HIBRIDA-MOVIMIENTOS-READONLY",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 110,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R16-KPIS-ALERTAS-JUSTIFICACIONES-INFORMES-READONLY",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 114,
-      "job_id": "EDARSAHUB-SERVIDORES-API-HEALTH-TIMEOUT-R11A-FRONTEND-FIX",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2338,
-      "job_id": "EDARSAHUB-SERVIDORES-CONEXIONES-API-LISTADO-FILTRO-R10A-R2-BACKEND-FIX",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2269,
-      "job_id": "EDARSAHUB-SERVIDORES-CONEXIONES-API-LISTADO-FILTRO-R10B-POSTCHECK-READONLY",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3008,
-      "job_id": "EDARSAHUB-SERVIDORES-CONEXIONES-API-LISTADO-FILTRO-R9-READONLY",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2891,
-      "job_id": "EDARSAHUB-SERVIDORES-CONEXIONES-API-LISTADO-FILTRO-R9B-READONLY",
+      "age_seconds": 27,
+      "job_id": "CAVAS-GATE12L-UI-POSTCHECK-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -172,16 +25,16 @@
   "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 2,
-  "queue_result_ready_recent": 22,
+  "queue_rejected_recent": 0,
+  "queue_result_ready_recent": 1,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-18T20:22:49Z",
-    "last_receive_utc": "2026-09-18T20:22:52Z",
-    "last_terminal_utc": "2026-09-18T20:21:02Z",
-    "pid": "728"
+    "last_cycle_utc": "2026-09-18T21:21:14Z",
+    "last_receive_utc": "2026-09-18T21:21:23Z",
+    "last_terminal_utc": "2026-09-18T21:20:58Z",
+    "pid": "736"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
