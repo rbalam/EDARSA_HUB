@@ -1,0 +1,34 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-TRIGGER-R3-20260918T0100Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "cc278d33fa14566a6b196a3fe6175e7412949ab9",
+  "production_allowed": false,
+  "objective": "Disparar una sola vez el workflow seguro P5 Runtime E2E ya certificado mediante un cambio minimo valido en el trigger canonico. Corregir exclusivamente el fallo de git diff --check del R1 eliminando el newline final del archivo trigger, usando el SHA-256 real del contenido actual. No cambiar contenido semantico, workflow, backend, secretos, RBAC ni SQL. No tocar Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "ops/e2e/requests/CENTRO-CONTROL-SYNC-MONITOR-P5-RUNTIME-SECURE-R1.execute",
+      "old": "P5_E2E_SUPERADMIN\n",
+      "new": "P5_E2E_SUPERADMIN",
+      "expected_count": 1,
+      "expected_sha256": "eed57fad24479296218b130331319f69f3aff348d1f78af4059dcb7ee2f1d130"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "pytest", "paths": ["backend/tests/test_control_sync_p5_secure_profile_contract.py"]}
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL writes",
+    "No RBAC mutation",
+    "No secret values in job or repository",
+    "Only trigger file may change",
+    "Do not modify workflow or backend logic",
+    "Preserve exact semantic value P5_E2E_SUPERADMIN"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "technical"
+}
