@@ -1,0 +1,209 @@
+{
+  "base_sha": "25298bf0e4a8ceee04f29867783bf2454a76224a",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T03:03:03Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-P3-COA-NAVIGATION-RBAC-CANARY-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T03:04:56Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "/api/",
+              "coahome",
+              "layout",
+              "path=\"coa\"",
+              "protectedroute",
+              "sql"
+            ],
+            "path": "frontend/src/App.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "coa - operaciones administrativas",
+              "layout",
+              "sql"
+            ],
+            "path": "frontend/src/config/enterpriseMenuConfig.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "active",
+              "coa - operaciones administrativas",
+              "coa.dashboard",
+              "roles",
+              "sql"
+            ],
+            "path": "frontend/src/config/enterpriseNavigationRegistry.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "active",
+              "sql"
+            ],
+            "path": "frontend/src/config/enterpriseNavigationRegistry.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "sap"
+            ],
+            "matched_terms": [
+              "coahome"
+            ],
+            "path": "frontend/src/pages/satelites/COAHome.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "active",
+              "layout",
+              "sql"
+            ],
+            "path": "frontend/src/components/navigation/EnterpriseNavigationMenu.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "active",
+              "layout"
+            ],
+            "path": "frontend/scripts/validate_enterprise_navigation.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "axios",
+              "fetch(",
+              "layout",
+              "protectedroute",
+              "sql"
+            ],
+            "path": "backend/tests/test_catalogo_ampliado_frontend_gate5_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "read",
+              "test_frontend_covers_gate5_surfaces",
+              "test_navigation_registry_exempts_explicit_gate5_route",
+              "test_page_has_no_direct_sql_or_parallel_rbac",
+              "test_route_registered_under_protected_layout",
+              "test_service_uses_only_canonical_api_client_and_domain_root"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 8,
+          "scanned_files": 8,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-18T03:03:02Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
