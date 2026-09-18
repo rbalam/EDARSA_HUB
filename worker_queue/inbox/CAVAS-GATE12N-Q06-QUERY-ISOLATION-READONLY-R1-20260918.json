@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12N-Q06-QUERY-ISOLATION-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3ea717f1c26365551518edb89d98e4abb07096d2",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Aislar Q06A-Q06D una por una en READ_ONLY_SQL para localizar la primera consulta que falla en la auditoria de desambiguacion canonica unidad->empresa de Gate12N. No cambiar contrato funcional, no ejecutar UAT, no modificar datos, permisos, menus, roles, usuarios, unidades ni Produccion.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "Q06A_eligible_context_unit_metadata",
+          "sql": "WITH E AS (SELECT DISTINCT u.UsuarioID,CONVERT(varchar(36),u.PublicUUID) AS PublicUUID,u.Email,u.NombreCompleto,urc.UnidadNegocioID,UPPER(LTRIM(RTRIM(a.CodigoAccion))) AS CodigoAccion FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesContexto urc ON urc.UsuarioID=u.UsuarioID AND urc.Activo=1 INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID=urc.RolID AND prm.Activo=1 AND prm.Permitido=1 INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID AND ISNULL(m.Activo,1)=1 INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID AND ISNULL(a.Activo,1)=1 WHERE u.Activo=1 AND u.PublicUUID IS NOT NULL AND LOWER(LTRIM(RTRIM(m.CodigoModulo)))=N'cava_socios' AND UPPER(LTRIM(RTRIM(a.CodigoAccion))) IN (N'VER',N'EDITAR')), Eligible AS (SELECT UsuarioID,PublicUUID,Email,NombreCompleto,UnidadNegocioID FROM E GROUP BY UsuarioID,PublicUUID,Email,NombreCompleto,UnidadNegocioID HAVING MAX(CASE WHEN CodigoAccion=N'VER' THEN 1 ELSE 0 END)=1 AND MAX(CASE WHEN CodigoAccion=N'EDITAR' THEN 1 ELSE 0 END)=1) SELECT e.UsuarioID,e.PublicUUID,e.Email,e.NombreCompleto,CONVERT(varchar(100),e.UnidadNegocioID) AS UnidadNegocioID,un.codigo AS UnidadCodigo,un.nombre AS UnidadNombre,un.server_id,un.sucursal_origen_id,un.system_type FROM Eligible e INNER JOIN dbo.Unidades_Negocio un ON un.id=e.UnidadNegocioID ORDER BY e.Email,un.nombre;"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "Q06B_canonical_unit_code_to_empresa",
+          "sql": "WITH E AS (SELECT DISTINCT u.UsuarioID,urc.UnidadNegocioID,UPPER(LTRIM(RTRIM(a.CodigoAccion))) AS CodigoAccion FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesContexto urc ON urc.UsuarioID=u.UsuarioID AND urc.Activo=1 INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID=urc.RolID AND prm.Activo=1 AND prm.Permitido=1 INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID AND ISNULL(m.Activo,1)=1 INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID AND ISNULL(a.Activo,1)=1 WHERE u.Activo=1 AND LOWER(LTRIM(RTRIM(m.CodigoModulo)))=N'cava_socios' AND UPPER(LTRIM(RTRIM(a.CodigoAccion))) IN (N'VER',N'EDITAR')), Eligible AS (SELECT UsuarioID,UnidadNegocioID FROM E GROUP BY UsuarioID,UnidadNegocioID HAVING MAX(CASE WHEN CodigoAccion=N'VER' THEN 1 ELSE 0 END)=1 AND MAX(CASE WHEN CodigoAccion=N'EDITAR' THEN 1 ELSE 0 END)=1) SELECT e.UsuarioID,CONVERT(varchar(100),e.UnidadNegocioID) AS UnidadNegocioID,un.codigo AS UnidadCodigo,un.nombre AS UnidadNombre,se.EmpresaID,se.CodigoEmpresa,se.NombreEmpresa,se.NombreComercial FROM Eligible e INNER JOIN dbo.Unidades_Negocio un ON un.id=e.UnidadNegocioID LEFT JOIN dbo.Sistema_Empresas se ON UPPER(LTRIM(RTRIM(se.CodigoEmpresa)))=UPPER(LTRIM(RTRIM(un.codigo))) AND ISNULL(se.Activo,1)=1 ORDER BY e.UsuarioID,un.nombre,se.EmpresaID;"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "Q06C_shared_server_branch_disambiguation",
+          "sql": "WITH Shared AS (SELECT un.id AS UnidadNegocioID,un.codigo,un.nombre,un.server_id,un.sucursal_origen_id FROM dbo.Unidades_Negocio un WHERE ISNULL(un.activo,1)=1 AND EXISTS (SELECT 1 FROM dbo.Unidades_Negocio x WHERE ISNULL(x.activo,1)=1 AND x.server_id=un.server_id AND x.id<>un.id)) SELECT CONVERT(varchar(100),s.UnidadNegocioID) AS UnidadNegocioID,s.codigo AS UnidadCodigo,s.nombre AS UnidadNombre,s.server_id,s.sucursal_origen_id,es.EmpresaID,es.CodigoSucursalSistema,se.CodigoEmpresa,se.NombreEmpresa FROM Shared s LEFT JOIN dbo.Sistema_EmpresasServidores es ON es.ServidorID=TRY_CONVERT(uniqueidentifier,s.server_id) AND ISNULL(es.Activo,1)=1 AND (s.sucursal_origen_id IS NULL OR LTRIM(RTRIM(es.CodigoSucursalSistema))=LTRIM(RTRIM(s.sucursal_origen_id))) LEFT JOIN dbo.Sistema_Empresas se ON se.EmpresaID=es.EmpresaID ORDER BY s.server_id,s.codigo,es.EmpresaID;"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "Q06D_final_uat_candidates",
+          "sql": "WITH E AS (SELECT DISTINCT u.UsuarioID,CONVERT(varchar(36),u.PublicUUID) AS PublicUUID,u.Email,u.NombreCompleto,urc.UnidadNegocioID,UPPER(LTRIM(RTRIM(a.CodigoAccion))) AS CodigoAccion FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesContexto urc ON urc.UsuarioID=u.UsuarioID AND urc.Activo=1 INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID=urc.RolID AND prm.Activo=1 AND prm.Permitido=1 INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID AND ISNULL(m.Activo,1)=1 INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID AND ISNULL(a.Activo,1)=1 WHERE u.Activo=1 AND u.PublicUUID IS NOT NULL AND LOWER(LTRIM(RTRIM(m.CodigoModulo)))=N'cava_socios' AND UPPER(LTRIM(RTRIM(a.CodigoAccion))) IN (N'VER',N'EDITAR')), Eligible AS (SELECT UsuarioID,PublicUUID,Email,NombreCompleto,UnidadNegocioID FROM E GROUP BY UsuarioID,PublicUUID,Email,NombreCompleto,UnidadNegocioID HAVING MAX(CASE WHEN CodigoAccion=N'VER' THEN 1 ELSE 0 END)=1 AND MAX(CASE WHEN CodigoAccion=N'EDITAR' THEN 1 ELSE 0 END)=1), R AS (SELECT e.*,un.codigo AS UnidadCodigo,un.nombre AS UnidadNombre,se.EmpresaID,se.CodigoEmpresa,se.NombreEmpresa FROM Eligible e INNER JOIN dbo.Unidades_Negocio un ON un.id=e.UnidadNegocioID INNER JOIN dbo.Sistema_Empresas se ON UPPER(LTRIM(RTRIM(se.CodigoEmpresa)))=UPPER(LTRIM(RTRIM(un.codigo))) AND ISNULL(se.Activo,1)=1) SELECT r.UsuarioID,r.PublicUUID,r.Email,r.NombreCompleto,CONVERT(varchar(100),r.UnidadNegocioID) AS UnidadNegocioID,r.UnidadCodigo,r.UnidadNombre,CONVERT(varchar(36),r.EmpresaID) AS EmpresaID,r.CodigoEmpresa,r.NombreEmpresa,COUNT_BIG(cs.SocioID) AS socios_activos,SUM(CASE WHEN cs.PersonaID IS NULL THEN 1 ELSE 0 END) AS socios_sin_persona FROM R r LEFT JOIN dbo.CavaSocios_Socios cs ON cs.EmpresaID=r.EmpresaID AND cs.Activo=1 AND cs.Estatus=N'ACTIVO' GROUP BY r.UsuarioID,r.PublicUUID,r.Email,r.NombreCompleto,r.UnidadNegocioID,r.UnidadCodigo,r.UnidadNombre,r.EmpresaID,r.CodigoEmpresa,r.NombreEmpresa HAVING COUNT_BIG(cs.SocioID)>0 ORDER BY r.Email,r.UnidadNombre;"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "Development only",
+    "No UAT execution",
+    "No DDL or DML",
+    "No permission menu role user unit or company changes",
+    "No Production",
+    "Do not change the canonical resolution contract",
+    "EDARSAHUB SQL Server remains source of truth"
+  ]
+}
