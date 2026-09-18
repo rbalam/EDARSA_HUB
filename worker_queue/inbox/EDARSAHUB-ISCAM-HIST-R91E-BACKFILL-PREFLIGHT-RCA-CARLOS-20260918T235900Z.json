@@ -1,0 +1,52 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-ISCAM-HIST-R91E-BACKFILL-PREFLIGHT-RCA-CARLOS-20260918T235900Z",
+  "created_at_utc":"2026-09-18T23:59:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"252ca168e6081d33afae52aa502d8b69c6f38eb8",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Determinar por que ISCAM_DETAIL_BACKFILL falla con rc=1 incluso en dry-run para 130MID 2026-09-11. Auditar preflight del catalogo canonico que get_unidades_negocio_pos valida antes de filtrar la unidad: codigos/UUID duplicados, campos obligatorios faltantes y system_type inconsistente. Si catalogo esta sano, reproducir la agregacion exacta del extractor por producto para 130MID 2026-09-11. Solo lectura.",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "source":"EDARSAHUB",
+      "queries":[
+        {
+          "name":"active_unit_code_duplicates",
+          "sql":"SELECT CONVERT(varchar(50),u.codigo) AS unidad_codigo,COUNT(*) AS cantidad FROM dbo.Unidades_Negocio u INNER JOIN dbo.Servidores_Conexiones s ON s.id=u.server_id WHERE ISNULL(u.activo,1)=1 AND ISNULL(s.activo,1)=1 GROUP BY CONVERT(varchar(50),u.codigo) HAVING COUNT(*)>1 ORDER BY unidad_codigo"
+        },
+        {
+          "name":"active_unit_required_fields_health",
+          "sql":"SELECT CONVERT(varchar(36),u.id) AS unidad_pk,CONVERT(varchar(50),u.codigo) AS unidad_codigo,CONVERT(varchar(200),u.nombre) AS unidad_nombre,CONVERT(varchar(36),u.server_id) AS server_id,CONVERT(varchar(100),u.system_type) AS unidad_system_type,CONVERT(varchar(100),s.system_type) AS servidor_system_type,CONVERT(varchar(50),s.tipo_conexion) AS tipo_conexion,CASE WHEN u.id IS NULL OR NULLIF(LTRIM(RTRIM(CONVERT(varchar(50),u.codigo))),'') IS NULL OR NULLIF(LTRIM(RTRIM(CONVERT(varchar(200),u.nombre))),'') IS NULL OR u.server_id IS NULL OR NULLIF(LTRIM(RTRIM(CONVERT(varchar(100),u.system_type))),'') IS NULL OR NULLIF(LTRIM(RTRIM(CONVERT(varchar(100),s.system_type))),'') IS NULL OR NULLIF(LTRIM(RTRIM(CONVERT(varchar(50),s.tipo_conexion))),'') IS NULL THEN 'INVALIDO' WHEN UPPER(LTRIM(RTRIM(CONVERT(varchar(100),u.system_type))))<>UPPER(LTRIM(RTRIM(CONVERT(varchar(100),s.system_type)))) THEN 'SYSTEM_TYPE_DIFERENTE' ELSE 'OK' END AS estado FROM dbo.Unidades_Negocio u INNER JOIN dbo.Servidores_Conexiones s ON s.id=u.server_id WHERE ISNULL(u.activo,1)=1 AND ISNULL(s.activo,1)=1 ORDER BY unidad_codigo"
+        },
+        {
+          "name":"config_130mid",
+          "sql":"SELECT CONVERT(varchar(36),u.id) AS unidad_pk,CONVERT(varchar(50),u.codigo) AS unidad_codigo,CONVERT(varchar(200),u.nombre) AS unidad_nombre,CONVERT(varchar(36),u.server_id) AS server_id,CONVERT(varchar(100),u.system_type) AS unidad_system_type,CONVERT(varchar(100),s.system_type) AS servidor_system_type,CONVERT(varchar(50),s.tipo_conexion) AS tipo_conexion,CONVERT(varchar(100),u.sucursal_origen_id) AS sucursal_origen_id,CASE WHEN s.host IS NULL THEN 0 ELSE 1 END AS tiene_host,CASE WHEN s.port IS NULL THEN 0 ELSE 1 END AS tiene_port,CASE WHEN s.database_name IS NULL THEN 0 ELSE 1 END AS tiene_database,CASE WHEN s.username IS NULL THEN 0 ELSE 1 END AS tiene_username,CASE WHEN s.password_encrypted IS NULL THEN 0 ELSE 1 END AS tiene_password FROM dbo.Unidades_Negocio u INNER JOIN dbo.Servidores_Conexiones s ON s.id=u.server_id WHERE ISNULL(u.activo,1)=1 AND ISNULL(s.activo,1)=1 AND UPPER(CONVERT(varchar(50),u.codigo))='130MID'"
+        }
+      ]
+    },
+    {
+      "type":"sql_readonly_audit",
+      "source":"POS",
+      "units":["130MID"],
+      "system_types":["SOFTRESTAURANT"],
+      "queries":[
+        {
+          "name":"extractor_exact_ticket_rollup_20260911",
+          "sql":"WITH h AS (SELECT ch.folio,ch.fecha,ISNULL(ch.nopersonas,0) AS pax_ticket,CAST(ISNULL(ch.total,0) AS decimal(19,4)) AS header_total FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE tr.apertura>='2026-09-11' AND tr.apertura<'2026-09-12' AND ISNULL(ch.cancelado,0)=0), l AS (SELECT h.folio,h.header_total,COALESCE(NULLIF(CONVERT(varchar(100),dc.idproducto),''),'SIN_CODIGO') AS producto_codigo,SUM(CAST(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0) AS decimal(19,4))) AS detalle_producto FROM h LEFT JOIN cheqdet dc ON dc.foliodet=h.folio LEFT JOIN productos p ON p.idproducto=dc.idproducto GROUP BY h.folio,h.header_total,COALESCE(NULLIF(CONVERT(varchar(100),dc.idproducto),''),'SIN_CODIGO')), t AS (SELECT folio,MAX(header_total) AS header_total,SUM(detalle_producto) AS detalle_total FROM l GROUP BY folio) SELECT folio,header_total,detalle_total,CAST(header_total-detalle_total AS decimal(19,4)) AS delta FROM t WHERE ABS(header_total-detalle_total)>0.05 ORDER BY ABS(header_total-detalle_total) DESC,folio"
+        },
+        {
+          "name":"duplicate_product_keys_referenced_20260911",
+          "sql":"WITH ids AS (SELECT DISTINCT dc.idproducto FROM cheqdet dc INNER JOIN cheques ch ON ch.folio=dc.foliodet INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE tr.apertura>='2026-09-11' AND tr.apertura<'2026-09-12' AND ISNULL(ch.cancelado,0)=0 AND dc.idproducto IS NOT NULL) SELECT CONVERT(varchar(100),p.idproducto) AS idproducto,COUNT(*) AS filas_productos FROM productos p INNER JOIN ids ON ids.idproducto=p.idproducto GROUP BY p.idproducto HAVING COUNT(*)>1 ORDER BY filas_productos DESC,idproducto"
+        }
+      ]
+    }
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
