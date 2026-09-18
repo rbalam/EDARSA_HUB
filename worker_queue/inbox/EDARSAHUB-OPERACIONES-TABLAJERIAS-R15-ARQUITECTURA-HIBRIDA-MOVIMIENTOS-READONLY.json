@@ -1,0 +1,89 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R15-ARQUITECTURA-HIBRIDA-MOVIMIENTOS-READONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "objective": "Auditar arquitectura hibrida correcta para Tablajeria: permitir elegir lonjas o insumos base desde sistemas origen cuando el cliente los usa, procesar la orden completa en EDARSAHUB como cerebro canonico, y devolver movimientos de salida de insumo base, entrada de derivados y merma al sistema origen o a los almacenes canonicos de EDARSAHUB segun configuracion por unidad. No modificar codigo ni datos.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/tablajeria",
+          "backend/modules/compras",
+          "backend/modules/fase2_operativo",
+          "backend/core",
+          "frontend/src/pages/tablajeria",
+          "frontend/src/config/enterpriseMenuConfig.js",
+          "docs/modules"
+        ],
+        "search_terms": [
+          "Servidores_Conexiones",
+          "InsumoBaseCodigo",
+          "InsumoBaseNombre",
+          "SistemaOrigen",
+          "IDLegacyPlantilla",
+          "ProductoDerivadoCodigo",
+          "MovimientoInventarioGenerado",
+          "Tablajeria_MovimientosInventario",
+          "SALIDA_INSUMO",
+          "ENTRADA_DERIVADO",
+          "SALIDA_MERMA",
+          "Inventario_Movimientos",
+          "Inventario_MovimientosDetalle",
+          "API_LOCAL",
+          "DATA_SOURCE",
+          "sync_servidor",
+          "afectar_inventario_orden",
+          "GeneraMovimiento",
+          "EsInventariable",
+          "AlmacenOrigenID",
+          "AlmacenDestinoID",
+          "SistemaOrigen",
+          "writeback",
+          "push",
+          "reconciliacion",
+          "mapeo",
+          "Producto_MapeoOrigen"
+        ],
+        "include_patterns": ["*.py", "*.js", "*.jsx", "*.json", "*.sql", "*.md"],
+        "exclude_patterns": [".git/*", "node_modules/*", "__pycache__/*", "*.pyc", "dist/*", "build/*"],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "tablajeria_tables_for_hybrid_architecture",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE 'Operaciones_Tablaje%' OR TABLE_NAME LIKE 'Tablajeria_%' OR TABLE_NAME IN ('Inventario_Movimientos','Inventario_MovimientosDetalle','Producto_MapeoOrigen','Servidores_Conexiones') ORDER BY TABLE_NAME"
+        },
+        {
+          "name": "tablajeria_columns_origin_and_movements",
+          "sql": "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('Operaciones_Tablaje_Plantillas','Operaciones_Tablaje_PlantillasDetalle','Operaciones_Tablaje_Ordenes','Operaciones_Tablaje_OrdenesDetalle','Tablajeria_MovimientosInventario','Inventario_Movimientos','Inventario_MovimientosDetalle','Producto_MapeoOrigen') AND (COLUMN_NAME LIKE '%Origen%' OR COLUMN_NAME LIKE '%Legacy%' OR COLUMN_NAME LIKE '%Movimiento%' OR COLUMN_NAME LIKE '%Insumo%' OR COLUMN_NAME LIKE '%Derivado%' OR COLUMN_NAME LIKE '%Almacen%' OR COLUMN_NAME LIKE '%Sistema%' OR COLUMN_NAME LIKE '%Servidor%' OR COLUMN_NAME LIKE '%Inventariable%' OR COLUMN_NAME LIKE '%Genera%') ORDER BY TABLE_NAME, ORDINAL_POSITION"
+        },
+        {
+          "name": "tablajeria_source_connections",
+          "sql": "SELECT nombre, system_type, tipo_conexion, database_name, activo, visible_en_listado, visible_en_operaciones, queries_configured FROM dbo.Servidores_Conexiones WHERE nombre LIKE '%TABLAJERIA%' OR database_name LIKE '%tablajeria%' OR database_name = 'Tablajeria' OR tipo_conexion IN ('API_LOCAL','DATA_SOURCE') ORDER BY nombre"
+        },
+        {
+          "name": "tablajeria_current_movement_counts",
+          "sql": "SELECT TipoMovimiento, COUNT(*) AS total FROM dbo.Tablajeria_MovimientosInventario GROUP BY TipoMovimiento ORDER BY TipoMovimiento"
+        }
+      ]
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/tablajeria/routes.py",
+        "backend/modules/tablajeria/fase6_service.py",
+        "backend/modules/tablajeria/sync_service.py",
+        "backend/modules/tablajeria/ordenes_service.py"
+      ]
+    }
+  ]
+}
