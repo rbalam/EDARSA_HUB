@@ -1,0 +1,62 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-WORKFLOW-PREJOB-FIX-R1-20260918T0315Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d0188293f98e618b96dec196fe38dca5930cf2fd",
+  "production_allowed": false,
+  "objective": "Corregir exclusivamente la validacion pre-job del workflow seguro P5 Runtime E2E. GitHub no permite el contexto runner en jobs.<job_id>.env; sustituir P5_EVIDENCE_FILE por una ruta relativa no sensible, retirar las demas dependencias runner.temp y ampliar el path trigger para que el propio workflow corregido se ejecute al integrarse. No tocar backend funcional, RBAC, SQL, secretos ni Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/centro-control-sync-monitor-p5-runtime-e2e.yml",
+      "old": "    paths:\n      - ops/e2e/requests/CENTRO-CONTROL-SYNC-MONITOR-P5-RUNTIME-SECURE-R1.execute\n",
+      "new": "    paths:\n      - ops/e2e/requests/CENTRO-CONTROL-SYNC-MONITOR-P5-RUNTIME-SECURE-R1.execute\n      - .github/workflows/centro-control-sync-monitor-p5-runtime-e2e.yml\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/centro-control-sync-monitor-p5-runtime-e2e.yml",
+      "old": "      P5_EVIDENCE_FILE: ${{ runner.temp }}/p5/evidence.json\n",
+      "new": "      P5_EVIDENCE_FILE: .tmp/p5/evidence.json\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/centro-control-sync-monitor-p5-runtime-e2e.yml",
+      "old": "          mkdir -p \"$RUNNER_TEMP/p5\"\n",
+      "new": "          mkdir -p \"$(dirname \"$P5_EVIDENCE_FILE\")\"\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/centro-control-sync-monitor-p5-runtime-e2e.yml",
+      "old": "          path: ${{ runner.temp }}/p5/evidence.json\n",
+      "new": "          path: .tmp/p5/evidence.json\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_control_sync_p5_secure_profile_contract.py"
+      ]
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL writes",
+    "No RBAC mutation",
+    "No secret values in job or repository",
+    "Only .github/workflows/centro-control-sync-monitor-p5-runtime-e2e.yml may change",
+    "Do not change TEST_SUPERADMIN_EMAIL or TEST_SUPERADMIN_PASSWORD secret references",
+    "Do not send email or WhatsApp",
+    "Preserve GitHub Environment development"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "technical"
+}
