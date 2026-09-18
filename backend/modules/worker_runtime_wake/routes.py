@@ -11,9 +11,11 @@ Security contract:
 from __future__ import annotations
 
 import fcntl
+import json
 import os
 import re
 import subprocess
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -34,7 +36,8 @@ LOCK_PATH = Path("/tmp/edarsahub-universal-worker-wake.lock")
 COOLDOWN_PATH = Path("/tmp/edarsahub-universal-worker-wake.last")
 WORKER_TREE_STATE = RUNTIME_DIR / "active_worker_code_tree_sha"
 WORKER_CODE_TREE_SPEC = "HEAD:tools/mirror_sync"
-WAKE_ROUTE_VERSION = "r32-queue-head-diagnostic"
+GIT_GUARD_PATH = REPO_ROOT / "tools" / "mirror_sync" / "git_divergence_guard.py"
+WAKE_ROUTE_VERSION = "r33-canonical-ff-refresh"
 _SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 
 
@@ -113,12 +116,57 @@ def _converge_development_if_safe() -> dict[str, str]:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker runtime worktree status unavailable")
     if dirty.stdout.strip():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="worker runtime convergence blocked: local worktree dirty")
-    ff = _runtime_git("reset", "--hard", f"origin/{DEV_BRANCH}", timeout=120)
-    if ff.returncode != 0:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker runtime fast-forward reset failed")
+    if not GIT_GUARD_PATH.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="worker runtime canonical git guard unavailable",
+        )
+    try:
+        refresh = subprocess.run(
+            [
+                sys.executable,
+                str(GIT_GUARD_PATH),
+                "refresh",
+                "--repo",
+                str(REPO_ROOT),
+                "--expected-remote",
+                remote,
+                "--job-id",
+                f"worker-runtime-wake-{os.getpid()}",
+                "--owner",
+                "worker-runtime-wake",
+                "--owner-pid",
+                str(os.getpid()),
+            ],
+            cwd=str(REPO_ROOT),
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="worker runtime canonical fast-forward unavailable",
+        ) from exc
+    if refresh.returncode != 0:
+        detail = "canonical refresh failed"
+        try:
+            payload = json.loads((refresh.stdout or "").strip() or "{}")
+            detail = str(payload.get("status") or detail)
+        except (TypeError, ValueError):
+            pass
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"worker runtime canonical fast-forward failed [{detail}]",
+        )
     new_head = _runtime_git("rev-parse", "HEAD").stdout.strip().lower()
     if new_head != remote:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker runtime fast-forward verification failed")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="worker runtime fast-forward verification failed",
+        )
     return {"state": "FF_APPLIED", "local_sha": local, "remote_sha": remote, "new_sha": new_head}
 
 
