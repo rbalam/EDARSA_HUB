@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "GATE5D-MIGRATION-WRITER-IDENTITY-HARDENING-R5-20260917",
+  "created_at_utc": "2026-09-18T05:14:00Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "expected_base_sha": "53dfe0b405553874f79223c429cfe319031f99d9",
+  "production_allowed": false,
+  "objective": "Reemitir exactamente el hardening R4 tras contencion legitima GIT_LOCK_BUSY ya resuelta: HRLectura debe estar prohibido como writer tanto en fuente dedicated como canonical, y EDARSAHUB_MIGRATION_EXPECTED_USER debe validar la identidad seleccionada en ambas fuentes. No ejecutar SQL, no tocar workflows, secretos, dispatcher ni Produccion.",
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/sql_migration_development.py",
+      "old": "    if selected_source == 'dedicated' and user.lower() == 'hrlectura':\n        raise MigrationContractError('HRLECTURA_CANNOT_BE_MIGRATION_WRITER')\n    if selected_source == 'dedicated' and expected_user and user != expected_user:\n        raise MigrationContractError('MIGRATION_WRITER_IDENTITY_MISMATCH')\n",
+      "new": "    if user.lower() == 'hrlectura':\n        raise MigrationContractError('HRLECTURA_CANNOT_BE_MIGRATION_WRITER')\n    if expected_user and user != expected_user:\n        raise MigrationContractError('MIGRATION_WRITER_IDENTITY_MISMATCH')\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_sql_migration_development_capability.py",
+      "old": "def test_explicit_canonical_writer_reuses_existing_sql_credentials():\n    source={'EDARSAHUB_SQL_HOST':'db','EDARSAHUB_SQL_DATABASE':'EDARSAHUB','EDARSAHUB_SQL_USER':'HRLectura','EDARSAHUB_SQL_PASSWORD':'existing'}\n    child=mod.build_child_env(source,allow_canonical_sql_writer=True); assert child['EDARSAHUB_SQL_USER']=='HRLectura'; assert child['EDARSAHUB_SQL_PASSWORD']=='existing'; assert child['EDARSAHUB_MIGRATION_CREDENTIAL_SOURCE']=='canonical'; assert child['EDARSAHUB_ALLOW_MIGRATIONS']=='true'\n",
+      "new": "def test_hrlectura_forbidden_as_canonical_writer_even_with_explicit_opt_in():\n    source={'EDARSAHUB_SQL_HOST':'db','EDARSAHUB_SQL_DATABASE':'EDARSAHUB','EDARSAHUB_SQL_USER':'HRLectura','EDARSAHUB_SQL_PASSWORD':'existing'}\n    with pytest.raises(mod.MigrationContractError,match='HRLECTURA_CANNOT_BE_MIGRATION_WRITER'): mod.build_child_env(source,allow_canonical_sql_writer=True)\n\ndef test_explicit_canonical_writer_reuses_non_readonly_credentials():\n    source={'EDARSAHUB_SQL_HOST':'db','EDARSAHUB_SQL_DATABASE':'EDARSAHUB','EDARSAHUB_SQL_USER':'GptEscritura','EDARSAHUB_SQL_PASSWORD':'existing','EDARSAHUB_MIGRATION_EXPECTED_USER':'GptEscritura'}\n    child=mod.build_child_env(source,allow_canonical_sql_writer=True); assert child['EDARSAHUB_SQL_USER']=='GptEscritura'; assert child['EDARSAHUB_SQL_PASSWORD']=='existing'; assert child['EDARSAHUB_MIGRATION_CREDENTIAL_SOURCE']=='canonical'; assert child['EDARSAHUB_ALLOW_MIGRATIONS']=='true'\n\ndef test_expected_identity_mismatch_fails_closed_for_canonical_writer():\n    source={'EDARSAHUB_SQL_HOST':'db','EDARSAHUB_SQL_DATABASE':'EDARSAHUB','EDARSAHUB_SQL_USER':'OtherWriter','EDARSAHUB_SQL_PASSWORD':'existing','EDARSAHUB_MIGRATION_EXPECTED_USER':'GptEscritura'}\n    with pytest.raises(mod.MigrationContractError,match='MIGRATION_WRITER_IDENTITY_MISMATCH'): mod.build_child_env(source,allow_canonical_sql_writer=True)\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/sql_migration_development.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_sql_migration_development_capability.py",
+        "backend/tests/test_worker_sql_migration_integration_gate6.py"
+      ]
+    }
+  ]
+}
