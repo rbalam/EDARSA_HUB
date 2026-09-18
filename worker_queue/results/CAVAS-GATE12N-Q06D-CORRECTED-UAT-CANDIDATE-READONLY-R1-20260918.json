@@ -1,0 +1,284 @@
+{
+  "base_sha": "3ea717f1c26365551518edb89d98e4abb07096d2",
+  "blockers": [
+    "check_failed:sql_readonly_audit"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-18T22:46:23Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE12N-Q06D-CORRECTED-UAT-CANDIDATE-READONLY-R1-20260918",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T22:46:30Z",
+  "quality_gate": "FAIL",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.auth.sql_user_identity",
+              "core.rbac",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "logging",
+              "modules.rbac_context_sql.context_service",
+              "notification_service",
+              "persona_link_service",
+              "pydantic",
+              "report_service",
+              "service",
+              "typing"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "_resolve_cava_scope",
+              "cava_socios",
+              "cava_socios_editar",
+              "cava_socios_ver",
+              "empresaid",
+              "unidad_negocio_pk",
+              "unidadnegocioid"
+            ],
+            "path": "backend/modules/cava_socios/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/botellas/{botella_id}/consumo",
+              "/botellas/{botella_id}/etiqueta",
+              "/clientes-canonicos",
+              "/clientes-canonicos/sync",
+              "/consumos",
+              "/dashboard",
+              "/inventario",
+              "/inventario-fisico/aplicar",
+              "/inventario-fisico/hoja",
+              "/inventario-inicial",
+              "/kardex",
+              "/personas-canonicas",
+              "/reportes/socio/{socio_id}/consumos",
+              "/reportes/socio/{socio_id}/estado-cuenta",
+              "/reportes/socio/{socio_id}/ficha",
+              "/socios",
+              "/socios/promover-cliente",
+              "/socios/{socio_id}",
+              "/socios/{socio_id}/botellas",
+              "/socios/{socio_id}/enviar-reporte",
+              "/socios/{socio_id}/enviar-todos-reportes",
+              "/socios/{socio_id}/persona-link",
+              "/socios/{socio_id}/persona-link/crear-persona"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BotellaCreate",
+              "ConsumoCreate",
+              "EnvioReporteRequest",
+              "InventarioFisicoAplicarRequest",
+              "InventarioFisicoItem",
+              "InventarioInicialBotellaItem",
+              "InventarioInicialCreate",
+              "PersonaCreateLinkRequest",
+              "PersonaExistingLinkRequest",
+              "PromoverClienteCreate",
+              "SincronizarClientesRequest",
+              "SocioCreate",
+              "SocioUpdate",
+              "_resolve_cava_actor",
+              "_resolve_cava_scope",
+              "actualizar_socio",
+              "aplicar_ajustes_inventario_fisico",
+              "crear_persona_y_vincular",
+              "crear_socio",
+              "descargar_estado_cuenta",
+              "descargar_ficha_socio",
+              "descargar_historial_consumos",
+              "desvincular_persona",
+              "enviar_reporte_socio",
+              "enviar_todos_reportes_socio",
+              "get_dashboard",
+              "listar_clientes_canonicos",
+              "listar_personas_canonicas",
+              "listar_socios",
+              "obtener_consumos",
+              "obtener_etiqueta_botella",
+              "obtener_hoja_inventario_fisico",
+              "obtener_inventario",
+              "obtener_kardex",
+              "obtener_persona_link",
+              "obtener_socio",
+              "promover_cliente_canonico",
+              "registrar_botella",
+              "registrar_consumo",
+              "registrar_inventario_inicial",
+              "sincronizar_clientes_canonicos",
+              "vincular_persona_existente"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.connection_factory",
+              "datetime",
+              "logging",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cava_socios",
+              "cavasocios_socios",
+              "empresaid"
+            ],
+            "path": "backend/modules/cava_socios/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CavaSociosService",
+              "_crear_cargo",
+              "_generar_numero_socio",
+              "_get_connection",
+              "actualizar_socio",
+              "aplicar_ajustes_inventario_fisico",
+              "crear_socio",
+              "get_cava_socios_service",
+              "listar_clientes_canonicos",
+              "listar_socios",
+              "obtener_cargos_socio",
+              "obtener_dashboard",
+              "obtener_etiqueta_botella",
+              "obtener_historial_consumos_global",
+              "obtener_hoja_inventario_fisico",
+              "obtener_inventario_global",
+              "obtener_kardex",
+              "obtener_movimientos_socio",
+              "obtener_socio",
+              "promover_cliente_canonico",
+              "registrar_botella",
+              "registrar_consumo",
+              "registrar_inventario_inicial",
+              "sincronizar_clientes_canonicos"
+            ],
+            "tables_referenced": [
+              "CavaSocios_Socios",
+              "Cliente_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.rbac_context_sql",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.auth.sql_user_identity",
+              "core.sql_first.db",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "empresaid",
+              "unidadnegocioid"
+            ],
+            "path": "backend/modules/rbac_context_sql/context_service.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "Usuario_RolesContexto"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACContextService",
+              "get_user_context"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.inventarios",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "core.server_registry",
+              "core.sql_first.db",
+              "dataclasses",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "empresaid",
+              "unidadnegocioid"
+            ],
+            "path": "backend/core/inventarios/resolver_canonico.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ResultadoResolucion",
+              "_fetchall",
+              "_get_conn",
+              "_server_id_de_unidad",
+              "_tabla_existe",
+              "clear_resolver_caches",
+              "ok",
+              "pendiente",
+              "precargar_productos_mapeo",
+              "resolver_almacen_id",
+              "resolver_empresa_id",
+              "resolver_producto_id",
+              "resolver_sucursal_id",
+              "resolver_tipo_movimiento_desde_concepto",
+              "resolver_tipo_movimiento_por_codigo"
+            ],
+            "tables_referenced": [
+              "Sistema_Empresas",
+              "Sistema_Sucursales",
+              "Unidades_Negocio"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 4,
+          "scanned_files": 4,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-18T22:46:13Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
