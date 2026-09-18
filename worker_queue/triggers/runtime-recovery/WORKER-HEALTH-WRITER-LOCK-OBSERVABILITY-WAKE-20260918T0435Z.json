@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker to consume existing EDARSAHUB-WORKER-HEALTH-WRITER-LOCK-OBSERVABILITY-R1 already present on worker/requests. Worker health is stale and shows no active job. Do not clone or replace the job. Preserve fail-closed Git safeguards, do not release locks manually, and do not touch Production.",
+  "existing_job_id": "EDARSAHUB-WORKER-HEALTH-WRITER-LOCK-OBSERVABILITY-R1",
+  "production_touched": false
+}
