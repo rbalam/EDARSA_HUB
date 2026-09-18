@@ -1,0 +1,44 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-SCHEDULER-SERVICE-IDENTITY-DISCOVERY-R4-20260917T225500Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Determinar en READ_ONLY si EDARSAHUB ya tiene una identidad canónica de servicio/sistema para jobs internos que deba usar InventariosDetectorJob en lugar del mock system@edarsa.hub. Auditar repositorio y SQL canónico sin exponer secretos. Si no existe una identidad de servicio explícita, documentar el contrato mínimo necesario para resolver contexto interno sin impersonar usuarios humanos ni bypass RBAC.",
+  "mode":"READ_ONLY",
+  "actions":[],
+  "checks":[
+    {
+      "type":"repository_contract_audit",
+      "request":{
+        "paths":[
+          "backend/core",
+          "backend/modules",
+          "backend/server.py"
+        ],
+        "search_terms":[
+          "service principal",
+          "service_account",
+          "system@edarsa.hub",
+          "Sistema Automático",
+          "internal user",
+          "scheduler",
+          "build_user_access_context",
+          "resolve_server_context",
+          "get_user_empresas_permitidas"
+        ],
+        "max_results":150
+      }
+    },
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {
+          "name":"candidate_system_users",
+          "sql":"SELECT TOP (20) UsuarioID, Email, Nombre, Activo FROM dbo.Usuario_Catalogo WHERE LOWER(ISNULL(Email,'')) LIKE '%system%' OR LOWER(ISNULL(Email,'')) LIKE '%sistema%' OR LOWER(ISNULL(Nombre,'')) LIKE '%sistema%' ORDER BY UsuarioID"
+        }
+      ]
+    }
+  ],
+  "human_summary_language":"es"
+}
