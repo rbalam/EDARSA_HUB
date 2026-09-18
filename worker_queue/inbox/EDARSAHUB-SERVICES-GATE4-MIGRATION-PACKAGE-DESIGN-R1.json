@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SERVICES-GATE4-MIGRATION-PACKAGE-DESIGN-R1",
+  "created_at_utc": "2026-09-18T03:24:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "962214daee04f012aba9944328f381d1f91e22db",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "objective": "Gate 4 de EDARSAHUB Services. Diseñar y persistir el paquete de migracion para Desarrollo derivado de Gate3B certificado: orden por bounded context, scripts versionados propuestos, prechecks, postchecks, rollback, idempotencia, dry-run plan y canal SQL_MIGRATION_DEVELOPMENT. No ejecutar SQL ni migraciones. No tocar Production. No usar HRLectura como writer.",
+  "constraints": [
+    "Gate3B R2 CERTIFIED 100 PASS",
+    "No DDL ni DML ejecutado en este Gate",
+    "No Produccion",
+    "HRLectura es lectura y nunca writer",
+    "Usar exclusivamente canal SQL_MIGRATION_DEVELOPMENT cuando en un Gate posterior se autorice ejecutar",
+    "Antes de cualquier ejecucion: writer canonico autenticable, environment development, backup/restore point y dry-run certificados",
+    "Migraciones additive-first, idempotentes, transaccionales y reversibles",
+    "No duplicar capacidades BOS existentes",
+    "No tocar backend/core, Scheduler ni NetPay",
+    "No crear Fabrication_WorkOrders hasta resolver compatibilidad con ActivoFijo_OrdenesTrabajo",
+    "No crear Land_Notaries/Land_NotaryOffices hasta collision/public-master review",
+    "Gate4 solo diseña paquete y dry-run; ejecucion queda fuera de alcance"
+  ],
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/BOS/EDARSAHUB_SERVICES_GATE4_MIGRATION_PACKAGE_DESIGN_R1.md",
+      "content": "# EDARSAHUB Services - Gate 4 Migration Package Design R1\n\n## Entrada certificada\nGate 3B R2 = CERTIFIED / PASS / 100%, production_touched=false. El dossier fisico ya clasifica REUSE / EXTEND / NEW / DO_NOT_CREATE.\n\n## Objetivo\nDiseñar el paquete de migracion para Desarrollo sin ejecutar SQL. La ejecucion futura solo puede ocurrir mediante SQL_MIGRATION_DEVELOPMENT con writer canonico distinto de HRLectura.\n\n## Canal canonico\nPatron requerido:\n- rama: Edarsahub_Desarrollo\n- environment: development\n- script versionado en repositorio\n- rollback versionado separado\n- XACT_ABORT + transaccion explicita + TRY/CATCH\n- prechecks antes de DDL\n- postchecks deterministas\n- segunda ejecucion idempotente\n- production_touched=false\n\nReferencia de patron existente: docs/COA/COA_GATE4_SQL_MIGRATION_CHANNEL.md y workflows de migracion Development existentes.\n\n## Orden de paquetes\n1. Services Foundation\n2. Services Engagement\n3. Construction\n4. Fabrication base, sin Fabrication_WorkOrders\n5. Interiors\n6. Land Parcel + lineage\n7. Land legal/comercial\n8. Extensiones COA solo si el gap queda probado\n9. Fabrication_WorkOrders solo tras gate de compatibilidad ActivoFijo\n\n## Archivos propuestos\nLos scripts se materializaran en un Gate posterior, una vez cerrados los tipos exactos de cada FK y los subgates condicionales.\n\n- backend/database/migrations/20260918_001_services_foundation.sql\n- backend/database/migrations/20260918_001_services_foundation_rollback.sql\n- backend/database/migrations/20260918_002_services_engagement.sql\n- backend/database/migrations/20260918_002_services_engagement_rollback.sql\n- backend/database/migrations/20260918_003_construction.sql\n- backend/database/migrations/20260918_003_construction_rollback.sql\n- backend/database/migrations/20260918_004_fabrication.sql\n- backend/database/migrations/20260918_004_fabrication_rollback.sql\n- backend/database/migrations/20260918_005_interiors.sql\n- backend/database/migrations/20260918_005_interiors_rollback.sql\n- backend/database/migrations/20260918_006_land_core.sql\n- backend/database/migrations/20260918_006_land_core_rollback.sql\n- backend/database/migrations/20260918_007_land_legal_commercial.sql\n- backend/database/migrations/20260918_007_land_legal_commercial_rollback.sql\n\nLas fechas/numeros son propuesta de versionado y deben revalidarse contra colisiones reales antes de crear los archivos.\n\n## Prechecks obligatorios\nCada script futuro debe abortar si:\n- DB_NAME() != EDARSAHUB\n- environment no es Development\n- login efectivo es HRLectura\n- writer no coincide con el contrato de migracion autorizado\n- objeto equivalente ya existe\n- tipos de FK no coinciden exactamente\n- existe colision de nombre/constraint/index\n- backup/restore point no esta certificado\n- el estado Git no corresponde al SHA autorizado\n\n## Postchecks obligatorios\n- objetos creados exactamente una vez\n- PK/FK/UQ/CK e indices esperados\n- cero referencias huerfanas\n- conteos de tablas reutilizadas preservados\n- segundo run = no-op/idempotente\n- rollback evaluado\n- topology Git 0/0\n- build/tests PASS\n- production_touched=false\n\n## Rollback\nRollback por paquete, separado del forward migration.\n- objetos nuevos: DROP solo si no contienen datos oficiales y no tienen consumidores\n- extensiones: revertir solo la extension creada y validar dependencias\n- si ya existen datos oficiales, bloquear rollback destructivo y preservar informacion\n\n## Dry-run\nAntes de ejecutar cualquier script:\n1. validar sintaxis y dependencias en una base de Desarrollo restaurable;\n2. ejecutar prechecks;\n3. ejecutar forward migration;\n4. ejecutar postchecks;\n5. ejecutar segunda vez para certificar idempotencia;\n6. ejecutar rollback en copia/entorno controlado;\n7. ejecutar forward nuevamente;\n8. certificar conteos, constraints y tiempos;\n9. conservar evidencia de SHA de scripts y resultado.\n\n## Bloqueadores de ejecucion\nNo se autoriza migracion hasta resolver:\n- writer canonico de Development y credenciales por secret/environment;\n- backup/restore point certificado;\n- tipos exactos de FK para cada objeto nuevo;\n- review de colisiones Land Notary/NotaryOffice;\n- compatibilidad Fabrication WorkOrder vs ActivoFijo OrdenesTrabajo;\n- cualquier extension COA contra schema real.\n\n## Siguiente gate\nGate 4A = Migration Package Physical Scripts READ_ONLY DESIGN.\nDebe crear los archivos SQL forward/rollback de manera versionada, sin ejecutarlos, y someterlos a auditoria de sintaxis/contratos. Gate 4B = Dry-run en Desarrollo solo despues de certificar writer, environment y backup.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
