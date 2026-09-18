@@ -1,0 +1,466 @@
+{
+  "base_sha": "25834c62cd6a67a0ac5d892ee978f140acf69aa7",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T19:45:03Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SERVIDORES-CONEXIONES-API-LISTADO-FILTRO-R10B-POSTCHECK-READONLY",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T19:45:17Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.server_registry.py",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.db",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "def _get_servers_from_sql",
+              "def list_operational_servers",
+              "def list_servers",
+              "get_visible_servers_for_operaciones",
+              "r10a: el listado administrativo debe incluir api_local",
+              "tipo_conexion != 'core'",
+              "visible_en_listado",
+              "visible_en_operaciones"
+            ],
+            "path": "backend/core/server_registry.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_execute_sql_write",
+              "_get_server_by_id_from_sql",
+              "_get_servers_from_sql",
+              "_get_unidades_from_sql",
+              "_parse_json_field",
+              "_parse_tipos_movimiento",
+              "_serialize_catalog_field",
+              "_sql_row_to_server_dict",
+              "create_server",
+              "delete_server",
+              "filter_servers_by_user_permissions",
+              "get_connection_config",
+              "get_decrypted_credentials",
+              "get_server_by_id",
+              "get_server_by_unidad_codigo",
+              "get_server_connection_info",
+              "get_server_connection_info_with_secrets",
+              "get_server_sucursales",
+              "get_visible_servers_for_operaciones",
+              "list_operational_servers",
+              "list_servers",
+              "list_unidades_negocio",
+              "map_sql_to_api_server_response",
+              "mask_sensitive_fields",
+              "normalize_server_record",
+              "normalize_system_type",
+              "normalize_unidad_codigo",
+              "resolve_server_context",
+              "resolve_unidad_by_server_sucursal",
+              "update_server",
+              "validate_registry_integrity",
+              "validate_server_payload"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 1,
+          "scanned_files": 1,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "nombre",
+              "system_type",
+              "tipo_conexion",
+              "database_name",
+              "activo",
+              "visible_en_listado",
+              "visible_en_operaciones"
+            ],
+            "name": "admin_visible_api_local_candidates",
+            "row_count_returned": 9,
+            "rows": [
+              [
+                "130° QRO LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                "QUERETARO",
+                true,
+                true,
+                true
+              ],
+              [
+                "API ManagmentPro",
+                "MPRO",
+                "API_LOCAL",
+                "CLOUD",
+                true,
+                true,
+                false
+              ],
+              [
+                "CHAPUR BACKOFFICE",
+                "ENTERPRISE",
+                "API_LOCAL",
+                "CHAPUR",
+                true,
+                true,
+                false
+              ],
+              [
+                "CHAPUR NORTE",
+                "ENTERPRISE",
+                "API_LOCAL",
+                "CHAPUR",
+                true,
+                true,
+                true
+              ],
+              [
+                "CIENFUEGOS NOMINPAQ",
+                "SOFTRESTAURANT_PRO",
+                "API_LOCAL",
+                "CIENFUEGOS",
+                true,
+                true,
+                false
+              ],
+              [
+                "GARIBALDI",
+                "SOFTRESTAURANT_PRO",
+                "API_LOCAL",
+                "GARIBALDI",
+                true,
+                true,
+                true
+              ],
+              [
+                "ORIGEN LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                "ORIGEN",
+                true,
+                true,
+                false
+              ],
+              [
+                "TEST API LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                "TEST",
+                false,
+                true,
+                false
+              ],
+              [
+                "TEST_COMMIT_1785357429",
+                "MPRO",
+                "API_LOCAL",
+                "",
+                false,
+                true,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "nombre",
+              "system_type",
+              "tipo_conexion",
+              "database_name",
+              "activo",
+              "visible_en_listado",
+              "visible_en_operaciones"
+            ],
+            "name": "admin_visible_datasource_candidates",
+            "row_count_returned": 15,
+            "rows": [
+              [
+                "130° MERIDA",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                "softrestaurant10",
+                true,
+                true,
+                true
+              ],
+              [
+                "BENDITA AGUITA",
+                "SoftRestaurant",
+                "DATA_SOURCE",
+                "softrestaurant12",
+                false,
+                true,
+                true
+              ],
+              [
+                "BENDITA AGUITA",
+                "MPRO",
+                "DATA_SOURCE",
+                "softrestaurant12",
+                false,
+                true,
+                true
+              ],
+              [
+                "BENDITA AGUITA",
+                "MPRO",
+                "DATA_SOURCE",
+                "softrestaurant12",
+                false,
+                true,
+                true
+              ],
+              [
+                "CAVAS",
+                "MPRO",
+                "DATA_SOURCE",
+                "cava_www",
+                false,
+                true,
+                true
+              ],
+              [
+                "CIENFUEGOS",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                "softrestaurant95pro",
+                true,
+                true,
+                true
+              ],
+              [
+                "CIENFUEGOS TABLAJERIA",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                "Tablajeria",
+                true,
+                true,
+                false
+              ],
+              [
+                "HR2020 ESCRITURA",
+                "MPRO",
+                "DATA_SOURCE",
+                "HR2020",
+                false,
+                true,
+                false
+              ],
+              [
+                "LA ESTELAR",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                "softrestaurant12",
+                true,
+                true,
+                true
+              ],
+              [
+                "ManagmentPro",
+                "MPRO",
+                "DATA_SOURCE",
+                "CENTRAL2020",
+                true,
+                true,
+                true
+              ],
+              [
+                "MPRO TABLAJERIA",
+                "MPRO",
+                "DATA_SOURCE",
+                "tablajeria_mpro",
+                true,
+                true,
+                false
+              ],
+              [
+                "PRUEBAS SOFTRESTAURANT",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                "softrestaurant12",
+                false,
+                true,
+                false
+              ],
+              [
+                "TEST_ENCRYPTED_PASSWORD_UPDATED",
+                "MPRO",
+                "DATA_SOURCE",
+                "TEST_DB",
+                false,
+                true,
+                true
+              ],
+              [
+                "TEST_RBAC_ADMIN_CHECK",
+                "MPRO",
+                "DATA_SOURCE",
+                "TEST_DB",
+                false,
+                true,
+                true
+              ],
+              [
+                "TEST_SQL_FIRST_TEMP_UPDATED",
+                "MANAGEMENTPRO",
+                "DATA_SOURCE",
+                "TEST_DB",
+                false,
+                true,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "nombre",
+              "system_type",
+              "tipo_conexion",
+              "database_name",
+              "activo",
+              "visible_en_listado",
+              "visible_en_operaciones"
+            ],
+            "name": "operaciones_visible_candidates",
+            "row_count_returned": 8,
+            "rows": [
+              [
+                "130° MERIDA",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                "softrestaurant10",
+                true,
+                true,
+                true
+              ],
+              [
+                "130° QRO LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                "QUERETARO",
+                true,
+                true,
+                true
+              ],
+              [
+                "CHAPUR NORTE",
+                "ENTERPRISE",
+                "API_LOCAL",
+                "CHAPUR",
+                true,
+                true,
+                true
+              ],
+              [
+                "CIENFUEGOS",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                "softrestaurant95pro",
+                true,
+                true,
+                true
+              ],
+              [
+                "EDARSA HUB",
+                "EDARSA_HUB",
+                "CORE",
+                "EDARSAHUB",
+                true,
+                true,
+                true
+              ],
+              [
+                "GARIBALDI",
+                "SOFTRESTAURANT_PRO",
+                "API_LOCAL",
+                "GARIBALDI",
+                true,
+                true,
+                true
+              ],
+              [
+                "LA ESTELAR",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                "softrestaurant12",
+                true,
+                true,
+                true
+              ],
+              [
+                "ManagmentPro",
+                "MPRO",
+                "DATA_SOURCE",
+                "CENTRAL2020",
+                true,
+                true,
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T19:45:02Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
