@@ -1,0 +1,68 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "000-EDARSAHUB-SERVIDORES-HEALTH-TIMEOUT-R12B-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Alta a servidores"
+  },
+  "supersedes": [
+    "000-EDARSAHUB-SERVIDORES-CIERRE-INTEGRAL-R12-20260918"
+  ],
+  "objective": "Aplicar exclusivamente la correccion funcional del health-check en SERVIDORES. El backend /test-connectivity puede esperar hasta 30 segundos, mientras el cliente Axios global corta a 15 segundos. Configurar timeout de 40 segundos solo en esta llamada de Servidores.js. No modificar timeout global, backend, RBAC, secretos, SQL ni Produccion. Validar con build frontend, auditoria de repositorio y git diff.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "      // Usar endpoint que obtiene api_key internamente y no requiere permisos estrictos\n      const response = await api.post(`/api-connections/${apiConn.id}/test-connectivity`);",
+      "new": "      // El backend de test-connectivity puede esperar hasta 30s. Este request usa\n      // un margen propio para no heredar el timeout global de 15s y marcar falsos Error.\n      const response = await api.post(\n        `/api-connections/${apiConn.id}/test-connectivity`,\n        {},\n        { timeout: 40000 }\n      );",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/Servidores.js",
+          "frontend/src/lib/api.js",
+          "backend/modules/api_connections/universal_test_routes.py"
+        ],
+        "search_terms": [
+          "/api-connections/${apiConn.id}/test-connectivity",
+          "timeout: 40000",
+          "timeout: 15000",
+          "timeout = 30",
+          "get_api_connection_with_secret",
+          "headers['x-api-key'] = api_key"
+        ],
+        "include_patterns": [
+          "*.js",
+          "*.jsx",
+          "*.py"
+        ],
+        "exclude_patterns": [
+          ".git/*",
+          "node_modules/*",
+          "__pycache__/*",
+          "dist/*",
+          "build/*"
+        ],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
