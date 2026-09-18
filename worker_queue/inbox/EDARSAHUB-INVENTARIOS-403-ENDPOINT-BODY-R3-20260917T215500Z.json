@@ -1,0 +1,38 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-INVENTARIOS-403-ENDPOINT-BODY-R3-20260917T215500Z",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "production_allowed":false,
+  "objective":"Auditar en solo lectura el cuerpo exacto de generate_inventory_analysis en backend/server.py y los helpers que invoca para autorización de server_id. Determinar qué condición produce HTTP 403 para el contexto interno del scheduler y qué campos faltan en current_user. No modificar código, permisos, SQL, email ni Producción.",
+  "mode":"READ_ONLY",
+  "actions":[],
+  "checks":[
+    {
+      "type":"repository_contract_audit",
+      "request":{
+        "paths":[
+          "backend/server.py",
+          "backend/core/inventory_analysis_core.py",
+          "backend/core/security.py",
+          "backend/core/corporate_filters/request_resolver.py",
+          "backend/core/rbac_helper_sql.py"
+        ],
+        "search_terms":[
+          "generate_inventory_analysis",
+          "No tiene acceso a este servidor",
+          "Sin acceso a este servidor",
+          "user_has_server_access",
+          "resolve_authorized_unidad_scope",
+          "_get_allowed_server_ids",
+          "_get_sql_usuario_id",
+          "has_full_access",
+          "current_user",
+          "server_id"
+        ],
+        "max_results":200
+      }
+    }
+  ],
+  "human_summary_language":"es"
+}
