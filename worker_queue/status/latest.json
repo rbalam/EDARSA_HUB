@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "f2ef46227536ffd6f66ab871983ce7cfa19b7374",
-  "generated_at_utc": "2026-09-18T15:48:56Z",
+  "generated_at_utc": "2026-09-18T15:49:10Z",
   "history": {
     "done_total_local": 620,
     "pending_total_local": 0,
@@ -13,43 +13,43 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1272,
+      "age_seconds": 1286,
       "job_id": "ARBITROA-BOS-GATE-A5-PREFLIGHT-SQL-READONLY-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 771,
+      "age_seconds": 785,
       "job_id": "BOS-AGENT-HARNESS-V1-RH-IMPORTADOR-SQLFIRST-RECOVERY-GATE29-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1168,
+      "age_seconds": 1182,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE2-DATA-INTEGRATION-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 894,
+      "age_seconds": 908,
       "job_id": "UNIVERSAL-BANKING-GATE1-MATERIALIZE-CANONICAL-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 788,
+      "age_seconds": 802,
       "job_id": "UNIVERSAL-WORKER-D2-RUNTIME-CONVERGENCE-GUARD-D2.1-IMPLEMENTATION-R1-RETRY3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 973,
+      "age_seconds": 987,
       "job_id": "UNIVERSAL-WORKER-PUBLISHER-REPO-AUDIT-ALIGNMENT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1021,
+      "age_seconds": 1035,
       "job_id": "coa-gate6c-fiscal-status-lifecycle-design-v1-20260918",
       "reason": null,
       "state": "RESULT_READY"
@@ -67,8 +67,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-18T15:48:55Z",
-    "last_receive_utc": "2026-09-18T15:48:50Z",
+    "last_cycle_utc": "2026-09-18T15:49:07Z",
+    "last_receive_utc": "2026-09-18T15:49:09Z",
     "last_terminal_utc": "2026-09-18T15:36:04Z",
     "pid": "48668"
   },
