@@ -1,0 +1,28 @@
+{
+  "base_sha": "decf416190215dbe792fac7c875da9f6b8f676cc",
+  "blockers": [
+    "REMOTE_MOVED_RETRY_REQUIRED"
+  ],
+  "candidate_sha": "d43d74451d9751bcf349024d9b610c5716385eb9",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-18T20:20:58Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "frontend/src/pages/Servidores.js"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SERVIDORES-API-HEALTH-TIMEOUT-R11A-FRONTEND-FIX",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T20:21:15Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-18T20:18:37Z",
+  "status": "REMOTE_MOVED_RETRY_REQUIRED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
