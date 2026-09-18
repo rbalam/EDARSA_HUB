@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "e28da4d31a55ad5251db5400ebadd6f4e5466375",
-  "generated_at_utc": "2026-09-18T21:42:32Z",
+  "generated_at_utc": "2026-09-18T21:43:46Z",
   "history": {
     "done_total_local": 681,
     "pending_total_local": 0,
@@ -13,31 +13,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1294,
+      "age_seconds": 1368,
       "job_id": "CAVAS-GATE12L-UI-POSTCHECK-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 270,
+      "age_seconds": 344,
       "job_id": "CAVAS-GATE12M-PERSONA-LINK-E2E-CANARY-READINESS-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 260,
+      "age_seconds": 334,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R22-R23-R2-REPORTES-LOTE-RECLAMOS-PROVEEDOR-READONLY",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 472,
+      "age_seconds": 546,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R22-R23-REPORTES-LOTE-RECLAMOS-PROVEEDOR-READONLY",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 51,
+      "age_seconds": 125,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24A-IMPLEMENTATION-MAP-READONLY",
       "reason": null,
       "state": "RESULT_READY"
@@ -55,8 +55,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-18T21:42:26Z",
-    "last_receive_utc": "2026-09-18T21:42:29Z",
+    "last_cycle_utc": "2026-09-18T21:43:41Z",
+    "last_receive_utc": "2026-09-18T21:43:44Z",
     "last_terminal_utc": "2026-09-18T21:41:41Z",
     "pid": "736"
   },
