@@ -1,0 +1,78 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12I-SQL-MIGRATION-DEVELOPMENT-CANONICAL-WRITER-R5-20260917",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ef25def3b8e9f68900556edd4349bbb19f6dee9e",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Ejecutar exclusivamente en Development la migracion fisica certificada de Gate 12I que agrega CavaSocios_Socios.PersonaID nullable, su FK a Gobierno_Persona(PersonaID) y el indice filtrado, reutilizando de forma explicita la credencial SQL canonica existente mediante confirm_use_existing_sql_writer=true. Sin SQL inline, sin secrets nuevos, sin backfill, sin tocar Produccion y con auditorias READ_ONLY antes y despues.",
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "actions": [],
+  "migration_path": "backend/database/migrations/20260910_cavas_socios_persona_link.sql",
+  "migration_sha256": "581fe86deac853fe447458afc0f88e6cd66e9790521181e314f136a4c66ab6b5",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": true,
+  "preflight_checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "identity_guard",
+          "sql": "SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS db_user, ORIGINAL_LOGIN() AS original_login;"
+        },
+        {
+          "name": "target_objects_guard",
+          "sql": "SELECT OBJECT_SCHEMA_NAME(o.object_id) AS schema_name, o.name AS object_name, o.type_desc FROM sys.objects o WHERE o.object_id IN (OBJECT_ID(N'dbo.CavaSocios_Socios'), OBJECT_ID(N'dbo.Gobierno_Persona')) ORDER BY o.name;"
+        },
+        {
+          "name": "persona_column_preflight",
+          "sql": "SELECT COUNT(*) AS persona_column_count FROM sys.columns WHERE object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND name=N'PersonaID';"
+        },
+        {
+          "name": "persona_pk_preflight",
+          "sql": "SELECT COUNT(*) AS persona_pk_count FROM sys.key_constraints kc JOIN sys.index_columns ic ON ic.object_id=kc.parent_object_id AND ic.index_id=kc.unique_index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE kc.parent_object_id=OBJECT_ID(N'dbo.Gobierno_Persona') AND kc.type='PK' AND c.name=N'PersonaID';"
+        },
+        {
+          "name": "socios_population_preflight",
+          "sql": "SELECT COUNT_BIG(*) AS socios_rows FROM dbo.CavaSocios_Socios;"
+        },
+        {
+          "name": "child_fk_preflight",
+          "sql": "SELECT fk.name AS fk_name, OBJECT_NAME(fk.parent_object_id) AS child_table, fk.is_disabled, fk.is_not_trusted FROM sys.foreign_keys fk WHERE fk.referenced_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') ORDER BY fk.name;"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "identity_postcheck",
+          "sql": "SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS db_user, ORIGINAL_LOGIN() AS original_login;"
+        },
+        {
+          "name": "persona_column_postcheck",
+          "sql": "SELECT c.name AS column_name, TYPE_NAME(c.user_type_id) AS type_name, c.max_length, c.is_nullable FROM sys.columns c WHERE c.object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND c.name=N'PersonaID';"
+        },
+        {
+          "name": "persona_fk_postcheck",
+          "sql": "SELECT fk.name AS fk_name, OBJECT_SCHEMA_NAME(fk.parent_object_id) AS parent_schema, OBJECT_NAME(fk.parent_object_id) AS parent_table, OBJECT_SCHEMA_NAME(fk.referenced_object_id) AS referenced_schema, OBJECT_NAME(fk.referenced_object_id) AS referenced_table, fk.is_disabled, fk.is_not_trusted FROM sys.foreign_keys fk WHERE fk.parent_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND fk.name=N'FK_CavaSocios_Socios_GobiernoPersona';"
+        },
+        {
+          "name": "persona_index_postcheck",
+          "sql": "SELECT i.name AS index_name, i.has_filter, i.filter_definition, i.is_disabled FROM sys.indexes i WHERE i.object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND i.name=N'IX_CavaSocios_Socios_PersonaID';"
+        },
+        {
+          "name": "no_backfill_postcheck",
+          "sql": "SELECT COUNT_BIG(*) AS socios_rows, SUM(CASE WHEN PersonaID IS NOT NULL THEN 1 ELSE 0 END) AS persona_nonnull_rows FROM dbo.CavaSocios_Socios;"
+        },
+        {
+          "name": "child_fk_postcheck",
+          "sql": "SELECT fk.name AS fk_name, OBJECT_NAME(fk.parent_object_id) AS child_table, fk.is_disabled, fk.is_not_trusted FROM sys.foreign_keys fk WHERE fk.referenced_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') ORDER BY fk.name;"
+        }
+      ]
+    }
+  ]
+}
