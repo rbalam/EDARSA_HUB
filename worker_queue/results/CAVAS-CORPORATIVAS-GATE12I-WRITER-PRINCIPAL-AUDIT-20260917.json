@@ -1,0 +1,444 @@
+{
+  "base_sha": "b22fcd921a3d219ab0b209409c8df36b174c0f56",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T00:21:34Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CORPORATIVAS-GATE12I-WRITER-PRINCIPAL-AUDIT-20260917",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T00:21:59Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "db_user",
+              "original_login"
+            ],
+            "name": "identity_guard",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc"
+            ],
+            "name": "target_objects_guard",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "dbo",
+                "CavaSocios_Socios",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "Gobierno_Persona",
+                "USER_TABLE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "principal_id",
+              "principal_name",
+              "type_desc",
+              "authentication_type_desc",
+              "default_schema_name",
+              "mapped_login_name",
+              "create_date",
+              "modify_date"
+            ],
+            "name": "visible_database_principals",
+            "row_count_returned": 13,
+            "rows": [
+              [
+                16385,
+                "db_accessadmin",
+                "DATABASE_ROLE",
+                "NONE",
+                null,
+                null,
+                "2003-04-08T09:10:42.333000",
+                "2009-04-13T12:59:14.467000"
+              ],
+              [
+                16389,
+                "db_backupoperator",
+                "DATABASE_ROLE",
+                "NONE",
+                null,
+                null,
+                "2003-04-08T09:10:42.350000",
+                "2009-04-13T12:59:14.467000"
+              ],
+              [
+                16390,
+                "db_datareader",
+                "DATABASE_ROLE",
+                "NONE",
+                null,
+                null,
+                "2003-04-08T09:10:42.363000",
+                "2009-04-13T12:59:14.467000"
+              ],
+              [
+                16391,
+                "db_datawriter",
+                "DATABASE_ROLE",
+                "NONE",
+                null,
+                null,
+                "2003-04-08T09:10:42.363000",
+                "2009-04-13T12:59:14.467000"
+              ],
+              [
+                16387,
+                "db_ddladmin",
+                "DATABASE_ROLE",
+                "NONE",
+                null,
+                null,
+                "2003-04-08T09:10:42.350000",
+                "2009-04-13T12:59:14.467000"
+              ],
+              [
+                16392,
+                "db_denydatareader",
+                "DATABASE_ROLE",
+                "NONE",
+                null,
+                null,
+                "2003-04-08T09:10:42.380000",
+                "2009-04-13T12:59:14.467000"
+              ],
+              [
+                16393,
+                "db_denydatawriter",
+                "DATABASE_ROLE",
+                "NONE",
+                null,
+                null,
+                "2003-04-08T09:10:42.380000",
+                "2009-04-13T12:59:14.467000"
+              ],
+              [
+                16384,
+                "db_owner",
+                "DATABASE_ROLE",
+                "NONE",
+                null,
+                null,
+                "2003-04-08T09:10:42.333000",
+                "2009-04-13T12:59:14.467000"
+              ],
+              [
+                16386,
+                "db_securityadmin",
+                "DATABASE_ROLE",
+                "NONE",
+                null,
+                null,
+                "2003-04-08T09:10:42.350000",
+                "2009-04-13T12:59:14.467000"
+              ],
+              [
+                5,
+                "HRLectura",
+                "SQL_USER",
+                "INSTANCE",
+                "dbo",
+                "HRLectura",
+                "2026-04-01T17:32:49.157000",
+                "2026-04-01T17:32:49.157000"
+              ],
+              [
+                8,
+                "HUB_Auditor_SQL",
+                "SQL_USER",
+                "INSTANCE",
+                "dbo",
+                "HUB_Auditor_SQL",
+                "2026-08-27T16:46:48.960000",
+                "2026-08-27T16:46:48.960000"
+              ],
+              [
+                6,
+                "HUB_Escritura",
+                "SQL_USER",
+                "INSTANCE",
+                "dbo",
+                "GptEscritura",
+                "2026-06-23T18:15:16.753000",
+                "2026-06-23T18:15:16.753000"
+              ],
+              [
+                7,
+                "HUB_Lectura",
+                "SQL_USER",
+                "INSTANCE",
+                "dbo",
+                "GptLectura",
+                "2026-06-23T18:16:57.480000",
+                "2026-06-23T18:16:57.480000"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "role_name",
+              "role_type",
+              "member_name",
+              "member_type"
+            ],
+            "name": "database_role_memberships",
+            "row_count_returned": 15,
+            "rows": [
+              [
+                "db_accessadmin",
+                "DATABASE_ROLE",
+                "HRLectura",
+                "SQL_USER"
+              ],
+              [
+                "db_accessadmin",
+                "DATABASE_ROLE",
+                "HUB_Escritura",
+                "SQL_USER"
+              ],
+              [
+                "db_backupoperator",
+                "DATABASE_ROLE",
+                "HRLectura",
+                "SQL_USER"
+              ],
+              [
+                "db_datareader",
+                "DATABASE_ROLE",
+                "HRLectura",
+                "SQL_USER"
+              ],
+              [
+                "db_datareader",
+                "DATABASE_ROLE",
+                "HUB_Auditor_SQL",
+                "SQL_USER"
+              ],
+              [
+                "db_datareader",
+                "DATABASE_ROLE",
+                "HUB_Lectura",
+                "SQL_USER"
+              ],
+              [
+                "db_datawriter",
+                "DATABASE_ROLE",
+                "HRLectura",
+                "SQL_USER"
+              ],
+              [
+                "db_datawriter",
+                "DATABASE_ROLE",
+                "HUB_Escritura",
+                "SQL_USER"
+              ],
+              [
+                "db_ddladmin",
+                "DATABASE_ROLE",
+                "HRLectura",
+                "SQL_USER"
+              ],
+              [
+                "db_ddladmin",
+                "DATABASE_ROLE",
+                "HUB_Escritura",
+                "SQL_USER"
+              ],
+              [
+                "db_owner",
+                "DATABASE_ROLE",
+                "dbo",
+                "SQL_USER"
+              ],
+              [
+                "db_owner",
+                "DATABASE_ROLE",
+                "HRLectura",
+                "SQL_USER"
+              ],
+              [
+                "db_owner",
+                "DATABASE_ROLE",
+                "HUB_Escritura",
+                "SQL_USER"
+              ],
+              [
+                "db_securityadmin",
+                "DATABASE_ROLE",
+                "HRLectura",
+                "SQL_USER"
+              ],
+              [
+                "db_securityadmin",
+                "DATABASE_ROLE",
+                "HUB_Escritura",
+                "SQL_USER"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "grantee_name",
+              "grantee_type",
+              "state_desc",
+              "permission_name",
+              "class_desc",
+              "major_id",
+              "securable_name"
+            ],
+            "name": "relevant_explicit_permissions",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "member_name",
+              "member_type",
+              "mapped_login_name"
+            ],
+            "name": "db_owner_members",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "dbo",
+                "SQL_USER",
+                "sa"
+              ],
+              [
+                "HRLectura",
+                "SQL_USER",
+                "HRLectura"
+              ],
+              [
+                "HUB_Escritura",
+                "SQL_USER",
+                "GptEscritura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "schema_owner",
+              "object_name",
+              "object_owner"
+            ],
+            "name": "target_object_owners",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "dbo",
+                "dbo",
+                "CavaSocios_Socios",
+                null
+              ],
+              [
+                "dbo",
+                "dbo",
+                "Gobierno_Persona",
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "principal_id",
+              "server_principal_name",
+              "type_desc",
+              "is_disabled",
+              "default_database_name",
+              "create_date",
+              "modify_date"
+            ],
+            "name": "server_principals_visible_mapping",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                283,
+                "HRLectura",
+                "SQL_LOGIN",
+                false,
+                "CENTRAL2020",
+                "2024-01-17T16:58:12.410000",
+                "2026-08-18T18:18:00.553000"
+              ],
+              [
+                1,
+                "sa",
+                "SQL_LOGIN",
+                false,
+                "master",
+                "2003-04-08T09:10:35.460000",
+                "2026-09-17T18:20:03.700000"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "hrlectura_can_alter_socios",
+              "hrlectura_can_reference_persona",
+              "hrlectura_is_db_owner"
+            ],
+            "name": "current_hrlectura_permissions_sanity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1,
+                1,
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T00:21:32Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
