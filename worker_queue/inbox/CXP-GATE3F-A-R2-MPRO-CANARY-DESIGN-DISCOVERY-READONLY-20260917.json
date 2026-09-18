@@ -1,0 +1,81 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CXP-GATE3F-A-R2-MPRO-CANARY-DESIGN-DISCOVERY-READONLY-20260917",
+  "created_at_utc": "2026-09-18T01:34:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "8b9cdd5e084db2726f263e5567d32635533bd9b5",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "GATE 3F-A R2 MPRO CANARY DESIGN DISCOVERY. Recovery minimo y determinista para decidir readiness del canary MPRO usando solo consultas simples ya compatibles con el auditor READ_ONLY. Resolver evidencia de Pc_ID, forma/estado, tablas hijas, lookup e indicador de saldo. Si Pc_ID sigue sin mecanismo autoritativo, certificar el blocker y NO autorizar canary. No escribir ni implementar Payment Executor.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN",
+        "130QRO"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "f3a_r2_runtime_identity",
+          "sql": "SELECT @@SERVERNAME AS server_name,DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS database_user"
+        },
+        {
+          "name": "f3a_r2_pc_id_column",
+          "sql": "SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.max_length,c.is_nullable,c.is_identity,c.is_computed,dc.definition AS default_definition FROM sys.columns c INNER JOIN sys.types t ON t.user_type_id=c.user_type_id LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id WHERE c.object_id=OBJECT_ID(N'dbo.Pago_CXP') AND c.name=N'Pc_ID'"
+        },
+        {
+          "name": "f3a_r2_pc_id_frequency",
+          "sql": "SELECT Pc_ID,COUNT_BIG(*) AS total FROM dbo.Pago_CXP GROUP BY Pc_ID ORDER BY total DESC,Pc_ID"
+        },
+        {
+          "name": "f3a_r2_form_state_shape",
+          "sql": "SELECT Fp_Cve_Forma_Pago,Es_Cve_Estado,COUNT_BIG(*) AS total FROM dbo.Pago_CXP GROUP BY Fp_Cve_Forma_Pago,Es_Cve_Estado ORDER BY Fp_Cve_Forma_Pago,Es_Cve_Estado"
+        },
+        {
+          "name": "f3a_r2_child_comprobante_by_form",
+          "sql": "SELECT p.Fp_Cve_Forma_Pago,COUNT_BIG(*) AS pagos,COUNT_BIG(c.Cxp_Folio) AS comprobantes_relacionados FROM dbo.Pago_CXP p LEFT JOIN dbo.Pago_Cxp_Comprobante c ON c.Cxp_Folio=p.Cxp_Folio AND c.Pc_ID=p.Pc_ID GROUP BY p.Fp_Cve_Forma_Pago ORDER BY p.Fp_Cve_Forma_Pago"
+        },
+        {
+          "name": "f3a_r2_child_impuesto_by_form",
+          "sql": "SELECT p.Fp_Cve_Forma_Pago,COUNT_BIG(*) AS pagos,COUNT_BIG(i.Cxp_Folio) AS impuestos_relacionados FROM dbo.Pago_CXP p LEFT JOIN dbo.Pago_CXP_Impuesto i ON i.Cxp_Folio=p.Cxp_Folio AND i.Pc_ID=p.Pc_ID GROUP BY p.Fp_Cve_Forma_Pago ORDER BY p.Fp_Cve_Forma_Pago"
+        },
+        {
+          "name": "f3a_r2_cxp_confirmation_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,t.name AS data_type,c.is_nullable FROM sys.columns c INNER JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID(N'dbo.Cuenta_X_Pagar') ORDER BY c.column_id"
+        },
+        {
+          "name": "f3a_r2_pago_indexes",
+          "sql": "SELECT i.name AS index_name,i.is_unique,i.is_primary_key,ic.key_ordinal,c.name AS column_name FROM sys.indexes i INNER JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id INNER JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.Pago_CXP') ORDER BY i.index_id,ic.key_ordinal"
+        },
+        {
+          "name": "f3a_r2_candidate_sequences",
+          "sql": "SELECT s.name AS schema_name,q.name AS sequence_name,t.name AS data_type,q.start_value,q.increment,q.current_value FROM sys.sequences q INNER JOIN sys.schemas s ON s.schema_id=q.schema_id INNER JOIN sys.types t ON t.user_type_id=q.user_type_id WHERE q.name LIKE N'%Pago%' OR q.name LIKE N'%CXP%' OR q.name LIKE N'%Pc%' ORDER BY s.name,q.name"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ ONLY SQL ONLY",
+    "actions must remain empty",
+    "NO INSERT UPDATE DELETE MERGE EXEC EXECUTE DDL SELECT INTO OR MULTI-STATEMENT SQL",
+    "NO procedure execution",
+    "NO individual provider, invoice or payment business rows beyond bounded Pc_ID code frequency and aggregate form/state evidence",
+    "NO Production",
+    "NO code or file mutation",
+    "Connections only through PosRuntimeResolver and get_external_sql_connection",
+    "Use prior certified Gate 3D and 3E evidence together with this R2",
+    "If Pc_ID authoritative generation is not proven, classify MPRO canary as BLOCKED_NOT_READY",
+    "Do not authorize child-table writes from correlation alone",
+    "Do not authorize any canary or Payment Executor writer",
+    "Payment Executor writer remains 0 percent"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
