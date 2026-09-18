@@ -1,0 +1,43 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-WORKER-ISCAM-BACKFILL-SUMMARY-R92-CARLOS-20260919T000500Z",
+  "created_at_utc":"2026-09-19T00:05:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"252ca168e6081d33afae52aa502d8b69c6f38eb8",
+  "production_allowed":false,
+  "mode":"MUTATION",
+  "objective":"Agregar trazabilidad segura al modo ISCAM_DETAIL_BACKFILL. El dispatcher ya captura stdout pero el publicador elimina operation_output; operation_summary ya esta permitido. Parsear el JSON resumen que imprime backfill_detalle_producto_pendientes.py, publicar solo contadores/metricas/status por dia, nunca errores crudos ni secretos. Esto permitira explicar rc=1 sin pruebas a ciegas. No cambiar logica de negocio ni tocar Produccion.",
+  "actions":[
+    {
+      "type":"replace_text",
+      "path":"tools/mirror_sync/universal_job_dispatcher.py",
+      "old":"def run(args: list[str], cwd: Path | None = None, check: bool = False, timeout: int | None = None, env_extra: dict[str, str] | None = None):\n",
+      "new":"def summarize_iscam_detail_backfill_output(output: str) -> dict[str, Any]:\n    summary: dict[str, Any] = {\"unidades\": []}\n    for raw_line in reversed((output or \"\").splitlines()):\n        try:\n            payload = json.loads(raw_line)\n        except Exception:\n            continue\n        if not isinstance(payload, dict) or not isinstance(payload.get(\"unidades\"), list):\n            continue\n        units = []\n        for unit in payload.get(\"unidades\") or []:\n            if not isinstance(unit, dict):\n                continue\n            days = []\n            for day in unit.get(\"dias\") or []:\n                if not isinstance(day, dict):\n                    continue\n                days.append({\n                    key: day.get(key)\n                    for key in (\n                        \"fecha_operacion\", \"status\",\n                        \"ventas_runtime\", \"ventas_pos\", \"delta_ventas\",\n                        \"tickets_runtime\", \"tickets_pos\", \"delta_tickets\",\n                        \"pax_runtime\", \"pax_pos\", \"delta_pax\",\n                        \"filas_insertadas\",\n                    )\n                    if key in day\n                })\n            units.append({\n                \"unidad\": str(unit.get(\"unidad\") or \"\"),\n                \"ya_ok\": int(unit.get(\"ya_ok\") or 0),\n                \"candidatos\": int(unit.get(\"candidatos\") or 0),\n                \"reparables\": int(unit.get(\"reparables\") or 0),\n                \"bloqueados\": int(unit.get(\"bloqueados\") or 0),\n                \"sin_runtime\": int(unit.get(\"sin_runtime\") or 0),\n                \"filas_insertadas\": int(unit.get(\"filas_insertadas\") or 0),\n                \"dias\": days,\n            })\n        return {\n            \"modo\": str(payload.get(\"modo\") or \"\"),\n            \"fecha_inicio\": str(payload.get(\"fecha_inicio\") or \"\"),\n            \"fecha_fin_exclusivo\": str(payload.get(\"fecha_fin_exclusivo\") or \"\"),\n            \"dias_evaluados\": int(payload.get(\"dias_evaluados\") or 0),\n            \"dias_ya_ok\": int(payload.get(\"dias_ya_ok\") or 0),\n            \"dias_candidatos\": int(payload.get(\"dias_candidatos\") or 0),\n            \"dias_reparables\": int(payload.get(\"dias_reparables\") or 0),\n            \"dias_bloqueados\": int(payload.get(\"dias_bloqueados\") or 0),\n            \"dias_sin_runtime\": int(payload.get(\"dias_sin_runtime\") or 0),\n            \"filas_insertadas\": int(payload.get(\"filas_insertadas\") or 0),\n            \"unidades\": units,\n        }\n    return summary\n\n\ndef run(args: list[str], cwd: Path | None = None, check: bool = False, timeout: int | None = None, env_extra: dict[str, str] | None = None):\n",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"tools/mirror_sync/universal_job_dispatcher.py",
+      "old":"            result[\"operation_output\"] = execution.stdout[-20000:]\n            result[\"files_changed\"] = []\n            if execution.returncode != 0:\n                result[\"blockers\"].append(f\"iscam_detail_backfill_failed:rc={execution.returncode}\")\n",
+      "new":"            result[\"operation_output\"] = execution.stdout[-20000:]\n            result[\"operation_summary\"] = summarize_iscam_detail_backfill_output(execution.stdout or \"\")\n            result[\"files_changed\"] = []\n            if execution.returncode != 0:\n                result[\"blockers\"].append(f\"iscam_detail_backfill_failed:rc={execution.returncode}\")\n",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/tests/test_worker_softrestaurant_sanitized_failure_evidence.py",
+      "old":"def test_publisher_allows_summary_but_not_raw_output():\n    text = PUBLISHER.read_text(encoding='utf-8')\n    assert '\"operation_summary\"' in text\n    allowed_block = text.split('def sanitize', 1)[1].split('public =', 1)[0]\n    assert '\"operation_output\"' not in allowed_block\n",
+      "new":"def test_iscam_backfill_summary_is_sanitized_and_keeps_day_deltas():\n    module = _load_dispatcher()\n    output = 'HEADER\\n' + '{\"run_id\":\"x\",\"modo\":\"DRY_RUN\",\"fecha_inicio\":\"2026-09-11\",\"fecha_fin_exclusivo\":\"2026-09-12\",\"dias_evaluados\":1,\"dias_ya_ok\":0,\"dias_candidatos\":1,\"dias_reparables\":0,\"dias_bloqueados\":1,\"dias_sin_runtime\":0,\"filas_insertadas\":0,\"unidades\":[{\"unidad\":\"130MID\",\"ya_ok\":0,\"candidatos\":1,\"reparables\":0,\"bloqueados\":1,\"sin_runtime\":0,\"filas_insertadas\":0,\"dias\":[{\"fecha_operacion\":\"2026-09-11\",\"status\":\"NO_CUADRA_REVISAR\",\"ventas_runtime\":\"133674.00\",\"ventas_pos\":\"133673.00\",\"delta_ventas\":\"1.00\",\"tickets_runtime\":36,\"tickets_pos\":36,\"delta_tickets\":0,\"pax_runtime\":85,\"pax_pos\":85,\"delta_pax\":0,\"error\":\"password=must-not-publish\"}]}]}\\n'\n    value = module.summarize_iscam_detail_backfill_output(output)\n    assert value['dias_bloqueados'] == 1\n    day = value['unidades'][0]['dias'][0]\n    assert day['status'] == 'NO_CUADRA_REVISAR'\n    assert day['delta_ventas'] == '1.00'\n    assert 'password' not in str(value)\n    assert 'must-not-publish' not in str(value)\n\n\ndef test_publisher_allows_summary_but_not_raw_output():\n    text = PUBLISHER.read_text(encoding='utf-8')\n    assert '\"operation_summary\"' in text\n    allowed_block = text.split('def sanitize', 1)[1].split('public =', 1)[0]\n    assert '\"operation_output\"' not in allowed_block\n",
+      "expected_count":1
+    }
+  ],
+  "checks":[
+    {"type":"git_diff_check"},
+    {"type":"py_compile","paths":["tools/mirror_sync/universal_job_dispatcher.py","backend/tests/test_worker_softrestaurant_sanitized_failure_evidence.py"]},
+    {"type":"pytest","paths":["backend/tests/test_worker_softrestaurant_sanitized_failure_evidence.py"]}
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
