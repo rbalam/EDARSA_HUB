@@ -1,0 +1,905 @@
+{
+  "base_sha": "aa57b944342f7e7efda0397ebfa64358c8c99a61",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T18:43:48Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE12J-SQL-AUDIT-FAILURE-DIAGNOSTIC-READONLY-R1-20260918",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T18:44:05Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.connection_factory",
+              "datetime",
+              "logging",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cavasocios_socios",
+              "cliente_catalogo",
+              "clientecrmid"
+            ],
+            "path": "backend/modules/cava_socios/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CavaSociosService",
+              "_crear_cargo",
+              "_generar_numero_socio",
+              "_get_connection",
+              "actualizar_socio",
+              "aplicar_ajustes_inventario_fisico",
+              "crear_socio",
+              "get_cava_socios_service",
+              "listar_clientes_canonicos",
+              "listar_socios",
+              "obtener_cargos_socio",
+              "obtener_dashboard",
+              "obtener_etiqueta_botella",
+              "obtener_historial_consumos_global",
+              "obtener_hoja_inventario_fisico",
+              "obtener_inventario_global",
+              "obtener_kardex",
+              "obtener_movimientos_socio",
+              "obtener_socio",
+              "promover_cliente_canonico",
+              "registrar_botella",
+              "registrar_consumo",
+              "registrar_inventario_inicial",
+              "sincronizar_clientes_canonicos"
+            ],
+            "tables_referenced": [
+              "CavaSocios_Socios",
+              "Cliente_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogo_ampliado",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.db",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "gobierno_persona",
+              "gobierno_personavinculo",
+              "personaid"
+            ],
+            "path": "backend/modules/catalogo_ampliado/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_insert_one",
+              "create_alerta_regla",
+              "create_documento",
+              "create_documento_version",
+              "create_empresa_rol",
+              "create_persona",
+              "create_vinculo",
+              "empresa_existe",
+              "ensure_canonical_task_for_alert",
+              "get_empresa_configuracion",
+              "get_kardex",
+              "list_alerta_eventos",
+              "list_alerta_reglas",
+              "list_documentos",
+              "list_due_alert_events",
+              "list_personas",
+              "list_roles_catalogo",
+              "list_tipos_documento",
+              "list_vencimientos",
+              "plan_alerta_eventos",
+              "upsert_empresa_configuracion"
+            ],
+            "tables_referenced": [
+              "Gobierno_AlertaEvento",
+              "Gobierno_AlertaRegla",
+              "Gobierno_Documento",
+              "Gobierno_DocumentoMovimiento",
+              "Gobierno_DocumentoVersion",
+              "Gobierno_EmpresaConfiguracion",
+              "Gobierno_Persona",
+              "Gobierno_PersonaEmpresaRol",
+              "Gobierno_PersonaVinculo",
+              "Gobierno_RolCorporativoCatalogo",
+              "Gobierno_TipoDocumento",
+              "Sistema_Empresas",
+              "Sistema_Tareas"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "cliente_catalogo",
+              "gobierno_persona",
+              "gobierno_personavinculo",
+              "personaid"
+            ],
+            "path": "backend/database/migrations/20260908_catalogo_ampliado_gobierno_core.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Cliente_Catalogo",
+              "Cliente_Contactos",
+              "Gobierno_AlertaEvento",
+              "Gobierno_AlertaRegla",
+              "Gobierno_Documento",
+              "Gobierno_DocumentoMovimiento",
+              "Gobierno_DocumentoVersion",
+              "Gobierno_EmpresaConfiguracion",
+              "Gobierno_Persona",
+              "Gobierno_PersonaEmpresaRol",
+              "Gobierno_PersonaVinculo",
+              "Gobierno_RolCorporativoCatalogo",
+              "Gobierno_TipoDocumento",
+              "Proveedor_Catalogo",
+              "Proveedor_Contactos",
+              "Sistema_Empresas",
+              "Usuario_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "cavasocios_socios",
+              "gobierno_persona",
+              "personaid"
+            ],
+            "path": "backend/database/migrations/20260910_cavas_socios_persona_link.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "CavaSocios_Socios",
+              "Gobierno_Persona"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 4,
+          "scanned_files": 4,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "login_name",
+              "db_user",
+              "original_login"
+            ],
+            "name": "identity_guard",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "table_name",
+              "object_id"
+            ],
+            "name": "required_tables",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "dbo",
+                "CavaSocios_Socios",
+                1351727918
+              ],
+              [
+                "dbo",
+                "Cliente_Catalogo",
+                738817694
+              ],
+              [
+                "dbo",
+                "Gobierno_Persona",
+                611585317
+              ],
+              [
+                "dbo",
+                "Gobierno_PersonaVinculo",
+                723585716
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "type_name",
+              "is_nullable"
+            ],
+            "name": "cava_socios_columns",
+            "row_count_returned": 19,
+            "rows": [
+              [
+                1,
+                "SocioID",
+                "uniqueidentifier",
+                false
+              ],
+              [
+                2,
+                "EmpresaID",
+                "uniqueidentifier",
+                false
+              ],
+              [
+                3,
+                "NumeroSocio",
+                "varchar",
+                false
+              ],
+              [
+                4,
+                "NombreCompleto",
+                "nvarchar",
+                false
+              ],
+              [
+                5,
+                "Email",
+                "varchar",
+                true
+              ],
+              [
+                6,
+                "Telefono",
+                "varchar",
+                true
+              ],
+              [
+                7,
+                "ClienteCRMID",
+                "uniqueidentifier",
+                true
+              ],
+              [
+                8,
+                "TipoMembresia",
+                "varchar",
+                true
+              ],
+              [
+                9,
+                "FechaAltaMembresia",
+                "date",
+                true
+              ],
+              [
+                10,
+                "FechaVencimientoMembresia",
+                "date",
+                true
+              ],
+              [
+                11,
+                "MaximoBotellas",
+                "int",
+                true
+              ],
+              [
+                12,
+                "Estatus",
+                "varchar",
+                true
+              ],
+              [
+                13,
+                "Activo",
+                "bit",
+                true
+              ],
+              [
+                14,
+                "FechaCreacion",
+                "datetime2",
+                true
+              ],
+              [
+                15,
+                "UsuarioCreacionID",
+                "uniqueidentifier",
+                true
+              ],
+              [
+                16,
+                "FechaModificacion",
+                "datetime2",
+                true
+              ],
+              [
+                17,
+                "UsuarioModificacionID",
+                "uniqueidentifier",
+                true
+              ],
+              [
+                18,
+                "Observaciones",
+                "nvarchar",
+                true
+              ],
+              [
+                19,
+                "PersonaID",
+                "bigint",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "type_name",
+              "is_nullable"
+            ],
+            "name": "gobierno_persona_columns",
+            "row_count_returned": 13,
+            "rows": [
+              [
+                1,
+                "PersonaID",
+                "bigint",
+                false
+              ],
+              [
+                2,
+                "PublicUUID",
+                "uniqueidentifier",
+                false
+              ],
+              [
+                3,
+                "Nombre",
+                "nvarchar",
+                false
+              ],
+              [
+                4,
+                "ApellidoPaterno",
+                "nvarchar",
+                true
+              ],
+              [
+                5,
+                "ApellidoMaterno",
+                "nvarchar",
+                true
+              ],
+              [
+                6,
+                "RFC",
+                "varchar",
+                true
+              ],
+              [
+                7,
+                "CURP",
+                "varchar",
+                true
+              ],
+              [
+                8,
+                "FechaNacimiento",
+                "date",
+                true
+              ],
+              [
+                9,
+                "Nacionalidad",
+                "nvarchar",
+                true
+              ],
+              [
+                10,
+                "Activo",
+                "bit",
+                false
+              ],
+              [
+                11,
+                "FechaAlta",
+                "datetime2",
+                false
+              ],
+              [
+                12,
+                "FechaActualizacion",
+                "datetime2",
+                true
+              ],
+              [
+                13,
+                "UsuarioActualizacionID",
+                "int",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "type_name",
+              "is_nullable"
+            ],
+            "name": "gobierno_personavinculo_columns",
+            "row_count_returned": 11,
+            "rows": [
+              [
+                1,
+                "VinculoID",
+                "bigint",
+                false
+              ],
+              [
+                2,
+                "PersonaID",
+                "bigint",
+                false
+              ],
+              [
+                3,
+                "UsuarioID",
+                "int",
+                true
+              ],
+              [
+                4,
+                "ClienteID",
+                "int",
+                true
+              ],
+              [
+                5,
+                "ProveedorID",
+                "int",
+                true
+              ],
+              [
+                6,
+                "ContactoClienteID",
+                "int",
+                true
+              ],
+              [
+                7,
+                "ContactoProveedorID",
+                "int",
+                true
+              ],
+              [
+                8,
+                "EsPrincipal",
+                "bit",
+                false
+              ],
+              [
+                9,
+                "Activo",
+                "bit",
+                false
+              ],
+              [
+                10,
+                "FechaAlta",
+                "datetime2",
+                false
+              ],
+              [
+                11,
+                "UsuarioAltaID",
+                "int",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "type_name",
+              "is_nullable"
+            ],
+            "name": "cliente_catalogo_columns",
+            "row_count_returned": 44,
+            "rows": [
+              [
+                1,
+                "ClienteID",
+                "int",
+                false
+              ],
+              [
+                2,
+                "CodigoCliente",
+                "varchar",
+                false
+              ],
+              [
+                3,
+                "RFC",
+                "varchar",
+                false
+              ],
+              [
+                4,
+                "CURP",
+                "varchar",
+                true
+              ],
+              [
+                5,
+                "RazonSocial",
+                "varchar",
+                false
+              ],
+              [
+                6,
+                "NombreComercial",
+                "varchar",
+                true
+              ],
+              [
+                7,
+                "TipoPersona",
+                "char",
+                false
+              ],
+              [
+                8,
+                "ClienteMaestroID",
+                "int",
+                true
+              ],
+              [
+                9,
+                "GrupoClienteID",
+                "int",
+                true
+              ],
+              [
+                10,
+                "MonedaID",
+                "smallint",
+                false
+              ],
+              [
+                11,
+                "LimiteCredito",
+                "decimal",
+                true
+              ],
+              [
+                12,
+                "DiasCredito",
+                "smallint",
+                false
+              ],
+              [
+                13,
+                "DescuentoMaximoPorcentaje",
+                "decimal",
+                false
+              ],
+              [
+                14,
+                "PortalHabilitado",
+                "bit",
+                false
+              ],
+              [
+                15,
+                "BloqueadoVenta",
+                "bit",
+                false
+              ],
+              [
+                16,
+                "EmailPrincipal",
+                "varchar",
+                true
+              ],
+              [
+                17,
+                "TelefonoPrincipal",
+                "varchar",
+                true
+              ],
+              [
+                18,
+                "SitioWeb",
+                "varchar",
+                true
+              ],
+              [
+                19,
+                "CodigoPostalFiscal",
+                "varchar",
+                true
+              ],
+              [
+                20,
+                "Ciudad",
+                "varchar",
+                true
+              ],
+              [
+                21,
+                "Estado",
+                "varchar",
+                true
+              ],
+              [
+                22,
+                "Pais",
+                "varchar",
+                false
+              ],
+              [
+                23,
+                "Observaciones",
+                "varchar",
+                true
+              ],
+              [
+                24,
+                "Activo",
+                "bit",
+                false
+              ],
+              [
+                25,
+                "FechaAlta",
+                "datetime2",
+                false
+              ],
+              [
+                26,
+                "FechaModificacion",
+                "datetime2",
+                true
+              ],
+              [
+                27,
+                "CreatedBy",
+                "varchar",
+                true
+              ],
+              [
+                28,
+                "ModifiedBy",
+                "varchar",
+                true
+              ],
+              [
+                29,
+                "ListaPrecioID",
+                "int",
+                true
+              ],
+              [
+                30,
+                "CondicionPagoID",
+                "smallint",
+                true
+              ],
+              [
+                31,
+                "EjecutivoPrincipalUserID",
+                "uniqueidentifier",
+                true
+              ],
+              [
+                32,
+                "GerenteComercialUserID",
+                "uniqueidentifier",
+                true
+              ],
+              [
+                33,
+                "CustomerSuccessUserID",
+                "uniqueidentifier",
+                true
+              ],
+              [
+                34,
+                "SectorID",
+                "int",
+                true
+              ],
+              [
+                35,
+                "SubsectorID",
+                "int",
+                true
+              ],
+              [
+                36,
+                "TamanoClienteID",
+                "int",
+                true
+              ],
+              [
+                37,
+                "RiesgoCuentaID",
+                "int",
+                true
+              ],
+              [
+                38,
+                "EsProspecto",
+                "bit",
+                true
+              ],
+              [
+                39,
+                "EsPartner",
+                "bit",
+                true
+              ],
+              [
+                40,
+                "EsCuentaEstrategica",
+                "bit",
+                true
+              ],
+              [
+                41,
+                "FechaUltimaInteraccion",
+                "datetime",
+                true
+              ],
+              [
+                42,
+                "ScoreCuenta",
+                "int",
+                true
+              ],
+              [
+                43,
+                "OrigenCuentaID",
+                "int",
+                true
+              ],
+              [
+                44,
+                "PublicUUID",
+                "uniqueidentifier",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_socios",
+              "sin_persona",
+              "con_persona"
+            ],
+            "name": "cava_socios_population",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2",
+                2,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_personas"
+            ],
+            "name": "persona_population",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_vinculos"
+            ],
+            "name": "persona_vinculo_population",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_clientes"
+            ],
+            "name": "cliente_population",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T18:43:46Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
