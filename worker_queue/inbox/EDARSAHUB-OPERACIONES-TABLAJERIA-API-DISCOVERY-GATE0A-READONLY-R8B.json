@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-API-DISCOVERY-GATE0A-READONLY-R8B",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "human_summary_language": "es",
+  "objective": "Auditar en modo solo lectura la estructura real de dbo.Servidores_Conexiones y extraer candidatos API relacionados con Tablajeria, MPRO, Cienfuegos, Cavas y Origen sin asumir columnas inexistentes, sin exponer secretos, sin tocar TABLAJERIA.sys.*, sin modificar datos.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "servidores_conexiones_columns_real",
+          "sql": "SELECT c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.is_nullable FROM sys.tables t INNER JOIN sys.schemas s ON s.schema_id = t.schema_id INNER JOIN sys.columns c ON c.object_id = t.object_id INNER JOIN sys.types ty ON ty.user_type_id = c.user_type_id WHERE s.name = 'dbo' AND t.name = 'Servidores_Conexiones' ORDER BY c.column_id"
+        },
+        {
+          "name": "servidores_conexiones_total_count",
+          "sql": "SELECT COUNT(*) AS total_rows FROM dbo.Servidores_Conexiones"
+        },
+        {
+          "name": "servidores_conexiones_sample_masked",
+          "sql": "SELECT TOP 20 * FROM dbo.Servidores_Conexiones ORDER BY 1 DESC"
+        },
+        {
+          "name": "servidores_conexiones_log_columns_real",
+          "sql": "SELECT c.column_id, c.name AS column_name, ty.name AS data_type, c.max_length, c.is_nullable FROM sys.tables t INNER JOIN sys.schemas s ON s.schema_id = t.schema_id INNER JOIN sys.columns c ON c.object_id = t.object_id INNER JOIN sys.types ty ON ty.user_type_id = c.user_type_id WHERE s.name = 'dbo' AND t.name = 'Servidores_Conexiones_Log' ORDER BY c.column_id"
+        },
+        {
+          "name": "servidores_conexiones_related_tables",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, t.create_date, t.modify_date FROM sys.tables t INNER JOIN sys.schemas s ON s.schema_id = t.schema_id WHERE t.name LIKE '%Servidor%' OR t.name LIKE '%Conexion%' OR t.name LIKE '%Conex%' OR t.name LIKE '%API%' OR t.name LIKE '%Sistema%' ORDER BY s.name, t.name"
+        }
+      ]
+    }
+  ]
+}
