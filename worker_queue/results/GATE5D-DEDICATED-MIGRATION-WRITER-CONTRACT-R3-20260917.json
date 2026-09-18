@@ -1,0 +1,28 @@
+{
+  "base_sha": "bb6453f33e31158e6b88af064ca64d8e0cefcfc7",
+  "blockers": [],
+  "candidate_sha": "5b15ee193c331614d010422f64e658266fb97855",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-18T02:29:44Z",
+  "development_sha": "5b15ee193c331614d010422f64e658266fb97855",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_worker_sql_migration_development_capability.py",
+    "tools/mirror_sync/sql_migration_development.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "GATE5D-DEDICATED-MIGRATION-WRITER-CONTRACT-R3-20260917",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T02:29:55Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-18T02:29:39Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
