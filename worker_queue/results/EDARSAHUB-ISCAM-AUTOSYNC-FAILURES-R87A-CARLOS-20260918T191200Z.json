@@ -1,0 +1,167 @@
+{
+  "base_sha": "25834c62cd6a67a0ac5d892ee978f140acf69aa7",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T19:50:16Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-AUTOSYNC-FAILURES-R87A-CARLOS-20260918T191200Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T19:50:21Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "FechaAccion",
+              "RunID",
+              "estatus_general",
+              "detalle_fallidos",
+              "detalles_unidades"
+            ],
+            "name": "scheduler_latest_detalles_unidades",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "2026-09-18T19:35:15.143000",
+                "20c90da3940f",
+                "PARCIAL",
+                "8",
+                "[{\"unidad_negocio_id\": \"130MID\", \"unidad\": \"130° MERIDA\", \"sistema\": \"SoftRestaurant\", \"fecha_inicio\": \"2026-09-15\", \"fecha_fin\": \"2026-09-18\", \"estatus\": \"SUCCESS\", \"procesados\": 4, \"insertados\": 0, \"actualizados\": 0, \"omitidos\": 4, \"errores\": 0, \"duracion_seg\": 1, \"mensaje_error\": null, \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-15\", \"status\": \"NO_CUADRA_REVISAR\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}, {\"fecha_operacion\": \"2026-09-16\", \"status\": \"NO_CUADRA_REVISAR\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}, {\"fecha_operacion\": \"2026-09-17\", \"status\": \"NO_CUADRA_REVISAR\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}, {\"fecha_operacion\": \"2026-09-18\", \"status\": \"NO_PROBAR_ABIERTO_REAL\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}], \"detalle_producto_status\": \"NO_PROBAR_ABIERTO_REAL\", \"detalle_producto_filas_insertadas\": 0, \"detalle_producto_error\": \"NO_CUADRA_REVISAR\"}, {\"unidad_negocio_id\": \"CIENFUEGOS\", \"unidad\": \"CIENFUEGOS\", \"sistema\": \"SoftRestaurant\", \"fecha_inicio\": \"2026-09-15\", \"fecha_fin\": \"2026-09-18\", \"estatus\": \"SUCCESS\", \"procesados\": 4, \"insertados\": 0, \"actualizados\": 0, \"omitidos\": 4, \"errores\": 0, \"duracion_seg\": 1, \"mensaje_error\": null, \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-15\", \"status\": \"NO_CUADRA_REVISAR\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}, {\"fecha_operacion\": \"2026-09-16\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 238, \"filas_preparadas\": 238}, {\"fecha_operacion\": \"2026-09-17\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 274, \"filas_preparadas\": 274}, {\"fecha_operacion\": \"2026-09-18\", \"status\": \"NO_PROBAR_ABIERTO_REAL\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}], \"detalle_producto_status\": \"NO_PROBAR_ABIERTO_REAL\", \"detalle_producto_filas_insertadas\": 512, \"detalle_producto_error\": \"NO_CUADRA_REVISAR\"}, {\"unidad_negocio_id\": \"ESTELAR\", \"unidad\": \"LA ESTELAR\", \"sistema\": \"SoftRestaurant\", \"fecha_inicio\": \"2026-09-15\", \"fecha_fin\": \"2026-09-18\", \"estatus\": \"SUCCESS\", \"procesados\": 4, \"insertados\": 0, \"actualizados\": 0, \"omitidos\": 4, \"errores\": 0, \"duracion_seg\": 1, \"mensaje_error\": null, \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-15\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 910, \"filas_preparadas\": 910}, {\"fecha_operacion\": \"2026-09-16\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 385, \"filas_preparadas\": 385}, {\"fecha_operacion\": \"2026-09-17\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 241, \"filas_preparadas\": 241}, {\"fecha_operacion\": \"2026-09-18\", \"status\": \"NO_CUADRA_REVISAR\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}], \"detalle_producto_status\": \"NO_CUADRA_REVISAR\", \"detalle_producto_filas_insertadas\": 1536, \"detalle_producto_error\": \"NO_CUADRA_REVISAR\"}, {\"unidad_negocio_id\": \"130QRO\", \"unidad\": \"130° QUERETARO\", \"sistema\": \"MPRO\", \"fecha_inicio\": \"2026-09-15\", \"fecha_fin\": \"2026-09-18\", \"sucursal_id\": \"0021\", \"estatus\": \"SUCCESS\", \"procesados\": 3, \"insertados\": 0, \"actualizados\": 0, \"omitidos\": 3, \"errores\": 0, \"duracion_seg\": 0, \"mensaje_error\": null, \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-15\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 293, \"filas_preparadas\": 293}, {\"fecha_operacion\": \"2026-09-16\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 164, \"filas_preparadas\": 164}, {\"fecha_operacion\": \"2026-09-17\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 263, \"filas_preparadas\": 263}, {\"fecha_operacion\": \"2026-09-18\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}], \"detalle_producto_status\": \"OK_HEADER_CANONICO\", \"detalle_producto_filas_insertadas\": 720}, {\"unidad_negocio_id\": \"ORIGEN\", \"unidad\": \"ORIGEN\", \"sistema\": \"MPRO\", \"fecha_inicio\": \"2026-09-15\", \"fecha_fin\": \"2026-09-18\", \"sucursal_id\": \"0023\", \"estatus\": \"SUCCESS\", \"procesados\": 0, \"insertados\": 0, \"actualizados\": 0, \"omitidos\": 0, \"errores\": 0, \"duracion_seg\": 0, \"mensaje_error\": null, \"detalle_producto_status\": \"OK_HEADER_CANONICO\", \"detalle_producto_error\": \"Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-17\", \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-15\", \"status\": \"ERROR\", \"filas_insertadas\": 0, \"error\": \"Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-15\"}, {\"fecha_operacion\": \"2026-09-16\", \"status\": \"ERROR\", \"filas_insertadas\": 0, \"error\": \"Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-16\"}, {\"fecha_operacion\": \"2026-09-17\", \"status\": \"ERROR\", \"filas_insertadas\": 0, \"error\": \"Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-17\"}, {\"fecha_operacion\": \"2026-09-18\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}], \"detalle_producto_filas_insertadas\": 0}]"
+              ],
+              [
+                "2026-09-18T18:23:51.137000",
+                "8e4e33f0e72e",
+                "PARCIAL",
+                "11",
+                "[{\"unidad_negocio_id\": \"130MID\", \"unidad\": \"130° MERIDA\", \"sistema\": \"SoftRestaurant\", \"fecha_inicio\": \"2026-09-14\", \"fecha_fin\": \"2026-09-17\", \"estatus\": \"SUCCESS\", \"procesados\": 4, \"insertados\": 0, \"actualizados\": 0, \"omitidos\": 4, \"errores\": 0, \"duracion_seg\": 1, \"mensaje_error\": null, \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-14\", \"status\": \"NO_CUADRA_REVISAR\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}, {\"fecha_operacion\": \"2026-09-15\", \"status\": \"NO_CUADRA_REVISAR\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}, {\"fecha_operacion\": \"2026-09-16\", \"status\": \"NO_CUADRA_REVISAR\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}, {\"fecha_operacion\": \"2026-09-17\", \"status\": \"NO_CUADRA_REVISAR\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}], \"detalle_producto_status\": \"NO_CUADRA_REVISAR\", \"detalle_producto_filas_insertadas\": 0, \"detalle_producto_error\": \"NO_CUADRA_REVISAR\"}, {\"unidad_negocio_id\": \"CIENFUEGOS\", \"unidad\": \"CIENFUEGOS\", \"sistema\": \"SoftRestaurant\", \"fecha_inicio\": \"2026-09-14\", \"fecha_fin\": \"2026-09-17\", \"estatus\": \"SUCCESS\", \"procesados\": 4, \"insertados\": 0, \"actualizados\": 0, \"omitidos\": 4, \"errores\": 0, \"duracion_seg\": 1, \"mensaje_error\": null, \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-14\", \"status\": \"NO_CUADRA_REVISAR\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}, {\"fecha_operacion\": \"2026-09-15\", \"status\": \"NO_CUADRA_REVISAR\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}, {\"fecha_operacion\": \"2026-09-16\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 238, \"filas_preparadas\": 238}, {\"fecha_operacion\": \"2026-09-17\", \"status\": \"NO_PROBAR_ABIERTO_REAL\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}], \"detalle_producto_status\": \"NO_PROBAR_ABIERTO_REAL\", \"detalle_producto_filas_insertadas\": 238, \"detalle_producto_error\": \"NO_CUADRA_REVISAR\"}, {\"unidad_negocio_id\": \"ESTELAR\", \"unidad\": \"LA ESTELAR\", \"sistema\": \"SoftRestaurant\", \"fecha_inicio\": \"2026-09-14\", \"fecha_fin\": \"2026-09-17\", \"estatus\": \"SUCCESS\", \"procesados\": 4, \"insertados\": 0, \"actualizados\": 0, \"omitidos\": 4, \"errores\": 0, \"duracion_seg\": 1, \"mensaje_error\": null, \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-14\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 144, \"filas_preparadas\": 144}, {\"fecha_operacion\": \"2026-09-15\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 910, \"filas_preparadas\": 910}, {\"fecha_operacion\": \"2026-09-16\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 385, \"filas_preparadas\": 385}, {\"fecha_operacion\": \"2026-09-17\", \"status\": \"NO_CUADRA_REVISAR\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}], \"detalle_producto_status\": \"NO_CUADRA_REVISAR\", \"detalle_producto_filas_insertadas\": 1439, \"detalle_producto_error\": \"NO_CUADRA_REVISAR\"}, {\"unidad_negocio_id\": \"130QRO\", \"unidad\": \"130° QUERETARO\", \"sistema\": \"MPRO\", \"fecha_inicio\": \"2026-09-14\", \"fecha_fin\": \"2026-09-17\", \"sucursal_id\": \"0021\", \"estatus\": \"SUCCESS\", \"procesados\": 4, \"insertados\": 0, \"actualizados\": 0, \"omitidos\": 4, \"errores\": 0, \"duracion_seg\": 0, \"mensaje_error\": null, \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-14\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 283, \"filas_preparadas\": 283}, {\"fecha_operacion\": \"2026-09-15\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 293, \"filas_preparadas\": 293}, {\"fecha_operacion\": \"2026-09-16\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 164, \"filas_preparadas\": 164}, {\"fecha_operacion\": \"2026-09-17\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 263, \"filas_preparadas\": 263}], \"detalle_producto_status\": \"OK_HEADER_CANONICO\", \"detalle_producto_filas_insertadas\": 1003}, {\"unidad_negocio_id\": \"ORIGEN\", \"unidad\": \"ORIGEN\", \"sistema\": \"MPRO\", \"fecha_inicio\": \"2026-09-15\", \"fecha_fin\": \"2026-09-18\", \"sucursal_id\": \"0023\", \"estatus\": \"SUCCESS\", \"procesados\": 0, \"insertados\": 0, \"actualizados\": 0, \"omitidos\": 0, \"errores\": 0, \"duracion_seg\": 0, \"mensaje_error\": null, \"detalle_producto_status\": \"ERROR\", \"detalle_producto_error\": \"Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-18\", \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-15\", \"status\": \"ERROR\", \"filas_insertadas\": 0, \"error\": \"Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-15\"}, {\"fecha_operacion\": \"2026-09-16\", \"status\": \"ERROR\", \"filas_insertadas\": 0, \"error\": \"Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-16\"}, {\"fecha_operacion\": \"2026-09-17\", \"status\": \"ERROR\", \"filas_insertadas\": 0, \"error\": \"Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-17\"}, {\"fecha_operacion\": \"2026-09-18\", \"status\": \"ERROR\", \"filas_insertadas\": 0, \"error\": \"Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-18\"}]}]"
+              ],
+              [
+                "2026-09-18T18:08:47.090000",
+                "f8cf213b5e93",
+                "PARCIAL",
+                "11",
+                "[{\"unidad_negocio_id\": \"130MID\", \"unidad\": \"130° MERIDA\", \"sistema\": \"SoftRestaurant\", \"fecha_inicio\": \"2026-09-14\", \"fecha_fin\": \"2026-09-17\", \"estatus\": \"SUCCESS\", \"procesados\": 4, \"insertados\": 0, \"actualizados\": 0, \"omitidos\": 4, \"errores\": 0, \"duracion_seg\": 1, \"mensaje_error\": null, \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-14\", \"status\": \"NO_CUADRA_REVISAR\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}, {\"fecha_operacion\": \"2026-09-15\", \"status\": \"NO_CUADRA_REVISAR\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}, {\"fecha_operacion\": \"2026-09-16\", \"status\": \"NO_CUADRA_REVISAR\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}, {\"fecha_operacion\": \"2026-09-17\", \"status\": \"NO_CUADRA_REVISAR\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}], \"detalle_producto_status\": \"NO_CUADRA_REVISAR\", \"detalle_producto_filas_insertadas\": 0, \"detalle_producto_error\": \"NO_CUADRA_REVISAR\"}, {\"unidad_negocio_id\": \"CIENFUEGOS\", \"unidad\": \"CIENFUEGOS\", \"sistema\": \"SoftRestaurant\", \"fecha_inicio\": \"2026-09-14\", \"fecha_fin\": \"2026-09-17\", \"estatus\": \"SUCCESS\", \"procesados\": 4, \"insertados\": 0, \"actualizados\": 0, \"omitidos\": 4, \"errores\": 0, \"duracion_seg\": 1, \"mensaje_error\": null, \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-14\", \"status\": \"NO_CUADRA_REVISAR\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}, {\"fecha_operacion\": \"2026-09-15\", \"status\": \"NO_CUADRA_REVISAR\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}, {\"fecha_operacion\": \"2026-09-16\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 238, \"filas_preparadas\": 238}, {\"fecha_operacion\": \"2026-09-17\", \"status\": \"NO_PROBAR_ABIERTO_REAL\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}], \"detalle_producto_status\": \"NO_PROBAR_ABIERTO_REAL\", \"detalle_producto_filas_insertadas\": 238, \"detalle_producto_error\": \"NO_CUADRA_REVISAR\"}, {\"unidad_negocio_id\": \"ESTELAR\", \"unidad\": \"LA ESTELAR\", \"sistema\": \"SoftRestaurant\", \"fecha_inicio\": \"2026-09-14\", \"fecha_fin\": \"2026-09-17\", \"estatus\": \"SUCCESS\", \"procesados\": 4, \"insertados\": 0, \"actualizados\": 0, \"omitidos\": 4, \"errores\": 0, \"duracion_seg\": 1, \"mensaje_error\": null, \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-14\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 144, \"filas_preparadas\": 144}, {\"fecha_operacion\": \"2026-09-15\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 910, \"filas_preparadas\": 910}, {\"fecha_operacion\": \"2026-09-16\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 385, \"filas_preparadas\": 385}, {\"fecha_operacion\": \"2026-09-17\", \"status\": \"NO_CUADRA_REVISAR\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}], \"detalle_producto_status\": \"NO_CUADRA_REVISAR\", \"detalle_producto_filas_insertadas\": 1439, \"detalle_producto_error\": \"NO_CUADRA_REVISAR\"}, {\"unidad_negocio_id\": \"130QRO\", \"unidad\": \"130° QUERETARO\", \"sistema\": \"MPRO\", \"fecha_inicio\": \"2026-09-14\", \"fecha_fin\": \"2026-09-17\", \"sucursal_id\": \"0021\", \"estatus\": \"SUCCESS\", \"procesados\": 4, \"insertados\": 0, \"actualizados\": 0, \"omitidos\": 4, \"errores\": 0, \"duracion_seg\": 0, \"mensaje_error\": null, \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-14\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 283, \"filas_preparadas\": 283}, {\"fecha_operacion\": \"2026-09-15\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 293, \"filas_preparadas\": 293}, {\"fecha_operacion\": \"2026-09-16\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 164, \"filas_preparadas\": 164}, {\"fecha_operacion\": \"2026-09-17\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 263, \"filas_preparadas\": 263}], \"detalle_producto_status\": \"OK_HEADER_CANONICO\", \"detalle_producto_filas_insertadas\": 1003}, {\"unidad_negocio_id\": \"ORIGEN\", \"unidad\": \"ORIGEN\", \"sistema\": \"MPRO\", \"fecha_inicio\": \"2026-09-15\", \"fecha_fin\": \"2026-09-18\", \"sucursal_id\": \"0023\", \"estatus\": \"SUCCESS\", \"procesados\": 0, \"insertados\": 0, \"actualizados\": 0, \"omitidos\": 0, \"errores\": 0, \"duracion_seg\": 0, \"mensaje_error\": null, \"detalle_producto_status\": \"ERROR\", \"detalle_producto_error\": \"Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-18\", \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-15\", \"status\": \"ERROR\", \"filas_insertadas\": 0, \"error\": \"Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-15\"}, {\"fecha_operacion\": \"2026-09-16\", \"status\": \"ERROR\", \"filas_insertadas\": 0, \"error\": \"Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-16\"}, {\"fecha_operacion\": \"2026-09-17\", \"status\": \"ERROR\", \"filas_insertadas\": 0, \"error\": \"Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-17\"}, {\"fecha_operacion\": \"2026-09-18\", \"status\": \"ERROR\", \"filas_insertadas\": 0, \"error\": \"Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-18\"}]}]"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "FechaAccion",
+              "RunID",
+              "unidad",
+              "sistema",
+              "fecha_operacion",
+              "status",
+              "error_detalle",
+              "error_unidad"
+            ],
+            "name": "scheduler_latest_detalle_errors_flat",
+            "row_count_returned": 8,
+            "rows": [
+              [
+                "2026-09-18T19:35:15.143000",
+                "20c90da3940f",
+                "130MID",
+                "SoftRestaurant",
+                "2026-09-15",
+                "NO_CUADRA_REVISAR",
+                null,
+                "NO_CUADRA_REVISAR"
+              ],
+              [
+                "2026-09-18T19:35:15.143000",
+                "20c90da3940f",
+                "130MID",
+                "SoftRestaurant",
+                "2026-09-16",
+                "NO_CUADRA_REVISAR",
+                null,
+                "NO_CUADRA_REVISAR"
+              ],
+              [
+                "2026-09-18T19:35:15.143000",
+                "20c90da3940f",
+                "130MID",
+                "SoftRestaurant",
+                "2026-09-17",
+                "NO_CUADRA_REVISAR",
+                null,
+                "NO_CUADRA_REVISAR"
+              ],
+              [
+                "2026-09-18T19:35:15.143000",
+                "20c90da3940f",
+                "CIENFUEGOS",
+                "SoftRestaurant",
+                "2026-09-15",
+                "NO_CUADRA_REVISAR",
+                null,
+                "NO_CUADRA_REVISAR"
+              ],
+              [
+                "2026-09-18T19:35:15.143000",
+                "20c90da3940f",
+                "ESTELAR",
+                "SoftRestaurant",
+                "2026-09-18",
+                "NO_CUADRA_REVISAR",
+                null,
+                "NO_CUADRA_REVISAR"
+              ],
+              [
+                "2026-09-18T19:35:15.143000",
+                "20c90da3940f",
+                "ORIGEN",
+                "MPRO",
+                "2026-09-15",
+                "ERROR",
+                "Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-15",
+                "Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-17"
+              ],
+              [
+                "2026-09-18T19:35:15.143000",
+                "20c90da3940f",
+                "ORIGEN",
+                "MPRO",
+                "2026-09-16",
+                "ERROR",
+                "Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-16",
+                "Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-17"
+              ],
+              [
+                "2026-09-18T19:35:15.143000",
+                "20c90da3940f",
+                "ORIGEN",
+                "MPRO",
+                "2026-09-17",
+                "ERROR",
+                "Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-17",
+                "Runtime V2 no disponible para unidad='ORIGEN' fecha_operacion=2026-09-17"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T19:50:13Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
