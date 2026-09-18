@@ -1,0 +1,64 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-ISCAM-AUTOSYNC-SOURCE-RCA-R88-CARLOS-20260918T220000Z",
+  "created_at_utc":"2026-09-18T22:00:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"e28da4d31a55ad5251db5400ebadd6f4e5466375",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"RCA definitiva y solo lectura de los fallos actuales del autosincronizador ISCAM. Comparar poblacion fuente SoftRestaurant de 130MID/CIENFUEGOS contra Runtime, detectar folios duplicados que puedan colapsarse en detalle; revisar poblacion fuente MPRO ORIGEN y sucursal canonica 0023 para explicar ausencia de Runtime 15-17 septiembre. No modificar datos, codigo ni Produccion.",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "source":"POS",
+      "units":["130MID","CIENFUEGOS"],
+      "system_types":["SOFTRESTAURANT"],
+      "queries":[
+        {
+          "name":"soft_header_vs_folio_dedup_20260915_17",
+          "sql":"WITH h AS (SELECT CAST(tr.apertura AS date) AS fecha,ch.folio,CAST(ISNULL(ch.total,0) AS decimal(19,4)) AS total,CAST(ISNULL(ch.nopersonas,0) AS bigint) AS pax FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE tr.apertura>='2026-09-15' AND tr.apertura<'2026-09-18' AND ISNULL(ch.cancelado,0)=0), f AS (SELECT fecha,folio,COUNT(*) AS rows_folio,SUM(total) AS ventas_sum_folio,MAX(total) AS venta_one_folio,SUM(pax) AS pax_sum_folio,MAX(pax) AS pax_one_folio FROM h GROUP BY fecha,folio) SELECT fecha,SUM(rows_folio) AS cheque_rows,COUNT(*) AS folios_distintos,SUM(ventas_sum_folio) AS ventas_header,SUM(venta_one_folio) AS ventas_dedup_folio,SUM(pax_sum_folio) AS pax_header,SUM(pax_one_folio) AS pax_dedup_folio,SUM(CASE WHEN rows_folio>1 THEN 1 ELSE 0 END) AS folios_duplicados FROM f GROUP BY fecha ORDER BY fecha"
+        },
+        {
+          "name":"soft_duplicate_folios_20260915_17",
+          "sql":"SELECT CAST(tr.apertura AS date) AS fecha,ch.folio,COUNT(*) AS rows_folio,SUM(CAST(ISNULL(ch.total,0) AS decimal(19,4))) AS ventas_sum,MAX(CAST(ISNULL(ch.total,0) AS decimal(19,4))) AS venta_max,SUM(CAST(ISNULL(ch.nopersonas,0) AS bigint)) AS pax_sum,MAX(CAST(ISNULL(ch.nopersonas,0) AS bigint)) AS pax_max FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE tr.apertura>='2026-09-15' AND tr.apertura<'2026-09-18' AND ISNULL(ch.cancelado,0)=0 GROUP BY CAST(tr.apertura AS date),ch.folio HAVING COUNT(*)>1 ORDER BY fecha,ch.folio"
+        }
+      ]
+    },
+    {
+      "type":"sql_readonly_audit",
+      "source":"POS",
+      "units":["ORIGEN"],
+      "system_types":["MPRO"],
+      "queries":[
+        {
+          "name":"origen_branch_distribution_20260915_18",
+          "sql":"SELECT CAST(Vn_Fecha AS date) AS fecha,CONVERT(varchar(50),Sc_Cve_Sucursal) AS sucursal,ISNULL(CONVERT(varchar(50),Vn_Tabla),'') AS vn_tabla,ISNULL(CONVERT(varchar(20),Es_Cve_Estado),'') AS estado,COUNT(*) AS registros,COUNT(DISTINCT Vn_Folio) AS folios,SUM(CAST(ISNULL(Vn_Precio_Neto_Importe,0) AS decimal(19,4))) AS ventas FROM Venta_Encabezado WHERE Vn_Fecha>='2026-09-15' AND Vn_Fecha<'2026-09-19' GROUP BY CAST(Vn_Fecha AS date),Sc_Cve_Sucursal,Vn_Tabla,Es_Cve_Estado ORDER BY fecha,sucursal,vn_tabla,estado"
+        },
+        {
+          "name":"origen_header_contract_0023_20260915_18",
+          "sql":"SELECT CAST(Vn_Fecha AS date) AS fecha,COUNT(*) AS rows_header,COUNT(DISTINCT Vn_Folio) AS folios,SUM(CAST(ISNULL(Vn_Precio_Neto_Importe,0) AS decimal(19,4))) AS ventas FROM Venta_Encabezado WHERE Vn_Fecha>='2026-09-15' AND Vn_Fecha<'2026-09-19' AND Sc_Cve_Sucursal='0023' AND ISNULL(Es_Cve_Estado,'') IN ('AC','FA') GROUP BY CAST(Vn_Fecha AS date) ORDER BY fecha"
+        },
+        {
+          "name":"origen_detail_contract_0023_20260915_18",
+          "sql":"SELECT CAST(Vn_Fecha AS date) AS fecha,ISNULL(CONVERT(varchar(20),Es_Cve_Estado),'') AS estado,COUNT(*) AS rows_header,COUNT(DISTINCT Vn_Folio) AS folios,SUM(CAST(ISNULL(Vn_Precio_Neto_Importe,0) AS decimal(19,4))) AS ventas FROM Venta_Encabezado WHERE Vn_Fecha>='2026-09-15' AND Vn_Fecha<'2026-09-19' AND Sc_Cve_Sucursal='0023' AND ISNULL(Vn_Tabla,'')='Comanda' AND ISNULL(Es_Cve_Estado,'') IN ('AC','FA','CA') GROUP BY CAST(Vn_Fecha AS date),Es_Cve_Estado ORDER BY fecha,estado"
+        }
+      ]
+    },
+    {
+      "type":"sql_readonly_audit",
+      "source":"EDARSAHUB",
+      "queries":[
+        {
+          "name":"runtime_affected_units_20260915_18",
+          "sql":"SELECT unidad_negocio_id,CAST(fecha_operacion AS date) AS fecha,ventas_total,tickets_total,pax_total,ventas_abiertas,es_venta_abierta,es_corte_cerrado,fuente_original FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id IN ('130MID','CIENFUEGOS','ORIGEN','ESTELAR') AND CAST(fecha_operacion AS date) BETWEEN '2026-09-15' AND '2026-09-18' ORDER BY unidad_negocio_id,fecha"
+        }
+      ]
+    }
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
