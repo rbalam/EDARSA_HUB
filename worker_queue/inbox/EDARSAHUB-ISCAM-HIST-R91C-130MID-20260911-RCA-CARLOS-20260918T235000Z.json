@@ -1,0 +1,44 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-ISCAM-HIST-R91C-130MID-20260911-RCA-CARLOS-20260918T235000Z",
+  "created_at_utc":"2026-09-18T23:50:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"252ca168e6081d33afae52aa502d8b69c6f38eb8",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Aislar la causa exacta de R91B para 130MID 2026-09-11. Confirmar flags de Runtime y revisar anomalías de folio/encabezado-detalle que puedan bloquear el extractor. Solo lectura.",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "source":"EDARSAHUB",
+      "queries":[
+        {
+          "name":"runtime_flags_130mid_20260911_12",
+          "sql":"SELECT CAST(fecha_operacion AS date) AS fecha,ventas_total,tickets_total,pax_total,ventas_abiertas,es_venta_abierta,es_corte_cerrado,fuente_original FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='130MID' AND CAST(fecha_operacion AS date) IN ('2026-09-11','2026-09-12') ORDER BY fecha"
+        }
+      ]
+    },
+    {
+      "type":"sql_readonly_audit",
+      "source":"POS",
+      "units":["130MID"],
+      "system_types":["SOFTRESTAURANT"],
+      "queries":[
+        {
+          "name":"duplicate_folios_130mid_20260911",
+          "sql":"SELECT ch.folio,COUNT(*) AS rows_folio,SUM(CAST(ISNULL(ch.total,0) AS decimal(19,4))) AS ventas_sum,MAX(CAST(ISNULL(ch.total,0) AS decimal(19,4))) AS venta_max,SUM(CAST(ISNULL(ch.nopersonas,0) AS bigint)) AS pax_sum,MAX(CAST(ISNULL(ch.nopersonas,0) AS bigint)) AS pax_max FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE CAST(tr.apertura AS date)='2026-09-11' AND ISNULL(ch.cancelado,0)=0 GROUP BY ch.folio HAVING COUNT(*)>1 ORDER BY ch.folio"
+        },
+        {
+          "name":"ticket_header_detail_130mid_20260911",
+          "sql":"WITH h AS (SELECT ch.folio,CAST(ISNULL(ch.total,0) AS decimal(19,4)) AS header_total,CAST(ISNULL(ch.totaldescuentoycortesia,0) AS decimal(19,4)) AS descuento_indicador FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE CAST(tr.apertura AS date)='2026-09-11' AND ISNULL(ch.cancelado,0)=0), d AS (SELECT dc.foliodet AS folio,SUM(CAST(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0) AS decimal(19,4))) AS detalle_total FROM cheqdet dc GROUP BY dc.foliodet) SELECT h.folio,h.header_total,ISNULL(d.detalle_total,0) AS detalle_total,CAST(h.header_total-ISNULL(d.detalle_total,0) AS decimal(19,4)) AS delta,h.descuento_indicador FROM h LEFT JOIN d ON d.folio=h.folio WHERE ABS(h.header_total-ISNULL(d.detalle_total,0))>0.05 ORDER BY ABS(h.header_total-ISNULL(d.detalle_total,0)) DESC,h.folio"
+        }
+      ]
+    }
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
