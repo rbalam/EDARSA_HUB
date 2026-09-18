@@ -1,0 +1,4763 @@
+{
+  "base_sha": "e28da4d31a55ad5251db5400ebadd6f4e5466375",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T21:41:41Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24A-IMPLEMENTATION-MAP-READONLY",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T21:41:57Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.tablajeria",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "routes",
+              "schemas",
+              "sync_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "tablajeria"
+            ],
+            "path": "backend/modules/tablajeria/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.tablajeria",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "logging",
+              "os",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "operaciones_tablaje_ordenes",
+              "operaciones_tablaje_ordenesdetalle",
+              "rendimiento",
+              "reporte",
+              "tablajeria",
+              "tablajeria_costeoproduccion"
+            ],
+            "path": "backend/modules/tablajeria/dashboard_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TablajeriaDashboardService",
+              "__init__",
+              "_get_connection",
+              "get_alertas_rendimiento",
+              "get_kpis_generales",
+              "get_rendimientos_por_plantilla",
+              "get_resumen_costeo",
+              "get_tablajeria_dashboard_service",
+              "get_tendencia_rendimientos",
+              "get_top_mermas"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.tablajeria",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "dataclasses",
+              "datetime",
+              "decimal",
+              "enum",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "lote",
+              "operaciones_tablaje_ordenes",
+              "operaciones_tablaje_ordenesdetalle",
+              "tablajeria",
+              "tablajeria_costeodetalle",
+              "tablajeria_costeoproduccion",
+              "tablajeria_movimientosinventario"
+            ],
+            "path": "backend/modules/tablajeria/fase6_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ConfigContable",
+              "EstatusPoliza",
+              "TablajeriaFase6Service",
+              "TipoMovimiento",
+              "TipoPoliza",
+              "__init__",
+              "_get_connection",
+              "_now_utc",
+              "afectar_inventario_orden",
+              "calcular_costeo_orden",
+              "generar_poliza_produccion",
+              "get_tablajeria_fase6_service",
+              "guardar_config_contable",
+              "obtener_config_contable",
+              "procesar_cierre_completo"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.tablajeria",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "json",
+              "logging",
+              "pymssql",
+              "schemas",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "lote",
+              "operaciones_tablaje_ordenes",
+              "operaciones_tablaje_ordenesdetalle",
+              "rendimiento",
+              "tablajeria"
+            ],
+            "path": "backend/modules/tablajeria/ordenes_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TablajeriaOrdenesService",
+              "__init__",
+              "_generar_folio",
+              "_get_connection",
+              "_now_utc",
+              "_today_mexico",
+              "autorizar_orden",
+              "cancelar_orden",
+              "cerrar_orden",
+              "crear_orden",
+              "crear_orden_captura_directa",
+              "iniciar_ejecucion",
+              "listar_ordenes",
+              "obtener_orden",
+              "registrar_resultados",
+              "to_uuid_safe"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.tablajeria",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.security",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "csv",
+              "dashboard_service",
+              "datetime",
+              "decimal",
+              "fase6_service",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "json",
+              "logging",
+              "ordenes_service",
+              "os",
+              "pydantic",
+              "pymssql",
+              "schemas",
+              "sync_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "operaciones_tablaje_ordenes",
+              "operaciones_tablaje_ordenesdetalle",
+              "permiso",
+              "rbac",
+              "rendimiento",
+              "reporte",
+              "tablajeria",
+              "tablajeria_costeoproduccion"
+            ],
+            "path": "backend/modules/tablajeria/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/dashboard/alertas",
+              "/dashboard/kpis",
+              "/dashboard/rendimientos-plantilla",
+              "/dashboard/resumen-costeo",
+              "/dashboard/tendencia",
+              "/dashboard/top-mermas",
+              "/fase6/config-contable/{empresa_id}",
+              "/ordenes",
+              "/ordenes-stats",
+              "/ordenes/captura-directa",
+              "/ordenes/{orden_id}",
+              "/ordenes/{orden_id}/autorizar",
+              "/ordenes/{orden_id}/cancelar",
+              "/ordenes/{orden_id}/cerrar",
+              "/ordenes/{orden_id}/fase6/afectar-inventario",
+              "/ordenes/{orden_id}/fase6/calcular-costeo",
+              "/ordenes/{orden_id}/fase6/generar-poliza",
+              "/ordenes/{orden_id}/fase6/procesar-cierre",
+              "/ordenes/{orden_id}/iniciar",
+              "/ordenes/{orden_id}/resultados",
+              "/plantillas",
+              "/plantillas/{plantilla_id}",
+              "/plantillas/{plantilla_id}/publicar",
+              "/reportes/costeo",
+              "/reportes/mermas",
+              "/reportes/ordenes",
+              "/stats",
+              "/sync/ejecutar",
+              "/sync/log",
+              "/sync/servidores"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AutorizarOrdenRequest",
+              "CancelarOrdenRequest",
+              "CerrarOrdenRequest",
+              "ResultadosOrdenRequest",
+              "_get_ordenes_service",
+              "afectar_inventario",
+              "autorizar_orden",
+              "calcular_costeo",
+              "cancelar_orden",
+              "cerrar_orden",
+              "crear_orden",
+              "crear_orden_captura_directa",
+              "ejecutar_sincronizacion",
+              "exportar_costeo",
+              "exportar_mermas",
+              "exportar_ordenes",
+              "generar_poliza",
+              "get_alertas_rendimiento",
+              "get_connection",
+              "get_dashboard_kpis",
+              "get_rendimientos_por_plantilla",
+              "get_resumen_costeo",
+              "get_tendencia_rendimientos",
+              "get_top_mermas",
+              "guardar_config_contable",
+              "iniciar_ejecucion_orden",
+              "listar_ordenes",
+              "listar_plantillas",
+              "listar_servidores_tablajeria",
+              "obtener_config_contable",
+              "obtener_estadisticas",
+              "obtener_estadisticas_ordenes",
+              "obtener_orden",
+              "obtener_plantilla",
+              "obtener_sync_log",
+              "procesar_cierre_fase6",
+              "publicar_plantilla",
+              "registrar_resultados_orden"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.tablajeria",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "enum",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "lote",
+              "rendimiento",
+              "tablajeria"
+            ],
+            "path": "backend/modules/tablajeria/schemas.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "Config",
+              "EstatusOrden",
+              "EstatusPlantilla",
+              "MPROReceta",
+              "MPROSubgrupoInsumo",
+              "MPROSucursal",
+              "Orden",
+              "OrdenCapturaDirectaCreate",
+              "OrdenCreate",
+              "OrdenDetalle",
+              "OrdenDetalleBase",
+              "OrdenDetalleCreate",
+              "OrdenUpdate",
+              "OrigenPlantilla",
+              "Plantilla",
+              "PlantillaBase",
+              "PlantillaCreate",
+              "PlantillaDetalle",
+              "PlantillaDetalleBase",
+              "PlantillaDetalleCreate",
+              "PlantillaUpdate",
+              "ReglaCosteo",
+              "SyncRequest",
+              "SyncResult",
+              "TipoDerivado",
+              "TipoMerma"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.tablajeria",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "lote",
+              "tablajeria",
+              "tablajeria_costeodetalle",
+              "tablajeria_costeoproduccion",
+              "tablajeria_movimientosinventario"
+            ],
+            "path": "backend/modules/tablajeria/sql/fase6_tablas.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.tablajeria",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.sql_first.connection_factory",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "json",
+              "logging",
+              "os",
+              "schemas",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "rendimiento",
+              "tablajeria"
+            ],
+            "path": "backend/modules/tablajeria/sync_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TablajeriaSyncService",
+              "__init__",
+              "_actualizar_plantilla_mpro",
+              "_generate_hash",
+              "_get_hub_connection",
+              "_get_servidor_config",
+              "_insertar_plantilla_mpro",
+              "_mapear_empresa_mpro",
+              "_now_utc",
+              "_procesar_plantilla_mpro",
+              "_registrar_sync_log",
+              "_sync_cienfuegos",
+              "_sync_mpro",
+              "_sync_mpro_plantillas",
+              "_today_mexico",
+              "sync_servidor"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.rbac_sql.service",
+              "fastapi",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "permiso",
+              "permission",
+              "rbac"
+            ],
+            "path": "backend/modules/compras/access.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_sql_usuario_id",
+              "_normalize",
+              "require_any_compras_permission",
+              "require_compras_permission"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "compras_recepciones",
+              "compras_recepcionesdetalle",
+              "ordencompra"
+            ],
+            "path": "backend/modules/compras/adapters/softrestaurant_pro_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "query_almacenes",
+              "query_inventarios_fisicos",
+              "query_inventarios_fisicos_detalle",
+              "query_movimientos_almacen",
+              "query_ordenes",
+              "query_ordenes_detalle",
+              "query_pedidos",
+              "query_pedidos_detalle",
+              "query_recepciones",
+              "query_recepciones_detalle"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "abc",
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "dataclasses",
+              "datetime",
+              "enum",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "permiso"
+            ],
+            "path": "backend/modules/compras/eventos_compras.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CheckpointManager",
+              "EventDispatcher",
+              "EventoCompras",
+              "EventoTipo",
+              "NuevosRegistrosDetector",
+              "PollingEventDispatcher",
+              "ServiceBrokerEventDispatcher",
+              "SyncType",
+              "__init__",
+              "__post_init__",
+              "_get_connection",
+              "detectar_nuevas_requisiciones",
+              "detectar_nuevos_inventarios",
+              "dispatch",
+              "get_all_checkpoints",
+              "get_checkpoint",
+              "get_checkpoint_manager",
+              "get_detector",
+              "get_event_dispatcher",
+              "get_pending_events",
+              "mark_as_processed",
+              "process_pending_events",
+              "register_handler",
+              "to_dict",
+              "update_checkpoint"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.server_registry",
+              "datetime",
+              "logging",
+              "os",
+              "pytds",
+              "sys",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "factura"
+            ],
+            "path": "backend/modules/compras/historical_kpis_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "check_table_exists",
+              "create_table_if_not_exists",
+              "get_edarsahub_connection",
+              "get_edarsahub_server",
+              "upsert_compras_kpi_historico"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.secret_manager",
+              "core.server_registry",
+              "core.unidades_service",
+              "dataclasses",
+              "logging",
+              "modules.compras.repository_compras_sql",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "factura"
+            ],
+            "path": "backend/modules/compras/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ComprasQueryResult",
+              "_decrypt_server_password",
+              "get_compras_params",
+              "get_db",
+              "get_server_by_id",
+              "init_compras_repository",
+              "is_stub_mode",
+              "query_detalle_factura_mpro",
+              "query_detalle_pedido_mpro",
+              "query_facturas_proveedor_mpro",
+              "query_inventarios_fisicos_mpro",
+              "query_inventarios_fisicos_sr",
+              "query_pedidos_vigentes_mpro",
+              "query_pedidos_vigentes_sr",
+              "save_compras_params",
+              "validate_table_exists"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "scheduler_bitacorajobs"
+            ],
+            "path": "backend/modules/compras/repository_pedidos_sql.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_execute_edarsahub_insert",
+              "_execute_edarsahub_query",
+              "crear_tarea_operativa_sql",
+              "marcar_pedido_procesado_sql",
+              "obtener_pedidos_procesados_sql",
+              "obtener_tareas_pendientes_sql",
+              "pedido_ya_procesado_sql",
+              "registrar_bitacora_pedidos_sql"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.security",
+              "core.unidades_service",
+              "fastapi",
+              "fastapi.security",
+              "modules.compras",
+              "modules.compras.schemas",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "factura"
+            ],
+            "path": "backend/modules/compras/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/compras/parametros",
+              "/compras/parametros/{server_id}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "fastapi",
+              "logging",
+              "modules.compras",
+              "modules.compras.system_type_utils",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "factura"
+            ],
+            "path": "backend/modules/compras/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "guardar_parametros",
+              "obtener_detalle_factura",
+              "obtener_facturas_proveedor",
+              "obtener_inventarios_fisicos",
+              "obtener_parametros",
+              "obtener_pedidos_vigentes"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "compras_recepciones",
+              "compras_recepcionesdetalle"
+            ],
+            "path": "backend/modules/compras/sql_first_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ComprasSQLFirstRepository",
+              "__init__",
+              "_fetch_all",
+              "detalle_movimientos",
+              "productos_para_captura",
+              "table_counts"
+            ],
+            "tables_referenced": [
+              "Compras_Ordenes",
+              "Compras_OrdenesDetalle",
+              "Compras_Pedidos",
+              "Compras_PedidosDetalle",
+              "Compras_Recepciones",
+              "Compras_RecepcionesDetalle",
+              "Compras_Requisiciones_Sync",
+              "Inventario_Almacenes",
+              "Inventario_Existencias",
+              "Inventario_Movimientos",
+              "Inventario_MovimientosDetalle"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection",
+              "resolver_canonico"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.inventarios.resolver_canonico",
+              "core.inventarios.sync_movimientos_canonico",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "logging",
+              "os",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "compras_recepciones",
+              "compras_recepcionesdetalle",
+              "lote",
+              "ordencompra",
+              "proveedor_catalogo",
+              "rendimiento",
+              "resolver_proveedor_edarsahub",
+              "sync_recepciones_from_server"
+            ],
+            "path": "backend/modules/compras/sync_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_as_float",
+              "_as_text",
+              "_bulk_insert_detail_values",
+              "_bulk_update_detail_values",
+              "_bulk_upsert_detail_values",
+              "_collapse_detail_values_by_key",
+              "_detail_insert_parts",
+              "_detail_insert_statement",
+              "_detail_update_statement",
+              "_detail_values",
+              "_fetch_existing_detail_keys",
+              "_fetch_table_columns",
+              "_filter_inventory_headers_with_detail",
+              "_folio_in_filter",
+              "_get_edarsahub_context",
+              "_insert_detail_row",
+              "_inventarios_fisicos_detalle_query",
+              "_inventory_detail_batch_size",
+              "_inventory_detail_key",
+              "_inventory_header_detail_key",
+              "_inventory_history_filter",
+              "_sql_identifier",
+              "_sql_literal",
+              "_sync_inventarios_fisicos_detalle",
+              "_unique_folio_batches",
+              "_update_detail_row",
+              "get_compras_adapter",
+              "get_edarsahub_connection",
+              "get_last_sync_info",
+              "log_sync_operation",
+              "map_tipo_movimiento_softrestaurant",
+              "obtener_inventarios_fisicos_sync",
+              "obtener_requisiciones_sync",
+              "registrar_concepto_movimiento_no_mapeado",
+              "resolver_proveedor_edarsahub",
+              "sync_almacenes_from_server",
+              "sync_existencias_from_server",
+              "sync_inventarios_fisicos_from_server",
+              "sync_movimientos_from_server",
+              "sync_ordenes_from_server",
+              "sync_pedidos_from_server",
+              "sync_recepciones_from_server",
+              "sync_requisiciones_from_server"
+            ],
+            "tables_referenced": [
+              "Compras_Inventarios_Fisicos_Detalle_Sync",
+              "Proveedor_Catalogo",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.compras",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.system_type_utils",
+              "core.unidades_service",
+              "dataclasses",
+              "enum",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "permission"
+            ],
+            "path": "backend/modules/compras/system_type_utils.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ComprasResponse",
+              "ComprasStatus",
+              "configuration_missing",
+              "log_compras_adapter_selected",
+              "log_compras_error",
+              "log_compras_query_result",
+              "no_data",
+              "not_available",
+              "query_error",
+              "source_unreachable",
+              "success",
+              "to_dict",
+              "unsupported_system"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.proveedores",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "factura"
+            ],
+            "path": "backend/modules/proveedores/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.centro_control",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "concurrent.futures",
+              "core.centro_control.recipients_manager",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "email.mime.application",
+              "email.mime.multipart",
+              "email.mime.text",
+              "logging",
+              "os",
+              "smtplib",
+              "ssl",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_email_recipients",
+              "send_critical_alert_email"
+            ],
+            "path": "backend/core/centro_control/email_notifications.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_send_email_sync",
+              "generate_alert_html",
+              "get_email_config_status",
+              "get_email_recipients",
+              "is_email_configured",
+              "send_critical_alert_email",
+              "send_test_email"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.centro_control",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "get_email_recipients",
+              "get_whatsapp_recipients"
+            ],
+            "path": "backend/core/centro_control/recipients_manager.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "Usuario_RolesContexto"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_conn",
+              "_created_at_iso",
+              "_merge_dedup",
+              "_normalizar_tel",
+              "_parse_payload",
+              "_role_based_recipients",
+              "_row_to_recipient",
+              "add_recipient",
+              "delete_recipient",
+              "get_all_recipients",
+              "get_email_recipients",
+              "get_recipients_summary",
+              "get_whatsapp_recipients",
+              "update_recipient"
+            ],
+            "tables_referenced": [
+              "Sistema_AlertasDestinatarios",
+              "Usuario_Catalogo",
+              "vw_Usuario_RolesContexto_Efectivo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.centro_control",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.centro_control",
+              "core.centro_control.email_notifications",
+              "core.centro_control.recipients_manager",
+              "core.centro_control.websocket",
+              "core.centro_control.whatsapp_notifications",
+              "core.connection_resolver",
+              "core.corporate_filters.service",
+              "core.health_checker",
+              "core.rbac.middleware",
+              "core.regression_checker",
+              "core.scheduler.scheduler_manager",
+              "core.security",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "json",
+              "logging",
+              "os",
+              "pydantic",
+              "re",
+              "subprocess",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "netpay",
+              "sap",
+              "softrestaurant",
+              "twilio"
+            ],
+            "matched_terms": [
+              "permission",
+              "rbac",
+              "reporte",
+              "scheduler_bitacorajobs",
+              "send_critical_alert_email",
+              "send_critical_alert_whatsapp",
+              "sys_scheduler_jobconfig",
+              "sys_scheduler_jobs"
+            ],
+            "path": "backend/core/centro_control/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/alertas",
+              "/alertas/acknowledge",
+              "/bitacora",
+              "/blindaje/modulos",
+              "/destinatarios",
+              "/destinatarios/resumen",
+              "/destinatarios/{recipient_id}",
+              "/email/alerta-critica",
+              "/email/config",
+              "/email/test",
+              "/estado",
+              "/fuentes",
+              "/historial",
+              "/jobs",
+              "/jobs/{job_id}/run",
+              "/matriz-resolucion",
+              "/metricas",
+              "/notificaciones/config",
+              "/notificar/alerta-critica",
+              "/notificar/test",
+              "/ping",
+              "/regresiones",
+              "/regresiones/{modulo}",
+              "/salud",
+              "/salud/resumen",
+              "/whatsapp/alerta-critica",
+              "/whatsapp/config",
+              "/whatsapp/test",
+              "/ws/status"
+            ],
+            "scheduler_contracts": [
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [
+              "AlertAcknowledgeRequest",
+              "BitacoraEntryRequest",
+              "RecipientCreateRequest",
+              "RecipientUpdateRequest",
+              "RegressionCheckRequest",
+              "SchedulerJobCreateRequest",
+              "SchedulerJobRunRequest",
+              "_cc_execute",
+              "_cc_fetchall",
+              "_cc_sql_connection",
+              "_crear_alerta",
+              "_ensure_scheduler_job_config_table",
+              "_enviar_email_alerta_critica",
+              "_enviar_whatsapp_alerta_critica",
+              "_registrar_evento",
+              "_run_netpay_backfill_sync",
+              "_safe_job_id",
+              "_validate_handler",
+              "actualizar_destinatario",
+              "crear_destinatario",
+              "crear_scheduler_job",
+              "ejecutar_checks_regresion",
+              "ejecutar_scheduler_job_manual",
+              "eliminar_destinatario",
+              "enviar_alerta_critica_email",
+              "enviar_alerta_critica_whatsapp",
+              "enviar_email_prueba",
+              "enviar_whatsapp_prueba",
+              "listar_destinatarios",
+              "notificar_alerta_critica",
+              "notificar_test",
+              "obtener_alertas",
+              "obtener_bitacora",
+              "obtener_config_email",
+              "obtener_config_notificaciones",
+              "obtener_config_whatsapp",
+              "obtener_estado_fuentes",
+              "obtener_estado_general",
+              "obtener_estado_jobs",
+              "obtener_historial",
+              "obtener_matriz_resolucion",
+              "obtener_metricas_estabilidad",
+              "obtener_modulos_blindados",
+              "obtener_regresiones_modulo",
+              "obtener_resumen_ejecutivo",
+              "obtener_salud_sistema",
+              "ping_centro_control",
+              "reconocer_alerta",
+              "registrar_cambio_bitacora",
+              "resumen_destinatarios",
+              "websocket_endpoint",
+              "websocket_status"
+            ],
+            "tables_referenced": [
+              "Scheduler_BitacoraJobs",
+              "Sys_Scheduler_JobConfig",
+              "Sys_Scheduler_Jobs"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.centro_control",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.sql_first.connection_factory",
+              "datetime",
+              "json",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "scheduler_bitacorajobs"
+            ],
+            "path": "backend/core/centro_control/sql_store.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_conn",
+              "_dt",
+              "_execute",
+              "_fetchall",
+              "_fetchone",
+              "_now_id",
+              "acknowledge_alert",
+              "active_alert_count",
+              "bitacora_summary",
+              "blindaje_registry_status",
+              "create_alert",
+              "latest_event_timestamp",
+              "list_alerts",
+              "list_bitacora",
+              "list_events",
+              "metrics",
+              "record_bitacora",
+              "record_event"
+            ],
+            "tables_referenced": [
+              "Alertas_Sistema",
+              "Scheduler_BitacoraJobs"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.centro_control",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "concurrent.futures",
+              "core.centro_control.recipients_manager",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "os",
+              "twilio.base.exceptions",
+              "twilio.rest",
+              "typing"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "get_whatsapp_recipients",
+              "send_critical_alert_whatsapp"
+            ],
+            "path": "backend/core/centro_control/whatsapp_notifications.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_twilio_client",
+              "_send_whatsapp_sync",
+              "generate_alert_message",
+              "get_whatsapp_config_status",
+              "get_whatsapp_recipients",
+              "is_whatsapp_configured",
+              "send_critical_alert_whatsapp",
+              "send_test_whatsapp"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "os",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "netpay",
+              "sap",
+              "softrestaurant",
+              "twilio",
+              "vtiger"
+            ],
+            "matched_terms": [
+              "factura",
+              "reporte"
+            ],
+            "path": "backend/core/scheduler/config.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "Config",
+              "JobConfig",
+              "SchedulerConfig",
+              "from_env",
+              "get_scheduler_config",
+              "reload_scheduler_config"
+            ],
+            "tables_referenced": [
+              "Finanzas_CxP_Sync"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.sql_first.db",
+              "datetime",
+              "json",
+              "logging",
+              "pydantic",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "scheduler_bitacorajobs"
+            ],
+            "path": "backend/core/scheduler/job_logger.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [
+              "Config",
+              "JobExecutionLog",
+              "JobLogger",
+              "__init__",
+              "_ensure_indexes_noop",
+              "_insert_bitacora",
+              "_is_success_status",
+              "_log_execution_compat",
+              "cleanup_old_logs",
+              "finish_execution",
+              "get_job_logger",
+              "get_last_execution",
+              "get_logs",
+              "get_stats",
+              "log_skipped",
+              "start_execution"
+            ],
+            "tables_referenced": [
+              "Scheduler_BitacoraJobs"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.auth.sql_user_identity",
+              "core.centro_control.email_notifications",
+              "core.centro_control.whatsapp_notifications",
+              "core.config.edarsahub_sql",
+              "datetime",
+              "logging",
+              "modules.alertas_estrategicas.service",
+              "os",
+              "typing"
+            ],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "send_critical_alert_email",
+              "send_critical_alert_whatsapp"
+            ],
+            "path": "backend/core/scheduler/jobs/alertas_excepciones_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_build_digest_alerta",
+              "_excepcion_key",
+              "_keys_ya_gestionadas",
+              "_marcar_notificada",
+              "_obtener_excepciones_por_severidad",
+              "_severidades_configuradas",
+              "enviar_prueba_canales",
+              "execute_alertas_excepciones_notifier",
+              "marcar_excepcion_revisada_estado",
+              "obtener_excepciones_revisadas",
+              "silenciar_backlog_excepciones"
+            ],
+            "tables_referenced": [
+              "Sistema_Excepciones_Estado"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "logging",
+              "modules.cava_socios.notification_service",
+              "modules.cava_socios.report_service",
+              "modules.cava_socios.service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "reporte"
+            ],
+            "path": "backend/core/scheduler/jobs/cava_socios_monthly_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "execute_cava_socios_monthly"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "core.scheduler.jobs.inteligencia_comercial_sync_job",
+              "core.sql_first.db",
+              "datetime",
+              "hashlib",
+              "logging",
+              "modules.finanzas.repository_mpro",
+              "modules.finanzas.repository_softrestaurant",
+              "time"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "factura"
+            ],
+            "path": "backend/core/scheduler/jobs/cxp_sync_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_extract",
+              "_fecha",
+              "_hash",
+              "_mpro_code_to_canonical",
+              "_persist",
+              "_tipo_mpro",
+              "run_cxp_sync",
+              "run_cxp_sync_async"
+            ],
+            "tables_referenced": [
+              "Finanzas_CxP_Sync",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.scheduler.jobs.inteligencia_comercial_enrich",
+              "core.sql_first.connection_factory",
+              "core.sql_first.db",
+              "datetime",
+              "json",
+              "logging",
+              "modules.comercial_v2.sync_comercial_edarsahub",
+              "os",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "sys_scheduler_jobs"
+            ],
+            "path": "backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_syncpos_literal",
+              "actualizar_syncpos_config_estado",
+              "audit_syncpos_canonical_configs",
+              "detectar_faltantes_syncpos",
+              "extract_sales_from_pos",
+              "get_edarsahub_connection",
+              "get_mpro_query",
+              "get_pos_config_for_unidad",
+              "get_pos_connection",
+              "get_softrestaurant_query",
+              "get_syncpos_config",
+              "get_unidades_negocio_pos",
+              "insert_into_sync_sales",
+              "job_inteligencia_comercial_sync",
+              "registrar_syncpos_bitacora",
+              "should_run_syncpos_now",
+              "update_job_status",
+              "update_kpis_diarios"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Sistema_SyncPOS_Bitacora",
+              "Sistema_SyncPOS_Config",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.centro_control.email_notifications",
+              "core.inventory_analysis_core",
+              "core.mongo_stub",
+              "core.system_type_utils",
+              "dataclasses",
+              "datetime",
+              "io",
+              "job_logger",
+              "json",
+              "logging",
+              "modules.compras.sync_service",
+              "modules.fase2_operativo.services.orquestador_service",
+              "openpyxl",
+              "os",
+              "sql_repository",
+              "traceback",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "reporte",
+              "send_critical_alert_email"
+            ],
+            "path": "backend/core/scheduler/jobs/inventarios_detector_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "ClaveIdempotencia",
+              "InventarioDetectado",
+              "InventariosDetectorJob",
+              "__init__",
+              "_detectar_desde_sync",
+              "_detectar_mpro",
+              "_detectar_soft",
+              "_ejecutar_analisis",
+              "_ejecutar_orquestacion",
+              "_ensure_index",
+              "_enviar_reporte_analisis_email",
+              "_es_consolidado",
+              "_escanear_servidor",
+              "_fecha_key",
+              "_generar_excel_analisis",
+              "_generar_resumen",
+              "_is_stub_db",
+              "_marcar_error",
+              "_normalizar_system_type",
+              "_obtener_servidores",
+              "_preferir_inventario_fecha",
+              "_procesar_inventario",
+              "_procesar_inventario_desde_registro",
+              "_procesar_reintentos",
+              "_rehidratar_registro_reintento",
+              "create_inventarios_detector_job",
+              "retry_error_by_id",
+              "run",
+              "to_dict",
+              "to_query"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "asyncio",
+              "datetime",
+              "os",
+              "pathlib",
+              "shlex",
+              "sys",
+              "typing"
+            ],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "reporte"
+            ],
+            "path": "backend/core/scheduler/jobs/netpay_sync_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_build_robot_env",
+              "_default_date_range",
+              "_read_env_file",
+              "_run_cli",
+              "_validate_range",
+              "execute_netpay_sync_diario"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.db",
+              "core.mongo_stub",
+              "core.source_resolver",
+              "datetime",
+              "job_logger",
+              "logging",
+              "modules.compras.repository",
+              "modules.compras.repository_pedidos_sql",
+              "modules.compras.service",
+              "modules.fase2_operativo.db_utils",
+              "modules.fase2_operativo.services.automatizacion_compras_service",
+              "sql_repository",
+              "time",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "scheduler_bitacorajobs"
+            ],
+            "path": "backend/core/scheduler/jobs/pedidos_detector_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "PedidosDetectorJob",
+              "__init__",
+              "_consultar_pedidos_con_estado",
+              "_consultar_pedidos_vigentes",
+              "_crear_tarea_operativa",
+              "_format_stats_message",
+              "_format_stats_message_with_state",
+              "_iniciar_auditoria",
+              "_is_stub_db",
+              "_marcar_procesado",
+              "_notificar_tarea_creada",
+              "_obtener_detalle_pedido",
+              "_obtener_empresas_activas",
+              "_obtener_servidores_empresa",
+              "_procesar_pedido_nuevo",
+              "_registrar_bitacora_job",
+              "_validar_inventario_disponible",
+              "_ya_procesado",
+              "create_pedidos_detector_job",
+              "ejecutar_detector_manual",
+              "run"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.auth.sql_user_identity",
+              "core.centro_control.email_notifications",
+              "datetime",
+              "logging",
+              "modules.alertas_estrategicas.service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_email_recipients"
+            ],
+            "path": "backend/core/scheduler/jobs/resumen_diario_excepciones_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_build_resumen_html",
+              "execute_resumen_diario_excepciones"
+            ],
+            "tables_referenced": [
+              "Sistema_AlertasDestinatarios"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "core.config.edarsahub_config",
+              "core.secret_manager",
+              "core.sql_first.connection_factory",
+              "core.sql_first.db",
+              "datetime",
+              "logging",
+              "modules.compras.sync_service",
+              "modules.integrations_runtime.sync_ledger",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "sync_recepciones_from_server"
+            ],
+            "path": "backend/core/scheduler/jobs/sync_compras_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "APScheduler",
+              "scheduler"
+            ],
+            "symbols": [
+              "_acquire_sync_lock",
+              "_coerce_mx_datetime",
+              "_execute_sql_with_timeout",
+              "_get_servers_to_sync",
+              "_is_sync_compras_execution_enabled",
+              "_release_sync_lock",
+              "execute_sync_compras",
+              "get_job_config",
+              "run_sync_compras_job"
+            ],
+            "tables_referenced": [
+              "Sync_Control_Ejecuciones"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.config.edarsahub_sql",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "sys_scheduler_jobs"
+            ],
+            "path": "backend/core/scheduler/persistent_state_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "SchedulerPersistentStateRepository",
+              "get_paused_job_ids",
+              "set_paused"
+            ],
+            "tables_referenced": [
+              "Sys_Scheduler_RuntimeState",
+              "sp_Scheduler_SetAdministrativePause"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "config",
+              "core.centro_control.routes",
+              "core.rbac.middleware",
+              "datetime",
+              "fastapi",
+              "job_logger",
+              "jobs.netpay_sync_job",
+              "locks",
+              "logging",
+              "pydantic",
+              "scheduler_manager",
+              "typing"
+            ],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "permiso",
+              "permission",
+              "rbac",
+              "sys_scheduler_jobconfig"
+            ],
+            "path": "backend/core/scheduler/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/config",
+              "/inventarios/retry-error/{record_id}",
+              "/jobs/{job_id}",
+              "/jobs/{job_id}/pause",
+              "/jobs/{job_id}/resume",
+              "/jobs/{job_id}/run",
+              "/locks",
+              "/locks/{job_name}",
+              "/logs",
+              "/logs/stats",
+              "/netpay/run",
+              "/status"
+            ],
+            "scheduler_contracts": [
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [
+              "NetPayManualRunRequest",
+              "_run_netpay_manual_background",
+              "force_release_lock",
+              "get_active_locks",
+              "get_db",
+              "get_job_info",
+              "get_job_logs",
+              "get_job_stats",
+              "get_scheduler_config",
+              "get_scheduler_status",
+              "init_scheduler_routes",
+              "is_mongo_available",
+              "pause_job",
+              "resume_job",
+              "retry_inventario_error",
+              "run_job_now",
+              "run_netpay_manual"
+            ],
+            "tables_referenced": [
+              "Sys_Scheduler_JobConfig"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "apscheduler.events",
+              "apscheduler.schedulers.asyncio",
+              "apscheduler.triggers.cron",
+              "apscheduler.triggers.interval",
+              "asyncio",
+              "config",
+              "core.mongo_stub",
+              "datetime",
+              "job_logger",
+              "jobs.alertas_excepciones_job",
+              "jobs.auditorias_job",
+              "jobs.bos_direction_status_job",
+              "jobs.catalogo_ampliado_alertas_job",
+              "jobs.cava_socios_monthly_job",
+              "jobs.crm_sync_job",
+              "jobs.cxp_sync_job",
+              "jobs.inteligencia_comercial_sync_job",
+              "jobs.inventarios_detector_job",
+              "jobs.netpay_sync_job",
+              "jobs.notifications_job",
+              "jobs.pedidos_detector_job",
+              "jobs.resumen_diario_excepciones_job",
+              "jobs.sla_job",
+              "jobs.sync_comercial_abiertas_v2_job",
+              "jobs.sync_comercial_v2_job",
+              "jobs.sync_compras_job",
+              "jobs.sync_ingresos_job",
+              "jobs.sync_nightly_comercial_job",
+              "jobs.sync_propinas_tpv_job",
+              "jobs.sync_short_comercial_job",
+              "jobs.vtiger_sync_job",
+              "locks",
+              "logging",
+              "modules.economia.service",
+              "os",
+              "persistent_state_repository",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "netpay",
+              "sap",
+              "softrestaurant",
+              "twilio",
+              "vtiger"
+            ],
+            "matched_terms": [
+              "factura",
+              "reporte"
+            ],
+            "path": "backend/core/scheduler/scheduler_manager.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "APScheduler",
+              "AsyncIOScheduler",
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [
+              "SchedulerManager",
+              "__init__",
+              "__new__",
+              "_create_scheduler",
+              "_normalize_comercial_sync_status",
+              "_on_job_error",
+              "_on_job_executed",
+              "_on_job_missed",
+              "_run_alertas_excepciones_notifier_job",
+              "_run_auditorias_job",
+              "_run_bos_direction_status_job",
+              "_run_catalogo_ampliado_alertas_job",
+              "_run_cava_socios_monthly_job",
+              "_run_crm_actividades_vencidas_job",
+              "_run_crm_sla_check_job",
+              "_run_crm_sync_job",
+              "_run_economia_sync_job",
+              "_run_inteligencia_comercial_sync_job",
+              "_run_inventarios_detector_job",
+              "_run_netpay_sync_diario_job",
+              "_run_notifications_job",
+              "_run_pedidos_detector_job",
+              "_run_resumen_diario_excepciones_job",
+              "_run_sla_job",
+              "_run_sync_comercial_abiertas_v2_job",
+              "_run_sync_comercial_v2_job",
+              "_run_sync_compras_job",
+              "_run_sync_cxp_facturas_job",
+              "_run_sync_ingresos_incremental_job",
+              "_run_sync_nightly_comercial_job",
+              "_run_sync_propinas_tpv_incremental_job",
+              "_run_sync_short_comercial_job",
+              "_run_vtiger_sync_job",
+              "get_job_info",
+              "get_scheduler_manager",
+              "get_status",
+              "pause_job",
+              "register_jobs",
+              "reset_scheduler_manager",
+              "resume_job",
+              "retry_inventario_error_by_id",
+              "run_job_now",
+              "start",
+              "start_scheduler",
+              "stop",
+              "stop_scheduler"
+            ],
+            "tables_referenced": [
+              "Finanzas_CxP_Sync"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "concurrent.futures",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "scheduler_bitacorajobs"
+            ],
+            "path": "backend/core/scheduler/sql_repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_decrypt_password_for_internal_use",
+              "_execute_sql",
+              "_execute_sql_async",
+              "actualizar_inventario_completado",
+              "actualizar_inventario_error",
+              "get_active_servers",
+              "get_empresas_activas",
+              "get_inventario_error_by_id",
+              "get_inventarios_pendientes_reintento",
+              "get_server_by_id",
+              "inventario_existe",
+              "pedido_existe",
+              "registrar_bitacora_job",
+              "registrar_inventario_procesando",
+              "registrar_pedido_detectado"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "middleware",
+              "schemas",
+              "service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "permiso",
+              "permission",
+              "rbac"
+            ],
+            "path": "backend/core/rbac/__init__.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.rbac_helper_sql",
+              "core.security",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "fastapi",
+              "fastapi.security",
+              "functools",
+              "logging",
+              "service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "permiso",
+              "permission",
+              "rbac"
+            ],
+            "path": "backend/core/rbac/middleware.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "get_current_user"
+            ],
+            "routes": [
+              "/cargos/{id}/aplicar",
+              "/endpoint"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACAllDependency",
+              "RBACAnyDependency",
+              "RBACDependency",
+              "RBACExplicitDependency",
+              "RBACExplicitDualDependency",
+              "__call__",
+              "__init__",
+              "_get_db",
+              "get_current_user_from_token",
+              "get_current_user_with_permissions",
+              "require_all_permissions",
+              "require_any_permission",
+              "require_explicit_permission",
+              "require_explicit_permission_dual",
+              "require_permission"
+            ],
+            "tables_referenced": [
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "repository_sql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "permiso",
+              "rbac"
+            ],
+            "path": "backend/core/rbac/repository.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACRepository",
+              "__init__",
+              "_ensure_indexes",
+              "asignar_rol",
+              "create_permiso",
+              "create_rol",
+              "delete_rol",
+              "get_all_permisos",
+              "get_all_roles",
+              "get_audit_logs",
+              "get_nivel_jerarquia_usuario",
+              "get_permiso_by_codigo",
+              "get_permisos_usuario",
+              "get_rol_by_id",
+              "get_rol_by_nombre",
+              "get_roles_usuario",
+              "log_verificacion",
+              "revocar_rol",
+              "seed_permisos",
+              "seed_roles",
+              "update_rol"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "permiso",
+              "permission",
+              "rbac"
+            ],
+            "path": "backend/core/rbac/repository_sql.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACRepositorySQL",
+              "__init__",
+              "_get_connection",
+              "_invalidate_cache",
+              "_is_cache_valid",
+              "asignar_rol",
+              "create_rol",
+              "delete_rol",
+              "get_all_permisos",
+              "get_all_roles",
+              "get_audit_logs",
+              "get_nivel_jerarquia_usuario",
+              "get_permiso_by_codigo",
+              "get_permisos_usuario",
+              "get_rbac_repository_sql",
+              "get_rol_by_id",
+              "get_rol_by_nombre",
+              "get_roles_usuario",
+              "log_verificacion",
+              "revocar_rol",
+              "seed_permisos",
+              "seed_roles",
+              "update_rol"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.security",
+              "core.unidades_service",
+              "fastapi",
+              "fastapi.security",
+              "logging",
+              "middleware",
+              "os",
+              "schemas",
+              "service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "permiso",
+              "permission",
+              "rbac"
+            ],
+            "path": "backend/core/rbac/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/asignar",
+              "/audit",
+              "/mis-permisos",
+              "/permisos",
+              "/revocar",
+              "/roles",
+              "/roles/{rol_id}",
+              "/usuario/{user_id}/permisos",
+              "/verificar"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_db",
+              "actualizar_rol",
+              "asignar_rol",
+              "crear_rol",
+              "eliminar_rol",
+              "get_current_user",
+              "get_rbac_service",
+              "listar_permisos",
+              "listar_roles",
+              "obtener_audit_logs",
+              "obtener_mis_permisos",
+              "obtener_permisos_usuario",
+              "obtener_rol",
+              "revocar_rol",
+              "verificar_permiso"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "enum",
+              "pydantic",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "permiso",
+              "rbac",
+              "reporte"
+            ],
+            "path": "backend/core/rbac/schemas.py",
+            "rbac_contracts": [
+              "RBAC_Permisos"
+            ],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "AccionPermiso",
+              "AsignacionRol",
+              "AsignacionRolCreate",
+              "AsignacionRolResponse",
+              "ModuloSistema",
+              "Permiso",
+              "PermisoCreate",
+              "PermisoResponse",
+              "PermisoUsuarioResponse",
+              "RBACAuditLog",
+              "RolRBAC",
+              "RolRBACCreate",
+              "RolRBACResponse",
+              "RolRBACUpdate",
+              "VerificacionPermisoResponse"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "logging",
+              "repository",
+              "schemas",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "permiso",
+              "permission",
+              "rbac",
+              "reporte"
+            ],
+            "path": "backend/core/rbac/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "PermisoDenegadoError",
+              "RBACService",
+              "__init__",
+              "_get_permisos_from_legacy_role",
+              "asignar_rol_a_usuario",
+              "check_all_permissions",
+              "check_any_permission",
+              "check_permission",
+              "create_rol",
+              "delete_rol",
+              "ensure_initialized",
+              "get_all_permisos",
+              "get_all_roles",
+              "get_audit_logs",
+              "get_rbac_service",
+              "get_rol",
+              "get_user_permissions",
+              "initialize",
+              "require_permission",
+              "revocar_rol_de_usuario",
+              "update_rol"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.user_access_context.py",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.access_context.sql_context",
+              "core.corporate_filters.service",
+              "core.rbac_sql.service",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "dataclasses",
+              "datetime",
+              "logging",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "permiso",
+              "permission",
+              "rbac"
+            ],
+            "path": "backend/core/user_access_context.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "UserAccessContext",
+              "_extract_ids",
+              "_get_all_empresas_sql",
+              "_get_all_servers_sql",
+              "_get_servers_from_empresas_sql",
+              "_get_sql_connection",
+              "_get_user_almacenes_sql",
+              "_get_user_empresas_sql",
+              "_get_user_id_sql",
+              "_get_user_role_sql",
+              "_get_user_servers_sql",
+              "_get_user_sucursales_sql",
+              "_resolver_acceso_global_sql",
+              "filter_empresas",
+              "filter_results_by_almacen",
+              "filter_servers",
+              "get_almacenes_permitidos",
+              "get_almacenes_sql_filter",
+              "get_almacenes_sql_filter_like",
+              "has_almacen_access",
+              "has_empresa_access",
+              "has_permiso",
+              "has_server_access",
+              "resolve_user_access_context",
+              "to_dict",
+              "validate_almacen_in_scope"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "lote",
+              "rendimiento",
+              "tablajeria"
+            ],
+            "path": "frontend/src/pages/tablajeria/CapturaDirectaPage.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "lote",
+              "rendimiento",
+              "tablajeria"
+            ],
+            "path": "frontend/src/pages/tablajeria/OrdenesPage.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "rendimiento",
+              "tablajeria"
+            ],
+            "path": "frontend/src/pages/tablajeria/PlantillasPage.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "rendimiento",
+              "reporte",
+              "tablajeria"
+            ],
+            "path": "frontend/src/pages/tablajeria/TablajeriaDashboard.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "factura",
+              "permiso",
+              "reporte",
+              "tablajeria"
+            ],
+            "path": "frontend/src/config/enterpriseMenuConfig.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "lote",
+              "operaciones_tablaje_ordenes",
+              "operaciones_tablaje_ordenesdetalle",
+              "rendimiento",
+              "tablajeria"
+            ],
+            "path": "docs/modules/TABLAJERIA_DDL_FASE1.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "operaciones_tablaje_ordenes",
+              "operaciones_tablaje_ordenesdetalle",
+              "permiso",
+              "rbac",
+              "rendimiento",
+              "reporte",
+              "tablajeria"
+            ],
+            "path": "docs/modules/TABLAJERIA_FASE0_DIAGNOSTICO.md",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "operaciones_tablaje_ordenes",
+              "operaciones_tablaje_ordenesdetalle",
+              "permiso",
+              "rbac",
+              "rendimiento",
+              "reporte",
+              "tablajeria"
+            ],
+            "path": "docs/modules/TABLAJERIA_SPEC.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 56,
+          "scanned_files": 98,
+          "skipped_sensitive": 61
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "TABLE_SCHEMA",
+              "TABLE_NAME",
+              "TABLE_TYPE"
+            ],
+            "name": "r24_existing_tablajeria_tables",
+            "row_count_returned": 20,
+            "rows": [
+              [
+                "dbo",
+                "Operaciones_Tablaje_Auditoria",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Operaciones_Tablaje_Autorizaciones",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Operaciones_Tablaje_Costos",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Operaciones_Tablaje_Documentos",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Operaciones_Tablaje_EventosContables",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Operaciones_Tablaje_Mermas",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Operaciones_Tablaje_Ordenes",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Operaciones_Tablaje_Plantillas",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Operaciones_Tablaje_PlantillasDetalle",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Operaciones_Tablaje_PlantillasVersiones",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Operaciones_Tablaje_Rendimientos",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Operaciones_Tablaje_SyncErrores",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Operaciones_Tablaje_SyncLog",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Tablajeria_ConfigContable",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Tablajeria_CosteoDetalle",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Tablajeria_CosteoProduccion",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Tablajeria_MovimientosInventario",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Tablajeria_PolizasContables",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Tablajeria_PolizasDetalle",
+                "BASE TABLE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "TABLE_SCHEMA",
+              "TABLE_NAME",
+              "TABLE_TYPE"
+            ],
+            "name": "r24_existing_compras_lote_proveedor_tables",
+            "row_count_returned": 62,
+            "rows": [
+              [
+                "dbo",
+                "BAK_Sistema_ModulosMenus_ProveedoresAdmin_20260623_113403",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_AutomatizacionesOperativas",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_CFDI_RutasIngesta",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_ConciliacionSAT",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_ConciliacionSATDetalle",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_ConciliacionSATEstatus",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_Detalle",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_DocumentosFiscales",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_DocumentosFiscalesDetalle",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_DocumentosFiscalesEstatus",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_DocumentosFiscalesRelaciones",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_Estatus",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_Eventos_Pendientes",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_Informes_Config",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_Inventarios_Fisicos_Detalle_Stage",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_Inventarios_Fisicos_Detalle_Sync",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_Inventarios_Fisicos_Stage",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_Inventarios_Fisicos_Sync",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_Inventarios_Fisicos_SyncRuns",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_Inventarios_Movimientos_Sync",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_KPIs_Historico",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_Ordenes",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_OrdenesDetalle",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_OrdenesEstatus",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_Parametros_Sucursal",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_Pedidos",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_PedidosDetalle",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_PedidosEstatus",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_PedidosProcesadosAutomatizacion",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_Recepciones",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_RecepcionesDetalle",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_RecepcionesEstatus",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_Requisiciones_Sync",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_Sync_Checkpoint",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Compras_Sync_Log",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Economia_Proveedores",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Operativo_BitacoraCompras",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Operativo_TareasCompras",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Portal_Proveedores",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_Bancos",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_Catalogo",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_Categorias",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_CategoriasCatalogo",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_Contactos",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_CuentasBancarias",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_Documentos",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_EstatusProveedor",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_EstatusSAT",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_EstatusSincronizacion",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_Evaluaciones",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_Integracion",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_Monedas",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_PortalSuppliers",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_RegimenFiscal",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_RiesgoProveedor",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_RolUsuarioPortal",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_SistemasIntegracion",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_TipoContacto",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_TipoDocumento",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_TipoProveedor",
+                "BASE TABLE"
+              ],
+              [
+                "dbo",
+                "Proveedor_UsuariosPortal",
+                "BASE TABLE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "TABLE_NAME",
+              "COLUMN_NAME",
+              "DATA_TYPE"
+            ],
+            "name": "r24_tablajeria_order_columns_safe",
+            "row_count_returned": 123,
+            "rows": [
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "OrdenID",
+                "uniqueidentifier"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "EmpresaID",
+                "uniqueidentifier"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "UnidadNegocioID",
+                "uniqueidentifier"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "SucursalID",
+                "int"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "FolioOrden",
+                "nvarchar"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "PlantillaID",
+                "uniqueidentifier"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "PlantillaVersion",
+                "int"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "AlmacenOrigenID",
+                "int"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "AlmacenDestinoID",
+                "int"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "InsumoBaseID",
+                "int"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "InsumoBaseCodigo",
+                "nvarchar"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "InsumoBaseNombre",
+                "nvarchar"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "LoteInsumo",
+                "nvarchar"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "CantidadBasePlaneada",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "UnidadBaseID",
+                "int"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "CantidadBaseReal",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "PesoInicialKg",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "PesoFinalKg",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "RendimientoEsperadoPorcentaje",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "RendimientoRealPorcentaje",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "DesviacionRendimiento",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "MermaEsperadaPorcentaje",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "MermaRealPorcentaje",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "MermaRealKg",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "CostoInsumoBase",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "CostoTotalOrden",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "MonedaID",
+                "int"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "EstatusOrden",
+                "nvarchar"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "RequiereAutorizacion",
+                "bit"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "MotivoAutorizacion",
+                "nvarchar"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "AutorizadoPor",
+                "uniqueidentifier"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "FechaAutorizacion",
+                "datetime2"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "FechaOperacionMexico",
+                "date"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "FechaProgramada",
+                "date"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "FechaInicioEjecucion",
+                "datetime2"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "FechaFinEjecucion",
+                "datetime2"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "FechaCierre",
+                "datetime2"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "ResponsableID",
+                "uniqueidentifier"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "EjecutorID",
+                "uniqueidentifier"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "SupervisorID",
+                "uniqueidentifier"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "OrigenOrden",
+                "nvarchar"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "IDLegacyOrden",
+                "nvarchar"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "AfectaInventario",
+                "bit"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "MovimientoInventarioGenerado",
+                "bit"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "Observaciones",
+                "nvarchar"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "Activo",
+                "bit"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "FechaAltaUTC",
+                "datetime2"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "FechaModificacionUTC",
+                "datetime2"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "UsuarioAltaID",
+                "uniqueidentifier"
+              ],
+              [
+                "Operaciones_Tablaje_Ordenes",
+                "UsuarioModificacionID",
+                "uniqueidentifier"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "OrdenDetalleID",
+                "uniqueidentifier"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "OrdenID",
+                "uniqueidentifier"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "PlantillaDetalleID",
+                "uniqueidentifier"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "ProductoDerivadoID",
+                "int"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "ProductoDerivadoCodigo",
+                "nvarchar"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "ProductoDerivadoNombre",
+                "nvarchar"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "TipoDerivado",
+                "nvarchar"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "CantidadEsperada",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "PorcentajeEsperado",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "CantidadReal",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "PesoRealKg",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "PorcentajeReal",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "DesviacionCantidad",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "DesviacionPorcentaje",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "CostoUnitario",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "CostoTotal",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "PorcentajeCostoAsignado",
+                "decimal"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "UnidadID",
+                "int"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "UnidadCodigo",
+                "nvarchar"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "GeneraMovimiento",
+                "bit"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "MovimientoGenerado",
+                "bit"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "AlmacenDestinoID",
+                "int"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "LoteGenerado",
+                "nvarchar"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "Observaciones",
+                "nvarchar"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "FechaCaptura",
+                "datetime2"
+              ],
+              [
+                "Operaciones_Tablaje_OrdenesDetalle",
+                "UsuarioCapturaID",
+                "uniqueidentifier"
+              ],
+              [
+                "Tablajeria_CosteoDetalle",
+                "DetalleID",
+                "varchar"
+              ],
+              [
+                "Tablajeria_CosteoDetalle",
+                "CosteoID",
+                "varchar"
+              ],
+              [
+                "Tablajeria_CosteoDetalle",
+                "OrdenDetalleID",
+                "varchar"
+              ],
+              [
+                "Tablajeria_CosteoDetalle",
+                "ProductoCodigo",
+                "varchar"
+              ],
+              [
+                "Tablajeria_CosteoDetalle",
+                "ProductoNombre",
+                "varchar"
+              ],
+              [
+                "Tablajeria_CosteoDetalle",
+                "TipoDerivado",
+                "varchar"
+              ],
+              [
+                "Tablajeria_CosteoDetalle",
+                "CantidadProducida",
+                "decimal"
+              ],
+              [
+                "Tablajeria_CosteoDetalle",
+                "PorcentajeCostoAsignado",
+                "decimal"
+              ],
+              [
+                "Tablajeria_CosteoDetalle",
+                "CostoAsignado",
+                "decimal"
+              ],
+              [
+                "Tablajeria_CosteoDetalle",
+                "CostoUnitario",
+                "decimal"
+              ],
+              [
+                "Tablajeria_CosteoDetalle",
+                "EsInventariable",
+                "bit"
+              ],
+              [
+                "Tablajeria_CosteoProduccion",
+                "CosteoID",
+                "varchar"
+              ],
+              [
+                "Tablajeria_CosteoProduccion",
+                "OrdenID",
+                "varchar"
+              ],
+              [
+                "Tablajeria_CosteoProduccion",
+                "FechaCosteo",
+                "datetime2"
+              ],
+              [
+                "Tablajeria_CosteoProduccion",
+                "InsumoBaseCodigo",
+                "varchar"
+              ],
+              [
+                "Tablajeria_CosteoProduccion",
+                "InsumoBaseNombre",
+                "varchar"
+              ],
+              [
+                "Tablajeria_CosteoProduccion",
+                "CantidadInsumoConsumida",
+                "decimal"
+              ],
+              [
+                "Tablajeria_CosteoProduccion",
+                "CostoUnitarioInsumo",
+                "decimal"
+              ],
+              [
+                "Tablajeria_CosteoProduccion",
+                "CostoTotalInsumo",
+                "decimal"
+              ],
+              [
+                "Tablajeria_CosteoProduccion",
+                "CostoManoObra",
+                "decimal"
+              ],
+              [
+                "Tablajeria_CosteoProduccion",
+                "CostoIndirectos",
+                "decimal"
+              ],
+              [
+                "Tablajeria_CosteoProduccion",
+                "CostoEnergia",
+                "decimal"
+              ],
+              [
+                "Tablajeria_CosteoProduccion",
+                "OtrosCostos",
+                "decimal"
+              ],
+              [
+                "Tablajeria_CosteoProduccion",
+                "CostoTotalProduccion",
+                "decimal"
+              ],
+              [
+                "Tablajeria_CosteoProduccion",
+                "CostoUnitarioPromedio",
+                "decimal"
+              ],
+              [
+                "Tablajeria_CosteoProduccion",
+                "ReglaCosteoAplicada",
+                "varchar"
+              ],
+              [
+                "Tablajeria_CosteoProduccion",
+                "UsuarioID",
+                "varchar"
+              ],
+              [
+                "Tablajeria_CosteoProduccion",
+                "Observaciones",
+                "nvarchar"
+              ],
+              [
+                "Tablajeria_CosteoProduccion",
+                "EsEstimado",
+                "bit"
+              ],
+              [
+                "Tablajeria_MovimientosInventario",
+                "MovimientoID",
+                "varchar"
+              ],
+              [
+                "Tablajeria_MovimientosInventario",
+                "OrdenID",
+                "varchar"
+              ],
+              [
+                "Tablajeria_MovimientosInventario",
+                "TipoMovimiento",
+                "varchar"
+              ],
+              [
+                "Tablajeria_MovimientosInventario",
+                "ProductoCodigo",
+                "varchar"
+              ],
+              [
+                "Tablajeria_MovimientosInventario",
+                "ProductoNombre",
+                "varchar"
+              ],
+              [
+                "Tablajeria_MovimientosInventario",
+                "AlmacenOrigenID",
+                "varchar"
+              ],
+              [
+                "Tablajeria_MovimientosInventario",
+                "AlmacenDestinoID",
+                "varchar"
+              ],
+              [
+                "Tablajeria_MovimientosInventario",
+                "Cantidad",
+                "decimal"
+              ],
+              [
+                "Tablajeria_MovimientosInventario",
+                "UnidadMedida",
+                "varchar"
+              ],
+              [
+                "Tablajeria_MovimientosInventario",
+                "CostoUnitario",
+                "decimal"
+              ],
+              [
+                "Tablajeria_MovimientosInventario",
+                "CostoTotal",
+                "decimal"
+              ],
+              [
+                "Tablajeria_MovimientosInventario",
+                "LoteProducto",
+                "varchar"
+              ],
+              [
+                "Tablajeria_MovimientosInventario",
+                "FechaMovimiento",
+                "datetime2"
+              ],
+              [
+                "Tablajeria_MovimientosInventario",
+                "UsuarioID",
+                "varchar"
+              ],
+              [
+                "Tablajeria_MovimientosInventario",
+                "Referencia",
+                "varchar"
+              ],
+              [
+                "Tablajeria_MovimientosInventario",
+                "Sincronizado",
+                "bit"
+              ],
+              [
+                "Tablajeria_MovimientosInventario",
+                "FechaSincronizacion",
+                "datetime2"
+              ],
+              [
+                "Tablajeria_MovimientosInventario",
+                "ErrorSincronizacion",
+                "varchar"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "TABLE_NAME",
+              "COLUMN_NAME",
+              "DATA_TYPE"
+            ],
+            "name": "r24_compras_trace_columns_safe",
+            "row_count_returned": 200,
+            "rows": [
+              [
+                "BAK_Sistema_ModulosMenus_ProveedoresAdmin_20260623_113403",
+                "MenuID",
+                "int"
+              ],
+              [
+                "BAK_Sistema_ModulosMenus_ProveedoresAdmin_20260623_113403",
+                "ModuloID",
+                "int"
+              ],
+              [
+                "BAK_Sistema_ModulosMenus_ProveedoresAdmin_20260623_113403",
+                "MenuPadreID",
+                "int"
+              ],
+              [
+                "BAK_Sistema_ModulosMenus_ProveedoresAdmin_20260623_113403",
+                "Orden",
+                "int"
+              ],
+              [
+                "BAK_Sistema_ModulosMenus_ProveedoresAdmin_20260623_113403",
+                "FechaCreacion",
+                "datetime"
+              ],
+              [
+                "Compras",
+                "CompraID",
+                "bigint"
+              ],
+              [
+                "Compras",
+                "PedidoCompraID",
+                "bigint"
+              ],
+              [
+                "Compras",
+                "OrdenCompraID",
+                "bigint"
+              ],
+              [
+                "Compras",
+                "EmpresaID",
+                "int"
+              ],
+              [
+                "Compras",
+                "SucursalID",
+                "int"
+              ],
+              [
+                "Compras",
+                "AlmacenID",
+                "int"
+              ],
+              [
+                "Compras",
+                "FechaCompra",
+                "datetime2"
+              ],
+              [
+                "Compras",
+                "FechaRecepcion",
+                "datetime2"
+              ],
+              [
+                "Compras",
+                "FechaFactura",
+                "date"
+              ],
+              [
+                "Compras",
+                "FechaVencimiento",
+                "date"
+              ],
+              [
+                "Compras",
+                "ProveedorID",
+                "int"
+              ],
+              [
+                "Compras",
+                "CompradorUsuarioID",
+                "int"
+              ],
+              [
+                "Compras",
+                "RecibioUsuarioID",
+                "int"
+              ],
+              [
+                "Compras",
+                "CondicionPagoID",
+                "smallint"
+              ],
+              [
+                "Compras",
+                "FormaPagoID",
+                "smallint"
+              ],
+              [
+                "Compras",
+                "MonedaID",
+                "smallint"
+              ],
+              [
+                "Compras",
+                "NumeroFactura",
+                "varchar"
+              ],
+              [
+                "Compras",
+                "UUIDFactura",
+                "varchar"
+              ],
+              [
+                "Compras",
+                "ReferenciaProveedor",
+                "varchar"
+              ],
+              [
+                "Compras",
+                "AutorizacionID",
+                "bigint"
+              ],
+              [
+                "Compras",
+                "EstatusCompraID",
+                "tinyint"
+              ],
+              [
+                "Compras_AutomatizacionesOperativas",
+                "Id",
+                "uniqueidentifier"
+              ],
+              [
+                "Compras_AutomatizacionesOperativas",
+                "MongoId",
+                "nvarchar"
+              ],
+              [
+                "Compras_AutomatizacionesOperativas",
+                "FechaMigracion",
+                "datetime"
+              ],
+              [
+                "Compras_AutomatizacionesOperativas",
+                "FechaCreacion",
+                "datetime"
+              ],
+              [
+                "Compras_AutomatizacionesOperativas",
+                "FechaActualizacion",
+                "datetime"
+              ],
+              [
+                "Compras_CFDI_RutasIngesta",
+                "RutaIngestaID",
+                "int"
+              ],
+              [
+                "Compras_CFDI_RutasIngesta",
+                "UnidadNegocioID",
+                "uniqueidentifier"
+              ],
+              [
+                "Compras_CFDI_RutasIngesta",
+                "FechaAlta",
+                "datetime2"
+              ],
+              [
+                "Compras_CFDI_RutasIngesta",
+                "FechaModificacion",
+                "datetime2"
+              ],
+              [
+                "Compras_ConciliacionSAT",
+                "ConciliacionSATID",
+                "bigint"
+              ],
+              [
+                "Compras_ConciliacionSAT",
+                "DocumentoFiscalID",
+                "bigint"
+              ],
+              [
+                "Compras_ConciliacionSAT",
+                "CompraID",
+                "bigint"
+              ],
+              [
+                "Compras_ConciliacionSAT",
+                "RecepcionCompraID",
+                "bigint"
+              ],
+              [
+                "Compras_ConciliacionSAT",
+                "EstatusConciliacionSATID",
+                "tinyint"
+              ],
+              [
+                "Compras_ConciliacionSAT",
+                "FechaConciliacion",
+                "datetime2"
+              ],
+              [
+                "Compras_ConciliacionSAT",
+                "UsuarioID",
+                "int"
+              ],
+              [
+                "Compras_ConciliacionSAT",
+                "RFCEmisorCoincide",
+                "bit"
+              ],
+              [
+                "Compras_ConciliacionSAT",
+                "RFCReceptorCoincide",
+                "bit"
+              ],
+              [
+                "Compras_ConciliacionSAT",
+                "FechaCoincide",
+                "bit"
+              ],
+              [
+                "Compras_ConciliacionSAT",
+                "MonedaCoincide",
+                "bit"
+              ],
+              [
+                "Compras_ConciliacionSAT",
+                "TotalCoincide",
+                "bit"
+              ],
+              [
+                "Compras_ConciliacionSAT",
+                "UUIDDuplicado",
+                "bit"
+              ],
+              [
+                "Compras_ConciliacionSAT",
+                "XMLValido",
+                "bit"
+              ],
+              [
+                "Compras_ConciliacionSATDetalle",
+                "ConciliacionSATDetalleID",
+                "bigint"
+              ],
+              [
+                "Compras_ConciliacionSATDetalle",
+                "ConciliacionSATID",
+                "bigint"
+              ],
+              [
+                "Compras_ConciliacionSATDetalle",
+                "RecepcionDetalleID",
+                "bigint"
+              ],
+              [
+                "Compras_ConciliacionSATDetalle",
+                "CompraDetalleID",
+                "bigint"
+              ],
+              [
+                "Compras_ConciliacionSATDetalle",
+                "DocumentoFiscalDetalleID",
+                "bigint"
+              ],
+              [
+                "Compras_ConciliacionSATDetalle",
+                "ProductoID",
+                "int"
+              ],
+              [
+                "Compras_ConciliacionSATDetalle",
+                "PresentacionProductoID",
+                "bigint"
+              ],
+              [
+                "Compras_ConciliacionSATDetalle",
+                "CantidadSistema",
+                "decimal"
+              ],
+              [
+                "Compras_ConciliacionSATDetalle",
+                "CantidadXML",
+                "decimal"
+              ],
+              [
+                "Compras_ConciliacionSATDetalle",
+                "DiferenciaCantidad",
+                "decimal"
+              ],
+              [
+                "Compras_ConciliacionSATDetalle",
+                "CostoSistema",
+                "decimal"
+              ],
+              [
+                "Compras_ConciliacionSATDetalle",
+                "CostoXML",
+                "decimal"
+              ],
+              [
+                "Compras_ConciliacionSATDetalle",
+                "DiferenciaCosto",
+                "decimal"
+              ],
+              [
+                "Compras_ConciliacionSATDetalle",
+                "ImporteSistema",
+                "decimal"
+              ],
+              [
+                "Compras_ConciliacionSATDetalle",
+                "ImporteXML",
+                "decimal"
+              ],
+              [
+                "Compras_ConciliacionSATDetalle",
+                "DiferenciaImporte",
+                "decimal"
+              ],
+              [
+                "Compras_ConciliacionSATDetalle",
+                "Coincide",
+                "bit"
+              ],
+              [
+                "Compras_ConciliacionSATEstatus",
+                "EstatusConciliacionSATID",
+                "tinyint"
+              ],
+              [
+                "Compras_Detalle",
+                "DetalleCompraID",
+                "bigint"
+              ],
+              [
+                "Compras_Detalle",
+                "CompraID",
+                "bigint"
+              ],
+              [
+                "Compras_Detalle",
+                "OrdenDetalleCompraID",
+                "bigint"
+              ],
+              [
+                "Compras_Detalle",
+                "PedidoDetalleCompraID",
+                "bigint"
+              ],
+              [
+                "Compras_Detalle",
+                "ProductoID",
+                "int"
+              ],
+              [
+                "Compras_Detalle",
+                "PresentacionProductoID",
+                "bigint"
+              ],
+              [
+                "Compras_Detalle",
+                "Cantidad",
+                "decimal"
+              ],
+              [
+                "Compras_Detalle",
+                "CantidadDevuelta",
+                "decimal"
+              ],
+              [
+                "Compras_Detalle",
+                "CantidadNeta",
+                "decimal"
+              ],
+              [
+                "Compras_Detalle",
+                "DescuentoImporte",
+                "numeric"
+              ],
+              [
+                "Compras_Detalle",
+                "ImpuestoImporte",
+                "numeric"
+              ],
+              [
+                "Compras_Detalle",
+                "Lote",
+                "varchar"
+              ],
+              [
+                "Compras_Detalle",
+                "FechaCaducidad",
+                "date"
+              ],
+              [
+                "Compras_DocumentosFiscales",
+                "DocumentoFiscalID",
+                "bigint"
+              ],
+              [
+                "Compras_DocumentosFiscales",
+                "SucursalFiscalID",
+                "int"
+              ],
+              [
+                "Compras_DocumentosFiscales",
+                "SucursalID",
+                "int"
+              ],
+              [
+                "Compras_DocumentosFiscales",
+                "ProveedorID",
+                "int"
+              ],
+              [
+                "Compras_DocumentosFiscales",
+                "CompraID",
+                "bigint"
+              ],
+              [
+                "Compras_DocumentosFiscales",
+                "RecepcionCompraID",
+                "bigint"
+              ],
+              [
+                "Compras_DocumentosFiscales",
+                "EstatusDocumentoFiscalID",
+                "tinyint"
+              ],
+              [
+                "Compras_DocumentosFiscales",
+                "UUID",
+                "varchar"
+              ],
+              [
+                "Compras_DocumentosFiscales",
+                "FechaEmision",
+                "datetime2"
+              ],
+              [
+                "Compras_DocumentosFiscales",
+                "ImpuestoRetenido",
+                "decimal"
+              ],
+              [
+                "Compras_DocumentosFiscales",
+                "FechaConsultaSAT",
+                "datetime2"
+              ],
+              [
+                "Compras_DocumentosFiscales",
+                "FechaDescarga",
+                "datetime2"
+              ],
+              [
+                "Compras_DocumentosFiscalesDetalle",
+                "DocumentoFiscalDetalleID",
+                "bigint"
+              ],
+              [
+                "Compras_DocumentosFiscalesDetalle",
+                "DocumentoFiscalID",
+                "bigint"
+              ],
+              [
+                "Compras_DocumentosFiscalesDetalle",
+                "NoIdentificacion",
+                "varchar"
+              ],
+              [
+                "Compras_DocumentosFiscalesDetalle",
+                "UnidadSAT",
+                "varchar"
+              ],
+              [
+                "Compras_DocumentosFiscalesDetalle",
+                "UnidadInterna",
+                "varchar"
+              ],
+              [
+                "Compras_DocumentosFiscalesDetalle",
+                "Cantidad",
+                "decimal"
+              ],
+              [
+                "Compras_DocumentosFiscalesDetalle",
+                "Importe",
+                "decimal"
+              ],
+              [
+                "Compras_DocumentosFiscalesDetalle",
+                "ProductoID",
+                "int"
+              ],
+              [
+                "Compras_DocumentosFiscalesDetalle",
+                "PresentacionProductoID",
+                "bigint"
+              ],
+              [
+                "Compras_DocumentosFiscalesEstatus",
+                "EstatusDocumentoFiscalID",
+                "tinyint"
+              ],
+              [
+                "Compras_DocumentosFiscalesRelaciones",
+                "DocumentoFiscalRelacionID",
+                "bigint"
+              ],
+              [
+                "Compras_DocumentosFiscalesRelaciones",
+                "DocumentoFiscalID",
+                "bigint"
+              ],
+              [
+                "Compras_DocumentosFiscalesRelaciones",
+                "EntidadID",
+                "nvarchar"
+              ],
+              [
+                "Compras_DocumentosFiscalesRelaciones",
+                "EntidadClave",
+                "nvarchar"
+              ],
+              [
+                "Compras_DocumentosFiscalesRelaciones",
+                "UnidadNegocioID",
+                "uniqueidentifier"
+              ],
+              [
+                "Compras_DocumentosFiscalesRelaciones",
+                "ProveedorID",
+                "int"
+              ],
+              [
+                "Compras_DocumentosFiscalesRelaciones",
+                "UsuarioResponsableID",
+                "int"
+              ],
+              [
+                "Compras_DocumentosFiscalesRelaciones",
+                "FechaAlta",
+                "datetime2"
+              ],
+              [
+                "Compras_DocumentosFiscalesRelaciones",
+                "FechaModificacion",
+                "datetime2"
+              ],
+              [
+                "Compras_Estatus",
+                "EstatusCompraID",
+                "tinyint"
+              ],
+              [
+                "Compras_Eventos_Pendientes",
+                "EventoID",
+                "int"
+              ],
+              [
+                "Compras_Eventos_Pendientes",
+                "ServerID",
+                "nvarchar"
+              ],
+              [
+                "Compras_Eventos_Pendientes",
+                "UnidadNegocioID",
+                "nvarchar"
+              ],
+              [
+                "Compras_Eventos_Pendientes",
+                "Fecha",
+                "datetime"
+              ],
+              [
+                "Compras_Eventos_Pendientes",
+                "InformeID",
+                "nvarchar"
+              ],
+              [
+                "Compras_Informes_Config",
+                "ConfigID",
+                "int"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Stage",
+                "run_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Stage",
+                "server_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Stage",
+                "unidad_negocio_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Stage",
+                "unidad_negocio_codigo",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Stage",
+                "almacen_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Stage",
+                "codigo_producto",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Stage",
+                "nombre_producto",
+                "nvarchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Stage",
+                "unidad",
+                "nvarchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Stage",
+                "costo_unitario",
+                "decimal"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Sync",
+                "id",
+                "bigint"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Sync",
+                "inventario_sync_id",
+                "int"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Sync",
+                "unidad_negocio_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Sync",
+                "unidad_negocio_codigo",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Sync",
+                "server_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Sync",
+                "fecha",
+                "datetime"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Sync",
+                "almacen_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Sync",
+                "sucursal_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Sync",
+                "codigo_producto",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Sync",
+                "nombre_producto",
+                "nvarchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Sync",
+                "unidad",
+                "nvarchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Sync",
+                "costo_unitario",
+                "decimal"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Detalle_Sync",
+                "diferencia_costo",
+                "decimal"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Stage",
+                "run_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Stage",
+                "server_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Stage",
+                "unidad_negocio_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Stage",
+                "unidad_negocio_codigo",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Stage",
+                "fecha",
+                "datetime"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Stage",
+                "almacen_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Stage",
+                "sucursal_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Stage",
+                "total_productos",
+                "int"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Sync",
+                "id",
+                "int"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Sync",
+                "unidad_negocio_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Sync",
+                "unidad_negocio_codigo",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Sync",
+                "server_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Sync",
+                "fecha",
+                "datetime"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Sync",
+                "almacen_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Sync",
+                "sucursal_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Sync",
+                "total_productos",
+                "int"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Sync",
+                "MongoId",
+                "nvarchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_Sync",
+                "FechaMigracionMongo",
+                "datetime"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_SyncRuns",
+                "run_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_SyncRuns",
+                "server_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_SyncRuns",
+                "unidad_negocio_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Fisicos_SyncRuns",
+                "unidad_codigo",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Movimientos_Sync",
+                "id",
+                "bigint"
+              ],
+              [
+                "Compras_Inventarios_Movimientos_Sync",
+                "unidad_negocio_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Movimientos_Sync",
+                "unidad_negocio_codigo",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Movimientos_Sync",
+                "server_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Movimientos_Sync",
+                "fecha",
+                "datetime"
+              ],
+              [
+                "Compras_Inventarios_Movimientos_Sync",
+                "fecha_operacion",
+                "date"
+              ],
+              [
+                "Compras_Inventarios_Movimientos_Sync",
+                "almacen_id",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Movimientos_Sync",
+                "idconcepto",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Movimientos_Sync",
+                "codigo_producto",
+                "varchar"
+              ],
+              [
+                "Compras_Inventarios_Movimientos_Sync",
+                "nombre_producto",
+                "nvarchar"
+              ],
+              [
+                "Compras_Inventarios_Movimientos_Sync",
+                "costo_unitario",
+                "decimal"
+              ],
+              [
+                "Compras_Inventarios_Movimientos_Sync",
+                "cantidad",
+                "decimal"
+              ],
+              [
+                "Compras_Inventarios_Movimientos_Sync",
+                "importe",
+                "decimal"
+              ],
+              [
+                "Compras_Inventarios_Movimientos_Sync",
+                "idcompra",
+                "decimal"
+              ],
+              [
+                "Compras_Inventarios_Movimientos_Sync",
+                "idturno",
+                "decimal"
+              ],
+              [
+                "Compras_Inventarios_Movimientos_Sync",
+                "idpedido",
+                "decimal"
+              ],
+              [
+                "Compras_KPIs_Historico",
+                "id",
+                "int"
+              ],
+              [
+                "Compras_KPIs_Historico",
+                "run_id",
+                "nvarchar"
+              ],
+              [
+                "Compras_KPIs_Historico",
+                "server_id",
+                "nvarchar"
+              ],
+              [
+                "Compras_KPIs_Historico",
+                "sucursal_id",
+                "nvarchar"
+              ],
+              [
+                "Compras_KPIs_Historico",
+                "fecha",
+                "date"
+              ],
+              [
+                "Compras_KPIs_Historico",
+                "inv_productos_count",
+                "int"
+              ],
+              [
+                "Compras_KPIs_Historico",
+                "ped_pedidos_count",
+                "int"
+              ],
+              [
+                "Compras_KPIs_Historico",
+                "ped_productos_count",
+                "int"
+              ],
+              [
+                "Compras_KPIs_Historico",
+                "oc_ordenes_count",
+                "int"
+              ],
+              [
+                "Compras_KPIs_Historico",
+                "oc_proveedores_count",
+                "int"
+              ],
+              [
+                "Compras_KPIs_Historico",
+                "ec_productos_count",
+                "int"
+              ],
+              [
+                "Compras_KPIs_Historico",
+                "empresa_id",
+                "nvarchar"
+              ],
+              [
+                "Compras_Ordenes",
+                "OrdenCompraID",
+                "bigint"
+              ],
+              [
+                "Compras_Ordenes",
+                "FolioOrden",
+                "varchar"
+              ],
+              [
+                "Compras_Ordenes",
+                "PedidoCompraID",
+                "bigint"
+              ],
+              [
+                "Compras_Ordenes",
+                "EmpresaID",
+                "int"
+              ],
+              [
+                "Compras_Ordenes",
+                "SucursalID",
+                "int"
+              ],
+              [
+                "Compras_Ordenes",
+                "AlmacenID",
+                "int"
+              ],
+              [
+                "Compras_Ordenes",
+                "FechaOrden",
+                "datetime2"
+              ],
+              [
+                "Compras_Ordenes",
+                "FechaEntregaPrometida",
+                "date"
+              ],
+              [
+                "Compras_Ordenes",
+                "ProveedorID",
+                "int"
+              ],
+              [
+                "Compras_Ordenes",
+                "CompradorUsuarioID",
+                "int"
+              ]
+            ],
+            "truncated": true
+          },
+          {
+            "columns": [
+              "TABLE_SCHEMA",
+              "TABLE_NAME"
+            ],
+            "name": "r24_missing_target_tables_probe",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T21:41:40Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
