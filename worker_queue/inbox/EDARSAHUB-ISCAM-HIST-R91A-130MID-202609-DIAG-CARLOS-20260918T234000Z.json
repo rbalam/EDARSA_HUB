@@ -1,0 +1,44 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-ISCAM-HIST-R91A-130MID-202609-DIAG-CARLOS-20260918T234000Z",
+  "created_at_utc":"2026-09-18T23:40:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"252ca168e6081d33afae52aa502d8b69c6f38eb8",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Diagnosticar exactamente por que R91 130MID 2026-09-01..12 fallo con rc=1. Identificar dias pendientes, comparar encabezados POS contra Runtime y localizar tickets con encabezado cero y detalle monetario no explicado que puedan bloquear el extractor. Solo lectura.",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "source":"POS",
+      "units":["130MID"],
+      "system_types":["SOFTRESTAURANT"],
+      "queries":[
+        {
+          "name":"pos_daily_130mid_20260901_12",
+          "sql":"SELECT CAST(tr.apertura AS date) AS fecha,SUM(CAST(ISNULL(ch.total,0) AS decimal(19,4))) AS ventas,COUNT(DISTINCT ch.folio) AS tickets,SUM(CAST(ISNULL(ch.nopersonas,0) AS bigint)) AS pax FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE tr.apertura>='2026-09-01' AND tr.apertura<'2026-09-13' AND ISNULL(ch.cancelado,0)=0 GROUP BY CAST(tr.apertura AS date) ORDER BY fecha"
+        },
+        {
+          "name":"zero_header_unexplained_candidates",
+          "sql":"WITH h AS (SELECT CAST(tr.apertura AS date) AS fecha,ch.folio,CAST(ISNULL(ch.total,0) AS decimal(19,4)) AS header_total FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE tr.apertura>='2026-09-01' AND tr.apertura<'2026-09-13' AND ISNULL(ch.cancelado,0)=0), d AS (SELECT dc.foliodet AS folio,SUM(CAST(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0) AS decimal(19,4))) AS detalle_total,SUM(CASE WHEN ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0)<0 AND UPPER(ISNULL(p.descripcion,'')) LIKE '%FRANQUICIA%' THEN 1 ELSE 0 END) AS franquicia_negativa FROM cheqdet dc LEFT JOIN productos p ON p.idproducto=dc.idproducto GROUP BY dc.foliodet) SELECT h.fecha,h.folio,h.header_total,ISNULL(d.detalle_total,0) AS detalle_total,CAST(h.header_total-ISNULL(d.detalle_total,0) AS decimal(19,4)) AS delta,ISNULL(d.franquicia_negativa,0) AS franquicia_negativa FROM h LEFT JOIN d ON d.folio=h.folio WHERE h.header_total=0 AND ABS(h.header_total-ISNULL(d.detalle_total,0))>0.05 ORDER BY h.fecha,h.folio"
+        }
+      ]
+    },
+    {
+      "type":"sql_readonly_audit",
+      "source":"EDARSAHUB",
+      "queries":[
+        {
+          "name":"runtime_vs_existing_detail_130mid_20260901_12",
+          "sql":"WITH rt AS (SELECT CAST(fecha_operacion AS date) fecha,SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) ventas_runtime,SUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets_runtime,SUM(CAST(ISNULL(pax_total,0) AS bigint)) pax_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='130MID' AND CAST(fecha_operacion AS date)>='2026-09-01' AND CAST(fecha_operacion AS date)<'2026-09-13' GROUP BY CAST(fecha_operacion AS date)), dt_ticket AS (SELECT CAST(fecha_operacion AS date) fecha,numero_ticket,SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) venta_ticket,MAX(CAST(ISNULL(pax,0) AS bigint)) pax_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='130MID' AND CAST(fecha_operacion AS date)>='2026-09-01' AND CAST(fecha_operacion AS date)<'2026-09-13' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY CAST(fecha_operacion AS date),numero_ticket), dt AS (SELECT fecha,SUM(venta_ticket) ventas_detalle,COUNT(*) tickets_detalle,SUM(pax_ticket) pax_detalle FROM dt_ticket GROUP BY fecha) SELECT rt.fecha,rt.ventas_runtime,ISNULL(dt.ventas_detalle,0) ventas_detalle,CAST(rt.ventas_runtime-ISNULL(dt.ventas_detalle,0) AS decimal(19,4)) delta_ventas,rt.tickets_runtime,ISNULL(dt.tickets_detalle,0) tickets_detalle,rt.tickets_runtime-ISNULL(dt.tickets_detalle,0) delta_tickets,rt.pax_runtime,ISNULL(dt.pax_detalle,0) pax_detalle,rt.pax_runtime-ISNULL(dt.pax_detalle,0) delta_pax,CASE WHEN ABS(rt.ventas_runtime-ISNULL(dt.ventas_detalle,0))<=0.05 AND rt.tickets_runtime=ISNULL(dt.tickets_detalle,0) AND rt.pax_runtime=ISNULL(dt.pax_detalle,0) THEN 'OK' ELSE 'PENDIENTE' END estado FROM rt LEFT JOIN dt ON dt.fecha=rt.fecha ORDER BY rt.fecha"
+        }
+      ]
+    }
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
