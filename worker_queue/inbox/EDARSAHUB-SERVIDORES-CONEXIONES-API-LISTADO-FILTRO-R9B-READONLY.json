@@ -1,0 +1,72 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SERVIDORES-CONEXIONES-API-LISTADO-FILTRO-R9B-READONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "objective": "Auditar en modo solo lectura ventanas de codigo de los filtros backend/frontend que determinan el listado administrativo de SERVIDORES -> Conexiones API. No modificar codigo, no modificar datos, no tocar secretos, no tocar permisos, no crear tablas.",
+  "actions": [],
+  "allowed_paths": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/api/admin_core_connections.py",
+          "backend/core/server_registry.py",
+          "backend/core/connection_resolver.py",
+          "frontend/src/components/UniversalQueryTester.jsx",
+          "frontend/src/config/enterpriseNavigationRegistry.json",
+          "frontend/src/config/enterpriseMenuConfig.js",
+          "frontend/src/config/enterpriseRouteBaseline.json"
+        ],
+        "search_terms": [
+          "def list_core_connections",
+          "def get_core_connections_from_sql",
+          "def format_core_connection",
+          "def test_core_connection",
+          "def test_core_connectivity",
+          "def list_servers",
+          "def list_operational_servers",
+          "def get_visible_servers_for_operaciones",
+          "def filter_servers_by_user_permissions",
+          "def map_sql_to_api_server_response",
+          "visible_en_listado",
+          "visible_en_operaciones",
+          "activo",
+          "WHERE",
+          "ORDER BY",
+          "Servidores_Conexiones",
+          "Sistema_VW_Servidores_Conexiones_Publico",
+          "API_LOCAL",
+          "DATA_SOURCE",
+          "tipo_conexion",
+          "system_type",
+          "health",
+          "timeout",
+          "offline",
+          "isOnline",
+          "Conexiones API",
+          "/servers"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.json"
+        ],
+        "exclude_patterns": [
+          ".git/*",
+          "node_modules/*",
+          "__pycache__/*",
+          "*.pyc",
+          "dist/*",
+          "build/*"
+        ],
+        "max_results": 500
+      }
+    }
+  ]
+}
