@@ -1,0 +1,84 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24D-FRONTEND-DISCOVERY-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "objective": "Auditar frontend de Tablajeria para preparar R24E UI de Lotes Proveedor y Reclamos. Ubicar archivos exactos, patrones de componentes, servicios API, rutas React, menu, estilos, tablas, formularios, modales y exportaciones existentes. No modificar codigo, datos, permisos ni Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/tablajeria",
+          "frontend/src/config/enterpriseMenuConfig.js",
+          "frontend/src/services",
+          "frontend/src/api",
+          "frontend/src/components",
+          "frontend/src/App.js",
+          "backend/modules/tablajeria/routes.py"
+        ],
+        "search_terms": [
+          "TablajeriaDashboard",
+          "OrdenesPage",
+          "PlantillasPage",
+          "CapturaDirectaPage",
+          "tablajeria",
+          "lotes-proveedor",
+          "reclamos-proveedor",
+          "drilldown",
+          "axios",
+          "api.get",
+          "api.post",
+          "fetch",
+          "table",
+          "DataTable",
+          "modal",
+          "Dialog",
+          "form",
+          "exportar",
+          "csv",
+          "dashboard",
+          "routes",
+          "enterpriseMenuConfig"
+        ],
+        "include_patterns": ["*.js", "*.jsx", "*.ts", "*.tsx", "*.json", "*.css"],
+        "exclude_patterns": ["node_modules/*", "dist/*", "build/*", "*.map"],
+        "max_results": 1500
+      }
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/tablajeria/routes.py",
+        "backend/modules/tablajeria/lote_proveedor_service.py"
+      ]
+    },
+    {
+      "type": "git_diff_check",
+      "allowed_paths": [],
+      "forbidden_paths": [
+        "frontend/src/pages/tablajeria/TablajeriaDashboard.jsx",
+        "frontend/src/pages/tablajeria/OrdenesPage.jsx",
+        "frontend/src/pages/tablajeria/PlantillasPage.jsx",
+        "frontend/src/pages/tablajeria/CapturaDirectaPage.jsx",
+        "frontend/src/config/enterpriseMenuConfig.js",
+        "frontend/src/App.js",
+        "backend/modules/tablajeria/routes.py",
+        "backend/modules/tablajeria/lote_proveedor_service.py"
+      ]
+    }
+  ],
+  "expected_findings": [
+    "Pagina frontend exacta donde anclar Lotes Proveedor.",
+    "Componente o patron UI existente a reutilizar.",
+    "Rutas React necesarias para R24E.",
+    "Menu exacto si debe agregarse subentrada.",
+    "Cliente API existente a reutilizar.",
+    "Componentes de tabla, modal y formulario disponibles.",
+    "Plan R24E de archivos exactos y pruebas frontend."
+  ]
+}
