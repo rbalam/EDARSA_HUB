@@ -1,0 +1,42 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-EXECUTIVE-BOS-GAP-MATRIX-R1-20260917",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2f76997de376dec42f8d8d4edfee65e1d25579ba",
+  "production_allowed": false,
+  "objective": "Materializar exclusivamente la interpretacion del Gate E BOS Ejecutivo a partir de la evidencia READ_ONLY ya certificada. No implementar gaps, no repetir discovery, no modificar runtime y no tocar Produccion.",
+  "acceptance": [
+    "Crear solamente docs/BOS/certifications/BOS_V1_GATE_E_EXECUTIVE_BOS_GAP_MATRIX_V2.md.",
+    "Registrar las seis capacidades ejecutivas con estado PASS, PARTIAL o NOT_PROVEN y evidencia concreta.",
+    "No declarar Gate E certificado mientras existan capacidades PARTIAL o NOT_PROVEN.",
+    "Distinguir drilldown/trazabilidad de causalidad real.",
+    "Distinguir IA conversacional generica de recomendaciones BOS basadas en datos canonicos.",
+    "Distinguir infraestructura de autorizacion de un puente ejecutivo recomendacion-a-accion.",
+    "git_diff_check debe pasar y production_touched=false."
+  ],
+  "constraints": [
+    "No nuevo discovery.",
+    "No codigo funcional.",
+    "No SQL DDL/DML.",
+    "No Mongo operativo.",
+    "No LIVE administrativo.",
+    "No Produccion.",
+    "No crear nuevos motores de recomendacion, workflow, RBAC o acciones."
+  ],
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/BOS/certifications/BOS_V1_GATE_E_EXECUTIVE_BOS_GAP_MATRIX_V2.md",
+      "content": "# BOS V1 Gate E - Executive BOS Gap Matrix V2\n\nEstado: EVIDENCE INTERPRETATION / NOT YET CERTIFIED\nFecha: 2026-09-17\n\nFuente principal certificada:\n`BOS-V1-GATE-E-EXECUTIVE-BOS-CERTIFICATION-R2-READONLY-20260917`\n\nResultado fuente:\n- status=READ_ONLY_COMPLETE\n- quality_gate=PASS\n- tests=PASS\n- certification=CERTIFIED_READ_ONLY\n- percent_complete=100\n- files_changed=[]\n- production_touched=false\n\n## Regla\nLa certificacion READ_ONLY confirma que la recoleccion de evidencia fue correcta; no implica que las seis capacidades ejecutivas esten funcionalmente completas.\n\n## Matriz ejecutiva\n\n| Pregunta de Direccion | Estado | Evidencia | Interpretacion |\n|---|---|---|---|\n| Como estamos | PASS | Tablero Ejecutivo, KPIs comerciales y Decision Dashboard financiero | Existen superficies ejecutivas con datos backend y contratos de KPI. |\n| Donde estan los problemas | PASS | Alertas, auditorias de calidad, riesgos/anomalias y drilldowns | Existe capacidad de localizar problemas y bajar a detalle. |\n| Por que ocurren | PARTIAL | Decision Dashboard expone drilldown y como se construye; existen auditorias y trazabilidad | Drilldown/trazabilidad no prueba una capa BOS general de causalidad o root-cause. |\n| Que debe atenderse | PARTIAL | Workflows, SLA, prioridades y pendientes existen por dominio | No queda probada una priorizacion ejecutiva consolidada cross-domain. |\n| Que recomienda el BOS | NOT_PROVEN | Gate F historico es evidence-only; IA Assistant es conversacional generico | No queda probado un motor de recomendaciones basado en datos canonicos, explicable y accionable. |\n| Que acciones autorizadas puede ejecutar | PARTIAL | RBAC/policy, workflows y acciones autorizadas existen | No queda probado el puente ejecutivo recomendacion -> accion gobernada -> confirmacion/auditoria. |\n\n## Evidencia concreta relevante\n\n### Decision Dashboard financiero\nEl contrato existente exige SQL-first, periodo autoritativo backend, limite de pago, comprometido, disponible, porcentaje utilizado y drilldown hasta recepcion de compra. El frontend consume el backend y muestra \"Ver como se construye\". Tambien existe override del periodo efectivo protegido por autorizacion.\n\nConclusion: soporta estado y trazabilidad de decision, pero no se debe presentar como motor general de causalidad.\n\n### Asistente IA\n`backend/modules/ia_assistant/routes.py` requiere permiso explicito `IA_ASSISTANT_VER`.\n`backend/modules/ia_assistant/service.py` define un asistente conversacional con instrucciones de no inventar datos empresariales y no ejecutar SQL.\n\nConclusion: esta infraestructura no demuestra por si misma recomendaciones BOS derivadas de datos canonicos ni ejecucion autorizada de recomendaciones.\n\n### Gate F\n`BOS-V1-GATE-F-INTELLIGENCE-CERTIFICATION` esta certificado, pero su harness historico verifica cobertura evidence-only por presencia de conceptos como anomalias, tendencias, forecast, oportunidades, riesgos y recomendaciones. Esa certificacion no debe reinterpretarse como prueba de un motor operacional de recomendaciones.\n\n## Gaps reales de Gate E\n\n1. CAUSAL_EXPLANATION_LAYER\n   - Debe explicar por que ocurre un problema con evidencia y provenance.\n   - No basta mostrar drilldown.\n\n2. EXECUTIVE_PRIORITY_AGGREGATION\n   - Debe consolidar prioridades de multiples dominios bajo reglas canonicas.\n   - No debe duplicar workflows/SLA existentes.\n\n3. BOS_RECOMMENDATION_CONTRACT\n   - Recomendacion derivada de datos canonicos.\n   - Evidencia utilizada y vigencia/freshness.\n   - Explicacion de por que se recomienda.\n   - Riesgo/impacto esperado.\n   - No ejecucion automatica implicita.\n\n4. RECOMMENDATION_TO_AUTHORIZED_ACTION_BRIDGE\n   - Recomendacion -> accion elegible -> RBAC/policy -> confirmacion -> Worker/workflow -> auditoria.\n   - Reutilizar infraestructura existente; no crear un motor paralelo.\n\n## Regla de arquitectura\n\nAntes de CREATE:\n`REUSE -> CONSOLIDATE -> EXTRACT -> EXTEND -> CREATE_ONLY_WHEN_PROVEN_MISSING`\n\nLos siguientes movimientos deben reutilizar:\n- Auth/RBAC canonico.\n- capability/procedure policy existente.\n- Scheduler/Worker.\n- workflows/SLA existentes.\n- fuentes SQL-first y KPIs canonicos.\n- infraestructura de auditoria/provenance.\n\n## Cierre\n\n`GATE_E_CERTIFIED=NO`\n`BLOCKERS_FUNCTIONAL=CAUSAL_EXPLANATION_LAYER,EXECUTIVE_PRIORITY_AGGREGATION,BOS_RECOMMENDATION_CONTRACT,RECOMMENDATION_TO_AUTHORIZED_ACTION_BRIDGE`\n`NEW_DISCOVERY_REQUIRED=NO`\n`PRODUCTION_TOUCHED=false`\n\nEl siguiente Gate de Gate E debe ser de diseno/contrato y reutilizacion de capacidades existentes para estos cuatro gaps; no un nuevo discovery general.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
