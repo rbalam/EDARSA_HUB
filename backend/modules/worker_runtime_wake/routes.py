@@ -11,6 +11,7 @@ Security contract:
 from __future__ import annotations
 
 import fcntl
+import os
 import re
 import subprocess
 import time
@@ -48,7 +49,7 @@ def _remote_queue_sha() -> str:
                 capture_output=True,
                 text=True,
                 timeout=15,
-                env={"GIT_TERMINAL_PROMPT": "0"},
+                env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
             )
         except (OSError, subprocess.SubprocessError) as exc:
             last_error = exc
@@ -78,7 +79,7 @@ def _runtime_git(*args: str, timeout: int = 30) -> subprocess.CompletedProcess[s
             capture_output=True,
             text=True,
             timeout=timeout,
-            env={"GIT_TERMINAL_PROMPT": "0"},
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
         )
     except (OSError, subprocess.SubprocessError) as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker runtime git unavailable") from exc
@@ -122,7 +123,7 @@ def _current_worker_code_tree() -> str:
             capture_output=True,
             text=True,
             timeout=10,
-            env={"GIT_TERMINAL_PROMPT": "0"},
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
         )
     except (OSError, subprocess.SubprocessError) as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker code tree unavailable") from exc
