@@ -1,11 +1,11 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "c85ab15705196c85ef7e4bf7fc3847d3f13e6960",
-  "generated_at_utc": "2026-09-18T00:46:22Z",
+  "generated_at_utc": "2026-09-18T00:47:43Z",
   "history": {
     "done_total_local": 544,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 552,
     "results_total_local": 956
   },
@@ -13,68 +13,74 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1488,
+      "age_seconds": 1569,
       "job_id": "CAVAS-CORPORATIVAS-GATE12I-WRITER-PRINCIPAL-AUDIT-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 53,
+      "age_seconds": 134,
       "job_id": "CAVAS-GATE12I-CANONICAL-SQL-WRITER-POLICY-CERT-READONLY-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 40,
+      "age_seconds": 121,
       "job_id": "EDARSAHUB-INVENTARIOS-CANARY-373-POSTAUDIT-20260917T182800Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1493,
+      "age_seconds": 1574,
       "job_id": "EDARSAHUB-SERVICES-GATE2-CERT-READONLY-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1484,
+      "age_seconds": 1565,
       "job_id": "GATE5D-HARDENING-SQL-MIGRATION-EXEC-R2-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 709,
+      "age_seconds": 790,
       "job_id": "GATE5D-HARDENING-SQL-MIGRATION-EXEC-R3-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 800,
+      "age_seconds": 881,
       "job_id": "GATE5D-SQL-MIGRATION-SAFE-DIAGNOSTIC-R1-20260917",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1480,
+      "age_seconds": 1561,
       "job_id": "WORKER-BOS-AGENTS-IA-GATE6B-R5-V5-LOCK-FREE-RETRY-20260917",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 13,
+      "job_id": "BOS-V1-GATE-E-EXECUTIVE-BOS-CERTIFICATION-R2-READONLY-20260917",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 8,
-  "queue_running": 0,
+  "queue_running": 1,
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "BOS-V1-GATE-E-EXECUTIVE-BOS-CERTIFICATION-R2-READONLY-20260917",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-18T00:46:15Z",
-    "last_receive_utc": "2026-09-18T00:46:19Z",
+    "last_cycle_utc": "2026-09-18T00:47:37Z",
+    "last_receive_utc": "2026-09-18T00:47:40Z",
     "last_terminal_utc": "2026-09-18T00:45:42Z",
     "pid": "58137"
   },
