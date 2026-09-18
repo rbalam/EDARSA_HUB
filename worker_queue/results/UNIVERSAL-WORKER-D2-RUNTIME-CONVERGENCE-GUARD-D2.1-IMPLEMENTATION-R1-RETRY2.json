@@ -1,0 +1,23 @@
+{
+  "base_sha": "d1f3a055fdf0be3ddc710934fca3ed69594bf908",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:REPLACE_COUNT_MISMATCH:backend/modules/worker_runtime_wake/routes.py:expected=1:actual=0"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-18T03:33:41Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "UNIVERSAL-WORKER-D2-RUNTIME-CONVERGENCE-GUARD-D2.1-IMPLEMENTATION-R1-RETRY2",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T03:34:16Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-18T03:33:39Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
