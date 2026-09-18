@@ -2,8 +2,11 @@
   "base_sha": "f7c2f81f10dca497c387974a8d28d629a6e673e7",
   "blockers": [],
   "candidate_sha": "c1f95a719f900f8f6f40c11a032fb6bf342ae78d",
-  "certification": "PENDING_AUDIT_EVIDENCE",
+  "certification": "CERTIFIED",
+  "certification_basis": "SHA_BOUND_ATTESTATION_PLUS_DESCENDANT_CONVERGENCE",
+  "certified_source_sha": "c1f95a719f900f8f6f40c11a032fb6bf342ae78d",
   "completed_at_utc": "2026-09-18T00:57:34Z",
+  "converged_head": "cc278d33fa14566a6b196a3fe6175e7412949ab9",
   "development_sha": "c1f95a719f900f8f6f40c11a032fb6bf342ae78d",
   "executor": "chatgpt-deterministic",
   "files_changed": [
@@ -12,9 +15,9 @@
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE2-DATA-INTEGRATION-ARCHITECTURE-R1",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-09-18T00:58:03Z",
+  "published_at_utc": "2026-09-18T01:01:37Z",
   "quality_gate": "PASS",
   "repository_contract_evidence": {
     "checks": [
@@ -8253,5 +8256,5 @@
   "status": "INTEGRATED",
   "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
   "tests": "PASS",
-  "work_completion": "PENDING_CERTIFICATION"
+  "work_completion": "COMPLETE"
 }
