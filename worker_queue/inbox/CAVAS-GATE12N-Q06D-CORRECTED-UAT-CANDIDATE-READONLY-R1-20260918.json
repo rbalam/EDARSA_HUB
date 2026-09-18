@@ -1,0 +1,70 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12N-Q06D-CORRECTED-UAT-CANDIDATE-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3ea717f1c26365551518edb89d98e4abb07096d2",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Corregir exclusivamente Q06D usando el dominio fisico certificado de CavaSocios_Socios.EmpresaID: UNIQUEIDENTIFIER que corresponde a Unidades_Negocio.id, no a Sistema_Empresas.EmpresaID INT. Identificar el candidato UAT real combinando permisos efectivos CAVA_SOCIOS_VER/EDITAR por Usuario_RolesContexto + unidad autorizada + socio Cava ACTIVO con PersonaID NULL en la misma UnidadNegocioID. Mantener la resolucion Sistema_Empresas solo como metadata informativa derivada de Unidades_Negocio.codigo -> Sistema_Empresas.CodigoEmpresa; no usarla para unir CavaSocios_Socios. No ejecutar UAT ni modificar datos.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/routes.py",
+          "backend/modules/cava_socios/service.py",
+          "backend/modules/rbac_context_sql/context_service.py",
+          "backend/core/inventarios/resolver_canonico.py"
+        ],
+        "search_terms": [
+          "EmpresaID",
+          "UnidadNegocioID",
+          "unidad_negocio_pk",
+          "CavaSocios_Socios",
+          "_resolve_cava_scope",
+          "cava_socios",
+          "CAVA_SOCIOS_VER",
+          "CAVA_SOCIOS_EDITAR"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 400
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "Q06D_corrected_final_uat_candidates",
+          "sql": "WITH E AS (SELECT DISTINCT u.UsuarioID,CONVERT(varchar(36),u.PublicUUID) AS PublicUUID,u.Email,u.NombreCompleto,urc.UnidadNegocioID,UPPER(LTRIM(RTRIM(a.CodigoAccion))) AS CodigoAccion FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesContexto urc ON urc.UsuarioID=u.UsuarioID AND urc.Activo=1 INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID=urc.RolID AND prm.Activo=1 AND prm.Permitido=1 INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID AND ISNULL(m.Activo,1)=1 INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID AND ISNULL(a.Activo,1)=1 WHERE u.Activo=1 AND u.PublicUUID IS NOT NULL AND LOWER(LTRIM(RTRIM(m.CodigoModulo)))=N'cava_socios' AND UPPER(LTRIM(RTRIM(a.CodigoAccion))) IN (N'VER',N'EDITAR')), Eligible AS (SELECT UsuarioID,PublicUUID,Email,NombreCompleto,UnidadNegocioID FROM E GROUP BY UsuarioID,PublicUUID,Email,NombreCompleto,UnidadNegocioID HAVING MAX(CASE WHEN CodigoAccion=N'VER' THEN 1 ELSE 0 END)=1 AND MAX(CASE WHEN CodigoAccion=N'EDITAR' THEN 1 ELSE 0 END)=1) SELECT e.UsuarioID,e.PublicUUID,e.Email,e.NombreCompleto,CONVERT(varchar(36),e.UnidadNegocioID) AS UnidadNegocioID,un.codigo AS UnidadCodigo,un.nombre AS UnidadNombre,se.EmpresaID AS EmpresaID_INT,se.CodigoEmpresa,se.NombreEmpresa,CONVERT(varchar(36),cs.SocioID) AS SocioID,cs.NumeroSocio,cs.NombreCompleto AS SocioNombre,cs.Estatus,cs.Activo,cs.PersonaID FROM Eligible e INNER JOIN dbo.Unidades_Negocio un ON un.id=e.UnidadNegocioID LEFT JOIN dbo.Sistema_Empresas se ON UPPER(LTRIM(RTRIM(se.CodigoEmpresa)))=UPPER(LTRIM(RTRIM(un.codigo))) AND ISNULL(se.Activo,1)=1 INNER JOIN dbo.CavaSocios_Socios cs ON cs.EmpresaID=e.UnidadNegocioID AND cs.Activo=1 AND cs.Estatus=N'ACTIVO' AND cs.PersonaID IS NULL ORDER BY e.Email,un.nombre,cs.NumeroSocio;"
+        },
+        {
+          "name": "Q06D_corrected_candidate_count",
+          "sql": "WITH E AS (SELECT DISTINCT u.UsuarioID,urc.UnidadNegocioID,UPPER(LTRIM(RTRIM(a.CodigoAccion))) AS CodigoAccion FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesContexto urc ON urc.UsuarioID=u.UsuarioID AND urc.Activo=1 INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID=urc.RolID AND prm.Activo=1 AND prm.Permitido=1 INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID AND ISNULL(m.Activo,1)=1 INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID AND ISNULL(a.Activo,1)=1 WHERE u.Activo=1 AND LOWER(LTRIM(RTRIM(m.CodigoModulo)))=N'cava_socios' AND UPPER(LTRIM(RTRIM(a.CodigoAccion))) IN (N'VER',N'EDITAR')), Eligible AS (SELECT UsuarioID,UnidadNegocioID FROM E GROUP BY UsuarioID,UnidadNegocioID HAVING MAX(CASE WHEN CodigoAccion=N'VER' THEN 1 ELSE 0 END)=1 AND MAX(CASE WHEN CodigoAccion=N'EDITAR' THEN 1 ELSE 0 END)=1) SELECT COUNT_BIG(*) AS eligible_uat_candidates FROM Eligible e INNER JOIN dbo.CavaSocios_Socios cs ON cs.EmpresaID=e.UnidadNegocioID AND cs.Activo=1 AND cs.Estatus=N'ACTIVO' AND cs.PersonaID IS NULL;"
+        },
+        {
+          "name": "Q06D_nonmatching_cava_units",
+          "sql": "SELECT CONVERT(varchar(36),cs.EmpresaID) AS CavaUnidadNegocioID,COUNT_BIG(*) AS socios FROM dbo.CavaSocios_Socios cs LEFT JOIN dbo.Unidades_Negocio un ON un.id=cs.EmpresaID WHERE un.id IS NULL GROUP BY cs.EmpresaID;"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "Development only",
+    "No UAT execution",
+    "No DDL or DML",
+    "No code changes",
+    "No permission menu role user unit or company changes",
+    "No Production",
+    "CavaSocios_Socios.EmpresaID must be treated as UnidadNegocioID UUID for this diagnostic",
+    "Sistema_Empresas.EmpresaID INT is metadata only and must not be joined to CavaSocios_Socios.EmpresaID",
+    "EDARSAHUB SQL Server remains source of truth",
+    "MongoDB prohibited"
+  ]
+}
