@@ -1,0 +1,64 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-UNIVERSAL-WORKER-RUNTIME-DIAGNOSTIC-GATE22A-CERT-READONLY-R5",
+  "created_at_utc": "2026-09-18T00:49:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ef9fcfe1adbb8331fb2ed4b04d06f0e0a195436a",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Certificacion READ_ONLY final de Gate22A despues del Recovery R4 integrado. Confirmar que el Universal Worker vigente mantiene el contrato de loops independientes para intake, result, health, reconcile y dispatch; que el contrato backend de las tres propiedades del Worker permanece PASS; que no hay cambios tracked; y que Production permanece intacta. No modificar archivos, no tocar cola, supervisor, Scheduler, NetPay, RBAC, SQL, secretos ni Production.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/tests/test_universal_worker_runtime.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_three_properties_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/tests/test_universal_worker_runtime.py",
+          "tools/mirror_sync/universal_job_worker.sh",
+          "backend/tests/test_worker_three_properties_contract.py"
+        ],
+        "search_terms": [
+          "UNIVERSAL_WORKER_INTAKE_SECONDS",
+          "UNIVERSAL_WORKER_RESULT_SECONDS",
+          "UNIVERSAL_WORKER_HEALTH_SECONDS",
+          "UNIVERSAL_WORKER_RECONCILE_SECONDS",
+          "UNIVERSAL_WORKER_DISPATCH_IDLE_SECONDS"
+        ],
+        "include_patterns": ["*.py", "*.sh"],
+        "exclude_patterns": ["*.pyc", "__pycache__/*"],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "harness_context": {
+    "plan_step_id": "gate22a-final-cert-readonly-r5",
+    "domain": "engineering",
+    "procedure": "repository-contract-audit",
+    "risk": "R0",
+    "data_classification": "INTERNAL",
+    "agent_id": "bos-backend",
+    "agent_version": "1",
+    "skill_id": "repository-contract-audit",
+    "skill_version": "1",
+    "executor": "worker"
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
