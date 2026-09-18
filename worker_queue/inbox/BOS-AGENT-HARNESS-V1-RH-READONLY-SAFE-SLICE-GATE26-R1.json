@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENT-HARNESS-V1-RH-READONLY-SAFE-SLICE-GATE26-R1",
+  "created_at_utc": "2026-09-18T03:16:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4cd17ed44a4b595b9145f64c0497d6aa3ea7b576",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Gate26 canary READ_ONLY de un slice seguro de RH para BOS Agent Harness. Certificar exclusivamente contratos estaticos y de solo lectura del modulo RH: autenticacion/RBAC canonico, alcance por empresa/sucursal, catalogos GET, colaboradores GET, incidencias GET, asistencia GET, auditoria fiscal GET, dashboard GET, vacantes/candidatos GET y reclutamiento dashboard GET. Excluir de este gate solicitudes_catalogo.py por almacenamiento en memoria, todo backend/modules/rh/importador, flujo de Nomina, scripts de inicializacion como capacidad ejecutable y todos los endpoints POST/PUT/DELETE. No hacer llamadas HTTP Live, no ejecutar SQL, no usar Mongo, no tocar HCM, Scheduler, permisos, Production ni archivos.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/rh/repository.py",
+        "backend/modules/rh/routes.py",
+        "backend/modules/rh/service.py",
+        "backend/modules/rh/schemas.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_rbac_p1_hardening_gates.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/rh/repository.py",
+          "backend/modules/rh/routes.py",
+          "backend/modules/rh/service.py",
+          "backend/modules/rh/schemas.py",
+          "backend/tests/test_rbac_p1_hardening_gates.py"
+        ],
+        "search_terms": [
+          "resolve_user_access_context",
+          "get_user_sucursales_permitidas_rh",
+          "get_current_user",
+          "@router.get",
+          "query_listar_puestos",
+          "query_listar_sucursales",
+          "query_listar_tipos_incidencias",
+          "query_listar_colaboradores",
+          "query_listar_incidencias",
+          "query_listar_asistencias",
+          "query_listar_auditoria_fiscal",
+          "query_dashboard_rh",
+          "query_listar_vacantes",
+          "query_listar_candidatos",
+          "query_dashboard_reclutamiento",
+          "EDARSAHUB_CONFIG"
+        ],
+        "include_patterns": ["*.py"],
+        "exclude_patterns": ["*.pyc", "__pycache__/*"],
+        "max_results": 250
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "harness_context": {
+    "plan_step_id": "gate26-rh-readonly-safe-slice-r1",
+    "domain": "rh",
+    "procedure": "repository-contract-audit",
+    "risk": "R0",
+    "data_classification": "HR_PRIVATE",
+    "agent_id": "bos-backend",
+    "agent_version": "1",
+    "skill_id": "repository-contract-audit",
+    "skill_version": "1",
+    "executor": "worker"
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
