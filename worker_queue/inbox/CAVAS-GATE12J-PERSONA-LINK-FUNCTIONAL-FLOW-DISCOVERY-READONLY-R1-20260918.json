@@ -1,0 +1,87 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12J-PERSONA-LINK-FUNCTIONAL-FLOW-DISCOVERY-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3dd2b28edb3130f368c9db4ce2e93d86b1a23f7d",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Definir y certificar en READ_ONLY el flujo funcional posterior a Gate12I para vincular membresias Cava existentes y nuevas con Gobierno_Persona, reutilizando Gobierno_PersonaVinculo y Cliente_Catalogo sin crear identidades paralelas. Auditar el CRUD actual de Cavas, promover/sincronizar clientes canonicos, repositorio Catalogo Ampliado, RBAC existente y el estado fisico SQL de los 2 socios actuales. Determinar el contrato minimo para alta, vinculacion, desvinculacion controlada, promocion a cliente y compatibilidad legacy. No modificar codigo, SQL, permisos, secrets ni Produccion.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/routes.py",
+          "backend/modules/cava_socios/service.py",
+          "backend/modules/catalogo_ampliado/repository.py",
+          "backend/database/migrations/20260908_catalogo_ampliado_gobierno_core.sql",
+          "docs/CAVAS/CAVAS_CORPORATIVAS_GATE12C_BOS_ENTITY_ROLE_ALIGNMENT.md",
+          "backend/tests/test_cava_socios.py"
+        ],
+        "search_terms": [
+          "SocioCreate",
+          "SocioUpdate",
+          "crear_socio",
+          "actualizar_socio",
+          "promover_cliente_canonico",
+          "sincronizar_clientes_canonicos",
+          "CAVA_SOCIOS_CREAR",
+          "CAVA_SOCIOS_EDITAR",
+          "CAVA_SOCIOS_VER",
+          "Gobierno_Persona",
+          "Gobierno_PersonaVinculo",
+          "Cliente_Catalogo",
+          "ClienteCRMID",
+          "PersonaID"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sql",
+          "*.md"
+        ],
+        "exclude_patterns": [],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "identity_guard",
+          "sql": "SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, USER_NAME() AS db_user, ORIGINAL_LOGIN() AS original_login;"
+        },
+        {
+          "name": "current_cava_socios",
+          "sql": "SELECT SocioID,EmpresaID,NumeroSocio,NombreCompleto,Email,Telefono,ClienteCRMID,PersonaID,Estatus FROM dbo.CavaSocios_Socios ORDER BY EmpresaID,NumeroSocio,SocioID;"
+        },
+        {
+          "name": "persona_link_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_socios, SUM(CASE WHEN PersonaID IS NULL THEN 1 ELSE 0 END) AS socios_sin_persona, SUM(CASE WHEN PersonaID IS NOT NULL THEN 1 ELSE 0 END) AS socios_con_persona FROM dbo.CavaSocios_Socios;"
+        },
+        {
+          "name": "persona_vinculo_schema",
+          "sql": "SELECT c.column_id,c.name AS column_name,TYPE_NAME(c.user_type_id) AS type_name,c.is_nullable FROM sys.columns c WHERE c.object_id=OBJECT_ID(N'dbo.Gobierno_PersonaVinculo') ORDER BY c.column_id;"
+        },
+        {
+          "name": "persona_vinculo_indexes",
+          "sql": "SELECT i.name AS index_name,i.is_unique,i.has_filter,i.filter_definition,c.name AS column_name,ic.key_ordinal FROM sys.indexes i JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id WHERE i.object_id=OBJECT_ID(N'dbo.Gobierno_PersonaVinculo') AND i.is_hypothetical=0 ORDER BY i.index_id,ic.key_ordinal;"
+        },
+        {
+          "name": "existing_personas",
+          "sql": "SELECT PersonaID,Nombre,ApellidoPaterno,ApellidoMaterno,RFC,CURP,Activo FROM dbo.Gobierno_Persona ORDER BY PersonaID;"
+        },
+        {
+          "name": "existing_persona_vinculos",
+          "sql": "SELECT VinculoID,PersonaID,UsuarioID,ClienteID,ProveedorID,ContactoClienteID,ContactoProveedorID,EsPrincipal,Activo FROM dbo.Gobierno_PersonaVinculo ORDER BY VinculoID;"
+        },
+        {
+          "name": "cliente_catalogo_candidates",
+          "sql": "SELECT ClienteID,Nombre,RFC,Email,Telefono,Activo FROM dbo.Cliente_Catalogo ORDER BY ClienteID;"
+        }
+      ]
+    }
+  ]
+}
