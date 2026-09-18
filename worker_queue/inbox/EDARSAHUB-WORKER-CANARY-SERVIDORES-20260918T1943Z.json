@@ -1,0 +1,29 @@
+{
+  "schema": "edarsahub.worker-job.v1",
+  "job_id": "EDARSAHUB-WORKER-CANARY-SERVIDORES-20260918T1943Z",
+  "created_at_utc": "2026-09-18T19:43:00Z",
+  "requested_by": "chatgpt",
+  "requester_email": "carlosruz@edarsa.com.mx",
+  "request_source": "chatgpt",
+  "project": "V1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "objective": "CANARY ZERO-TOUCH: comprobar que el Universal Worker vuelve a consumir solicitudes. Leer el HEAD actual de Edarsahub_Desarrollo y devolver un resultado terminal con el SHA observado y estado del worker. No realizar ningun cambio funcional ni de archivos del repositorio.",
+  "acceptance": [
+    "La solicitud es tomada por el Universal Worker.",
+    "Se reporta el HEAD observado de Edarsahub_Desarrollo.",
+    "Se genera worker_queue/results/EDARSAHUB-WORKER-CANARY-SERVIDORES-20260918T1943Z.json.",
+    "files_changed debe quedar vacio y production_touched debe ser false."
+  ],
+  "constraints": [
+    "ZERO-TOUCH: no modificar archivos funcionales ni de configuracion.",
+    "No ejecutar DML ni DDL SQL.",
+    "No cambiar secretos, RBAC, dispatcher, supervisor o scheduler.",
+    "No tocar Edarsahub_Produccion.",
+    "No force push, reset destructivo ni clean.",
+    "Si no puede garantizar cero cambios, rechazar de forma segura y explicar el bloqueo."
+  ],
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
