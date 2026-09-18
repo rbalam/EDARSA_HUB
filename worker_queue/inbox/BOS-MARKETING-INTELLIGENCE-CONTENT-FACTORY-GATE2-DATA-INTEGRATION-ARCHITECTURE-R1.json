@@ -1,0 +1,52 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE2-DATA-INTEGRATION-ARCHITECTURE-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "f7c2f81f10dca497c387974a8d28d629a6e673e7",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Gate 2 Data & Integration Architecture de BOS Marketing Intelligence & Content Factory. Basarse en Gate 0A/0B certificados y Gate 1 R2 integrado. Crear exclusivamente documentación de arquitectura de datos, ownership e integraciones. No crear tablas, migraciones, endpoints, jobs, UI ni despliegues. SQL Server EDARSAHUB sigue siendo cerebro y fuente canónica; reutilizar CRM, Comercial, Finanzas, RBAC, Scheduler y Secret Manager existentes; no duplicar capacidades.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/ARCHITECTURE/BOS_MARKETING_INTELLIGENCE_CONTENT_FACTORY_GATE2_DATA_INTEGRATION_ARCHITECTURE.md",
+      "content": "# BOS Marketing Intelligence & Content Factory — Gate 2 Data & Integration Architecture\n\nEstado: DATA & INTEGRATION ARCHITECTURE — NO PRODUCTIVE IMPLEMENTATION\n\n## 1. Objetivo\n\nDefinir cómo Marketing se integra al canon existente de EDARSAHUB BOS sin duplicar dominios, fuentes de verdad, RBAC, Scheduler, Comercial, CRM ni Finanzas.\n\nEste Gate no autoriza tablas, migraciones, endpoints, jobs, UI, conectores productivos ni despliegues.\n\n## 2. Fuentes canónicas y ownership de datos\n\n- SQL Server EDARSAHUB permanece como cerebro y única fuente canónica.\n- Marketing no crea una segunda verdad de clientes, leads, oportunidades, ventas, pedidos, cotizaciones, costos ni presupuestos.\n- Los datos operativos externos entran mediante adaptadores/syncs y se canonicalizan antes de ser usados por dashboards o analítica administrativa.\n- No usar conexiones LIVE como fuente de reporting administrativo.\n- No usar Mongo como fuente operativa o de verdad.\n\n## 3. Reutilización obligatoria detectada\n\n### CRM / Comercial\nReutilizar y referenciar, sin duplicar:\n- Cliente_Catalogo\n- Cliente_Contactos\n- Cliente_Direcciones\n- CRM_Leads\n- CRM_Oportunidades\n- Venta_Cotizaciones\n- Venta_Pedidos\n- Comercial_Competidores\n- Comercial_CompetidoresCatalogo\n- Comercial_CompetidoresListas\n- Comercial_CompetidoresListasDetalle\n- Comercial_CompetidoresMenuItems\n- Comercial_CompetidoresUnidad\n- Comercial_Ingesta_Competencia\n\n### Comercial / KPIs\n- Toda atribución de ingreso debe enlazar contra la verdad comercial canónica.\n- Marketing no recalcula ni redefine ventas.\n- Los KPIs de revenue atribuido son derivados; la venta base sigue siendo Comercial.\n\n### Finanzas\n- Presupuestos y costos financieros se referencian mediante contratos existentes.\n- Marketing puede registrar costo propio de proveedor/campaña/contenido cuando no exista otra fuente canónica, pero debe enlazarlo a moneda, empresa y presupuesto oficiales.\n\n### Seguridad / Plataforma\n- Reutilizar RBAC existente.\n- Reutilizar Scheduler existente.\n- Reutilizar Secret Manager/configuración de integraciones.\n- No crear scheduler, auth, permisos o vault paralelo.\n\n## 4. Arquitectura lógica de datos propuesta\n\nLas siguientes estructuras son conceptuales y requieren Gate posterior antes de crear tablas:\n\n### MarketingCampaign\nRelaciones:\n- empresa_id / unidad / sucursal mediante relaciones oficiales\n- presupuesto canónico de Finanzas\n- owner/user/approval workflow\n- objetivos/KPIs\n- estado y vigencia\n\n### MarketingBrief\nRelaciones:\n- campaign\n- brand profile\n- audience profile\n- requester/approver\n- idioma/mercado/canal\n\n### ContentAsset\nPersistir sólo metadata canónica:\n- asset_id\n- campaign_id\n- brief_id\n- provider/model\n- storage reference\n- checksum/hash\n- mime/type\n- rights/license\n- cost/currency\n- status\n- audit timestamps\n\nLos binarios pesados no se almacenan en SQL Server salvo una excepción futura explícitamente aprobada.\n\n### ContentVariant / Experiment\n- variante\n- hipótesis\n- segmentación\n- canal\n- periodo\n- métricas\n- winner/result sin alterar el dato comercial fuente\n\n### BrandProfile / AudienceProfile / ContentPattern\n- perfiles versionados\n- alcance por empresa/unidad cuando aplique\n- referencias a CRM/segmentos\n- auditabilidad de cambios\n- no duplicar cliente maestro\n\n### TrendSignal / SocialListeningSignal\n- source/provider\n- external id\n- observed_at\n- topic/entity\n- score/metrics\n- raw reference\n- normalized fields\n- empresa/unidad/mercado aplicable\n- retención y trazabilidad\n\n### PublishingExecution\n- campaign/asset\n- provider/channel/account reference\n- idempotency_key\n- scheduled_at\n- published_at\n- remote_id\n- status\n- retry/error metadata\n- audit\n\n### MarketingTouchpoint / AttributionResult\n- touchpoint enlaza campaña/contenido/canal con entidad canónica disponible\n- attribution result es snapshot derivado\n- nunca altera venta, pedido, cliente ni margen canónico\n\n### AIContentRequest / AIProviderUsage\n- capability\n- provider/model\n- request correlation id\n- usage\n- cost\n- currency\n- latency\n- status\n- fallback chain\n- policy decision\n- audit\n- sin secretos\n\n## 5. Patrones de integración\n\n### 5.1 Inbound\nExternal source -> provider adapter -> normalization -> canonical validation -> SQL canonical persistence/snapshot -> analytics.\n\n### 5.2 Outbound publishing\nCampaign/Content canonical state -> approval -> provider adapter -> idempotent publish -> remote status -> canonical execution log.\n\n### 5.3 AI generation\nBrief -> capability request -> AI provider router -> provider -> generated asset reference -> rights/cost/usage metadata -> approval.\n\n### 5.4 Attribution\nTouchpoints + canonical Comercial sales + canonical Finance costs -> attribution engine -> snapshot/result -> dashboard.\n\n## 6. Idempotencia y correlación\n\nToda integración nueva debe contemplar:\n- external_id/provider_id\n- idempotency_key\n- correlation_id\n- source_system\n- first_seen_at / last_seen_at\n- checksum cuando aplique\n- retry_count / last_error\n- no duplicación por claves naturales o índices únicos definidos posteriormente\n\n## 7. Multiempresa, país, moneda e idioma\n\n- No hardcodear empresas/unidades/sucursales.\n- Toda entidad debe heredar el alcance organizacional por relaciones oficiales.\n- Costos deben conservar moneda original y, si aplica, referencia a conversión canónica.\n- País/mercado/idioma deben ser configurables, no constantes.\n- Fechas operativas deben respetar timezone/FechaOperación cuando corresponda.\n\n## 8. Integraciones/proveedores\n\nGate 2 no autoriza proveedores específicos como dependencia única.\n\nLos adapters deben ser capability-driven:\n- social listening\n- social publishing\n- image generation\n- video generation\n- audio/voice\n- LLM/text\n- analytics/ad platforms\n- storage/media delivery\n\nCada adapter debe exponer un contrato común y declarar:\n- capabilities\n- auth mechanism\n- rate limits\n- SLA\n- cost model\n- geographic restrictions\n- supported media\n- retry/idempotency behavior\n\n## 9. AI Provider Router\n\nAntes de crear uno nuevo, auditar si existe infraestructura AI/provider reusable.\n\nSi no existe canon suficiente, el router deberá:\n- vivir fuera de backend/core salvo capacidad verdaderamente transversal;\n- resolver provider/model por capability y policy;\n- soportar fallback;\n- registrar usage/cost;\n- no almacenar secretos;\n- permitir deshabilitar proveedores por empresa/país;\n- registrar auditoría de decisiones.\n\n## 10. Eventos y mensajería\n\nLos eventos definidos en Gate 1 son contratos de dominio, no autorización para crear un nuevo bus.\n\nOrden de decisión:\n1. reutilizar mecanismo de eventos/jobs ya existente;\n2. extenderlo si cubre durabilidad/idempotencia/reintentos;\n3. crear infraestructura nueva sólo con evidencia de gap.\n\n## 11. Matriz REUSE / EXTEND / NEW\n\n| Área | Decisión Gate 2 |\n|---|---|\n| Clientes/CRM | REUSE |\n| Leads/Oportunidades | REUSE |\n| Ventas/Pedidos/Cotizaciones | REUSE |\n| Competidores | REUSE + EXTEND sólo metadata faltante |\n| Presupuestos/Finanzas | REUSE |\n| RBAC/Auth | REUSE |\n| Scheduler | REUSE |\n| Secret management | REUSE |\n| Marketing campaign domain | NEW capability |\n| Content factory domain | NEW capability |\n| Publishing execution domain | NEW capability |\n| Trend/Social signals | NEW capability |\n| Attribution snapshots | NEW capability |\n| AI usage/cost metadata | EXTEND/NEW según infraestructura existente |\n| AI provider routing | REUSE/ALIGN first, NEW sólo si gap comprobado |\n\n## 12. Prohibiciones explícitas\n\n- No duplicar tablas CRM/Comercial/Finanzas.\n- No crear Mongo operativo.\n- No consultar LIVE para dashboards administrativos.\n- No hardcodear IDs o aliases.\n- No secretos en código o tablas de dominio.\n- No crecer Core con lógica de Marketing.\n- No crear scheduler paralelo.\n- No crear un segundo sistema de permisos.\n- No permitir que proveedor externo se convierta en fuente de verdad.\n\n## 13. Salida de Gate 2\n\nGate 2 se considera completo cuando:\n- la arquitectura de datos e integración esté documentada;\n- las fronteras de ownership estén alineadas con Gate 1;\n- las capacidades de reutilización estén explícitas;\n- no se haya implementado runtime productivo;\n- cualquier tabla/endpoints/migración futura quede diferida a gates posteriores y requiera evidencia exacta.\n\nSiguiente Gate permitido: Gate 3 — AI Provider Router, empezando por discovery/contract y sólo después implementación controlada.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "tools/mirror_sync",
+          "docs/ARCHITECTURE"
+        ],
+        "search_terms": [
+          "ai",
+          "provider",
+          "secret",
+          "scheduler",
+          "crm",
+          "comercial",
+          "marketing",
+          "asset",
+          "media",
+          "integration",
+          "webhook",
+          "event"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.md"
+        ],
+        "exclude_patterns": [],
+        "max_results": 200
+      }
+    }
+  ]
+}
