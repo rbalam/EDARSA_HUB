@@ -1,0 +1,79 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12N-R4-SQL-QUERY-ISOLATION-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3ea717f1c26365551518edb89d98e4abb07096d2",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Aislar exclusivamente cual consulta SQL de Gate12N R4 falla. Ejecutar cada consulta de R4 como evidencia READ_ONLY_SQL separada, sin modificar R4, sin publicar R5, sin ejecutar UAT y sin tocar datos. El objetivo es identificar la primera consulta FAIL y la causa exacta de esquema/columna/relacion antes de decidir cualquier siguiente movimiento.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "Q01_identity_guard",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS db_user,ORIGINAL_LOGIN() AS original_login;"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "Q02_unit_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,TYPE_NAME(c.user_type_id) AS data_type FROM sys.columns c WHERE c.object_id=OBJECT_ID(N'dbo.Unidades_Negocio') ORDER BY c.column_id;"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "Q03_empresa_server_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,TYPE_NAME(c.user_type_id) AS data_type FROM sys.columns c WHERE c.object_id=OBJECT_ID(N'dbo.Sistema_EmpresasServidores') ORDER BY c.column_id;"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "Q04_eligible_contexts_with_unit_server",
+          "sql": "WITH E AS (SELECT DISTINCT u.UsuarioID,CONVERT(varchar(36),u.PublicUUID) AS PublicUUID,u.Email,u.NombreCompleto,urc.UnidadNegocioID,urc.EmpresaID,UPPER(LTRIM(RTRIM(a.CodigoAccion))) AS CodigoAccion FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesContexto urc ON urc.UsuarioID=u.UsuarioID AND urc.Activo=1 INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID=urc.RolID AND prm.Activo=1 AND prm.Permitido=1 INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID AND ISNULL(m.Activo,1)=1 INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID AND ISNULL(a.Activo,1)=1 WHERE u.Activo=1 AND u.PublicUUID IS NOT NULL AND LOWER(LTRIM(RTRIM(m.CodigoModulo)))=N'cava_socios' AND UPPER(LTRIM(RTRIM(a.CodigoAccion))) IN (N'VER',N'EDITAR')), Eligible AS (SELECT UsuarioID,PublicUUID,Email,NombreCompleto,UnidadNegocioID,EmpresaID FROM E GROUP BY UsuarioID,PublicUUID,Email,NombreCompleto,UnidadNegocioID,EmpresaID HAVING MAX(CASE WHEN CodigoAccion=N'VER' THEN 1 ELSE 0 END)=1 AND MAX(CASE WHEN CodigoAccion=N'EDITAR' THEN 1 ELSE 0 END)=1) SELECT e.UsuarioID,e.PublicUUID,e.Email,e.NombreCompleto,CONVERT(varchar(100),e.UnidadNegocioID) AS UnidadNegocioID,CONVERT(varchar(36),e.EmpresaID) AS ContextEmpresaID,un.codigo AS UnidadCodigo,un.nombre AS UnidadNombre,un.server_id FROM Eligible e LEFT JOIN dbo.Unidades_Negocio un ON un.id=e.UnidadNegocioID ORDER BY e.Email,un.nombre;"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "Q05_unit_to_empresa_resolution",
+          "sql": "WITH E AS (SELECT DISTINCT u.UsuarioID,urc.UnidadNegocioID,UPPER(LTRIM(RTRIM(a.CodigoAccion))) AS CodigoAccion FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesContexto urc ON urc.UsuarioID=u.UsuarioID AND urc.Activo=1 INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID=urc.RolID AND prm.Activo=1 AND prm.Permitido=1 INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID AND ISNULL(m.Activo,1)=1 INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID AND ISNULL(a.Activo,1)=1 WHERE u.Activo=1 AND LOWER(LTRIM(RTRIM(m.CodigoModulo)))=N'cava_socios' AND UPPER(LTRIM(RTRIM(a.CodigoAccion))) IN (N'VER',N'EDITAR')), Eligible AS (SELECT UsuarioID,UnidadNegocioID FROM E GROUP BY UsuarioID,UnidadNegocioID HAVING MAX(CASE WHEN CodigoAccion=N'VER' THEN 1 ELSE 0 END)=1 AND MAX(CASE WHEN CodigoAccion=N'EDITAR' THEN 1 ELSE 0 END)=1) SELECT DISTINCT e.UsuarioID,CONVERT(varchar(100),e.UnidadNegocioID) AS UnidadNegocioID,un.codigo AS UnidadCodigo,un.nombre AS UnidadNombre,un.server_id,CONVERT(varchar(36),es.EmpresaID) AS ResolvedEmpresaID,se.NombreEmpresa FROM Eligible e INNER JOIN dbo.Unidades_Negocio un ON un.id=e.UnidadNegocioID LEFT JOIN dbo.Sistema_EmpresasServidores es ON es.ServerID=un.server_id AND ISNULL(es.Activo,1)=1 LEFT JOIN dbo.Sistema_Empresas se ON se.EmpresaID=es.EmpresaID ORDER BY e.UsuarioID,un.nombre,se.NombreEmpresa;"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "Q06_resolved_contexts_with_eligible_socios",
+          "sql": "WITH E AS (SELECT DISTINCT u.UsuarioID,CONVERT(varchar(36),u.PublicUUID) AS PublicUUID,u.Email,u.NombreCompleto,urc.UnidadNegocioID,UPPER(LTRIM(RTRIM(a.CodigoAccion))) AS CodigoAccion FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesContexto urc ON urc.UsuarioID=u.UsuarioID AND urc.Activo=1 INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID=urc.RolID AND prm.Activo=1 AND prm.Permitido=1 INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID AND ISNULL(m.Activo,1)=1 INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID AND ISNULL(a.Activo,1)=1 WHERE u.Activo=1 AND LOWER(LTRIM(RTRIM(m.CodigoModulo)))=N'cava_socios' AND UPPER(LTRIM(RTRIM(a.CodigoAccion))) IN (N'VER',N'EDITAR')), Eligible AS (SELECT UsuarioID,PublicUUID,Email,NombreCompleto,UnidadNegocioID FROM E GROUP BY UsuarioID,PublicUUID,Email,NombreCompleto,UnidadNegocioID HAVING MAX(CASE WHEN CodigoAccion=N'VER' THEN 1 ELSE 0 END)=1 AND MAX(CASE WHEN CodigoAccion=N'EDITAR' THEN 1 ELSE 0 END)=1), R AS (SELECT e.*,un.codigo AS UnidadCodigo,un.nombre AS UnidadNombre,es.EmpresaID FROM Eligible e INNER JOIN dbo.Unidades_Negocio un ON un.id=e.UnidadNegocioID INNER JOIN dbo.Sistema_EmpresasServidores es ON es.ServerID=un.server_id AND ISNULL(es.Activo,1)=1) SELECT r.UsuarioID,r.PublicUUID,r.Email,r.NombreCompleto,CONVERT(varchar(100),r.UnidadNegocioID) AS UnidadNegocioID,r.UnidadCodigo,r.UnidadNombre,CONVERT(varchar(36),r.EmpresaID) AS EmpresaID,COUNT_BIG(cs.SocioID) AS socios_activos,SUM(CASE WHEN cs.PersonaID IS NULL THEN 1 ELSE 0 END) AS socios_sin_persona FROM R r LEFT JOIN dbo.CavaSocios_Socios cs ON cs.EmpresaID=r.EmpresaID AND cs.Activo=1 AND cs.Estatus=N'ACTIVO' GROUP BY r.UsuarioID,r.PublicUUID,r.Email,r.NombreCompleto,r.UnidadNegocioID,r.UnidadCodigo,r.UnidadNombre,r.EmpresaID HAVING COUNT_BIG(cs.SocioID)>0 ORDER BY r.Email,r.UnidadNombre;"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "Development only",
+    "No DDL or DML",
+    "No UAT",
+    "No R5",
+    "Do not modify Gate12N R4",
+    "No permission menu role user unit or company changes",
+    "No Production",
+    "EDARSAHUB SQL Server remains source of truth"
+  ]
+}
