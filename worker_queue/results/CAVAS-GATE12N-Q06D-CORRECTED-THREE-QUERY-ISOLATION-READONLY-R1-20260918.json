@@ -1,0 +1,120 @@
+{
+  "base_sha": "843bb29250fd9d82a7740ba6400ede653da458a9",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-18T22:50:59Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE12N-Q06D-CORRECTED-THREE-QUERY-ISOLATION-READONLY-R1-20260918",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-18T22:51:41Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "UsuarioID",
+              "PublicUUID",
+              "Email",
+              "NombreCompleto",
+              "UnidadNegocioID",
+              "UnidadCodigo",
+              "UnidadNombre",
+              "EmpresaID_INT",
+              "CodigoEmpresa",
+              "NombreEmpresa",
+              "SocioID",
+              "NumeroSocio",
+              "SocioNombre",
+              "Estatus",
+              "Activo",
+              "PersonaID"
+            ],
+            "name": "Q06D_corrected_final_uat_candidates",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                4,
+                "A72B325B-662F-4777-83ED-4DDA6E8398A8",
+                "noxte@alpyc.com",
+                "Nestor Oxte",
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "130MID",
+                "130° MERIDA",
+                5,
+                "130MID",
+                "130 MID",
+                "62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58",
+                "SOC-00001",
+                "Carlos Alberto Mendoza",
+                "ACTIVO",
+                true,
+                null
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "eligible_uat_candidates"
+            ],
+            "name": "Q06D_corrected_candidate_count",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "1"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "CavaUnidadNegocioID",
+              "socios"
+            ],
+            "name": "Q06D_nonmatching_cava_units",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "D290F1EE-6C54-4B01-90E6-D701748F0851",
+                "1"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-18T22:50:55Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
