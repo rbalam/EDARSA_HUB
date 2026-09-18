@@ -1,0 +1,79 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24C-POSTCHECK-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "objective": "Certificar postcheck READ_ONLY de R24B Tablajeria Lote Proveedor Backend SQL. Verificar archivos exactos integrados, rutas API presentes, servicio backend presente, SQL versionado presente, py_compile PASS, git diff dentro de scope, sin tocar Produccion, sin tocar scheduler core ni centro control. No modificar codigo, datos, permisos ni Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/tablajeria/lote_proveedor_service.py",
+          "backend/modules/tablajeria/routes.py",
+          "backend/modules/tablajeria/sql/r24_lote_proveedor.sql",
+          "backend/core/scheduler",
+          "backend/core/centro_control"
+        ],
+        "search_terms": [
+          "Tablajeria_LotesProveedorRendimiento",
+          "Tablajeria_ReclamosProveedor",
+          "Tablajeria_ReportesLote",
+          "Tablajeria_NotificacionesLote",
+          "get_tablajeria_lote_proveedor_service",
+          "listar_rendimientos_lote",
+          "obtener_drilldown_lote",
+          "crear_reclamo_proveedor",
+          "listar_reclamos",
+          "lotes-proveedor/rendimientos",
+          "lotes-proveedor/{lote_rendimiento_id}/drilldown",
+          "lotes-proveedor/{lote_rendimiento_id}/reclamos",
+          "reclamos-proveedor",
+          "send_critical_alert_email",
+          "send_critical_alert_whatsapp",
+          "scheduler_manager"
+        ],
+        "include_patterns": ["*.py", "*.sql"],
+        "exclude_patterns": ["__pycache__/*", "*.pyc"],
+        "max_results": 700
+      }
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/tablajeria/routes.py",
+        "backend/modules/tablajeria/lote_proveedor_service.py",
+        "backend/modules/tablajeria/dashboard_service.py",
+        "backend/modules/tablajeria/ordenes_service.py",
+        "backend/modules/tablajeria/fase6_service.py",
+        "backend/modules/tablajeria/sync_service.py"
+      ]
+    },
+    {
+      "type": "git_diff_check",
+      "allowed_paths": [
+        "backend/modules/tablajeria/lote_proveedor_service.py",
+        "backend/modules/tablajeria/routes.py",
+        "backend/modules/tablajeria/sql/r24_lote_proveedor.sql"
+      ],
+      "forbidden_paths": [
+        "backend/server.py",
+        "backend/core/scheduler/scheduler_manager.py",
+        "backend/core/centro_control/email_notifications.py",
+        "backend/core/centro_control/whatsapp_notifications.py",
+        "frontend/src/config/enterpriseMenuConfig.js"
+      ]
+    }
+  ],
+  "expected_result": {
+    "status": "READ_ONLY_COMPLETE",
+    "quality_gate": "PASS",
+    "certification": "CERTIFIED_READ_ONLY",
+    "production_touched": false,
+    "files_changed": []
+  }
+}
