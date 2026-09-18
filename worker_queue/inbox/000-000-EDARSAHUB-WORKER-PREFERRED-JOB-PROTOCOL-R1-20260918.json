@@ -1,0 +1,139 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "000-000-EDARSAHUB-WORKER-PREFERRED-JOB-PROTOCOL-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Alta a servidores"
+  },
+  "objective": "Implementar protocolo canónico de job preferido para Universal Worker. El endpoint /api/internal/worker/wake debe poder registrar de forma segura el job_id solicitado por ChatGPT; el dispatcher debe ejecutarlo preferentemente cuando llegue a pending sin interrumpir un job activo; el workflow runtime-recovery debe propagar existing_job_id del trigger al endpoint. Documentar el procedimiento obligatorio. No tocar Produccion ni cambiar la semantica de ejecucion determinista de los jobs.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "old": "LOCK_PATH = Path(\"/tmp/edarsahub-universal-worker-wake.lock\")\nCOOLDOWN_PATH = Path(\"/tmp/edarsahub-universal-worker-wake.last\")\nWORKER_TREE_STATE = RUNTIME_DIR / \"active_worker_code_tree_sha\"",
+      "new": "LOCK_PATH = Path(\"/tmp/edarsahub-universal-worker-wake.lock\")\nCOOLDOWN_PATH = Path(\"/tmp/edarsahub-universal-worker-wake.last\")\nPREFERRED_JOB_PATH = RUNTIME_DIR / \"preferred_job.json\"\nPREFERRED_JOB_TTL_SECONDS = 300\n_JOB_ID_RE = re.compile(r\"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$\")\nWORKER_TREE_STATE = RUNTIME_DIR / \"active_worker_code_tree_sha\""
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "old": "def _active_job_id() -> str | None:\n    try:\n        value = (RUNTIME_DIR / \"current_job_id\").read_text(encoding=\"utf-8\").strip()\n    except OSError:\n        return None\n    return value or None\n\n\ndef _restart_worker() -> None:",
+      "new": "def _active_job_id() -> str | None:\n    try:\n        value = (RUNTIME_DIR / \"current_job_id\").read_text(encoding=\"utf-8\").strip()\n    except OSError:\n        return None\n    return value or None\n\n\ndef _register_preferred_job(job_id: str, queue_sha: str) -> str | None:\n    value = (job_id or \"\").strip()\n    if not value:\n        return None\n    if not _JOB_ID_RE.fullmatch(value):\n        raise HTTPException(\n            status_code=status.HTTP_401_UNAUTHORIZED,\n            detail=\"invalid preferred worker job id\",\n        )\n    RUNTIME_DIR.mkdir(parents=True, exist_ok=True)\n    payload = {\n        \"job_id\": value,\n        \"queue_sha\": queue_sha,\n        \"registered_at_utc\": datetime.now(timezone.utc).isoformat(),\n        \"expires_at_epoch\": time.time() + PREFERRED_JOB_TTL_SECONDS,\n    }\n    temporary = PREFERRED_JOB_PATH.with_suffix(\".tmp\")\n    temporary.write_text(json.dumps(payload, ensure_ascii=False) + \"\\n\", encoding=\"utf-8\")\n    os.replace(temporary, PREFERRED_JOB_PATH)\n    return value\n\n\ndef _restart_worker() -> None:"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "old": "def wake_worker(\n    x_worker_queue_sha: str | None = Header(default=None, alias=\"X-Worker-Queue-Sha\"),\n):",
+      "new": "def wake_worker(\n    x_worker_queue_sha: str | None = Header(default=None, alias=\"X-Worker-Queue-Sha\"),\n    x_worker_preferred_job_id: str | None = Header(default=None, alias=\"X-Worker-Preferred-Job-Id\"),\n):"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "old": "    if supplied.lower() != current:\n        raise HTTPException(\n            status_code=status.HTTP_409_CONFLICT,\n            detail=\"stale worker queue proof\",\n        )\n\n    heartbeat_age = _heartbeat_age_seconds()",
+      "new": "    if supplied.lower() != current:\n        raise HTTPException(\n            status_code=status.HTTP_409_CONFLICT,\n            detail=\"stale worker queue proof\",\n        )\n\n    preferred_job_id = _register_preferred_job(x_worker_preferred_job_id or \"\", current)\n    heartbeat_age = _heartbeat_age_seconds()"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "old": "            \"active_job_id\": active_job_id,\n            \"heartbeat_age_seconds\": round(heartbeat_age, 3),\n            \"runtime_convergence\": {\"state\": \"DEFERRED_ACTIVE_JOB\"},",
+      "new": "            \"active_job_id\": active_job_id,\n            \"preferred_job_id\": preferred_job_id,\n            \"heartbeat_age_seconds\": round(heartbeat_age, 3),\n            \"runtime_convergence\": {\"state\": \"DEFERRED_ACTIVE_JOB\"},"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "old": "            \"heartbeat_age_seconds\": round(heartbeat_age, 3),\n            \"worker_code_tree\": current_worker_tree,\n            \"runtime_convergence\": convergence,",
+      "new": "            \"heartbeat_age_seconds\": round(heartbeat_age, 3),\n            \"preferred_job_id\": preferred_job_id,\n            \"worker_code_tree\": current_worker_tree,\n            \"runtime_convergence\": convergence,"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/worker_runtime_wake/routes.py",
+      "old": "            \"heartbeat_age_seconds\": round(heartbeat_age, 3) if heartbeat_age is not None else None,\n            \"worker_code_tree\": current_worker_tree,\n            \"worker_code_changed\": not worker_code_current,",
+      "new": "            \"heartbeat_age_seconds\": round(heartbeat_age, 3) if heartbeat_age is not None else None,\n            \"preferred_job_id\": preferred_job_id,\n            \"worker_code_tree\": current_worker_tree,\n            \"worker_code_changed\": not worker_code_current,"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "LOCK_FILE = STATE / \"dispatcher.lock\"\nREMOTE = os.environ.get(\"EDARSAHUB_QUEUE_REMOTE\", \"origin\")",
+      "new": "LOCK_FILE = STATE / \"dispatcher.lock\"\nPREFERRED_JOB_PATH = RUNTIME / \"preferred_job.json\"\nREMOTE = os.environ.get(\"EDARSAHUB_QUEUE_REMOTE\", \"origin\")"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "def dispatch() -> int:\n    ensure_dirs()\n    with LOCK_FILE.open(\"a+\") as lock:\n        try:\n            fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)\n        except BlockingIOError:\n            print(\"UNIVERSAL_DISPATCHER=BUSY\")\n            return 0\n        jobs = sorted(PENDING.glob(\"*.json\"))\n        if not jobs:\n            print(\"UNIVERSAL_DISPATCHER=NO_PENDING_JOBS\")\n            return 0\n        return process_one(jobs[0])",
+      "new": "def _load_preferred_job() -> dict[str, Any] | None:\n    try:\n        payload = json.loads(PREFERRED_JOB_PATH.read_text(encoding=\"utf-8\"))\n    except (OSError, json.JSONDecodeError, TypeError):\n        return None\n    job_id = str(payload.get(\"job_id\") or \"\").strip()\n    try:\n        expires_at = float(payload.get(\"expires_at_epoch\") or 0)\n    except (TypeError, ValueError):\n        expires_at = 0\n    if not JOB_ID_RE.fullmatch(job_id) or expires_at <= datetime.now(timezone.utc).timestamp():\n        try:\n            PREFERRED_JOB_PATH.unlink()\n        except OSError:\n            pass\n        return None\n    return payload\n\n\ndef _select_pending_job(jobs: list[Path]) -> tuple[Path | None, bool]:\n    preferred = _load_preferred_job()\n    if preferred is not None:\n        preferred_id = str(preferred[\"job_id\"])\n        for path in jobs:\n            if path.stem == preferred_id:\n                print(f\"UNIVERSAL_DISPATCHER=PREFERRED_JOB_SELECTED JOB_ID={preferred_id}\")\n                return path, True\n        print(f\"UNIVERSAL_DISPATCHER=WAITING_PREFERRED_JOB JOB_ID={preferred_id}\")\n        return None, True\n    if not jobs:\n        return None, False\n    return jobs[0], False\n\n\ndef dispatch() -> int:\n    ensure_dirs()\n    with LOCK_FILE.open(\"a+\") as lock:\n        try:\n            fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)\n        except BlockingIOError:\n            print(\"UNIVERSAL_DISPATCHER=BUSY\")\n            return 0\n        jobs = sorted(PENDING.glob(\"*.json\"))\n        selected, is_preferred = _select_pending_job(jobs)\n        if selected is None:\n            if is_preferred:\n                return 0\n            print(\"UNIVERSAL_DISPATCHER=NO_PENDING_JOBS\")\n            return 0\n        rc = process_one(selected)\n        if is_preferred:\n            try:\n                PREFERRED_JOB_PATH.unlink()\n            except OSError:\n                pass\n        return rc"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/worker-runtime-recovery-probe.yml",
+      "old": "      - name: Checkout\n        uses: actions/checkout@v4\n\n      - name: Resolve worker queue head",
+      "new": "      - name: Checkout\n        uses: actions/checkout@v4\n\n      - name: Resolve preferred job from runtime-recovery trigger\n        id: preferred\n        shell: bash\n        run: |\n          set -euo pipefail\n          TRIGGER=\"$(git diff-tree --no-commit-id --name-only -r \"$GITHUB_SHA\" | grep '^worker_queue/triggers/runtime-recovery/' | tail -n 1 || true)\"\n          JOB_ID=\"\"\n          if [ -n \"$TRIGGER\" ] && [ -r \"$TRIGGER\" ]; then\n            JOB_ID=\"$(jq -r '.existing_job_id // empty' \"$TRIGGER\")\"\n          fi\n          if [ -n \"$JOB_ID\" ] && ! [[ \"$JOB_ID\" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$ ]]; then\n            echo 'INVALID_PREFERRED_JOB_ID'\n            exit 14\n          fi\n          echo \"preferred_job_id=$JOB_ID\" >> \"$GITHUB_OUTPUT\"\n          echo \"PREFERRED_JOB_ID=${JOB_ID:-none}\"\n\n      - name: Resolve worker queue head"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/worker-runtime-recovery-probe.yml",
+      "old": "        env:\n          QUEUE_SHA: ${{ steps.queue.outputs.queue_sha }}\n          RUNTIME_URL: ${{ steps.runtime.outputs.runtime_url }}",
+      "new": "        env:\n          QUEUE_SHA: ${{ steps.queue.outputs.queue_sha }}\n          RUNTIME_URL: ${{ steps.runtime.outputs.runtime_url }}\n          PREFERRED_JOB_ID: ${{ steps.preferred.outputs.preferred_job_id }}"
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/worker-runtime-recovery-probe.yml",
+      "old": "              -X POST \\\n              -H \"X-Worker-Queue-Sha: ${QUEUE_SHA}\" \\\n              \"$RUNTIME_URL/api/internal/worker/wake\" || true)\"",
+      "new": "              -X POST \\\n              -H \"X-Worker-Queue-Sha: ${QUEUE_SHA}\" \\\n              -H \"X-Worker-Preferred-Job-Id: ${PREFERRED_JOB_ID:-}\" \\\n              \"$RUNTIME_URL/api/internal/worker/wake\" || true)\""
+    },
+    {
+      "type": "write_file",
+      "path": "docs/operacion/WORKER_JOB_EXECUTION_PROTOCOL.md",
+      "content": "# Procedimiento obligatorio para ejecutar comandos por Universal Worker\n\n## Objetivo\n\nToda solicitud emitida desde ChatGPT hacia EDARSAHUB debe seguir el mismo circuito verificable. El objetivo es evitar que un job quede publicado pero sin pickup, y evitar interpretar un wake exitoso como si el job ya hubiera sido ejecutado.\n\n## Secuencia obligatoria\n\n1. Construir un job con `schema: edarsahub.worker-job.v2`, requester, target_repo, target_branch, production_allowed=false, acciones deterministas y checks.\n2. Publicar el job en `worker/requests:worker_queue/inbox/<job_id>.json`.\n3. Volver a leer el archivo publicado y confirmar que el contenido y el `job_id` coinciden.\n4. Resolver el HEAD actual de `worker/requests`.\n5. Crear un trigger en `Edarsahub_Desarrollo:worker_queue/triggers/runtime-recovery/<job_id>.json` con `existing_job_id=<job_id>`.\n6. El workflow de runtime-recovery debe extraer `existing_job_id` del trigger y llamar `POST /api/internal/worker/wake` enviando:\n   - `X-Worker-Queue-Sha: <HEAD worker/requests>`\n   - `X-Worker-Preferred-Job-Id: <job_id>`\n7. El endpoint debe validar el SHA de la cola, registrar el job preferido con expiracion y preservar cualquier job activo sano. Nunca debe interrumpir un job activo.\n8. El dispatcher debe:\n   - ejecutar primero el job preferido cuando aparezca en `pending`;\n   - esperar brevemente por ese job si el intake aun no lo materializo;\n   - eliminar la preferencia cuando expire;\n   - volver al orden normal cuando no exista preferencia valida.\n9. Confirmar pickup por evidencia terminal del Worker. Un wake verde NO equivale a job ejecutado.\n10. No marcar un trabajo como completado hasta tener:\n    - resultado en `worker_queue/results/<job_id>.json`;\n    - status terminal satisfactorio;\n    - commit integrado cuando el job sea MUTATION;\n    - checks requeridos en PASS;\n    - `production_touched=false`.\n\n## Estados que debe reportar ChatGPT\n\n- VERDE: resultado terminal satisfactorio y evidencia publicada.\n- NARANJA: el job fue tomado y existe evidencia de ejecucion/processing.\n- AMARILLO: job publicado pero aun no tomado.\n- ROJO: rechazo, bloqueo, timeout, resultado fallido o infraestructura que impide pickup.\n\n## Regla de preferencia\n\nLa preferencia no es preemption. Si existe otro job activo con heartbeat sano, el endpoint lo preserva y registra nuestro job como el siguiente preferido. Esto evita corromper ejecuciones en curso y al mismo tiempo evita que nuestro trabajo quede indefinidamente detras del orden alfabetico.\n\n## Regla para ChatGPT\n\nPara cada nuevo comando que requiera Universal Worker, ChatGPT debe ejecutar la secuencia completa de publicacion, verificacion, wake preferido y comprobacion de resultado. No debe crear variantes R2/R3/R4 de forma repetitiva mientras exista un job valido en curso o pendiente, salvo que exista un rechazo terminal que requiera una correccion de contrato.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/worker_runtime_wake/routes.py",
+        "tools/mirror_sync/universal_job_dispatcher.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/worker_runtime_wake/routes.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          ".github/workflows/worker-runtime-recovery-probe.yml",
+          "docs/operacion/WORKER_JOB_EXECUTION_PROTOCOL.md"
+        ],
+        "search_terms": [
+          "X-Worker-Preferred-Job-Id",
+          "preferred_job_id",
+          "PREFERRED_JOB_PATH",
+          "PREFERRED_JOB_SELECTED",
+          "WAITING_PREFERRED_JOB",
+          "existing_job_id",
+          "wake verde NO equivale"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.yml",
+          "*.yaml",
+          "*.md"
+        ],
+        "exclude_patterns": [
+          ".git/*",
+          "__pycache__/*",
+          "*.pyc"
+        ],
+        "max_results": 300
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
