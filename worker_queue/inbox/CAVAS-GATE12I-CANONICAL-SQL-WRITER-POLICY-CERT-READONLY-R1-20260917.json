@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12I-CANONICAL-SQL-WRITER-POLICY-CERT-READONLY-R1-20260917",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c85ab15705196c85ef7e4bf7fc3847d3f13e6960",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar en READ_ONLY el contrato canónico vigente para migraciones SQL Development: determinar si el repositorio ya autoriza reutilizar explícitamente la credencial SQL canónica existente (HRLectura) como writer de migración mediante opt-in determinista, y reconciliarlo con HRLECTURA_WRITER_FORBIDDEN de los workflows fail-closed. No ejecutar SQL, no modificar workflows, no tocar secrets y no ejecutar Gate12I.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/sql_migration_development.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "backend/tests/test_worker_sql_migration_development_capability.py",
+          "backend/tests/test_worker_sql_migration_integration_gate6.py",
+          "backend/tests/test_global_credentials_publishing_canonization_r3e.py",
+          ".github/workflows/cavas-gate12i-persona-link-development-migration.yml",
+          "backend/core/connections/edarsahub_writer_connection.py",
+          "backend/core/config/edarsahub_config.py"
+        ],
+        "search_terms": [
+          "allow_canonical_sql_writer",
+          "confirm_use_existing_sql_writer",
+          "EDARSAHUB_MIGRATION_CREDENTIAL_SOURCE",
+          "HRLECTURA_CANNOT_BE_MIGRATION_WRITER",
+          "HRLECTURA_WRITER_FORBIDDEN",
+          "MIGRATION_WRITER_STATUS=UNCONFIGURED",
+          "EXPECTED_LOGIN = \"HRLectura\"",
+          "CANONICAL_PROFILE = \"default\""
+        ],
+        "include_patterns": ["*.py", "*.yml"],
+        "exclude_patterns": [],
+        "max_results": 500
+      }
+    }
+  ]
+}
