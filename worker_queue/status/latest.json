@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "aa57b944342f7e7efda0397ebfa64358c8c99a61",
-  "generated_at_utc": "2026-09-18T18:07:51Z",
+  "generated_at_utc": "2026-09-18T18:09:08Z",
   "history": {
     "done_total_local": 625,
     "pending_total_local": 0,
@@ -13,25 +13,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2988,
+      "age_seconds": 3065,
       "job_id": "CAVAS-GATE12I-FINAL-PHYSICAL-CERT-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 994,
+      "age_seconds": 1071,
       "job_id": "CAVAS-GATE12J-PERSONA-LINK-FUNCTIONAL-FLOW-DISCOVERY-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 86,
+      "age_seconds": 163,
       "job_id": "EDARSAHUB-ISCAM-DETAIL-BACKFILL-R85-ESTELAR-20260914-CARLOS-20260918T180700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1825,
+      "age_seconds": 1902,
       "job_id": "EDARSAHUB-SERVICES-GATE4A-FOUNDATION-R2-PHYSICAL-SCRIPTS-DESIGN-R3",
       "reason": null,
       "state": "RESULT_READY"
@@ -49,8 +49,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-18T18:07:44Z",
-    "last_receive_utc": "2026-09-18T18:07:48Z",
+    "last_cycle_utc": "2026-09-18T18:09:04Z",
+    "last_receive_utc": "2026-09-18T18:09:07Z",
     "last_terminal_utc": "2026-09-18T18:06:25Z",
     "pid": "63"
   },
