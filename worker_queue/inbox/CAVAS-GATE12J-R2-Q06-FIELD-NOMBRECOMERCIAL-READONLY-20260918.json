@@ -1,0 +1,23 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12J-R2-Q06-FIELD-NOMBRECOMERCIAL-READONLY-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "aa57b944342f7e7efda0397ebfa64358c8c99a61",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Aislar exclusivamente el campo NombreComercial de Q06 CLIENTE_CATALOGO_ACTUAL. Ejecutar una sola consulta READ_ONLY_SQL que seleccione ese campo de dbo.Cliente_Catalogo en orden estable por ClienteID. No modificar SQL/codigo/RBAC/secrets/workflows ni Produccion. No avanzar a 12K.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "q06_nombrecomercial",
+          "sql": "SELECT NombreComercial FROM dbo.Cliente_Catalogo ORDER BY ClienteID;"
+        }
+      ]
+    }
+  ]
+}
