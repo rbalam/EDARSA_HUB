@@ -1,0 +1,101 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12L-PERSONA-LINK-UI-OPERATION-INTEGRATION-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d295093ee080c058f55e03a4536d272d20135449",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Implementar Gate12L de integracion UI/operacion del vinculo Persona sin reabrir Gate12J ni Gate12K. Agregar en la ficha de socio una tarjeta operativa Identidad BOS para consultar estado, buscar Persona existente, vincularla explicitamente, crear Persona explicitamente y desvincular solo la membresia con confirmacion. Mostrar en el listado de socios si la identidad BOS esta vinculada o pendiente. Reutilizar exclusivamente endpoints Gate12K, filtros canonicos de unidad y componentes UI existentes. No matching automatico, no DDL/DML directo desde frontend, no nuevos permisos, no tocar Produccion.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "frontend/src/pages/cava-socios/PersonaLinkCard.jsx",
+      "content": "/**\n * EDARSA HUB - Cava de Socios / Identidad BOS\n * Vinculación explícita de membresía Cava con Gobierno_Persona.\n */\n\nimport React, { useCallback, useEffect, useState } from 'react';\nimport { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';\nimport { Button } from '@/components/ui/button';\nimport { Input } from '@/components/ui/input';\nimport { Label } from '@/components/ui/label';\nimport {\n  Dialog,\n  DialogContent,\n  DialogDescription,\n  DialogFooter,\n  DialogHeader,\n  DialogTitle,\n} from '@/components/ui/dialog';\nimport { Link2, Loader2, Search, ShieldCheck, Unlink, UserPlus, UserRoundCheck } from 'lucide-react';\nimport api from '@/lib/api';\nimport { toast } from 'sonner';\n\nconst EMPTY_PERSONA = {\n  nombre: '',\n  apellido_paterno: '',\n  apellido_materno: '',\n  rfc: '',\n  curp: '',\n  fecha_nacimiento: '',\n  nacionalidad: '',\n};\n\nexport default function PersonaLinkCard({ socioId, unidadNegocioPk, onChanged }) {\n  const [link, setLink] = useState(null);\n  const [loading, setLoading] = useState(false);\n  const [saving, setSaving] = useState(false);\n  const [showExisting, setShowExisting] = useState(false);\n  const [showCreate, setShowCreate] = useState(false);\n  const [search, setSearch] = useState('');\n  const [personas, setPersonas] = useState([]);\n  const [searching, setSearching] = useState(false);\n  const [personaForm, setPersonaForm] = useState(EMPTY_PERSONA);\n\n  const scopeQuery = unidadNegocioPk\n    ? `?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`\n    : '';\n\n  const fetchLink = useCallback(async () => {\n    if (!socioId || !unidadNegocioPk) return;\n    setLoading(true);\n    try {\n      const response = await api.get(\n        `/cava-socios/socios/${socioId}/persona-link${scopeQuery}`\n      );\n      setLink(response.data);\n    } catch (err) {\n      setLink(null);\n      if (err?.response?.status !== 404) {\n        console.error('Error cargando vínculo BOS:', err);\n      }\n    } finally {\n      setLoading(false);\n    }\n  }, [socioId, unidadNegocioPk, scopeQuery]);\n\n  useEffect(() => {\n    fetchLink();\n  }, [fetchLink]);\n\n  const buscarPersonas = async () => {\n    setSearching(true);\n    try {\n      const params = new URLSearchParams();\n      if (search.trim()) params.set('search', search.trim());\n      params.set('limit', '50');\n      const response = await api.get(`/cava-socios/personas-canonicas?${params.toString()}`);\n      setPersonas(response.data?.personas || []);\n    } catch (err) {\n      toast.error(err?.response?.data?.detail || 'No se pudo consultar Personas BOS');\n    } finally {\n      setSearching(false);\n    }\n  };\n\n  const vincularExistente = async (personaId) => {\n    setSaving(true);\n    try {\n      await api.post(\n        `/cava-socios/socios/${socioId}/persona-link${scopeQuery}`,\n        { persona_id: personaId }\n      );\n      toast.success('Persona BOS vinculada correctamente');\n      setShowExisting(false);\n      setSearch('');\n      setPersonas([]);\n      await fetchLink();\n      await onChanged?.();\n    } catch (err) {\n      toast.error(err?.response?.data?.detail || 'No se pudo vincular la Persona');\n    } finally {\n      setSaving(false);\n    }\n  };\n\n  const crearPersona = async () => {\n    if (!personaForm.nombre.trim()) {\n      toast.error('El nombre es requerido');\n      return;\n    }\n    setSaving(true);\n    try {\n      const payload = {\n        ...personaForm,\n        nombre: personaForm.nombre.trim(),\n        apellido_paterno: personaForm.apellido_paterno.trim() || null,\n        apellido_materno: personaForm.apellido_materno.trim() || null,\n        rfc: personaForm.rfc.trim() || null,\n        curp: personaForm.curp.trim() || null,\n        fecha_nacimiento: personaForm.fecha_nacimiento || null,\n        nacionalidad: personaForm.nacionalidad.trim() || null,\n      };\n      await api.post(\n        `/cava-socios/socios/${socioId}/persona-link/crear-persona${scopeQuery}`,\n        payload\n      );\n      toast.success('Persona BOS creada y vinculada');\n      setShowCreate(false);\n      setPersonaForm(EMPTY_PERSONA);\n      await fetchLink();\n      await onChanged?.();\n    } catch (err) {\n      toast.error(err?.response?.data?.detail || 'No se pudo crear/vincular la Persona');\n    } finally {\n      setSaving(false);\n    }\n  };\n\n  const desvincular = async () => {\n    if (!window.confirm(\n      'Se quitará únicamente el vínculo de esta membresía con la Persona BOS. La Persona y sus vínculos canónicos no se eliminarán. ¿Continuar?'\n    )) return;\n\n    setSaving(true);\n    try {\n      await api.delete(\n        `/cava-socios/socios/${socioId}/persona-link${scopeQuery}`\n      );\n      toast.success('Membresía desvinculada de la Persona BOS');\n      await fetchLink();\n      await onChanged?.();\n    } catch (err) {\n      toast.error(err?.response?.data?.detail || 'No se pudo desvincular la Persona');\n    } finally {\n      setSaving(false);\n    }\n  };\n\n  const persona = link?.persona;\n  const linked = Boolean(link?.persona_id);\n\n  return (\n    <>\n      <Card data-testid=\"persona-link-card\">\n        <CardHeader className=\"pb-3\">\n          <div className=\"flex flex-wrap items-start justify-between gap-3\">\n            <div>\n              <CardTitle className=\"text-base flex items-center gap-2\">\n                <ShieldCheck className=\"h-5 w-5 text-indigo-600\" />\n                Identidad BOS\n              </CardTitle>\n              <CardDescription>\n                La membresía conserva su SocioID; esta relación conecta al socio con la Persona canónica de EDARSAHUB.\n              </CardDescription>\n            </div>\n            <span\n              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${\n                linked\n                  ? 'bg-green-100 text-green-800'\n                  : 'bg-amber-100 text-amber-800'\n              }`}\n            >\n              {linked ? 'Vinculada' : 'Pendiente de vincular'}\n            </span>\n          </div>\n        </CardHeader>\n        <CardContent>\n          {loading ? (\n            <div className=\"flex items-center gap-2 text-sm text-muted-foreground\">\n              <Loader2 className=\"h-4 w-4 animate-spin\" />\n              Consultando identidad...\n            </div>\n          ) : linked ? (\n            <div className=\"flex flex-col gap-4 md:flex-row md:items-center md:justify-between\">\n              <div className=\"space-y-1 text-sm\">\n                <div className=\"font-medium\">\n                  {[persona?.nombre, persona?.apellido_paterno, persona?.apellido_materno]\n                    .filter(Boolean)\n                    .join(' ') || `Persona #${link.persona_id}`}\n                </div>\n                <div className=\"text-muted-foreground\">\n                  PersonaID: {link.persona_id}\n                  {persona?.rfc ? ` · RFC: ${persona.rfc}` : ''}\n                  {persona?.curp ? ` · CURP: ${persona.curp}` : ''}\n                </div>\n                {Array.isArray(link?.vinculos) && link.vinculos.length > 0 && (\n                  <div className=\"text-xs text-muted-foreground\">\n                    {link.vinculos.length} vínculo(s) canónico(s) activo(s)\n                  </div>\n                )}\n              </div>\n              <Button\n                variant=\"outline\"\n                size=\"sm\"\n                onClick={desvincular}\n                disabled={saving}\n                data-testid=\"persona-unlink-button\"\n              >\n                {saving ? <Loader2 className=\"h-4 w-4 mr-2 animate-spin\" /> : <Unlink className=\"h-4 w-4 mr-2\" />}\n                Desvincular membresía\n              </Button>\n            </div>\n          ) : (\n            <div className=\"flex flex-col gap-3 md:flex-row md:items-center md:justify-between\">\n              <div className=\"text-sm text-muted-foreground\">\n                Selecciona una Persona existente o crea una nueva de forma explícita. No se hacen coincidencias automáticas por nombre, email o teléfono.\n              </div>\n              <div className=\"flex flex-wrap gap-2\">\n                <Button\n                  variant=\"outline\"\n                  size=\"sm\"\n                  onClick={() => setShowExisting(true)}\n                  data-testid=\"persona-link-existing-button\"\n                >\n                  <Link2 className=\"h-4 w-4 mr-2\" />\n                  Vincular existente\n                </Button>\n                <Button\n                  size=\"sm\"\n                  onClick={() => setShowCreate(true)}\n                  data-testid=\"persona-create-link-button\"\n                >\n                  <UserPlus className=\"h-4 w-4 mr-2\" />\n                  Crear Persona\n                </Button>\n              </div>\n            </div>\n          )}\n        </CardContent>\n      </Card>\n\n      <Dialog open={showExisting} onOpenChange={setShowExisting}>\n        <DialogContent className=\"max-w-2xl\">\n          <DialogHeader>\n            <DialogTitle>Vincular Persona BOS existente</DialogTitle>\n            <DialogDescription>\n              Busca y selecciona manualmente la identidad correcta. La selección es explícita y auditable.\n            </DialogDescription>\n          </DialogHeader>\n\n          <div className=\"space-y-4\">\n            <div className=\"flex gap-2\">\n              <div className=\"relative flex-1\">\n                <Search className=\"absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground\" />\n                <Input\n                  className=\"pl-9\"\n                  placeholder=\"Nombre, apellido, RFC o CURP\"\n                  value={search}\n                  onChange={(e) => setSearch(e.target.value)}\n                  onKeyDown={(e) => e.key === 'Enter' && buscarPersonas()}\n                />\n              </div>\n              <Button onClick={buscarPersonas} disabled={searching}>\n                {searching ? <Loader2 className=\"h-4 w-4 animate-spin\" /> : 'Buscar'}\n              </Button>\n            </div>\n\n            <div className=\"max-h-72 overflow-y-auto rounded-md border\">\n              {personas.length === 0 ? (\n                <div className=\"p-6 text-center text-sm text-muted-foreground\">\n                  Realiza una búsqueda para consultar Personas BOS.\n                </div>\n              ) : (\n                personas.map((item) => (\n                  <div\n                    key={item.PersonaID}\n                    className=\"flex items-center justify-between gap-3 border-b p-3 last:border-b-0\"\n                  >\n                    <div className=\"min-w-0\">\n                      <div className=\"font-medium text-sm\">\n                        {[item.Nombre, item.ApellidoPaterno, item.ApellidoMaterno]\n                          .filter(Boolean)\n                          .join(' ')}\n                      </div>\n                      <div className=\"text-xs text-muted-foreground\">\n                        PersonaID {item.PersonaID}\n                        {item.RFC ? ` · RFC ${item.RFC}` : ''}\n                        {item.CURP ? ` · CURP ${item.CURP}` : ''}\n                      </div>\n                    </div>\n                    <Button\n                      size=\"sm\"\n                      onClick={() => vincularExistente(item.PersonaID)}\n                      disabled={saving}\n                    >\n                      <UserRoundCheck className=\"h-4 w-4 mr-2\" />\n                      Seleccionar\n                    </Button>\n                  </div>\n                ))\n              )}\n            </div>\n          </div>\n\n          <DialogFooter>\n            <Button variant=\"outline\" onClick={() => setShowExisting(false)}>\n              Cerrar\n            </Button>\n          </DialogFooter>\n        </DialogContent>\n      </Dialog>\n\n      <Dialog open={showCreate} onOpenChange={setShowCreate}>\n        <DialogContent className=\"max-w-2xl\">\n          <DialogHeader>\n            <DialogTitle>Crear Persona BOS</DialogTitle>\n            <DialogDescription>\n              Crea la identidad solo cuando se haya confirmado que no existe. RFC y CURP se validan contra duplicados en backend.\n            </DialogDescription>\n          </DialogHeader>\n\n          <div className=\"grid grid-cols-1 gap-4 md:grid-cols-2\">\n            <div className=\"space-y-2 md:col-span-2\">\n              <Label>Nombre *</Label>\n              <Input\n                value={personaForm.nombre}\n                onChange={(e) => setPersonaForm((f) => ({ ...f, nombre: e.target.value }))}\n              />\n            </div>\n            <div className=\"space-y-2\">\n              <Label>Apellido paterno</Label>\n              <Input\n                value={personaForm.apellido_paterno}\n                onChange={(e) => setPersonaForm((f) => ({ ...f, apellido_paterno: e.target.value }))}\n              />\n            </div>\n            <div className=\"space-y-2\">\n              <Label>Apellido materno</Label>\n              <Input\n                value={personaForm.apellido_materno}\n                onChange={(e) => setPersonaForm((f) => ({ ...f, apellido_materno: e.target.value }))}\n              />\n            </div>\n            <div className=\"space-y-2\">\n              <Label>RFC</Label>\n              <Input\n                value={personaForm.rfc}\n                onChange={(e) => setPersonaForm((f) => ({ ...f, rfc: e.target.value.toUpperCase() }))}\n              />\n            </div>\n            <div className=\"space-y-2\">\n              <Label>CURP</Label>\n              <Input\n                value={personaForm.curp}\n                onChange={(e) => setPersonaForm((f) => ({ ...f, curp: e.target.value.toUpperCase() }))}\n              />\n            </div>\n            <div className=\"space-y-2\">\n              <Label>Fecha de nacimiento</Label>\n              <Input\n                type=\"date\"\n                value={personaForm.fecha_nacimiento}\n                onChange={(e) => setPersonaForm((f) => ({ ...f, fecha_nacimiento: e.target.value }))}\n              />\n            </div>\n            <div className=\"space-y-2\">\n              <Label>Nacionalidad</Label>\n              <Input\n                value={personaForm.nacionalidad}\n                onChange={(e) => setPersonaForm((f) => ({ ...f, nacionalidad: e.target.value }))}\n              />\n            </div>\n          </div>\n\n          <DialogFooter>\n            <Button variant=\"outline\" onClick={() => setShowCreate(false)} disabled={saving}>\n              Cancelar\n            </Button>\n            <Button onClick={crearPersona} disabled={saving || !personaForm.nombre.trim()}>\n              {saving ? <Loader2 className=\"h-4 w-4 mr-2 animate-spin\" /> : <UserPlus className=\"h-4 w-4 mr-2\" />}\n              Crear y vincular\n            </Button>\n          </DialogFooter>\n        </DialogContent>\n      </Dialog>\n    </>\n  );\n}\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SocioDetail.jsx",
+      "old": "import React, { useState, useEffect } from 'react';",
+      "new": "import React, { useState, useEffect, useCallback } from 'react';",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SocioDetail.jsx",
+      "old": "import { useAccessContext } from '../../hooks/useAccessContext';",
+      "new": "import { useAccessContext } from '../../hooks/useAccessContext';\nimport PersonaLinkCard from './PersonaLinkCard';",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SocioDetail.jsx",
+      "old": "      {/* Info del Socio */}\n      <div className=\"grid grid-cols-1 lg:grid-cols-3 gap-6\">",
+      "new": "      <PersonaLinkCard\n        socioId={id}\n        unidadNegocioPk={unidadNegocioPk}\n        onChanged={fetchSocio}\n      />\n\n      {/* Info del Socio */}\n      <div className=\"grid grid-cols-1 lg:grid-cols-3 gap-6\">",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SociosList.jsx",
+      "old": "                    <TableHead>Membresía</TableHead>\n                    <TableHead className=\"text-center\">Botellas</TableHead>",
+      "new": "                    <TableHead>Membresía</TableHead>\n                    <TableHead>Identidad BOS</TableHead>\n                    <TableHead className=\"text-center\">Botellas</TableHead>",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/SociosList.jsx",
+      "old": "                      <TableCell>\n                        <span className=\"text-sm font-medium\">{socio.tipo_membresia}</span>\n                      </TableCell>\n                      <TableCell className=\"text-center\">",
+      "new": "                      <TableCell>\n                        <span className=\"text-sm font-medium\">{socio.tipo_membresia}</span>\n                      </TableCell>\n                      <TableCell>\n                        <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${socio.persona_id ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>\n                          {socio.persona_id ? 'Vinculada' : 'Pendiente'}\n                        </span>\n                      </TableCell>\n                      <TableCell className=\"text-center\">",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "frontend_build"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/cava-socios/PersonaLinkCard.jsx",
+          "frontend/src/pages/cava-socios/SocioDetail.jsx",
+          "frontend/src/pages/cava-socios/SociosList.jsx",
+          "backend/modules/cava_socios/routes.py"
+        ],
+        "search_terms": [
+          "Identidad BOS",
+          "persona-link",
+          "personas-canonicas",
+          "persona_id",
+          "unidad_negocio_pk",
+          "Crear Persona",
+          "Vincular existente",
+          "Desvincular membresía",
+          "CAVA_SOCIOS_VER",
+          "CAVA_SOCIOS_EDITAR"
+        ],
+        "include_patterns": [
+          "*.jsx",
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 300
+      }
+    }
+  ],
+  "constraints": [
+    "Gate12J remains closed",
+    "Gate12K remains closed",
+    "No Production",
+    "No new SQL tables",
+    "No direct SQL from frontend",
+    "No new RBAC permissions",
+    "No automatic matching by name email or phone",
+    "Reuse Gate12K endpoints only",
+    "Use canonical unidad_negocio_pk filter",
+    "SocioID remains membership identity",
+    "Do not overwrite ClienteCRMID",
+    "No Mongo runtime"
+  ]
+}
