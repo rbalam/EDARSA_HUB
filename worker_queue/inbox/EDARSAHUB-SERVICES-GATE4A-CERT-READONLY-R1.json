@@ -1,0 +1,76 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SERVICES-GATE4A-CERT-READONLY-R1",
+  "created_at_utc": "2026-09-18T03:38:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "920638ce165f3bb5135c89fb78803836d3dc28fd",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "mode": "READ_ONLY",
+  "objective": "Certificar exclusivamente los artefactos Gate4A Services Foundation ya integrados. Auditar forward y rollback sin ejecutar SQL. Validar seguridad, idempotencia, transaccion, rollback, scope y alineacion con Gate4. Debe detectar como blocker cualquier ausencia de environment Development, writer canonico autorizado, tipos/naming canonicos o rollback seguro. No modificar archivos, no ampliar Gate4A y no ejecutar migraciones.",
+  "constraints": [
+    "READ_ONLY estricto",
+    "actions vacio",
+    "No ejecutar SQL ni DDL/DML",
+    "No SQL_MIGRATION_DEVELOPMENT",
+    "No Production",
+    "No modificar archivos",
+    "No aceptar como suficiente solo SUSER_SNAME()!=HRLectura; el futuro script ejecutable debe validar writer canonico autorizado por el canal de migracion",
+    "El futuro script ejecutable debe quedar ligado a environment development y contrato de migracion",
+    "Auditar rollback por dependencias y datos",
+    "Auditar idempotencia y colisiones de nombres/constraints",
+    "Auditar CreatedAt/UpdatedAt y timezone contra convenciones BOS",
+    "No certificar si faltan prechecks exigidos por Gate4"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/database/migrations/20260918_001_services_foundation.sql",
+          "backend/database/migrations/20260918_001_services_foundation_rollback.sql",
+          "docs/BOS/EDARSAHUB_SERVICES_GATE4_MIGRATION_PACKAGE_DESIGN_R1.md",
+          "docs/BOS/EDARSAHUB_SERVICES_GATE4A_MIGRATION_PHYSICAL_SCRIPTS_DESIGN_R1.md",
+          ".github/workflows/coa-core-development-migration.yml",
+          ".github/workflows/communications-gate5d-development-migration.yml"
+        ],
+        "search_terms": [
+          "SQL_MIGRATION_DEVELOPMENT",
+          "development",
+          "HRLectura",
+          "DEDICATED",
+          "SUSER_SNAME",
+          "DB_NAME",
+          "XACT_ABORT",
+          "BEGIN TRANSACTION",
+          "TRY",
+          "CATCH",
+          "ROLLBACK",
+          "OBJECT_ID",
+          "Services_Professions",
+          "Services_Specialties",
+          "CreatedAt",
+          "UpdatedAt",
+          "SYSUTCDATETIME",
+          "America/Mexico_City",
+          "FechaOperacion"
+        ],
+        "include_patterns": [
+          "*.sql",
+          "*.md",
+          "*.yml",
+          "*.yaml"
+        ],
+        "exclude_patterns": [
+          "**/.git/**",
+          "**/node_modules/**"
+        ],
+        "max_results": 300
+      }
+    }
+  ]
+}
