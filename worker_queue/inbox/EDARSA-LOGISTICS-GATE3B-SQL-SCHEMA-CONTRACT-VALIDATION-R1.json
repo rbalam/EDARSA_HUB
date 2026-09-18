@@ -1,0 +1,56 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSA-LOGISTICS-GATE3B-SQL-SCHEMA-CONTRACT-VALIDATION-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "962214daee04f012aba9944328f381d1f91e22db",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "human_summary_language": "es",
+  "objective": "Gate 3B READ ONLY SQL de EDARSA Logistics. Validar exclusivamente metadatos del SQL canonico para cerrar naming, colisiones, objetos existentes y referencias fisicas antes de cualquier DDL. No consultar datos operativos sensibles ni modificar nada. Confirmar existencia/columnas de maestros BOS requeridos, patrones de PK/FK/nombres, objetos relacionados con activos/vehiculos/logistica/transporte, y detectar colisiones con candidatos Logistica_*. Clasificar los candidatos de Gate 2 como CONFIRMED_REUSE, CONFIRMED_EXTENSION, SAFE_NEW_CANDIDATE, COLLISION o REJECT. No crear tablas, migraciones, endpoints, codigo ni Gate 4. No tocar Produccion.",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "logistics_like_existing_objects",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE 'Logistica%' OR TABLE_NAME LIKE '%Logistic%' OR TABLE_NAME LIKE '%Transporte%' OR TABLE_NAME LIKE '%Vehicul%' OR TABLE_NAME LIKE '%Flota%' OR TABLE_NAME LIKE '%Viaje%' OR TABLE_NAME LIKE '%Embarque%' OR TABLE_NAME LIKE '%Entrega%' OR TABLE_NAME LIKE '%Mantenimiento%' OR TABLE_NAME LIKE '%Telemat%' ORDER BY TABLE_SCHEMA, TABLE_NAME"
+        },
+        {
+          "name": "canonical_master_tables_presence",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME IN ('Sistema_Empresas','Sistema_Sucursales','Unidades_Negocio','Gobierno_Persona','Gobierno_Documento','Gobierno_DocumentoVersion','Gobierno_DocumentoMovimiento','Usuario_Catalogo','Cliente_Catalogo','Proveedor_Catalogo','Producto_Catalogo','Inventario_Almacenes','Inventario_Existencias','Inventario_Movimientos','Inventario_MovimientosDetalle') ORDER BY TABLE_NAME"
+        },
+        {
+          "name": "canonical_master_columns",
+          "sql": "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, IS_NULLABLE, ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('Sistema_Empresas','Sistema_Sucursales','Unidades_Negocio','Gobierno_Persona','Gobierno_Documento','Usuario_Catalogo','Cliente_Catalogo','Proveedor_Catalogo','Producto_Catalogo','Inventario_Almacenes','Inventario_Existencias','Inventario_Movimientos','Inventario_MovimientosDetalle') ORDER BY TABLE_NAME, ORDINAL_POSITION"
+        },
+        {
+          "name": "asset_vehicle_candidate_objects",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE 'Activo%' OR TABLE_NAME LIKE '%ActivoFijo%' OR TABLE_NAME LIKE '%Vehiculo%' OR TABLE_NAME LIKE '%Equipo%' ORDER BY TABLE_SCHEMA, TABLE_NAME"
+        },
+        {
+          "name": "primary_keys_relevant_objects",
+          "sql": "SELECT t.name AS table_name, c.name AS column_name, ic.key_ordinal FROM sys.tables t JOIN sys.indexes i ON i.object_id=t.object_id AND i.is_primary_key=1 JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE t.name IN ('Sistema_Empresas','Sistema_Sucursales','Unidades_Negocio','Gobierno_Persona','Gobierno_Documento','Usuario_Catalogo','Cliente_Catalogo','Proveedor_Catalogo','Producto_Catalogo','Inventario_Almacenes','Inventario_Existencias','Inventario_Movimientos','Inventario_MovimientosDetalle') ORDER BY t.name, ic.key_ordinal"
+        },
+        {
+          "name": "foreign_key_patterns_relevant_objects",
+          "sql": "SELECT OBJECT_NAME(fk.parent_object_id) AS child_table, COL_NAME(fkc.parent_object_id,fkc.parent_column_id) AS child_column, OBJECT_NAME(fk.referenced_object_id) AS parent_table, COL_NAME(fkc.referenced_object_id,fkc.referenced_column_id) AS parent_column, fk.name AS fk_name FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id WHERE OBJECT_NAME(fk.parent_object_id) IN ('Sistema_Sucursales','Unidades_Negocio','Gobierno_Documento','Cliente_Catalogo','Proveedor_Catalogo','Inventario_Almacenes','Inventario_Existencias','Inventario_Movimientos','Inventario_MovimientosDetalle') OR OBJECT_NAME(fk.referenced_object_id) IN ('Sistema_Empresas','Sistema_Sucursales','Unidades_Negocio','Gobierno_Persona','Usuario_Catalogo','Cliente_Catalogo','Proveedor_Catalogo','Producto_Catalogo','Inventario_Almacenes') ORDER BY child_table, fk_name"
+        },
+        {
+          "name": "finance_purchase_document_naming_patterns",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE 'Finanzas_%' OR TABLE_NAME LIKE 'Compras_%' OR TABLE_NAME LIKE 'Gobierno_Documento%' OR TABLE_NAME LIKE 'Sistema_RBAC%' OR TABLE_NAME LIKE 'Usuario_RBAC%' ORDER BY TABLE_NAME"
+        },
+        {
+          "name": "logistica_candidate_collision_exact",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME IN ('Logistica_Ordenes','Logistica_Envios','Logistica_Viajes','Logistica_Paradas','Logistica_AsignacionesDespacho','Logistica_VehiculosPerfilOperativo','Logistica_ConductoresPerfilOperativo','Logistica_AlmacenesPerfilOperativo','Logistica_OrdenesMantenimiento','Logistica_PartesInstaladas','Logistica_LlantasCicloVida','Logistica_Combustible','Logistica_CargaEnergia','Logistica_DispositivosTelemetria','Logistica_EventosTelemetria','Logistica_TarifasAcuerdos','Logistica_TarifasReglas','Logistica_Incidentes','Logistica_Siniestros','Logistica_Cumplimiento','Logistica_ServiciosPasajeros','Logistica_ManifiestosPasajeros') ORDER BY TABLE_NAME"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS / EDARSA Logistics",
+    "chat": "EDARSA Logistics Gate3B SQL schema contract validation"
+  }
+}
