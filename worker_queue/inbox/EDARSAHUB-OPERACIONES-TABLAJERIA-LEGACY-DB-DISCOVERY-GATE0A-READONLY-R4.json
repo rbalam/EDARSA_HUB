@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIA-LEGACY-DB-DISCOVERY-GATE0A-READONLY-R4",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "objective": "Auditar en modo solo lectura el estado actual de Tablajeria legacy Cienfuegos y MPRO y su posible mapeo hacia EDARSAHUB como fuente canonica final. No modificar base de datos, no ejecutar migraciones, no crear tablas, no crear endpoints, no crear UI y no convertir bases legadas en fuente canonica.",
+  "actions": [],
+  "allowed_paths": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": ["backend", "frontend", "docs", "worker_queue"],
+        "search_terms": ["Tablajeria", "tablajeria", "Transformacion", "Produccion", "Inventarios", "Kardex", "Merma", "Rendimiento", "sql_readonly_audit", "repository_contract_audit"],
+        "include_patterns": ["*.py", "*.ts", "*.tsx", "*.js", "*.jsx", "*.sql", "*.md", "*.json"],
+        "exclude_patterns": [".git/*", "node_modules/*", "__pycache__/*", "*.pyc", "dist/*", "build/*"],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "database_names_discovery",
+          "sql": "SELECT name AS database_name, database_id, create_date, state_desc, compatibility_level FROM sys.databases WHERE name IN ('Tablajeria','tablajeria_mpro','EDARSAHUB') OR name LIKE '%Tablaj%' OR name LIKE '%tablaj%' OR name LIKE '%EDARSA%' ORDER BY name"
+        },
+        {
+          "name": "current_database_context",
+          "sql": "SELECT DB_NAME() AS current_database, SYSTEM_USER AS system_user_name, USER_NAME() AS database_user_name, @@SERVERNAME AS server_name"
+        },
+        {
+          "name": "current_db_tablajeria_related_objects",
+          "sql": "SELECT s.name AS schema_name, o.name AS object_name, o.type_desc, o.create_date, o.modify_date FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id = o.schema_id WHERE o.name LIKE '%Tablaj%' OR o.name LIKE '%tablaj%' OR o.name LIKE '%Transform%' OR o.name LIKE '%Produccion%' OR o.name LIKE '%Merma%' OR o.name LIKE '%Rendimiento%' ORDER BY s.name, o.name"
+        },
+        {
+          "name": "current_db_inventory_related_objects",
+          "sql": "SELECT s.name AS schema_name, o.name AS object_name, o.type_desc, o.create_date, o.modify_date FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id = o.schema_id WHERE o.name LIKE '%Invent%' OR o.name LIKE '%Kardex%' OR o.name LIKE '%Almacen%' OR o.name LIKE '%Insumo%' OR o.name LIKE '%Movimiento%' OR o.name LIKE '%Costo%' ORDER BY s.name, o.name"
+        },
+        {
+          "name": "current_db_rbac_audit_workflow_accounting_objects",
+          "sql": "SELECT s.name AS schema_name, o.name AS object_name, o.type_desc, o.create_date, o.modify_date FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id = o.schema_id WHERE o.name LIKE '%Usuario%' OR o.name LIKE '%Permiso%' OR o.name LIKE '%Rol%' OR o.name LIKE '%RBAC%' OR o.name LIKE '%Auditoria%' OR o.name LIKE '%Workflow%' OR o.name LIKE '%Evento%' OR o.name LIKE '%Contab%' ORDER BY s.name, o.name"
+        }
+      ]
+    }
+  ]
+}
