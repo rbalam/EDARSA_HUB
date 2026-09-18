@@ -1,0 +1,86 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SERVIDORES-CONEXIONES-API-LISTADO-FILTRO-R9-READONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "objective": "Auditar en modo solo lectura el filtro backend/frontend que provoca que SERVIDORES -> Conexiones API muestre menos conexiones que dbo.Servidores_Conexiones y Sistema_VW_Servidores_Conexiones_Publico. No modificar codigo, no modificar datos, no tocar secretos, no tocar permisos, no crear tablas, no activar visible_en_operaciones, no consultar TABLAJERIA.sys.*.",
+  "actions": [],
+  "allowed_paths": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/api/admin_core_connections.py",
+          "backend/core/connection_resolver.py",
+          "backend/core/server_registry.py",
+          "backend/core/connections",
+          "frontend",
+          "docs"
+        ],
+        "search_terms": [
+          "list_core_connections",
+          "get_core_connections_from_sql",
+          "format_core_connection",
+          "get_core_connection_by_id",
+          "get_core_connection_detail",
+          "test_core_connection",
+          "test_core_connectivity",
+          "Servidores_Conexiones",
+          "Sistema_VW_Servidores_Conexiones_Publico",
+          "Servidores_ConexionEstado",
+          "Servidores_Status",
+          "visible_en_listado",
+          "visible_en_operaciones",
+          "activo",
+          "tipo_conexion",
+          "system_type",
+          "API_LOCAL",
+          "DATA_SOURCE",
+          "queries_configured",
+          "source_status",
+          "ultimo_error_sync",
+          "health",
+          "health-check",
+          "timeout",
+          "CONFIGURED",
+          "api_key",
+          "server registry",
+          "clear_server_registry_cache",
+          "Conexiones API",
+          "Servidores",
+          "connections",
+          "core connections",
+          "connection status",
+          "isOnline",
+          "offline",
+          "error",
+          "NO_TESTED"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.ts",
+          "*.tsx",
+          "*.js",
+          "*.jsx",
+          "*.md",
+          "*.json"
+        ],
+        "exclude_patterns": [
+          ".git/*",
+          "node_modules/*",
+          "__pycache__/*",
+          "*.pyc",
+          "dist/*",
+          "build/*",
+          ".next/*",
+          "coverage/*"
+        ],
+        "max_results": 1200
+      }
+    }
+  ]
+}
