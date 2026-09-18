@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-EXECUTIVE-BOS-DESIGN-CONTRACT-R2-20260917",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "962214daee04f012aba9944328f381d1f91e22db",
+  "production_allowed": false,
+  "objective": "Reintentar exclusivamente la materializacion documental del contrato de diseño Gate E BOS Ejecutivo. R1 termino en GIT_DIVERGENCE_BLOCKED/NEEDS_FAST_FORWARD_REFRESH sin tocar Produccion. No ampliar alcance ni implementar funcionalidad.",
+  "acceptance": [
+    "Crear solamente docs/BOS/certifications/BOS_V1_GATE_E_EXECUTIVE_BOS_DESIGN_CONTRACT_V1.md.",
+    "Definir contrato para CAUSAL_EXPLANATION_LAYER.",
+    "Definir contrato para EXECUTIVE_PRIORITY_AGGREGATION.",
+    "Definir contrato para BOS_RECOMMENDATION_CONTRACT.",
+    "Definir contrato para RECOMMENDATION_TO_AUTHORIZED_ACTION_BRIDGE.",
+    "Cada contrato debe indicar inputs, outputs, provenance/freshness, RBAC/policy, auditoria, reuse de capacidades existentes y condiciones fail-closed.",
+    "Prohibir motores paralelos de RBAC, workflow, scheduler, recommendations o action execution.",
+    "No autorizar tablas ni endpoints nuevos sin Gate posterior de evidencia exacta.",
+    "git_diff_check debe pasar y production_touched=false."
+  ],
+  "constraints": [
+    "No nuevo discovery general.",
+    "No codigo funcional.",
+    "No SQL DDL/DML.",
+    "No Mongo operativo.",
+    "No LIVE administrativo.",
+    "No Produccion.",
+    "No crecer backend/core.",
+    "REUSE -> CONSOLIDATE -> EXTRACT -> EXTEND -> CREATE_ONLY_WHEN_PROVEN_MISSING."
+  ],
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/BOS/certifications/BOS_V1_GATE_E_EXECUTIVE_BOS_DESIGN_CONTRACT_V1.md",
+      "content": "# BOS V1 Gate E - Executive BOS Design Contract V1\n\nEstado: DESIGN CONTRACT / NO IMPLEMENTATION\nFecha: 2026-09-17\n\nFuentes:\n- BOS-V1-GATE-E-EXECUTIVE-BOS-CERTIFICATION-R2-READONLY-20260917\n- BOS-V1-GATE-E-EXECUTIVE-BOS-GAP-MATRIX-R1-20260917\n\n## 1. Objetivo\n\nDefinir el contrato minimo y gobernado para cerrar los cuatro gaps funcionales probados de Gate E sin duplicar capacidades BOS existentes.\n\nRegla obligatoria:\n\n`REUSE -> CONSOLIDATE -> EXTRACT -> EXTEND -> CREATE_ONLY_WHEN_PROVEN_MISSING`\n\nEste documento NO autoriza implementacion, tablas, endpoints, permisos, jobs ni cambios de Produccion.\n\n## 2. Gap A - CAUSAL_EXPLANATION_LAYER\n\n### Proposito\nResponder \"por que ocurre\" un problema ejecutivo usando evidencia rastreable, no solo drilldown.\n\n### Inputs\n- KPI/metric_id canonico.\n- empresa/unidad/sucursal y periodo.\n- observacion/problema detectado.\n- datos canonicos SQL-first.\n- eventos/auditorias/workflows relacionados.\n- provenance y freshness disponibles.\n\n### Output minimo\n- finding_id.\n- claim: explicacion concreta.\n- evidence_refs: referencias verificables.\n- contributing_factors: factores observados.\n- confidence_class: determinista / correlacional / inferido.\n- as_of / freshness / stale.\n- limitations.\n- suggested_next_checks.\n\n### Reglas\n- No declarar causalidad si solo existe correlacion o drilldown.\n- Toda explicacion debe distinguir hecho, correlacion e inferencia.\n- Sin evidencia suficiente: `NOT_ENOUGH_EVIDENCE`.\n- No usar Mongo como fuente operativa.\n- No consultar LIVE para dashboards administrativos.\n- Reutilizar auditoria/provenance, KPIs y fuentes SQL canonicas.\n- No crear un root cause engine paralelo si la capacidad puede extender servicios existentes.\n\n## 3. Gap B - EXECUTIVE_PRIORITY_AGGREGATION\n\n### Proposito\nResponder \"que debe atenderse primero\" consolidando pendientes cross-domain.\n\n### Inputs\n- workflows y SLA existentes.\n- severidad/impacto.\n- vencimiento.\n- valor economico expuesto.\n- riesgo operativo.\n- dependencias.\n- empresa/unidad/scope autorizado.\n\n### Output minimo\n- priority_item_id.\n- source_domain.\n- source_object_ref.\n- priority_band.\n- score_components explicables.\n- due_at / sla_state.\n- impact.\n- owner/responsible_ref.\n- required_permission.\n- reason_for_priority.\n\n### Reglas\n- No sustituir workflows/SLA existentes.\n- No hardcodear pesos globales sin configuracion canonica.\n- Empates deben ser deterministicamente explicables.\n- La prioridad no concede permiso de accion.\n- El agregador ejecutivo solo referencia objetos fuente; no duplica su lifecycle.\n\n## 4. Gap C - BOS_RECOMMENDATION_CONTRACT\n\n### Proposito\nResponder \"que recomienda el BOS\" con recomendaciones basadas en evidencia canonica.\n\n### Input minimo\n- executive finding o priority item.\n- datos canonicos usados.\n- contexto empresa/unidad.\n- policies aplicables.\n- restricciones.\n- freshness/provenance.\n\n### Output minimo\n- recommendation_id.\n- recommendation_type.\n- title.\n- rationale.\n- evidence_refs.\n- expected_impact.\n- risk_level.\n- confidence_class.\n- generated_at / valid_until.\n- required_permissions.\n- eligible_actions.\n- human_confirmation_required.\n- stale/provenance metadata.\n\n### Reglas\n- Una recomendacion nunca equivale a autorizacion.\n- Debe ser explicable.\n- Debe señalar datos stale o incompletos.\n- IA generativa puede redactar/explicar, pero no inventar hechos empresariales.\n- Preferir reglas deterministas para recomendaciones repetibles.\n- No ejecutar SQL generado por LLM.\n- Si no hay evidencia suficiente: no recomendar.\n\n## 5. Gap D - RECOMMENDATION_TO_AUTHORIZED_ACTION_BRIDGE\n\n### Proposito\nConectar una recomendacion con una accion elegible sin saltarse RBAC, policy, workflow ni confirmacion humana.\n\n### Flujo canonico\n\n```text\nRecommendation\n  -> Eligible Action\n  -> Capability/Procedure Policy\n  -> RBAC + scope\n  -> Preconditions\n  -> Human confirmation when required\n  -> Existing workflow / Universal Worker / domain service\n  -> Audit evidence\n  -> Outcome\n  -> Recommendation feedback\n```\n\n### Contrato de accion\n- action_type.\n- recommendation_id.\n- target_ref.\n- requested_by.\n- acting_scope.\n- required_permission.\n- required_policy.\n- preconditions.\n- dry_run_supported.\n- confirmation_required.\n- execution_channel.\n- idempotency_key.\n- audit_ref.\n- outcome_status.\n\n### Reglas\n- Default = no ejecutar.\n- Toda accion debe ser allowlisted.\n- No accion por texto libre del LLM.\n- No bypass de RBAC/policy.\n- No usar HRLectura como writer.\n- Universal Worker conserva sus contratos y guardas.\n- Acciones financieras/pagos requieren Gate especifico y controles adicionales.\n- Production permanece fuera de alcance salvo autorizacion humana expresa.\n\n## 6. Reutilizacion obligatoria\n\nLos cuatro gaps deben apoyarse en:\n- Auth/RBAC canonico.\n- capability policy / procedure policy existentes.\n- workflows/SLA existentes.\n- Scheduler y Universal Worker.\n- SQL-first / sources canonicas.\n- auditoria y evidencia existentes.\n- catalogo/capability registry existente.\n- contratos de empresa/unidad/sucursal.\n- Decision Dashboard y Tablero Ejecutivo como consumidores, no como nuevas fuentes de verdad.\n\n## 7. No crear todavia\n\nEste Gate NO autoriza:\n- nuevas tablas.\n- nuevas columnas.\n- nuevos endpoints.\n- nuevos permisos.\n- nuevos jobs.\n- nuevo scheduler.\n- nuevo workflow engine.\n- nuevo recommendation engine fisico.\n- nuevo action executor.\n- cambios en backend/core.\n\nTodo CREATE futuro debe demostrar por evidencia exacta que REUSE/EXTEND no son suficientes.\n\n## 8. Gates siguientes propuestos\n\nE1 - Contract-to-existing-capability mapping:\nmapear cada campo/flujo de este contrato a implementaciones reales existentes y marcar REUSE/EXTEND/MISSING.\n\nE2 - Minimal implementation plan:\nsolo para gaps MISSING probados, con owners y archivos exactos.\n\nE3 - Surgical implementation:\ncambios minimos con tests y rollback.\n\nE4 - Executive E2E certification:\nvalidar las seis preguntas de Direccion con casos reales/sinteticos controlados, sin Production.\n\n## 9. Criterio de cierre de Gate E\n\nGate E solo puede cerrarse cuando las seis preguntas de Direccion tengan evidencia funcional:\n\n1. Como estamos.\n2. Donde estan los problemas.\n3. Por que ocurren.\n4. Que debe atenderse.\n5. Que recomienda el BOS.\n6. Que acciones autorizadas puede ejecutar.\n\n`GATE_E_CERTIFIED=NO`\n`DESIGN_CONTRACT_READY=YES`\n`PRODUCTION_TOUCHED=false`\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
