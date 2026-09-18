@@ -1,0 +1,104 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "RRR-GATE4E-R10-R2-MINIMAL-ATTRIBUTION-IMPLEMENTATION-20260917",
+  "created_at_utc": "2026-09-18T04:18:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "920638ce165f3bb5135c89fb78803836d3dc28fd",
+  "production_allowed": false,
+  "objective": "Implementar quirurgicamente Gate4E-R10 en Desarrollo conforme al contrato R9 certificado. Agregar bounded context backend/modules/rrr, endpoint /api/rrr/attribution/transactions con auth sync_agent reutilizada, servicio de atribucion determinista contra Cliente_Catalogo + Comercial_Inteligencia_VentasDetalleProducto + RRR_Eventos, extender Comandero para transportar bloque opcional rrr_attribution sin romper firmas existentes, cambiar rafagas a la ruta /api y permitir token sync_agent por configuracion. Sin DDL, sin Customer360 V3, sin Mongo como verdad, sin tocar Produccion. Reemision R2 exclusivamente por GIT_LOCK_BUSY del intento R1; contenido funcional y checks identicos.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/rrr/__init__.py",
+      "content": "from .routes import router\n\n__all__ = [\"router\"]\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/modules/rrr/schemas.py",
+      "content": "from datetime import datetime\nfrom typing import Optional\n\nfrom pydantic import BaseModel, Field\n\n\nclass AttributionTransactionRequest(BaseModel):\n    server_id: str\n    agent_id: Optional[str] = None\n    source_transaction_uuid: str = Field(min_length=1, max_length=200)\n    source_system: str = Field(min_length=1, max_length=50)\n    occurred_at_utc: datetime\n    unit_source_id: str = Field(min_length=1, max_length=100)\n\n    cliente_id: Optional[int] = None\n    commercial_system: Optional[str] = Field(default=None, max_length=40)\n    native_transaction_id: Optional[str] = Field(default=None, max_length=128)\n    native_ticket_number: Optional[str] = Field(default=None, max_length=128)\n    native_folio: Optional[str] = Field(default=None, max_length=200)\n    payload_hash: Optional[str] = Field(default=None, max_length=64)\n\n\nclass AttributionTransactionResponse(BaseModel):\n    status: str\n    source_key: str\n    attributed: bool\n    event_id: Optional[int] = None\n    fecha_operacion: Optional[str] = None\n    message: Optional[str] = None\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/modules/rrr/attribution_service.py",
+      "content": "import hashlib\nimport json\nfrom typing import Any, Dict, Optional\n\nfrom core.corporate_filters.service import CorporateFilterService\nfrom core.server_registry import get_server_connection_info\nfrom core.sql_first.db import get_sql_connection\n\nfrom .schemas import AttributionTransactionRequest\n\n\nclass AttributionConflict(Exception):\n    pass\n\n\nclass AttributionInvalidCustomer(Exception):\n    pass\n\n\nclass AttributionInvalidCommercial(Exception):\n    pass\n\n\nclass AttributionOrgScopeError(Exception):\n    pass\n\n\ndef _cursor(conn):\n    try:\n        return conn.cursor(as_dict=True)\n    except TypeError:\n        return conn.cursor()\n\n\ndef _one(cur) -> Optional[Dict[str, Any]]:\n    row = cur.fetchone()\n    if not row:\n        return None\n    if isinstance(row, dict):\n        return row\n    cols = [c[0] for c in cur.description] if cur.description else []\n    return dict(zip(cols, row))\n\n\ndef _stable_payload_hash(payload: AttributionTransactionRequest) -> str:\n    if payload.payload_hash:\n        return payload.payload_hash\n    data = payload.model_dump(mode=\"json\")\n    encoded = json.dumps(data, sort_keys=True, ensure_ascii=False, separators=(\",\", \":\")).encode(\"utf-8\")\n    return hashlib.sha256(encoded).hexdigest()\n\n\ndef _resolve_org(payload: AttributionTransactionRequest) -> Dict[str, Any]:\n    server = get_server_connection_info(payload.server_id)\n    if not server:\n        raise AttributionOrgScopeError(\"server_id no registrado\")\n\n    unit = CorporateFilterService.resolver_unidad(payload.unit_source_id)\n    unidad_pk = unit.get(\"pk\")\n    if not unidad_pk:\n        raise AttributionOrgScopeError(\"unidad no resoluble canonicamente\")\n\n    empresa_id = server.get(\"empresa_id\") or server.get(\"EmpresaID\")\n    if empresa_id is None:\n        raise AttributionOrgScopeError(\"empresa no resoluble desde server_id\")\n\n    return {\n        \"empresa_id\": int(empresa_id),\n        \"unidad_negocio_id\": str(unidad_pk),\n    }\n\n\ndef _validate_customer(cur, cliente_id: int) -> None:\n    cur.execute(\n        \"SELECT TOP 1 ClienteID FROM dbo.Cliente_Catalogo WHERE ClienteID = %s\",\n        (cliente_id,),\n    )\n    if not cur.fetchone():\n        raise AttributionInvalidCustomer(\"ClienteID no existe en Cliente_Catalogo\")\n\n\ndef _find_commercial_fact(cur, payload: AttributionTransactionRequest) -> Optional[Dict[str, Any]]:\n    if not payload.commercial_system:\n        return None\n\n    keys = [\n        payload.native_transaction_id,\n        payload.native_ticket_number,\n        payload.native_folio,\n    ]\n    if not any(keys):\n        return None\n\n    cur.execute(\n        \"\"\"\n        SELECT\n            sistema_origen,\n            fecha_operacion,\n            unidad_negocio_id,\n            sucursal_id,\n            id_transaccion,\n            numero_ticket,\n            folio_origen,\n            MAX(CASE WHEN ISNULL(cancelado_origen, 0) = 1 THEN 1 ELSE 0 END) AS any_cancelled,\n            MIN(CASE WHEN ISNULL(es_kpi_valido, 0) = 1 THEN 1 ELSE 0 END) AS all_valid,\n            COUNT_BIG(*) AS detail_rows\n        FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n        WHERE UPPER(sistema_origen) = UPPER(%s)\n          AND (\n                (%s IS NOT NULL AND id_transaccion = %s)\n             OR (%s IS NOT NULL AND numero_ticket = %s)\n             OR (%s IS NOT NULL AND folio_origen = %s)\n          )\n        GROUP BY\n            sistema_origen,\n            fecha_operacion,\n            unidad_negocio_id,\n            sucursal_id,\n            id_transaccion,\n            numero_ticket,\n            folio_origen\n        \"\"\",\n        (\n            payload.commercial_system,\n            payload.native_transaction_id,\n            payload.native_transaction_id,\n            payload.native_ticket_number,\n            payload.native_ticket_number,\n            payload.native_folio,\n            payload.native_folio,\n        ),\n    )\n    rows = cur.fetchall()\n    if not rows:\n        return None\n    if len(rows) != 1:\n        raise AttributionConflict(\"la llave comercial exacta produjo multiples transacciones logicas\")\n\n    row = rows[0] if isinstance(rows[0], dict) else dict(zip([c[0] for c in cur.description], rows[0]))\n    if int(row.get(\"any_cancelled\") or 0) != 0 or int(row.get(\"all_valid\") or 0) != 1:\n        raise AttributionInvalidCommercial(\"la transaccion comercial esta cancelada o no es KPI valida\")\n    return row\n\n\ndef process_attribution(payload: AttributionTransactionRequest) -> Dict[str, Any]:\n    if payload.cliente_id is None:\n        return {\n            \"status\": \"ACCEPTED_PENDING_CUSTOMER\",\n            \"source_key\": payload.source_transaction_uuid,\n            \"attributed\": False,\n            \"message\": \"transaccion recibida sin ClienteID explicito\",\n        }\n\n    org = _resolve_org(payload)\n    payload_hash = _stable_payload_hash(payload)\n\n    with get_sql_connection() as conn:\n        cur = _cursor(conn)\n        _validate_customer(cur, payload.cliente_id)\n\n        cur.execute(\n            \"\"\"\n            SELECT TOP 1\n                EventoID, ClienteID, EmpresaID, UnidadNegocioID,\n                SourceSystem, SourceKey, PayloadHash, FechaOperacion\n            FROM dbo.RRR_Eventos\n            WHERE SourceSystem = %s AND SourceKey = %s\n            \"\"\",\n            (payload.source_system, payload.source_transaction_uuid),\n        )\n        existing = _one(cur)\n        if existing:\n            same_customer = int(existing[\"ClienteID\"]) == int(payload.cliente_id)\n            same_hash = not existing.get(\"PayloadHash\") or existing.get(\"PayloadHash\") == payload_hash\n            if same_customer and same_hash:\n                return {\n                    \"status\": \"IDEMPOTENT_REPLAY\",\n                    \"source_key\": payload.source_transaction_uuid,\n                    \"attributed\": True,\n                    \"event_id\": existing.get(\"EventoID\"),\n                    \"fecha_operacion\": str(existing.get(\"FechaOperacion\")) if existing.get(\"FechaOperacion\") else None,\n                    \"message\": \"evento ya atribuido con la misma identidad\",\n                }\n            raise AttributionConflict(\"SourceKey ya existe con identidad o payload materialmente distinto\")\n\n        fact = _find_commercial_fact(cur, payload)\n        if fact is None:\n            return {\n                \"status\": \"ACCEPTED_PENDING_COMMERCIAL\",\n                \"source_key\": payload.source_transaction_uuid,\n                \"attributed\": False,\n                \"message\": \"falta acknowledgement/llave comercial exacta\",\n            }\n\n        fact_unit = CorporateFilterService.resolver_unidad(fact.get(\"unidad_negocio_id\"))\n        if fact_unit.get(\"pk\") and str(fact_unit.get(\"pk\")) != str(org[\"unidad_negocio_id\"]):\n            raise AttributionOrgScopeError(\"unidad del hecho comercial no coincide con la unidad canonica solicitada\")\n\n        cur.execute(\n            \"\"\"\n            INSERT INTO dbo.RRR_Eventos (\n                ClienteID, EmpresaID, UnidadNegocioID, VentaID,\n                TipoEvento, SourceSystem, SourceKey, FechaOperacion,\n                OcurridoAtUtc, PayloadHash, EstadoValidacion,\n                EstadoAntifraude, MotivoRechazo, FechaCreacion\n            )\n            OUTPUT INSERTED.EventoID\n            VALUES (\n                %s, %s, %s, NULL,\n                %s, %s, %s, %s,\n                %s, %s, %s,\n                %s, NULL, SYSUTCDATETIME()\n            )\n            \"\"\",\n            (\n                payload.cliente_id,\n                org[\"empresa_id\"],\n                org[\"unidad_negocio_id\"],\n                \"ACTIVIDAD_COMERCIAL\",\n                payload.source_system,\n                payload.source_transaction_uuid,\n                fact[\"fecha_operacion\"],\n                payload.occurred_at_utc,\n                payload_hash,\n                \"VALIDADO\",\n                \"PENDIENTE\",\n            ),\n        )\n        inserted = _one(cur)\n        conn.commit()\n\n        return {\n            \"status\": \"ATTRIBUTED\",\n            \"source_key\": payload.source_transaction_uuid,\n            \"attributed\": True,\n            \"event_id\": inserted.get(\"EventoID\") if inserted else None,\n            \"fecha_operacion\": str(fact[\"fecha_operacion\"]),\n            \"message\": \"atribucion determinista persistida\",\n        }\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/modules/rrr/routes.py",
+      "content": "from fastapi import APIRouter, Depends, HTTPException\n\nfrom api.sync_receiver import get_agent_from_token, validate_server_id_match\n\nfrom .attribution_service import (\n    AttributionConflict,\n    AttributionInvalidCommercial,\n    AttributionInvalidCustomer,\n    AttributionOrgScopeError,\n    process_attribution,\n)\nfrom .schemas import AttributionTransactionRequest, AttributionTransactionResponse\n\n\nrouter = APIRouter(prefix=\"/rrr/attribution\", tags=[\"RRR Attribution\"])\n\n\n@router.post(\"/transactions\", response_model=AttributionTransactionResponse)\nasync def receive_attribution_transaction(\n    payload: AttributionTransactionRequest,\n    agent=Depends(get_agent_from_token),\n):\n    validate_server_id_match(agent, payload.server_id)\n\n    if payload.agent_id and payload.agent_id != agent.get(\"agent_id\"):\n        raise HTTPException(status_code=403, detail=\"agent_id mismatch\")\n\n    try:\n        return process_attribution(payload)\n    except AttributionInvalidCustomer as exc:\n        raise HTTPException(status_code=422, detail={\"status\": \"REJECTED_INVALID_CUSTOMER\", \"message\": str(exc)})\n    except AttributionInvalidCommercial as exc:\n        raise HTTPException(status_code=422, detail={\"status\": \"REJECTED_INVALID_COMMERCIAL\", \"message\": str(exc)})\n    except AttributionOrgScopeError as exc:\n        raise HTTPException(status_code=422, detail={\"status\": \"REJECTED_ORG_SCOPE\", \"message\": str(exc)})\n    except AttributionConflict as exc:\n        raise HTTPException(status_code=409, detail={\"status\": \"REJECTED_CONFLICT\", \"message\": str(exc)})\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_rrr_attribution_contract.py",
+      "content": "from datetime import datetime, timezone\n\nimport pytest\n\nfrom modules.rrr.schemas import AttributionTransactionRequest\n\n\ndef test_attribution_schema_preserves_uuid_and_cliente():\n    payload = AttributionTransactionRequest(\n        server_id=\"srv-1\",\n        agent_id=\"agent-1\",\n        source_transaction_uuid=\"550e8400-e29b-41d4-a716-446655440000\",\n        source_system=\"COMANDERO\",\n        occurred_at_utc=datetime.now(timezone.utc),\n        unit_source_id=\"130MID\",\n        cliente_id=123,\n        commercial_system=\"SOFTRESTAURANT\",\n        native_folio=\"25454\",\n    )\n    assert payload.source_transaction_uuid == \"550e8400-e29b-41d4-a716-446655440000\"\n    assert payload.cliente_id == 123\n    assert payload.native_folio == \"25454\"\n\n\ndef test_attribution_schema_allows_anonymous_transport():\n    payload = AttributionTransactionRequest(\n        server_id=\"srv-1\",\n        source_transaction_uuid=\"uuid-2\",\n        source_system=\"COMANDERO\",\n        occurred_at_utc=datetime.now(timezone.utc),\n        unit_source_id=\"130MID\",\n    )\n    assert payload.cliente_id is None\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/server.py",
+      "old": "api_router.include_router(sync_receiver_router)\n",
+      "new": "api_router.include_router(sync_receiver_router)\n\n# RRR - atribucion determinista cliente <-> venta (Gate 4E)\nfrom modules.rrr.routes import router as rrr_attribution_router\napi_router.include_router(rrr_attribution_router)\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/edge/comandero_local_core.py",
+      "old": "from typing import Dict, List, Any\n",
+      "new": "from typing import Dict, List, Any, Optional\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/edge/comandero_local_core.py",
+      "old": "                                  totales: Dict, \n                                  contabilidad: Dict) -> str:\n",
+      "new": "                                  totales: Dict, \n                                  contabilidad: Dict,\n                                  rrr_attribution: Optional[Dict[str, Any]] = None) -> str:\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/edge/comandero_local_core.py",
+      "old": "        payload_local = {\n            \"offline_payload_control\": {\n",
+      "new": "        attribution = dict(rrr_attribution or {})\n        attribution[\"source_transaction_uuid\"] = id_transaccion_global\n\n        payload_local = {\n            \"rrr_attribution\": attribution,\n            \"offline_payload_control\": {\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/edge/gestor_sincronizacion_rafagas.py",
+      "old": "import http.client\nfrom typing import Dict, Any, List\n",
+      "new": "import http.client\nimport os\nfrom typing import Dict, Any, List, Optional\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/edge/gestor_sincronizacion_rafagas.py",
+      "old": "    def __init__(self, db_path: str = \"edarsa_edge_device.db\", hub_host: str = \"api.edarashub.internal\"):\n        self.db_path = db_path\n        self.hub_host = hub_host\n",
+      "new": "    def __init__(self, db_path: str = \"edarsa_edge_device.db\", hub_host: str = \"api.edarashub.internal\", sync_agent_token: Optional[str] = None):\n        self.db_path = db_path\n        self.hub_host = hub_host\n        self.sync_agent_token = sync_agent_token or os.environ.get(\"EDARSAHUB_SYNC_AGENT_TOKEN\")\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/edge/gestor_sincronizacion_rafagas.py",
+      "old": "        try:\n            conexion = http.client.HTTPConnection(self.hub_host, timeout=2.0)\n            headers = {\"Content-Type\": \"application/json\"}\n            conexion.request(\"POST\", \"/v1/sync/transaccion\", json.dumps(payload), headers)\n            respuesta = conexion.getresponse()\n            return respuesta.status in [200, 201, 202] # Aceptado para procesamiento diferido\n        except Exception:\n            return False\n",
+      "new": "        try:\n            attribution = dict(payload.get(\"rrr_attribution\") or {})\n            if not attribution:\n                return False\n            if not self.sync_agent_token:\n                return False\n\n            headers = {\n                \"Content-Type\": \"application/json\",\n                \"Authorization\": f\"Bearer {self.sync_agent_token}\",\n            }\n            conexion = http.client.HTTPConnection(self.hub_host, timeout=2.0)\n            conexion.request(\n                \"POST\",\n                \"/api/rrr/attribution/transactions\",\n                json.dumps(attribution),\n                headers,\n            )\n            respuesta = conexion.getresponse()\n            return respuesta.status in [200, 201, 202]\n        except Exception:\n            return False\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/rrr/__init__.py",
+        "backend/modules/rrr/schemas.py",
+        "backend/modules/rrr/attribution_service.py",
+        "backend/modules/rrr/routes.py",
+        "backend/modules/edge/comandero_local_core.py",
+        "backend/modules/edge/gestor_sincronizacion_rafagas.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_rrr_attribution_contract.py"
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
