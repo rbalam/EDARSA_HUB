@@ -1,0 +1,78 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENT-HARNESS-V1-RH-CANONICAL-READINESS-GATE25-R1",
+  "created_at_utc": "2026-09-18T01:38:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2f76997de376dec42f8d8d4edfee65e1d25579ba",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Gate25 READ_ONLY de canonical readiness del dominio RH para BOS Agent Harness. No certificar RH como dominio operativo si existen fuentes no canonicas o estado en memoria de proceso. Auditar exclusivamente backend/modules/rh y tests relacionados para separar: contratos SQL-first reutilizables, RBAC canonico reutilizable, endpoints de solo lectura seguros, y blockers que impidan un canary de dominio (por ejemplo almacenamiento runtime en memoria, TODO de migracion a SQL, dependencias legacy, escrituras reales o fuentes no canonicas). Mantener separado este gate del programa RH Global HCM. No ejecutar integraciones, no escribir SQL, no usar Mongo, no tocar Scheduler, Nomina, permisos, Production ni archivos.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/rh/repository.py",
+        "backend/modules/rh/routes.py",
+        "backend/modules/rh/service.py",
+        "backend/modules/rh/solicitudes_catalogo.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_rbac_p1_hardening_gates.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/rh",
+          "backend/tests/test_rbac_p1_hardening_gates.py",
+          "backend/tests/test_catalogos_rrhh.py"
+        ],
+        "search_terms": [
+          "EDARSAHUB_CONFIG",
+          "sql_first",
+          "get_current_user",
+          "rbac_helper_sql",
+          "get_role_code",
+          "es_admin",
+          "es_supervisor_o_superior",
+          "_solicitudes_db",
+          "ALMACENAMIENTO EN MEMORIA",
+          "migrar a SQL Server",
+          "TODO",
+          "Mongo",
+          "execute_hub_query",
+          "INSERT",
+          "UPDATE",
+          "DELETE"
+        ],
+        "include_patterns": ["*.py"],
+        "exclude_patterns": ["*.pyc", "__pycache__/*"],
+        "max_results": 400
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "harness_context": {
+    "plan_step_id": "gate25-rh-canonical-readiness-r1",
+    "domain": "rh",
+    "procedure": "repository-contract-audit",
+    "risk": "R0",
+    "data_classification": "HR_PRIVATE",
+    "agent_id": "bos-backend",
+    "agent_version": "1",
+    "skill_id": "repository-contract-audit",
+    "skill_version": "1",
+    "executor": "worker"
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
