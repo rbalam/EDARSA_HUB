@@ -1,0 +1,23 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12J-R2-ISOLATE-Q03-PERSONA-LINK-POPULATION-READONLY-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "aa57b944342f7e7efda0397ebfa64358c8c99a61",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Aislar exclusivamente la consulta Q03-PERSONA-LINK-POPULATION que formaba parte del sql_readonly_audit de Gate12J-R2. Ejecutar una sola consulta READ_ONLY_SQL. No modificar codigo, SQL, RBAC, secrets, workflows ni Produccion. No avanzar a Gate12K.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "q03_persona_link_population",
+          "sql": "SELECT COUNT_BIG(*) AS total_socios,SUM(CASE WHEN PersonaID IS NULL THEN 1 ELSE 0 END) AS socios_sin_persona,SUM(CASE WHEN PersonaID IS NOT NULL THEN 1 ELSE 0 END) AS socios_con_persona FROM dbo.CavaSocios_Socios;"
+        }
+      ]
+    }
+  ]
+}
