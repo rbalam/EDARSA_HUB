@@ -1,0 +1,62 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENT-HARNESS-V1-GATE23-DOMAIN-SELECTION-DISCOVERY-READONLY-R1",
+  "created_at_utc": "2026-09-18T00:53:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "f7c2f81f10dca497c387974a8d28d629a6e673e7",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Gate23 discovery READ_ONLY para seleccionar, con evidencia de repositorio y sin inventar arquitectura, el siguiente dominio funcional a certificar mediante BOS Agent Harness despues de Gate22. Comparar exclusivamente los dominios canonicos existentes aun no cubiertos por los canaries Gate15-Gate21: Finanzas/Tesoreria, Proveedores, RH y CRM. Determinar para cada dominio: ownership modular real, rutas y contratos existentes, SQL/RBAC/fail-closed relevante, tests disponibles, integraciones sensibles, dependencia de Scheduler/NetPay y si puede abrirse un canary READ_ONLY sin mutacion previa. Excluir CRM si la capacidad ya esta suficientemente cubierta por AH7 Marketing/CX. El resultado debe identificar un unico siguiente dominio recomendado por evidencia, sin implementar cambios. No tocar SQL, Mongo, Scheduler, NetPay, RBAC, permisos, secretos ni Production.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/finanzas",
+          "backend/modules/proveedores",
+          "backend/modules/rh",
+          "backend/modules/crm",
+          "backend/tests"
+        ],
+        "search_terms": [
+          "tesoreria",
+          "finanzas",
+          "proveedores",
+          "rh",
+          "nomina",
+          "crm",
+          "permission",
+          "rbac",
+          "fail_closed",
+          "sql_first",
+          "scheduler",
+          "netpay",
+          "portal-proveedores"
+        ],
+        "include_patterns": ["*.py", "*.json", "*.md"],
+        "exclude_patterns": ["*.pyc", "__pycache__/*"],
+        "max_results": 800
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "harness_context": {
+    "plan_step_id": "gate23-domain-selection-discovery-readonly-r1",
+    "domain": "engineering",
+    "procedure": "repository-contract-audit",
+    "risk": "R0",
+    "data_classification": "INTERNAL",
+    "agent_id": "bos-backend",
+    "agent_version": "1",
+    "skill_id": "repository-contract-audit",
+    "skill_version": "1",
+    "executor": "worker"
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
