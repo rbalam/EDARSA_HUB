@@ -1,0 +1,101 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12N-RBAC-MODULES-SOURCE-OF-TRUTH-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3ea717f1c26365551518edb89d98e4abb07096d2",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Aislar sin tocar nada la coexistencia de dbo.Usuario_Modulos y dbo.Sistema_Modulos en EDARSAHUB y determinar con evidencia cual participa en autorizacion RBAC efectiva y cual participa en navegacion/menu. Auditar repositorio y SQL runtime. No elegir por intuicion, no modificar codigo, permisos, roles, menus, usuarios ni datos. Confirmar especificamente como Usuario_PermisosRolModulo.ModuloID se relaciona con cada catalogo y cual usa require_explicit_permission / RBACRepositorySQL / RBACContextService frente a MenuService.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/rbac/repository_sql.py",
+          "backend/core/rbac/middleware.py",
+          "backend/modules/rbac_context_sql/context_service.py",
+          "backend/modules/sistema/menu_service.py",
+          "backend/scripts/create_cava_socios_rbac.py",
+          "docs/architecture/rbac/02_tablas_sql.md"
+        ],
+        "search_terms": [
+          "Usuario_Modulos",
+          "Sistema_Modulos",
+          "Usuario_PermisosRolModulo",
+          "Usuario_Acciones",
+          "CodigoModulo",
+          "Codigo",
+          "obtener_permisos_usuario_por_unidad",
+          "_obtener_modulos_permitidos_usuario",
+          "_obtener_menus_usuario_resuelto",
+          "require_explicit_permission",
+          "cava_socios"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.md"
+        ],
+        "exclude_patterns": [],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "objects_exist",
+          "sql": "SELECT OBJECT_SCHEMA_NAME(o.object_id) AS schema_name,o.name,o.type_desc FROM sys.objects o WHERE o.object_id IN (OBJECT_ID(N'dbo.Usuario_Modulos'),OBJECT_ID(N'dbo.Sistema_Modulos'),OBJECT_ID(N'dbo.Usuario_PermisosRolModulo'),OBJECT_ID(N'dbo.Usuario_Acciones')) ORDER BY o.name;"
+        },
+        {
+          "name": "usuario_modulos_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,TYPE_NAME(c.user_type_id) AS data_type FROM sys.columns c WHERE c.object_id=OBJECT_ID(N'dbo.Usuario_Modulos') ORDER BY c.column_id;"
+        },
+        {
+          "name": "sistema_modulos_columns",
+          "sql": "SELECT c.column_id,c.name AS column_name,TYPE_NAME(c.user_type_id) AS data_type FROM sys.columns c WHERE c.object_id=OBJECT_ID(N'dbo.Sistema_Modulos') ORDER BY c.column_id;"
+        },
+        {
+          "name": "permiso_fk_targets",
+          "sql": "SELECT fk.name AS fk_name,OBJECT_SCHEMA_NAME(fk.parent_object_id) AS parent_schema,OBJECT_NAME(fk.parent_object_id) AS parent_table,pc.name AS parent_column,OBJECT_SCHEMA_NAME(fk.referenced_object_id) AS referenced_schema,OBJECT_NAME(fk.referenced_object_id) AS referenced_table,rc.name AS referenced_column,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk INNER JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id INNER JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id INNER JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fk.parent_object_id=OBJECT_ID(N'dbo.Usuario_PermisosRolModulo') ORDER BY fk.name;"
+        },
+        {
+          "name": "cava_in_usuario_modulos",
+          "sql": "SELECT ModuloID,CodigoModulo,NombreModulo,Ruta,Activo FROM dbo.Usuario_Modulos WHERE LOWER(LTRIM(RTRIM(CodigoModulo))) LIKE N'cava_socios%' ORDER BY CodigoModulo;"
+        },
+        {
+          "name": "cava_in_sistema_modulos",
+          "sql": "SELECT ModuloID,Codigo,Nombre,URLExterna,Activo FROM dbo.Sistema_Modulos WHERE LOWER(LTRIM(RTRIM(Codigo))) LIKE N'cava_socios%' OR LOWER(LTRIM(RTRIM(Nombre))) LIKE N'%cava%' ORDER BY Codigo;"
+        },
+        {
+          "name": "permission_join_usuario_modulos",
+          "sql": "SELECT TOP (100) prm.PermisoRolModuloID,prm.RolID,prm.ModuloID,um.CodigoModulo,ua.CodigoAccion,prm.Permitido,prm.Activo FROM dbo.Usuario_PermisosRolModulo prm INNER JOIN dbo.Usuario_Modulos um ON um.ModuloID=prm.ModuloID INNER JOIN dbo.Usuario_Acciones ua ON ua.AccionID=prm.AccionID WHERE LOWER(LTRIM(RTRIM(um.CodigoModulo))) LIKE N'cava_socios%' ORDER BY prm.RolID,um.CodigoModulo,ua.CodigoAccion;"
+        },
+        {
+          "name": "permission_join_sistema_modulos_overlap",
+          "sql": "SELECT TOP (100) prm.PermisoRolModuloID,prm.RolID,prm.ModuloID,sm.Codigo,sm.Nombre,prm.Permitido,prm.Activo FROM dbo.Usuario_PermisosRolModulo prm INNER JOIN dbo.Sistema_Modulos sm ON sm.ModuloID=prm.ModuloID WHERE LOWER(LTRIM(RTRIM(sm.Codigo))) LIKE N'cava_socios%' OR LOWER(LTRIM(RTRIM(sm.Nombre))) LIKE N'%cava%' ORDER BY prm.RolID,sm.Codigo;"
+        },
+        {
+          "name": "module_id_collision_check",
+          "sql": "SELECT um.ModuloID,um.CodigoModulo AS usuario_codigo,um.NombreModulo AS usuario_nombre,sm.Codigo AS sistema_codigo,sm.Nombre AS sistema_nombre FROM dbo.Usuario_Modulos um INNER JOIN dbo.Sistema_Modulos sm ON sm.ModuloID=um.ModuloID WHERE LOWER(LTRIM(RTRIM(um.CodigoModulo))) LIKE N'cava_socios%' OR LOWER(LTRIM(RTRIM(sm.Codigo))) LIKE N'cava_socios%' OR LOWER(LTRIM(RTRIM(sm.Nombre))) LIKE N'%cava%' ORDER BY um.ModuloID;"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "Development only",
+    "No DDL or DML",
+    "No code changes",
+    "No permission changes",
+    "No role changes",
+    "No menu changes",
+    "No user changes",
+    "No Production",
+    "Do not assume Usuario_Modulos or Sistema_Modulos is canonical before evidence",
+    "EDARSAHUB SQL Server remains source of truth",
+    "MongoDB prohibited"
+  ]
+}
