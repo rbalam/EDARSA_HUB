@@ -31,6 +31,7 @@ DEV_BRANCH = os.environ.get("EDARSAHUB_DEV_BRANCH", "Edarsahub_Desarrollo")
 ORPHAN_SECONDS = int(os.environ.get("EDARSAHUB_PROCESSING_ORPHAN_SECONDS", "2100"))
 CLAIM_STALE_SECONDS = int(os.environ.get("EDARSAHUB_CLAIM_STALE_SECONDS", "900"))
 GUARD = ROOT / ".git" / "agent-guard" / "bin" / "agent_guard.py"
+GUARD_STATE_WORKTREES = ROOT / ".git" / "agent-guard" / "state" / "worktrees"
 PYTHON = Path("/root/.venv/bin/python")
 
 def now() -> str:
@@ -102,13 +103,28 @@ def parse_guard_claims(text: str) -> list[dict[str, Any]]:
     return claims
 
 def guard_claims() -> list[dict[str, Any]]:
-    if not GUARD.is_file() or not PYTHON.is_file(): return []
-    for command in ([str(PYTHON), str(GUARD), "status"], [str(PYTHON), str(GUARD), "claims"]):
-        try: result = run(command, timeout=20)
-        except Exception: continue
-        claims = parse_guard_claims(result.stdout)
-        if claims: return claims
-    return []
+    claims: list[dict[str, Any]] = []
+    if GUARD.is_file() and PYTHON.is_file():
+        for command in ([str(PYTHON), str(GUARD), "status"], [str(PYTHON), str(GUARD), "claims"]):
+            try: result = run(command, timeout=20)
+            except Exception: continue
+            claims.extend(parse_guard_claims(result.stdout))
+            if claims: break
+    if GUARD_STATE_WORKTREES.is_dir():
+        for path in sorted(GUARD_STATE_WORKTREES.glob("*.json")):
+            try: value = json.loads(path.read_text(encoding="utf-8"))
+            except Exception: continue
+            if isinstance(value, dict):
+                value = dict(value)
+                value.setdefault("claim_file", str(path))
+                claims.append(value)
+    deduped: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for claim in claims:
+        key = (str(claim.get("agent_id") or ""), str(claim.get("branch") or ""), str(claim.get("worktree") or ""))
+        if key in seen: continue
+        seen.add(key); deduped.append(claim)
+    return deduped
 
 def parse_iso(value: Any) -> float | None:
     text = str(value or "").strip()
@@ -127,15 +143,26 @@ def worktree_clean(path: Path) -> bool:
     if not (path / ".git").exists(): return False
     status = git("status", "--porcelain=v1", cwd=path); return status.returncode == 0 and not status.stdout.strip()
 
+def claim_task_id(claim: dict[str, Any]) -> str:
+    task_id = str(claim.get("task_id") or "").strip()
+    if task_id: return task_id
+    branch = str(claim.get("branch") or "").strip()
+    prefix = "agent/worker/"
+    if branch.startswith(prefix) and len(branch) > len(prefix): return branch[len(prefix):]
+    agent_id = str(claim.get("agent_id") or "").strip()
+    if agent_id.startswith("worker-") and len(agent_id) > len("worker-"): return agent_id[len("worker-"):]
+    return ""
+
 def claim_terminal(claim: dict[str, Any]) -> bool:
-    task_id = str(claim.get("task_id") or "")
+    task_id = claim_task_id(claim)
     if task_id and ((DONE / f"{task_id}.json").exists() or (REJECTED / f"{task_id}.json").exists() or (RESULTS / f"{task_id}.json").exists()): return True
     return branch_is_integrated(str(claim.get("branch") or ""))
 
 def safe_releasable(claim: dict[str, Any]) -> tuple[bool, str]:
-    heartbeat = parse_iso(claim.get("heartbeat"))
-    if heartbeat is None: return False, "NO_HEARTBEAT_EVIDENCE"
-    if time.time() - heartbeat < CLAIM_STALE_SECONDS: return False, "CLAIM_NOT_STALE"
+    claim_time = parse_iso(claim.get("heartbeat"))
+    if claim_time is None: claim_time = parse_iso(claim.get("registered_at"))
+    if claim_time is None: return False, "NO_CLAIM_TIME_EVIDENCE"
+    if time.time() - claim_time < CLAIM_STALE_SECONDS: return False, "CLAIM_NOT_STALE"
     worktree = Path(str(claim.get("worktree") or ""))
     if not claim_terminal(claim): return False, "WORK_NOT_TERMINAL_OR_INTEGRATED"
     if process_references(worktree): return False, "LIVE_PROCESS_REFERENCES_WORKTREE"
@@ -144,14 +171,21 @@ def safe_releasable(claim: dict[str, Any]) -> tuple[bool, str]:
 
 def release_claim(claim: dict[str, Any]) -> tuple[bool, str]:
     if not GUARD.is_file() or not PYTHON.is_file(): return False, "AGENT_GUARD_UNAVAILABLE"
-    agent_id = str(claim.get("agent_id") or ""); task_id = str(claim.get("task_id") or "")
-    if not agent_id or not task_id: return False, "CLAIM_IDENTITY_INCOMPLETE"
+    agent_id = str(claim.get("agent_id") or "").strip(); task_id = claim_task_id(claim)
+    if not agent_id: return False, "CLAIM_IDENTITY_INCOMPLETE"
+    commands = []
+    if task_id:
+        commands.extend(([str(PYTHON), str(GUARD), "claim-release", "--agent-id", agent_id, "--task-id", task_id], [str(PYTHON), str(GUARD), "release", "--agent-id", agent_id, "--task-id", task_id]))
+    commands.extend(([str(PYTHON), str(GUARD), "claim-release", "--agent-id", agent_id], [str(PYTHON), str(GUARD), "release", "--agent-id", agent_id]))
     last = ""
-    for command in ([str(PYTHON), str(GUARD), "claim-release", "--agent-id", agent_id, "--task-id", task_id], [str(PYTHON), str(GUARD), "release", "--agent-id", agent_id, "--task-id", task_id]):
+    for command in commands:
         result = run(command, timeout=20); last = result.stdout[-800:]
         if result.returncode == 0:
             worktree = Path(str(claim.get("worktree") or ""))
-            if worktree.exists(): git("worktree", "remove", "--force", str(worktree)); shutil.rmtree(worktree, ignore_errors=True)
+            if worktree.exists():
+                git("worktree", "remove", "--force", str(worktree)); shutil.rmtree(worktree, ignore_errors=True)
+            branch = str(claim.get("branch") or "").strip()
+            if branch and branch_is_integrated(branch): git("branch", "-d", branch)
             return True, "CLAIM_RELEASED"
     return False, "CLAIM_RELEASE_FAILED:" + last
 
