@@ -38,6 +38,7 @@ import CRMDashboard from '@/pages/crm/CRMDashboard';
 // Módulos Satélites
 import SuperCajaPage from '@/pages/satelites/SuperCajaPage';
 import ComanderoPage from '@/pages/satelites/ComanderoPage';
+import COAHome from '@/pages/satelites/COAHome';
 import LeadsPage from '@/pages/crm/LeadsPage';
 import OportunidadesPage from '@/pages/crm/OportunidadesPage';
 import PipelinePage from '@/pages/crm/PipelinePage';
@@ -195,6 +196,7 @@ function App() {
               {/* Módulos Satélites */}
               <Route path="super-caja" element={<SuperCajaPage />} />
               <Route path="comandero" element={<ComanderoPage />} />
+              <Route path="coa" element={<COAHome />} />
 
               {/* Módulos registrados pendientes de implementación */}
               <Route path="pos/generico" element={<ComingSoonPage title="Punto de Venta" />} />

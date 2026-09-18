@@ -458,6 +458,15 @@ export const enterpriseMenuGroups = [
         section: "Analítica Comercial",
         satellite: true,
         keywords: ["portal", "inteligencia comercial", "pic", "ventas", "analitica"]
+      },
+      {
+        id: "coa",
+        label: "COA - Operaciones Administrativas",
+        path: "/coa",
+        icon: "ClipboardList",
+        section: "Administracion",
+        satellite: true,
+        keywords: ["coa", "operaciones administrativas", "facturacion", "nominas", "comisiones", "expedientes"]
       }
     ]
   }
