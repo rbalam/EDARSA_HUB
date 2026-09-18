@@ -1,0 +1,56 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12I-R3-MIGRATION-COMPILE-FIX-R1-20260917",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "bb6453f33e31158e6b88af064ca64d8e0cefcfc7",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Corregir quirurgicamente la migracion certificada de Gate12I para evitar compilacion prematura de PersonaID en el mismo batch de SQL Server. Mantener exactamente el mismo modelo de datos, transaccion, idempotencia, cero backfill y alcance. Solo envolver el DDL dependiente (FK e indice) en sys.sp_executesql, siguiendo el patron canonico ya existente en migraciones EDARSAHUB. No ejecutar SQL ni tocar Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/database/migrations/20260910_cavas_socios_persona_link.sql",
+      "expected_sha256": "072e4c23f86073d1f18b3b40ca3572d4956e897c65e442e5fcef7dbe4a74518f",
+      "expected_count": 1,
+      "old": "    BEGIN\n        ALTER TABLE dbo.CavaSocios_Socios\n        ADD CONSTRAINT FK_CavaSocios_Socios_GobiernoPersona\n        FOREIGN KEY (PersonaID)\n        REFERENCES dbo.Gobierno_Persona(PersonaID);\n    END;",
+      "new": "    BEGIN\n        EXEC sys.sp_executesql N'\n            ALTER TABLE dbo.CavaSocios_Socios\n            ADD CONSTRAINT FK_CavaSocios_Socios_GobiernoPersona\n            FOREIGN KEY (PersonaID)\n            REFERENCES dbo.Gobierno_Persona(PersonaID);\n        ';\n    END;"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/database/migrations/20260910_cavas_socios_persona_link.sql",
+      "expected_count": 1,
+      "old": "    BEGIN\n        CREATE INDEX IX_CavaSocios_Socios_PersonaID\n        ON dbo.CavaSocios_Socios(PersonaID)\n        WHERE PersonaID IS NOT NULL;\n    END;",
+      "new": "    BEGIN\n        EXEC sys.sp_executesql N'\n            CREATE INDEX IX_CavaSocios_Socios_PersonaID\n            ON dbo.CavaSocios_Socios(PersonaID)\n            WHERE PersonaID IS NOT NULL;\n        ';\n    END;"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/database/migrations/20260910_cavas_socios_persona_link.sql",
+          "backend/database/migrations/20260813_026_compras_unidad_negocio_uuid_canonica.sql"
+        ],
+        "search_terms": [
+          "ADD PersonaID bigint NULL",
+          "EXEC sys.sp_executesql",
+          "FK_CavaSocios_Socios_GobiernoPersona",
+          "IX_CavaSocios_Socios_PersonaID",
+          "BEGIN TRANSACTION",
+          "COMMIT TRANSACTION",
+          "ROLLBACK TRANSACTION",
+          "XACT_ABORT"
+        ],
+        "include_patterns": [
+          "*.sql"
+        ],
+        "exclude_patterns": [],
+        "max_results": 100
+      }
+    }
+  ]
+}
