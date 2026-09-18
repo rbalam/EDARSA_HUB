@@ -1,0 +1,172 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-EXECUTIVE-BOS-CERTIFICATION-R2-READONLY-20260917",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c85ab15705196c85ef7e4bf7fc3847d3f13e6960",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Certificar evidence-only el Gate E BOS Ejecutivo contra el contrato vigente del Programa Estrategico BOS. No revivir el harness historico ausente, no ejecutar discovery general y no modificar funcionalidad. Reunir evidencia estructurada para las seis capacidades ejecutivas: como estamos, donde estan los problemas, por que ocurren, que debe atenderse, que recomienda el BOS y que acciones autorizadas puede ejecutar.",
+  "acceptance": [
+    "Evidencia verificable de superficies ejecutivas y KPIs para responder como estamos.",
+    "Evidencia verificable de alertas, anomalias, problemas o prioridades y sus drilldowns.",
+    "Evidencia verificable de explicaciones, causas, trazabilidad o contexto para responder por que ocurren.",
+    "Evidencia verificable de priorizacion, pendientes, decisiones o acciones que deben atenderse.",
+    "Evidencia verificable de recomendaciones BOS o decision support.",
+    "Evidencia verificable de acciones autorizadas gobernadas por RBAC/policy/workflow, sin ejecucion en este Gate.",
+    "No modificar archivos; files_changed=[] y production_touched=false.",
+    "quality_gate=PASS y CERTIFIED_READ_ONLY para considerar completa la recoleccion de evidencia de Gate E."
+  ],
+  "constraints": [
+    "READ ONLY estricto.",
+    "No actions de mutacion.",
+    "No SQL DDL/DML.",
+    "No Mongo operativo.",
+    "No LIVE administrativo.",
+    "No Produccion.",
+    "No crear dashboard, KPI, recomendador, workflow o policy paralelos.",
+    "Usar solo repository_contract_audit canonico existente."
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "frontend",
+          "docs/BOS"
+        ],
+        "search_terms": [
+          "ejecutivo",
+          "executive",
+          "dashboard",
+          "kpi",
+          "direccion",
+          "resumen",
+          "summary",
+          "estado",
+          "status"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.md",
+          "*.json"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1200
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "frontend",
+          "docs/BOS"
+        ],
+        "search_terms": [
+          "problema",
+          "alerta",
+          "anomalia",
+          "riesgo",
+          "prioridad",
+          "drilldown",
+          "causa",
+          "explain",
+          "explicacion",
+          "root cause",
+          "evidence"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.md",
+          "*.json"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1200
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "frontend",
+          "docs/BOS"
+        ],
+        "search_terms": [
+          "recomendacion",
+          "recommendation",
+          "decision",
+          "accion",
+          "action",
+          "pendiente",
+          "atender",
+          "workflow",
+          "authorize",
+          "autoriz",
+          "policy",
+          "rbac"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.md",
+          "*.json"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1200
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "frontend"
+        ],
+        "search_terms": [
+          "ventas_sin_propina",
+          "stale",
+          "freshness",
+          "fecha_operacion",
+          "access-context",
+          "effective-permissions",
+          "menu-permissions",
+          "scheduler",
+          "sla",
+          "decision",
+          "auditoria"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.json"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1200
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
