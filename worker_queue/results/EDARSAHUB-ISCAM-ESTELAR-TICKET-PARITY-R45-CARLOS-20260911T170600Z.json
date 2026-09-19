@@ -1,0 +1,21 @@
+{
+  "certification": "NOT_CERTIFIED",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-ESTELAR-TICKET-PARITY-R45-CARLOS-20260911T170600Z",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-19T08:00:16Z",
+  "reasons": [
+    "INVALID_SCHEMA",
+    "ACTIONS_REQUIRED"
+  ],
+  "received_at_utc": "2026-09-11T18:02:47.570678+00:00",
+  "schema": "edarsahub.worker-rejection.v2",
+  "source": "worker_queue/inbox/EDARSAHUB-ISCAM-ESTELAR-TICKET-PARITY-R45-CARLOS-20260911T170600Z.json",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "status": "REJECTED",
+  "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto.",
+  "work_completion": "NOT_CERTIFIED"
+}
