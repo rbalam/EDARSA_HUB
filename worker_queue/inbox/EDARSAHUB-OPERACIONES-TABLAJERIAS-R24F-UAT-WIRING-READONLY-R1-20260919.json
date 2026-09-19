@@ -1,0 +1,57 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-WIRING-READONLY-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b8ff434f61559efcc458091dea6185dc8451b342",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias"
+  },
+  "objective": "Certificar en solo lectura el wiring UAT de R24F Lotes Proveedor: ruta frontend, pagina integrada, endpoints backend existentes de rendimientos, drilldown y reclamos, y servicio SQL-first. No modificar archivos, no tocar SQL, Produccion, Scheduler, NetPay, RBAC/permisos ni menu/layout transversal.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/App.js",
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+          "backend/modules/tablajeria/routes.py",
+          "backend/modules/tablajeria/lote_proveedor_service.py"
+        ],
+        "search_terms": [
+          "LotesProveedorPage",
+          "tablajeria/lotes-proveedor",
+          "lotes-proveedor/rendimientos",
+          "drilldown",
+          "reclamos",
+          "crear_reclamo_lote_proveedor",
+          "listar_rendimientos_lote_proveedor",
+          "obtener_drilldown_lote_proveedor"
+        ],
+        "max_results": 300
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No product mutation",
+    "No SQL mutation",
+    "No Production",
+    "No Scheduler",
+    "No NetPay",
+    "No RBAC or permissions changes",
+    "No menu or transversal layout changes",
+    "EDARSAHUB SQL Server remains source of truth",
+    "MongoDB prohibited"
+  ]
+}
