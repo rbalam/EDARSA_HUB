@@ -1,0 +1,243 @@
+{
+  "base_sha": "01ad6e403fc05c82970cfaa1bb8cb7027dfb3bc2",
+  "blockers": [],
+  "candidate_sha": "f6cd66a98063f1569a197dc717657ba610841ba9",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-19T05:11:42Z",
+  "development_sha": "f6cd66a98063f1569a197dc717657ba610841ba9",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "frontend/src/pages/tablajeria/LotesProveedorPage.jsx"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-IMPLEMENTATION-MUTATION-R1C-20260919",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-19T05:12:19Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "crear reclamo",
+              "drilldown",
+              "impacto económico",
+              "lotes-proveedor",
+              "reclamos",
+              "rendimientos",
+              "tablajeria"
+            ],
+            "path": "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.tablajeria",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "core.sql_first.db",
+              "datetime",
+              "decimal",
+              "json",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "drilldown",
+              "reclamos",
+              "rendimientos",
+              "tablajeria"
+            ],
+            "path": "backend/modules/tablajeria/lote_proveedor_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "TablajeriaLoteProveedorService",
+              "_row_to_dict",
+              "_to_float",
+              "_to_str",
+              "crear_reclamo_proveedor",
+              "get_tablajeria_lote_proveedor_service",
+              "listar_reclamos",
+              "listar_rendimientos_lote",
+              "obtener_drilldown_lote"
+            ],
+            "tables_referenced": [
+              "Tablajeria_LotesProveedorRendimiento",
+              "Tablajeria_NotificacionesLote",
+              "Tablajeria_ReclamosProveedor"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.tablajeria",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.security",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "csv",
+              "dashboard_service",
+              "datetime",
+              "decimal",
+              "fase6_service",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "json",
+              "logging",
+              "lote_proveedor_service",
+              "ordenes_service",
+              "os",
+              "pydantic",
+              "pymssql",
+              "schemas",
+              "sync_service",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "drilldown",
+              "lotes-proveedor",
+              "reclamos",
+              "rendimientos",
+              "tablajeria"
+            ],
+            "path": "backend/modules/tablajeria/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/dashboard/alertas",
+              "/dashboard/kpis",
+              "/dashboard/rendimientos-plantilla",
+              "/dashboard/resumen-costeo",
+              "/dashboard/tendencia",
+              "/dashboard/top-mermas",
+              "/fase6/config-contable/{empresa_id}",
+              "/lotes-proveedor/rendimientos",
+              "/lotes-proveedor/{lote_rendimiento_id}/drilldown",
+              "/lotes-proveedor/{lote_rendimiento_id}/reclamos",
+              "/ordenes",
+              "/ordenes-stats",
+              "/ordenes/captura-directa",
+              "/ordenes/{orden_id}",
+              "/ordenes/{orden_id}/autorizar",
+              "/ordenes/{orden_id}/cancelar",
+              "/ordenes/{orden_id}/cerrar",
+              "/ordenes/{orden_id}/fase6/afectar-inventario",
+              "/ordenes/{orden_id}/fase6/calcular-costeo",
+              "/ordenes/{orden_id}/fase6/generar-poliza",
+              "/ordenes/{orden_id}/fase6/procesar-cierre",
+              "/ordenes/{orden_id}/iniciar",
+              "/ordenes/{orden_id}/resultados",
+              "/plantillas",
+              "/plantillas/{plantilla_id}",
+              "/plantillas/{plantilla_id}/publicar",
+              "/reclamos-proveedor",
+              "/reportes/costeo",
+              "/reportes/mermas",
+              "/reportes/ordenes",
+              "/stats",
+              "/sync/ejecutar",
+              "/sync/log",
+              "/sync/servidores"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AutorizarOrdenRequest",
+              "CancelarOrdenRequest",
+              "CerrarOrdenRequest",
+              "ReclamoProveedorCreateRequest",
+              "ResultadosOrdenRequest",
+              "_get_ordenes_service",
+              "afectar_inventario",
+              "autorizar_orden",
+              "calcular_costeo",
+              "cancelar_orden",
+              "cerrar_orden",
+              "crear_orden",
+              "crear_orden_captura_directa",
+              "crear_reclamo_lote_proveedor",
+              "ejecutar_sincronizacion",
+              "exportar_costeo",
+              "exportar_mermas",
+              "exportar_ordenes",
+              "generar_poliza",
+              "get_alertas_rendimiento",
+              "get_connection",
+              "get_dashboard_kpis",
+              "get_rendimientos_por_plantilla",
+              "get_resumen_costeo",
+              "get_tendencia_rendimientos",
+              "get_top_mermas",
+              "guardar_config_contable",
+              "iniciar_ejecucion_orden",
+              "listar_ordenes",
+              "listar_plantillas",
+              "listar_reclamos_proveedor",
+              "listar_rendimientos_lote_proveedor",
+              "listar_servidores_tablajeria",
+              "obtener_config_contable",
+              "obtener_drilldown_lote_proveedor",
+              "obtener_estadisticas",
+              "obtener_estadisticas_ordenes",
+              "obtener_orden",
+              "obtener_plantilla",
+              "obtener_sync_log",
+              "procesar_cierre_fase6",
+              "publicar_plantilla",
+              "registrar_resultados_orden"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 3,
+          "scanned_files": 3,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-19T05:06:49Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
