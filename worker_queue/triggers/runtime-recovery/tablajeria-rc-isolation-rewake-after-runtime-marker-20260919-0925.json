@@ -1,0 +1,20 @@
+{
+  "schema": "edarsahub.worker-rewake.v1",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-CANDIDATE-ISOLATION-READONLY-R1-20260919",
+  "reason": "single diagnostic rewake after runtime reload marker commit 5dc6fcb2081fa3e57cf2f4c44b282b89b42738b9",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "REWAKE_ONLY",
+  "actions": [],
+  "forbidden": [
+    "functional_R2",
+    "code_changes_tablajeria",
+    "production_deploy",
+    "manual_sql",
+    "scheduler_changes",
+    "netpay_changes",
+    "rbac_changes",
+    "menu_layout_changes"
+  ]
+}
