@@ -1,0 +1,31 @@
+{
+  "base_sha": "ebb60bb5bca8595e631284f084b87c35f7748d32",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-19T07:08:23Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    ".github/workflows/worker-runtime-recovery-probe.yml",
+    "backend/tests/test_universal_worker_control_plane_hardening_r1.py",
+    "docs/operacion/WORKER_JOB_EXECUTION_PROTOCOL.md",
+    "tools/mirror_sync/universal_job_dispatcher.py",
+    "tools/mirror_sync/universal_job_result_publisher.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-CONTROL-PLANE-INTEGRATION-HARDENING-R2-20260919",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-19T07:08:37Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-19T07:08:21Z",
+  "status": "GIT_TESTS_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
