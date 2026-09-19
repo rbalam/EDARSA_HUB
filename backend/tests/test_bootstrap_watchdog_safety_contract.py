@@ -3,7 +3,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 BOOTSTRAP = ROOT / "tools/bootstrap/edarsahub_bootstrap_watchdog.py"
 INSTALLER = ROOT / "tools/bootstrap/install_bootstrap_watchdog.sh"
-MIRROR_CONF = ROOT / "tools/mirror_sync/supervisor/edarsahub-mirror-sync.conf"
+MIRROR_CONF = ROOT / "tools/mirror_sync/supervisor/edarsahub-mirror-sync.conf"\nMIRROR_START = ROOT / "tools/mirror_sync/mirror_sync_start.sh"
 
 
 def body() -> str:
@@ -84,3 +84,15 @@ def test_bootstrap_state_writes_are_outside_shared_worktree():
     assert 'STATE = Path(os.environ.get("EDARSAHUB_BOOTSTRAP_STATE", "/var/lib/edarsahub-bootstrap"))' in text
     assert "STATUS = STATE /" in text
     assert "AUDIT = STATE /" in text
+
+
+def test_mirror_enable_requires_health_gate_before_clearing_kill_switch():
+    text = MIRROR_START.read_text(encoding="utf-8")
+    assert "BLOCKED_PRODUCTION_ENV" in text
+    assert "BLOCKED_WRONG_BRANCH" in text
+    assert "BLOCKED_GLOBAL_PAUSE" in text
+    assert "DEFERRED_LOCAL_DIRTY" in text
+    assert '"HEAD...origin/$DEV_BRANCH"' in text
+    assert 'rm -f "$PERSISTENT_STOP" "$TEMP_STOP"' in text
+    assert text.index('git status --porcelain=v1 --untracked-files=all') < text.index('rm -f "$PERSISTENT_STOP" "$TEMP_STOP"')
+    assert "MIRROR_SYNC_HEALTH_GATE=PASS" in text
