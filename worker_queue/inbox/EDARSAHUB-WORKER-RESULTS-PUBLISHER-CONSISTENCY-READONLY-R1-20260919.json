@@ -1,0 +1,68 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-RESULTS-PUBLISHER-CONSISTENCY-READONLY-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2f8de5ba4a54e1062c4f7486ba2ef99316b902de",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias"
+  },
+  "objective": "Auditar en solo lectura la inconsistencia observada: worker_queue/status/latest.json marca RESULT_READY para EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-WIRING-READONLY-R2-20260919, pero worker/results no expone el JSON terminal. Identificar si la causa esta en health publisher, result publisher, path de materializacion, identidad canonica del result, retencion/ventana de terminales, o cola DONE/RESULTS. No modificar archivos, no tocar producto, SQL, Produccion, Scheduler, NetPay, RBAC/permisos ni menu/layout transversal.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "worker_queue/status/latest.json"
+        ],
+        "search_terms": [
+          "RESULT_READY",
+          "worker_queue/results",
+          "latest.json",
+          "result_identity",
+          "publish execution result",
+          "terminal_retention_seconds",
+          "worker_queue/status",
+          "worker_queue/done",
+          "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-WIRING-READONLY-R2-20260919"
+        ],
+        "max_results": 400
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "context_observed": {
+    "development_sha_observed": "2f8de5ba4a54e1062c4f7486ba2ef99316b902de",
+    "worker_health_branch": "worker/health",
+    "worker_results_branch": "worker/results",
+    "observed_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-WIRING-READONLY-R2-20260919",
+    "observed_health_state": "RESULT_READY",
+    "observed_result_blob_status": "404"
+  },
+  "constraints": [
+    "READ_ONLY only",
+    "No product mutation",
+    "No SQL mutation",
+    "No Production",
+    "No Scheduler",
+    "No NetPay",
+    "No RBAC or permissions changes",
+    "No menu or transversal layout changes",
+    "Do not advance UAT preview until terminal visibility is resolved",
+    "EDARSAHUB SQL Server remains source of truth",
+    "MongoDB prohibited"
+  ]
+}
