@@ -1,0 +1,23 @@
+{
+  "base_sha": "737c5f904d57cd5d514733d47297f1554707e60e",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:WRITE_EXISTING_REQUIRES_EXPECTED_SHA256:backend/modules/bos_executive/__init__.py"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-19T06:49:34Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-V1-GATE-E-E3B-CROSS-DOMAIN-PRIORITY-AGGREGATOR-R1-20260919",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-19T06:49:38Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-19T06:49:32Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
