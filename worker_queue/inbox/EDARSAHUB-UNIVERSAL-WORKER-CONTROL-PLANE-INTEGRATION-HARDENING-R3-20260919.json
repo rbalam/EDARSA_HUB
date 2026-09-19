@@ -1,0 +1,148 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-CONTROL-PLANE-INTEGRATION-HARDENING-R3-20260919",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4a43bd71cab1f17440e9bee9b54c40700ec14eed",
+  "production_allowed": false,
+  "objective": "Cerrar hardening Universal Worker: control-plane wake sin commits en Development, SAFE_REPLAY ante remote move CAS->push y publicacion remota de rechazos de intake.",
+  "acceptance": [
+    "Recovery Probe deja de depender de commits trigger en Edarsahub_Desarrollo.",
+    "Dispatcher reintenta solo avance remoto descendiente con SAFE_REPLAY.",
+    "Conflictos de scope siguen fail-closed.",
+    "Result publisher publica REJECTED y RESULTS con reasons/source/received_at_utc.",
+    "Protocolo operativo prohíbe wake commits en Desarrollo.",
+    "Pruebas y repository contract audit PASS.",
+    "production_touched=false.",
+    "Actualizar el assert legacy de concurrencia READ_ONLY para reflejar FRONTEND_BUILD_CERTIFICATION_MODE ya existente."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL.",
+    "No modulos de negocio.",
+    "No force/merge/rebase/cherry-pick/reset-hard/clean/stash.",
+    "Mantener writer lock, CAS, scope validation y topology 0/0."
+  ],
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/worker-runtime-recovery-probe.yml",
+      "old": "on:\n  push:\n    branches:\n      - Edarsahub_Desarrollo\n    paths:\n      - '.github/workflows/worker-runtime-recovery-probe.yml'\n      - 'worker_queue/config/runtime-recovery.json'\n      - 'worker_queue/triggers/runtime-recovery/**'\n  workflow_dispatch:\n    inputs:\n      preview_url:\n        description: 'Override opcional de URL publica del runtime'\n        required: false\n        type: string\n",
+      "new": "on:\n  schedule:\n    - cron: '*/5 * * * *'\n  workflow_dispatch:\n    inputs:\n      preferred_job_id:\n        description: 'Job existente en worker/requests que debe recibir preferencia'\n        required: false\n        type: string\n      preview_url:\n        description: 'Override opcional de URL publica del runtime'\n        required: false\n        type: string\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": ".github/workflows/worker-runtime-recovery-probe.yml",
+      "old": "      - name: Resolve preferred job from runtime-recovery trigger\n        id: preferred\n        shell: bash\n        run: |\n          set -euo pipefail\n          TRIGGER=\"$(git diff-tree --no-commit-id --name-only -r \"$GITHUB_SHA\" | grep '^worker_queue/triggers/runtime-recovery/' | tail -n 1 || true)\"\n          JOB_ID=\"\"\n          if [ -n \"$TRIGGER\" ] && [ -r \"$TRIGGER\" ]; then\n            JOB_ID=\"$(jq -r '.existing_job_id // empty' \"$TRIGGER\")\"\n          fi\n          if [ -n \"$JOB_ID\" ] && ! [[ \"$JOB_ID\" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$ ]]; then\n            echo 'INVALID_PREFERRED_JOB_ID'\n            exit 14\n          fi\n          echo \"preferred_job_id=$JOB_ID\" >> \"$GITHUB_OUTPUT\"\n          echo \"PREFERRED_JOB_ID=${JOB_ID:-none}\"\n",
+      "new": "      - name: Resolve preferred job from control-plane input\n        id: preferred\n        shell: bash\n        env:\n          INPUT_PREFERRED_JOB_ID: ${{ inputs.preferred_job_id || '' }}\n        run: |\n          set -euo pipefail\n          JOB_ID=\"${INPUT_PREFERRED_JOB_ID:-}\"\n          if [ -n \"$JOB_ID\" ] && ! [[ \"$JOB_ID\" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$ ]]; then\n            echo 'INVALID_PREFERRED_JOB_ID'\n            exit 14\n          fi\n          echo \"preferred_job_id=$JOB_ID\" >> \"$GITHUB_OUTPUT\"\n          echo \"PREFERRED_JOB_ID=${JOB_ID:-none}\"\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "            terminal = detail.split(\":\",1)[0]\n            if terminal in {\"REMOTE_MOVED_RETRY_REQUIRED\",\"GIT_DIVERGENCE_BLOCKED\",\"GIT_SCOPE_VIOLATION\",\"GIT_PUSH_FAILED\",\"GIT_LOCK_BUSY\"}: result[\"status\"] = terminal\n            result[\"blockers\"].append(detail); break",
+      "new": "            terminal = detail.split(\":\",1)[0]\n            if terminal in {\"REMOTE_MOVED_RETRY_REQUIRED\", \"GIT_PUSH_FAILED\"}:\n                git(\"fetch\", REMOTE, DEV_BRANCH)\n                remote_now = git(\"rev-parse\", f\"{REMOTE}/{DEV_BRANCH}\").stdout.strip()\n                if remote_now != execution_base_sha:\n                    if not git_is_ancestor(execution_base_sha, remote_now):\n                        result[\"status\"] = \"GIT_DIVERGENCE_BLOCKED\"\n                        result[\"blockers\"].append(\n                            f\"REMOTE_ADVANCE_NOT_DESCENDANT:base={execution_base_sha}:remote={remote_now}\"\n                        )\n                        break\n                    concurrent_paths = git_changed_paths(execution_base_sha, remote_now)\n                    replay_policy = evaluate_scope_advance(\n                        execution_base_sha,\n                        remote_now,\n                        requested_paths,\n                        concurrent_paths,\n                    )\n                    accumulated_integration.append({\n                        \"decision\": replay_policy.get(\"decision\"),\n                        \"remote_after_failed_push\": remote_now,\n                        \"concurrent_head_changes\": concurrent_paths,\n                        \"replay_attempt\": replay_attempt,\n                    })\n                    result[\"concurrency\"][\"integration\"] = accumulated_integration\n                    result[\"concurrent_head_changes\"] = sorted({\n                        p\n                        for step in accumulated_integration\n                        for p in (step.get(\"concurrent_head_changes\") or [])\n                    })\n                    if replay_policy.get(\"decision\") == \"SAFE_REPLAY\":\n                        execution_base_sha = remote_now\n                        result[\"remote_at_start\"] = remote_now\n                        continue\n                    conflicts = \",\".join(replay_policy.get(\"scope_conflicts\") or [])\n                    result[\"status\"] = \"CONCURRENT_SCOPE_CONFLICT\"\n                    result[\"blockers\"].append(\n                        f\"CONCURRENT_SCOPE_CONFLICT:base={execution_base_sha}:remote={remote_now}:paths={conflicts}\"\n                    )\n                    break\n            if terminal in {\"REMOTE_MOVED_RETRY_REQUIRED\",\"GIT_DIVERGENCE_BLOCKED\",\"GIT_SCOPE_VIOLATION\",\"GIT_PUSH_FAILED\",\"GIT_LOCK_BUSY\"}:\n                result[\"status\"] = terminal\n            result[\"blockers\"].append(detail)\n            break",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "old": "RESULTS = STATE / \"results\"\nPUBLISHED = STATE / \"published\"\n",
+      "new": "RESULTS = STATE / \"results\"\nREJECTED = STATE / \"rejected\"\nPUBLISHED = STATE / \"published\"\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "old": "        \"operation_summary\",\n",
+      "new": "        \"operation_summary\", \"reasons\", \"received_at_utc\", \"source\",\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "old": "def main() -> int:\n    RESULTS.mkdir(parents=True, exist_ok=True)\n    PUBLISH_LOCK.parent.mkdir(parents=True, exist_ok=True)\n",
+      "new": "def publishable_paths() -> list[Path]:\n    \"\"\"Return terminal artifacts with dispatcher results taking precedence.\"\"\"\n    by_name = {path.name: path for path in REJECTED.glob(\"*.json\")}\n    by_name.update({path.name: path for path in RESULTS.glob(\"*.json\")})\n    return [by_name[name] for name in sorted(by_name)]\n\n\ndef main() -> int:\n    RESULTS.mkdir(parents=True, exist_ok=True)\n    REJECTED.mkdir(parents=True, exist_ok=True)\n    PUBLISH_LOCK.parent.mkdir(parents=True, exist_ok=True)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "old": "        for path in sorted(RESULTS.glob(\"*.json\")):\n",
+      "new": "        for path in publishable_paths():\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "docs/operacion/WORKER_JOB_EXECUTION_PROTOCOL.md",
+      "old": "4. Resolver el HEAD actual de `worker/requests`.\n5. Crear un trigger en `Edarsahub_Desarrollo:worker_queue/triggers/runtime-recovery/<job_id>.json` con `existing_job_id=<job_id>`.\n6. El workflow de runtime-recovery debe extraer `existing_job_id` del trigger y llamar `POST /api/internal/worker/wake` enviando:\n   - `X-Worker-Queue-Sha: <HEAD worker/requests>`\n   - `X-Worker-Preferred-Job-Id: <job_id>`\n7. El endpoint debe validar el SHA de la cola, registrar el job preferido con expiracion y preservar cualquier job activo sano. Nunca debe interrumpir un job activo.\n",
+      "new": "4. Resolver el HEAD actual de `worker/requests`.\n5. No crear commits de wake en `Edarsahub_Desarrollo`. El wake pertenece al control plane y no puede mover la rama que los jobs intentan integrar.\n6. El workflow `Worker Requests Wake` se activa desde `worker/requests` y envia el job publicado como preferido. El workflow `Worker Runtime Recovery Probe` queda reservado para `workflow_dispatch` y self-heal programado, sin commits trigger en Desarrollo. Ambos llaman `POST /api/internal/worker/wake` enviando:\n   - `X-Worker-Queue-Sha: <HEAD worker/requests>`\n   - `X-Worker-Preferred-Job-Id: <job_id>` cuando exista una preferencia explicita.\n7. El endpoint debe validar el SHA de la cola, registrar el job preferido con expiracion y preservar cualquier job activo sano. Nunca debe interrumpir un job activo ni requerir una mutacion de `Edarsahub_Desarrollo`.\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "docs/operacion/WORKER_JOB_EXECUTION_PROTOCOL.md",
+      "old": "Para cada nuevo comando que requiera Universal Worker, ChatGPT debe ejecutar la secuencia completa de publicacion, verificacion, wake preferido y comprobacion de resultado. No debe crear variantes R2/R3/R4 de forma repetitiva mientras exista un job valido en curso o pendiente, salvo que exista un rechazo terminal que requiera una correccion de contrato.\n",
+      "new": "Para cada nuevo comando que requiera Universal Worker, ChatGPT debe publicar y verificar el job y comprobar su lifecycle. Si el push a `worker/requests` activa correctamente el control plane y el job entra a pending/processing, no debe emitir otro wake. Si el runtime requiere recovery, debe usar el control plane sin crear commits en `Edarsahub_Desarrollo`. No debe crear variantes R2/R3/R4 mientras exista un job valido en curso o pendiente, salvo rechazo terminal que requiera una correccion de contrato.\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_universal_worker_control_plane_hardening_r1.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nWORKFLOW = ROOT / \".github\" / \"workflows\" / \"worker-runtime-recovery-probe.yml\"\nDISPATCHER = ROOT / \"tools\" / \"mirror_sync\" / \"universal_job_dispatcher.py\"\nPUBLISHER = ROOT / \"tools\" / \"mirror_sync\" / \"universal_job_result_publisher.py\"\nPROTOCOL = ROOT / \"docs\" / \"operacion\" / \"WORKER_JOB_EXECUTION_PROTOCOL.md\"\n\n\ndef test_recovery_probe_no_longer_uses_development_push_trigger():\n    text = WORKFLOW.read_text(encoding=\"utf-8\")\n    assert \"schedule:\" in text\n    assert \"workflow_dispatch:\" in text\n    assert \"preferred_job_id:\" in text\n    assert \"branches:\\n      - Edarsahub_Desarrollo\" not in text\n    assert \"worker_queue/triggers/runtime-recovery/**\" not in text\n\n\ndef test_dispatcher_safe_replays_remote_move_after_cas():\n    text = DISPATCHER.read_text(encoding=\"utf-8\")\n    process = text.split(\"def process_one(\", 1)[1].split(\"def dispatch(\", 1)[0]\n    assert 'terminal in {\"REMOTE_MOVED_RETRY_REQUIRED\", \"GIT_PUSH_FAILED\"}' in process\n    assert \"git_changed_paths(execution_base_sha, remote_now)\" in process\n    assert \"evaluate_scope_advance(\" in process\n    assert 'replay_policy.get(\"decision\") == \"SAFE_REPLAY\"' in process\n    assert \"execution_base_sha = remote_now\" in process\n    assert 'result[\"status\"] = \"CONCURRENT_SCOPE_CONFLICT\"' in process\n\n\ndef test_dispatcher_integration_still_forbids_history_rewriting():\n    text = DISPATCHER.read_text(encoding=\"utf-8\")\n    integrate = text.split(\"def integrate(\", 1)[1].split(\"def release_agent_guard_claim\", 1)[0]\n    for forbidden in ('git(\"merge\"', 'git(\"rebase\"', 'git(\"cherry-pick\"', \"force-with-lease\"):\n        assert forbidden not in integrate\n\n\ndef test_result_publisher_exposes_bridge_rejections():\n    text = PUBLISHER.read_text(encoding=\"utf-8\")\n    assert 'REJECTED = STATE / \"rejected\"' in text\n    assert \"def publishable_paths()\" in text\n    assert 'REJECTED.glob(\"*.json\")' in text\n    assert 'RESULTS.glob(\"*.json\")' in text\n    assert '\"reasons\"' in text\n    assert '\"received_at_utc\"' in text\n\n\ndef test_protocol_forbids_wake_commits_on_development():\n    text = PROTOCOL.read_text(encoding=\"utf-8\")\n    assert \"No crear commits de wake en `Edarsahub_Desarrollo`\" in text\n    assert \"Worker Requests Wake\" in text\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_scope_concurrency_dispatcher_contract.py",
+      "old": "    assert 'allow_empty_scope_advance=(mode in {\"READ_ONLY_SQL\", READ_ONLY_MODE})' in src\n",
+      "new": "    assert 'allow_empty_scope_advance=(mode in {\"READ_ONLY_SQL\", READ_ONLY_MODE, FRONTEND_BUILD_CERTIFICATION_MODE})' in src\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "backend/tests/test_universal_worker_control_plane_hardening_r1.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_universal_worker_control_plane_hardening_r1.py",
+        "backend/tests/test_universal_worker_deterministic_replay_concurrency.py",
+        "backend/tests/test_worker_scope_concurrency_dispatcher_contract.py",
+        "backend/tests/test_universal_job_result_publisher_queue_retry.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          ".github/workflows/worker-runtime-recovery-probe.yml",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "docs/operacion/WORKER_JOB_EXECUTION_PROTOCOL.md",
+          "backend/tests/test_universal_worker_control_plane_hardening_r1.py"
+        ],
+        "search_terms": [
+          "SAFE_REPLAY",
+          "CONCURRENT_SCOPE_CONFLICT",
+          "publishable_paths",
+          "workflow_dispatch",
+          "schedule",
+          "Worker Requests Wake"
+        ]
+      }
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
