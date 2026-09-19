@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "da6c160d842e89dc6bd8ca12646829ae46242522",
-  "generated_at_utc": "2026-09-19T23:09:11Z",
+  "generated_at_utc": "2026-09-19T23:10:22Z",
   "history": {
     "done_total_local": 748,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2610,
+      "age_seconds": 2682,
       "job_id": "CAVAS-GATE16A-UNIVERSAL-INTEROPERABILITY-MIGRATION-DISCOVERY-READONLY-R1-20260919",
       "reasons": [
         "REQUESTER_RBAC_DENIED:REQUESTER_NOT_FOUND"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2610,
+      "age_seconds": 2682,
       "job_id": "EDARSA-AI-GATE1-CAPABILITY-DISCOVERY-R1-20260919",
       "reasons": [
         "REQUESTER_EMAIL_INVALID"
@@ -31,19 +31,19 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2609,
+      "age_seconds": 2681,
       "job_id": "CAVAS-GATE15A-PRODUCTION-PROMOTION-MANIFEST-CERT-READONLY-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2606,
+      "age_seconds": 2678,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RC-ISOLATION-INTAKE-DIAGNOSTIC-READONLY-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2572,
+      "age_seconds": 2644,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-CANDIDATE-ISOLATION-READONLY-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
@@ -61,8 +61,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-19T23:09:04Z",
-    "last_receive_utc": "2026-09-19T23:09:06Z",
+    "last_cycle_utc": "2026-09-19T23:10:20Z",
+    "last_receive_utc": "2026-09-19T23:10:22Z",
     "last_terminal_utc": "2026-09-19T22:26:18Z",
     "pid": "66149"
   },
