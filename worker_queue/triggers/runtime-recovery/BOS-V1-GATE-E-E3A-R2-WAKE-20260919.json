@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker to consume the already-published Gate E E3A-R2 corrected job from worker_queue/inbox. Preserve original R2 payload and job_id. If terminal result already exists, do not execute again; converge safely. Do not touch Production.",
+  "existing_job_id": "BOS-V1-GATE-E-E3A-EXECUTIVE-EVIDENCE-CAUSAL-R2-20260919",
+  "production_touched": false
+}
