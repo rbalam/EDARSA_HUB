@@ -1,0 +1,58 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RC-ISOLATION-INTAKE-DIAGNOSTIC-READONLY-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b7eb4c7a674a821213883d67279d4718280b41a8",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias"
+  },
+  "objective": "Diagnosticar intake/health del Worker para el gate EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-CANDIDATE-ISOLATION-READONLY-R1-20260919. El request existe en worker/requests y el re-wake no funcional cerro success, pero worker/health sigue en ciclo anterior y no existe terminal en worker/results. No crear R2 funcional, no tocar codigo, no desplegar, no tocar Produccion, SQL, Scheduler, NetPay, RBAC/permisos, menu ni layout.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "worker_queue/inbox/EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-CANDIDATE-ISOLATION-READONLY-R1-20260919.json",
+          "worker_queue/triggers/runtime-recovery/EDARSAHUB-OPERACIONES-TABLAJERIAS-RC-ISOLATION-R1-REWAKE-20260919T0816Z.json"
+        ],
+        "search_terms": [
+          "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-CANDIDATE-ISOLATION-READONLY-R1-20260919",
+          "existing_job_id",
+          "production_allowed",
+          "READ_ONLY",
+          "actions",
+          "No crear R2",
+          "no desplegar",
+          "no tocar codigo"
+        ],
+        "max_results": 80
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "diagnostic_scope": {
+    "problem": "worker_health_stale_after_successful_rewake",
+    "original_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-CANDIDATE-ISOLATION-READONLY-R1-20260919",
+    "expected_result_path": "worker_queue/results/EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-CANDIDATE-ISOLATION-READONLY-R1-20260919.json",
+    "forbidden": [
+      "functional_R2",
+      "code_changes",
+      "production_deploy",
+      "manual_sql",
+      "scheduler_changes",
+      "netpay_changes",
+      "rbac_changes",
+      "menu_layout_changes"
+    ]
+  }
+}
