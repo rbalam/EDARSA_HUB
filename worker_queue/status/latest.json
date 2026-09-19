@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "116dbdc428932c1f84e225c676507a7608d38499",
-  "generated_at_utc": "2026-09-19T04:32:35Z",
+  "development_sha": "9d274fa69c3eb16f6b63ebf5436a7783fdcb5949",
+  "generated_at_utc": "2026-09-19T04:33:59Z",
   "history": {
-    "done_total_local": 709,
+    "done_total_local": 710,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 660,
-    "results_total_local": 1214
+    "results_total_local": 1215
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3281,
+      "age_seconds": 3365,
       "job_id": "CAVAS-GATE12N-SCOPE-FIX-R2B-CERT-READONLY-R1-20260918",
       "reasons": [
         "CHECK_4_REQUEST_REQUIRED"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3279,
+      "age_seconds": 3363,
       "job_id": "EDARSAHUB-RUNTIME-PREVIEW-WAKE-ENDPOINT-INFRA-CORRECTION-R1-20260918",
       "reasons": [
         "REQUESTER_EMAIL_INVALID",
@@ -32,31 +32,37 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1152,
+      "age_seconds": 1236,
       "job_id": "CAVAS-GATE12N-SCOPE-FIX-R2B-CERT-READONLY-R2-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 481,
+      "age_seconds": 564,
       "job_id": "CAVAS-GATE12N-UAT-CONTROLLED-EXECUTION-R2-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 117,
+      "age_seconds": 201,
       "job_id": "CAVAS-GATE12N-UAT-CONTROLLED-EXECUTION-R2B-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3277,
+      "age_seconds": 3361,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-DESIGN-CONTRACT-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 72,
+      "age_seconds": 7,
+      "job_id": "REPLAY-EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-DESIGN-CONTRACT-READONLY-R1-20260919T0434Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 156,
       "job_id": "UNIVERSAL-WORKER-READONLY-MUTATION-EVIDENCE-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
@@ -69,14 +75,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 2,
-  "queue_result_ready_recent": 5,
+  "queue_result_ready_recent": 6,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-19T04:32:31Z",
-    "last_receive_utc": "2026-09-19T04:32:26Z",
-    "last_terminal_utc": "2026-09-19T04:31:22Z",
+    "last_cycle_utc": "2026-09-19T04:33:54Z",
+    "last_receive_utc": "2026-09-19T04:33:57Z",
+    "last_terminal_utc": "2026-09-19T04:33:51Z",
     "pid": "375524"
   },
   "schema": "edarsahub.worker-health.v3",
