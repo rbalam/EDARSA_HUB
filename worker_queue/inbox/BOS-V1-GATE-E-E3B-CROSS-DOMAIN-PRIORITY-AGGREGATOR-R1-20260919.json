@@ -1,0 +1,105 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3B-CROSS-DOMAIN-PRIORITY-AGGREGATOR-R1-20260919",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "737c5f904d57cd5d514733d47297f1554707e60e",
+  "production_allowed": false,
+  "objective": "Implementar exclusivamente E3B de Gate E: adaptadores read-only cross-domain para prioridades + agregador ejecutivo determinista dentro de backend/modules/bos_executive. Reutilizar señales existentes de tareas/workflows/SLA/prioridad/responsables de Operativo y CRM sin crear lifecycle, persistencia, queries, endpoints ni pesos numericos globales.",
+  "acceptance": [
+    "Mantener backend/modules/bos_executive como owner del bounded context ejecutivo.",
+    "Crear DTO comun de prioridad con source_domain, source_object_ref, band, explicacion, SLA/due, impact, owner, permissions, as_of y stale.",
+    "Crear adaptador puro para tareas Operativo reutilizando estado_sla, prioridad, fecha_limite y responsable existentes.",
+    "Crear adaptador puro para oportunidades CRM reutilizando EstatusSLA, Prioridad, MontoEstimado y ResponsableID existentes.",
+    "Los adaptadores no consultan SQL, no escriben y fallan cerrado cuando falta identidad de objeto fuente.",
+    "Crear agregador cross-domain read-only, determinista, sin tabla ejecutiva y sin nuevo workflow.",
+    "Ordenar por banda categorica y fecha de vencimiento; no usar pesos numericos globales.",
+    "Propagar stale sin ocultar la prioridad original.",
+    "Agregar tests de Operativo, CRM, fail-closed, agregacion cross-domain, vencimiento y stale.",
+    "py_compile, pytest, git_diff_check y repository_contract_audit deben pasar.",
+    "production_touched=false."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL DDL/DML ni queries nuevas.",
+    "No tablas ni columnas.",
+    "No endpoints ni routers.",
+    "No permisos nuevos.",
+    "No scheduler/jobs.",
+    "No nuevo workflow engine.",
+    "No nueva tabla de tareas ejecutivas.",
+    "No backend/core mutation.",
+    "No Mongo operativo.",
+    "No LLM.",
+    "No persistencia.",
+    "No iniciar E3C/E3D/E3E/E3F."
+  ],
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/bos_executive/__init__.py",
+      "content": "from .causal_service import explain_causal_finding\nfrom .contracts import (\n    ConfidenceClass,\n    EvidenceKind,\n    EvidenceRef,\n    ExecutiveFindingInput,\n    ExecutiveFindingOutput,\n    FindingStatus,\n)\nfrom .priority_adapters import adapt_crm_opportunity, adapt_operational_task\nfrom .priority_contracts import (\n    ExecutivePriorityAggregate,\n    ExecutivePriorityItem,\n    PriorityBand,\n)\nfrom .priority_service import aggregate_priorities\n\n__all__ = [\n    \"ConfidenceClass\",\n    \"EvidenceKind\",\n    \"EvidenceRef\",\n    \"ExecutiveFindingInput\",\n    \"ExecutiveFindingOutput\",\n    \"FindingStatus\",\n    \"PriorityBand\",\n    \"ExecutivePriorityItem\",\n    \"ExecutivePriorityAggregate\",\n    \"adapt_operational_task\",\n    \"adapt_crm_opportunity\",\n    \"aggregate_priorities\",\n    \"explain_causal_finding\",\n]\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/modules/bos_executive/priority_contracts.py",
+      "content": "from __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom enum import Enum\n\n\nclass PriorityBand(str, Enum):\n    CRITICA = \"CRITICA\"\n    ALTA = \"ALTA\"\n    MEDIA = \"MEDIA\"\n    BAJA = \"BAJA\"\n    SIN_PRIORIDAD = \"SIN_PRIORIDAD\"\n\n\n@dataclass(frozen=True)\nclass ExecutivePriorityItem:\n    source_domain: str\n    source_object_ref: str\n    title: str\n    priority_band: PriorityBand\n    priority_score_explanation: tuple[str, ...] = ()\n    sla_state: str | None = None\n    due_at: str | None = None\n    impact: str | None = None\n    owner_ref: str | None = None\n    permission_refs: tuple[str, ...] = ()\n    as_of: str | None = None\n    stale: bool = False\n\n\n@dataclass(frozen=True)\nclass ExecutivePriorityAggregate:\n    items: tuple[ExecutivePriorityItem, ...]\n    total: int\n    domains: tuple[str, ...]\n    stale: bool\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/modules/bos_executive/priority_adapters.py",
+      "content": "from __future__ import annotations\n\nfrom collections.abc import Mapping\nfrom typing import Any\n\nfrom .priority_contracts import ExecutivePriorityItem, PriorityBand\n\n\n_TEXT_PRIORITY = {\n    \"CRITICA\": PriorityBand.CRITICA,\n    \"CRITICAL\": PriorityBand.CRITICA,\n    \"URGENTE\": PriorityBand.ALTA,\n    \"ALTA\": PriorityBand.ALTA,\n    \"HIGH\": PriorityBand.ALTA,\n    \"MEDIA\": PriorityBand.MEDIA,\n    \"MEDIUM\": PriorityBand.MEDIA,\n    \"NORMAL\": PriorityBand.MEDIA,\n    \"BAJA\": PriorityBand.BAJA,\n    \"LOW\": PriorityBand.BAJA,\n}\n\n_OPERATIONAL_SLA_PRIORITY = {\n    \"ESCALADA\": PriorityBand.CRITICA,\n    \"VENCIDA\": PriorityBand.CRITICA,\n    \"URGENTE\": PriorityBand.ALTA,\n    \"ADVERTENCIA\": PriorityBand.MEDIA,\n}\n\n_CRM_SLA_PRIORITY = {\n    \"VENCIDO\": PriorityBand.CRITICA,\n    \"PROXIMO\": PriorityBand.ALTA,\n}\n\n\ndef _first(record: Mapping[str, Any], *keys: str) -> Any:\n    for key in keys:\n        value = record.get(key)\n        if value not in (None, \"\"):\n            return value\n    return None\n\n\ndef _text(value: Any) -> str | None:\n    if value in (None, \"\"):\n        return None\n    return str(value)\n\n\ndef _priority_from_text(value: Any) -> PriorityBand:\n    normalized = str(value or \"\").strip().upper()\n    return _TEXT_PRIORITY.get(normalized, PriorityBand.SIN_PRIORIDAD)\n\n\ndef _unique(values: tuple[str, ...]) -> tuple[str, ...]:\n    return tuple(dict.fromkeys(value for value in values if value))\n\n\ndef _permissions(record: Mapping[str, Any]) -> tuple[str, ...]:\n    raw = _first(record, \"permission_refs\", \"permisos\", \"permissions\")\n    if raw is None:\n        return ()\n    if isinstance(raw, str):\n        return (raw,)\n    if isinstance(raw, (list, tuple, set)):\n        return _unique(tuple(str(value) for value in raw if value not in (None, \"\")))\n    return (str(raw),)\n\n\ndef adapt_operational_task(record: Mapping[str, Any]) -> ExecutivePriorityItem | None:\n    task_id = _first(record, \"id\", \"tarea_id\", \"TareaID\", \"TareaId\")\n    if task_id is None:\n        return None\n\n    sla_state = str(_first(record, \"estado_sla\", \"EstadoSLA\") or \"\").strip().upper() or None\n    source_priority = _priority_from_text(_first(record, \"prioridad\", \"Prioridad\"))\n    sla_priority = _OPERATIONAL_SLA_PRIORITY.get(sla_state or \"\")\n    band = sla_priority or source_priority\n\n    reasons: tuple[str, ...] = ()\n    if sla_priority:\n        reasons += (f\"SLA_{sla_state}\",)\n    if source_priority is not PriorityBand.SIN_PRIORIDAD:\n        reasons += (f\"SOURCE_PRIORITY_{source_priority.value}\",)\n    if not reasons:\n        reasons = (\"NO_PRIORITY_SIGNAL\",)\n\n    return ExecutivePriorityItem(\n        source_domain=\"OPERATIVO\",\n        source_object_ref=f\"tarea:{task_id}\",\n        title=str(_first(record, \"titulo\", \"Titulo\", \"descripcion\", \"Descripcion\") or f\"Tarea {task_id}\"),\n        priority_band=band,\n        priority_score_explanation=_unique(reasons),\n        sla_state=sla_state,\n        due_at=_text(_first(record, \"fecha_limite\", \"FechaLimite\")),\n        impact=_text(_first(record, \"impacto\", \"Impacto\")),\n        owner_ref=_text(_first(record, \"responsable_id\", \"ResponsableID\", \"usuario_responsable_id\")),\n        permission_refs=_permissions(record),\n        as_of=_text(_first(record, \"as_of\", \"fecha_actualizacion\", \"FechaActualizacion\")),\n        stale=bool(_first(record, \"stale\", \"es_stale\") or False),\n    )\n\n\ndef adapt_crm_opportunity(record: Mapping[str, Any]) -> ExecutivePriorityItem | None:\n    opportunity_id = _first(record, \"OportunidadID\", \"oportunidad_id\", \"id\")\n    if opportunity_id is None:\n        return None\n\n    sla_state = str(_first(record, \"EstatusSLA\", \"estatus_sla\", \"estado_sla\") or \"\").strip().upper() or None\n    source_priority = _priority_from_text(_first(record, \"Prioridad\", \"prioridad\"))\n    sla_priority = _CRM_SLA_PRIORITY.get(sla_state or \"\")\n    band = sla_priority or source_priority\n\n    reasons: tuple[str, ...] = ()\n    if sla_priority:\n        reasons += (f\"CRM_SLA_{sla_state}\",)\n    if source_priority is not PriorityBand.SIN_PRIORIDAD:\n        reasons += (f\"SOURCE_PRIORITY_{source_priority.value}\",)\n    if not reasons:\n        reasons = (\"NO_PRIORITY_SIGNAL\",)\n\n    amount = _first(record, \"MontoEstimado\", \"monto_estimado\")\n    impact = f\"monto_estimado:{amount}\" if amount not in (None, \"\") else None\n\n    return ExecutivePriorityItem(\n        source_domain=\"CRM\",\n        source_object_ref=f\"oportunidad:{opportunity_id}\",\n        title=str(_first(record, \"Nombre\", \"NombreOportunidad\", \"nombre\") or f\"Oportunidad {opportunity_id}\"),\n        priority_band=band,\n        priority_score_explanation=_unique(reasons),\n        sla_state=sla_state,\n        due_at=_text(_first(record, \"fecha_limite\", \"FechaLimite\")),\n        impact=impact,\n        owner_ref=_text(_first(record, \"ResponsableID\", \"responsable_id\")),\n        permission_refs=_permissions(record),\n        as_of=_text(_first(record, \"as_of\", \"FechaUltimaActividad\", \"fecha_ultima_actividad\")),\n        stale=bool(_first(record, \"stale\", \"es_stale\") or False),\n    )\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/modules/bos_executive/priority_service.py",
+      "content": "from __future__ import annotations\n\nfrom collections.abc import Iterable\n\nfrom .priority_contracts import (\n    ExecutivePriorityAggregate,\n    ExecutivePriorityItem,\n    PriorityBand,\n)\n\n\n_BAND_ORDER = {\n    PriorityBand.CRITICA: 0,\n    PriorityBand.ALTA: 1,\n    PriorityBand.MEDIA: 2,\n    PriorityBand.BAJA: 3,\n    PriorityBand.SIN_PRIORIDAD: 4,\n}\n\n\ndef _sort_key(item: ExecutivePriorityItem) -> tuple[int, int, str, str, str]:\n    due_missing = 1 if not item.due_at else 0\n    due_at = item.due_at or \"\"\n    return (\n        _BAND_ORDER[item.priority_band],\n        due_missing,\n        due_at,\n        item.source_domain,\n        item.source_object_ref,\n    )\n\n\ndef aggregate_priorities(\n    items: Iterable[ExecutivePriorityItem | None],\n) -> ExecutivePriorityAggregate:\n    accepted = tuple(item for item in items if item is not None)\n    deduplicated: dict[tuple[str, str], ExecutivePriorityItem] = {}\n\n    for item in accepted:\n        key = (item.source_domain, item.source_object_ref)\n        current = deduplicated.get(key)\n        if current is None or _sort_key(item) < _sort_key(current):\n            deduplicated[key] = item\n\n    ordered = tuple(sorted(deduplicated.values(), key=_sort_key))\n    domains = tuple(sorted({item.source_domain for item in ordered}))\n\n    return ExecutivePriorityAggregate(\n        items=ordered,\n        total=len(ordered),\n        domains=domains,\n        stale=any(item.stale for item in ordered),\n    )\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_bos_executive_e3b.py",
+      "content": "from modules.bos_executive import (\n    PriorityBand,\n    adapt_crm_opportunity,\n    adapt_operational_task,\n    aggregate_priorities,\n)\n\n\ndef test_e3b_operational_sla_reuses_existing_state_as_priority_signal():\n    item = adapt_operational_task(\n        {\n            \"id\": \"T-1\",\n            \"titulo\": \"Revisar diferencia\",\n            \"estado_sla\": \"VENCIDA\",\n            \"prioridad\": \"MEDIA\",\n            \"fecha_limite\": \"2026-09-19T08:00:00Z\",\n            \"responsable_id\": \"user-1\",\n            \"permission_refs\": [\"OPERATIVO_VER\"],\n        }\n    )\n\n    assert item is not None\n    assert item.source_domain == \"OPERATIVO\"\n    assert item.source_object_ref == \"tarea:T-1\"\n    assert item.priority_band is PriorityBand.CRITICA\n    assert \"SLA_VENCIDA\" in item.priority_score_explanation\n    assert item.owner_ref == \"user-1\"\n    assert item.permission_refs == (\"OPERATIVO_VER\",)\n\n\ndef test_e3b_crm_sla_adapter_normalizes_without_creating_task_lifecycle():\n    item = adapt_crm_opportunity(\n        {\n            \"OportunidadID\": \"OP-9\",\n            \"Nombre\": \"Renovacion mayorista\",\n            \"MontoEstimado\": 250000,\n            \"EstatusSLA\": \"PROXIMO\",\n            \"Prioridad\": \"BAJA\",\n            \"ResponsableID\": \"crm-7\",\n        }\n    )\n\n    assert item is not None\n    assert item.source_domain == \"CRM\"\n    assert item.source_object_ref == \"oportunidad:OP-9\"\n    assert item.priority_band is PriorityBand.ALTA\n    assert item.impact == \"monto_estimado:250000\"\n    assert \"CRM_SLA_PROXIMO\" in item.priority_score_explanation\n\n\ndef test_e3b_adapter_fails_closed_without_source_identity():\n    assert adapt_operational_task({\"estado_sla\": \"VENCIDA\"}) is None\n    assert adapt_crm_opportunity({\"EstatusSLA\": \"VENCIDO\"}) is None\n\n\ndef test_e3b_aggregator_is_cross_domain_deterministic_and_read_only():\n    critical = adapt_operational_task(\n        {\n            \"id\": \"T-2\",\n            \"estado_sla\": \"ESCALADA\",\n            \"fecha_limite\": \"2026-09-19T07:00:00Z\",\n        }\n    )\n    crm = adapt_crm_opportunity(\n        {\n            \"OportunidadID\": \"OP-1\",\n            \"EstatusSLA\": \"PROXIMO\",\n            \"MontoEstimado\": 1000,\n        }\n    )\n    medium = adapt_operational_task(\n        {\n            \"id\": \"T-3\",\n            \"prioridad\": \"MEDIA\",\n            \"fecha_limite\": \"2026-09-20T07:00:00Z\",\n        }\n    )\n\n    result = aggregate_priorities([medium, crm, critical])\n\n    assert result.total == 3\n    assert result.domains == (\"CRM\", \"OPERATIVO\")\n    assert [item.source_object_ref for item in result.items] == [\n        \"tarea:T-2\",\n        \"oportunidad:OP-1\",\n        \"tarea:T-3\",\n    ]\n\n\ndef test_e3b_same_band_uses_due_date_not_global_numeric_weights():\n    later = adapt_operational_task(\n        {\n            \"id\": \"T-LATE\",\n            \"prioridad\": \"ALTA\",\n            \"fecha_limite\": \"2026-09-20T12:00:00Z\",\n        }\n    )\n    sooner = adapt_operational_task(\n        {\n            \"id\": \"T-SOON\",\n            \"prioridad\": \"ALTA\",\n            \"fecha_limite\": \"2026-09-19T12:00:00Z\",\n        }\n    )\n\n    result = aggregate_priorities([later, sooner])\n\n    assert [item.source_object_ref for item in result.items] == [\n        \"tarea:T-SOON\",\n        \"tarea:T-LATE\",\n    ]\n\n\ndef test_e3b_aggregate_propagates_stale_without_hiding_priority():\n    stale = adapt_operational_task(\n        {\n            \"id\": \"T-STALE\",\n            \"estado_sla\": \"VENCIDA\",\n            \"stale\": True,\n        }\n    )\n\n    result = aggregate_priorities([stale])\n\n    assert result.stale is True\n    assert result.items[0].priority_band is PriorityBand.CRITICA\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/bos_executive/__init__.py",
+        "backend/modules/bos_executive/priority_contracts.py",
+        "backend/modules/bos_executive/priority_adapters.py",
+        "backend/modules/bos_executive/priority_service.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_bos_executive_e3a.py",
+        "backend/tests/test_bos_executive_e3b.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/bos_executive",
+          "backend/tests/test_bos_executive_e3b.py"
+        ],
+        "search_terms": [
+          "ExecutivePriorityItem",
+          "PriorityBand",
+          "adapt_operational_task",
+          "adapt_crm_opportunity",
+          "aggregate_priorities",
+          "priority_score_explanation"
+        ]
+      }
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
