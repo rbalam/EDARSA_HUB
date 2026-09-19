@@ -1,0 +1,100 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE14C-SECURITY-RBAC-CLEANUP-CERT-READONLY-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "cd47106ad4ef91ce114711ab78a645b63636eac9",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar sin desarrollo el cierre de seguridad/RBAC y limpieza de Cavas en Development. Auditar permisos y modulos Cava existentes, resolucion de scope multiunidad, protecciones 403/404/409 ya implementadas, aislamiento por unidad, Persona-Link, cero residuos UAT, baseline del canario y FKs. No crear ni modificar roles, usuarios, permisos, menus, tablas, datos ni codigo. Reportar blockers reales sin corregirlos.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "cava_rbac_modules",
+          "sql": "SELECT ModuloID,CodigoModulo,NombreModulo,TipoModulo,Ruta,EsVisibleMenu,Activo FROM dbo.Usuario_Modulos WHERE CodigoModulo=N'cava_socios' OR CodigoModulo LIKE N'cava_socios.%' ORDER BY CodigoModulo;"
+        },
+        {
+          "name": "cava_rbac_permissions",
+          "sql": "SELECT m.CodigoModulo,p.RolID,p.AccionID,p.Permitido,p.RestriccionPropietario,p.RestriccionSucursal,p.RequiereAutorizacion,p.NivelAutorizacionRequerido,p.Activo FROM dbo.Usuario_PermisosRolModulo p JOIN dbo.Usuario_Modulos m ON m.ModuloID=p.ModuloID WHERE (m.CodigoModulo=N'cava_socios' OR m.CodigoModulo LIKE N'cava_socios.%') AND p.Activo=1 ORDER BY m.CodigoModulo,p.RolID,p.AccionID;"
+        },
+        {
+          "name": "uat_personas_zero",
+          "sql": "SELECT COUNT_BIG(*) AS n FROM dbo.Gobierno_Persona WHERE RFC LIKE N'UAT13B%';"
+        },
+        {
+          "name": "uat_bottles_zero",
+          "sql": "SELECT COUNT_BIG(*) AS n FROM dbo.CavaSocios_Botellas WHERE ProductoNombre LIKE N'UAT13B-%' OR ProductoCodigo LIKE N'UAT13B-%';"
+        },
+        {
+          "name": "uat_movements_zero",
+          "sql": "SELECT COUNT_BIG(*) AS n FROM dbo.CavaSocios_Movimientos WHERE Observaciones LIKE N'UAT13B-%' OR MotivoMovimiento LIKE N'CAVAS-GATE13B-%';"
+        },
+        {
+          "name": "uat_cargos_zero",
+          "sql": "SELECT COUNT_BIG(*) AS n FROM dbo.CavaSocios_Cargos WHERE ConceptoCargo LIKE N'%UAT13B-%';"
+        },
+        {
+          "name": "canary_baseline",
+          "sql": "SELECT CONVERT(varchar(36),SocioID) AS SocioID,CONVERT(varchar(36),EmpresaID) AS UnidadNegocioID,NumeroSocio,PersonaID,ClienteCRMID,Estatus,Activo FROM dbo.CavaSocios_Socios WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        },
+        {
+          "name": "cava_fk",
+          "sql": "SELECT OBJECT_NAME(parent_object_id) AS child_table,name,is_disabled,is_not_trusted FROM sys.foreign_keys WHERE parent_object_id IN (OBJECT_ID(N'dbo.CavaSocios_Socios'),OBJECT_ID(N'dbo.CavaSocios_Botellas'),OBJECT_ID(N'dbo.CavaSocios_Cargos'),OBJECT_ID(N'dbo.CavaSocios_Movimientos')) ORDER BY child_table,name;"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/routes.py",
+          "backend/modules/cava_socios/persona_link_service.py",
+          "backend/modules/cava_socios/service.py",
+          "backend/modules/cavas_corporativas/routes.py",
+          "backend/tests/test_cava_socios.py",
+          "backend/tests/test_cava_socios_gate13b_e2e_controlled.py",
+          "backend/tests/test_cavas_corporativas_routes.py",
+          "frontend/src/pages/cava-socios"
+        ],
+        "search_terms": [
+          "_resolve_cava_scope",
+          "RBACContextService",
+          "require_explicit_permission_dual",
+          "cava_socios.VER",
+          "cava_socios.consumos.CREAR",
+          "403",
+          "404",
+          "409",
+          "unidad_negocio_pk",
+          "PersonaID",
+          "ClienteCRMID",
+          "persona-link",
+          "CONSUMPTION_HISTORY",
+          "cleanup"
+        ],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "Certification and cleanup verification only",
+    "READ_ONLY only",
+    "No file mutations",
+    "No SQL DDL or DML",
+    "No Production",
+    "No changes to RBAC roles permissions users menus companies or units",
+    "Do not seed or repair permissions in this job",
+    "Fail closed if any UAT residue remains",
+    "Fail closed if any FK is disabled or untrusted",
+    "Report blockers exactly; do not fix them",
+    "EDARSAHUB SQL Server remains source of truth",
+    "MongoDB prohibited as source of truth"
+  ]
+}
