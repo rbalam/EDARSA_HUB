@@ -1,0 +1,142 @@
+{
+  "base_sha": "5c2c00741c9660b71a525f98d211f1035d5f4808",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-19T07:22:47Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-WORKER-RESULTS-PUBLISHER-CONSISTENCY-READONLY-R1-20260919",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-19T07:26:30Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "json",
+              "os",
+              "pathlib",
+              "shutil",
+              "subprocess",
+              "tempfile",
+              "time"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "latest.json",
+              "result_ready",
+              "terminal_retention_seconds"
+            ],
+            "path": "tools/mirror_sync/runtime_health_publisher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "age_seconds",
+              "directory_ids",
+              "git",
+              "history_summary",
+              "main",
+              "now",
+              "payload",
+              "processing_stale_seconds",
+              "public_rejection",
+              "queue_jobs",
+              "read_text",
+              "resolve_runtime_git_credential_helper",
+              "run",
+              "runtime_git_command",
+              "runtime_git_env",
+              "runtime_summary",
+              "terminal_visible"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "fcntl",
+              "json",
+              "os",
+              "pathlib",
+              "shutil",
+              "subprocess",
+              "tempfile",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "publish execution result",
+              "result_identity"
+            ],
+            "path": "tools/mirror_sync/universal_job_result_publisher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_sensitive_column",
+              "atomic_json",
+              "certification_evidence",
+              "create_attestation",
+              "generic_readonly_evidence",
+              "git",
+              "load",
+              "main",
+              "marker_satisfied",
+              "now",
+              "prepare_queue_worktree",
+              "publish_one",
+              "publishable_paths",
+              "resolve_runtime_git_credential_helper",
+              "result_identity",
+              "run",
+              "runtime_git",
+              "runtime_git_command",
+              "runtime_git_env",
+              "sanitize",
+              "sanitize_readonly_evidence",
+              "sanitize_repository_evidence",
+              "valid_sha"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 4,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-19T07:22:47Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
