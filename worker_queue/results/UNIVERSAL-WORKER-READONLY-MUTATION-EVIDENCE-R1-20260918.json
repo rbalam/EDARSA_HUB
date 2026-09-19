@@ -1,0 +1,150 @@
+{
+  "base_sha": "475c6e88227d185fac03d1121078b08e7ec7b3ae",
+  "blockers": [],
+  "candidate_sha": "8cf8e789f8c571888c8e0bb0c17d93f53a61525b",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-19T04:31:22Z",
+  "development_sha": "8cf8e789f8c571888c8e0bb0c17d93f53a61525b",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "tools/mirror_sync/universal_job_dispatcher.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "UNIVERSAL-WORKER-READONLY-MUTATION-EVIDENCE-R1-20260918",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-19T04:31:31Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "fcntl",
+              "git_divergence_guard",
+              "hashlib",
+              "json",
+              "os",
+              "pathlib",
+              "re",
+              "shutil",
+              "subprocess",
+              "sys",
+              "tempfile",
+              "typing",
+              "worker_concurrency"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "diff_names",
+              "diff_porcelain",
+              "diff_stat",
+              "readonly_head_after",
+              "readonly_head_before",
+              "readonly_mutation_evidence",
+              "readonly_tracked_repo_mutation_detected",
+              "tracked_after",
+              "tracked_before"
+            ],
+            "path": "tools/mirror_sync/universal_job_dispatcher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_load_preferred_job",
+              "_select_pending_job",
+              "apply_action",
+              "changed_files",
+              "create_commit",
+              "dispatch",
+              "ensure_dirs",
+              "git",
+              "git_changed_paths",
+              "git_is_ancestor",
+              "integrate",
+              "load_backend_runtime_env",
+              "load_envelope",
+              "main",
+              "now",
+              "prepare_worktree",
+              "process_one",
+              "release_agent_guard_claim",
+              "resolve_canonical_python",
+              "resolve_repository_credential_helper",
+              "run",
+              "run_check",
+              "safe_path",
+              "sha256_file",
+              "summarize_iscam_detail_backfill_output",
+              "summarize_softrestaurant_output",
+              "validate_scope",
+              "verify_expected_hash",
+              "write_json"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "importlib.util",
+              "pathlib",
+              "sys"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "readonly_tracked_repo_mutation_detected"
+            ],
+            "path": "backend/tests/test_worker_generic_readonly.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "Completed",
+              "base_job",
+              "fake_run",
+              "load_dispatcher",
+              "load_module",
+              "test_bridge_accepts_combined_repository_and_sql_readonly_checks",
+              "test_bridge_accepts_generic_readonly_with_empty_actions_and_safe_checks",
+              "test_bridge_rejects_mutating_readonly_checks_and_production",
+              "test_bridge_requires_actions_to_be_exact_empty_list",
+              "test_dispatcher_has_dedicated_readonly_terminal_and_no_shell_execution",
+              "test_readonly_py_compile_redirects_bytecode",
+              "test_readonly_pytest_disables_repo_cache_and_bytecode"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 2,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-19T04:31:16Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
