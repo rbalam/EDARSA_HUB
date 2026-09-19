@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "5c84b897c79c1104a9781875896b32f5fbedfb55",
-  "generated_at_utc": "2026-09-19T07:32:15Z",
+  "generated_at_utc": "2026-09-19T07:33:35Z",
   "history": {
     "done_total_local": 732,
     "pending_total_local": 0,
@@ -13,103 +13,103 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2560,
+      "age_seconds": 2640,
       "job_id": "BOS-V1-GATE-E-E3B-CROSS-DOMAIN-PRIORITY-AGGREGATOR-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2888,
+      "age_seconds": 2968,
       "job_id": "BOS-V1-GATE-E-E3B-OWNER-CAPABILITY-AUDIT-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2524,
+      "age_seconds": 2604,
       "job_id": "CAVAS-GATE13B-CARGO-MOVEMENT-CONSISTENCY-FIX-R1B-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1814,
+      "age_seconds": 1894,
       "job_id": "CAVAS-GATE13B-CARGO-MOVEMENT-FIX-R1B-CERT-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1276,
+      "age_seconds": 1356,
       "job_id": "CAVAS-GATE13B-E2E-CONTROLLED-UAT-R2-INSTRUMENTED-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 110,
+      "age_seconds": 191,
       "job_id": "CAVAS-GATE13B-E2E-CONTROLLED-UAT-R2B-INSTRUMENTED-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 502,
+      "age_seconds": 582,
       "job_id": "CAVAS-GATE13B-R2-POSTCHECK-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 393,
+      "age_seconds": 473,
       "job_id": "CAVAS-GATE13B-R2-POSTCHECK-READONLY-R1B-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1308,
+      "age_seconds": 1389,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-FRONTEND-BUILD-CERTIFICATION-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 111,
+      "age_seconds": 191,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-PREVIEW-CONTROLLED-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1192,
+      "age_seconds": 1273,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-WIRING-READONLY-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 857,
+      "age_seconds": 938,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-WIRING-READONLY-R2-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1583,
+      "age_seconds": 1663,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-CONTROL-PLANE-INTEGRATION-HARDENING-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1431,
+      "age_seconds": 1511,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-CONTROL-PLANE-INTEGRATION-HARDENING-R2-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1269,
+      "age_seconds": 1349,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-CONTROL-PLANE-INTEGRATION-HARDENING-R3-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 386,
+      "age_seconds": 466,
       "job_id": "EDARSAHUB-WORKER-RESULT-PUBLISHER-PRIORITIZE-RECENT-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 567,
+      "age_seconds": 647,
       "job_id": "EDARSAHUB-WORKER-RESULTS-PUBLISHER-CONSISTENCY-READONLY-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
@@ -127,8 +127,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-19T07:32:09Z",
-    "last_receive_utc": "2026-09-19T07:32:12Z",
+    "last_cycle_utc": "2026-09-19T07:33:30Z",
+    "last_receive_utc": "2026-09-19T07:33:33Z",
     "last_terminal_utc": "2026-09-19T07:30:24Z",
     "pid": "205425"
   },
