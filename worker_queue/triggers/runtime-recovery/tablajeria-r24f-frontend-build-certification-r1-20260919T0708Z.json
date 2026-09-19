@@ -1,0 +1,9 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "wake tablajeria R24F frontend build certification R1",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-FRONTEND-BUILD-CERTIFICATION-R1-20260919",
+  "queue_sha": "5f32cf78633b04418828c18f5939f15264234634",
+  "production_allowed": false,
+  "created_by": "chatgpt",
+  "created_at_utc": "2026-09-19T07:08:00Z"
+}
