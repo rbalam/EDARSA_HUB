@@ -1,0 +1,69 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-PREVIEW-CONTROLLED-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "cde86681cbb3d85a90c82cc1ac962acb540610a5",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias"
+  },
+  "objective": "Ejecutar UAT preview controlado no destructivo de R24F Lotes Proveedor. Validar que el preview publico sirve la ruta SPA /tablajeria/lotes-proveedor y que /api/health responde, sin llamar endpoints de negocio, sin tocar SQL, sin Produccion, sin Scheduler, sin NetPay, sin RBAC/permisos ni menu/layout transversal.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+      "content": "from __future__ import annotations\n\nimport os\nfrom urllib.error import HTTPError, URLError\nfrom urllib.request import Request, urlopen\n\n\nPREVIEW_URL = os.environ.get(\n    \"EDARSAHUB_PREVIEW_URL\",\n    \"https://erp-crm-enterprise-1.preview.emergentagent.com\",\n).rstrip(\"/\")\n\n\ndef _get(path: str) -> tuple[int, str]:\n    request = Request(\n        PREVIEW_URL + path,\n        headers={\n            \"User-Agent\": \"EDARSAHUB-R24F-UAT-PREVIEW-CONTROLLED\",\n            \"Accept\": \"text/html,application/json,*/*\",\n        },\n    )\n    try:\n        with urlopen(request, timeout=25) as response:\n            body = response.read(500000).decode(\"utf-8\", \"replace\")\n            return int(response.status), body\n    except HTTPError as exc:\n        body = exc.read(500000).decode(\"utf-8\", \"replace\")\n        return int(exc.code), body\n    except URLError as exc:  # pragma: no cover - surfaced as deterministic failure\n        raise AssertionError(f\"STAGE=PREVIEW_CONNECTIVITY;ERROR={exc}\") from exc\n\n\ndef test_preview_spa_route_for_lotes_proveedor_is_served_without_business_calls():\n    status, body = _get(\"/tablajeria/lotes-proveedor\")\n    assert status == 200, f\"STAGE=PREVIEW_ROUTE;STATUS={status}\"\n    lower = body.lower()\n    assert \"root\" in lower or \"script\" in lower, \"STAGE=PREVIEW_ROUTE;SPA_MARKERS_MISSING\"\n\n\ndef test_preview_api_health_is_reachable_without_sql_business_endpoints():\n    status, body = _get(\"/api/health\")\n    assert status == 200, f\"STAGE=PREVIEW_HEALTH;STATUS={status};BODY={body[:300]}\"\n    lower = body.lower()\n    assert \"status\" in lower or \"healthy\" in lower or \"ok\" in lower, \"STAGE=PREVIEW_HEALTH;BODY_UNEXPECTED\"\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_tablajeria_r24f_uat_preview_static.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+          "frontend/src/App.js"
+        ],
+        "search_terms": [
+          "tablajeria/lotes-proveedor",
+          "api/health",
+          "PREVIEW_URL",
+          "LotesProveedorPage",
+          "STAGE=PREVIEW_ROUTE",
+          "STAGE=PREVIEW_HEALTH"
+        ],
+        "max_results": 120
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "allowed_files": [
+    "backend/tests/test_tablajeria_r24f_uat_preview_static.py"
+  ],
+  "constraints": [
+    "No product mutation",
+    "No business endpoint calls",
+    "No SQL mutation",
+    "No Production",
+    "No Scheduler",
+    "No NetPay",
+    "No RBAC or permissions changes",
+    "No menu or transversal layout changes",
+    "Preview smoke only",
+    "Do not touch runtime data"
+  ]
+}
