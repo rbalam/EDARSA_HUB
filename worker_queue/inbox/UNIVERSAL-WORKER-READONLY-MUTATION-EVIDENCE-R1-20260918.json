@@ -1,0 +1,93 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "UNIVERSAL-WORKER-READONLY-MUTATION-EVIDENCE-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "21d1d36e5ca1ab35876fe4f8a430d51066f620bf",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "Universal Worker READ_ONLY mutation evidence"
+  },
+  "objective": "Corregir observabilidad del Universal Worker para que, cuando un job READ_ONLY detecte readonly_tracked_repo_mutation_detected, el resultado terminal incluya evidencia suficiente para identificar exactamente que cambio. Mantener el guardrail y la semantica de certificacion: no convertir FAIL en PASS, no tocar R24F, SQL, Produccion, Scheduler, NetPay, RBAC ni menu/layout transversal.",
+  "constraints": [
+    "MUTATION quirurgica",
+    "Archivo permitido: tools/mirror_sync/universal_job_dispatcher.py",
+    "No modificar repository_contract_audit.py",
+    "No tocar R24F",
+    "No tocar SQL",
+    "No tocar Produccion",
+    "No tocar Scheduler",
+    "No tocar NetPay",
+    "No tocar RBAC/permisos",
+    "No tocar menu/layout transversal",
+    "Mantener readonly_tracked_repo_mutation_detected como blocker",
+    "No cambiar semantica de certificacion ni convertir FAIL en PASS"
+  ],
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "            tracked_before = git(\"status\", \"--porcelain=v1\", \"--untracked-files=no\", cwd=ROOT).stdout\n            check_results = []\n            for check in checks:\n                check_result = run_check(ROOT, check, readonly=True)\n                check_results.append(check_result)\n                if check_result[\"status\"] != \"PASS\":\n                    result[\"blockers\"].append(f\"check_failed:{check.get('type')}\")\n                    break\n            tracked_after = git(\"status\", \"--porcelain=v1\", \"--untracked-files=no\", cwd=ROOT).stdout\n            if tracked_after != tracked_before:\n                result[\"blockers\"].append(\"readonly_tracked_repo_mutation_detected\")\n",
+      "new": "            readonly_head_before = git(\"rev-parse\", \"HEAD\", cwd=ROOT).stdout.strip()\n            tracked_before = git(\"status\", \"--porcelain=v1\", \"--untracked-files=no\", cwd=ROOT).stdout\n            readonly_tracked_before = tracked_before\n            check_results = []\n            for check in checks:\n                check_result = run_check(ROOT, check, readonly=True)\n                check_results.append(check_result)\n                if check_result[\"status\"] != \"PASS\":\n                    result[\"blockers\"].append(f\"check_failed:{check.get('type')}\")\n                    break\n            readonly_head_after = git(\"rev-parse\", \"HEAD\", cwd=ROOT).stdout.strip()\n            tracked_after = git(\"status\", \"--porcelain=v1\", \"--untracked-files=no\", cwd=ROOT).stdout\n            readonly_tracked_after = tracked_after\n            if tracked_after != tracked_before:\n                result[\"readonly_mutation_evidence\"] = {\n                    \"version\": \"r1\",\n                    \"head_before\": readonly_head_before,\n                    \"head_after\": readonly_head_after,\n                    \"tracked_before\": readonly_tracked_before,\n                    \"tracked_after\": readonly_tracked_after,\n                    \"diff_names\": git(\"diff\", \"--name-only\", cwd=ROOT, check=False).stdout,\n                    \"diff_stat\": git(\"diff\", \"--stat\", cwd=ROOT, check=False).stdout,\n                    \"diff_porcelain\": readonly_tracked_after,\n                    \"check_types\": [str(c.get(\"type\")) for c in checks if isinstance(c, dict)],\n                    \"cwd\": str(ROOT),\n                }\n                result[\"blockers\"].append(\"readonly_tracked_repo_mutation_detected\")\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_generic_readonly.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "backend/tests/test_worker_generic_readonly.py"
+        ],
+        "search_terms": [
+          "readonly_mutation_evidence",
+          "readonly_head_before",
+          "readonly_head_after",
+          "tracked_before",
+          "tracked_after",
+          "diff_names",
+          "diff_stat",
+          "diff_porcelain",
+          "readonly_tracked_repo_mutation_detected"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [
+          ".git/*",
+          "node_modules/*",
+          "frontend/build/*"
+        ],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "success_criteria": [
+    "quality_gate = PASS",
+    "production_touched = false",
+    "files_changed solo incluye tools/mirror_sync/universal_job_dispatcher.py",
+    "READ_ONLY emite evidencia de mutacion tracked sin relajar el guardrail",
+    "readonly_tracked_repo_mutation_detected sigue siendo blocker"
+  ]
+}
