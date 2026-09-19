@@ -146,6 +146,60 @@ def summarize_softrestaurant_output(output: str) -> dict[str, Any]:
     return summary
 
 
+def summarize_iscam_detail_backfill_output(output: str) -> dict[str, Any]:
+    summary: dict[str, Any] = {"unidades": []}
+    for raw_line in reversed((output or "").splitlines()):
+        try:
+            payload = json.loads(raw_line)
+        except Exception:
+            continue
+        if not isinstance(payload, dict) or not isinstance(payload.get("unidades"), list):
+            continue
+        units = []
+        for unit in payload.get("unidades") or []:
+            if not isinstance(unit, dict):
+                continue
+            days = []
+            for day in unit.get("dias") or []:
+                if not isinstance(day, dict):
+                    continue
+                days.append({
+                    key: day.get(key)
+                    for key in (
+                        "fecha_operacion", "status",
+                        "ventas_runtime", "ventas_pos", "delta_ventas",
+                        "tickets_runtime", "tickets_pos", "delta_tickets",
+                        "pax_runtime", "pax_pos", "delta_pax",
+                        "filas_insertadas",
+                    )
+                    if key in day
+                })
+            units.append({
+                "unidad": str(unit.get("unidad") or ""),
+                "ya_ok": int(unit.get("ya_ok") or 0),
+                "candidatos": int(unit.get("candidatos") or 0),
+                "reparables": int(unit.get("reparables") or 0),
+                "bloqueados": int(unit.get("bloqueados") or 0),
+                "sin_runtime": int(unit.get("sin_runtime") or 0),
+                "filas_insertadas": int(unit.get("filas_insertadas") or 0),
+                "dias": days,
+            })
+        return {
+            "modo": str(payload.get("modo") or ""),
+            "fecha_inicio": str(payload.get("fecha_inicio") or ""),
+            "fecha_fin_exclusivo": str(payload.get("fecha_fin_exclusivo") or ""),
+            "dias_evaluados": int(payload.get("dias_evaluados") or 0),
+            "dias_ya_ok": int(payload.get("dias_ya_ok") or 0),
+            "dias_candidatos": int(payload.get("dias_candidatos") or 0),
+            "dias_reparables": int(payload.get("dias_reparables") or 0),
+            "dias_bloqueados": int(payload.get("dias_bloqueados") or 0),
+            "dias_sin_runtime": int(payload.get("dias_sin_runtime") or 0),
+            "filas_insertadas": int(payload.get("filas_insertadas") or 0),
+            "unidades": units,
+        }
+    return summary
+
+
 def run(args: list[str], cwd: Path | None = None, check: bool = False, timeout: int | None = None, env_extra: dict[str, str] | None = None):
     env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
     if env_extra:
@@ -693,6 +747,7 @@ def process_one(path: Path) -> int:
             result["fecha_inicio"] = fecha_inicio
             result["fecha_fin"] = fecha_fin
             result["operation_output"] = execution.stdout[-20000:]
+            result["operation_summary"] = summarize_iscam_detail_backfill_output(execution.stdout or "")
             result["files_changed"] = []
             if execution.returncode != 0:
                 result["blockers"].append(f"iscam_detail_backfill_failed:rc={execution.returncode}")
