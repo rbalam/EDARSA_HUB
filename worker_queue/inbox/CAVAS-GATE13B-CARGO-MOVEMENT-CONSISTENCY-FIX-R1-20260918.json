@@ -1,0 +1,63 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE13B-CARGO-MOVEMENT-CONSISTENCY-FIX-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "bb4a5333055b54c3a8f7075f853d0adae9902b37",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Corregir quirurgicamente en Development la trazabilidad cargo<->movimiento de Cavas. Cuando registrar_consumo genere un cargo por descorche, el mismo movimiento debe persistir GeneroCargo=1 y MontoCargo igual al monto base del cargo asociado. Cuando no genere cargo, conservar GeneroCargo=0 y MontoCargo=0. No cambiar schema SQL, RBAC, permisos, frontend ni Produccion.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_in_file",
+      "path": "backend/modules/cava_socios/service.py",
+      "old": "            # Generar cargo por descorche si aplica\n            cargo_id = None\n            if data.get('generar_cargo_descorche'):\n                cargo_id = self._crear_cargo(\n                    cursor, botella['EmpresaID'], botella['SocioID'],\n                    'SERVICIO_DESCORCHE', f\"Descorche: {botella['ProductoNombre']}\",\n                    data.get('monto_descorche', 350), botella_id, mov_id, usuario_id\n                )\n\n            conn.commit()",
+      "new": "            # Generar cargo por descorche si aplica y reflejarlo en el movimiento.\n            cargo_id = None\n            monto_descorche = float(data.get('monto_descorche', 350) or 0)\n            if data.get('generar_cargo_descorche'):\n                cargo_id = self._crear_cargo(\n                    cursor, botella['EmpresaID'], botella['SocioID'],\n                    'SERVICIO_DESCORCHE', f\"Descorche: {botella['ProductoNombre']}\",\n                    monto_descorche, botella_id, mov_id, usuario_id\n                )\n                cursor.execute(\"\"\"\n                    UPDATE CavaSocios_Movimientos\n                       SET GeneroCargo = 1,\n                           MontoCargo = %s\n                     WHERE MovimientoID = %s\n                       AND EmpresaID = %s\n                \"\"\", (monto_descorche, mov_id, botella['EmpresaID']))\n\n            conn.commit()"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/cava_socios/service.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios.py",
+        "backend/tests/test_cava_socios_persona_link.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/service.py"
+        ],
+        "search_terms": [
+          "GeneroCargo",
+          "MontoCargo",
+          "_crear_cargo",
+          "registrar_consumo"
+        ],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "Development only",
+    "Modify only backend/modules/cava_socios/service.py",
+    "No SQL DDL",
+    "No data backfill in this job",
+    "No RBAC permission user role menu company or unit changes",
+    "No frontend changes",
+    "No Production",
+    "Existing historical inconsistent row must not be mutated by this code fix job",
+    "Gate13B R2 remains blocked until this implementation passes and is certified"
+  ]
+}
