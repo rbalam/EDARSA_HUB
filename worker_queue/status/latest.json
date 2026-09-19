@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "269f04975f5bd3a65c3cba2a7fb6f122ea273d3d",
-  "generated_at_utc": "2026-09-19T02:10:47Z",
+  "generated_at_utc": "2026-09-19T02:12:20Z",
   "history": {
     "done_total_local": 705,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2603,
+      "age_seconds": 2695,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R8-FRONTEND-BUILD-CAPABLE-CERT-R1",
       "reasons": [
         "ACTIONS_REQUIRED"
@@ -22,37 +22,37 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3028,
+      "age_seconds": 3120,
       "job_id": "CAVAS-GATE12N-SCOPE-FIX-DESIGN-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2573,
+      "age_seconds": 2666,
       "job_id": "CAVAS-GATE12N-SCOPE-FIX-IMPLEMENTATION-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 5,
+      "age_seconds": 98,
       "job_id": "CAVAS-GATE12N-SCOPE-FIX-IMPLEMENTATION-R2-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1497,
+      "age_seconds": 1589,
       "job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-CERTIFICATION-MODE-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 412,
+      "age_seconds": 505,
       "job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-CERTIFICATION-MODE-R2-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 30,
+      "age_seconds": 122,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R9-FRONTEND-BUILD-CERTIFICATION-R1-20260918",
       "reason": null,
       "state": "RUNNING"
@@ -70,8 +70,8 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R9-FRONTEND-BUILD-CERTIFICATION-R1-20260918",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-19T02:10:44Z",
-    "last_receive_utc": "2026-09-19T02:10:39Z",
+    "last_cycle_utc": "2026-09-19T02:12:12Z",
+    "last_receive_utc": "2026-09-19T02:12:18Z",
     "last_terminal_utc": "2026-09-19T02:10:42Z",
     "pid": "63"
   },
