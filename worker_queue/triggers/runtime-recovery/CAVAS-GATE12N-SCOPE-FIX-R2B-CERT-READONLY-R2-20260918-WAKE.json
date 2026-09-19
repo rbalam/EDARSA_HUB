@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "CAVAS-GATE12N-SCOPE-FIX-R2B-CERT-READONLY-R2-20260918",
+  "reason": "Wake canonical Universal Worker for corrected deterministic READ_ONLY certification contract. Same Gate12N Scope Fix R2B certification scope; repository_contract_audit request corrected. No Production.",
+  "production_touched": false
+}
