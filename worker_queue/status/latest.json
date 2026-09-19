@@ -1,76 +1,82 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "9d274fa69c3eb16f6b63ebf5436a7783fdcb5949",
-  "generated_at_utc": "2026-09-19T04:43:07Z",
+  "development_sha": "6aa1d228e08075a5cd634e9ed35f76a00b8cba94",
+  "generated_at_utc": "2026-09-19T04:46:39Z",
   "history": {
-    "done_total_local": 711,
-    "pending_total_local": 1,
+    "done_total_local": 712,
+    "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 660,
-    "results_total_local": 1216
+    "rejected_total_local": 661,
+    "results_total_local": 1218
   },
-  "intake_sla_breached": true,
+  "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 56,
-      "job_id": "CAVAS-GATE12N-SCOPE-UUID-NORMALIZATION-FIX-R1-20260918",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 1784,
+      "age_seconds": 1996,
       "job_id": "CAVAS-GATE12N-SCOPE-FIX-R2B-CERT-READONLY-R2-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1112,
+      "age_seconds": 24,
+      "job_id": "CAVAS-GATE12N-SCOPE-UUID-NORMALIZATION-FIX-R1-20260918",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1325,
       "job_id": "CAVAS-GATE12N-UAT-CONTROLLED-EXECUTION-R2-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 749,
+      "age_seconds": 961,
       "job_id": "CAVAS-GATE12N-UAT-CONTROLLED-EXECUTION-R2B-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 191,
+      "age_seconds": 404,
       "job_id": "CAVAS-GATE12N-UAT-R2B-POSTCHECK-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 555,
+      "age_seconds": 17,
+      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-IMPLEMENTATION-SCOPE-DRAFT-READONLY-R1-20260919",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 768,
       "job_id": "REPLAY-EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-DESIGN-CONTRACT-READONLY-R1-20260919T0434Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 704,
+      "age_seconds": 916,
       "job_id": "UNIVERSAL-WORKER-READONLY-MUTATION-EVIDENCE-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "oldest_pending_age_seconds": 56,
+  "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
-  "queue_pending": 1,
+  "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 8,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-19T04:42:59Z",
-    "last_receive_utc": "2026-09-19T04:43:03Z",
-    "last_terminal_utc": "2026-09-19T04:39:55Z",
-    "pid": "375524"
+    "last_cycle_utc": "2026-09-19T04:46:35Z",
+    "last_receive_utc": "2026-09-19T04:46:30Z",
+    "last_terminal_utc": "2026-09-19T04:46:22Z",
+    "pid": "763"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
