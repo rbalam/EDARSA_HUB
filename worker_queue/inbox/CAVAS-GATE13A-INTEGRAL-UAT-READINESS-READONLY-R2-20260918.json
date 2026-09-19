@@ -1,0 +1,92 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE13A-INTEGRAL-UAT-READINESS-READONLY-R2-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b79d63aa1f6db8ae70d25158fd286dc37989f72d",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar readiness integral backend/SQL/repositorio de Cavas antes del canario E2E: Dashboard, Socios, Persona-Link, Botellas, Inventario, Consumos, Kardex, reportes, permisos, multiunidad, errores y flujo operativo. Sin frontend_build en este contrato; no mutar datos ni codigo ni Produccion.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/cava_socios/routes.py",
+        "backend/modules/cava_socios/service.py",
+        "backend/modules/cava_socios/persona_link_service.py",
+        "backend/modules/cava_socios/report_service.py",
+        "backend/modules/cava_socios/notification_service.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios.py",
+        "backend/tests/test_cava_socios_persona_link.py",
+        "backend/tests/test_cava_socios_gate12n_uat_controlled.py"
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate13a_r2_candidate",
+          "sql": "SELECT CONVERT(varchar(36),SocioID) AS SocioID,CONVERT(varchar(36),EmpresaID) AS UnidadNegocioID,NumeroSocio,Estatus,Activo,PersonaID,ClienteCRMID FROM dbo.CavaSocios_Socios WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        },
+        {
+          "name": "gate13a_r2_counts",
+          "sql": "SELECT (SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Socios) AS socios,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Botellas) AS botellas,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Consumos) AS consumos,(SELECT COUNT_BIG(*) FROM dbo.Gobierno_Persona) AS personas,(SELECT COUNT_BIG(*) FROM dbo.Gobierno_PersonaVinculo) AS persona_vinculos;"
+        },
+        {
+          "name": "gate13a_r2_rbac",
+          "sql": "SELECT urc.UsuarioID,urc.RolID,CONVERT(varchar(36),urc.UnidadNegocioID) AS UnidadNegocioID,urc.EmpresaID,urc.Activo FROM dbo.Usuario_RolesContexto urc WHERE urc.UsuarioID=4 AND urc.Activo=1;"
+        },
+        {
+          "name": "gate13a_r2_fk",
+          "sql": "SELECT name,is_disabled,is_not_trusted FROM sys.foreign_keys WHERE parent_object_id IN (OBJECT_ID(N'dbo.CavaSocios_Socios'),OBJECT_ID(N'dbo.CavaSocios_Botellas'),OBJECT_ID(N'dbo.CavaSocios_Consumos')) ORDER BY name;"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios",
+          "backend/tests/test_cava_socios.py",
+          "backend/tests/test_cava_socios_persona_link.py",
+          "frontend/src/pages/cava-socios",
+          "frontend/src/App.js",
+          "frontend/src/config/enterpriseMenuConfig.js"
+        ],
+        "search_terms": [
+          "/api/cava-socios",
+          "CAVA_SOCIOS_VER",
+          "CAVA_SOCIOS_CREAR",
+          "CAVA_SOCIOS_EDITAR",
+          "unidad_negocio_pk",
+          "PersonaLinkCard",
+          "inventario",
+          "kardex",
+          "consumos",
+          "reportes",
+          "CorporateFiltersProvider",
+          "useAccessContext"
+        ],
+        "max_results": 250
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No source code mutations",
+    "No SQL DDL or DML",
+    "No RBAC permission user role menu company or unit changes",
+    "EDARSAHUB SQL Server remains source of truth",
+    "Gate13B remains blocked until both Gate13A components pass"
+  ]
+}
