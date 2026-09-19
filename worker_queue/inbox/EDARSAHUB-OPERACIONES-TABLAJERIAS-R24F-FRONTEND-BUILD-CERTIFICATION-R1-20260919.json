@@ -1,0 +1,48 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-FRONTEND-BUILD-CERTIFICATION-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ebb60bb5bca8595e631284f084b87c35f7748d32",
+  "production_allowed": false,
+  "mode": "FRONTEND_BUILD_CERTIFICATION",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias"
+  },
+  "objective": "Certificar build frontend despues de integrar R24F Lotes Proveedor. No modificar producto. No tocar Produccion, SQL, backend, Scheduler, NetPay, RBAC/permisos ni menu/layout transversal.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+          "backend/modules/tablajeria/lote_proveedor_service.py",
+          "backend/modules/tablajeria/routes.py"
+        ],
+        "search_terms": [
+          "tablajeria",
+          "lotes-proveedor",
+          "rendimientos",
+          "drilldown",
+          "reclamos",
+          "crear reclamo"
+        ],
+        "include_patterns": [],
+        "exclude_patterns": [],
+        "max_results": 500
+      }
+    }
+  ]
+}
