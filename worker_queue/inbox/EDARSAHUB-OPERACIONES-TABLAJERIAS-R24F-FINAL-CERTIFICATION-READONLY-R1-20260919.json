@@ -1,0 +1,69 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-FINAL-CERTIFICATION-READONLY-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "5c84b897c79c1104a9781875896b32f5fbedfb55",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias"
+  },
+  "objective": "Certificar cierre final no productivo de R24F Tablajerias Lotes Proveedor: implementacion frontend integrada, build frontend certificado, UAT wiring certificado, UAT preview controlado con tests PASS y CI full gate PASS. No ejecutar acciones, no tocar SQL, Produccion, Scheduler, NetPay, RBAC ni menu.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+          "frontend/src/App.js",
+          "backend/modules/tablajeria/routes.py",
+          "backend/modules/tablajeria/lote_proveedor_service.py",
+          "backend/tests/test_tablajeria_r24f_uat_preview_static.py"
+        ],
+        "search_terms": [
+          "LotesProveedorPage",
+          "tablajeria/lotes-proveedor",
+          "lotes-proveedor/rendimientos",
+          "drilldown",
+          "reclamos",
+          "listar_rendimientos_lote_proveedor",
+          "obtener_drilldown_lote_proveedor",
+          "crear_reclamo_lote_proveedor",
+          "api/health",
+          "STAGE=PREVIEW_HEALTH",
+          "STAGE=PREVIEW_ROUTE"
+        ],
+        "max_results": 120
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "evidence_expected": {
+    "implementation_job": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-IMPLEMENTATION-MUTATION-R1C-20260919",
+    "frontend_build_job": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-FRONTEND-BUILD-CERTIFICATION-R1-20260919",
+    "uat_wiring_job": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-WIRING-READONLY-R2-20260919",
+    "uat_preview_job": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-PREVIEW-CONTROLLED-R1-20260919",
+    "github_actions_run": "35429506328"
+  },
+  "constraints": [
+    "READ_ONLY only",
+    "No product mutation",
+    "No SQL mutation",
+    "No Production",
+    "No Scheduler",
+    "No NetPay",
+    "No RBAC or permissions changes",
+    "No menu or transversal layout changes",
+    "Do not create or modify business tables",
+    "Do not call business endpoints",
+    "Do not use live administrative dashboards"
+  ]
+}
