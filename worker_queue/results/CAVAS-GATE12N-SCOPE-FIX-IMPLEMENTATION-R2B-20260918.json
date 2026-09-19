@@ -1,0 +1,75 @@
+{
+  "base_sha": "f0da4595515c8a9ad9b65d22f32576309ab82fa6",
+  "blockers": [],
+  "candidate_sha": "837e02383a9df7f8b32bc1df39c82f6c3070e7fc",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-19T02:21:05Z",
+  "development_sha": "837e02383a9df7f8b32bc1df39c82f6c3070e7fc",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/cava_socios/routes.py",
+    "backend/tests/test_cava_socios.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE12N-SCOPE-FIX-IMPLEMENTATION-R2B-20260918",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-19T02:21:13Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "SocioID",
+              "UnidadNegocioID",
+              "PersonaID",
+              "ClienteCRMID"
+            ],
+            "name": "scope_fix_candidate_clean",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58",
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_personas",
+              "total_vinculos",
+              "socios_vinculados"
+            ],
+            "name": "scope_fix_baseline_counts",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0",
+                "0",
+                "0"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-19T02:20:40Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
