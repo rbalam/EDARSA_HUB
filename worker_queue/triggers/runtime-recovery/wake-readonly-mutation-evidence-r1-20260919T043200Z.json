@@ -1,0 +1,16 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "created_at_utc": "2026-09-19T04:32:00Z",
+  "reason": "Wake Universal Worker to process UNIVERSAL-WORKER-READONLY-MUTATION-EVIDENCE-R1-20260918 after queue publication.",
+  "existing_job_id": "UNIVERSAL-WORKER-READONLY-MUTATION-EVIDENCE-R1-20260918",
+  "production_touched": false,
+  "notes": [
+    "No R24F-R2",
+    "No SQL",
+    "No Produccion",
+    "No Scheduler",
+    "No NetPay",
+    "No RBAC",
+    "No menu/layout transversal"
+  ]
+}
