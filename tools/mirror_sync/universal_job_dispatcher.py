@@ -580,7 +580,9 @@ def process_one(path: Path) -> int:
             checks = job.get("checks") or []
             if not checks or any(not isinstance(c, dict) or c.get("type") not in READ_ONLY_CHECKS for c in checks):
                 raise RuntimeError("READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED")
+            readonly_head_before = git("rev-parse", "HEAD", cwd=ROOT).stdout.strip()
             tracked_before = git("status", "--porcelain=v1", "--untracked-files=no", cwd=ROOT).stdout
+            readonly_tracked_before = tracked_before
             check_results = []
             for check in checks:
                 check_result = run_check(ROOT, check, readonly=True)
@@ -588,8 +590,22 @@ def process_one(path: Path) -> int:
                 if check_result["status"] != "PASS":
                     result["blockers"].append(f"check_failed:{check.get('type')}")
                     break
+            readonly_head_after = git("rev-parse", "HEAD", cwd=ROOT).stdout.strip()
             tracked_after = git("status", "--porcelain=v1", "--untracked-files=no", cwd=ROOT).stdout
+            readonly_tracked_after = tracked_after
             if tracked_after != tracked_before:
+                result["readonly_mutation_evidence"] = {
+                    "version": "r1",
+                    "head_before": readonly_head_before,
+                    "head_after": readonly_head_after,
+                    "tracked_before": readonly_tracked_before,
+                    "tracked_after": readonly_tracked_after,
+                    "diff_names": git("diff", "--name-only", cwd=ROOT, check=False).stdout,
+                    "diff_stat": git("diff", "--stat", cwd=ROOT, check=False).stdout,
+                    "diff_porcelain": readonly_tracked_after,
+                    "check_types": [str(c.get("type")) for c in checks if isinstance(c, dict)],
+                    "cwd": str(ROOT),
+                }
                 result["blockers"].append("readonly_tracked_repo_mutation_detected")
             result["checks"] = check_results
             result["files_changed"] = []
