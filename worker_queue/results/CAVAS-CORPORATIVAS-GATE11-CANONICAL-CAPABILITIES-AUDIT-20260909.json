@@ -1,0 +1,23 @@
+{
+  "certification": "NOT_CERTIFIED",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CORPORATIVAS-GATE11-CANONICAL-CAPABILITIES-AUDIT-20260909",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-19T07:21:08Z",
+  "reasons": [
+    "INVALID_SCHEMA",
+    "INVALID_TARGET_REPO",
+    "SUMMARY_LANGUAGE_MUST_BE_ES",
+    "READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED"
+  ],
+  "received_at_utc": "2026-09-09T14:34:01.945461+00:00",
+  "schema": "edarsahub.worker-rejection.v2",
+  "source": "worker_queue/inbox/CAVAS-CORPORATIVAS-GATE11-CANONICAL-CAPABILITIES-AUDIT-20260909.json",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "status": "REJECTED",
+  "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto.",
+  "work_completion": "NOT_CERTIFIED"
+}
