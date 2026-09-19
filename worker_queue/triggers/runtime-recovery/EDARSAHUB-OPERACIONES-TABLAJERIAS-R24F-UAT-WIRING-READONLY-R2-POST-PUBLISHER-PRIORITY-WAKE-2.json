@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-WIRING-READONLY-R2-20260919",
+  "reason": "Second re-wake to drain recent result publisher queue after priority fix. No product mutation, no Production, no SQL, no Scheduler, no NetPay, no RBAC, no menu.",
+  "production_touched": false
+}
