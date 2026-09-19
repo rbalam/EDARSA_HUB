@@ -872,10 +872,14 @@ def publish_one(path: Path) -> bool:
     )
 
 def publishable_paths() -> list[Path]:
-    """Return terminal artifacts with dispatcher results taking precedence."""
+    """Return terminal artifacts with recent dispatcher results taking precedence."""
     by_name = {path.name: path for path in REJECTED.glob("*.json")}
     by_name.update({path.name: path for path in RESULTS.glob("*.json")})
-    return [by_name[name] for name in sorted(by_name)]
+    return sorted(
+        by_name.values(),
+        key=lambda path: (path.stat().st_mtime_ns, path.name),
+        reverse=True,
+    )
 
 
 def main() -> int:
