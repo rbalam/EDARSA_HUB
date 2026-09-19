@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12N-UAT-CLEANUP-POSTCHECK-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "22d5613dc13ac471603b33eba863fb18cb616224",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Verificar exclusivamente, despues del FAIL de pytest de la UAT controlada Gate12N R1, si el cleanup dejo Development sin residuos. No reintentar UAT, no ejecutar mutaciones, no cambiar codigo. Confirmar Socio exacto con PersonaID NULL y ClienteCRMID sin cambios, conteos Gobierno_Persona/Gobierno_PersonaVinculo/socios vinculados en baseline 0/0/0, ausencia de Personas UAT12N y FK trusted.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "cleanup_candidate_state",
+          "sql": "SELECT CONVERT(varchar(36),SocioID) AS SocioID,CONVERT(varchar(36),EmpresaID) AS UnidadNegocioID,NumeroSocio,NombreCompleto,Estatus,Activo,PersonaID,ClienteCRMID FROM dbo.CavaSocios_Socios WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        },
+        {
+          "name": "cleanup_baseline_counts",
+          "sql": "SELECT (SELECT COUNT_BIG(*) FROM dbo.Gobierno_Persona) AS total_personas,(SELECT COUNT_BIG(*) FROM dbo.Gobierno_PersonaVinculo) AS total_vinculos,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Socios WHERE PersonaID IS NOT NULL) AS socios_vinculados;"
+        },
+        {
+          "name": "cleanup_uat12n_residual_personas",
+          "sql": "SELECT COUNT_BIG(*) AS uat12n_personas FROM dbo.Gobierno_Persona WHERE RFC LIKE N'UAT12N%' OR Nombre=N'UAT Gate12N';"
+        },
+        {
+          "name": "cleanup_fk_integrity",
+          "sql": "SELECT fk.name,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk WHERE fk.parent_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND fk.name=N'FK_CavaSocios_Socios_GobiernoPersona';"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "Development only",
+    "No UAT retry",
+    "No DDL or DML",
+    "No code changes",
+    "No permission role user menu unit company changes",
+    "No Production",
+    "EDARSAHUB SQL Server remains source of truth"
+  ]
+}
