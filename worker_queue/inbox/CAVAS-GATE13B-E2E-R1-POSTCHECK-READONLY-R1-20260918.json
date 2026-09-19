@@ -1,0 +1,55 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE13B-E2E-R1-POSTCHECK-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b79d63aa1f6db8ae70d25158fd286dc37989f72d",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar en solo lectura el cleanup posterior al Gate13B E2E R1 fallido. Confirmar SOC-00001 en baseline, cero artefactos UAT13B, conteos canarios restaurados e integridad FK. No repetir la UAT ni mutar datos/codigo.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate13b_r1_post_candidate",
+          "sql": "SELECT CONVERT(varchar(36),SocioID) AS SocioID,CONVERT(varchar(36),EmpresaID) AS UnidadNegocioID,NumeroSocio,PersonaID,ClienteCRMID FROM dbo.CavaSocios_Socios WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        },
+        {
+          "name": "gate13b_r1_post_candidate_counts",
+          "sql": "SELECT (SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Botellas WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C')) AS botellas,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Movimientos WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C')) AS movimientos,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Cargos WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C')) AS cargos;"
+        },
+        {
+          "name": "gate13b_r1_post_residual_personas",
+          "sql": "SELECT COUNT_BIG(*) AS personas_uat13b FROM dbo.Gobierno_Persona WHERE RFC LIKE N'UAT13B%';"
+        },
+        {
+          "name": "gate13b_r1_post_residual_bottles",
+          "sql": "SELECT COUNT_BIG(*) AS botellas_uat13b FROM dbo.CavaSocios_Botellas WHERE ProductoNombre LIKE N'UAT13B-%' OR ProductoCodigo LIKE N'UAT13B-%';"
+        },
+        {
+          "name": "gate13b_r1_post_residual_movements",
+          "sql": "SELECT COUNT_BIG(*) AS movimientos_uat13b FROM dbo.CavaSocios_Movimientos WHERE MotivoMovimiento LIKE N'%CAVAS-GATE13B-E2E-CONTROLLED-UAT-R1-20260918%' OR Observaciones LIKE N'%UAT13B-%';"
+        },
+        {
+          "name": "gate13b_r1_post_fk",
+          "sql": "SELECT OBJECT_NAME(parent_object_id) AS child_table,name,is_disabled,is_not_trusted FROM sys.foreign_keys WHERE parent_object_id IN (OBJECT_ID(N'dbo.CavaSocios_Socios'),OBJECT_ID(N'dbo.CavaSocios_Botellas'),OBJECT_ID(N'dbo.CavaSocios_Cargos'),OBJECT_ID(N'dbo.CavaSocios_Movimientos')) ORDER BY child_table,name;"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No pytest that mutates SQL",
+    "No file mutations",
+    "No DDL or DML",
+    "No Production",
+    "No RBAC changes",
+    "Fail closed if any UAT13B residue remains"
+  ]
+}
