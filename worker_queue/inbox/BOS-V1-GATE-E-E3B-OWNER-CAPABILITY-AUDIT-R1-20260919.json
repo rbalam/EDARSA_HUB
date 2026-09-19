@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3B-OWNER-CAPABILITY-AUDIT-R1-20260919",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "7ba6abf57b4e98853b427363aeda6b79e20c38fb",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente owners y capacidades existentes para E3B Cross-domain priority adapters + aggregator. Identificar y clasificar reutilizacion de tareas, workflows, SLA, prioridad, responsables, vencimientos y objetos fuente por dominio. No implementar, no modificar repositorio, no SQL, no Produccion.",
+  "acceptance": [
+    "Identificar owner canonico de tareas/workflows/SLA operativos y sus campos reutilizables.",
+    "Identificar dominios adicionales con prioridad/SLA propios, incluyendo CRM cuando exista evidencia.",
+    "Confirmar si existe o no un agregador ejecutivo cross-domain reutilizable.",
+    "Confirmar owner de E3A backend/modules/bos_executive como bounded context disponible para E3B.",
+    "Clasificar cada capacidad como REUSE, EXTEND_EXISTING o MISSING_CROSS_DOMAIN_AGGREGATOR.",
+    "No proponer nueva tabla de tareas ejecutivas ni nuevo workflow engine.",
+    "production_touched=false."
+  ],
+  "constraints": [
+    "READ_ONLY solamente.",
+    "No Produccion.",
+    "No SQL DDL/DML.",
+    "No acciones de escritura.",
+    "No backend/core mutation.",
+    "No crear endpoints, permisos, jobs, scheduler, tablas o persistencia.",
+    "No iniciar E3C/E3D/E3E/E3F."
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/bos_executive",
+          "backend/modules/fase2_operativo",
+          "backend/modules/crm",
+          "backend/core/scheduler"
+        ],
+        "search_terms": [
+          "Prioridad",
+          "prioridad",
+          "estado_sla",
+          "fecha_limite",
+          "FechaLimite",
+          "responsable",
+          "workflow",
+          "tarea",
+          "DiasSLAMaximo",
+          "porcentaje_tiempo_consumido"
+        ]
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
