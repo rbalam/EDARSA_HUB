@@ -1,0 +1,111 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-RUNTIME-PREVIEW-WAKE-ENDPOINT-INFRA-CORRECTION-R1-20260918",
+  "mode": "READ_ONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9a16593122f90c988885c2cc1c24eadbac726beb",
+  "production_allowed": false,
+  "objective": "Abrir correccion de infraestructura preview para aislar por que el runtime publico https://erp-crm-enterprise-1.preview.emergentagent.com sigue devolviendo HTTP 404 en /api/internal/worker/wake aunque el repositorio contiene backend/modules/worker_runtime_wake/routes.py y backend/server.py monta worker_runtime_wake_router con prefix=/api. No implementar R24F. No crear R24F-R2. No tocar SQL, Produccion, Scheduler, NetPay, RBAC/permisos ni menu/layout transversal. Emitir dossier con diagnostico y procedimiento canonico para redeploy/restart real del backend preview desde Edarsahub_Desarrollo HEAD antes de cualquier nuevo re-wake R24F.",
+  "requester": {
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "R24F runtime preview wake endpoint blocker"
+  },
+  "context": {
+    "blocked_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-DESIGN-CONTRACT-READONLY-R1-20260918",
+    "canonical_runtime_url": "https://erp-crm-enterprise-1.preview.emergentagent.com",
+    "failed_endpoint": "/api/internal/worker/wake",
+    "last_rewake_run_id": 35417307617,
+    "last_rewake_job_id": 105828323957,
+    "last_rewake_http": 404,
+    "last_rewake_attempts": 6,
+    "last_rewake_description": "http=404 convergence=FAILED detail=http_404",
+    "runtime_reload_marker_commit": "9a16593122f90c988885c2cc1c24eadbac726beb",
+    "runtime_reload_marker_file": "backend/modules/worker_runtime_wake/routes.py",
+    "worker_requests_sha_at_last_rewake": "f0726ae2bb8efdbfd6de79e5648707ae890bf774",
+    "source_observation": "Repository route exists and bootstrap reported WORKER_WAKE_ROUTER_ALREADY_MOUNTED=1 / NO_SERVER_CHANGE_REQUIRED=1, but public preview still returns 404 from GitHub Actions runner. Direct DNS resolution from ChatGPT container was unavailable, so authoritative external evidence is the GitHub Actions runner log."
+  },
+  "hard_guards": {
+    "read_only_only": true,
+    "actions_must_be_empty": true,
+    "no_product_mutation": true,
+    "no_functional_mutation": true,
+    "no_r24f_implementation": true,
+    "no_r24f_r2": true,
+    "no_sql": true,
+    "no_production": true,
+    "no_scheduler": true,
+    "no_netpay": true,
+    "no_permissions_rbac": true,
+    "no_menu_layout_transversal": true,
+    "no_frontend_mutation": true,
+    "no_backend_mutation": true,
+    "no_database_migration": true,
+    "no_inline_sql": true,
+    "no_manual_sql": true,
+    "no_deploy_without_explicit_platform_mechanism": true
+  },
+  "required_runtime_verification_plan": [
+    "Verify GET /api/health on canonical runtime and record HTTP/body.",
+    "Verify GET /openapi.json and /api/openapi.json on canonical runtime and record whether /api/internal/worker/wake appears.",
+    "Verify expected behavior for POST /api/internal/worker/wake without headers: 401/422 style route-level validation, not 404.",
+    "Verify expected behavior for POST /api/internal/worker/wake with X-Worker-Queue-Sha and X-Worker-Preferred-Job-Id after route exists: 200/202.",
+    "If route remains absent, identify whether preview is serving stale commit, wrong branch, wrong backend service, wrong ingress/proxy, or missing deploy/restart hook.",
+    "Document the canonical redeploy/restart mechanism required for backend preview from Edarsahub_Desarrollo HEAD. Do not execute arbitrary deploy commands from the deterministic worker unless a repository-sanctioned mechanism exists and is explicitly in scope."
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "paths": [
+        "backend/server.py",
+        "backend/modules/worker_runtime_wake/routes.py",
+        "worker_queue/config/runtime-recovery.json",
+        ".github/workflows/worker-runtime-recovery-probe.yml",
+        ".github/workflows/worker-wake-endpoint-bootstrap.yml",
+        ".github/workflows/worker-full-gate.yml",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/universal_job_bridge.py",
+        "worker_queue/status/latest.json"
+      ],
+      "search_terms": [
+        "/api/internal/worker/wake",
+        "worker_runtime_wake_router",
+        "app.include_router(worker_runtime_wake_router, prefix=\"/api\")",
+        "@router.post(\"/internal/worker/wake\"",
+        "canonical_public_url",
+        "erp-crm-enterprise-1.preview.emergentagent.com",
+        "PREVIEW_URL_OVERRIDE",
+        "X-Worker-Queue-Sha",
+        "X-Worker-Preferred-Job-Id",
+        "supervisorctl",
+        "edarsahub-universal-worker",
+        "runtime_convergence",
+        "repository_contract_audit",
+        "READ_ONLY_MODE"
+      ],
+      "expected_dossier": "runtime_preview_wake_endpoint_infra_correction_dossier",
+      "expected_findings": [
+        "repo_route_definition_status",
+        "server_mount_status",
+        "runtime_recovery_workflow_contract",
+        "dispatcher_capability_limits",
+        "preview_url_source_of_truth",
+        "probable_root_cause_classification",
+        "redeploy_restart_required_or_not",
+        "safe_next_step_after_route_is_reachable"
+      ]
+    }
+  ],
+  "success_criteria": {
+    "terminal_status": "READ_ONLY_COMPLETE",
+    "quality_gate": "PASS",
+    "tests": "PASS",
+    "certification": "CERTIFIED_READ_ONLY_INFRA_DIAGNOSIS",
+    "production_touched": false,
+    "files_changed": [],
+    "required_conclusion": "Do not re-wake R24F again until /api/internal/worker/wake is reachable on the public preview runtime. Once reachable, re-wake the same blocked R24F job id only."
+  },
+  "human_summary_language": "es"
+}
