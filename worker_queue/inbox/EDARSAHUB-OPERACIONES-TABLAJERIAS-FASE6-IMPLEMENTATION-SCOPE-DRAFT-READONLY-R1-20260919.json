@@ -1,0 +1,93 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-FASE6-IMPLEMENTATION-SCOPE-DRAFT-READONLY-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3ecd99516f57986e6d8ee5d1485a68375c75ce9e",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias"
+  },
+  "objective": "Certificar el scope implementable de Fase 6 Tablajerias antes de tocar codigo: corregir solo seguridad/idempotencia/balance contable/trazabilidad de inventario-costeo-poliza y agregar pruebas aisladas sin SQL real. No modificar SQL, Produccion, Scheduler, NetPay, RBAC, permisos, menu ni layout transversal.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/tablajeria/fase6_service.py",
+          "backend/modules/tablajeria/routes.py",
+          "backend/modules/tablajeria/sql/fase6_tablas.sql"
+        ],
+        "search_terms": [
+          "SALIDA_INSUMO",
+          "ENTRADA_DERIVADO",
+          "SALIDA_MERMA",
+          "MERMA",
+          "MovimientoInventarioGenerado",
+          "Tablajeria_MovimientosInventario",
+          "Tablajeria_CosteoProduccion",
+          "Tablajeria_PolizasContables",
+          "Tablajeria_PolizasDetalle",
+          "Debe",
+          "Haber",
+          "procesar_cierre_completo",
+          "get_current_user",
+          "SucursalID",
+          "LoteInsumo"
+        ],
+        "max_results": 160
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "scope_draft": {
+    "allowed_files_next_mutation": [
+      "backend/modules/tablajeria/fase6_service.py",
+      "backend/tests/test_tablajeria_fase6_service_unit.py"
+    ],
+    "conditionally_allowed_files_next_mutation": [
+      "backend/modules/tablajeria/routes.py"
+    ],
+    "forbidden_files_next_mutation": [
+      "backend/modules/tablajeria/sql/fase6_tablas.sql",
+      "frontend/src/App.js",
+      "frontend/src/config/enterpriseNavigationRegistry.json",
+      "backend/server.py",
+      "scheduler",
+      "netpay",
+      "rbac",
+      "permissions",
+      "menu",
+      "layout"
+    ],
+    "must_fix_or_certify": [
+      "idempotency_no_duplicate_inventory_movements",
+      "idempotency_no_duplicate_costeo",
+      "idempotency_no_duplicate_poliza",
+      "canonical_merma_movement_value_or_explicit_compatibility",
+      "balanced_poliza_debe_equals_haber_no_hardcoded_merma_cost",
+      "traceability_orden_lote_folio_usuario_preserved",
+      "isolated_unit_tests_without_real_sql"
+    ]
+  },
+  "constraints": [
+    "READ_ONLY only",
+    "No product mutation in this gate",
+    "No SQL mutation",
+    "No Production",
+    "No Scheduler",
+    "No NetPay",
+    "No RBAC or permissions changes",
+    "No menu or transversal layout changes",
+    "Do not call business endpoints",
+    "Do not use live administrative dashboards"
+  ]
+}
