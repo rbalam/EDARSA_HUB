@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
-      - name: Resolve published job and wake Universal Worker
+      - name: Resolve preferred job and wake Universal Worker
         shell: bash
         run: |
           set -euo pipefail
@@ -21,60 +21,11 @@ jobs:
           QUEUE_SHA="${GITHUB_SHA}"
           test "${#QUEUE_SHA}" -eq 40
 
-          JOB_PATH="$(git show --pretty='' --name-only "$GITHUB_SHA" | grep '^worker_queue/inbox/.*\.json
-          if [ -n "$JOB_ID" ] && ! [[ "$JOB_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$ ]]; then
-            echo 'INVALID_PREFERRED_JOB_ID'
-            exit 14
-          fi
-
-          RUNTIME_URL='https://erp-crm-enterprise-1.preview.emergentagent.com'
-          FINAL_HTTP=000
-
-          for attempt in 1 2 3 4 5 6; do
-            echo "WAKE_ATTEMPT=$attempt"
-            HTTP_CODE="$(curl --silent --show-error --location               --connect-timeout 5 --max-time 25               --output /tmp/wake.json --write-out '%{http_code}'               --request POST "$RUNTIME_URL/api/internal/worker/wake"               --header "X-Worker-Queue-Sha: $QUEUE_SHA"               --header "X-Worker-Preferred-Job-Id: $JOB_ID"               --header 'Content-Type: application/json'               --data '{}' || true)"
-            FINAL_HTTP="$HTTP_CODE"
-            cat /tmp/wake.json 2>/dev/null || true
-            echo
-            echo "WAKE_HTTP_CODE=$HTTP_CODE"
-            echo "PREFERRED_JOB_ID=${JOB_ID:-none}"
-            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "202" ]; then
-              exit 0
-            fi
-            if [ "$attempt" -lt 6 ]; then sleep 8; fi
-          done
-
-          echo "WORKER_WAKE_FAILED_HTTP=$FINAL_HTTP"
-          exit 12
- | tail -n 1 || true)"
+          JOB_PATH="$(git show --pretty='' --name-only "$GITHUB_SHA" | grep '^worker_queue/inbox/.*\.json$' | tail -n 1 || true)"
           if [ -z "$JOB_PATH" ]; then
-            JOB_PATH="$(git ls-tree -r --name-only "$GITHUB_SHA" worker_queue/inbox | grep '^worker_queue/inbox/.*\.json
-          if [ -n "$JOB_ID" ] && ! [[ "$JOB_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$ ]]; then
-            echo 'INVALID_PREFERRED_JOB_ID'
-            exit 14
+            JOB_PATH="$(git ls-tree -r --name-only "$GITHUB_SHA" worker_queue/inbox | grep '^worker_queue/inbox/.*\.json$' | tail -n 1 || true)"
           fi
 
-          RUNTIME_URL='https://erp-crm-enterprise-1.preview.emergentagent.com'
-          FINAL_HTTP=000
-
-          for attempt in 1 2 3 4 5 6; do
-            echo "WAKE_ATTEMPT=$attempt"
-            HTTP_CODE="$(curl --silent --show-error --location               --connect-timeout 5 --max-time 25               --output /tmp/wake.json --write-out '%{http_code}'               --request POST "$RUNTIME_URL/api/internal/worker/wake"               --header "X-Worker-Queue-Sha: $QUEUE_SHA"               --header "X-Worker-Preferred-Job-Id: $JOB_ID"               --header 'Content-Type: application/json'               --data '{}' || true)"
-            FINAL_HTTP="$HTTP_CODE"
-            cat /tmp/wake.json 2>/dev/null || true
-            echo
-            echo "WAKE_HTTP_CODE=$HTTP_CODE"
-            echo "PREFERRED_JOB_ID=${JOB_ID:-none}"
-            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "202" ]; then
-              exit 0
-            fi
-            if [ "$attempt" -lt 6 ]; then sleep 8; fi
-          done
-
-          echo "WORKER_WAKE_FAILED_HTTP=$FINAL_HTTP"
-          exit 12
- | tail -n 1 || true)"
-          fi
           JOB_ID=""
           if [ -n "$JOB_PATH" ]; then
             JOB_ID="$(basename "$JOB_PATH" .json)"
@@ -86,12 +37,17 @@ jobs:
           fi
 
           RUNTIME_URL='https://erp-crm-enterprise-1.preview.emergentagent.com'
-          FINAL_HTTP=000
 
           for attempt in 1 2 3 4 5 6; do
             echo "WAKE_ATTEMPT=$attempt"
-            HTTP_CODE="$(curl --silent --show-error --location               --connect-timeout 5 --max-time 25               --output /tmp/wake.json --write-out '%{http_code}'               --request POST "$RUNTIME_URL/api/internal/worker/wake"               --header "X-Worker-Queue-Sha: $QUEUE_SHA"               --header "X-Worker-Preferred-Job-Id: $JOB_ID"               --header 'Content-Type: application/json'               --data '{}' || true)"
-            FINAL_HTTP="$HTTP_CODE"
+            HTTP_CODE="$(curl --silent --show-error --location \
+              --connect-timeout 5 --max-time 25 \
+              --output /tmp/wake.json --write-out '%{http_code}' \
+              --request POST "$RUNTIME_URL/api/internal/worker/wake" \
+              --header "X-Worker-Queue-Sha: $QUEUE_SHA" \
+              --header "X-Worker-Preferred-Job-Id: $JOB_ID" \
+              --header 'Content-Type: application/json' \
+              --data '{}' || true)"
             cat /tmp/wake.json 2>/dev/null || true
             echo
             echo "WAKE_HTTP_CODE=$HTTP_CODE"
@@ -102,5 +58,4 @@ jobs:
             if [ "$attempt" -lt 6 ]; then sleep 8; fi
           done
 
-          echo "WORKER_WAKE_FAILED_HTTP=$FINAL_HTTP"
           exit 12
