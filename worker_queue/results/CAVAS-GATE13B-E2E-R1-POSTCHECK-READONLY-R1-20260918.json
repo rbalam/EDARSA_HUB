@@ -1,0 +1,167 @@
+{
+  "base_sha": "0164efda77363c025d1184300f8a13986e3ab4d8",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-19T05:56:57Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE13B-E2E-R1-POSTCHECK-READONLY-R1-20260918",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-19T05:57:04Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "SocioID",
+              "UnidadNegocioID",
+              "NumeroSocio",
+              "PersonaID",
+              "ClienteCRMID"
+            ],
+            "name": "gate13b_r1_post_candidate",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58",
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "SOC-00001",
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "botellas",
+              "movimientos",
+              "cargos"
+            ],
+            "name": "gate13b_r1_post_candidate_counts",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "1",
+                "1",
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "personas_uat13b"
+            ],
+            "name": "gate13b_r1_post_residual_personas",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "botellas_uat13b"
+            ],
+            "name": "gate13b_r1_post_residual_bottles",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "movimientos_uat13b"
+            ],
+            "name": "gate13b_r1_post_residual_movements",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "child_table",
+              "name",
+              "is_disabled",
+              "is_not_trusted"
+            ],
+            "name": "gate13b_r1_post_fk",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "CavaSocios_Botellas",
+                "FK_CavaSocios_Botellas_Socio",
+                false,
+                false
+              ],
+              [
+                "CavaSocios_Cargos",
+                "FK_CavaSocios_Cargos_Botella",
+                false,
+                false
+              ],
+              [
+                "CavaSocios_Cargos",
+                "FK_CavaSocios_Cargos_Movimiento",
+                false,
+                false
+              ],
+              [
+                "CavaSocios_Cargos",
+                "FK_CavaSocios_Cargos_Socio",
+                false,
+                false
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "FK_CavaSocios_Movimientos_Botella",
+                false,
+                false
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "FK_CavaSocios_Movimientos_Socio",
+                false,
+                false
+              ],
+              [
+                "CavaSocios_Socios",
+                "FK_CavaSocios_Socios_GobiernoPersona",
+                false,
+                false
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-19T05:56:56Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
