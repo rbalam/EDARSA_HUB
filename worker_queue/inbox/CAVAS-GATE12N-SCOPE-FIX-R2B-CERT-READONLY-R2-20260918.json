@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12N-SCOPE-FIX-R2B-CERT-READONLY-R2-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "cb3a2d05601107bfc73c1446fcc54dd06c652dae",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar en modo READ_ONLY el Scope Fix R2B ya integrado para Cavas Gate 12N. Verificar que el cambio de _resolve_cava_scope usa el UnidadNegocioID UUID autorizado como scope operativo, que las pruebas de Cavas/Persona-Link pasan, que el candidato UAT SOC-00001 permanece limpio y que no existen residuos antes de habilitar UAT R2. No modificar archivos, datos, RBAC, permisos, usuarios, empresas, unidades ni Produccion.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/cava_socios/routes.py",
+        "backend/tests/test_cava_socios.py",
+        "backend/tests/test_cava_socios_persona_link.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios.py",
+        "backend/tests/test_cava_socios_persona_link.py"
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate12n_r2b_candidate_clean",
+          "sql": "SELECT CONVERT(varchar(36),SocioID) AS SocioID,CONVERT(varchar(36),EmpresaID) AS UnidadNegocioID,PersonaID,ClienteCRMID FROM dbo.CavaSocios_Socios WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        },
+        {
+          "name": "gate12n_r2b_baseline_counts",
+          "sql": "SELECT (SELECT COUNT_BIG(*) FROM dbo.Gobierno_Persona) AS total_personas,(SELECT COUNT_BIG(*) FROM dbo.Gobierno_PersonaVinculo) AS total_vinculos,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Socios WHERE PersonaID IS NOT NULL) AS socios_vinculados;"
+        },
+        {
+          "name": "gate12n_r2b_fk_trusted",
+          "sql": "SELECT name,is_disabled,is_not_trusted FROM sys.foreign_keys WHERE name=N'FK_CavaSocios_Socios_GobiernoPersona';"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios",
+          "backend/tests/test_cava_socios.py",
+          "backend/tests/test_cava_socios_persona_link.py"
+        ],
+        "search_terms": [
+          "_resolve_cava_scope",
+          "UnidadNegocioID",
+          "CavaSocios",
+          "PersonaID"
+        ],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No file mutations",
+    "No DDL or DML",
+    "No UAT execution in this job",
+    "Do not modify RBACContextService",
+    "Do not modify Usuario_RolesContexto",
+    "Do not modify Sistema_Empresas",
+    "Do not change permissions roles users menus units or companies",
+    "No Production",
+    "EDARSAHUB SQL Server remains source of truth",
+    "MongoDB prohibited",
+    "Certification must fail closed on any blocker or residue"
+  ]
+}
