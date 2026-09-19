@@ -13,6 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
+      - name: Checkout worker requests
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 20
+
       - name: Resolve preferred job and wake Universal Worker
         shell: bash
         run: |
@@ -23,7 +28,7 @@ jobs:
 
           JOB_PATH="$(git show --pretty='' --name-only "$GITHUB_SHA" | grep '^worker_queue/inbox/.*\.json$' | tail -n 1 || true)"
           if [ -z "$JOB_PATH" ]; then
-            JOB_PATH="$(git ls-tree -r --name-only "$GITHUB_SHA" worker_queue/inbox | grep '^worker_queue/inbox/.*\.json$' | tail -n 1 || true)"
+            JOB_PATH="$(git log -n 1 --pretty='' --name-only -- worker_queue/inbox | grep '^worker_queue/inbox/.*\.json$' | head -n 1 || true)"
           fi
 
           JOB_ID=""
@@ -31,7 +36,11 @@ jobs:
             JOB_ID="$(basename "$JOB_PATH" .json)"
           fi
 
-          if [ -n "$JOB_ID" ] && ! [[ "$JOB_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$ ]]; then
+          if [ -z "$JOB_ID" ]; then
+            echo 'PREFERRED_JOB_NOT_FOUND'
+            exit 15
+          fi
+          if ! [[ "$JOB_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$ ]]; then
             echo 'INVALID_PREFERRED_JOB_ID'
             exit 14
           fi
@@ -51,7 +60,7 @@ jobs:
             cat /tmp/wake.json 2>/dev/null || true
             echo
             echo "WAKE_HTTP_CODE=$HTTP_CODE"
-            echo "PREFERRED_JOB_ID=${JOB_ID:-none}"
+            echo "PREFERRED_JOB_ID=$JOB_ID"
             if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "202" ]; then
               exit 0
             fi
