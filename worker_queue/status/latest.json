@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "0164efda77363c025d1184300f8a13986e3ab4d8",
-  "generated_at_utc": "2026-09-19T06:03:00Z",
+  "generated_at_utc": "2026-09-19T06:04:16Z",
   "history": {
-    "done_total_local": 719,
+    "done_total_local": 720,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 670,
-    "results_total_local": 1231
+    "results_total_local": 1232
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 745,
+      "age_seconds": 821,
       "job_id": "BOS-V1-GATE-E-E3A-EXECUTIVE-EVIDENCE-CAUSAL-R1-20260919",
       "reasons": [
         "CHECK_4_REQUEST_REQUIRED"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2679,
+      "age_seconds": 2755,
       "job_id": "CAVAS-GATE13A-INTEGRAL-UAT-READINESS-READONLY-R1-20260918",
       "reasons": [
         "READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED"
@@ -31,70 +31,67 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3550,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-IMPLEMENTATION-MUTATION-R1B-20260919",
-      "reasons": [
-        "CHECK_2_SEARCH_TERMS_REQUIRED"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 3076,
+      "age_seconds": 3151,
       "job_id": "BOS-V1-GATE-E-E2-MINIMAL-IMPLEMENTATION-PLAN-R2-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2273,
+      "age_seconds": 2349,
       "job_id": "BOS-V1-GATE-E-E2-MINIMAL-IMPLEMENTATION-PLAN-R3-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3047,
+      "age_seconds": 3123,
       "job_id": "CAVAS-GATE12N-UAT-CONTROLLED-EXECUTION-R3-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2934,
+      "age_seconds": 3010,
       "job_id": "CAVAS-GATE12N-UAT-R3-CERT-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2034,
+      "age_seconds": 2110,
       "job_id": "CAVAS-GATE13A-FRONTEND-BUILD-CERT-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1996,
+      "age_seconds": 2072,
       "job_id": "CAVAS-GATE13A-INTEGRAL-UAT-READINESS-READONLY-R2-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1549,
+      "age_seconds": 1625,
       "job_id": "CAVAS-GATE13A-INTEGRAL-UAT-READINESS-READONLY-R3-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 702,
+      "age_seconds": 778,
       "job_id": "CAVAS-GATE13B-E2E-CONTROLLED-UAT-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 363,
+      "age_seconds": 439,
       "job_id": "CAVAS-GATE13B-E2E-R1-POSTCHECK-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3077,
+      "age_seconds": 35,
+      "job_id": "CAVAS-GATE13B-E2E-R1-PYTEST-RCA-READONLY-R1-20260918",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3153,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-IMPLEMENTATION-MUTATION-R1C-20260919",
       "reason": null,
       "state": "RESULT_READY"
@@ -106,15 +103,15 @@
   "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 3,
-  "queue_result_ready_recent": 10,
+  "queue_rejected_recent": 2,
+  "queue_result_ready_recent": 11,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-19T06:02:53Z",
-    "last_receive_utc": "2026-09-19T06:02:55Z",
-    "last_terminal_utc": "2026-09-19T05:56:57Z",
+    "last_cycle_utc": "2026-09-19T06:04:11Z",
+    "last_receive_utc": "2026-09-19T06:04:15Z",
+    "last_terminal_utc": "2026-09-19T06:03:41Z",
     "pid": "773"
   },
   "schema": "edarsahub.worker-health.v3",
