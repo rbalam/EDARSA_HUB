@@ -1,0 +1,138 @@
+{
+  "base_sha": "1c5d682b7d5c84bab807df03893d22fb87d8985e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-19T07:52:30Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-FASE6-POSTCHECK-READONLY-R1-20260919",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-19T07:52:52Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.tablajeria",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "dataclasses",
+              "datetime",
+              "decimal",
+              "enum",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "_fetch_existing_costeo",
+              "_fetch_existing_inventory_movements",
+              "_fetch_existing_poliza",
+              "_validar_balance_asientos",
+              "costo_merma_dec",
+              "debe_haber_descuadrado",
+              "idempotente",
+              "merma",
+              "movimientoinventariogenerado",
+              "salida_merma"
+            ],
+            "path": "backend/modules/tablajeria/fase6_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ConfigContable",
+              "EstatusPoliza",
+              "TablajeriaFase6Service",
+              "TipoMovimiento",
+              "TipoPoliza",
+              "__init__",
+              "_decimal_money",
+              "_fetch_existing_costeo",
+              "_fetch_existing_inventory_movements",
+              "_fetch_existing_poliza",
+              "_fetch_poliza_asientos",
+              "_get_connection",
+              "_now_utc",
+              "_validar_balance_asientos",
+              "afectar_inventario_orden",
+              "calcular_costeo_orden",
+              "generar_poliza_produccion",
+              "get_tablajeria_fase6_service",
+              "guardar_config_contable",
+              "obtener_config_contable",
+              "procesar_cierre_completo"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "_fetch_existing_costeo",
+              "_fetch_existing_inventory_movements",
+              "_fetch_existing_poliza",
+              "_validar_balance_asientos",
+              "costo_merma_dec",
+              "debe_haber_descuadrado",
+              "idempotente",
+              "merma",
+              "movimientoinventariogenerado",
+              "salida_merma"
+            ],
+            "path": "backend/tests/test_tablajeria_fase6_service_unit.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_source",
+              "test_fase6_idempotency_helpers_are_present_without_sql_runtime",
+              "test_fase6_poliza_has_balance_guard_and_no_hardcoded_merma_cost",
+              "test_fase6_uses_canonical_merma_and_keeps_compatibility"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 2,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-19T07:52:29Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
