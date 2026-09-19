@@ -1,0 +1,20 @@
+{
+  "certification": "NOT_CERTIFIED",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "coa-gate5a-facturacion-cfdi-emitidos-readonly-v1-20260909",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-19T08:00:57Z",
+  "reasons": [
+    "CHECK_1_QUERIES_REQUIRED"
+  ],
+  "received_at_utc": "2026-09-09T23:15:46.333055+00:00",
+  "schema": "edarsahub.worker-rejection.v2",
+  "source": "worker_queue/inbox/coa-gate5a-facturacion-cfdi-emitidos-readonly-v1-20260909.json",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "status": "REJECTED",
+  "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto.",
+  "work_completion": "NOT_CERTIFIED"
+}
