@@ -1,0 +1,20 @@
+{
+  "certification": "NOT_CERTIFIED",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "bridge-canary3-20260825T024234Z",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-19T22:32:15Z",
+  "reasons": [
+    "FORBIDDEN_DESTRUCTIVE_OPERATION_REQUESTED"
+  ],
+  "received_at_utc": "2026-08-25T02:43:06.269187+00:00",
+  "schema": "edarsahub.worker-rejection.v1",
+  "source": "worker_queue/inbox/bridge-canary3-20260825T024234Z.json",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "status": "REJECTED",
+  "summary_es": "El worker recibio la orden, pero la rechazo porque no cumple las reglas de seguridad o formato. Consulta 'reasons' para conocer el motivo exacto.",
+  "work_completion": "NOT_CERTIFIED"
+}
