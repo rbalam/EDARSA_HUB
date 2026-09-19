@@ -283,6 +283,33 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
             "percent_complete": min(int(result.get("percent_complete") or 0), 95),
         }
 
+    if result.get("status") == "FRONTEND_BUILD_CERTIFIED":
+        frontend_certified = (
+            str(result.get("certification") or "").upper() == "CERTIFIED_FRONTEND_BUILD"
+            and str(result.get("tests", "")).upper() == "PASS"
+            and str(result.get("quality_gate", "")).upper() == "PASS"
+            and not (result.get("blockers") or [])
+            and result.get("production_touched") is False
+            and (result.get("files_changed") or []) == []
+        )
+        if frontend_certified:
+            return {
+                "certified": True,
+                "certification": "CERTIFIED_FRONTEND_BUILD",
+                "work_completion": "COMPLETE",
+                "percent_complete": 100,
+                "certification_basis": "FRONTEND_BUILD_CERTIFICATION_PASS_PLUS_NON_MUTATING_RESULT",
+            }
+        return {
+            **pending,
+            "certification": "NOT_CERTIFIED",
+            "work_completion": "NOT_CERTIFIED",
+            "percent_complete": min(
+                int(result.get("percent_complete") or 0),
+                95,
+            ),
+        }
+
     if result.get("status") != "INTEGRATED":
         return {
             **pending,
