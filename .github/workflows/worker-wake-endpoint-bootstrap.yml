@@ -1,5 +1,6 @@
 name: Worker Wake Endpoint Bootstrap
 # Manual retrigger 2026-09-18T20:05-06:00: restore missing /api/internal/worker/wake mount after R24E-R8 worktree cleanup.
+# Manual retrigger for R24F DESIGN-CONTRACT wake endpoint recovery.
 
 on:
   push:
