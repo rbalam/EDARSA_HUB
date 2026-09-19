@@ -1,5 +1,5 @@
 name: Worker Wake Endpoint Bootstrap
-# Manual retrigger 2026-09-17T13:25-06:00: restore missing /api/internal/worker/wake mount for Gate22A-R3 intake.
+# Manual retrigger 2026-09-18T20:05-06:00: restore missing /api/internal/worker/wake mount after R24E-R8 worktree cleanup.
 
 on:
   push:
