@@ -92,7 +92,7 @@ class TestCavaScopeResolution:
         }
 
         scope = _resolve_cava_scope(mock_user, "UNIT-01")
-        assert scope["empresa_id"] == "EMP-99"
+        assert scope["empresa_id"] == "UNIT-01"
         assert scope["unidad_negocio_pk"] == "UNIT-01"
 
     @pytest.mark.unit
@@ -115,7 +115,7 @@ class TestCavaScopeResolution:
     @pytest.mark.unit
     @patch("modules.cava_socios.routes.context_service.get_user_context")
     @patch("modules.cava_socios.routes.enrich_current_user_with_sql_id")
-    def test_resolve_cava_scope_missing_empresa(self, mock_enrich, mock_get_context):
+    def test_resolve_cava_scope_uses_unit_when_corporate_empresa_missing(self, mock_enrich, mock_get_context):
         mock_user = {"id": "user-123"}
         mock_enrich.return_value = mock_user
         mock_get_context.return_value = {
@@ -125,9 +125,9 @@ class TestCavaScopeResolution:
             ],
         }
 
-        with pytest.raises(HTTPException) as exc_info:
-            _resolve_cava_scope(mock_user, "UNIT-01")
-        assert exc_info.value.status_code == 409
+        scope = _resolve_cava_scope(mock_user, "UNIT-01")
+        assert scope["empresa_id"] == "UNIT-01"
+        assert scope["unidad_negocio_pk"] == "UNIT-01"
 
 
 class TestCavaSociosService:

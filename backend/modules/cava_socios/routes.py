@@ -28,7 +28,7 @@ def _resolve_cava_scope(
     current_user: Dict,
     unidad_negocio_pk: Optional[str],
 ) -> Dict[str, Any]:
-    """Resuelve unidad y empresa exclusivamente desde el contexto RBAC SQL."""
+    """Resuelve el scope operativo de Cavas desde la unidad autorizada por RBAC SQL."""
     user_with_sql_id = enrich_current_user_with_sql_id(current_user)
     context = context_service.get_user_context(
         user_with_sql_id,
@@ -51,14 +51,9 @@ def _resolve_cava_scope(
     if not selected:
         raise HTTPException(status_code=403, detail="Unidad de negocio no autorizada")
 
-    empresa_id = selected.get("EmpresaID")
-    if empresa_id in (None, ""):
-        raise HTTPException(
-            status_code=409,
-            detail="La unidad no tiene empresa canónica configurada para Cavas",
-        )
-
-    return {"empresa_id": empresa_id, "unidad_negocio_pk": active_unit}
+    # CavaSocios_*.EmpresaID es UNIQUEIDENTIFIER y representa el
+    # UnidadNegocioID autorizado. No mezclarlo con EmpresaID INT corporativo.
+    return {"empresa_id": active_unit, "unidad_negocio_pk": active_unit}
 
 
 def _resolve_cava_actor(current_user: Dict) -> Dict[str, Any]:
