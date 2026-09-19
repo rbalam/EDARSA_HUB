@@ -1,98 +1,98 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "da6a537850c8996bdb22041fd450b83291e04c6f",
-  "generated_at_utc": "2026-09-19T04:55:37Z",
+  "development_sha": "781733153dcd62f9634d577757b6c6bbb0696397",
+  "generated_at_utc": "2026-09-19T04:57:12Z",
   "history": {
     "done_total_local": 712,
-    "pending_total_local": 2,
-    "processing_total_local": 0,
+    "pending_total_local": 1,
+    "processing_total_local": 1,
     "rejected_total_local": 662,
     "results_total_local": 1219
   },
-  "intake_sla_breached": true,
+  "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 138,
+      "age_seconds": 233,
       "job_id": "CAVAS-GATE12N-SCOPE-UUID-NORMALIZATION-FIX-R1B-20260918",
-      "reason": null,
-      "state": "PENDING"
+      "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
+      "state": "BLOCKED"
     },
     {
-      "age_seconds": 14,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-IMPLEMENTATION-MUTATION-R1A-20260919",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 2534,
+      "age_seconds": 2629,
       "job_id": "CAVAS-GATE12N-SCOPE-FIX-R2B-CERT-READONLY-R2-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 562,
+      "age_seconds": 657,
       "job_id": "CAVAS-GATE12N-SCOPE-UUID-NORMALIZATION-FIX-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1862,
+      "age_seconds": 1957,
       "job_id": "CAVAS-GATE12N-UAT-CONTROLLED-EXECUTION-R2-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1499,
+      "age_seconds": 1594,
       "job_id": "CAVAS-GATE12N-UAT-CONTROLLED-EXECUTION-R2B-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 941,
+      "age_seconds": 1036,
       "job_id": "CAVAS-GATE12N-UAT-R2B-POSTCHECK-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 212,
+      "age_seconds": 307,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-IMPLEMENTATION-MUTATION-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 554,
+      "age_seconds": 649,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-IMPLEMENTATION-SCOPE-DRAFT-READONLY-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1305,
+      "age_seconds": 1400,
       "job_id": "REPLAY-EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-DESIGN-CONTRACT-READONLY-R1-20260919T0434Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1454,
+      "age_seconds": 1549,
       "job_id": "UNIVERSAL-WORKER-READONLY-MUTATION-EVIDENCE-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 109,
+      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-IMPLEMENTATION-MUTATION-R1A-20260919",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
-  "oldest_pending_age_seconds": 138,
+  "oldest_pending_age_seconds": 0,
   "production_touched": false,
-  "queue_blocked": 0,
+  "queue_blocked": 1,
   "queue_depth": 2,
   "queue_done_local_recent": 0,
-  "queue_pending": 2,
+  "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 9,
-  "queue_running": 0,
+  "queue_running": 1,
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-IMPLEMENTATION-MUTATION-R1A-20260919",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-19T04:55:36Z",
-    "last_receive_utc": "2026-09-19T04:55:31Z",
+    "last_cycle_utc": "2026-09-19T04:57:05Z",
+    "last_receive_utc": "2026-09-19T04:57:09Z",
     "last_terminal_utc": "2026-09-19T04:52:04Z",
     "pid": "763"
   },
