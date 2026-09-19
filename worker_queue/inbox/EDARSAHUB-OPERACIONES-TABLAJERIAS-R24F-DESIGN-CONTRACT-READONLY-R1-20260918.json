@@ -1,0 +1,115 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-DESIGN-CONTRACT-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias-r24f"
+  },
+  "objective": "Preparar R24F como gate nuevo READ_ONLY / DESIGN-CONTRACT para Tablajeria / Lotes Proveedor, posterior a R24E frontend_build certificado. El Worker debe auditar contrato y alcance del siguiente gate sin implementar: estado actual de frontend, rutas, navegación existente, backend relacionado, contratos esperados, dependencias, riesgos de duplicidad, blockers y propuesta de alcance seguro para R24F implementable. No debe tocar producto, SQL, Produccion, Scheduler, NetPay, permisos/RBAC, menu/layout transversal ni crear cambios funcionales.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+          "frontend/src/App.js",
+          "frontend/src/config/enterpriseNavigationRegistry.json",
+          "backend/modules/tablajeria",
+          "backend/modules/operaciones",
+          "backend/server.py"
+        ],
+        "search_terms": [
+          "lotes proveedor",
+          "LotesProveedorPage",
+          "/tablajeria/lotes-proveedor",
+          "tablajeria.lotes_proveedor",
+          "rendimientos",
+          "mermas",
+          "reclamos proveedor",
+          "insumo base",
+          "insumo derivado",
+          "Trazabilidad",
+          "Tablajeria"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.jsx",
+          "*.js",
+          "*.json",
+          "*.md"
+        ],
+        "exclude_patterns": [
+          "node_modules/*",
+          "build/*",
+          "dist/*",
+          ".git/*",
+          "*.xlsx",
+          "*.pdf"
+        ],
+        "max_results": 300
+      }
+    },
+    {
+      "type": "git_diff_check",
+      "allowed_paths": [],
+      "forbidden_paths": [
+        "frontend/**",
+        "backend/**",
+        "database/**",
+        "migrations/**",
+        "sql/**",
+        "tools/**",
+        ".github/**"
+      ]
+    }
+  ],
+  "expected_result": {
+    "status": "READ_ONLY_COMPLETE",
+    "quality_gate": "PASS",
+    "tests": "PASS",
+    "certification": "CERTIFIED_READ_ONLY",
+    "work_completion": "COMPLETE",
+    "percent_complete": 100,
+    "production_touched": false,
+    "files_changed": [],
+    "deliverable": {
+      "type": "design_contract_dossier",
+      "must_include": [
+        "current_state_inventory",
+        "canonical_scope_for_R24F",
+        "explicit_out_of_scope_items",
+        "implementation_preconditions",
+        "safe_allowed_paths_for_future_mutation",
+        "forbidden_paths_for_future_mutation",
+        "frontend_backend_contract_map",
+        "data_contract_observations_without_sql_changes",
+        "risk_and_blocker_matrix",
+        "go_no_go_recommendation_for_next_gate"
+      ]
+    }
+  },
+  "hard_guards": {
+    "read_only_only": true,
+    "actions_must_be_empty": true,
+    "no_product_mutation": true,
+    "no_functional_mutation": true,
+    "no_sql": true,
+    "no_production": true,
+    "no_scheduler": true,
+    "no_netpay": true,
+    "no_permissions_rbac": true,
+    "no_menu_layout_transversal": true,
+    "no_frontend_mutation": true,
+    "no_backend_mutation": true,
+    "no_database_migration": true,
+    "no_r24f_implementation": true
+  }
+}
