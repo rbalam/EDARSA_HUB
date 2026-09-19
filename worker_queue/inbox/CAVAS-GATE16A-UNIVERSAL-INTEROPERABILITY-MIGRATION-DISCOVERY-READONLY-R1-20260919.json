@@ -1,0 +1,98 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE16A-UNIVERSAL-INTEROPERABILITY-MIGRATION-DISCOVERY-READONLY-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2f7e9e12cec868d9349af04f759c25b14f2ce7be",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Gate 16A: auditar exclusivamente la capacidad real existente para Cavas Universal Interoperability, homologacion, migracion historica y convivencia multi-sistema. Inventariar CavaSocios/Cavas Corporativas, SoftRestaurant, MPRO, capability/connection registries, sync/backfill, import/export, object storage/evidencias, CRM/persona/producto canonico, idempotencia/provenance/reconciliation y determinar REUSE/CONSOLIDATE/EXTEND/NEW_REQUIRED. No implementar, no crear tablas, no DDL/DML, no Production. Entregar evidencia exacta para Gate 16B.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "chatgpt@edarsahub.local",
+    "source": "ChatGPT Socios Cavas"
+  },
+  "actions": [],
+  "constraints": [
+    "SQL Server EDARSAHUB es cerebro y unica verdad canonica",
+    "Mongo no operativo; no LIVE para dashboards administrativos",
+    "No crear tablas, migraciones, endpoints, jobs, UI ni conectores",
+    "No tocar Produccion",
+    "No duplicar CRM, productos, RBAC, Scheduler, connection resolver, capability registry, object storage ni infraestructura de integraciones",
+    "SoftRestaurant y MPRO deben evaluarse como adapters existentes; no hardcodear proveedor dentro del dominio Cavas",
+    "Preservar historia y procedencia: distinguir occurred_at original de imported_at; auditar soporte existente para source_system/source_transaction/historical_reference",
+    "Auditar convivencia continua, migracion, backfill, idempotencia, matching/deduplicacion, reconciliacion, rollback/exportabilidad y evidencias",
+    "No mezclar Tablajeria ni Marketing en este gate"
+  ],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios",
+          "backend/modules/cavas_corporativas",
+          "backend/core",
+          "backend/modules",
+          "backend/tests",
+          "docs",
+          "tools"
+        ],
+        "search_terms": [
+          "REGULARIZACION_HISTORICA",
+          "source_system",
+          "historical_reference",
+          "SoftRestaurant",
+          "Soft Restaurant",
+          "MPRO",
+          "connection_resolver",
+          "catalogos_sistemas",
+          "capability",
+          "sync",
+          "backfill",
+          "import",
+          "export",
+          "object_storage",
+          "Cliente_Catalogo",
+          "Producto",
+          "idempotency",
+          "checksum",
+          "reconciliation",
+          "provenance"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.md",
+          "*.json",
+          "*.sql"
+        ],
+        "exclude_patterns": [
+          "*.env",
+          "*secret*",
+          "*password*",
+          "node_modules/*"
+        ],
+        "max_results": 300
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios_domain.py",
+        "backend/tests/test_cava_socios.py",
+        "backend/tests/test_cavas_corporativas_routes.py"
+      ]
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/cava_socios/domain.py",
+        "backend/modules/cava_socios/service.py",
+        "backend/modules/cava_socios/routes.py",
+        "backend/modules/cavas_corporativas/routes.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
