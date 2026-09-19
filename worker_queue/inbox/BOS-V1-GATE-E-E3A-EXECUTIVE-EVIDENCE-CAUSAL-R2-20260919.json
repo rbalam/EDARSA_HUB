@@ -1,0 +1,93 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E3A-EXECUTIVE-EVIDENCE-CAUSAL-R2-20260919",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "0164efda77363c025d1184300f8a13986e3ab4d8",
+  "production_allowed": false,
+  "objective": "Implementar exclusivamente E3A de Gate E: Executive Evidence DTO + causal explanation read-only, con clasificacion conservadora HECHO/CORRELACION/INFERENCIA, freshness/stale, limitations y NOT_ENOUGH_EVIDENCE. No persistencia, no endpoints, no SQL, no LLM, no backend/core.",
+  "acceptance": [
+    "Crear un bounded context funcional aislado en backend/modules/bos_executive, ya que la auditoria no encontro un owner equivalente fuera de backend/core.",
+    "Crear DTOs inmutables para evidencia y finding ejecutivo con evidence_refs, contributing_factors, confidence_class, as_of/freshness, stale, limitations y suggested_next_checks.",
+    "Clasificar de forma determinista HECHO/CORRELACION/INFERENCIA sin elevar correlacion o inferencia a causalidad.",
+    "Sin evidencia, devolver NOT_ENOUGH_EVIDENCE sin inventar claim, factores ni provenance.",
+    "Si cualquier evidencia es stale, el finding debe quedar stale y explicitar STALE_EVIDENCE en limitations.",
+    "No modificar backend/core ni infraestructura BOS Direction existente; solo reutilizar sus patrones/contratos.",
+    "Agregar pruebas unitarias para fail-closed, HECHO, CORRELACION, INFERENCIA y stale.",
+    "pytest, py_compile, git_diff_check y repository_contract_audit deben pasar.",
+    "production_touched=false."
+  ],
+  "constraints": [
+    "No Produccion.",
+    "No SQL DDL/DML.",
+    "No nuevas tablas ni columnas.",
+    "No endpoints ni routers.",
+    "No nuevos permisos.",
+    "No jobs ni scheduler.",
+    "No Mongo operativo.",
+    "No LIVE administrativo.",
+    "No LLM.",
+    "No backend/core.",
+    "No persistencia.",
+    "No iniciar E3B/E3C/E3D/E3E/E3F."
+  ],
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/bos_executive/__init__.py",
+      "content": "from .causal_service import explain_causal_finding\nfrom .contracts import (\n    ConfidenceClass,\n    EvidenceKind,\n    EvidenceRef,\n    ExecutiveFindingInput,\n    ExecutiveFindingOutput,\n    FindingStatus,\n)\n\n__all__ = [\n    \"ConfidenceClass\",\n    \"EvidenceKind\",\n    \"EvidenceRef\",\n    \"ExecutiveFindingInput\",\n    \"ExecutiveFindingOutput\",\n    \"FindingStatus\",\n    \"explain_causal_finding\",\n]\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/modules/bos_executive/contracts.py",
+      "content": "from __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom enum import Enum\n\n\nclass EvidenceKind(str, Enum):\n    HECHO = \"HECHO\"\n    CORRELACION = \"CORRELACION\"\n    INFERENCIA = \"INFERENCIA\"\n\n\nclass ConfidenceClass(str, Enum):\n    DETERMINISTA = \"determinista\"\n    CORRELACIONAL = \"correlacional\"\n    INFERIDO = \"inferido\"\n\n\nclass FindingStatus(str, Enum):\n    EXPLAINED = \"EXPLAINED\"\n    NOT_ENOUGH_EVIDENCE = \"NOT_ENOUGH_EVIDENCE\"\n\n\n@dataclass(frozen=True)\nclass EvidenceRef:\n    ref: str\n    kind: EvidenceKind\n    as_of: str | None = None\n    stale: bool = False\n    provenance: str | None = None\n\n\n@dataclass(frozen=True)\nclass ExecutiveFindingInput:\n    finding_id: str\n    metric_id: str\n    scope_ref: str\n    period_ref: str\n    observation: str\n    evidence: tuple[EvidenceRef, ...] = ()\n    contributing_factors: tuple[str, ...] = ()\n    limitations: tuple[str, ...] = ()\n    suggested_next_checks: tuple[str, ...] = ()\n\n\n@dataclass(frozen=True)\nclass ExecutiveFindingOutput:\n    finding_id: str\n    status: FindingStatus\n    claim: str\n    evidence_refs: tuple[str, ...]\n    contributing_factors: tuple[str, ...]\n    classification: EvidenceKind | None\n    confidence_class: ConfidenceClass | None\n    as_of: str | None\n    stale: bool\n    limitations: tuple[str, ...]\n    suggested_next_checks: tuple[str, ...]\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/modules/bos_executive/causal_service.py",
+      "content": "from __future__ import annotations\n\nfrom .contracts import (\n    ConfidenceClass,\n    EvidenceKind,\n    ExecutiveFindingInput,\n    ExecutiveFindingOutput,\n    FindingStatus,\n)\n\n_KIND_PRIORITY = {\n    EvidenceKind.HECHO: 0,\n    EvidenceKind.CORRELACION: 1,\n    EvidenceKind.INFERENCIA: 2,\n}\n\n_CONFIDENCE_BY_KIND = {\n    EvidenceKind.HECHO: ConfidenceClass.DETERMINISTA,\n    EvidenceKind.CORRELACION: ConfidenceClass.CORRELACIONAL,\n    EvidenceKind.INFERENCIA: ConfidenceClass.INFERIDO,\n}\n\n\ndef _unique(values: tuple[str, ...]) -> tuple[str, ...]:\n    return tuple(dict.fromkeys(value for value in values if value))\n\n\ndef _classify(request: ExecutiveFindingInput) -> EvidenceKind:\n    return max(\n        (evidence.kind for evidence in request.evidence),\n        key=lambda kind: _KIND_PRIORITY[kind],\n    )\n\n\ndef _claim(observation: str, classification: EvidenceKind) -> str:\n    if classification is EvidenceKind.HECHO:\n        return f\"Hecho observado y respaldado por evidencia: {observation}\"\n    if classification is EvidenceKind.CORRELACION:\n        return f\"Correlacion observada; no prueba causalidad: {observation}\"\n    return f\"Inferencia basada en evidencia disponible; requiere validacion: {observation}\"\n\n\ndef explain_causal_finding(request: ExecutiveFindingInput) -> ExecutiveFindingOutput:\n    if not request.evidence:\n        return ExecutiveFindingOutput(\n            finding_id=request.finding_id,\n            status=FindingStatus.NOT_ENOUGH_EVIDENCE,\n            claim=FindingStatus.NOT_ENOUGH_EVIDENCE.value,\n            evidence_refs=(),\n            contributing_factors=(),\n            classification=None,\n            confidence_class=None,\n            as_of=None,\n            stale=False,\n            limitations=_unique(request.limitations + (\"NO_EVIDENCE\",)),\n            suggested_next_checks=_unique(request.suggested_next_checks),\n        )\n\n    classification = _classify(request)\n    stale = any(evidence.stale for evidence in request.evidence)\n    as_of_values = tuple(\n        evidence.as_of for evidence in request.evidence if evidence.as_of\n    )\n    as_of = max(as_of_values) if as_of_values else None\n\n    limitations = request.limitations\n    if classification is EvidenceKind.CORRELACION:\n        limitations += (\"CORRELATION_IS_NOT_CAUSATION\",)\n    elif classification is EvidenceKind.INFERENCIA:\n        limitations += (\"INFERENCE_REQUIRES_VALIDATION\",)\n    if stale:\n        limitations += (\"STALE_EVIDENCE\",)\n\n    return ExecutiveFindingOutput(\n        finding_id=request.finding_id,\n        status=FindingStatus.EXPLAINED,\n        claim=_claim(request.observation, classification),\n        evidence_refs=_unique(tuple(evidence.ref for evidence in request.evidence)),\n        contributing_factors=_unique(request.contributing_factors),\n        classification=classification,\n        confidence_class=_CONFIDENCE_BY_KIND[classification],\n        as_of=as_of,\n        stale=stale,\n        limitations=_unique(limitations),\n        suggested_next_checks=_unique(request.suggested_next_checks),\n    )\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_bos_executive_e3a.py",
+      "content": "from modules.bos_executive import (\n    ConfidenceClass,\n    EvidenceKind,\n    EvidenceRef,\n    ExecutiveFindingInput,\n    FindingStatus,\n    explain_causal_finding,\n)\n\n\ndef _request(*evidence, **overrides):\n    values = {\n        \"finding_id\": \"finding-1\",\n        \"metric_id\": \"ventas_sin_propina\",\n        \"scope_ref\": \"empresa:1/unidad:ESTELAR\",\n        \"period_ref\": \"2026-09\",\n        \"observation\": \"La venta disminuyo frente al periodo comparable.\",\n        \"evidence\": tuple(evidence),\n        \"contributing_factors\": (\"trafico_menor\",),\n        \"limitations\": (),\n        \"suggested_next_checks\": (\"validar_eventos_calendario\",),\n    }\n    values.update(overrides)\n    return ExecutiveFindingInput(**values)\n\n\ndef test_e3a_fails_closed_without_evidence():\n    result = explain_causal_finding(_request())\n\n    assert result.status is FindingStatus.NOT_ENOUGH_EVIDENCE\n    assert result.claim == \"NOT_ENOUGH_EVIDENCE\"\n    assert result.evidence_refs == ()\n    assert result.contributing_factors == ()\n    assert result.classification is None\n    assert result.confidence_class is None\n    assert \"NO_EVIDENCE\" in result.limitations\n\n\ndef test_e3a_fact_is_deterministic_when_all_evidence_is_fact():\n    result = explain_causal_finding(\n        _request(\n            EvidenceRef(\n                ref=\"sql:kpi:ventas:2026-09\",\n                kind=EvidenceKind.HECHO,\n                as_of=\"2026-09-18T23:59:59Z\",\n                provenance=\"EDARSAHUB_SQL\",\n            )\n        )\n    )\n\n    assert result.status is FindingStatus.EXPLAINED\n    assert result.classification is EvidenceKind.HECHO\n    assert result.confidence_class is ConfidenceClass.DETERMINISTA\n    assert result.stale is False\n    assert result.evidence_refs == (\"sql:kpi:ventas:2026-09\",)\n\n\ndef test_e3a_correlation_never_becomes_causality():\n    result = explain_causal_finding(\n        _request(\n            EvidenceRef(ref=\"sql:kpi:ventas\", kind=EvidenceKind.HECHO),\n            EvidenceRef(ref=\"audit:traffic\", kind=EvidenceKind.CORRELACION),\n        )\n    )\n\n    assert result.classification is EvidenceKind.CORRELACION\n    assert result.confidence_class is ConfidenceClass.CORRELACIONAL\n    assert \"no prueba causalidad\" in result.claim\n    assert \"CORRELATION_IS_NOT_CAUSATION\" in result.limitations\n\n\ndef test_e3a_inference_is_conservative_and_requires_validation():\n    result = explain_causal_finding(\n        _request(\n            EvidenceRef(ref=\"workflow:event-1\", kind=EvidenceKind.INFERENCIA)\n        )\n    )\n\n    assert result.classification is EvidenceKind.INFERENCIA\n    assert result.confidence_class is ConfidenceClass.INFERIDO\n    assert \"requiere validacion\" in result.claim\n    assert \"INFERENCE_REQUIRES_VALIDATION\" in result.limitations\n\n\ndef test_e3a_marks_stale_if_any_evidence_is_stale():\n    result = explain_causal_finding(\n        _request(\n            EvidenceRef(\n                ref=\"sql:kpi:ventas\",\n                kind=EvidenceKind.HECHO,\n                as_of=\"2026-09-17T23:59:59Z\",\n                stale=True,\n            ),\n            EvidenceRef(\n                ref=\"audit:ops\",\n                kind=EvidenceKind.HECHO,\n                as_of=\"2026-09-18T23:59:59Z\",\n            ),\n        )\n    )\n\n    assert result.stale is True\n    assert result.as_of == \"2026-09-18T23:59:59Z\"\n    assert \"STALE_EVIDENCE\" in result.limitations\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/bos_executive/__init__.py",
+        "backend/modules/bos_executive/contracts.py",
+        "backend/modules/bos_executive/causal_service.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_bos_executive_e3a.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/bos_executive",
+          "backend/tests/test_bos_executive_e3a.py"
+        ],
+        "search_terms": [
+          "bos_executive",
+          "EvidenceKind",
+          "NOT_ENOUGH_EVIDENCE",
+          "CORRELATION_IS_NOT_CAUSATION"
+        ]
+      }
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
