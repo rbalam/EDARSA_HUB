@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R7-READONLY-CONTRACT-CERT",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias-r24e"
+  },
+  "objective": "Certificar en modo READ_ONLY compatible con el contrato determinista que la integracion frontend R24E-R6 de lotes proveedor esta materializada en Edarsahub_Desarrollo. No ejecutar frontend_build porque el contrato READ_ONLY solo permite checks no mutantes. No mutar archivos, no tocar backend, no tocar SQL y no tocar Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+          "frontend/src/App.js",
+          "frontend/src/config/enterpriseNavigationRegistry.json"
+        ],
+        "search_terms": [
+          "LotesProveedorPage",
+          "/tablajeria/lotes-proveedor",
+          "tablajeria.lotes_proveedor",
+          "/tablajeria/lotes-proveedor/rendimientos",
+          "/tablajeria/reclamos-proveedor"
+        ],
+        "include_patterns": [],
+        "exclude_patterns": [],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "git_diff_check",
+      "allowed_paths": [],
+      "forbidden_paths": [
+        "backend/server.py",
+        "backend/modules/tablajeria/routes.py",
+        "backend/core/scheduler/scheduler_manager.py",
+        "backend/core/centro_control/email_notifications.py",
+        "backend/core/centro_control/whatsapp_notifications.py",
+        "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+        "frontend/src/App.js",
+        "frontend/src/config/enterpriseNavigationRegistry.json"
+      ]
+    }
+  ],
+  "expected_result": {
+    "quality_gate": "PASS",
+    "tests": "PASS",
+    "production_touched": false,
+    "files_changed": [],
+    "frontend_build": "NOT_RUN_IN_READ_ONLY_CONTRACT"
+  }
+}
