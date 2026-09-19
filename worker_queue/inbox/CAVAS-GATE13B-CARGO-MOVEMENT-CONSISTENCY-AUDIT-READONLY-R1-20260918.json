@@ -1,0 +1,75 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE13B-CARGO-MOVEMENT-CONSISTENCY-AUDIT-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "0164efda77363c025d1184300f8a13986e3ab4d8",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar READ_ONLY la coherencia entre CavaSocios_Movimientos.GeneroCargo/MontoCargo y CavaSocios_Cargos antes de Gate13B R2. Confirmar definicion fisica de columnas, defaults/nullability, valores existentes, movimientos de consumo con y sin cargo, cargos asociados por MovimientoID y discrepancias. No mutar datos ni codigo ni Produccion.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "cargo_movement_column_definition",
+          "sql": "SELECT c.name AS column_name,t.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,dc.definition AS default_definition FROM sys.columns c INNER JOIN sys.types t ON c.user_type_id=t.user_type_id LEFT JOIN sys.default_constraints dc ON c.default_object_id=dc.object_id WHERE c.object_id=OBJECT_ID(N'dbo.CavaSocios_Movimientos') AND c.name IN (N'GeneroCargo',N'MontoCargo',N'CargoConceptoID',N'MovimientoID',N'TipoMovimiento') ORDER BY c.column_id;"
+        },
+        {
+          "name": "cargo_movement_existing_values",
+          "sql": "SELECT TOP 100 CONVERT(varchar(36),MovimientoID) AS MovimientoID,CONVERT(varchar(36),EmpresaID) AS EmpresaID,CONVERT(varchar(36),SocioID) AS SocioID,CONVERT(varchar(36),BotellaID) AS BotellaID,TipoMovimiento,GeneroCargo,MontoCargo,CONVERT(varchar(36),CargoConceptoID) AS CargoConceptoID,MotivoMovimiento,FechaMovimiento FROM dbo.CavaSocios_Movimientos ORDER BY FechaMovimiento DESC,MovimientoID DESC;"
+        },
+        {
+          "name": "cargo_movement_consumption_summary",
+          "sql": "SELECT TipoMovimiento,COUNT_BIG(*) AS movimientos,SUM(CASE WHEN GeneroCargo=1 THEN 1 ELSE 0 END) AS con_genero_cargo,SUM(CASE WHEN ISNULL(MontoCargo,0)>0 THEN 1 ELSE 0 END) AS con_monto_cargo,SUM(CASE WHEN c.CargoID IS NOT NULL THEN 1 ELSE 0 END) AS con_cargo_relacionado FROM dbo.CavaSocios_Movimientos m LEFT JOIN dbo.CavaSocios_Cargos c ON c.MovimientoID=m.MovimientoID GROUP BY TipoMovimiento ORDER BY TipoMovimiento;"
+        },
+        {
+          "name": "cargo_movement_consumption_detail",
+          "sql": "SELECT TOP 100 CONVERT(varchar(36),m.MovimientoID) AS MovimientoID,m.TipoMovimiento,m.GeneroCargo,m.MontoCargo,CONVERT(varchar(36),c.CargoID) AS CargoID,c.TipoCargo,c.Monto AS CargoMonto,c.Impuesto,c.Total,c.EstatusCargo,m.FechaMovimiento FROM dbo.CavaSocios_Movimientos m LEFT JOIN dbo.CavaSocios_Cargos c ON c.MovimientoID=m.MovimientoID WHERE m.TipoMovimiento LIKE N'CONSUMO%' ORDER BY m.FechaMovimiento DESC,m.MovimientoID DESC;"
+        },
+        {
+          "name": "cargo_movement_inconsistencies",
+          "sql": "SELECT COUNT_BIG(*) AS inconsistent_rows FROM dbo.CavaSocios_Movimientos m LEFT JOIN dbo.CavaSocios_Cargos c ON c.MovimientoID=m.MovimientoID WHERE (c.CargoID IS NOT NULL AND (ISNULL(m.GeneroCargo,0)<>1 OR ISNULL(m.MontoCargo,0)<>ISNULL(c.Monto,0))) OR (c.CargoID IS NULL AND (ISNULL(m.GeneroCargo,0)=1 OR ISNULL(m.MontoCargo,0)>0));"
+        },
+        {
+          "name": "cargo_movement_inconsistency_detail",
+          "sql": "SELECT TOP 100 CONVERT(varchar(36),m.MovimientoID) AS MovimientoID,m.TipoMovimiento,m.GeneroCargo,m.MontoCargo,CONVERT(varchar(36),c.CargoID) AS CargoID,c.Monto AS CargoMonto,c.Total AS CargoTotal,m.FechaMovimiento FROM dbo.CavaSocios_Movimientos m LEFT JOIN dbo.CavaSocios_Cargos c ON c.MovimientoID=m.MovimientoID WHERE (c.CargoID IS NOT NULL AND (ISNULL(m.GeneroCargo,0)<>1 OR ISNULL(m.MontoCargo,0)<>ISNULL(c.Monto,0))) OR (c.CargoID IS NULL AND (ISNULL(m.GeneroCargo,0)=1 OR ISNULL(m.MontoCargo,0)>0)) ORDER BY m.FechaMovimiento DESC,m.MovimientoID DESC;"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/service.py",
+          "backend/modules/cava_socios/report_service.py",
+          "backend/scripts/create_cava_socios_tables.py"
+        ],
+        "search_terms": [
+          "GeneroCargo",
+          "MontoCargo",
+          "CargoConceptoID",
+          "_crear_cargo",
+          "registrar_consumo",
+          "obtener_movimientos_socio",
+          "obtener_kardex"
+        ],
+        "max_results": 150
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No DDL or DML",
+    "No file mutations",
+    "No Production",
+    "No RBAC changes",
+    "Do not publish Gate13B R2 from this job",
+    "Fail closed if SQL evidence cannot distinguish movement metadata from cargo table truth"
+  ]
+}
