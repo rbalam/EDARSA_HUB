@@ -1,0 +1,112 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE14D-FINAL-PREDEPLOY-CLOSURE-CERT-READONLY-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a3e49ad5923d0863f51c66727adc68dd8021e9d2",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificacion final predeploy y limpieza de Cavas en Development. Recertificar sin desarrollo ni despliegue el backend Cavas, frontend contractual ya construido, scope/RBAC/multiunidad, Persona-Link, consumos/cargos/kardex/reportes, cero residuos UAT, baseline del canario, FKs y repositorio limpio. No agregar funciones, no corregir codigo en este job y no tocar Produccion.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/cava_socios/routes.py",
+        "backend/modules/cava_socios/service.py",
+        "backend/modules/cava_socios/persona_link_service.py",
+        "backend/modules/cava_socios/report_service.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios.py",
+        "backend/tests/test_cava_socios_gate13b_e2e_controlled.py",
+        "backend/tests/test_cavas_corporativas_routes.py"
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "final_uat_personas_zero",
+          "sql": "SELECT COUNT_BIG(*) AS n FROM dbo.Gobierno_Persona WHERE RFC LIKE N'UAT13B%';"
+        },
+        {
+          "name": "final_uat_bottles_zero",
+          "sql": "SELECT COUNT_BIG(*) AS n FROM dbo.CavaSocios_Botellas WHERE ProductoNombre LIKE N'UAT13B-%' OR ProductoCodigo LIKE N'UAT13B-%';"
+        },
+        {
+          "name": "final_uat_movements_zero",
+          "sql": "SELECT COUNT_BIG(*) AS n FROM dbo.CavaSocios_Movimientos WHERE Observaciones LIKE N'UAT13B-%' OR MotivoMovimiento LIKE N'CAVAS-GATE13B-%';"
+        },
+        {
+          "name": "final_uat_cargos_zero",
+          "sql": "SELECT COUNT_BIG(*) AS n FROM dbo.CavaSocios_Cargos WHERE ConceptoCargo LIKE N'%UAT13B-%';"
+        },
+        {
+          "name": "final_canary_baseline",
+          "sql": "SELECT CONVERT(varchar(36),SocioID) AS SocioID,CONVERT(varchar(36),EmpresaID) AS UnidadNegocioID,NumeroSocio,PersonaID,ClienteCRMID,Estatus,Activo FROM dbo.CavaSocios_Socios WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        },
+        {
+          "name": "final_fk",
+          "sql": "SELECT OBJECT_NAME(parent_object_id) AS child_table,name,is_disabled,is_not_trusted FROM sys.foreign_keys WHERE parent_object_id IN (OBJECT_ID(N'dbo.CavaSocios_Socios'),OBJECT_ID(N'dbo.CavaSocios_Botellas'),OBJECT_ID(N'dbo.CavaSocios_Cargos'),OBJECT_ID(N'dbo.CavaSocios_Movimientos')) ORDER BY child_table,name;"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios",
+          "backend/modules/cavas_corporativas/routes.py",
+          "backend/tests/test_cava_socios.py",
+          "backend/tests/test_cava_socios_gate13b_e2e_controlled.py",
+          "backend/tests/test_cavas_corporativas_routes.py",
+          "frontend/src/pages/cava-socios",
+          "frontend/src/App.js",
+          "frontend/src/config/enterpriseMenuConfig.js"
+        ],
+        "search_terms": [
+          "_resolve_cava_scope",
+          "unidad_negocio_pk",
+          "PersonaLinkCard",
+          "registrar_consumo",
+          "GeneroCargo",
+          "MontoCargo",
+          "obtener_kardex",
+          "obtener_consumos",
+          "generar_ficha_socio",
+          "generar_historial_consumos",
+          "generar_estado_cuenta",
+          "403",
+          "404",
+          "409",
+          "CavaSociosDashboard",
+          "InventarioCava",
+          "ConsumosCava"
+        ],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "Certification and cleanup only",
+    "READ_ONLY only",
+    "No new features",
+    "No file mutations",
+    "No SQL DDL or DML",
+    "No Production",
+    "No RBAC role permission user menu company or unit mutations",
+    "No deployment",
+    "Fail closed on any test failure, UAT residue, disabled or untrusted FK",
+    "Report blockers exactly; do not fix them in this job",
+    "EDARSAHUB SQL Server remains canonical source of truth",
+    "MongoDB prohibited as operational source of truth"
+  ]
+}
