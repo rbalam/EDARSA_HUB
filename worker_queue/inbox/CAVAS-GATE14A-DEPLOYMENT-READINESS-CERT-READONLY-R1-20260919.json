@@ -1,0 +1,83 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE14A-DEPLOYMENT-READINESS-CERT-READONLY-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b8193f31daadc7d61a0032d38988de4e16d87976",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "objective": "Certificar exclusivamente readiness tecnico-operativo de Cavas sobre Development despues del cierre 100% de Gate13B. No agregar funciones, no modificar codigo, datos, RBAC, menus, infraestructura ni Produccion. Auditar contrato existente, SQL canonico, integridad referencial, ausencia de residuos UAT, dependencias prohibidas Mongo/LIVE, wiring backend/frontend y evidencia de rollback/deployment ya existente en repositorio. Reportar blockers reales sin corregirlos.",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "cavas_tables",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE t.name LIKE N'CavaSocios_%' ORDER BY t.name;"
+        },
+        {
+          "name": "cavas_fk",
+          "sql": "SELECT OBJECT_NAME(parent_object_id) AS child_table,name,is_disabled,is_not_trusted FROM sys.foreign_keys WHERE parent_object_id IN (OBJECT_ID(N'dbo.CavaSocios_Socios'),OBJECT_ID(N'dbo.CavaSocios_Botellas'),OBJECT_ID(N'dbo.CavaSocios_Cargos'),OBJECT_ID(N'dbo.CavaSocios_Movimientos')) ORDER BY child_table,name;"
+        },
+        {
+          "name": "uat_personas",
+          "sql": "SELECT COUNT_BIG(*) AS n FROM dbo.Gobierno_Persona WHERE RFC LIKE N'UAT13B%';"
+        },
+        {
+          "name": "uat_bottles",
+          "sql": "SELECT COUNT_BIG(*) AS n FROM dbo.CavaSocios_Botellas WHERE ProductoNombre LIKE N'UAT13B-%' OR ProductoCodigo LIKE N'UAT13B-%';"
+        },
+        {
+          "name": "uat_movements",
+          "sql": "SELECT COUNT_BIG(*) AS n FROM dbo.CavaSocios_Movimientos WHERE Observaciones LIKE N'UAT13B-%' OR MotivoMovimiento LIKE N'CAVAS-GATE13B-%';"
+        },
+        {
+          "name": "canary",
+          "sql": "SELECT CONVERT(varchar(36),SocioID) SocioID,CONVERT(varchar(36),EmpresaID) UnidadNegocioID,NumeroSocio,PersonaID,ClienteCRMID FROM dbo.CavaSocios_Socios WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios",
+          "backend/tests/test_cava_socios_gate13b_e2e_controlled.py",
+          "frontend/src"
+        ],
+        "search_terms": [
+          "cava_socios",
+          "CavaSocios",
+          "CAVA_SOCIOS",
+          "Mongo",
+          "mongo",
+          "LIVE",
+          "rollback",
+          "health",
+          "deployment",
+          "unidad_negocio_pk",
+          "sessionStorage"
+        ],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "Certification only; do not add features",
+    "No file mutations",
+    "No SQL DDL or DML",
+    "No Production",
+    "No RBAC role permission menu user company or unit mutations",
+    "EDARSAHUB SQL Server remains canonical source of truth",
+    "MongoDB cannot be operational source of truth",
+    "Do not use LIVE for administrative dashboards or reports",
+    "Do not fix discovered blockers in this job; report exact evidence",
+    "Do not start deployment"
+  ]
+}
