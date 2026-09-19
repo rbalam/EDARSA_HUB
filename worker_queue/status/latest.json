@@ -1,97 +1,109 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "5c2c00741c9660b71a525f98d211f1035d5f4808",
-  "generated_at_utc": "2026-09-19T07:25:29Z",
+  "development_sha": "41ebec751a341c32228cfdee3d9ddc9ebee636b5",
+  "generated_at_utc": "2026-09-19T07:26:50Z",
   "history": {
-    "done_total_local": 729,
+    "done_total_local": 731,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 678,
-    "results_total_local": 1248
+    "results_total_local": 1250
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3280,
+      "age_seconds": 3361,
       "job_id": "BOS-V1-GATE-E-E3A-EXECUTIVE-EVIDENCE-CAUSAL-R3-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2154,
+      "age_seconds": 2235,
       "job_id": "BOS-V1-GATE-E-E3B-CROSS-DOMAIN-PRIORITY-AGGREGATOR-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2482,
+      "age_seconds": 2563,
       "job_id": "BOS-V1-GATE-E-E3B-OWNER-CAPABILITY-AUDIT-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2118,
+      "age_seconds": 2199,
       "job_id": "CAVAS-GATE13B-CARGO-MOVEMENT-CONSISTENCY-FIX-R1B-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1408,
+      "age_seconds": 1489,
       "job_id": "CAVAS-GATE13B-CARGO-MOVEMENT-FIX-R1B-CERT-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 870,
+      "age_seconds": 951,
       "job_id": "CAVAS-GATE13B-E2E-CONTROLLED-UAT-R2-INSTRUMENTED-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 96,
+      "age_seconds": 177,
       "job_id": "CAVAS-GATE13B-R2-POSTCHECK-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 902,
+      "age_seconds": 68,
+      "job_id": "CAVAS-GATE13B-R2-POSTCHECK-READONLY-R1B-20260918",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 983,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-FRONTEND-BUILD-CERTIFICATION-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 786,
+      "age_seconds": 868,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-WIRING-READONLY-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 451,
+      "age_seconds": 532,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-WIRING-READONLY-R2-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1177,
+      "age_seconds": 1258,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-CONTROL-PLANE-INTEGRATION-HARDENING-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1025,
+      "age_seconds": 1106,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-CONTROL-PLANE-INTEGRATION-HARDENING-R2-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 863,
+      "age_seconds": 944,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-CONTROL-PLANE-INTEGRATION-HARDENING-R3-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 161,
+      "age_seconds": 61,
+      "job_id": "EDARSAHUB-WORKER-RESULT-PUBLISHER-PRIORITIZE-RECENT-R1-20260919",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 242,
       "job_id": "EDARSAHUB-WORKER-RESULTS-PUBLISHER-CONSISTENCY-READONLY-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
@@ -104,14 +116,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 14,
+  "queue_result_ready_recent": 16,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-19T07:25:22Z",
-    "last_receive_utc": "2026-09-19T07:25:26Z",
-    "last_terminal_utc": "2026-09-19T07:23:52Z",
+    "last_cycle_utc": "2026-09-19T07:26:48Z",
+    "last_receive_utc": "2026-09-19T07:26:49Z",
+    "last_terminal_utc": "2026-09-19T07:25:48Z",
     "pid": "83689"
   },
   "schema": "edarsahub.worker-health.v3",
