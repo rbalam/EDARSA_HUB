@@ -1,121 +1,133 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "72307e9171fbb80d67c05c53e7a0bc29eabb2c4e",
-  "generated_at_utc": "2026-09-19T07:35:23Z",
+  "development_sha": "3ecd99516f57986e6d8ee5d1485a68375c75ce9e",
+  "generated_at_utc": "2026-09-19T07:39:19Z",
   "history": {
-    "done_total_local": 733,
+    "done_total_local": 734,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 679,
-    "results_total_local": 1253
+    "rejected_total_local": 680,
+    "results_total_local": 1255
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2749,
+      "age_seconds": 2985,
       "job_id": "BOS-V1-GATE-E-E3B-CROSS-DOMAIN-PRIORITY-AGGREGATOR-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3076,
+      "age_seconds": 3313,
       "job_id": "BOS-V1-GATE-E-E3B-OWNER-CAPABILITY-AUDIT-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2713,
+      "age_seconds": 2949,
       "job_id": "CAVAS-GATE13B-CARGO-MOVEMENT-CONSISTENCY-FIX-R1B-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2002,
+      "age_seconds": 2239,
       "job_id": "CAVAS-GATE13B-CARGO-MOVEMENT-FIX-R1B-CERT-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1465,
+      "age_seconds": 1701,
       "job_id": "CAVAS-GATE13B-E2E-CONTROLLED-UAT-R2-INSTRUMENTED-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 299,
+      "age_seconds": 535,
       "job_id": "CAVAS-GATE13B-E2E-CONTROLLED-UAT-R2B-INSTRUMENTED-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 690,
+      "age_seconds": 196,
+      "job_id": "CAVAS-GATE13B-E2E-CONTROLLED-UAT-R2B-RERUN-R1-20260919",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 927,
       "job_id": "CAVAS-GATE13B-R2-POSTCHECK-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 581,
+      "age_seconds": 818,
       "job_id": "CAVAS-GATE13B-R2-POSTCHECK-READONLY-R1B-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 87,
+      "age_seconds": 16,
+      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-FASE6-INVENTARIO-COSTEO-POLIZA-READONLY-R1-20260919",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 324,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-FINAL-CERTIFICATION-READONLY-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1497,
+      "age_seconds": 1733,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-FRONTEND-BUILD-CERTIFICATION-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 300,
+      "age_seconds": 536,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-PREVIEW-CONTROLLED-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1381,
+      "age_seconds": 1617,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-WIRING-READONLY-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1046,
+      "age_seconds": 1282,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-WIRING-READONLY-R2-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1772,
+      "age_seconds": 2008,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-CONTROL-PLANE-INTEGRATION-HARDENING-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1620,
+      "age_seconds": 1856,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-CONTROL-PLANE-INTEGRATION-HARDENING-R2-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1457,
+      "age_seconds": 1694,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-CONTROL-PLANE-INTEGRATION-HARDENING-R3-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 574,
+      "age_seconds": 811,
       "job_id": "EDARSAHUB-WORKER-RESULT-PUBLISHER-PRIORITIZE-RECENT-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 755,
+      "age_seconds": 992,
       "job_id": "EDARSAHUB-WORKER-RESULTS-PUBLISHER-CONSISTENCY-READONLY-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
@@ -128,15 +140,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 18,
+  "queue_result_ready_recent": 20,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-19T07:35:21Z",
-    "last_receive_utc": "2026-09-19T07:35:23Z",
-    "last_terminal_utc": "2026-09-19T07:33:55Z",
-    "pid": "205425"
+    "last_cycle_utc": "2026-09-19T07:39:16Z",
+    "last_receive_utc": "2026-09-19T07:39:19Z",
+    "last_terminal_utc": "2026-09-19T07:39:03Z",
+    "pid": "63"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
