@@ -1,0 +1,88 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12N-UAT-CONTROLLED-EXECUTION-R2-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "f8a48aadcb4f08dbb7850ad3c517a003e6a75714",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Ejecutar una unica UAT R2 controlada de Gate12N en Development, posterior al Scope Fix R2B certificado, usando exclusivamente el candidato certificado: usuario Nestor Oxte / noxte@alpyc.com, UnidadNegocioID 19E076FB-C6DE-4EA5-84AB-1CAA9E86082C (130MID), SocioID 62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58 (SOC-00001). Ejecutar consulta inicial, crear Persona UAT, vincular, validar, desvincular y cleanup obligatorio en finally; el postcheck debe restaurar PersonaID/ClienteCRMID y conteos exactamente al baseline certificado, con cero residuos UAT. No ampliar permisos ni tocar Produccion.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_cava_socios_gate12n_uat_controlled.py",
+      "content": "import uuid\n\nimport pytest\nfrom fastapi import HTTPException\n\nfrom core.sql_first.connection_factory import get_edarsahub_pymssql_connection\nfrom modules.cava_socios import routes\n\n\nJOB_ID = \"CAVAS-GATE12N-UAT-CONTROLLED-EXECUTION-R2-20260918\"\nSOCIO_ID = \"62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58\"\nUNIDAD_ID = \"19E076FB-C6DE-4EA5-84AB-1CAA9E86082C\"\nPUBLIC_UUID = \"A72B325B-662F-4777-83ED-4DDA6E8398A8\"\nEMAIL = \"noxte@alpyc.com\"\n\n\ndef _snapshot():\n    conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)\n    try:\n        cur = conn.cursor(as_dict=True)\n        cur.execute(\n            \"\"\"\n            SELECT\n              CONVERT(varchar(36),SocioID) AS SocioID,\n              CONVERT(varchar(36),EmpresaID) AS UnidadNegocioID,\n              NumeroSocio,\n              NombreCompleto,\n              Estatus,\n              Activo,\n              PersonaID,\n              ClienteCRMID\n            FROM dbo.CavaSocios_Socios\n            WHERE SocioID=%s AND EmpresaID=%s\n            \"\"\",\n            (SOCIO_ID, UNIDAD_ID),\n        )\n        socio = cur.fetchone()\n        assert socio is not None, \"UAT_PRECHECK_SOCIO_NOT_FOUND\"\n\n        cur.execute(\"SELECT COUNT_BIG(*) AS n FROM dbo.Gobierno_Persona\")\n        personas = int(cur.fetchone()[\"n\"])\n        cur.execute(\"SELECT COUNT_BIG(*) AS n FROM dbo.Gobierno_PersonaVinculo\")\n        vinculos = int(cur.fetchone()[\"n\"])\n        cur.execute(\"SELECT COUNT_BIG(*) AS n FROM dbo.CavaSocios_Socios WHERE PersonaID IS NOT NULL\")\n        linked = int(cur.fetchone()[\"n\"])\n\n        return {\n            \"socio\": dict(socio),\n            \"personas\": personas,\n            \"vinculos\": vinculos,\n            \"linked\": linked,\n        }\n    finally:\n        conn.close()\n\n\ndef _cleanup_uat(rfc: str):\n    conn = get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)\n    try:\n        cur = conn.cursor(as_dict=True)\n        cur.execute(\n            \"SELECT PersonaID FROM dbo.Gobierno_Persona WHERE RFC=%s\",\n            (rfc,),\n        )\n        row = cur.fetchone()\n        persona_id = int(row[\"PersonaID\"]) if row else None\n\n        if persona_id is not None:\n            cur.execute(\n                \"\"\"\n                UPDATE dbo.CavaSocios_Socios\n                   SET PersonaID=NULL\n                 WHERE SocioID=%s\n                   AND EmpresaID=%s\n                   AND PersonaID=%s\n                \"\"\",\n                (SOCIO_ID, UNIDAD_ID, persona_id),\n            )\n            cur.execute(\n                \"DELETE FROM dbo.Gobierno_PersonaVinculo WHERE PersonaID=%s\",\n                (persona_id,),\n            )\n            cur.execute(\n                \"DELETE FROM dbo.Gobierno_Persona WHERE PersonaID=%s\",\n                (persona_id,),\n            )\n        conn.commit()\n    except Exception:\n        conn.rollback()\n        raise\n    finally:\n        conn.close()\n\n\n@pytest.mark.asyncio\nasync def test_gate12n_controlled_uat_exact_candidate_and_cleanup():\n    before = _snapshot()\n    socio_before = before[\"socio\"]\n\n    assert socio_before[\"SocioID\"].upper() == SOCIO_ID\n    assert socio_before[\"UnidadNegocioID\"].upper() == UNIDAD_ID\n    assert socio_before[\"NumeroSocio\"] == \"SOC-00001\"\n    assert socio_before[\"Estatus\"] == \"ACTIVO\"\n    assert bool(socio_before[\"Activo\"]) is True\n    assert socio_before[\"PersonaID\"] is None\n\n    current_user = {\n        \"id\": PUBLIC_UUID,\n        \"public_uuid\": PUBLIC_UUID,\n        \"email\": EMAIL,\n    }\n\n    suffix = uuid.uuid4().hex.upper()\n    rfc = (\"UAT12N\" + suffix[:7])[:13]\n    curp = (\"UAT12N\" + suffix[:12])[:18]\n\n    created_persona_id = None\n    try:\n        initial = await routes.obtener_persona_link(\n            socio_id=SOCIO_ID,\n            unidad_negocio_pk=UNIDAD_ID,\n            current_user=current_user,\n        )\n        assert initial[\"persona_id\"] is None\n\n        payload = routes.PersonaCreateLinkRequest(\n            nombre=\"UAT Gate12N\",\n            apellido_paterno=\"EDARSAHUB\",\n            rfc=rfc,\n            curp=curp,\n            nacionalidad=\"MX\",\n            cliente_id=None,\n        )\n\n        created = await routes.crear_persona_y_vincular(\n            socio_id=SOCIO_ID,\n            data=payload,\n            unidad_negocio_pk=UNIDAD_ID,\n            current_user=current_user,\n        )\n        assert created[\"created_persona\"] is True\n        assert created[\"cliente_id\"] is None\n        created_persona_id = int(created[\"persona_id\"])\n\n        linked = await routes.obtener_persona_link(\n            socio_id=SOCIO_ID,\n            unidad_negocio_pk=UNIDAD_ID,\n            current_user=current_user,\n        )\n        assert int(linked[\"persona_id\"]) == created_persona_id\n\n        unlinked = await routes.desvincular_persona(\n            socio_id=SOCIO_ID,\n            unidad_negocio_pk=UNIDAD_ID,\n            current_user=current_user,\n        )\n        assert int(unlinked[\"persona_id_anterior\"]) == created_persona_id\n        assert unlinked[\"canonical_records_deleted\"] is False\n\n        final_link = await routes.obtener_persona_link(\n            socio_id=SOCIO_ID,\n            unidad_negocio_pk=UNIDAD_ID,\n            current_user=current_user,\n        )\n        assert final_link[\"persona_id\"] is None\n\n    finally:\n        _cleanup_uat(rfc)\n\n    after = _snapshot()\n    socio_after = after[\"socio\"]\n\n    assert after[\"personas\"] == before[\"personas\"]\n    assert after[\"vinculos\"] == before[\"vinculos\"]\n    assert after[\"linked\"] == before[\"linked\"]\n    assert socio_after[\"PersonaID\"] is None\n    assert socio_after[\"ClienteCRMID\"] == socio_before[\"ClienteCRMID\"]\n    assert socio_after[\"SocioID\"] == socio_before[\"SocioID\"]\n    assert socio_after[\"UnidadNegocioID\"] == socio_before[\"UnidadNegocioID\"]\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/tests/test_cava_socios_gate12n_uat_controlled.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios_gate12n_uat_controlled.py"
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "uat_postcheck_candidate",
+          "sql": "SELECT CONVERT(varchar(36),SocioID) AS SocioID,CONVERT(varchar(36),EmpresaID) AS UnidadNegocioID,NumeroSocio,Estatus,Activo,PersonaID,ClienteCRMID FROM dbo.CavaSocios_Socios WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        },
+        {
+          "name": "uat_postcheck_counts",
+          "sql": "SELECT (SELECT COUNT_BIG(*) FROM dbo.Gobierno_Persona) AS total_personas,(SELECT COUNT_BIG(*) FROM dbo.Gobierno_PersonaVinculo) AS total_vinculos,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Socios WHERE PersonaID IS NOT NULL) AS socios_vinculados;"
+        },
+        {
+          "name": "uat_postcheck_fk",
+          "sql": "SELECT fk.name,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk WHERE fk.parent_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND fk.name=N'FK_CavaSocios_Socios_GobiernoPersona';"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios",
+          "backend/tests/test_cava_socios_gate12n_uat_controlled.py"
+        ],
+        "search_terms": [
+          "_resolve_cava_scope",
+          "UnidadNegocioID",
+          "persona-link",
+          "Gobierno_Persona",
+          "CavaSocios_Socios"
+        ],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "Development only",
+    "Exactly one controlled UAT",
+    "Use only Nestor Oxte, 130MID and SOC-00001 certified candidate",
+    "No mocks or monkeypatches for RBAC, scope or identity",
+    "No Production",
+    "No DDL",
+    "No Cliente link",
+    "No automatic matching",
+    "Cleanup mandatory in finally",
+    "Delete only UAT-created Persona and PersonaVinculo rows",
+    "Restore Socio PersonaID to NULL",
+    "ClienteCRMID must remain unchanged",
+    "SocioID must remain unchanged",
+    "Pre/post counts must match",
+    "If canonical runtime scope blocks, fail closed and do not workaround",
+    "EDARSAHUB SQL Server remains source of truth",
+    "MongoDB prohibited"
+  ]
+}
