@@ -1,0 +1,65 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12N-UAT-R2B-POSTCHECK-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9d274fa69c3eb16f6b63ebf5436a7783fdcb5949",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar en modo READ_ONLY que la UAT R2B fallida por HTTP 403 no dejó residuos ni mutaciones funcionales antes de corregir la normalización UUID del scope Cavas. Confirmar SOC-00001 con PersonaID NULL y ClienteCRMID NULL, conteos baseline en cero, FK trusted y ausencia de residuos UAT12N. No modificar archivos, datos, RBAC, permisos, usuarios, empresas, unidades ni Produccion.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "uat_r2b_postcheck_candidate",
+          "sql": "SELECT CONVERT(varchar(36),SocioID) AS SocioID,CONVERT(varchar(36),EmpresaID) AS UnidadNegocioID,NumeroSocio,Estatus,Activo,PersonaID,ClienteCRMID FROM dbo.CavaSocios_Socios WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        },
+        {
+          "name": "uat_r2b_postcheck_counts",
+          "sql": "SELECT (SELECT COUNT_BIG(*) FROM dbo.Gobierno_Persona) AS total_personas,(SELECT COUNT_BIG(*) FROM dbo.Gobierno_PersonaVinculo) AS total_vinculos,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Socios WHERE PersonaID IS NOT NULL) AS socios_vinculados;"
+        },
+        {
+          "name": "uat_r2b_postcheck_residuals",
+          "sql": "SELECT (SELECT COUNT_BIG(*) FROM dbo.Gobierno_Persona WHERE RFC LIKE N'UAT12N%') AS personas_uat12n,(SELECT COUNT_BIG(*) FROM dbo.Gobierno_PersonaVinculo v INNER JOIN dbo.Gobierno_Persona p ON p.PersonaID=v.PersonaID WHERE p.RFC LIKE N'UAT12N%') AS vinculos_uat12n;"
+        },
+        {
+          "name": "uat_r2b_postcheck_fk",
+          "sql": "SELECT name,is_disabled,is_not_trusted FROM sys.foreign_keys WHERE name=N'FK_CavaSocios_Socios_GobiernoPersona';"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios",
+          "backend/tests/test_cava_socios.py",
+          "backend/tests/test_cava_socios_persona_link.py"
+        ],
+        "search_terms": [
+          "_resolve_cava_scope",
+          "UnidadNegocioID",
+          "PersonaID",
+          "CavaSocios_Socios"
+        ],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No file mutations",
+    "No DDL or DML",
+    "No UAT execution",
+    "No RBAC changes",
+    "No permission user role menu company or unit changes",
+    "No Production",
+    "Certification must fail closed if any residue is present"
+  ]
+}
