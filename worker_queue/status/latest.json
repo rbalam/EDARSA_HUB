@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "ebb60bb5bca8595e631284f084b87c35f7748d32",
-  "generated_at_utc": "2026-09-19T06:52:31Z",
+  "generated_at_utc": "2026-09-19T06:53:47Z",
   "history": {
     "done_total_local": 724,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2478,
+      "age_seconds": 2554,
       "job_id": "CAVAS-GATE13B-CARGO-MOVEMENT-CONSISTENCY-FIX-R1-20260918",
       "reasons": [
         "ACTION_1_INVALID_TYPE"
@@ -22,49 +22,49 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2574,
+      "age_seconds": 2650,
       "job_id": "BOS-V1-GATE-E-E3A-EXECUTIVE-EVIDENCE-CAUSAL-R2-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1302,
+      "age_seconds": 1378,
       "job_id": "BOS-V1-GATE-E-E3A-EXECUTIVE-EVIDENCE-CAUSAL-R3-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 176,
+      "age_seconds": 253,
       "job_id": "BOS-V1-GATE-E-E3B-CROSS-DOMAIN-PRIORITY-AGGREGATOR-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 504,
+      "age_seconds": 580,
       "job_id": "BOS-V1-GATE-E-E3B-OWNER-CAPABILITY-AUDIT-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2570,
+      "age_seconds": 2647,
       "job_id": "CAVAS-GATE13B-CARGO-MOVEMENT-CONSISTENCY-AUDIT-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 140,
+      "age_seconds": 217,
       "job_id": "CAVAS-GATE13B-CARGO-MOVEMENT-CONSISTENCY-FIX-R1B-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3333,
+      "age_seconds": 3409,
       "job_id": "CAVAS-GATE13B-E2E-R1-POSTCHECK-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2929,
+      "age_seconds": 3005,
       "job_id": "CAVAS-GATE13B-E2E-R1-PYTEST-RCA-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
@@ -82,8 +82,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-19T06:52:28Z",
-    "last_receive_utc": "2026-09-19T06:52:30Z",
+    "last_cycle_utc": "2026-09-19T06:53:44Z",
+    "last_receive_utc": "2026-09-19T06:53:46Z",
     "last_terminal_utc": "2026-09-19T06:50:10Z",
     "pid": "647"
   },
