@@ -423,14 +423,22 @@ class CavaSociosService:
                 data.get('foto_evidencia'), usuario_id, data.get('observaciones')
             ))
 
-            # Generar cargo por descorche si aplica
+            # Generar cargo por descorche si aplica y reflejarlo en el movimiento.
             cargo_id = None
+            monto_descorche = float(data.get('monto_descorche', 350) or 0)
             if data.get('generar_cargo_descorche'):
                 cargo_id = self._crear_cargo(
                     cursor, botella['EmpresaID'], botella['SocioID'],
                     'SERVICIO_DESCORCHE', f"Descorche: {botella['ProductoNombre']}",
-                    data.get('monto_descorche', 350), botella_id, mov_id, usuario_id
+                    monto_descorche, botella_id, mov_id, usuario_id
                 )
+                cursor.execute("""
+                    UPDATE CavaSocios_Movimientos
+                       SET GeneroCargo = 1,
+                           MontoCargo = %s
+                     WHERE MovimientoID = %s
+                       AND EmpresaID = %s
+                """, (monto_descorche, mov_id, botella['EmpresaID']))
 
             conn.commit()
 
