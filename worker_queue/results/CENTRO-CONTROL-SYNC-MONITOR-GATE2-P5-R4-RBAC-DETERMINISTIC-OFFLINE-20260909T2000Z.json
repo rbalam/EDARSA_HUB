@@ -1,0 +1,21 @@
+{
+  "certification": "NOT_CERTIFIED",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-R4-RBAC-DETERMINISTIC-OFFLINE-20260909T2000Z",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-19T07:24:16Z",
+  "reasons": [
+    "INVALID_TARGET_REPO",
+    "SUMMARY_LANGUAGE_MUST_BE_ES"
+  ],
+  "received_at_utc": "2026-09-09T22:19:53.016559+00:00",
+  "schema": "edarsahub.worker-rejection.v2",
+  "source": "worker_queue/inbox/CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-R4-RBAC-DETERMINISTIC-OFFLINE-20260909T2000Z.json",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "status": "REJECTED",
+  "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto.",
+  "work_completion": "NOT_CERTIFIED"
+}
