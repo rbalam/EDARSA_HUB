@@ -1,0 +1,74 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12N-SCOPE-FIX-DESIGN-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "22d5613dc13ac471603b33eba863fb18cb616224",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar en modo READ_ONLY el fix quirurgico de scope para Cavas. Determinar si CavaSocios_Socios.EmpresaID debe resolverse con UnidadNegocioID UUID del contexto autorizado en vez de Usuario_RolesContexto.EmpresaID, sin cambiar RBAC global ni datos. Confirmar alcance minimo de cambio dentro de cava_socios y compatibilidad con tablas relacionadas. No implementar.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/routes.py",
+          "backend/modules/cava_socios/service.py",
+          "backend/modules/cava_socios/persona_link_service.py",
+          "backend/modules/rbac_context_sql/context_service.py",
+          "backend/tests/test_cava_socios.py",
+          "backend/tests/test_cava_socios_persona_link.py"
+        ],
+        "search_terms": [
+          "_resolve_cava_scope",
+          "EmpresaID",
+          "UnidadNegocioID",
+          "unidad_negocio_pk",
+          "CavaSocios_Socios",
+          "CavaSocios_Botellas",
+          "CavaSocios_Cargos",
+          "CavaSocios_Movimientos"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "scope_column_types",
+          "sql": "SELECT OBJECT_NAME(c.object_id) AS table_name,c.name AS column_name,TYPE_NAME(c.user_type_id) AS data_type,c.max_length,c.is_nullable FROM sys.columns c WHERE c.object_id IN (OBJECT_ID(N'dbo.CavaSocios_Socios'),OBJECT_ID(N'dbo.CavaSocios_Botellas'),OBJECT_ID(N'dbo.CavaSocios_Cargos'),OBJECT_ID(N'dbo.CavaSocios_Movimientos')) AND c.name=N'EmpresaID' ORDER BY table_name;"
+        },
+        {
+          "name": "scope_candidate_context",
+          "sql": "SELECT CONVERT(varchar(36),urc.UnidadNegocioID) AS UnidadNegocioID,urc.EmpresaID,un.codigo,un.nombre FROM dbo.Usuario_RolesContexto urc INNER JOIN dbo.Unidades_Negocio un ON un.id=urc.UnidadNegocioID WHERE urc.UsuarioID=4 AND urc.UnidadNegocioID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C') AND urc.Activo=1;"
+        },
+        {
+          "name": "scope_socios_vs_unidad",
+          "sql": "SELECT COUNT_BIG(*) AS total_socios,SUM(CASE WHEN un.id IS NOT NULL THEN 1 ELSE 0 END) AS matches_unidad,SUM(CASE WHEN un.id IS NULL THEN 1 ELSE 0 END) AS no_match_unidad FROM dbo.CavaSocios_Socios s LEFT JOIN dbo.Unidades_Negocio un ON un.id=s.EmpresaID;"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "Development only",
+    "No implementation",
+    "No UAT retry",
+    "No DDL or DML",
+    "No changes to RBAC global behavior",
+    "No changes to Usuario_RolesContexto",
+    "No changes to Sistema_Empresas",
+    "No permission role user menu unit or company changes",
+    "No Production",
+    "Prefer a module-local surgical fix if evidence supports it",
+    "EDARSAHUB SQL Server remains source of truth",
+    "MongoDB prohibited"
+  ]
+}
