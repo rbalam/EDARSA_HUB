@@ -1,0 +1,91 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-CERTIFICATION-MODE-R2-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias-r24e"
+  },
+  "objective": "Reintento canonico post-limpieza local /app. Agregar capacidad build-only al Universal Worker mediante modo FRONTEND_BUILD_CERTIFICATION. Cambio de infraestructura del Worker, no de producto. No tocar backend funcional, SQL, Produccion ni R24F. Debe permitir jobs sin actions para ejecutar frontend_build, git_diff_check y repository_contract_audit, certificando files_changed=[] y production_touched=false.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "SQL_MIGRATION_DEVELOPMENT_MODE = \"SQL_MIGRATION_DEVELOPMENT\"\nUNIT_CODE_RE = re.compile(r\"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$\")",
+      "new": "SQL_MIGRATION_DEVELOPMENT_MODE = \"SQL_MIGRATION_DEVELOPMENT\"\nFRONTEND_BUILD_CERTIFICATION_MODE = \"FRONTEND_BUILD_CERTIFICATION\"\nUNIT_CODE_RE = re.compile(r\"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$\")",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "        else:\n            for index, check in enumerate(preflight_checks, 1):\n                errors.extend(validate_check(check, index))\n    elif mode == MPRO_FULL_HISTORY_MODE:",
+      "new": "        else:\n            for index, check in enumerate(preflight_checks, 1):\n                errors.extend(validate_check(check, index))\n    elif mode == FRONTEND_BUILD_CERTIFICATION_MODE:\n        if actions not in (None, []):\n            errors.append(\"FRONTEND_BUILD_CERTIFICATION_ACTIONS_FORBIDDEN\")\n    elif mode == MPRO_FULL_HISTORY_MODE:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    elif mode == SQL_MIGRATION_DEVELOPMENT_MODE:\n        if not isinstance(checks, list) or not checks:\n            errors.append(\"SQL_MIGRATION_POST_AUDIT_REQUIRED\")\n        elif any(not isinstance(c, dict) or c.get(\"type\") != \"sql_readonly_audit\" for c in checks):\n            errors.append(\"SQL_MIGRATION_POST_ONLY_SQL_AUDIT_ALLOWED\")\n    elif mode == MPRO_FULL_HISTORY_MODE:",
+      "new": "    elif mode == SQL_MIGRATION_DEVELOPMENT_MODE:\n        if not isinstance(checks, list) or not checks:\n            errors.append(\"SQL_MIGRATION_POST_AUDIT_REQUIRED\")\n        elif any(not isinstance(c, dict) or c.get(\"type\") != \"sql_readonly_audit\" for c in checks):\n            errors.append(\"SQL_MIGRATION_POST_ONLY_SQL_AUDIT_ALLOWED\")\n    elif mode == FRONTEND_BUILD_CERTIFICATION_MODE:\n        if not isinstance(checks, list) or not checks:\n            errors.append(\"FRONTEND_BUILD_CERTIFICATION_CHECK_REQUIRED\")\n        elif not any(isinstance(c, dict) and c.get(\"type\") == \"frontend_build\" for c in checks):\n            errors.append(\"FRONTEND_BUILD_CERTIFICATION_FRONTEND_BUILD_REQUIRED\")\n        elif any(not isinstance(c, dict) or c.get(\"type\") not in {\"frontend_build\", \"git_diff_check\", \"repository_contract_audit\"} for c in checks):\n            errors.append(\"FRONTEND_BUILD_CERTIFICATION_ONLY_ALLOWED_CHECKS\")\n    elif mode == MPRO_FULL_HISTORY_MODE:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "SQL_MIGRATION_DEVELOPMENT_MODE = \"SQL_MIGRATION_DEVELOPMENT\"\nUNIT_CODE_RE = re.compile(r\"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$\")",
+      "new": "SQL_MIGRATION_DEVELOPMENT_MODE = \"SQL_MIGRATION_DEVELOPMENT\"\nFRONTEND_BUILD_CERTIFICATION_MODE = \"FRONTEND_BUILD_CERTIFICATION\"\nUNIT_CODE_RE = re.compile(r\"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$\")",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        if mode in {READ_ONLY_MODE, \"READ_ONLY_SQL\"}:\n            current_head = git(\"rev-parse\", f\"{REMOTE}/{DEV_BRANCH}\").stdout.strip()",
+      "new": "        if mode in {READ_ONLY_MODE, \"READ_ONLY_SQL\", FRONTEND_BUILD_CERTIFICATION_MODE}:\n            current_head = git(\"rev-parse\", f\"{REMOTE}/{DEV_BRANCH}\").stdout.strip()",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "allow_empty_scope_advance=(mode in {\"READ_ONLY_SQL\", READ_ONLY_MODE})",
+      "new": "allow_empty_scope_advance=(mode in {\"READ_ONLY_SQL\", READ_ONLY_MODE, FRONTEND_BUILD_CERTIFICATION_MODE})",
+      "expected_count": 2
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "                result[\"summary_es\"] = \"El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.\"\n            else:\n                result[\"percent_complete\"] = 0\n                result[\"certification\"] = \"NOT_CERTIFIED\"\n            return 0\n\n        if mode == COMERCIAL_RANGE_RESYNC_MODE:",
+      "new": "                result[\"summary_es\"] = \"El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.\"\n            else:\n                result[\"percent_complete\"] = 0\n                result[\"certification\"] = \"NOT_CERTIFIED\"\n            return 0\n\n        if mode == FRONTEND_BUILD_CERTIFICATION_MODE:\n            if job.get(\"actions\") not in (None, []):\n                raise RuntimeError(\"FRONTEND_BUILD_CERTIFICATION_ACTIONS_FORBIDDEN\")\n            checks = job.get(\"checks\") or []\n            allowed_frontend_cert_checks = {\"frontend_build\", \"git_diff_check\", \"repository_contract_audit\"}\n            if not checks:\n                raise RuntimeError(\"FRONTEND_BUILD_CERTIFICATION_CHECK_REQUIRED\")\n            if not any(isinstance(c, dict) and c.get(\"type\") == \"frontend_build\" for c in checks):\n                raise RuntimeError(\"FRONTEND_BUILD_CERTIFICATION_FRONTEND_BUILD_REQUIRED\")\n            if any(not isinstance(c, dict) or c.get(\"type\") not in allowed_frontend_cert_checks for c in checks):\n                raise RuntimeError(\"FRONTEND_BUILD_CERTIFICATION_ONLY_ALLOWED_CHECKS\")\n            status_before = git(\"status\", \"--porcelain=v1\", \"--untracked-files=all\", cwd=ROOT).stdout\n            check_results = []\n            for check in checks:\n                check_result = run_check(ROOT, check, readonly=True)\n                check_results.append(check_result)\n                if check_result[\"status\"] != \"PASS\":\n                    result[\"blockers\"].append(f\"check_failed:{check.get('type')}\")\n                    break\n            status_after = git(\"status\", \"--porcelain=v1\", \"--untracked-files=all\", cwd=ROOT).stdout\n            if status_after != status_before:\n                result[\"blockers\"].append(\"frontend_build_certification_repo_mutation_detected\")\n            result[\"checks\"] = check_results\n            result[\"files_changed\"] = []\n            result[\"tests\"] = \"PASS\" if check_results and all(x[\"status\"] == \"PASS\" for x in check_results) else \"FAIL\"\n            result[\"quality_gate\"] = \"PASS\" if not result[\"blockers\"] else \"FAIL\"\n            result[\"work_completion\"] = \"COMPLETE\" if not result[\"blockers\"] else \"INCOMPLETE\"\n            if not result[\"blockers\"]:\n                result[\"status\"] = \"FRONTEND_BUILD_CERTIFIED\"\n                result[\"percent_complete\"] = 100\n                result[\"certification\"] = \"CERTIFIED_FRONTEND_BUILD\"\n                result[\"certification_basis\"] = \"FRONTEND_BUILD_CERTIFICATION_NON_PRODUCT_MUTATING\"\n                result[\"summary_es\"] = \"El Worker universal ejecuto frontend_build como certificacion no mutante de frontend, sin acciones de producto, sin cambios tracked/untracked del repositorio y sin tocar Produccion.\"\n            else:\n                result[\"status\"] = \"FRONTEND_BUILD_FAILED\"\n                result[\"percent_complete\"] = 0\n                result[\"certification\"] = \"NOT_CERTIFIED\"\n            return 0\n\n        if mode == COMERCIAL_RANGE_RESYNC_MODE:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/git_divergence_guard.py",
+      "old": "def requires_writer_lock(mode: str) -> bool:\n    return str(mode or \"MUTATION\") not in {\"READ_ONLY\",\"READ_ONLY_SQL\",\"SOFTRESTAURANT_FULL_HISTORY_RESYNC\",\"MPRO_FULL_HISTORY_RESYNC\",\"ISCAM_DETAIL_BACKFILL\",\"ISCAM_PAYMENTS_ONLY_RESYNC\",\"SQL_MIGRATION_DEVELOPMENT\"}",
+      "new": "def requires_writer_lock(mode: str) -> bool:\n    return str(mode or \"MUTATION\") not in {\"READ_ONLY\",\"READ_ONLY_SQL\",\"SOFTRESTAURANT_FULL_HISTORY_RESYNC\",\"MPRO_FULL_HISTORY_RESYNC\",\"ISCAM_DETAIL_BACKFILL\",\"ISCAM_PAYMENTS_ONLY_RESYNC\",\"SQL_MIGRATION_DEVELOPMENT\",\"FRONTEND_BUILD_CERTIFICATION\"}",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_frontend_build_certification_contract.py",
+      "content": "from pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[2]\nBRIDGE = ROOT / 'tools' / 'mirror_sync' / 'universal_job_bridge.py'\nDISPATCHER = ROOT / 'tools' / 'mirror_sync' / 'universal_job_dispatcher.py'\nGUARD = ROOT / 'tools' / 'mirror_sync' / 'git_divergence_guard.py'\n\n\ndef _read(path: Path) -> str:\n    return path.read_text(encoding='utf-8')\n\n\ndef test_bridge_accepts_frontend_build_certification_without_actions_required_branch():\n    text = _read(BRIDGE)\n    assert 'FRONTEND_BUILD_CERTIFICATION_MODE = \"FRONTEND_BUILD_CERTIFICATION\"' in text\n    start = text.index('elif mode == FRONTEND_BUILD_CERTIFICATION_MODE:')\n    end = text.index('elif mode == MPRO_FULL_HISTORY_MODE:', start)\n    block = text[start:end]\n    assert 'FRONTEND_BUILD_CERTIFICATION_ACTIONS_FORBIDDEN' in block\n    assert 'ACTIONS_REQUIRED' not in block\n\n\ndef test_bridge_restricts_frontend_build_certification_checks():\n    text = _read(BRIDGE)\n    assert 'FRONTEND_BUILD_CERTIFICATION_FRONTEND_BUILD_REQUIRED' in text\n    assert 'FRONTEND_BUILD_CERTIFICATION_ONLY_ALLOWED_CHECKS' in text\n    assert '{\"frontend_build\", \"git_diff_check\", \"repository_contract_audit\"}' in text\n\n\ndef test_dispatcher_runs_frontend_build_certification_without_product_actions():\n    text = _read(DISPATCHER)\n    assert 'FRONTEND_BUILD_CERTIFICATION_MODE = \"FRONTEND_BUILD_CERTIFICATION\"' in text\n    assert 'if mode == FRONTEND_BUILD_CERTIFICATION_MODE:' in text\n    assert 'FRONTEND_BUILD_CERTIFICATION_ACTIONS_FORBIDDEN' in text\n    assert 'FRONTEND_BUILD_CERTIFIED' in text\n    assert 'CERTIFIED_FRONTEND_BUILD' in text\n    assert 'frontend_build_certification_repo_mutation_detected' in text\n    assert 'result[\"files_changed\"] = []' in text\n\n\ndef test_git_guard_does_not_require_writer_lock_for_frontend_build_certification():\n    text = _read(GUARD)\n    assert 'FRONTEND_BUILD_CERTIFICATION' in text\n    assert 'requires_writer_lock' in text\n"
+    }
+  ],
+  "checks": [
+    {"type": "py_compile", "paths": ["tools/mirror_sync/universal_job_bridge.py", "tools/mirror_sync/universal_job_dispatcher.py", "tools/mirror_sync/git_divergence_guard.py", "backend/tests/test_worker_frontend_build_certification_contract.py"]},
+    {"type": "pytest", "paths": ["backend/tests/test_worker_frontend_build_certification_contract.py"]},
+    {"type": "repository_contract_audit", "request": {"paths": ["tools/mirror_sync/universal_job_bridge.py", "tools/mirror_sync/universal_job_dispatcher.py", "tools/mirror_sync/git_divergence_guard.py", "backend/tests/test_worker_frontend_build_certification_contract.py"], "search_terms": ["FRONTEND_BUILD_CERTIFICATION_MODE", "FRONTEND_BUILD_CERTIFICATION", "FRONTEND_BUILD_CERTIFIED", "CERTIFIED_FRONTEND_BUILD", "frontend_build_certification_repo_mutation_detected"], "include_patterns": ["*.py"], "exclude_patterns": ["node_modules/*", "build/*", "dist/*"], "max_results": 300}},
+    {"type": "git_diff_check", "allowed_paths": ["tools/mirror_sync/universal_job_bridge.py", "tools/mirror_sync/universal_job_dispatcher.py", "tools/mirror_sync/git_divergence_guard.py", "backend/tests/test_worker_frontend_build_certification_contract.py"], "forbidden_paths": ["frontend/src/pages/tablajeria/LotesProveedorPage.jsx", "frontend/src/App.js", "frontend/src/config/enterpriseNavigationRegistry.json", "frontend/src/config/enterpriseMenuConfig.js", "backend/server.py", "backend/modules/tablajeria/routes.py", "backend/core/scheduler/scheduler_manager.py", "backend/core/centro_control/email_notifications.py", "backend/core/centro_control/whatsapp_notifications.py"]}
+  ],
+  "expected_result": {
+    "quality_gate": "PASS",
+    "tests": "PASS",
+    "production_touched": false,
+    "files_changed_expected": ["tools/mirror_sync/universal_job_bridge.py", "tools/mirror_sync/universal_job_dispatcher.py", "tools/mirror_sync/git_divergence_guard.py", "backend/tests/test_worker_frontend_build_certification_contract.py"]
+  }
+}
