@@ -1,0 +1,20 @@
+{
+  "certification": "NOT_CERTIFIED",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-BOS-V1-PRICING-EXCEPTIONS-DOMAIN-01",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-19T07:20:16Z",
+  "reasons": [
+    "ACTION_1_INVALID_TYPE"
+  ],
+  "received_at_utc": "2026-09-06T21:00:39.771761+00:00",
+  "schema": "edarsahub.worker-rejection.v2",
+  "source": "worker_queue/inbox/CAVAS-BOS-V1-PRICING-EXCEPTIONS-DOMAIN-01.json",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "status": "REJECTED",
+  "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto.",
+  "work_completion": "NOT_CERTIFIED"
+}
