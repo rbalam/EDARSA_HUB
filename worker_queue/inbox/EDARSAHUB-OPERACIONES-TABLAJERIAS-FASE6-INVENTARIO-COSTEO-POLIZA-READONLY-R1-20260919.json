@@ -1,0 +1,76 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-FASE6-INVENTARIO-COSTEO-POLIZA-READONLY-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "72307e9171fbb80d67c05c53e7a0bc29eabb2c4e",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias"
+  },
+  "objective": "Auditar exclusivamente el estado real de Tablajerias Fase 6: movimientos inventario SALIDA_INSUMO, ENTRADA_DERIVADO, MERMA, costeo de orden, poliza/evento contable y trazabilidad contra orden/lote. Solo lectura, sin acciones, sin SQL mutation, sin Produccion, sin Scheduler, sin NetPay, sin RBAC/permisos y sin menu/layout transversal.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/tablajeria/fase6_service.py",
+          "backend/modules/tablajeria/routes.py",
+          "backend/modules/tablajeria/schemas.py",
+          "backend/modules/tablajeria/ordenes_service.py",
+          "backend/modules/tablajeria/dashboard_service.py",
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx"
+        ],
+        "search_terms": [
+          "SALIDA_INSUMO",
+          "ENTRADA_DERIVADO",
+          "MERMA",
+          "afectar_inventario",
+          "calcular_costeo",
+          "generar_poliza",
+          "procesar_cierre_fase6",
+          "costeo",
+          "poliza",
+          "movimiento inventario",
+          "trazabilidad",
+          "lote",
+          "orden",
+          "merma"
+        ],
+        "max_results": 160
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No product mutation",
+    "No SQL mutation",
+    "No Production",
+    "No Scheduler",
+    "No NetPay",
+    "No RBAC or permissions changes",
+    "No menu or transversal layout changes",
+    "Do not create or modify business tables",
+    "Do not call business endpoints",
+    "Do not use live administrative dashboards"
+  ],
+  "expected_output": {
+    "classification": "current_implementation_gap_map",
+    "must_report": [
+      "implemented_capabilities",
+      "missing_capabilities",
+      "files_and_routes_detected",
+      "risk_to_finish_100_percent",
+      "recommended_next_gate"
+    ]
+  }
+}
