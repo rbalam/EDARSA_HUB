@@ -1,0 +1,64 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE15A-PRODUCTION-PROMOTION-MANIFEST-CERT-READONLY-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "977d0e7e585c999aa45a07a755c3bb5276ae2c02",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "objective": "Gate 15A. Certificar en solo lectura el manifiesto exacto para promocionar Cavas a Produccion sin hacer merge ciego de Edarsahub_Desarrollo. Auditar divergencia Desarrollo vs Produccion, identificar exclusivamente archivos y commits de Cavas y sus dependencias necesarias, distinguir cambios ajenos, y producir evidencia para una promocion selectiva posterior. No desplegar, no modificar ramas, codigo, SQL, RBAC ni Produccion.",
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios",
+          "backend/modules/cavas_corporativas",
+          "backend/tests/test_cava_socios.py",
+          "backend/tests/test_cava_socios_gate12n_uat_controlled.py",
+          "backend/tests/test_cava_socios_gate13b_e2e_controlled.py",
+          "backend/tests/test_cava_socios_persona_link.py",
+          "backend/tests/test_cavas_corporativas_routes.py",
+          "frontend/src/pages/cava-socios",
+          "frontend/src/App.js",
+          "frontend/src/config/enterpriseMenuConfig.js",
+          "backend/database/migrations/20260909_cavas_corporativas_menu.sql",
+          "backend/database/migrations/20260910_cavas_gate12e_bos_persona_link.sql",
+          "backend/database/migrations/20260910_cavas_socios_persona_link.sql",
+          "backend/database/validation/20260910_cavas_socios_persona_link_validation.sql",
+          ".github/workflows/cavas-corporativas-menu-development-migration.yml",
+          ".github/workflows/cavas-gate12i-persona-link-development-migration.yml",
+          "docs/CAVAS"
+        ],
+        "search_terms": [
+          "cava_socios",
+          "cavas_corporativas",
+          "CavaSocios",
+          "CAVAS",
+          "persona-link",
+          "unidad_negocio_pk",
+          "CAVA_SOCIOS"
+        ],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No deployment",
+    "No branch mutation",
+    "No file mutation",
+    "No SQL DDL or DML",
+    "No Production",
+    "Do not merge Edarsahub_Desarrollo into Edarsahub_Produccion",
+    "Explicitly report that Development is far ahead and contains unrelated modules if confirmed",
+    "Promotion manifest must isolate Cavas and required dependencies only",
+    "Report blockers/dependencies exactly; do not fix them",
+    "EDARSAHUB SQL Server remains canonical source of truth"
+  ]
+}
