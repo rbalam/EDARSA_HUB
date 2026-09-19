@@ -1,0 +1,78 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R8-FRONTEND-BUILD-CAPABLE-CERT-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias-r24e"
+  },
+  "objective": "Certificar frontend_build real de la integracion R24E de Lotes Proveedor. R24E-R7 ya certifico READ_ONLY repository/contract. Este job no debe tocar backend, SQL, Produccion, scheduler, centro control, permisos globales ni publicar R24F. No debe corregir codigo ni crear mutaciones artificiales. Si el contrato del Worker no permite build-only sin actions, debe rechazarse o reportar CONTRACT_BLOCKER_BUILD_ONLY_UNSUPPORTED sin tocar producto.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "frontend_build",
+      "path": "frontend"
+    },
+    {
+      "type": "git_diff_check",
+      "allowed_paths": [],
+      "forbidden_paths": [
+        "backend/server.py",
+        "backend/modules/tablajeria/routes.py",
+        "backend/core/scheduler/scheduler_manager.py",
+        "backend/core/centro_control/email_notifications.py",
+        "backend/core/centro_control/whatsapp_notifications.py",
+        "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+        "frontend/src/App.js",
+        "frontend/src/config/enterpriseNavigationRegistry.json",
+        "frontend/src/config/enterpriseMenuConfig.js"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+          "frontend/src/App.js",
+          "frontend/src/config/enterpriseNavigationRegistry.json"
+        ],
+        "search_terms": [
+          "LotesProveedorPage",
+          "/tablajeria/lotes-proveedor",
+          "tablajeria.lotes_proveedor",
+          "/tablajeria/lotes-proveedor/rendimientos",
+          "/tablajeria/reclamos-proveedor"
+        ],
+        "include_patterns": [
+          "*.js",
+          "*.jsx",
+          "*.json"
+        ],
+        "exclude_patterns": [
+          "node_modules/*",
+          "build/*",
+          "dist/*"
+        ],
+        "max_results": 300
+      }
+    }
+  ],
+  "expected_result": {
+    "frontend_build": "PASS",
+    "quality_gate": "PASS",
+    "tests": "PASS",
+    "production_touched": false,
+    "files_changed": []
+  },
+  "fallback_contract_blocker": {
+    "if_build_only_without_actions_is_unsupported": "CONTRACT_BLOCKER_BUILD_ONLY_UNSUPPORTED",
+    "do_not_create_fake_mutations": true,
+    "do_not_touch_product": true
+  }
+}
