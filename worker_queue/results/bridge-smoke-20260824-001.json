@@ -1,0 +1,16 @@
+{
+  "certification": "NOT_CERTIFIED",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "percent_complete": 0,
+  "published_at_utc": "2026-09-19T22:33:19Z",
+  "reasons": [
+    "FORBIDDEN_OPERATION_REQUESTED"
+  ],
+  "received_at_utc": "2026-08-25T00:42:00.325182+00:00",
+  "source": "worker_queue/inbox/bridge-smoke-20260824-001.json",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "status": "REJECTED",
+  "work_completion": "NOT_CERTIFIED"
+}
