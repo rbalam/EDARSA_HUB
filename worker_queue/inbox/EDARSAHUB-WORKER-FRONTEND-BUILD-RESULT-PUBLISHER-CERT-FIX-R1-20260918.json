@@ -1,0 +1,110 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-RESULT-PUBLISHER-CERT-FIX-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias-r24e"
+  },
+  "objective": "Corregir exclusivamente el publicador de resultados del Universal Worker para que el estado FRONTEND_BUILD_CERTIFIED se publique como CERTIFIED_FRONTEND_BUILD cuando tests=PASS, quality_gate=PASS, blockers=[], files_changed=[] y production_touched=false. No tocar producto, frontend funcional, backend funcional, SQL, Produccion, Scheduler, NetPay, permisos, menu/layout ni R24F.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "old": "    if result.get(\"status\") != \"INTEGRATED\":\n        return {\n            **pending,\n            \"certification\": \"NOT_CERTIFIED\",\n            \"work_completion\": \"NOT_CERTIFIED\",\n            \"percent_complete\": min(\n                int(result.get(\"percent_complete\") or 0),\n                95,\n            ),\n        }\n\n    if str(result.get(\"tests\", \"\")).upper() != \"PASS\":",
+      "new": "    if result.get(\"status\") == \"FRONTEND_BUILD_CERTIFIED\":\n        frontend_certified = (\n            str(result.get(\"certification\") or \"\").upper() == \"CERTIFIED_FRONTEND_BUILD\"\n            and str(result.get(\"tests\", \"\")).upper() == \"PASS\"\n            and str(result.get(\"quality_gate\", \"\")).upper() == \"PASS\"\n            and not (result.get(\"blockers\") or [])\n            and result.get(\"production_touched\") is False\n            and (result.get(\"files_changed\") or []) == []\n        )\n        if frontend_certified:\n            return {\n                \"certified\": True,\n                \"certification\": \"CERTIFIED_FRONTEND_BUILD\",\n                \"work_completion\": \"COMPLETE\",\n                \"percent_complete\": 100,\n                \"certification_basis\": \"FRONTEND_BUILD_CERTIFICATION_PASS_PLUS_NON_MUTATING_RESULT\",\n            }\n        return {\n            **pending,\n            \"certification\": \"NOT_CERTIFIED\",\n            \"work_completion\": \"NOT_CERTIFIED\",\n            \"percent_complete\": min(\n                int(result.get(\"percent_complete\") or 0),\n                95,\n            ),\n        }\n\n    if result.get(\"status\") != \"INTEGRATED\":\n        return {\n            **pending,\n            \"certification\": \"NOT_CERTIFIED\",\n            \"work_completion\": \"NOT_CERTIFIED\",\n            \"percent_complete\": min(\n                int(result.get(\"percent_complete\") or 0),\n                95,\n            ),\n        }\n\n    if str(result.get(\"tests\", \"\")).upper() != \"PASS\":",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_frontend_build_result_publisher_contract.py",
+      "content": "import importlib.util\nfrom pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[2]\nPUBLISHER = ROOT / 'tools' / 'mirror_sync' / 'universal_job_result_publisher.py'\n\n\ndef _publisher_module():\n    spec = importlib.util.spec_from_file_location('universal_job_result_publisher', PUBLISHER)\n    module = importlib.util.module_from_spec(spec)\n    assert spec is not None and spec.loader is not None\n    spec.loader.exec_module(module)\n    return module\n\n\ndef test_frontend_build_certified_result_publishes_certified_frontend_build():\n    publisher = _publisher_module()\n    result = {\n        'status': 'FRONTEND_BUILD_CERTIFIED',\n        'certification': 'CERTIFIED_FRONTEND_BUILD',\n        'tests': 'PASS',\n        'quality_gate': 'PASS',\n        'blockers': [],\n        'production_touched': False,\n        'files_changed': [],\n        'percent_complete': 100,\n    }\n\n    evidence = publisher.certification_evidence(result)\n\n    assert evidence['certified'] is True\n    assert evidence['certification'] == 'CERTIFIED_FRONTEND_BUILD'\n    assert evidence['work_completion'] == 'COMPLETE'\n    assert evidence['percent_complete'] == 100\n    assert evidence['certification_basis'] == 'FRONTEND_BUILD_CERTIFICATION_PASS_PLUS_NON_MUTATING_RESULT'\n\n\ndef test_frontend_build_certified_result_requires_no_file_changes():\n    publisher = _publisher_module()\n    result = {\n        'status': 'FRONTEND_BUILD_CERTIFIED',\n        'certification': 'CERTIFIED_FRONTEND_BUILD',\n        'tests': 'PASS',\n        'quality_gate': 'PASS',\n        'blockers': [],\n        'production_touched': False,\n        'files_changed': ['frontend/src/App.js'],\n        'percent_complete': 100,\n    }\n\n    evidence = publisher.certification_evidence(result)\n\n    assert evidence['certification'] == 'NOT_CERTIFIED'\n    assert evidence['work_completion'] == 'NOT_CERTIFIED'\n    assert evidence['percent_complete'] <= 95\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "backend/tests/test_worker_frontend_build_result_publisher_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_frontend_build_result_publisher_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "backend/tests/test_worker_frontend_build_result_publisher_contract.py"
+        ],
+        "search_terms": [
+          "FRONTEND_BUILD_CERTIFIED",
+          "CERTIFIED_FRONTEND_BUILD",
+          "FRONTEND_BUILD_CERTIFICATION_PASS_PLUS_NON_MUTATING_RESULT",
+          "files_changed"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [
+          "node_modules/*",
+          "build/*",
+          "dist/*"
+        ],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "git_diff_check",
+      "allowed_paths": [
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "backend/tests/test_worker_frontend_build_result_publisher_contract.py"
+      ],
+      "forbidden_paths": [
+        "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+        "frontend/src/App.js",
+        "frontend/src/config/enterpriseNavigationRegistry.json",
+        "backend/server.py",
+        "backend/modules/tablajeria/routes.py",
+        "backend/core/scheduler/scheduler_manager.py",
+        "backend/core/centro_control/email_notifications.py",
+        "backend/core/centro_control/whatsapp_notifications.py",
+        "database/**",
+        "migrations/**",
+        "sql/**"
+      ]
+    }
+  ],
+  "expected_result": {
+    "quality_gate": "PASS",
+    "tests": "PASS",
+    "production_touched": false,
+    "files_changed_expected": [
+      "tools/mirror_sync/universal_job_result_publisher.py",
+      "backend/tests/test_worker_frontend_build_result_publisher_contract.py"
+    ]
+  },
+  "hard_guards": {
+    "no_product_mutation": true,
+    "no_frontend_product_change": true,
+    "no_backend_functional": true,
+    "no_sql": true,
+    "no_production": true,
+    "no_scheduler": true,
+    "no_netpay": true,
+    "no_permissions": true,
+    "no_menu_layout_changes": true,
+    "no_r24f": true
+  }
+}
