@@ -1,0 +1,100 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE13B-E2E-CONTROLLED-UAT-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b79d63aa1f6db8ae70d25158fd286dc37989f72d",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Ejecutar Gate13B E2E controlado de Cavas en Development usando el canario certificado Nestor Oxte / 130MID / SOC-00001. Validar Dashboard, Socios, Persona-Link, Botellas, Inventario, Consumos, Kardex, reportes PDF, aislamiento multiunidad y errores 403/404/409. Crear solo Persona y botella UAT identificables; cleanup obligatorio en finally debe eliminar cargos, movimientos, botella, Persona/Vinculos UAT y restaurar metadatos del socio al baseline. No tocar Produccion ni ampliar permisos.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_cava_socios_gate13b_e2e_controlled.py",
+      "content": "import uuid\n\nimport pytest\nfrom fastapi import HTTPException\n\nfrom core.sql_first.connection_factory import get_edarsahub_pymssql_connection\nfrom modules.cava_socios import routes\nfrom modules.cava_socios.report_service import get_cava_report_service\nfrom modules.cava_socios.service import get_cava_socios_service\n\n\nJOB_ID = \"CAVAS-GATE13B-E2E-CONTROLLED-UAT-R1-20260918\"\nSOCIO_ID = \"62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58\"\nUNIDAD_ID = \"19E076FB-C6DE-4EA5-84AB-1CAA9E86082C\"\nSECOND_AUTHORIZED_UNIT = \"23CA0B76-6580-4874-BA9B-672B122CA197\"\nUNAUTHORIZED_UNIT = \"11111111-2222-4333-8444-555555555555\"\nPUBLIC_UUID = \"A72B325B-662F-4777-83ED-4DDA6E8398A8\"\nEMAIL = \"noxte@alpyc.com\"\n\n\ndef _conn():\n    return get_edarsahub_pymssql_connection(timeout=30, login_timeout=10)\n\n\ndef _snapshot():\n    conn = _conn()\n    try:\n        cur = conn.cursor(as_dict=True)\n        cur.execute(\n            \"\"\"\n            SELECT\n                CONVERT(varchar(36), SocioID) AS SocioID,\n                CONVERT(varchar(36), EmpresaID) AS UnidadNegocioID,\n                NumeroSocio,\n                PersonaID,\n                ClienteCRMID,\n                FechaModificacion,\n                CONVERT(varchar(36), UsuarioModificacionID) AS UsuarioModificacionID\n            FROM dbo.CavaSocios_Socios\n            WHERE SocioID=%s AND EmpresaID=%s\n            \"\"\",\n            (SOCIO_ID, UNIDAD_ID),\n        )\n        socio = cur.fetchone()\n        assert socio is not None, \"GATE13B_SOCIO_CANARY_NOT_FOUND\"\n\n        counts = {}\n        for key, sql in {\n            \"botellas\": \"SELECT COUNT_BIG(*) n FROM dbo.CavaSocios_Botellas WHERE SocioID=%s AND EmpresaID=%s\",\n            \"movimientos\": \"SELECT COUNT_BIG(*) n FROM dbo.CavaSocios_Movimientos WHERE SocioID=%s AND EmpresaID=%s\",\n            \"cargos\": \"SELECT COUNT_BIG(*) n FROM dbo.CavaSocios_Cargos WHERE SocioID=%s AND EmpresaID=%s\",\n        }.items():\n            cur.execute(sql, (SOCIO_ID, UNIDAD_ID))\n            counts[key] = int(cur.fetchone()[\"n\"])\n\n        return {\"socio\": dict(socio), **counts}\n    finally:\n        conn.close()\n\n\ndef _cleanup(marker, botella_id, persona_rfc, before):\n    conn = _conn()\n    try:\n        cur = conn.cursor(as_dict=True)\n\n        if botella_id:\n            cur.execute(\n                \"DELETE FROM dbo.CavaSocios_Cargos WHERE BotellaID=%s AND EmpresaID=%s\",\n                (botella_id, UNIDAD_ID),\n            )\n            cur.execute(\n                \"DELETE FROM dbo.CavaSocios_Movimientos WHERE BotellaID=%s AND EmpresaID=%s\",\n                (botella_id, UNIDAD_ID),\n            )\n            cur.execute(\n                \"DELETE FROM dbo.CavaSocios_Botellas WHERE BotellaID=%s AND EmpresaID=%s\",\n                (botella_id, UNIDAD_ID),\n            )\n\n        cur.execute(\n            \"SELECT PersonaID FROM dbo.Gobierno_Persona WHERE RFC=%s\",\n            (persona_rfc,),\n        )\n        persona = cur.fetchone()\n        persona_id = int(persona[\"PersonaID\"]) if persona else None\n\n        if persona_id is not None:\n            cur.execute(\n                \"\"\"\n                UPDATE dbo.CavaSocios_Socios\n                   SET PersonaID=NULL\n                 WHERE SocioID=%s AND EmpresaID=%s AND PersonaID=%s\n                \"\"\",\n                (SOCIO_ID, UNIDAD_ID, persona_id),\n            )\n            cur.execute(\n                \"DELETE FROM dbo.Gobierno_PersonaVinculo WHERE PersonaID=%s\",\n                (persona_id,),\n            )\n            cur.execute(\n                \"DELETE FROM dbo.Gobierno_Persona WHERE PersonaID=%s\",\n                (persona_id,),\n            )\n\n        cur.execute(\n            \"\"\"\n            UPDATE dbo.CavaSocios_Socios\n               SET PersonaID=%s,\n                   ClienteCRMID=%s,\n                   FechaModificacion=%s,\n                   UsuarioModificacionID=%s\n             WHERE SocioID=%s AND EmpresaID=%s\n            \"\"\",\n            (\n                before[\"socio\"][\"PersonaID\"],\n                before[\"socio\"][\"ClienteCRMID\"],\n                before[\"socio\"][\"FechaModificacion\"],\n                before[\"socio\"][\"UsuarioModificacionID\"],\n                SOCIO_ID,\n                UNIDAD_ID,\n            ),\n        )\n\n        conn.commit()\n    except Exception:\n        conn.rollback()\n        raise\n    finally:\n        conn.close()\n\n\ndef _assert_no_residue(marker, persona_rfc, before):\n    after = _snapshot()\n    assert after[\"botellas\"] == before[\"botellas\"]\n    assert after[\"movimientos\"] == before[\"movimientos\"]\n    assert after[\"cargos\"] == before[\"cargos\"]\n    assert after[\"socio\"][\"PersonaID\"] == before[\"socio\"][\"PersonaID\"]\n    assert after[\"socio\"][\"ClienteCRMID\"] == before[\"socio\"][\"ClienteCRMID\"]\n\n    conn = _conn()\n    try:\n        cur = conn.cursor(as_dict=True)\n        cur.execute(\"SELECT COUNT_BIG(*) n FROM dbo.Gobierno_Persona WHERE RFC=%s\", (persona_rfc,))\n        assert int(cur.fetchone()[\"n\"]) == 0\n        cur.execute(\n            \"SELECT COUNT_BIG(*) n FROM dbo.CavaSocios_Botellas WHERE ProductoNombre=%s AND EmpresaID=%s\",\n            (marker, UNIDAD_ID),\n        )\n        assert int(cur.fetchone()[\"n\"]) == 0\n    finally:\n        conn.close()\n\n\ndef _contains_value(value, needle):\n    if isinstance(value, dict):\n        return any(_contains_value(v, needle) for v in value.values())\n    if isinstance(value, (list, tuple)):\n        return any(_contains_value(v, needle) for v in value)\n    return str(value).lower() == str(needle).lower()\n\n\n@pytest.mark.asyncio\nasync def test_gate13b_e2e_controlled_full_flow_and_cleanup():\n    before = _snapshot()\n    assert before[\"socio\"][\"PersonaID\"] is None\n    assert before[\"socio\"][\"ClienteCRMID\"] is None\n    assert before[\"socio\"][\"NumeroSocio\"] == \"SOC-00001\"\n\n    current_user = {\n        \"id\": PUBLIC_UUID,\n        \"public_uuid\": PUBLIC_UUID,\n        \"email\": EMAIL,\n    }\n\n    suffix = uuid.uuid4().hex.upper()\n    marker = f\"UAT13B-{suffix[:12]}\"\n    rfc = (\"UAT13B\" + suffix[:7])[:13]\n    curp = (\"UAT13B\" + suffix[:12])[:18]\n\n    botella_id = None\n\n    try:\n        dashboard_before = await routes.get_dashboard(\n            unidad_negocio_pk=UNIDAD_ID,\n            current_user=current_user,\n        )\n        assert \"socios\" in dashboard_before\n        assert \"botellas\" in dashboard_before\n        assert \"financiero\" in dashboard_before\n\n        socios = await routes.listar_socios(\n            unidad_negocio_pk=UNIDAD_ID,\n            estatus=\"ACTIVO\",\n            skip=0,\n            limit=100,\n            current_user=current_user,\n        )\n        assert _contains_value(socios, SOCIO_ID)\n\n        socio = await routes.obtener_socio(\n            socio_id=SOCIO_ID,\n            unidad_negocio_pk=UNIDAD_ID,\n            current_user=current_user,\n        )\n        assert socio[\"numero_socio\"] == \"SOC-00001\"\n\n        other_unit = await routes.listar_socios(\n            unidad_negocio_pk=SECOND_AUTHORIZED_UNIT,\n            estatus=None,\n            skip=0,\n            limit=100,\n            current_user=current_user,\n        )\n        assert not _contains_value(other_unit, SOCIO_ID)\n\n        with pytest.raises(HTTPException) as forbidden:\n            await routes.obtener_socio(\n                socio_id=SOCIO_ID,\n                unidad_negocio_pk=UNAUTHORIZED_UNIT,\n                current_user=current_user,\n            )\n        assert forbidden.value.status_code == 403\n\n        with pytest.raises(HTTPException) as missing:\n            await routes.obtener_socio(\n                socio_id=str(uuid.uuid4()),\n                unidad_negocio_pk=UNIDAD_ID,\n                current_user=current_user,\n            )\n        assert missing.value.status_code == 404\n\n        persona_payload = routes.PersonaCreateLinkRequest(\n            nombre=\"UAT Gate13B\",\n            apellido_paterno=\"EDARSAHUB\",\n            rfc=rfc,\n            curp=curp,\n            nacionalidad=\"MX\",\n            cliente_id=None,\n        )\n        created_persona = await routes.crear_persona_y_vincular(\n            socio_id=SOCIO_ID,\n            data=persona_payload,\n            unidad_negocio_pk=UNIDAD_ID,\n            current_user=current_user,\n        )\n        assert created_persona[\"created_persona\"] is True\n        persona_id = int(created_persona[\"persona_id\"])\n\n        linked = await routes.obtener_persona_link(\n            socio_id=SOCIO_ID,\n            unidad_negocio_pk=UNIDAD_ID,\n            current_user=current_user,\n        )\n        assert int(linked[\"persona_id\"]) == persona_id\n\n        with pytest.raises(HTTPException) as conflict:\n            await routes.crear_persona_y_vincular(\n                socio_id=SOCIO_ID,\n                data=routes.PersonaCreateLinkRequest(\n                    nombre=\"UAT Gate13B Duplicate\",\n                    apellido_paterno=\"EDARSAHUB\",\n                    rfc=(\"U13BD\" + suffix[:8])[:13],\n                    curp=(\"U13BD\" + suffix[:13])[:18],\n                    nacionalidad=\"MX\",\n                    cliente_id=None,\n                ),\n                unidad_negocio_pk=UNIDAD_ID,\n                current_user=current_user,\n            )\n        assert conflict.value.status_code == 409\n\n        bottle = await routes.registrar_botella(\n            socio_id=SOCIO_ID,\n            data=routes.BotellaCreate(\n                producto_nombre=marker,\n                producto_codigo=marker,\n                marca=\"EDARSAHUB-UAT\",\n                tipo_bebida=\"VINO_TINTO\",\n                añada=\"2026\",\n                capacidad=1.0,\n                nivel_actual=100.0,\n                ubicacion=\"UAT13B\",\n                valor_declarado=999.99,\n                observaciones=JOB_ID,\n            ),\n            unidad_negocio_pk=UNIDAD_ID,\n            current_user=current_user,\n        )\n        botella_id = str(bottle[\"botella_id\"])\n        assert botella_id\n\n        inventario = await routes.obtener_inventario(\n            ubicacion=None,\n            tipo_bebida=None,\n            estatus=None,\n            socio_id=SOCIO_ID,\n            skip=0,\n            limit=100,\n            unidad_negocio_pk=UNIDAD_ID,\n            current_user=current_user,\n        )\n        assert _contains_value(inventario, botella_id)\n        assert _contains_value(inventario, marker)\n\n        hoja = await routes.obtener_hoja_inventario_fisico(\n            ubicacion=None,\n            socio_id=SOCIO_ID,\n            unidad_negocio_pk=UNIDAD_ID,\n            current_user=current_user,\n        )\n        assert _contains_value(hoja, botella_id)\n\n        consumo = await routes.registrar_consumo(\n            botella_id=botella_id,\n            data=routes.ConsumoCreate(\n                porcentaje_consumido=25.0,\n                motivo=JOB_ID,\n                generar_cargo_descorche=True,\n                monto_descorche=123.45,\n                observaciones=marker,\n            ),\n            unidad_negocio_pk=UNIDAD_ID,\n            current_user=current_user,\n        )\n        assert float(consumo[\"nivel_anterior\"]) == 100.0\n        assert float(consumo[\"nivel_nuevo\"]) == 75.0\n        assert consumo[\"tipo_movimiento\"] == \"CONSUMO_PARCIAL\"\n        assert consumo[\"cargo_id\"] is not None\n\n        kardex = await routes.obtener_kardex(\n            socio_id=SOCIO_ID,\n            botella_id=botella_id,\n            fecha_inicio=None,\n            fecha_fin=None,\n            tipo_movimiento=None,\n            skip=0,\n            limit=100,\n            unidad_negocio_pk=UNIDAD_ID,\n            current_user=current_user,\n        )\n        assert _contains_value(kardex, botella_id)\n        assert _contains_value(kardex, \"CONSUMO_PARCIAL\")\n\n        consumos = await routes.obtener_consumos(\n            socio_id=SOCIO_ID,\n            skip=0,\n            limit=100,\n            unidad_negocio_pk=UNIDAD_ID,\n            current_user=current_user,\n        )\n        assert _contains_value(consumos, botella_id)\n        assert _contains_value(consumos, marker)\n\n        dashboard_after = await routes.get_dashboard(\n            unidad_negocio_pk=UNIDAD_ID,\n            current_user=current_user,\n        )\n        assert int(dashboard_after[\"botellas\"][\"total\"]) >= int(dashboard_before[\"botellas\"][\"total\"]) + 1\n        assert int(dashboard_after[\"financiero\"][\"cargos_pendientes\"]) >= int(dashboard_before[\"financiero\"][\"cargos_pendientes\"]) + 1\n\n        service = get_cava_socios_service()\n        report_service = get_cava_report_service()\n        socio_report = service.obtener_socio(SOCIO_ID, UNIDAD_ID)\n        movimientos_report = service.obtener_movimientos_socio(SOCIO_ID, UNIDAD_ID)\n        cargos_report = service.obtener_cargos_socio(SOCIO_ID, UNIDAD_ID)\n\n        ficha_pdf = report_service.generar_ficha_socio(socio_report)\n        consumos_pdf = report_service.generar_historial_consumos(socio_report, movimientos_report)\n        estado_pdf = report_service.generar_estado_cuenta(socio_report, cargos_report)\n\n        for pdf in (ficha_pdf, consumos_pdf, estado_pdf):\n            assert isinstance(pdf, (bytes, bytearray))\n            assert bytes(pdf).startswith(b\"%PDF\")\n            assert len(pdf) > 500\n\n        unlinked = await routes.desvincular_persona(\n            socio_id=SOCIO_ID,\n            unidad_negocio_pk=UNIDAD_ID,\n            current_user=current_user,\n        )\n        assert int(unlinked[\"persona_id_anterior\"]) == persona_id\n        assert unlinked[\"canonical_records_deleted\"] is False\n\n        final_link = await routes.obtener_persona_link(\n            socio_id=SOCIO_ID,\n            unidad_negocio_pk=UNIDAD_ID,\n            current_user=current_user,\n        )\n        assert final_link[\"persona_id\"] is None\n\n    finally:\n        _cleanup(marker, botella_id, rfc, before)\n\n    _assert_no_residue(marker, rfc, before)\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/tests/test_cava_socios_gate13b_e2e_controlled.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios_gate13b_e2e_controlled.py"
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate13b_post_candidate",
+          "sql": "SELECT CONVERT(varchar(36),SocioID) AS SocioID,CONVERT(varchar(36),EmpresaID) AS UnidadNegocioID,NumeroSocio,PersonaID,ClienteCRMID FROM dbo.CavaSocios_Socios WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        },
+        {
+          "name": "gate13b_post_residual_personas",
+          "sql": "SELECT COUNT_BIG(*) AS n FROM dbo.Gobierno_Persona WHERE RFC LIKE N'UAT13B%';"
+        },
+        {
+          "name": "gate13b_post_residual_bottles",
+          "sql": "SELECT COUNT_BIG(*) AS n FROM dbo.CavaSocios_Botellas WHERE ProductoNombre LIKE N'UAT13B-%';"
+        },
+        {
+          "name": "gate13b_post_fk",
+          "sql": "SELECT OBJECT_NAME(parent_object_id) AS child_table,name,is_disabled,is_not_trusted FROM sys.foreign_keys WHERE parent_object_id IN (OBJECT_ID(N'dbo.CavaSocios_Socios'),OBJECT_ID(N'dbo.CavaSocios_Botellas'),OBJECT_ID(N'dbo.CavaSocios_Cargos'),OBJECT_ID(N'dbo.CavaSocios_Movimientos')) ORDER BY child_table,name;"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/tests/test_cava_socios_gate13b_e2e_controlled.py",
+          "backend/modules/cava_socios/routes.py",
+          "backend/modules/cava_socios/service.py",
+          "backend/modules/cava_socios/persona_link_service.py",
+          "backend/modules/cava_socios/report_service.py",
+          "frontend/src/pages/cava-socios"
+        ],
+        "search_terms": [
+          "CAVA_SOCIOS_VER",
+          "CAVA_SOCIOS_CREAR",
+          "CAVA_SOCIOS_EDITAR",
+          "_resolve_cava_scope",
+          "PersonaLink",
+          "registrar_botella",
+          "registrar_consumo",
+          "obtener_inventario",
+          "obtener_kardex",
+          "obtener_consumos",
+          "generar_ficha_socio",
+          "generar_historial_consumos",
+          "generar_estado_cuenta"
+        ],
+        "max_results": 300
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "Development only",
+    "Exactly one controlled E2E UAT",
+    "Use only Nestor Oxte / 130MID / SOC-00001 as functional canary",
+    "No mocks or monkeypatches for SQL, RBAC, scope, Persona-Link or Cava services",
+    "No Production",
+    "No DDL",
+    "No global RBAC permission role user menu company or unit changes",
+    "Cleanup mandatory in finally",
+    "Delete only UAT-created Persona, PersonaVinculo, bottle, movement and cargo rows",
+    "Restore SOC-00001 PersonaID, ClienteCRMID, FechaModificacion and UsuarioModificacionID to baseline",
+    "Fail closed on any 403/404/409 expectation mismatch or residual row",
+    "EDARSAHUB SQL Server remains source of truth",
+    "MongoDB prohibited"
+  ]
+}
