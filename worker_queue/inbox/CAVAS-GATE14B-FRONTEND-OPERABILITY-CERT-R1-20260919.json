@@ -1,0 +1,65 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE14B-FRONTEND-OPERABILITY-CERT-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "fa5dbad1714a332603c53d2c056a783384d0ef61",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar sin desarrollo el frontend existente de Cavas en Development mediante el modo canonico FRONTEND_BUILD_CERTIFICATION. Validar build real y wiring/operabilidad de Dashboard, Socios, Detalle, Persona-Link, Inventario, Consumos, multiunidad, estados loading/error/empty, acciones visibles y rutas. No agregar funciones ni modificar codigo. Esta certificacion es de build y contrato UI existente; no simular evidencia de navegador que el Worker no soporta.",
+  "mode": "FRONTEND_BUILD_CERTIFICATION",
+  "actions": [],
+  "checks": [
+    {
+      "type": "frontend_build"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/cava-socios",
+          "frontend/src/App.js",
+          "frontend/src/config/enterpriseMenuConfig.js",
+          "frontend/src/services/authStorage.js",
+          "backend/modules/cava_socios/routes.py"
+        ],
+        "search_terms": [
+          "CavaSociosDashboard",
+          "SociosList",
+          "SocioDetail",
+          "SocioForm",
+          "PersonaLinkCard",
+          "InventarioCava",
+          "ConsumosCava",
+          "unidad_negocio_pk",
+          "loading",
+          "error",
+          "empty",
+          "disabled",
+          "persona-link",
+          "/consumos",
+          "/inventario",
+          "/kardex",
+          "/dashboard",
+          "sessionStorage"
+        ],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "Certification only; do not add features",
+    "No product actions",
+    "No file mutations",
+    "No SQL mutations",
+    "No Production",
+    "No RBAC role permission user menu company or unit mutations",
+    "Use only canonical frontend build certification capability",
+    "Do not invent browser or Playwright evidence",
+    "Report source/build blockers exactly; do not fix them in this job",
+    "EDARSAHUB remains source of truth"
+  ]
+}
