@@ -1,4 +1,5 @@
 name: Worker Wake Endpoint Bootstrap
+# Retrigger 2026-09-19T09:25Z: restore missing public wake endpoint for existing Cavas Gate16A pickup; no new job.
 # Retrigger 2026-09-19T02:57-06:00: resilient marker for missing wake router mount recovery.
 # Retrigger 2026-09-18T21:16-06:00: restore missing wake router mount for existing Cavas certification pickup.
 # Manual retrigger 2026-09-18T20:05-06:00: restore missing /api/internal/worker/wake mount after R24E-R8 worktree cleanup.
