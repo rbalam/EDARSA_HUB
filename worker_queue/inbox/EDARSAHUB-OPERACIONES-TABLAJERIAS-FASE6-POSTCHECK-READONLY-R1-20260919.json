@@ -1,0 +1,68 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-FASE6-POSTCHECK-READONLY-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b8193f31daadc7d61a0032d38988de4e16d87976",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias"
+  },
+  "objective": "Certificar postcheck READ_ONLY de Fase 6 despues de R1B: validar compilacion, prueba aislada, contrato de idempotencia/balance/MERMA y ausencia de cambios adicionales. No tocar SQL, Produccion, Scheduler, NetPay, RBAC/permisos, menu ni layout.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/tablajeria/fase6_service.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_tablajeria_fase6_service_unit.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/tablajeria/fase6_service.py",
+          "backend/tests/test_tablajeria_fase6_service_unit.py"
+        ],
+        "search_terms": [
+          "_fetch_existing_inventory_movements",
+          "_fetch_existing_costeo",
+          "_fetch_existing_poliza",
+          "_validar_balance_asientos",
+          "idempotente",
+          "MERMA",
+          "SALIDA_MERMA",
+          "MovimientoInventarioGenerado",
+          "DEBE_HABER_DESCUADRADO",
+          "costo_merma_dec"
+        ],
+        "max_results": 80
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No SQL mutation",
+    "No Production",
+    "No Scheduler",
+    "No NetPay",
+    "No RBAC or permissions changes",
+    "No menu or transversal layout changes",
+    "Do not call business endpoints",
+    "Do not use live administrative dashboards"
+  ]
+}
