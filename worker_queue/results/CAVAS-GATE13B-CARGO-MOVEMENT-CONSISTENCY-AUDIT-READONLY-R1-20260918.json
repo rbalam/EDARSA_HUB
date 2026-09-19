@@ -1,0 +1,349 @@
+{
+  "base_sha": "bb4a5333055b54c3a8f7075f853d0adae9902b37",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-19T06:09:40Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE13B-CARGO-MOVEMENT-CONSISTENCY-AUDIT-READONLY-R1-20260918",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-19T06:09:54Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.connection_factory",
+              "datetime",
+              "logging",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "_crear_cargo",
+              "montocargo",
+              "obtener_kardex",
+              "obtener_movimientos_socio",
+              "registrar_consumo"
+            ],
+            "path": "backend/modules/cava_socios/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CavaSociosService",
+              "_crear_cargo",
+              "_generar_numero_socio",
+              "_get_connection",
+              "actualizar_socio",
+              "aplicar_ajustes_inventario_fisico",
+              "crear_socio",
+              "get_cava_socios_service",
+              "listar_clientes_canonicos",
+              "listar_socios",
+              "obtener_cargos_socio",
+              "obtener_dashboard",
+              "obtener_etiqueta_botella",
+              "obtener_historial_consumos_global",
+              "obtener_hoja_inventario_fisico",
+              "obtener_inventario_global",
+              "obtener_kardex",
+              "obtener_movimientos_socio",
+              "obtener_socio",
+              "promover_cliente_canonico",
+              "registrar_botella",
+              "registrar_consumo",
+              "registrar_inventario_inicial",
+              "sincronizar_clientes_canonicos"
+            ],
+            "tables_referenced": [
+              "CavaSocios_Socios",
+              "Cliente_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "os",
+              "pymssql"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cargoconceptoid",
+              "generocargo",
+              "montocargo"
+            ],
+            "path": "backend/scripts/create_cava_socios_tables.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "create_tables",
+              "get_connection"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 3,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "column_name",
+              "data_type",
+              "max_length",
+              "precision",
+              "scale",
+              "is_nullable",
+              "default_definition"
+            ],
+            "name": "cargo_movement_column_definition",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "MovimientoID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                false,
+                "(newid())"
+              ],
+              [
+                "TipoMovimiento",
+                "varchar",
+                30,
+                0,
+                0,
+                false,
+                null
+              ],
+              [
+                "GeneroCargo",
+                "bit",
+                1,
+                1,
+                0,
+                true,
+                "((0))"
+              ],
+              [
+                "MontoCargo",
+                "decimal",
+                9,
+                18,
+                2,
+                true,
+                "((0))"
+              ],
+              [
+                "CargoConceptoID",
+                "uniqueidentifier",
+                16,
+                0,
+                0,
+                true,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "MovimientoID",
+              "EmpresaID",
+              "SocioID",
+              "BotellaID",
+              "TipoMovimiento",
+              "GeneroCargo",
+              "MontoCargo",
+              "CargoConceptoID",
+              "MotivoMovimiento",
+              "FechaMovimiento"
+            ],
+            "name": "cargo_movement_existing_values",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "B670F6E7-B0ED-4EBC-8D08-DAE57BE7AFB8",
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58",
+                "3F4A7823-5EFD-4711-B7A0-B44CBBD9DB82",
+                "ENTRADA",
+                false,
+                "0.00",
+                null,
+                "Ingreso de botella a cava",
+                "2026-05-24 04:11:12.7033333"
+              ],
+              [
+                "59B30335-F619-4F60-94F2-0920F22CB72F",
+                "D290F1EE-6C54-4B01-90E6-D701748F0851",
+                "2C08DC5C-D050-4377-8D92-E31E6F5F53B9",
+                "6821E7F4-C3C7-4027-88FB-9369BC56A3F4",
+                "CONSUMO_PARCIAL",
+                false,
+                "0.00",
+                null,
+                "Cena de negocios",
+                "2026-05-24 03:47:19.6066667"
+              ],
+              [
+                "FE7D13CB-65CA-4192-B1A3-7D6797B4D90E",
+                "D290F1EE-6C54-4B01-90E6-D701748F0851",
+                "2C08DC5C-D050-4377-8D92-E31E6F5F53B9",
+                "6821E7F4-C3C7-4027-88FB-9369BC56A3F4",
+                "ENTRADA",
+                false,
+                "0.00",
+                null,
+                "Ingreso de botella a cava",
+                "2026-05-24 03:47:11.1766667"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "TipoMovimiento",
+              "movimientos",
+              "con_genero_cargo",
+              "con_monto_cargo",
+              "con_cargo_relacionado"
+            ],
+            "name": "cargo_movement_consumption_summary",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "CONSUMO_PARCIAL",
+                "1",
+                0,
+                0,
+                1
+              ],
+              [
+                "ENTRADA",
+                "2",
+                0,
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "MovimientoID",
+              "TipoMovimiento",
+              "GeneroCargo",
+              "MontoCargo",
+              "CargoID",
+              "TipoCargo",
+              "CargoMonto",
+              "Impuesto",
+              "Total",
+              "EstatusCargo",
+              "FechaMovimiento"
+            ],
+            "name": "cargo_movement_consumption_detail",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "59B30335-F619-4F60-94F2-0920F22CB72F",
+                "CONSUMO_PARCIAL",
+                false,
+                "0.00",
+                "C5170D37-0A76-4AE3-B082-175EB9CEABD2",
+                "SERVICIO_DESCORCHE",
+                "400.00",
+                "64.00",
+                "464.00",
+                "PENDIENTE",
+                "2026-05-24 03:47:19.6066667"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "inconsistent_rows"
+            ],
+            "name": "cargo_movement_inconsistencies",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "1"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "MovimientoID",
+              "TipoMovimiento",
+              "GeneroCargo",
+              "MontoCargo",
+              "CargoID",
+              "CargoMonto",
+              "CargoTotal",
+              "FechaMovimiento"
+            ],
+            "name": "cargo_movement_inconsistency_detail",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "59B30335-F619-4F60-94F2-0920F22CB72F",
+                "CONSUMO_PARCIAL",
+                false,
+                "0.00",
+                "C5170D37-0A76-4AE3-B082-175EB9CEABD2",
+                "400.00",
+                "464.00",
+                "2026-05-24 03:47:19.6066667"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-19T06:09:39Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
