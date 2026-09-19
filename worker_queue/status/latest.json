@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "0e4761c223f83c8e96ab80f2f2f3002c891f8557",
-  "generated_at_utc": "2026-09-19T00:29:52Z",
+  "generated_at_utc": "2026-09-19T00:31:15Z",
   "history": {
     "done_total_local": 697,
     "pending_total_local": 2,
@@ -9,90 +9,90 @@
     "rejected_total_local": 646,
     "results_total_local": 1192
   },
-  "intake_sla_breached": true,
+  "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1841,
+      "age_seconds": 1925,
       "job_id": "000-EDARSAHUB-SERVIDORES-HEALTH-TIMEOUT-R12B-20260918",
       "reason": "El worker no termino esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 1938,
+      "age_seconds": 2022,
       "job_id": "EDARSAHUB-WORKER-ISCAM-BACKFILL-SUMMARY-R92-CARLOS-20260919T000500Z",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 135,
+      "age_seconds": 218,
       "job_id": "EDARSAHUB-WORKER-ISCAM-BACKFILL-SUMMARY-R92B-CARLOS-20260919T001000Z",
-      "reason": null,
-      "state": "PENDING"
+      "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
+      "state": "BLOCKED"
     },
     {
-      "age_seconds": 2081,
+      "age_seconds": 2164,
       "job_id": "000-000-000-EDARSAHUB-WORKER-PREFERRED-TRIGGER-FIX-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3442,
+      "age_seconds": 3525,
       "job_id": "EDARSAHUB-ISCAM-HIST-R90-130MID-202301-CARLOS-20260918T233000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3258,
+      "age_seconds": 3341,
       "job_id": "EDARSAHUB-ISCAM-HIST-R91-130MID-202609-CARLOS-20260918T233500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3146,
+      "age_seconds": 3229,
       "job_id": "EDARSAHUB-ISCAM-HIST-R91A-130MID-202609-DIAG-CARLOS-20260918T234000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3001,
+      "age_seconds": 3084,
       "job_id": "EDARSAHUB-ISCAM-HIST-R91B-130MID-20260911-CARLOS-20260918T234500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2890,
+      "age_seconds": 2973,
       "job_id": "EDARSAHUB-ISCAM-HIST-R91C-130MID-20260911-RCA-CARLOS-20260918T235000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2754,
+      "age_seconds": 2837,
       "job_id": "EDARSAHUB-ISCAM-HIST-R91D-130MID-20260911-DRYRUN-CARLOS-20260918T235500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2351,
+      "age_seconds": 2434,
       "job_id": "EDARSAHUB-ISCAM-HIST-R91E-BACKFILL-PREFLIGHT-RCA-CARLOS-20260918T235900Z",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "oldest_pending_age_seconds": 135,
+  "oldest_pending_age_seconds": 0,
   "production_touched": false,
-  "queue_blocked": 2,
+  "queue_blocked": 3,
   "queue_depth": 3,
   "queue_done_local_recent": 0,
-  "queue_pending": 1,
+  "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 8,
   "queue_running": 0,
   "runtime": {
     "current_job_id": "000-EDARSAHUB-SERVIDORES-HEALTH-TIMEOUT-R12B-20260918",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-19T00:29:43Z",
-    "last_receive_utc": "2026-09-19T00:29:50Z",
+    "last_cycle_utc": "2026-09-19T00:31:11Z",
+    "last_receive_utc": "2026-09-19T00:31:13Z",
     "last_terminal_utc": "2026-09-18T23:55:11Z",
     "pid": "688"
   },
