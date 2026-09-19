@@ -1,0 +1,107 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12N-SCOPE-UUID-NORMALIZATION-FIX-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9d274fa69c3eb16f6b63ebf5436a7783fdcb5949",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Aplicar fix quirurgico de normalizacion UUID en _resolve_cava_scope de Cavas para que UnidadNegocioID autorizado se compare canonicamente sin sensibilidad a mayusculas/minusculas ni tipo uuid.UUID vs string. Mantener fail-closed para unidades no autorizadas. No tocar RBAC global, SQL, permisos, usuarios, roles, empresas, menus ni Produccion.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/cava_socios/routes.py",
+      "old": "from typing import Dict, List, Optional, Any\nfrom fastapi.responses import StreamingResponse\nimport io\nimport logging\n",
+      "new": "from typing import Dict, List, Optional, Any\nfrom fastapi.responses import StreamingResponse\nfrom uuid import UUID\nimport io\nimport logging\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/cava_socios/routes.py",
+      "old": "    active_unit = str(context.get(\"unidad_activa\") or \"\").strip()\n    allowed_units = context.get(\"unidades_permitidas\") or []\n    selected = next(\n        (\n            unit for unit in allowed_units\n            if str(unit.get(\"UnidadNegocioID\") or \"\").strip() == active_unit\n        ),\n        None,\n    )\n\n    if not selected:\n        raise HTTPException(status_code=403, detail=\"Unidad de negocio no autorizada\")\n\n    # CavaSocios_*.EmpresaID es UNIQUEIDENTIFIER y representa el\n    # UnidadNegocioID autorizado. No mezclarlo con EmpresaID INT corporativo.\n    return {\"empresa_id\": active_unit, \"unidad_negocio_pk\": active_unit}\n",
+      "new": "    active_unit_raw = context.get(\"unidad_activa\")\n    try:\n        active_unit = str(UUID(str(active_unit_raw).strip()))\n    except (ValueError, TypeError, AttributeError):\n        raise HTTPException(status_code=403, detail=\"Unidad de negocio no autorizada\")\n\n    allowed_units = context.get(\"unidades_permitidas\") or []\n    selected = None\n    for unit in allowed_units:\n        try:\n            allowed_unit = str(UUID(str(unit.get(\"UnidadNegocioID\") or \"\").strip()))\n        except (ValueError, TypeError, AttributeError):\n            continue\n        if allowed_unit == active_unit:\n            selected = unit\n            break\n\n    if not selected:\n        raise HTTPException(status_code=403, detail=\"Unidad de negocio no autorizada\")\n\n    # CavaSocios_*.EmpresaID es UNIQUEIDENTIFIER y representa el\n    # UnidadNegocioID autorizado. No mezclarlo con EmpresaID INT corporativo.\n    return {\"empresa_id\": active_unit, \"unidad_negocio_pk\": active_unit}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_cava_socios.py",
+      "old": "import pytest\nfrom unittest.mock import MagicMock, patch\nfrom fastapi import HTTPException\n",
+      "new": "import pytest\nfrom uuid import UUID\nfrom unittest.mock import MagicMock, patch\nfrom fastapi import HTTPException\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_cava_socios.py",
+      "old": "        scope = _resolve_cava_scope(mock_user, \"UNIT-01\")\n        assert scope[\"empresa_id\"] == \"UNIT-01\"\n        assert scope[\"unidad_negocio_pk\"] == \"UNIT-01\"\n",
+      "new": "        with pytest.raises(HTTPException) as exc_info:\n            _resolve_cava_scope(mock_user, \"UNIT-01\")\n        assert exc_info.value.status_code == 403\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_cava_socios.py",
+      "old": "        scope = _resolve_cava_scope(mock_user, \"UNIT-01\")\n        assert scope[\"empresa_id\"] == \"UNIT-01\"\n        assert scope[\"unidad_negocio_pk\"] == \"UNIT-01\"\n\n\nclass TestCavaSociosService:\n",
+      "new": "        with pytest.raises(HTTPException) as exc_info:\n            _resolve_cava_scope(mock_user, \"UNIT-01\")\n        assert exc_info.value.status_code == 403\n\n    @pytest.mark.unit\n    @patch(\"modules.cava_socios.routes.context_service.get_user_context\")\n    @patch(\"modules.cava_socios.routes.enrich_current_user_with_sql_id\")\n    def test_resolve_cava_scope_normalizes_uuid_case(self, mock_enrich, mock_get_context):\n        mock_user = {\"id\": \"user-123\"}\n        mock_enrich.return_value = mock_user\n        mock_get_context.return_value = {\n            \"unidad_activa\": \"19E076FB-C6DE-4EA5-84AB-1CAA9E86082C\",\n            \"unidades_permitidas\": [\n                {\"UnidadNegocioID\": \"19e076fb-c6de-4ea5-84ab-1caa9e86082c\", \"EmpresaID\": None}\n            ],\n        }\n\n        scope = _resolve_cava_scope(mock_user, \"19E076FB-C6DE-4EA5-84AB-1CAA9E86082C\")\n        assert scope[\"empresa_id\"] == \"19e076fb-c6de-4ea5-84ab-1caa9e86082c\"\n        assert scope[\"unidad_negocio_pk\"] == \"19e076fb-c6de-4ea5-84ab-1caa9e86082c\"\n\n    @pytest.mark.unit\n    @patch(\"modules.cava_socios.routes.context_service.get_user_context\")\n    @patch(\"modules.cava_socios.routes.enrich_current_user_with_sql_id\")\n    def test_resolve_cava_scope_accepts_uuid_object(self, mock_enrich, mock_get_context):\n        mock_user = {\"id\": \"user-123\"}\n        mock_enrich.return_value = mock_user\n        unit_id = UUID(\"19E076FB-C6DE-4EA5-84AB-1CAA9E86082C\")\n        mock_get_context.return_value = {\n            \"unidad_activa\": unit_id,\n            \"unidades_permitidas\": [\n                {\"UnidadNegocioID\": unit_id, \"EmpresaID\": None}\n            ],\n        }\n\n        scope = _resolve_cava_scope(mock_user, str(unit_id).upper())\n        assert scope[\"empresa_id\"] == str(unit_id)\n        assert scope[\"unidad_negocio_pk\"] == str(unit_id)\n\n\nclass TestCavaSociosService:\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/cava_socios/routes.py",
+        "backend/tests/test_cava_socios.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios.py",
+        "backend/tests/test_cava_socios_persona_link.py"
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "scope_uuid_fix_baseline_candidate",
+          "sql": "SELECT CONVERT(varchar(36),SocioID) AS SocioID,CONVERT(varchar(36),EmpresaID) AS UnidadNegocioID,PersonaID,ClienteCRMID FROM dbo.CavaSocios_Socios WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        },
+        {
+          "name": "scope_uuid_fix_baseline_counts",
+          "sql": "SELECT (SELECT COUNT_BIG(*) FROM dbo.Gobierno_Persona) AS total_personas,(SELECT COUNT_BIG(*) FROM dbo.Gobierno_PersonaVinculo) AS total_vinculos,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Socios WHERE PersonaID IS NOT NULL) AS socios_vinculados;"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/routes.py",
+          "backend/tests/test_cava_socios.py"
+        ],
+        "search_terms": [
+          "_resolve_cava_scope",
+          "UUID",
+          "UnidadNegocioID",
+          "EmpresaID"
+        ],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "Modify only backend/modules/cava_socios/routes.py and backend/tests/test_cava_socios.py",
+    "Do not modify RBACContextService",
+    "Do not modify Usuario_RolesContexto",
+    "Do not modify Sistema_Empresas",
+    "Do not change permissions roles users menus companies or units",
+    "No DDL or SQL mutations",
+    "No Production",
+    "Unauthorized or invalid unit must remain fail-closed with HTTP 403",
+    "Cava scope must continue using UnidadNegocioID UUID, never corporate EmpresaID INT"
+  ]
+}
