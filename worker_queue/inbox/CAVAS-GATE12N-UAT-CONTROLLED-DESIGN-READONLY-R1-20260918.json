@@ -1,0 +1,102 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12N-UAT-CONTROLLED-DESIGN-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "22d5613dc13ac471603b33eba863fb18cb616224",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Disenar, sin ejecutar, la UAT controlada de Gate12N para el flujo Persona-Link usando exclusivamente el candidato ya certificado: usuario Nestor Oxte / noxte@alpyc.com, UnidadNegocioID 19E076FB-C6DE-4EA5-84AB-1CAA9E86082C (130MID), Empresa corporativa int 5 solo como metadata, SocioID 62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58 (SOC-00001, Carlos Alberto Mendoza), PersonaID NULL. La salida debe certificar el plan ejecutable por pasos con PRECHECK, ACCION_UAT, ASSERTS, ROLLBACK_CLEANUP y POSTCHECK. No ejecutar ninguna mutacion ni UAT en este job.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/cava-socios/PersonaLinkCard.jsx",
+          "frontend/src/pages/cava-socios/SocioDetail.jsx",
+          "frontend/src/pages/cava-socios/SociosList.jsx",
+          "backend/modules/cava_socios/routes.py",
+          "backend/modules/cava_socios/persona_link_service.py",
+          "backend/modules/cava_socios/service.py",
+          "backend/modules/rbac_context_sql/context_service.py",
+          "backend/core/rbac/middleware.py",
+          "backend/tests/test_cava_socios_persona_link.py",
+          "backend/tests/test_cava_socios_persona_link_gate12m_canary.py"
+        ],
+        "search_terms": [
+          "Identidad BOS",
+          "Vincular existente",
+          "Crear Persona",
+          "Desvincular membresía",
+          "/personas-canonicas",
+          "/persona-link",
+          "/persona-link/crear-persona",
+          "CAVA_SOCIOS_VER",
+          "CAVA_SOCIOS_EDITAR",
+          "unidad_negocio_pk",
+          "PersonaID",
+          "canonical_records_deleted",
+          "commit",
+          "rollback"
+        ],
+        "include_patterns": [
+          "*.jsx",
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "uat_precheck_candidate_exact",
+          "sql": "SELECT CONVERT(varchar(36),SocioID) AS SocioID,CONVERT(varchar(36),EmpresaID) AS UnidadNegocioID,NumeroSocio,NombreCompleto,Estatus,Activo,PersonaID,ClienteCRMID FROM dbo.CavaSocios_Socios WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        },
+        {
+          "name": "uat_precheck_user_context",
+          "sql": "SELECT TOP (20) u.UsuarioID,CONVERT(varchar(36),u.PublicUUID) AS PublicUUID,u.Email,u.NombreCompleto,CONVERT(varchar(36),urc.UnidadNegocioID) AS UnidadNegocioID,urc.EmpresaID,urc.RolID FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesContexto urc ON urc.UsuarioID=u.UsuarioID AND urc.Activo=1 WHERE u.Activo=1 AND u.Email=N'noxte@alpyc.com' AND urc.UnidadNegocioID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        },
+        {
+          "name": "uat_precheck_permissions",
+          "sql": "SELECT m.CodigoModulo,a.CodigoAccion,prm.Permitido,prm.Activo FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesContexto urc ON urc.UsuarioID=u.UsuarioID AND urc.Activo=1 INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID=urc.RolID INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID WHERE u.Email=N'noxte@alpyc.com' AND urc.UnidadNegocioID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C') AND LOWER(LTRIM(RTRIM(m.CodigoModulo)))=N'cava_socios' AND UPPER(LTRIM(RTRIM(a.CodigoAccion))) IN (N'VER',N'EDITAR') AND prm.Permitido=1 AND prm.Activo=1;"
+        },
+        {
+          "name": "uat_precheck_persona_counts",
+          "sql": "SELECT (SELECT COUNT_BIG(*) FROM dbo.Gobierno_Persona) AS total_personas,(SELECT COUNT_BIG(*) FROM dbo.Gobierno_PersonaVinculo) AS total_vinculos,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Socios WHERE PersonaID IS NOT NULL) AS socios_vinculados;"
+        },
+        {
+          "name": "uat_precheck_fk_integrity",
+          "sql": "SELECT fk.name,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk WHERE fk.parent_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND fk.name=N'FK_CavaSocios_Socios_GobiernoPersona';"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "Gate12J remains closed",
+    "Gate12K remains closed",
+    "Gate12L remains closed",
+    "Gate12M remains closed and certified",
+    "READ_ONLY only",
+    "Development only",
+    "Design only; do not execute UAT",
+    "Use only the certified candidate user/unit/socio",
+    "No DDL or DML",
+    "No create Persona",
+    "No link or unlink Socio",
+    "No permission menu role user unit or company changes",
+    "No Production",
+    "UAT design must include explicit PRECHECK ACTION_UAT ASSERTS ROLLBACK_CLEANUP POSTCHECK",
+    "Rollback must remove only UAT-created canonical records and restore Socio PersonaID to NULL",
+    "No Cliente link during UAT unless separately certified later",
+    "No automatic matching",
+    "SocioID remains membership identity",
+    "ClienteCRMID remains unchanged",
+    "CavaSocios_Socios.EmpresaID is UnidadNegocioID UUID; Sistema_Empresas.EmpresaID INT is metadata only",
+    "EDARSAHUB SQL Server remains source of truth",
+    "MongoDB prohibited"
+  ]
+}
