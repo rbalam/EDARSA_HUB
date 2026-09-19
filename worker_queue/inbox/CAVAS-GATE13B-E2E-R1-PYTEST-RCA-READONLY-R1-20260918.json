@@ -1,0 +1,65 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE13B-E2E-R1-PYTEST-RCA-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "0164efda77363c025d1184300f8a13986e3ab4d8",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "RCA READ_ONLY del pytest fallido en Gate13B E2E R1. Inspeccionar el test publicado y los contratos/rutas/servicios reales para identificar la primera incompatibilidad determinista probable, sin ejecutar mutaciones SQL ni repetir la UAT. Confirmar especialmente firmas de rutas, formas de respuesta, filtros multiunidad y reportes.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/cava_socios/routes.py",
+        "backend/modules/cava_socios/service.py",
+        "backend/modules/cava_socios/persona_link_service.py",
+        "backend/modules/cava_socios/report_service.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/routes.py",
+          "backend/modules/cava_socios/service.py",
+          "backend/modules/cava_socios/persona_link_service.py",
+          "backend/modules/cava_socios/report_service.py"
+        ],
+        "search_terms": [
+          "def listar_socios",
+          "def obtener_socio",
+          "def crear_persona_y_vincular",
+          "def registrar_botella",
+          "def registrar_consumo",
+          "def obtener_inventario",
+          "def obtener_hoja_inventario_fisico",
+          "def obtener_kardex",
+          "def obtener_consumos",
+          "def generar_ficha_socio",
+          "def generar_historial_consumos",
+          "def generar_estado_cuenta",
+          "SocioID",
+          "botella_id",
+          "movimientos",
+          "cargos_pendientes"
+        ],
+        "max_results": 300
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "Do not rerun Gate13B UAT",
+    "No SQL DML or DDL",
+    "No source file mutations",
+    "No Production",
+    "No RBAC changes",
+    "Use repository evidence only to isolate the failing assertion/contract"
+  ]
+}
