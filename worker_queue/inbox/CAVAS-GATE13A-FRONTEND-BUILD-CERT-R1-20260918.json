@@ -1,0 +1,50 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE13A-FRONTEND-BUILD-CERT-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b79d63aa1f6db8ae70d25158fd286dc37989f72d",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar build frontend de Cavas y presencia de superficies/rutas relacionadas sin mutar codigo ni datos. Esta certificacion complementa Gate13A R2 y no habilita Gate13B por si sola.",
+  "mode": "FRONTEND_BUILD_CERTIFICATION",
+  "actions": [],
+  "checks": [
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/cava-socios",
+          "frontend/src/App.js",
+          "frontend/src/config/enterpriseMenuConfig.js"
+        ],
+        "search_terms": [
+          "cava-socios",
+          "SociosList",
+          "SocioDetail",
+          "SocioForm",
+          "InventarioCava",
+          "ConsumosCava",
+          "PersonaLinkCard",
+          "CavaNavHeader"
+        ],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No source code mutations",
+    "No SQL DDL or DML",
+    "No RBAC permission user role menu company or unit changes",
+    "EDARSAHUB SQL Server remains source of truth",
+    "Gate13B remains blocked until both Gate13A components pass"
+  ]
+}
