@@ -1,0 +1,7 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Re-wake same pending job EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R9-FRONTEND-BUILD-CERTIFICATION-R2-20260918. Worker is online with queue_pending=1 and current_job_id=null. Do not create another R24E job. Do not touch Production, SQL, Scheduler, NetPay, permissions, menu/layout, or R24F.",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R9-FRONTEND-BUILD-CERTIFICATION-R2-20260918",
+  "queue_sha": "50435c30a035cee59cc0d4a1ad01f1d9de9e8879",
+  "production_touched": false
+}

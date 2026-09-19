@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Retry canonical runtime recovery for existing RRHH-CUSTODIA-GATE3-MINIMAL-DDL-DESIGN-R4 after Development integrated fix(worker): use canonical git guard for runtime fast-forward (dd9f45f4d027d501c1cd8b10b9d529780cde8bf5). Require runtime_convergence ALIGNED or FF_APPLIED, preserve local work, fail closed on unsafe state, consume existing R4 only, and do not touch Production.",
+  "existing_job_id": "RRHH-CUSTODIA-GATE3-MINIMAL-DDL-DESIGN-R4",
+  "production_touched": false
+}

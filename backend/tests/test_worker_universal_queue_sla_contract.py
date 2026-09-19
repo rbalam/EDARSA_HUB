@@ -9,8 +9,9 @@ HEALTH = ROOT / 'tools/mirror_sync/runtime_health_publisher.py'
 
 def test_inbox_is_history_and_results_deduplicate_jobs():
     text = BRIDGE.read_text(encoding='utf-8')
-    assert '(PENDING, PROCESSING, DONE, REJECTED, RESULTS)' in text
+    assert 'for folder in (PENDING, PROCESSING, DONE, RESULTS)' in text
     assert 'worker_queue/inbox is immutable audit history' in text
+    assert 'REJECTED is evaluated' in text
 
 
 def test_dispatcher_tracks_runtime_and_only_releases_created_claims():

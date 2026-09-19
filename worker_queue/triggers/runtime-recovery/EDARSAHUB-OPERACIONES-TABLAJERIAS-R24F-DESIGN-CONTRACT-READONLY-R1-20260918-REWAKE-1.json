@@ -1,0 +1,7 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Re-wake same R24F READ_ONLY / DESIGN-CONTRACT job after endpoint bootstrap verification. Do not create another R24F job. Do not implement R24F. Do not touch SQL, Production, Scheduler, NetPay, RBAC/permissions, or menu/layout transversal.",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-DESIGN-CONTRACT-READONLY-R1-20260918",
+  "queue_sha": "c468b7932d467aec8cdb832f6398b709ed81cdb9",
+  "production_touched": false
+}

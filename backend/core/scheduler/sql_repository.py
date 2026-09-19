@@ -315,6 +315,20 @@ async def get_inventarios_pendientes_reintento(max_intentos: int = 3, limit: int
     return await _execute_sql_async(query, params)
 
 
+async def get_inventario_error_by_id(record_id: int) -> Optional[Dict]:
+    """Obtiene un único registro ERROR por ID para recuperación administrativa controlada."""
+    query = """
+        SELECT
+            ID, SistemaOrigen, ServerID, SucursalID, AlmacenID, FolioInventario,
+            Estado, Intentos, FechaDeteccion, FechaUltimoIntento, ErrorMensaje, DetallesJSON
+        FROM Scheduler_InventariosProcesados
+        WHERE ID = %s
+          AND Estado = 'ERROR'
+    """
+    rows = await _execute_sql_async(query, (record_id,))
+    return rows[0] if rows else None
+
+
 # =============================================================================
 # PEDIDOS PROCESADOS
 # =============================================================================

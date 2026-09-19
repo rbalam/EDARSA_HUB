@@ -22,6 +22,7 @@ from typing import Any
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
 STATE = ROOT / ".git" / "universal-worker-queue"
 RESULTS = STATE / "results"
+REJECTED = STATE / "rejected"
 PUBLISHED = STATE / "published"
 QUEUE_BRANCH = os.environ.get("EDARSAHUB_QUEUE_BRANCH", "worker/requests")
 RESULT_BRANCH = os.environ.get(
@@ -171,6 +172,52 @@ def sanitize_readonly_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
     return {"checks": sanitized_checks} if sanitized_checks else None
 
 
+def sanitize_repository_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
+    sanitized_checks = []
+    allowed_entry_keys = ("path", "matched_terms", "candidate_ownership", "symbols", "imports", "routes", "tables_referenced", "helpers", "connections", "rbac_contracts", "scheduler_contracts", "integrations")
+    for check in result.get("checks") or []:
+        if not isinstance(check, dict) or check.get("type") != "repository_contract_audit":
+            continue
+        payload = check.get("repository_evidence")
+        if not isinstance(payload, dict):
+            continue
+        if payload.get("status") != "PASS":
+            continue
+        entries = []
+        for entry in payload.get("evidence") or []:
+            if not isinstance(entry, dict):
+                continue
+            entries.append({key: entry.get(key) for key in allowed_entry_keys if key in entry})
+        sanitized_checks.append({
+            "status": "PASS",
+            "mode": "READ_ONLY_REPOSITORY",
+            "summary": payload.get("summary"),
+            "truncated": bool(payload.get("truncated")),
+            "evidence": entries,
+        })
+    return {"checks": sanitized_checks} if sanitized_checks else None
+
+
+GENERIC_READ_ONLY_CHECKS = frozenset({"py_compile", "pytest", "git_diff_check"})
+
+
+def generic_readonly_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
+    checks = result.get("checks") or []
+    if not isinstance(checks, list) or not checks:
+        return None
+    sanitized = []
+    for check in checks:
+        if not isinstance(check, dict):
+            return None
+        kind = str(check.get("type") or "")
+        if kind not in GENERIC_READ_ONLY_CHECKS:
+            return None
+        if str(check.get("status") or "").upper() != "PASS":
+            return None
+        sanitized.append({"type": kind, "status": "PASS"})
+    return {"checks": sanitized}
+
+
 def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
     source_sha = result.get("development_sha")
 
@@ -183,19 +230,29 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
 
     if result.get("status") == "READ_ONLY_COMPLETE":
         readonly_evidence = sanitize_readonly_evidence(result)
-        if (
+        repository_evidence = sanitize_repository_evidence(result)
+        generic_evidence = generic_readonly_evidence(result)
+        base_pass = (
             str(result.get("tests", "")).upper() == "PASS"
             and str(result.get("quality_gate", "")).upper() == "PASS"
             and result.get("production_touched") is False
             and not (result.get("blockers") or [])
-            and readonly_evidence is not None
-        ):
+        )
+        if base_pass and (readonly_evidence is not None or repository_evidence is not None):
             return {
                 "certified": True,
                 "certification": "CERTIFIED_READ_ONLY",
                 "work_completion": "COMPLETE",
                 "percent_complete": 100,
-                "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+                "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE" if readonly_evidence is not None else "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+            }
+        if base_pass and generic_evidence is not None and (result.get("files_changed") or []) == []:
+            return {
+                "certified": True,
+                "certification": "CERTIFIED_READ_ONLY",
+                "work_completion": "COMPLETE",
+                "percent_complete": 100,
+                "certification_basis": "GENERIC_READ_ONLY_NON_MUTATING_CHECKS_PASS",
             }
         return {
             **pending,
@@ -225,6 +282,33 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
             "certification": "NOT_CERTIFIED",
             "work_completion": "NOT_CERTIFIED",
             "percent_complete": min(int(result.get("percent_complete") or 0), 95),
+        }
+
+    if result.get("status") == "FRONTEND_BUILD_CERTIFIED":
+        frontend_certified = (
+            str(result.get("certification") or "").upper() == "CERTIFIED_FRONTEND_BUILD"
+            and str(result.get("tests", "")).upper() == "PASS"
+            and str(result.get("quality_gate", "")).upper() == "PASS"
+            and not (result.get("blockers") or [])
+            and result.get("production_touched") is False
+            and (result.get("files_changed") or []) == []
+        )
+        if frontend_certified:
+            return {
+                "certified": True,
+                "certification": "CERTIFIED_FRONTEND_BUILD",
+                "work_completion": "COMPLETE",
+                "percent_complete": 100,
+                "certification_basis": "FRONTEND_BUILD_CERTIFICATION_PASS_PLUS_NON_MUTATING_RESULT",
+            }
+        return {
+            **pending,
+            "certification": "NOT_CERTIFIED",
+            "work_completion": "NOT_CERTIFIED",
+            "percent_complete": min(
+                int(result.get("percent_complete") or 0),
+                95,
+            ),
         }
 
     if result.get("status") != "INTEGRATED":
@@ -341,7 +425,7 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
         "quality_gate", "files_changed", "summary_es", "blockers",
         "percent_complete", "certification", "production_touched",
         "operation", "dry_run", "units", "canonical_sql_mutation",
-        "operation_summary",
+        "operation_summary", "reasons", "received_at_utc", "source",
     )
     public = {key: result.get(key) for key in allowed if key in result}
     public["published_at_utc"] = now()
@@ -352,6 +436,9 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
     readonly_evidence = sanitize_readonly_evidence(result)
     if readonly_evidence is not None:
         public["sql_readonly_evidence"] = readonly_evidence
+    repository_evidence = sanitize_repository_evidence(result)
+    if repository_evidence is not None:
+        public["repository_contract_evidence"] = repository_evidence
 
     evidence = certification_evidence(result)
 
@@ -532,7 +619,7 @@ def marker_satisfied(marker: Path, public: dict[str, Any]) -> bool:
     # Todo resultado ya publicado es terminal para el publisher, salvo
     # promociones desde evidencia previa no certificada a una certificacion
     # terminal valida del mismo contrato.
-    if desired not in {"CERTIFIED", "CERTIFIED_OPERATIONAL"}:
+    if desired not in {"CERTIFIED", "CERTIFIED_OPERATIONAL", "CERTIFIED_READ_ONLY"}:
         return True
 
     return f"certification={desired}" in marker_text
@@ -784,8 +871,20 @@ def publish_one(path: Path) -> bool:
         f"{last_error or 'UNKNOWN'}"
     )
 
+def publishable_paths() -> list[Path]:
+    """Return terminal artifacts with recent dispatcher results taking precedence."""
+    by_name = {path.name: path for path in REJECTED.glob("*.json")}
+    by_name.update({path.name: path for path in RESULTS.glob("*.json")})
+    return sorted(
+        by_name.values(),
+        key=lambda path: (path.stat().st_mtime_ns, path.name),
+        reverse=True,
+    )
+
+
 def main() -> int:
     RESULTS.mkdir(parents=True, exist_ok=True)
+    REJECTED.mkdir(parents=True, exist_ok=True)
     PUBLISH_LOCK.parent.mkdir(parents=True, exist_ok=True)
 
     with PUBLISH_LOCK.open("a+", encoding="utf-8") as lock_handle:
@@ -805,7 +904,7 @@ def main() -> int:
                 f"{RESULT_BATCH_SIZE}"
             )
 
-        for path in sorted(RESULTS.glob("*.json")):
+        for path in publishable_paths():
             marker = PUBLISHED / path.name
 
             # Un resultado ya certificado es terminal.

@@ -1,0 +1,7 @@
+{
+  "schema": "edarsahub.worker-runtime-recovery-trigger.v1",
+  "existing_job_id": "CAVAS-GATE12N-SCOPE-FIX-IMPLEMENTATION-R2-20260918",
+  "reason": "Preferred wake for Cavas Gate 12N Scope Fix Implementation R2 after verified publication on worker/requests.",
+  "production_allowed": false,
+  "queue_sha": "1eec8409009b81d6ccdac2e792c6c1e5850a3123"
+}

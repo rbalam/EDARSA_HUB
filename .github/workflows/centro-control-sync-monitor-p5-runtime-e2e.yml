@@ -1,0 +1,79 @@
+name: Centro Control Sync Monitor P5 Runtime Secure E2E
+
+on:
+  push:
+    branches: [Edarsahub_Desarrollo]
+    paths:
+      - ops/e2e/requests/CENTRO-CONTROL-SYNC-MONITOR-P5-RUNTIME-SECURE-R1.execute
+      - .github/workflows/centro-control-sync-monitor-p5-runtime-e2e.yml
+
+permissions:
+  contents: read
+
+jobs:
+  p5-runtime-e2e:
+    runs-on: ubuntu-latest
+    environment: development
+    timeout-minutes: 20
+    env:
+      P5_RUNTIME_ENV: development
+      P5_SECRET_PROFILE: P5_E2E_SUPERADMIN
+      TEST_BASE_URL: ${{ vars.TEST_BASE_URL }}
+      TEST_SUPERADMIN_EMAIL: ${{ secrets.TEST_SUPERADMIN_EMAIL }}
+      TEST_SUPERADMIN_PASSWORD: ${{ secrets.TEST_SUPERADMIN_PASSWORD }}
+      P5_EVIDENCE_FILE: .tmp/p5/evidence.json
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Validate secure profile reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(tr -d '\r\n ' < ops/e2e/requests/CENTRO-CONTROL-SYNC-MONITOR-P5-RUNTIME-SECURE-R1.execute)" = "P5_E2E_SUPERADMIN"
+          test "$P5_SECRET_PROFILE" = "P5_E2E_SUPERADMIN"
+          test "$P5_RUNTIME_ENV" = "development"
+          test -n "$TEST_BASE_URL"
+          test -n "$TEST_SUPERADMIN_EMAIL"
+          test -n "$TEST_SUPERADMIN_PASSWORD"
+
+      - name: Install minimal E2E dependencies
+        run: python -m pip install --disable-pip-version-check pytest requests
+
+      - name: Run authenticated runtime E2E
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$(dirname "$P5_EVIDENCE_FILE")"
+          python -m pytest -q backend/tests/test_control_sync_p5_runtime_secure_e2e.py
+
+      - name: Validate sanitized evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "$P5_EVIDENCE_FILE"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          p = Path(os.environ['P5_EVIDENCE_FILE'])
+          data = json.loads(p.read_text(encoding='utf-8'))
+          forbidden = ('authorization', 'bearer ', 'password', 'token', 'secret')
+          text = json.dumps(data, ensure_ascii=False).lower()
+          hits = [item for item in forbidden if item in text]
+          if hits:
+              raise SystemExit('UNSAFE_EVIDENCE_FIELDS:' + ','.join(hits))
+          print('P5_EVIDENCE_SANITIZED=YES')
+          print('production_touched=false')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: centro-control-sync-monitor-p5-${{ github.run_id }}
+          path: .tmp/p5/evidence.json
+          if-no-files-found: error
+          retention-days: 30

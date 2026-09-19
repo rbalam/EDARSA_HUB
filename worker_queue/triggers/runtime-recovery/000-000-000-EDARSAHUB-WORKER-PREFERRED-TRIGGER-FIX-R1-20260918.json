@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker for protocol fix 000-000-000-EDARSAHUB-WORKER-PREFERRED-TRIGGER-FIX-R1-20260918. Apply fetch-depth 2 so preferred job detection can resolve existing_job_id. Do not touch Production.",
+  "existing_job_id": "000-000-000-EDARSAHUB-WORKER-PREFERRED-TRIGGER-FIX-R1-20260918",
+  "production_touched": false
+}

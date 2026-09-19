@@ -1536,14 +1536,36 @@ async def _ejecutar_dry_run(
                 'iva': float(d.get('iva') or 0),
             })
         
-        detalle_producto = _ejecutar_backfill_detalle_iscam(
-            unidad_negocio_id, fecha_inicio, fecha_fin, commit=False
+        # El item de catalogo 'Ventas Cerradas (KPIs)' valida primero el header KPI.
+        # El detalle ISCAM es una etapa auxiliar: si falla no debe falsear que el
+        # servidor origen estuvo OFFLINE ni convertir un header valido en fallo.
+        try:
+            detalle_producto = _ejecutar_backfill_detalle_iscam(
+                unidad_negocio_id, fecha_inicio, fecha_fin, commit=False
+            )
+        except Exception as detalle_exc:
+            detalle_producto = {
+                'success': False,
+                'modo': 'DRY_RUN',
+                'error_message': f'Fallo en validacion auxiliar DETALLE_ISCAM: {detalle_exc}',
+            }
+
+        detalle_success = bool(detalle_producto.get('success'))
+        detalle_warning = (
+            None
+            if detalle_success
+            else detalle_producto.get('error_message')
+            or 'HEADER_KPI validado; DETALLE_ISCAM requiere revision.'
         )
 
         return {
-            'success': bool(detalle_producto.get('success')),
+            'success': True,
             'modo': 'DRY_RUN',
-            'mensaje': ('Simulación completada - NO se modificaron datos' if detalle_producto.get('success') else 'Header validado, pero el detalle ISCAM tiene días que no concilian'),
+            'stage': 'HEADER_KPI',
+            'header_success': True,
+            'detail_success': detalle_success,
+            'warning_message': detalle_warning,
+            'mensaje': 'Simulación de Ventas Cerradas (KPIs) completada - NO se modificaron datos',
             'records_processed': len(detalle),
             'registros_que_se_sincronizarian': len(detalle),
             'registros_extraidos': len(detalle),
@@ -1641,17 +1663,38 @@ async def _ejecutar_sync_real(
                 run_id=sync_run_id
             )
         
-        detalle_producto = (
-            _ejecutar_backfill_detalle_iscam(
-                unidad_negocio_id, fecha_inicio, fecha_fin, commit=True
-            )
-            if resultado.success
-            else {'success': False, 'modo': 'NO_EJECUTADO', 'error_message': 'Header no exitoso'}
+        if resultado.success:
+            try:
+                detalle_producto = _ejecutar_backfill_detalle_iscam(
+                    unidad_negocio_id, fecha_inicio, fecha_fin, commit=True
+                )
+            except Exception as detalle_exc:
+                detalle_producto = {
+                    'success': False,
+                    'modo': 'REAL',
+                    'error_message': f'HEADER_KPI sincronizado; fallo auxiliar DETALLE_ISCAM: {detalle_exc}',
+                }
+        else:
+            detalle_producto = {
+                'success': False,
+                'modo': 'NO_EJECUTADO',
+                'error_message': 'DETALLE_ISCAM no ejecutado porque HEADER_KPI no fue exitoso',
+            }
+
+        detalle_success = bool(detalle_producto.get('success'))
+        detalle_warning = (
+            None
+            if not resultado.success or detalle_success
+            else detalle_producto.get('error_message')
+            or 'HEADER_KPI sincronizado; DETALLE_ISCAM requiere revision.'
         )
-        success_total = bool(resultado.success and detalle_producto.get('success'))
 
         return {
-            'success': success_total,
+            'success': bool(resultado.success),
+            'stage': 'HEADER_KPI' if resultado.success else 'HEADER_KPI_FAILED',
+            'header_success': bool(resultado.success),
+            'detail_success': detalle_success,
+            'warning_message': detalle_warning,
             'records_processed': resultado.records_processed,
             'records_inserted': resultado.records_inserted,
             'records_updated': resultado.records_updated,
@@ -1659,7 +1702,7 @@ async def _ejecutar_sync_real(
             'records_errored': resultado.records_errored,
             'duration_seconds': resultado.duration_seconds,
             'detalle_producto': detalle_producto,
-            'error_message': resultado.error_message or detalle_producto.get('error_message')
+            'error_message': resultado.error_message
         }
         
     except Exception as e:

@@ -529,8 +529,13 @@ const Servidores = () => {
     }));
     
     try {
-      // Usar endpoint que obtiene api_key internamente y no requiere permisos estrictos
-      const response = await api.post(`/api-connections/${apiConn.id}/test-connectivity`);
+      // El backend de test-connectivity puede esperar hasta 30s. Este request usa
+      // un margen propio para no heredar el timeout global de 15s y marcar falsos Error.
+      const response = await api.post(
+        `/api-connections/${apiConn.id}/test-connectivity`,
+        {},
+        { timeout: 40000 }
+      );
       
       if (response.data.success) {
         if (response.data.sql_connected) {

@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker to consume PRIORITY v2 job 000-EDARSAHUB-SERVIDORES-CIERRE-INTEGRAL-R12-20260918. This job supersedes R11A and must close SERVIDORES end-to-end with SQL read-only audit, repository contract audit, frontend build and git diff check. Do not touch Production.",
+  "existing_job_id": "000-EDARSAHUB-SERVIDORES-CIERRE-INTEGRAL-R12-20260918",
+  "production_touched": false
+}

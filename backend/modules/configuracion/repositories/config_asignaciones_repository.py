@@ -394,31 +394,45 @@ class ConfigAsignacionesRepository:
     # =========================================================================
     
     async def listar_almacenes(self, unidad_negocio_pk: str) -> List[Dict]:
+        """Lista almacenes canonicos de una unidad desde EDARSAHUB SQL."""
+        resultado = [{"id": "", "nombre": "(Todos los almacenes)", "source": "EDARSAHUB_SQL"}]
+        query = """
+            WITH inventarios_unidad AS (
+                SELECT DISTINCT
+                    LTRIM(RTRIM(almacen_id)) AS almacen_id,
+                    UPPER(LTRIM(RTRIM(almacen))) AS almacen
+                FROM dbo.Compras_Inventarios_Fisicos_Sync
+                WHERE unidad_negocio_id = %s
+                  AND sync_status IN ('ACTIVE', 'REPLACED')
+                  AND NULLIF(LTRIM(RTRIM(almacen_id)), '') IS NOT NULL
+            ), candidatos AS (
+                SELECT a.SucursalID, COUNT_BIG(*) AS coincidencias
+                FROM dbo.Inventario_Almacenes a
+                INNER JOIN inventarios_unidad i
+                    ON LTRIM(RTRIM(a.CodigoAlmacen)) = i.almacen_id
+                   AND UPPER(LTRIM(RTRIM(a.NombreAlmacen))) = i.almacen
+                GROUP BY a.SucursalID
+            ), sucursal_canonica AS (
+                SELECT TOP (1) SucursalID
+                FROM candidatos
+                ORDER BY coincidencias DESC, SucursalID
+            )
+            SELECT
+                LTRIM(RTRIM(a.CodigoAlmacen)) AS id,
+                LTRIM(RTRIM(a.CodigoAlmacen)) AS almacen_id,
+                LTRIM(RTRIM(a.NombreAlmacen)) AS nombre,
+                LTRIM(RTRIM(a.NombreAlmacen)) AS almacen,
+                a.TipoAlmacen AS tipo_almacen,
+                'EDARSAHUB_SQL' AS source
+            FROM dbo.Inventario_Almacenes a
+            INNER JOIN sucursal_canonica s ON s.SucursalID = a.SucursalID
+            WHERE a.Activo = 1
+            ORDER BY a.NombreAlmacen, a.CodigoAlmacen
         """
-        Lista almacenes disponibles para una unidad de negocio.
-        Retorna opción "(Todos)" + almacenes del servidor.
-        """
-        resultado = [{"id": "", "nombre": "(Todos los almacenes)"}]
-        
-        # Intentar obtener almacenes desde SQL Server (tablas del servidor)
         try:
-            # Buscar el server_id asociado a la unidad
-            server_query = """
-                SELECT CAST(id AS VARCHAR(50)) as id, host, db_name
-                FROM Servidores_Conexiones
-                WHERE activo = 1 AND (
-                    CAST(id AS VARCHAR(50)) = %s OR nombre = %s
-                )
-            """
-            servers = await _execute_sql_async(server_query, (unidad_negocio_pk, unidad_negocio_pk))
-            
-            if servers:
-                # Por ahora retornar lista vacía de almacenes específicos
-                # La implementación completa requeriría consultar al servidor remoto
-                pass
+            resultado.extend(await _execute_sql_async(query, (unidad_negocio_pk,)))
         except Exception as e:
-            logger.debug(f"Error listando almacenes: {e}")
-        
+            logger.error(f"[CONFIG_ASIG] Error listando almacenes canonicos: {e}")
         return resultado
     
     async def sincronizar_almacenes_unidad(

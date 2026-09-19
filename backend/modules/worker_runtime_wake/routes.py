@@ -11,8 +11,11 @@ Security contract:
 from __future__ import annotations
 
 import fcntl
+import json
+import os
 import re
 import subprocess
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,45 +29,60 @@ REPO_ROOT = Path("/app")
 RUNTIME_DIR = REPO_ROOT / ".git" / "universal-worker-queue" / "runtime"
 LAST_RECEIVE = RUNTIME_DIR / "last_receive_utc"
 QUEUE_REF = "refs/heads/worker/requests"
+CANONICAL_QUEUE_REMOTE = "https://github.com/rbalam/EDARSA_HUB.git"
 DEV_BRANCH = "Edarsahub_Desarrollo"
 WORKER_SERVICE = "edarsahub-universal-worker"
 LOCK_PATH = Path("/tmp/edarsahub-universal-worker-wake.lock")
 COOLDOWN_PATH = Path("/tmp/edarsahub-universal-worker-wake.last")
+PREFERRED_JOB_PATH = RUNTIME_DIR / "preferred_job.json"
+PREFERRED_JOB_TTL_SECONDS = 300
+_JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 WORKER_TREE_STATE = RUNTIME_DIR / "active_worker_code_tree_sha"
 WORKER_CODE_TREE_SPEC = "HEAD:tools/mirror_sync"
-WAKE_ROUTE_VERSION = "r30-code-aware"
+GIT_GUARD_PATH = REPO_ROOT / "tools" / "mirror_sync" / "git_divergence_guard.py"
+WAKE_ROUTE_VERSION = "r33-canonical-ff-refresh"
+# Runtime reload marker 2026-09-19T09:15Z: restore mounted wake endpoint in Development preview.
 _SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 
 
 def _remote_queue_sha() -> str:
-    try:
-        completed = subprocess.run(
-            ["git", "ls-remote", "origin", QUEUE_REF],
-            cwd=str(REPO_ROOT),
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=15,
-            env={"GIT_TERMINAL_PROMPT": "0"},
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="worker queue head unavailable",
-        ) from exc
+    last_error: Exception | None = None
+    attempts: list[str] = []
+    for label, remote in (("origin", "origin"), ("canonical", CANONICAL_QUEUE_REMOTE)):
+        try:
+            completed = subprocess.run(
+                ["git", "ls-remote", remote, QUEUE_REF],
+                cwd=str(REPO_ROOT),
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=15,
+                env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+            )
+        except subprocess.TimeoutExpired as exc:
+            last_error = exc
+            attempts.append(f"{label}=timeout")
+            continue
+        except OSError as exc:
+            last_error = exc
+            attempts.append(f"{label}=oserror")
+            continue
 
-    fields = completed.stdout.strip().split()
-    if (
-        completed.returncode != 0
-        or len(fields) < 2
-        or fields[1] != QUEUE_REF
-        or not _SHA_RE.fullmatch(fields[0])
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="worker queue head invalid",
-        )
-    return fields[0].lower()
+        fields = completed.stdout.strip().split()
+        if (
+            completed.returncode == 0
+            and len(fields) >= 2
+            and fields[1] == QUEUE_REF
+            and _SHA_RE.fullmatch(fields[0])
+        ):
+            return fields[0].lower()
+        attempts.append(f"{label}=rc{completed.returncode}")
+
+    diagnostic = ",".join(attempts) if attempts else "no-attempt"
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail=f"worker queue head unavailable [{diagnostic}]",
+    ) from last_error
 
 
 def _runtime_git(*args: str, timeout: int = 30) -> subprocess.CompletedProcess[str]:
@@ -76,7 +94,7 @@ def _runtime_git(*args: str, timeout: int = 30) -> subprocess.CompletedProcess[s
             capture_output=True,
             text=True,
             timeout=timeout,
-            env={"GIT_TERMINAL_PROMPT": "0"},
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
         )
     except (OSError, subprocess.SubprocessError) as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker runtime git unavailable") from exc
@@ -102,12 +120,57 @@ def _converge_development_if_safe() -> dict[str, str]:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker runtime worktree status unavailable")
     if dirty.stdout.strip():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="worker runtime convergence blocked: local worktree dirty")
-    ff = _runtime_git("merge", "--ff-only", f"origin/{DEV_BRANCH}", timeout=120)
-    if ff.returncode != 0:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker runtime fast-forward failed")
+    if not GIT_GUARD_PATH.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="worker runtime canonical git guard unavailable",
+        )
+    try:
+        refresh = subprocess.run(
+            [
+                sys.executable,
+                str(GIT_GUARD_PATH),
+                "refresh",
+                "--repo",
+                str(REPO_ROOT),
+                "--expected-remote",
+                remote,
+                "--job-id",
+                f"worker-runtime-wake-{os.getpid()}",
+                "--owner",
+                "worker-runtime-wake",
+                "--owner-pid",
+                str(os.getpid()),
+            ],
+            cwd=str(REPO_ROOT),
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="worker runtime canonical fast-forward unavailable",
+        ) from exc
+    if refresh.returncode != 0:
+        detail = "canonical refresh failed"
+        try:
+            payload = json.loads((refresh.stdout or "").strip() or "{}")
+            detail = str(payload.get("status") or detail)
+        except (TypeError, ValueError):
+            pass
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"worker runtime canonical fast-forward failed [{detail}]",
+        )
     new_head = _runtime_git("rev-parse", "HEAD").stdout.strip().lower()
     if new_head != remote:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker runtime fast-forward verification failed")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="worker runtime fast-forward verification failed",
+        )
     return {"state": "FF_APPLIED", "local_sha": local, "remote_sha": remote, "new_sha": new_head}
 
 
@@ -120,7 +183,7 @@ def _current_worker_code_tree() -> str:
             capture_output=True,
             text=True,
             timeout=10,
-            env={"GIT_TERMINAL_PROMPT": "0"},
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
         )
     except (OSError, subprocess.SubprocessError) as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="worker code tree unavailable") from exc
@@ -149,6 +212,36 @@ def _heartbeat_age_seconds() -> float | None:
         return None
 
 
+def _active_job_id() -> str | None:
+    try:
+        value = (RUNTIME_DIR / "current_job_id").read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    return value or None
+
+
+def _register_preferred_job(job_id: str, queue_sha: str) -> str | None:
+    value = (job_id or "").strip()
+    if not value:
+        return None
+    if not _JOB_ID_RE.fullmatch(value):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="invalid preferred worker job id",
+        )
+    RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "job_id": value,
+        "queue_sha": queue_sha,
+        "registered_at_utc": datetime.now(timezone.utc).isoformat(),
+        "expires_at_epoch": time.time() + PREFERRED_JOB_TTL_SECONDS,
+    }
+    temporary = PREFERRED_JOB_PATH.with_suffix(".tmp")
+    temporary.write_text(json.dumps(payload, ensure_ascii=False) + "\n", encoding="utf-8")
+    os.replace(temporary, PREFERRED_JOB_PATH)
+    return value
+
+
 def _restart_worker() -> None:
     try:
         completed = subprocess.run(
@@ -175,6 +268,7 @@ def _restart_worker() -> None:
 @router.post("/internal/worker/wake", status_code=status.HTTP_202_ACCEPTED)
 def wake_worker(
     x_worker_queue_sha: str | None = Header(default=None, alias="X-Worker-Queue-Sha"),
+    x_worker_preferred_job_id: str | None = Header(default=None, alias="X-Worker-Preferred-Job-Id"),
 ):
     supplied = (x_worker_queue_sha or "").strip()
     if not _SHA_RE.fullmatch(supplied):
@@ -190,8 +284,23 @@ def wake_worker(
             detail="stale worker queue proof",
         )
 
-    convergence = _converge_development_if_safe()
+    preferred_job_id = _register_preferred_job(x_worker_preferred_job_id or "", current)
     heartbeat_age = _heartbeat_age_seconds()
+    active_job_id = _active_job_id()
+    if active_job_id and heartbeat_age is not None and heartbeat_age <= 90:
+        return {
+            "accepted": True,
+            "action": "active_job_preserved",
+            "queue_sha": current,
+            "active_job_id": active_job_id,
+            "preferred_job_id": preferred_job_id,
+            "heartbeat_age_seconds": round(heartbeat_age, 3),
+            "runtime_convergence": {"state": "DEFERRED_ACTIVE_JOB"},
+            "wake_route_version": WAKE_ROUTE_VERSION,
+            "production_touched": False,
+        }
+
+    convergence = _converge_development_if_safe()
     current_worker_tree = _current_worker_code_tree()
     active_worker_tree = _active_worker_code_tree()
     worker_code_current = active_worker_tree == current_worker_tree
@@ -201,6 +310,7 @@ def wake_worker(
             "action": "already_healthy",
             "queue_sha": current,
             "heartbeat_age_seconds": round(heartbeat_age, 3),
+            "preferred_job_id": preferred_job_id,
             "worker_code_tree": current_worker_tree,
             "runtime_convergence": convergence,
             "wake_route_version": WAKE_ROUTE_VERSION,
@@ -242,6 +352,7 @@ def wake_worker(
             "service": WORKER_SERVICE,
             "queue_sha": current,
             "heartbeat_age_seconds": round(heartbeat_age, 3) if heartbeat_age is not None else None,
+            "preferred_job_id": preferred_job_id,
             "worker_code_tree": current_worker_tree,
             "worker_code_changed": not worker_code_current,
             "runtime_convergence": convergence,

@@ -31,6 +31,18 @@ def test_summary_is_sanitized_and_identifies_failed_unit():
     assert 'secret detail' not in str(value)
 
 
+def test_iscam_backfill_summary_is_sanitized_and_keeps_day_deltas():
+    module = _load_dispatcher()
+    output = 'HEADER\n' + '{"run_id":"x","modo":"DRY_RUN","fecha_inicio":"2026-09-11","fecha_fin_exclusivo":"2026-09-12","dias_evaluados":1,"dias_ya_ok":0,"dias_candidatos":1,"dias_reparables":0,"dias_bloqueados":1,"dias_sin_runtime":0,"filas_insertadas":0,"unidades":[{"unidad":"130MID","ya_ok":0,"candidatos":1,"reparables":0,"bloqueados":1,"sin_runtime":0,"filas_insertadas":0,"dias":[{"fecha_operacion":"2026-09-11","status":"NO_CUADRA_REVISAR","ventas_runtime":"133674.00","ventas_pos":"133673.00","delta_ventas":"1.00","tickets_runtime":36,"tickets_pos":36,"delta_tickets":0,"pax_runtime":85,"pax_pos":85,"delta_pax":0,"error":"password=must-not-publish"}]}]}\n'
+    value = module.summarize_iscam_detail_backfill_output(output)
+    assert value['dias_bloqueados'] == 1
+    day = value['unidades'][0]['dias'][0]
+    assert day['status'] == 'NO_CUADRA_REVISAR'
+    assert day['delta_ventas'] == '1.00'
+    assert 'password' not in str(value)
+    assert 'must-not-publish' not in str(value)
+
+
 def test_publisher_allows_summary_but_not_raw_output():
     text = PUBLISHER.read_text(encoding='utf-8')
     assert '"operation_summary"' in text

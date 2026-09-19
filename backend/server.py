@@ -120,6 +120,24 @@ logger.info("[DB] Sistema funcionando 100% SQL Server - MongoDB ELIMINADO (usand
 app = FastAPI(title="EDARSA HUB API")
 api_router = APIRouter(prefix="/api")
 
+# CAVAS CORPORATIVAS GATE 5 - API backend B2B separada y RBAC SQL explicito
+from modules.cavas_corporativas.routes import router as cavas_corporativas_router
+api_router.include_router(cavas_corporativas_router)
+
+# CATALOGO AMPLIADO GATE 4 - Gobierno corporativo SQL-first
+from modules.catalogo_ampliado.routes import router as catalogo_ampliado_router
+api_router.include_router(catalogo_ampliado_router)
+
+# TABLAJERIA - Operaciones / Produccion
+# Router existente con prefijo propio /api/tablajeria; se monta directo en app para evitar /api/api.
+from modules.tablajeria.routes import router as tablajeria_router
+app.include_router(tablajeria_router)
+
+# TABLAJERIA - Operaciones / Produccion
+# Router existente con prefijo propio /api/tablajeria; se monta directo en app para evitar /api/api.
+from modules.tablajeria.routes import router as tablajeria_router
+app.include_router(tablajeria_router)
+
 # Montar archivos estáticos para descargas
 STATIC_DIR = ROOT_DIR / "static"
 if STATIC_DIR.exists():
@@ -711,6 +729,10 @@ from modules.comercial.kpis_repository import init_kpis_repository
 init_sync_receiver(None)  # MongoDB eliminado
 init_kpis_repository(None)  # MongoDB eliminado
 api_router.include_router(sync_receiver_router)
+
+# RRR - atribucion determinista cliente <-> venta (Gate 4E)
+from modules.rrr.routes import router as rrr_attribution_router
+api_router.include_router(rrr_attribution_router)
 
 # ============================================================================
 # MÓDULO API CONNECTIONS: CRUD de conexiones a APIs locales

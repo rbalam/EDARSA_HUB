@@ -4,7 +4,7 @@ import sqlite3
 import json
 import uuid
 import time
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 class ComanderoLocalCore:
     def __init__(self, db_path: str = "edarsa_edge_device.db"):
@@ -111,14 +111,19 @@ class ComanderoLocalCore:
                                   tipo_comensal: str, 
                                   items: List[Dict], 
                                   totales: Dict, 
-                                  contabilidad: Dict) -> str:
+                                  contabilidad: Dict,
+                                  rrr_attribution: Optional[Dict[str, Any]] = None) -> str:
         """
         Escribe la transacción directamente en el almacenamiento físico local.
         Asigna un UUID global inmutable para asegurar la idempotencia.
         """
         id_transaccion_global = str(uuid.uuid4())
         
+        attribution = dict(rrr_attribution or {})
+        attribution["source_transaction_uuid"] = id_transaccion_global
+
         payload_local = {
+            "rrr_attribution": attribution,
             "offline_payload_control": {
                 "sync_status": "PENDING_SYNC",
                 "offline_interception_time": time.strftime("%Y-%m-%dT%H:%M:%SZ"),

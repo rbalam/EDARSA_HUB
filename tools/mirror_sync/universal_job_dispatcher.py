@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from worker_concurrency import evaluate_scope_advance
+from git_divergence_guard import (GitGuardError, acquire_writer_lock, compare_and_swap, inspect_repository, mutation_policy, post_push_verify, release_writer_lock, requires_writer_lock, scoped_push_env, validate_commit_scope)
 
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
 STATE = ROOT / ".git" / "universal-worker-queue"
@@ -37,15 +38,23 @@ RESULTS = STATE / "results"
 RUNTIME = STATE / "runtime"
 WORKTREES = Path(os.environ.get("EDARSAHUB_JOB_WORKTREES", "/tmp/edarsahub-worker-jobs"))
 LOCK_FILE = STATE / "dispatcher.lock"
+PREFERRED_JOB_PATH = RUNTIME / "preferred_job.json"
 REMOTE = os.environ.get("EDARSAHUB_QUEUE_REMOTE", "origin")
 DEV_BRANCH = "Edarsahub_Desarrollo"
 MAX_SECONDS = int(os.environ.get("EDARSAHUB_JOB_MAX_SECONDS", "1800"))
 MAX_CONCURRENCY_REPLAY_ATTEMPTS = int(os.environ.get("EDARSAHUB_CONCURRENCY_REPLAY_ATTEMPTS", "3"))
 JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
-ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit"}
+ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit", "repository_contract_audit"}
+READ_ONLY_MODE = "READ_ONLY"
+READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest", "sql_readonly_audit", "repository_contract_audit"}
 SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
+MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
+COMERCIAL_RANGE_RESYNC_MODE = "COMERCIAL_RANGE_RESYNC"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
+ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
+SQL_MIGRATION_DEVELOPMENT_MODE = "SQL_MIGRATION_DEVELOPMENT"
+FRONTEND_BUILD_CERTIFICATION_MODE = "FRONTEND_BUILD_CERTIFICATION"
 UNIT_CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 SOFTRESTAURANT_RESYNC_MAX_SECONDS = int(os.environ.get("EDARSAHUB_SOFTRESTAURANT_RESYNC_MAX_SECONDS", "21600"))
@@ -135,6 +144,60 @@ def summarize_softrestaurant_output(output: str) -> dict[str, Any]:
                 "error_types": sorted(set(error_types)),
             })
         return {"results": sanitized}
+    return summary
+
+
+def summarize_iscam_detail_backfill_output(output: str) -> dict[str, Any]:
+    summary: dict[str, Any] = {"unidades": []}
+    for raw_line in reversed((output or "").splitlines()):
+        try:
+            payload = json.loads(raw_line)
+        except Exception:
+            continue
+        if not isinstance(payload, dict) or not isinstance(payload.get("unidades"), list):
+            continue
+        units = []
+        for unit in payload.get("unidades") or []:
+            if not isinstance(unit, dict):
+                continue
+            days = []
+            for day in unit.get("dias") or []:
+                if not isinstance(day, dict):
+                    continue
+                days.append({
+                    key: day.get(key)
+                    for key in (
+                        "fecha_operacion", "status",
+                        "ventas_runtime", "ventas_pos", "delta_ventas",
+                        "tickets_runtime", "tickets_pos", "delta_tickets",
+                        "pax_runtime", "pax_pos", "delta_pax",
+                        "filas_insertadas",
+                    )
+                    if key in day
+                })
+            units.append({
+                "unidad": str(unit.get("unidad") or ""),
+                "ya_ok": int(unit.get("ya_ok") or 0),
+                "candidatos": int(unit.get("candidatos") or 0),
+                "reparables": int(unit.get("reparables") or 0),
+                "bloqueados": int(unit.get("bloqueados") or 0),
+                "sin_runtime": int(unit.get("sin_runtime") or 0),
+                "filas_insertadas": int(unit.get("filas_insertadas") or 0),
+                "dias": days,
+            })
+        return {
+            "modo": str(payload.get("modo") or ""),
+            "fecha_inicio": str(payload.get("fecha_inicio") or ""),
+            "fecha_fin_exclusivo": str(payload.get("fecha_fin_exclusivo") or ""),
+            "dias_evaluados": int(payload.get("dias_evaluados") or 0),
+            "dias_ya_ok": int(payload.get("dias_ya_ok") or 0),
+            "dias_candidatos": int(payload.get("dias_candidatos") or 0),
+            "dias_reparables": int(payload.get("dias_reparables") or 0),
+            "dias_bloqueados": int(payload.get("dias_bloqueados") or 0),
+            "dias_sin_runtime": int(payload.get("dias_sin_runtime") or 0),
+            "filas_insertadas": int(payload.get("filas_insertadas") or 0),
+            "unidades": units,
+        }
     return summary
 
 
@@ -254,6 +317,13 @@ def apply_action(worktree: Path, action: dict[str, Any]) -> str:
         raise ValueError(f"UNSUPPORTED_ACTION:{kind}")
     relative = str(action.get("path") or "")
     target = safe_path(worktree, relative)
+    repo_path = Path(relative)
+    if (
+        kind == "write_file"
+        and repo_path.parts[:2] == ("backend", "core")
+        and not target.exists()
+    ):
+        raise RuntimeError(f"CORE_GROWTH_FORBIDDEN:{relative}")
     verify_expected_hash(target, action)
     if kind == "replace_text":
         if not target.is_file():
@@ -287,9 +357,10 @@ def apply_action(worktree: Path, action: dict[str, Any]) -> str:
     raise ValueError(f"UNSUPPORTED_ACTION:{kind}")
 
 
-def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:
+def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False) -> dict[str, Any]:
     kind = str(check.get("type"))
     started = now()
+    env_extra: dict[str, str] = {}
     if kind == "git_diff_check":
         cmd = ["git", "diff", "--check"]
         cwd = worktree
@@ -297,6 +368,8 @@ def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:
         paths = [str(p) for p in check.get("paths") or []]
         cmd = [PYTHON_BIN, "-m", "py_compile", *paths]
         cwd = worktree
+        if readonly:
+            env_extra["PYTHONPYCACHEPREFIX"] = str(Path(tempfile.gettempdir()) / "edarsahub-worker-readonly-pyc")
     elif kind == "pytest":
         backend = worktree / "backend"
         if not backend.is_dir():
@@ -309,9 +382,21 @@ def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:
             elif path.startswith("backend/"):
                 path = path[len("backend/"):]
             paths.append(path)
-        cmd = [PYTHON_BIN, "-m", "pytest", "-q", *paths]
+        pytest_args = ["-q"]
+        if readonly:
+            pytest_args.extend(["-p", "no:cacheprovider"])
+        cmd = [PYTHON_BIN, "-m", "pytest", *pytest_args, *paths]
         cwd = backend
         env_extra = {**load_backend_runtime_env(), "PYTHONPATH": str(backend)}
+        if readonly:
+            env_extra["PYTHONDONTWRITEBYTECODE"] = "1"
+    elif kind == "repository_contract_audit":
+        helper = worktree / "tools" / "mirror_sync" / "repository_contract_audit.py"
+        if not helper.is_file():
+            helper = ROOT / "tools" / "mirror_sync" / "repository_contract_audit.py"
+        cmd = [PYTHON_BIN, str(helper), "--request-json", json.dumps(check.get("request") or {}, ensure_ascii=False)]
+        cwd = worktree
+        env_extra = {"PYTHONDONTWRITEBYTECODE": "1"}
     elif kind == "sql_readonly_audit":
         helper = worktree / "tools" / "mirror_sync" / "sql_readonly_audit.py"
         if not helper.is_file():
@@ -320,6 +405,12 @@ def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:
         if not backend.is_dir():
             backend = ROOT / "backend"
         cmd = [PYTHON_BIN, str(helper), "--queries-json", json.dumps(check.get("queries") or [], ensure_ascii=False)]
+        source = str(check.get("source") or "EDARSAHUB").strip().upper()
+        cmd.extend(["--source", source])
+        if check.get("units") is not None:
+            cmd.extend(["--units-json", json.dumps(check.get("units"), ensure_ascii=False)])
+        if check.get("system_types") is not None:
+            cmd.extend(["--system-types-json", json.dumps(check.get("system_types"), ensure_ascii=False)])
         cwd = worktree
         env_extra = {**load_backend_runtime_env(), "PYTHONPATH": str(backend)}
     elif kind == "frontend_build":
@@ -337,16 +428,19 @@ def run_check(worktree: Path, check: dict[str, Any]) -> dict[str, Any]:
     else:
         raise ValueError(f"UNSUPPORTED_CHECK:{kind}")
     try:
-        result = run(cmd, cwd=cwd, timeout=MAX_SECONDS, env_extra=locals().get("env_extra"))
+        result = run(cmd, cwd=cwd, timeout=MAX_SECONDS, env_extra=env_extra or None)
         full_output = result.stdout or ""
         response = {"type": kind, "status": "PASS" if result.returncode == 0 else "FAIL", "returncode": result.returncode, "started_at_utc": started, "completed_at_utc": now(), "output": full_output[-12000:]}
-        if kind == "sql_readonly_audit":
+        if kind in {"sql_readonly_audit", "repository_contract_audit"}:
             try:
-                sql_evidence = json.loads(full_output.strip())
+                structured_evidence = json.loads(full_output.strip())
             except (json.JSONDecodeError, TypeError):
-                sql_evidence = None
-            if isinstance(sql_evidence, dict):
-                response["sql_evidence"] = sql_evidence
+                structured_evidence = None
+            if isinstance(structured_evidence, dict):
+                if kind == "sql_readonly_audit":
+                    response["sql_evidence"] = structured_evidence
+                else:
+                    response["repository_evidence"] = structured_evidence
         return response
     except subprocess.TimeoutExpired as exc:
         text = exc.stdout if isinstance(exc.stdout, str) else ""
@@ -367,14 +461,8 @@ def changed_files(worktree: Path, base_sha: str) -> list[str]:
 
 
 def validate_scope(worktree: Path, base_sha: str, allowed: set[str]) -> list[str]:
-    actual = set(changed_files(worktree, base_sha))
-    extra = sorted(actual - allowed)
-    missing = sorted(allowed - actual)
-    blockers: list[str] = []
-    if extra:
-        blockers.append("unexpected_files:" + ",".join(extra))
-    if missing:
-        blockers.append("expected_files_unchanged:" + ",".join(missing))
+    actual = set(changed_files(worktree, base_sha)); extra = sorted(actual - allowed); missing = sorted(allowed - actual); blockers: list[str] = []
+    if extra or missing: blockers.append("GIT_SCOPE_VIOLATION:extra=" + ",".join(extra) + ";missing=" + ",".join(missing))
     return blockers
 
 
@@ -388,74 +476,32 @@ def create_commit(worktree: Path, job_id: str, files: list[str]) -> str:
     return git("rev-parse", "HEAD", cwd=worktree).stdout.strip()
 
 
-def integrate(worktree: Path, branch: str, head: str, base_sha: str, write_scope: set[str]) -> tuple[bool, str, str, list[dict[str, Any]]]:
-    candidate = head
-    evidence: list[dict[str, Any]] = []
-    credential_helper = resolve_repository_credential_helper()
-    if not credential_helper:
-        return False, "development_push_credential_helper_missing", candidate, evidence
-
-    git("fetch", REMOTE, DEV_BRANCH)
-    remote_dev = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
-    step: dict[str, Any] = {"candidate_base_sha": base_sha, "remote_development_sha": remote_dev, "candidate_sha_before": candidate, "concurrent_head_changes": []}
-    if remote_dev != base_sha:
-        if not git_is_ancestor(base_sha, remote_dev):
-            step["decision"] = "NON_FAST_FORWARD"
-            evidence.append(step)
-            return False, f"CONCURRENT_NON_FAST_FORWARD:{remote_dev}", candidate, evidence
-        changed = git_changed_paths(base_sha, remote_dev)
-        step["concurrent_head_changes"] = changed
-        policy = evaluate_scope_advance(base_sha, remote_dev, write_scope, changed)
-        step["scope_policy"] = policy
-        if policy["decision"] != "SAFE_REPLAY":
-            step["decision"] = "CONCURRENT_SCOPE_CONFLICT"
-            evidence.append(step)
-            conflicts = ",".join(policy.get("scope_conflicts") or [])
-            return False, f"CONCURRENT_SCOPE_CONFLICT:{conflicts or remote_dev}", candidate, evidence
-        step["decision"] = "REPLAY_REQUIRED"
-        evidence.append(step)
-        return False, f"CONCURRENT_REPLAY_REQUIRED:{remote_dev}", candidate, evidence
-
-    guard = ROOT / "scripts" / "agent_guardrails" / "validate_repository_artifacts.py"
+def integrate(worktree: Path, branch: str, head: str, base_sha: str, write_scope: set[str], job_id: str, remote_at_start: str) -> tuple[bool, str, str, list[dict[str, Any]]]:
+    candidate=head; evidence=[]; credential_helper=resolve_repository_credential_helper()
+    if not credential_helper: return False,"GIT_PUSH_FAILED:credential_helper_missing",candidate,evidence
+    step={"candidate_base_sha":base_sha,"candidate_sha_before":candidate,"remote_at_start":remote_at_start,"push_attempted":False}
+    try: remote_dev=compare_and_swap(ROOT,remote_at_start)
+    except GitGuardError as exc:
+        step["decision"]=exc.code; step.update(exc.evidence); evidence.append(step); return False,exc.code,candidate,evidence
+    step["remote_before_push"]=remote_dev
+    if remote_dev != base_sha: step["decision"]="GIT_DIVERGENCE_BLOCKED"; evidence.append(step); return False,"GIT_DIVERGENCE_BLOCKED:base_no_longer_remote_tip",candidate,evidence
+    merge_base=git("merge-base",remote_dev,candidate,check=False).stdout.strip(); step["merge_base_before_push"]=merge_base
+    if merge_base != remote_dev: step["decision"]="GIT_DIVERGENCE_BLOCKED"; evidence.append(step); return False,"GIT_DIVERGENCE_BLOCKED:candidate_not_fast_forward",candidate,evidence
+    try: validate_commit_scope(worktree,base_sha,candidate,write_scope)
+    except GitGuardError as exc:
+        step["decision"]=exc.code; step["scope_evidence"]=exc.evidence; evidence.append(step); return False,exc.code,candidate,evidence
+    guard=ROOT/"scripts"/"agent_guardrails"/"validate_repository_artifacts.py"
     if guard.is_file():
-        check = run([PYTHON_BIN, str(guard), "--range", base_sha, candidate], cwd=ROOT)
-        if check.returncode != 0:
-            step["artifact_guard"] = "FAIL"
-            step["artifact_guard_output"] = check.stdout[-1000:]
-            evidence.append(step)
-            return False, "repository_artifact_guard_failed:" + check.stdout[-1000:], candidate, evidence
-        step["artifact_guard"] = "PASS"
-
-    push = run(["git", "-c", "credential.helper=", "-c", f"credential.helper={credential_helper}", "push", REMOTE, f"{candidate}:refs/heads/{DEV_BRANCH}"], cwd=ROOT, env_extra={"EDARSA_ALLOW_PUSH": "1"})
-    step["push_returncode"] = push.returncode
-    if push.returncode == 0:
-        git("fetch", REMOTE, DEV_BRANCH)
-        after = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
-        step["remote_after_push"] = after
-        evidence.append(step)
-        if after == candidate:
-            step["decision"] = "PUSHED"
-            return True, after, candidate, evidence
-
-    step["push_output"] = push.stdout[-1000:]
-    git("fetch", REMOTE, DEV_BRANCH)
-    latest = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
-    if latest != remote_dev:
-        changed = git_changed_paths(base_sha, latest) if git_is_ancestor(base_sha, latest) else []
-        step["concurrent_head_changes"] = changed
-        policy = evaluate_scope_advance(base_sha, latest, write_scope, changed) if changed else {"decision": "NON_FAST_FORWARD", "scope_conflicts": []}
-        step["scope_policy"] = policy
-        if policy.get("decision") == "SAFE_REPLAY":
-            step["decision"] = "REPLAY_REQUIRED_AFTER_PUSH_RACE"
-            evidence.append(step)
-            return False, f"CONCURRENT_REPLAY_REQUIRED:{latest}", candidate, evidence
-        step["decision"] = "CONCURRENT_SCOPE_CONFLICT"
-        evidence.append(step)
-        conflicts = ",".join(policy.get("scope_conflicts") or [])
-        return False, f"CONCURRENT_SCOPE_CONFLICT:{conflicts or latest}", candidate, evidence
-    step["decision"] = "PUSH_FAILED"
-    evidence.append(step)
-    return False, f"development_push_failed:{push.stdout[-1000:]}", candidate, evidence
+        check=run([PYTHON_BIN,str(guard),"--range",base_sha,candidate],cwd=ROOT)
+        if check.returncode != 0: step["artifact_guard"]="FAIL"; step["artifact_guard_output"]=check.stdout[-1000:]; evidence.append(step); return False,"GIT_SCOPE_VIOLATION:repository_artifact_guard_failed",candidate,evidence
+        step["artifact_guard"]="PASS"
+    push_env=scoped_push_env(job_id,"universal-worker",os.environ); push=run(["git","-c","credential.helper=","-c",f"credential.helper={credential_helper}","push",REMOTE,f"{candidate}:refs/heads/{DEV_BRANCH}"],cwd=ROOT,env_extra={k:push_env[k] for k in ("EDARSA_ALLOW_PUSH","EDARSA_PUSH_JOB_ID","EDARSA_PUSH_OWNER")})
+    step["push_attempted"]=True; step["push_returncode"]=push.returncode; step["push_result"]="PASS" if push.returncode==0 else "FAIL"
+    if push.returncode != 0: step["push_output"]=(push.stdout or "")[-1000:]; step["decision"]="GIT_PUSH_FAILED"; evidence.append(step); return False,"GIT_PUSH_FAILED",candidate,evidence
+    try: post=post_push_verify(worktree,candidate)
+    except GitGuardError as exc:
+        step["decision"]=exc.code; step.update(exc.evidence); evidence.append(step); return False,exc.code,candidate,evidence
+    step.update(post); step["decision"]="CERTIFIED_GIT_SYNC"; evidence.append(step); return True,candidate,candidate,evidence
 
 
 def release_agent_guard_claim(job_id: str) -> tuple[bool, str]:
@@ -484,26 +530,40 @@ def process_one(path: Path) -> int:
     worktree: Path | None = None
     branch = ""
     agent_guard_claim_created = False
+    git_writer_lock: dict[str, Any] | None = None
     try:
         if job.get("schema") != "edarsahub.worker-job.v2":
             raise ValueError("UNSUPPORTED_JOB_SCHEMA")
 
         requested_paths = sorted({str(action.get("path")) for action in (job.get("actions") or []) if action.get("path")})
         mode = str(job.get("mode") or "")
-        git("fetch", REMOTE, DEV_BRANCH)
-        current_head = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
+        git_mutating = requires_writer_lock(mode)
+        if mode in {READ_ONLY_MODE, "READ_ONLY_SQL", FRONTEND_BUILD_CERTIFICATION_MODE}:
+            current_head = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
+        elif git_mutating:
+            try:
+                git_writer_lock = acquire_writer_lock(ROOT, job_id=job_id, owner="universal-worker", owner_pid=os.getpid())
+            except GitGuardError as exc:
+                result["status"] = exc.code; result["git_guard_error"] = exc.evidence; raise RuntimeError(exc.code) from exc
+            git_state = inspect_repository(ROOT, fetch=True); git_policy = mutation_policy(git_state)
+            result.update({"git_guard_start":git_state,"branch":git_state["current_branch"],"remote_at_start":git_state["remote_head"],"local_at_start":git_state["local_head"],"merge_base_at_start":git_state["merge_base"],"ahead_at_start":git_state["ahead_count"],"behind_at_start":git_state["behind_count"],"dirty_state":{"worktree_dirty":git_state["worktree_dirty"],"staged_count":git_state["staged_count"],"unstaged_count":git_state["unstaged_count"],"untracked_count":git_state["untracked_count"]},"lock_owner":{k:git_writer_lock.get(k) for k in ("job_id","owner","owner_pid","created_at_utc")}})
+            if not git_policy["allowed"]:
+                result["status"] = git_policy["terminal_status"]; result["git_guard_reason"] = git_policy["reason"]; raise RuntimeError(git_policy["reason"])
+            current_head = git_state["remote_head"]
+        else:
+            git("fetch", REMOTE, DEV_BRANCH); current_head = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
         expected_base = str(job.get("base_sha") or "").strip() or None
         pickup_policy: dict[str, Any]
         if expected_base and expected_base != current_head:
             if not git_is_ancestor(expected_base, current_head):
                 raise RuntimeError(f"BASE_NOT_ANCESTOR:expected={expected_base}:actual={current_head}")
             changed = git_changed_paths(expected_base, current_head)
-            pickup_policy = evaluate_scope_advance(expected_base, current_head, requested_paths, changed, allow_empty_scope_advance=(mode == "READ_ONLY_SQL"))
+            pickup_policy = evaluate_scope_advance(expected_base, current_head, requested_paths, changed, allow_empty_scope_advance=(mode in {"READ_ONLY_SQL", READ_ONLY_MODE, FRONTEND_BUILD_CERTIFICATION_MODE}))
             if pickup_policy["decision"] not in {"SAFE_REPLAY", "EXACT_BASE"}:
                 conflicts = ",".join(pickup_policy.get("scope_conflicts") or [])
                 raise RuntimeError(f"CONCURRENT_SCOPE_CONFLICT:expected={expected_base}:actual={current_head}:paths={conflicts}")
         else:
-            pickup_policy = evaluate_scope_advance(expected_base, current_head, requested_paths, [], allow_empty_scope_advance=(mode == "READ_ONLY_SQL"))
+            pickup_policy = evaluate_scope_advance(expected_base, current_head, requested_paths, [], allow_empty_scope_advance=(mode in {"READ_ONLY_SQL", READ_ONLY_MODE, FRONTEND_BUILD_CERTIFICATION_MODE}))
         base_sha = current_head
         result["requested_base_sha"] = expected_base
         result["base_sha"] = base_sha
@@ -513,6 +573,55 @@ def process_one(path: Path) -> int:
         result["concurrency_replays"] = 0
         result["concurrent_head_changes"] = []
         result["concurrency"] = {"pickup": pickup_policy, "integration": []}
+
+        if mode == READ_ONLY_MODE:
+            if job.get("actions") != []:
+                raise RuntimeError("READ_ONLY_ACTIONS_MUST_BE_EMPTY_LIST")
+            checks = job.get("checks") or []
+            if not checks or any(not isinstance(c, dict) or c.get("type") not in READ_ONLY_CHECKS for c in checks):
+                raise RuntimeError("READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED")
+            readonly_head_before = git("rev-parse", "HEAD", cwd=ROOT).stdout.strip()
+            tracked_before = git("status", "--porcelain=v1", "--untracked-files=no", cwd=ROOT).stdout
+            readonly_tracked_before = tracked_before
+            check_results = []
+            for check in checks:
+                check_result = run_check(ROOT, check, readonly=True)
+                check_results.append(check_result)
+                if check_result["status"] != "PASS":
+                    result["blockers"].append(f"check_failed:{check.get('type')}")
+                    break
+            readonly_head_after = git("rev-parse", "HEAD", cwd=ROOT).stdout.strip()
+            tracked_after = git("status", "--porcelain=v1", "--untracked-files=no", cwd=ROOT).stdout
+            readonly_tracked_after = tracked_after
+            if tracked_after != tracked_before:
+                result["readonly_mutation_evidence"] = {
+                    "version": "r1",
+                    "head_before": readonly_head_before,
+                    "head_after": readonly_head_after,
+                    "tracked_before": readonly_tracked_before,
+                    "tracked_after": readonly_tracked_after,
+                    "diff_names": git("diff", "--name-only", cwd=ROOT, check=False).stdout,
+                    "diff_stat": git("diff", "--stat", cwd=ROOT, check=False).stdout,
+                    "diff_porcelain": readonly_tracked_after,
+                    "check_types": [str(c.get("type")) for c in checks if isinstance(c, dict)],
+                    "cwd": str(ROOT),
+                }
+                result["blockers"].append("readonly_tracked_repo_mutation_detected")
+            result["checks"] = check_results
+            result["files_changed"] = []
+            result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
+            result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
+            result["work_completion"] = "COMPLETE" if not result["blockers"] else "INCOMPLETE"
+            if not result["blockers"]:
+                result["status"] = "READ_ONLY_COMPLETE"
+                result["percent_complete"] = 100
+                result["certification"] = "CERTIFIED_READ_ONLY"
+                result["certification_basis"] = "NON_MUTATING_CHECKS_ONLY"
+                result["summary_es"] = "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion."
+            else:
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+            return 0
 
         if mode == "READ_ONLY_SQL":
             if job.get("actions") not in (None, []):
@@ -537,6 +646,119 @@ def process_one(path: Path) -> int:
                 result["certification"] = "CERTIFIED_READ_ONLY"
                 result["summary_es"] = "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion."
             else:
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+            return 0
+
+        if mode == FRONTEND_BUILD_CERTIFICATION_MODE:
+            if job.get("actions") not in (None, []):
+                raise RuntimeError("FRONTEND_BUILD_CERTIFICATION_ACTIONS_FORBIDDEN")
+            checks = job.get("checks") or []
+            allowed_frontend_cert_checks = {"frontend_build", "git_diff_check", "repository_contract_audit"}
+            if not checks:
+                raise RuntimeError("FRONTEND_BUILD_CERTIFICATION_CHECK_REQUIRED")
+            if not any(isinstance(c, dict) and c.get("type") == "frontend_build" for c in checks):
+                raise RuntimeError("FRONTEND_BUILD_CERTIFICATION_FRONTEND_BUILD_REQUIRED")
+            if any(not isinstance(c, dict) or c.get("type") not in allowed_frontend_cert_checks for c in checks):
+                raise RuntimeError("FRONTEND_BUILD_CERTIFICATION_ONLY_ALLOWED_CHECKS")
+            status_before = git("status", "--porcelain=v1", "--untracked-files=all", cwd=ROOT).stdout
+            check_results = []
+            for check in checks:
+                check_result = run_check(ROOT, check, readonly=True)
+                check_results.append(check_result)
+                if check_result["status"] != "PASS":
+                    result["blockers"].append(f"check_failed:{check.get('type')}")
+                    break
+            status_after = git("status", "--porcelain=v1", "--untracked-files=all", cwd=ROOT).stdout
+            if status_after != status_before:
+                result["blockers"].append("frontend_build_certification_repo_mutation_detected")
+            result["checks"] = check_results
+            result["files_changed"] = []
+            result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
+            result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
+            result["work_completion"] = "COMPLETE" if not result["blockers"] else "INCOMPLETE"
+            if not result["blockers"]:
+                result["status"] = "FRONTEND_BUILD_CERTIFIED"
+                result["percent_complete"] = 100
+                result["certification"] = "CERTIFIED_FRONTEND_BUILD"
+                result["certification_basis"] = "FRONTEND_BUILD_CERTIFICATION_NON_PRODUCT_MUTATING"
+                result["summary_es"] = "El Worker universal ejecuto frontend_build como certificacion no mutante de frontend, sin acciones de producto, sin cambios tracked/untracked del repositorio y sin tocar Produccion."
+            else:
+                result["status"] = "FRONTEND_BUILD_FAILED"
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+            return 0
+
+        if mode == COMERCIAL_RANGE_RESYNC_MODE:
+            if expected_base and expected_base != current_head:
+                raise RuntimeError(f"BASE_SHA_MISMATCH_OPERATIONAL_MODE:expected={expected_base}:actual={current_head}")
+            if job.get("actions") not in (None, []):
+                raise RuntimeError("COMERCIAL_RANGE_RESYNC_ACTIONS_FORBIDDEN")
+            units = job.get("units", [])
+            if not isinstance(units, list) or len(units) != 1 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):
+                raise RuntimeError("COMERCIAL_RANGE_RESYNC_EXACTLY_ONE_UNIT_REQUIRED")
+            fecha_inicio = str(job.get("fecha_inicio") or "")
+            fecha_fin = str(job.get("fecha_fin") or "")
+            if not DATE_RE.fullmatch(fecha_inicio) or not DATE_RE.fullmatch(fecha_fin):
+                raise RuntimeError("COMERCIAL_RANGE_RESYNC_DATES_INVALID")
+            inicio_dt = datetime.strptime(fecha_inicio, "%Y-%m-%d")
+            fin_dt = datetime.strptime(fecha_fin, "%Y-%m-%d")
+            dias = (fin_dt - inicio_dt).days + 1
+            if dias < 1 or dias > 31:
+                raise RuntimeError("COMERCIAL_RANGE_RESYNC_DATE_RANGE_INVALID")
+            dry_run = job.get("dry_run", True)
+            if not isinstance(dry_run, bool):
+                raise RuntimeError("COMERCIAL_RANGE_RESYNC_DRY_RUN_INVALID")
+            if dry_run is False and job.get("confirm_comercial_range_resync") is not True:
+                raise RuntimeError("COMERCIAL_RANGE_RESYNC_CONFIRMATION_REQUIRED")
+            checks = job.get("checks") or []
+            if not checks or any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+                raise RuntimeError("COMERCIAL_RANGE_RESYNC_SQL_AUDIT_REQUIRED")
+            script = ROOT / "backend" / "scripts" / "resync_comercial_range_worker.py"
+            if not script.is_file():
+                raise RuntimeError("COMERCIAL_RANGE_RESYNC_SCRIPT_NOT_FOUND")
+            unit = units[0].strip().upper()
+            cmd = [PYTHON_BIN, str(script), "--unidad", unit, "--fecha-inicio", fecha_inicio, "--fecha-fin", fecha_fin]
+            if dry_run is False:
+                cmd.append("--commit")
+            backend = ROOT / "backend"
+            execution = run(cmd, cwd=ROOT, timeout=SOFTRESTAURANT_RESYNC_MAX_SECONDS, env_extra={**load_backend_runtime_env(), "PYTHONPATH": str(backend)})
+            summary = {}
+            for raw_line in reversed((execution.stdout or "").splitlines()):
+                try:
+                    candidate = json.loads(raw_line)
+                except Exception:
+                    continue
+                if isinstance(candidate, dict) and candidate.get("event") == "comercial_range_summary":
+                    summary = candidate
+                    break
+            result["operation"] = COMERCIAL_RANGE_RESYNC_MODE
+            result["dry_run"] = dry_run
+            result["units"] = [unit]
+            result["canonical_sql_mutation"] = not dry_run
+            result["operation_output"] = (execution.stdout or "")[-20000:]
+            result["operation_summary"] = summary
+            result["files_changed"] = []
+            if execution.returncode != 0:
+                result["blockers"].append("comercial_range_resync_execution_failed")
+            check_results = []
+            if execution.returncode == 0:
+                for check in checks:
+                    check_result = run_check(ROOT, check)
+                    check_results.append(check_result)
+                    if check_result["status"] != "PASS":
+                        result["blockers"].append("check_failed:sql_readonly_audit")
+                        break
+            result["checks"] = check_results
+            result["tests"] = "PASS" if execution.returncode == 0 and check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
+            result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
+            if not result["blockers"]:
+                result["status"] = "OPERATIONAL_COMPLETE"
+                result["percent_complete"] = 100
+                result["certification"] = "CERTIFIED_OPERATIONAL"
+                result["summary_es"] = "El Worker ejecuto la re-sincronizacion comercial cerrada para una unidad y rango autorizado usando el handler oficial; valido header KPI y detalle ISCAM y certifico el destino con SQL de solo lectura. No acepto shell, comandos ni rutas desde la solicitud y no toco Produccion."
+            else:
+                result["status"] = "BLOCKED"
                 result["percent_complete"] = 0
                 result["certification"] = "NOT_CERTIFIED"
             return 0
@@ -581,6 +803,7 @@ def process_one(path: Path) -> int:
             result["fecha_inicio"] = fecha_inicio
             result["fecha_fin"] = fecha_fin
             result["operation_output"] = execution.stdout[-20000:]
+            result["operation_summary"] = summarize_iscam_detail_backfill_output(execution.stdout or "")
             result["files_changed"] = []
             if execution.returncode != 0:
                 result["blockers"].append(f"iscam_detail_backfill_failed:rc={execution.returncode}")
@@ -600,6 +823,236 @@ def process_one(path: Path) -> int:
                 result["percent_complete"] = 100
                 result["certification"] = "CERTIFIED_OPERATIONAL"
                 result["summary_es"] = "El Worker ejecuto el backfill cerrado de detalle ISCAM para las unidades y fechas autorizadas y certifico el resultado con SQL de solo lectura. No acepto shell, rutas ni comandos externos y no toco Produccion."
+            else:
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+            return 0
+
+        if mode == ISCAM_PAYMENTS_ONLY_RESYNC_MODE:
+            if expected_base and expected_base != current_head:
+                raise RuntimeError(f"BASE_SHA_MISMATCH_OPERATIONAL_MODE:expected={expected_base}:actual={current_head}")
+            if job.get("actions") not in (None, []):
+                raise RuntimeError("ISCAM_PAYMENTS_ONLY_ACTIONS_FORBIDDEN")
+            units = job.get("units", [])
+            if not isinstance(units, list) or len(units) != 1 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):
+                raise RuntimeError("ISCAM_PAYMENTS_ONLY_EXACTLY_ONE_UNIT_REQUIRED")
+            fecha_inicio = str(job.get("fecha_inicio") or "")
+            fecha_fin = str(job.get("fecha_fin") or "")
+            if not DATE_RE.fullmatch(fecha_inicio) or not DATE_RE.fullmatch(fecha_fin):
+                raise RuntimeError("ISCAM_PAYMENTS_ONLY_DATES_INVALID")
+            inicio_dt = datetime.strptime(fecha_inicio, "%Y-%m-%d")
+            fin_dt = datetime.strptime(fecha_fin, "%Y-%m-%d")
+            if fin_dt <= inicio_dt:
+                raise RuntimeError("ISCAM_PAYMENTS_ONLY_DATE_RANGE_INVALID")
+            dry_run = job.get("dry_run", True)
+            if not isinstance(dry_run, bool):
+                raise RuntimeError("ISCAM_PAYMENTS_ONLY_DRY_RUN_INVALID")
+            if dry_run is False and job.get("confirm_payments_only_resync") is not True:
+                raise RuntimeError("ISCAM_PAYMENTS_ONLY_CONFIRMATION_REQUIRED")
+            checks = job.get("checks") or []
+            if not checks or any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+                raise RuntimeError("ISCAM_PAYMENTS_ONLY_SQL_AUDIT_REQUIRED")
+            script = ROOT / "backend" / "scripts" / "resync_iscam_pagos_unidad.py"
+            if not script.is_file():
+                raise RuntimeError("ISCAM_PAYMENTS_ONLY_SCRIPT_NOT_FOUND")
+            unit = units[0].strip().upper()
+            cmd = [PYTHON_BIN, str(script), "--unit", unit, "--fi", fecha_inicio, "--ff", fecha_fin]
+            if dry_run is False:
+                cmd.append("--execute")
+            backend = ROOT / "backend"
+            execution = run(cmd, cwd=ROOT, timeout=SOFTRESTAURANT_RESYNC_MAX_SECONDS, env_extra={**load_backend_runtime_env(), "PYTHONPATH": str(backend)})
+            result["operation"] = ISCAM_PAYMENTS_ONLY_RESYNC_MODE
+            result["dry_run"] = dry_run
+            result["units"] = [unit]
+            result["fecha_inicio"] = fecha_inicio
+            result["fecha_fin"] = fecha_fin
+            result["canonical_sql_mutation"] = not dry_run
+            result["operation_output"] = execution.stdout[-20000:]
+            result["files_changed"] = []
+            if execution.returncode != 0:
+                result["blockers"].append(f"iscam_payments_only_resync_failed:rc={execution.returncode}")
+            check_results = []
+            if not result["blockers"]:
+                for check in checks:
+                    check_result = run_check(ROOT, check)
+                    check_results.append(check_result)
+                    if check_result["status"] != "PASS":
+                        result["blockers"].append("check_failed:sql_readonly_audit")
+                        break
+            result["checks"] = check_results
+            result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
+            result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
+            if not result["blockers"]:
+                result["status"] = "OPERATIONAL_COMPLETE"
+                result["percent_complete"] = 100
+                result["certification"] = "CERTIFIED_OPERATIONAL"
+                result["summary_es"] = "El Worker resincronizo exclusivamente Pagos por Ticket para una unidad y rango autorizados y certifico el resultado con SQL de solo lectura. No modifico Sync_Sales, Cuentas, Comandas, Cortes ni Produccion."
+            else:
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+            return 0
+
+        if mode == SQL_MIGRATION_DEVELOPMENT_MODE:
+            if expected_base and expected_base != current_head:
+                raise RuntimeError(f"BASE_SHA_MISMATCH_OPERATIONAL_MODE:expected={expected_base}:actual={current_head}")
+            if job.get("actions") not in (None, []):
+                raise RuntimeError("SQL_MIGRATION_ACTIONS_FORBIDDEN")
+            for forbidden_field in ("sql", "command", "shell", "script", "path"):
+                if job.get(forbidden_field) is not None:
+                    raise RuntimeError(f"SQL_MIGRATION_FORBIDDEN_FIELD:{forbidden_field}")
+            migration_path = str(job.get("migration_path") or "")
+            migration_parts = Path(migration_path).parts
+            if (
+                not migration_path
+                or Path(migration_path).is_absolute()
+                or ".." in migration_parts
+                or len(migration_parts) < 4
+                or migration_parts[:3] != ("backend", "database", "migrations")
+                or not migration_path.lower().endswith(".sql")
+            ):
+                raise RuntimeError("SQL_MIGRATION_PATH_INVALID")
+            migration_sha256 = str(job.get("migration_sha256") or "").lower()
+            if not re.fullmatch(r"[0-9a-f]{64}", migration_sha256):
+                raise RuntimeError("SQL_MIGRATION_SHA256_INVALID")
+            if job.get("confirm_sql_migration") is not True:
+                raise RuntimeError("SQL_MIGRATION_CONFIRMATION_REQUIRED")
+            use_existing_sql_writer = job.get("confirm_use_existing_sql_writer") is True
+            preflight_checks = job.get("preflight_checks") or []
+            checks = job.get("checks") or []
+            if not preflight_checks or any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in preflight_checks):
+                raise RuntimeError("SQL_MIGRATION_PREFLIGHT_SQL_AUDIT_REQUIRED")
+            if not checks or any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+                raise RuntimeError("SQL_MIGRATION_POST_SQL_AUDIT_REQUIRED")
+            preflight_results = []
+            for check in preflight_checks:
+                check_result = run_check(ROOT, check)
+                preflight_results.append(check_result)
+                if check_result["status"] != "PASS":
+                    result["blockers"].append("check_failed:sql_migration_preflight")
+                    break
+            result["preflight_checks"] = preflight_results
+            result["operation"] = SQL_MIGRATION_DEVELOPMENT_MODE
+            result["migration_path"] = migration_path
+            result["migration_sha256"] = migration_sha256
+            result["canonical_sql_mutation"] = True
+            result["files_changed"] = []
+            if result["blockers"]:
+                result["checks"] = []
+                result["tests"] = "FAIL"
+                result["quality_gate"] = "FAIL"
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+                return 0
+            helper = ROOT / "tools" / "mirror_sync" / "sql_migration_development.py"
+            if not helper.is_file():
+                raise RuntimeError("SQL_MIGRATION_HELPER_NOT_FOUND")
+            backend = ROOT / "backend"
+            migration_cmd = [PYTHON_BIN, str(helper), "--migration-path", migration_path, "--migration-sha256", migration_sha256, "--confirm"]
+            if use_existing_sql_writer:
+                migration_cmd.append("--allow-canonical-sql-writer")
+            result["use_existing_sql_writer"] = use_existing_sql_writer
+            execution = run(
+                migration_cmd,
+                cwd=ROOT,
+                timeout=MAX_SECONDS,
+                env_extra={**load_backend_runtime_env(), "PYTHONPATH": str(backend)},
+            )
+            raw_migration_output = execution.stdout or ""
+            result["operation_output"] = raw_migration_output[-12000:]
+            safe_migration_summary = {"returncode": execution.returncode}
+            for raw_line in reversed(raw_migration_output.splitlines()):
+                try:
+                    payload = json.loads(raw_line)
+                except (json.JSONDecodeError, TypeError):
+                    continue
+                if not isinstance(payload, dict):
+                    continue
+                status = str(payload.get("status") or "").upper()
+                if status in {"PASS", "FAIL"}:
+                    safe_migration_summary["status"] = status
+                credential_source = str(payload.get("credential_source") or "").strip().lower()
+                if credential_source in {"dedicated", "canonical"}:
+                    safe_migration_summary["credential_source"] = credential_source
+                error = str(payload.get("error") or "")
+                if error.startswith("MigrationContractError:"):
+                    error_code = error.split(":", 1)[1].split(":", 1)[0]
+                    if re.fullmatch(r"[A-Z0-9_]+", error_code):
+                        safe_migration_summary["error_code"] = error_code
+                if isinstance(payload.get("returncode"), int):
+                    safe_migration_summary["returncode"] = payload["returncode"]
+                break
+            result["operation_summary"] = safe_migration_summary
+            if execution.returncode != 0:
+                result["blockers"].append(f"sql_migration_failed:rc={execution.returncode}")
+            check_results = []
+            if not result["blockers"]:
+                for check in checks:
+                    check_result = run_check(ROOT, check)
+                    check_results.append(check_result)
+                    if check_result["status"] != "PASS":
+                        result["blockers"].append("check_failed:sql_migration_post_audit")
+                        break
+            result["checks"] = check_results
+            result["tests"] = "PASS" if (preflight_results and check_results and all(x["status"] == "PASS" for x in preflight_results + check_results)) else "FAIL"
+            result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
+            if not result["blockers"]:
+                result["status"] = "OPERATIONAL_COMPLETE"
+                result["percent_complete"] = 100
+                result["certification"] = "CERTIFIED_OPERATIONAL"
+                result["summary_es"] = "El Worker ejecuto preflight SQL HRLectura, una migracion Development versionada y SHA-bound mediante writer dedicado, y post-audit SQL HRLectura. No acepto SQL inline, shell arbitrario ni toco Produccion."
+            else:
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+            return 0
+
+        if mode == MPRO_FULL_HISTORY_MODE:
+            if expected_base and expected_base != current_head:
+                raise RuntimeError(f"BASE_SHA_MISMATCH_OPERATIONAL_MODE:expected={expected_base}:actual={current_head}")
+            if job.get("actions") not in (None, []):
+                raise RuntimeError("MPRO_RESYNC_ACTIONS_FORBIDDEN")
+            units = job.get("units", [])
+            if not isinstance(units, list) or len(units) != 1 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):
+                raise RuntimeError("MPRO_RESYNC_EXACTLY_ONE_UNIT_REQUIRED")
+            dry_run = job.get("dry_run", True)
+            if not isinstance(dry_run, bool):
+                raise RuntimeError("MPRO_RESYNC_DRY_RUN_INVALID")
+            if dry_run is False and job.get("confirm_full_history_resync") is not True:
+                raise RuntimeError("MPRO_RESYNC_CONFIRMATION_REQUIRED")
+            checks = job.get("checks") or []
+            if not checks or any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+                raise RuntimeError("MPRO_RESYNC_SQL_AUDIT_REQUIRED")
+            script = ROOT / "backend" / "scripts" / "resync_mpro_full_history.py"
+            if not script.is_file():
+                raise RuntimeError("MPRO_RESYNC_SCRIPT_NOT_FOUND")
+            cmd = [PYTHON_BIN, str(script), "--unit", units[0].strip().upper()]
+            if dry_run is False:
+                cmd.append("--execute")
+            backend = ROOT / "backend"
+            execution = run(cmd, cwd=ROOT, timeout=SOFTRESTAURANT_RESYNC_MAX_SECONDS, env_extra={**load_backend_runtime_env(), "PYTHONPATH": str(backend)})
+            result["operation"] = MPRO_FULL_HISTORY_MODE
+            result["dry_run"] = dry_run
+            result["units"] = [units[0].strip().upper()]
+            result["canonical_sql_mutation"] = not dry_run
+            result["operation_output"] = execution.stdout[-20000:]
+            result["files_changed"] = []
+            if execution.returncode != 0:
+                result["blockers"].append(f"mpro_resync_failed:rc={execution.returncode}")
+            check_results = []
+            if not result["blockers"]:
+                for check in checks:
+                    check_result = run_check(ROOT, check)
+                    check_results.append(check_result)
+                    if check_result["status"] != "PASS":
+                        result["blockers"].append("check_failed:sql_readonly_audit")
+                        break
+            result["checks"] = check_results
+            result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
+            result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
+            if not result["blockers"]:
+                result["status"] = "OPERATIONAL_COMPLETE"
+                result["percent_complete"] = 100
+                result["certification"] = "CERTIFIED_OPERATIONAL"
+                result["summary_es"] = "El Worker ejecuto la capability cerrada de resync historico MPRO para una sola unidad y certifico el resultado con SQL READ_ONLY. No acepto shell, rutas ni comandos externos y no toco Produccion."
             else:
                 result["percent_complete"] = 0
                 result["certification"] = "NOT_CERTIFIED"
@@ -689,6 +1142,7 @@ def process_one(path: Path) -> int:
                 allowed_files.add(relative)
             scope_blockers = validate_scope(worktree, execution_base_sha, allowed_files)
             if scope_blockers:
+                result["status"] = "GIT_SCOPE_VIOLATION"
                 result["blockers"].extend(scope_blockers)
                 break
             result["files_changed"] = changed_files(worktree, execution_base_sha)
@@ -698,31 +1152,72 @@ def process_one(path: Path) -> int:
                 check_result = run_check(worktree, check)
                 check_results.append(check_result)
                 if check_result["status"] != "PASS":
+                    result["status"] = "GIT_TESTS_FAILED"
                     result["blockers"].append(f"check_failed:{check_result['type']}")
                     break
             result["checks"] = check_results
             result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else ("PASS" if not check_results and not result["blockers"] else "FAIL")
+            result["build"] = next((x["status"] for x in check_results if x.get("type") == "frontend_build"), "NOT_REQUESTED")
             result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
             if result["blockers"]:
                 break
 
             head = create_commit(worktree, job_id, sorted(allowed_files))
             result["candidate_sha"] = head
-            ok, detail, final_head, integration_evidence = integrate(worktree, branch, head, execution_base_sha, allowed_files)
+            result["commit_created"] = head
+            ok, detail, final_head, integration_evidence = integrate(worktree, branch, head, execution_base_sha, allowed_files, job_id, result["remote_at_start"])
             accumulated_integration.extend(integration_evidence)
             result["concurrency"]["integration"] = accumulated_integration
             result["integration_attempts"] = len(accumulated_integration)
             result["concurrent_head_changes"] = sorted({p for step in accumulated_integration for p in (step.get("concurrent_head_changes") or [])})
+            if integration_evidence:
+                last_git = integration_evidence[-1]
+                for field in ("remote_before_push","remote_after_push","local_after","ahead_after","behind_after","push_attempted","push_result"):
+                    if field in last_git: result[field]=last_git[field]
             if ok:
-                result["status"] = "INTEGRATED"
-                result["development_sha"] = final_head
-                result["percent_complete"] = 95
-                result["certification"] = "PENDING_AUDIT_EVIDENCE"
-                result["summary_es"] = "ChatGPT envio cambios exactos; el Worker aplico deterministic replay sobre fresh worktree cuando hubo concurrencia segura y lo integro sin rebase, merge, cherry-pick ni force. Produccion no fue tocada."
-                break
-            if detail.startswith("CONCURRENT_REPLAY_REQUIRED:"):
-                execution_base_sha = detail.split(":", 1)[1]
-                continue
+                result["status"] = "INTEGRATED"; result["git_sync_status"] = "CERTIFIED_GIT_SYNC"; result["development_sha"] = final_head; result["percent_complete"] = 95; result["certification"] = "PENDING_AUDIT_EVIDENCE"; result["summary_es"] = "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada."; break
+            terminal = detail.split(":",1)[0]
+            if terminal in {"REMOTE_MOVED_RETRY_REQUIRED", "GIT_PUSH_FAILED"}:
+                git("fetch", REMOTE, DEV_BRANCH)
+                remote_now = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
+                if remote_now != execution_base_sha:
+                    if not git_is_ancestor(execution_base_sha, remote_now):
+                        result["status"] = "GIT_DIVERGENCE_BLOCKED"
+                        result["blockers"].append(
+                            f"REMOTE_ADVANCE_NOT_DESCENDANT:base={execution_base_sha}:remote={remote_now}"
+                        )
+                        break
+                    concurrent_paths = git_changed_paths(execution_base_sha, remote_now)
+                    replay_policy = evaluate_scope_advance(
+                        execution_base_sha,
+                        remote_now,
+                        requested_paths,
+                        concurrent_paths,
+                    )
+                    accumulated_integration.append({
+                        "decision": replay_policy.get("decision"),
+                        "remote_after_failed_push": remote_now,
+                        "concurrent_head_changes": concurrent_paths,
+                        "replay_attempt": replay_attempt,
+                    })
+                    result["concurrency"]["integration"] = accumulated_integration
+                    result["concurrent_head_changes"] = sorted({
+                        p
+                        for step in accumulated_integration
+                        for p in (step.get("concurrent_head_changes") or [])
+                    })
+                    if replay_policy.get("decision") == "SAFE_REPLAY":
+                        execution_base_sha = remote_now
+                        result["remote_at_start"] = remote_now
+                        continue
+                    conflicts = ",".join(replay_policy.get("scope_conflicts") or [])
+                    result["status"] = "CONCURRENT_SCOPE_CONFLICT"
+                    result["blockers"].append(
+                        f"CONCURRENT_SCOPE_CONFLICT:base={execution_base_sha}:remote={remote_now}:paths={conflicts}"
+                    )
+                    break
+            if terminal in {"REMOTE_MOVED_RETRY_REQUIRED","GIT_DIVERGENCE_BLOCKED","GIT_SCOPE_VIOLATION","GIT_PUSH_FAILED","GIT_LOCK_BUSY"}:
+                result["status"] = terminal
             result["blockers"].append(detail)
             break
         else:
@@ -749,6 +1244,13 @@ def process_one(path: Path) -> int:
                 result["certification"] = "NOT_CERTIFIED"
         else:
             result["agent_guard_release"] = "NOT_REQUIRED"
+        if git_writer_lock is not None:
+            try:
+                release_writer_lock(ROOT, git_writer_lock); result["git_writer_lock_release"] = "PASS"
+            except GitGuardError as exc:
+                result["git_writer_lock_release"] = "FAIL"; result["blockers"].append("git_writer_lock_release_failed:" + exc.code); result["quality_gate"] = "FAIL"; result["certification"] = "NOT_CERTIFIED"
+        else:
+            result["git_writer_lock_release"] = "NOT_REQUIRED"
         if worktree is not None:
             git("worktree", "remove", "--force", str(worktree), check=False)
         if branch:
@@ -768,6 +1270,40 @@ def process_one(path: Path) -> int:
     return 0
 
 
+def _load_preferred_job() -> dict[str, Any] | None:
+    try:
+        payload = json.loads(PREFERRED_JOB_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, TypeError):
+        return None
+    job_id = str(payload.get("job_id") or "").strip()
+    try:
+        expires_at = float(payload.get("expires_at_epoch") or 0)
+    except (TypeError, ValueError):
+        expires_at = 0
+    if not JOB_ID_RE.fullmatch(job_id) or expires_at <= datetime.now(timezone.utc).timestamp():
+        try:
+            PREFERRED_JOB_PATH.unlink()
+        except OSError:
+            pass
+        return None
+    return payload
+
+
+def _select_pending_job(jobs: list[Path]) -> tuple[Path | None, bool]:
+    preferred = _load_preferred_job()
+    if preferred is not None:
+        preferred_id = str(preferred["job_id"])
+        for path in jobs:
+            if path.stem == preferred_id:
+                print(f"UNIVERSAL_DISPATCHER=PREFERRED_JOB_SELECTED JOB_ID={preferred_id}")
+                return path, True
+        print(f"UNIVERSAL_DISPATCHER=WAITING_PREFERRED_JOB JOB_ID={preferred_id}")
+        return None, True
+    if not jobs:
+        return None, False
+    return jobs[0], False
+
+
 def dispatch() -> int:
     ensure_dirs()
     with LOCK_FILE.open("a+") as lock:
@@ -777,10 +1313,19 @@ def dispatch() -> int:
             print("UNIVERSAL_DISPATCHER=BUSY")
             return 0
         jobs = sorted(PENDING.glob("*.json"))
-        if not jobs:
+        selected, is_preferred = _select_pending_job(jobs)
+        if selected is None:
+            if is_preferred:
+                return 0
             print("UNIVERSAL_DISPATCHER=NO_PENDING_JOBS")
             return 0
-        return process_one(jobs[0])
+        rc = process_one(selected)
+        if is_preferred:
+            try:
+                PREFERRED_JOB_PATH.unlink()
+            except OSError:
+                pass
+        return rc
 
 
 def main() -> int:

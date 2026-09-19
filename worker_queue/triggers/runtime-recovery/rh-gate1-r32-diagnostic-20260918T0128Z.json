@@ -1,0 +1,5 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Validate r32 queue-head diagnostic and current runtime convergence for existing RH-RECLUTAMIENTO-ARQUITECTURA-GATE1-20260909T0802Z. Do not modify RH job. Do not touch Production.",
+  "production_touched": false
+}
