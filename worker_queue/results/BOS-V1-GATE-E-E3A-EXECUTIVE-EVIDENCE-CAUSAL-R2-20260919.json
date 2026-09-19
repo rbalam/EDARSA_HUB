@@ -1,0 +1,151 @@
+{
+  "base_sha": "0164efda77363c025d1184300f8a13986e3ab4d8",
+  "blockers": [
+    "GIT_PUSH_FAILED"
+  ],
+  "candidate_sha": "a8c0beeec1ac8701b89045c1305fe55843fb6786",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-19T06:09:36Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/bos_executive/__init__.py",
+    "backend/modules/bos_executive/causal_service.py",
+    "backend/modules/bos_executive/contracts.py",
+    "backend/tests/test_bos_executive_e3a.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-V1-GATE-E-E3A-EXECUTIVE-EVIDENCE-CAUSAL-R2-20260919",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-19T06:09:40Z",
+  "quality_gate": "FAIL",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.bos_executive",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "causal_service",
+              "contracts"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "bos_executive",
+              "evidencekind"
+            ],
+            "path": "backend/modules/bos_executive/__init__.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.bos_executive",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "contracts"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "bos_executive",
+              "correlation_is_not_causation",
+              "evidencekind",
+              "not_enough_evidence"
+            ],
+            "path": "backend/modules/bos_executive/causal_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_claim",
+              "_classify",
+              "_unique",
+              "explain_causal_finding"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.bos_executive",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "enum"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "bos_executive",
+              "evidencekind",
+              "not_enough_evidence"
+            ],
+            "path": "backend/modules/bos_executive/contracts.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ConfidenceClass",
+              "EvidenceKind",
+              "EvidenceRef",
+              "ExecutiveFindingInput",
+              "ExecutiveFindingOutput",
+              "FindingStatus"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.bos_executive"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "bos_executive",
+              "correlation_is_not_causation",
+              "evidencekind",
+              "not_enough_evidence"
+            ],
+            "path": "backend/tests/test_bos_executive_e3a.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_request",
+              "test_e3a_correlation_never_becomes_causality",
+              "test_e3a_fact_is_deterministic_when_all_evidence_is_fact",
+              "test_e3a_fails_closed_without_evidence",
+              "test_e3a_inference_is_conservative_and_requires_validation",
+              "test_e3a_marks_stale_if_any_evidence_is_stale"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 4,
+          "scanned_files": 4,
+          "skipped_sensitive": 3
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-19T06:09:30Z",
+  "status": "GIT_PUSH_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
