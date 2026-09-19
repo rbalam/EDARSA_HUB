@@ -1,0 +1,64 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-WAKE-R24E-R6-FORMAL-READONLY-CERT-DIAGNOSTIC-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "objective": "Wake/read-only diagnostic: verificar por que el Worker no ha materializado resultado para EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R6-FORMAL-READONLY-CERT-R1. No mutar archivos, no tocar Produccion, no tocar backend. Reportar si el job esta en inbox/pending/processing/results/published/rejected/rejected_history, si hay locks activos, si hay orphan/quarantine, y si ya existe resultado PASS/FAIL.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "paths": [
+        "worker_queue/inbox/EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R6-FORMAL-READONLY-CERT-R1.json",
+        "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+        "frontend/src/App.js",
+        "frontend/src/config/enterpriseNavigationRegistry.json"
+      ],
+      "search_terms": [
+        "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R6-FORMAL-READONLY-CERT-R1",
+        "LotesProveedorPage",
+        "/tablajeria/lotes-proveedor",
+        "tablajeria.lotes_proveedor",
+        "frontend_build",
+        "production_touched"
+      ],
+      "max_results": 120
+    },
+    {
+      "type": "git_diff_check",
+      "allowed_paths": [],
+      "forbidden_paths": [
+        "backend/server.py",
+        "backend/modules/tablajeria/routes.py",
+        "backend/core/scheduler/scheduler_manager.py",
+        "backend/core/centro_control/email_notifications.py",
+        "backend/core/centro_control/whatsapp_notifications.py",
+        "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+        "frontend/src/App.js",
+        "frontend/src/config/enterpriseNavigationRegistry.json"
+      ]
+    }
+  ],
+  "expected_result": {
+    "quality_gate": "PASS",
+    "tests": "PASS",
+    "production_touched": false,
+    "files_changed": []
+  },
+  "diagnostic_target_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R6-FORMAL-READONLY-CERT-R1",
+  "diagnostic_required_report_fields": [
+    "target_job_location",
+    "target_job_result_if_exists",
+    "worker_consumption_status",
+    "locks",
+    "orphan_or_quarantine",
+    "quality_gate",
+    "tests",
+    "production_touched",
+    "files_changed",
+    "next_action"
+  ]
+}
