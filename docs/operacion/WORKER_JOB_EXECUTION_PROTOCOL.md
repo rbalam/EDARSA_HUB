@@ -10,11 +10,11 @@ Toda solicitud emitida desde ChatGPT hacia EDARSAHUB debe seguir el mismo circui
 2. Publicar el job en `worker/requests:worker_queue/inbox/<job_id>.json`.
 3. Volver a leer el archivo publicado y confirmar que el contenido y el `job_id` coinciden.
 4. Resolver el HEAD actual de `worker/requests`.
-5. Crear un trigger en `Edarsahub_Desarrollo:worker_queue/triggers/runtime-recovery/<job_id>.json` con `existing_job_id=<job_id>`.
-6. El workflow de runtime-recovery debe extraer `existing_job_id` del trigger y llamar `POST /api/internal/worker/wake` enviando:
+5. No crear commits de wake en `Edarsahub_Desarrollo`. El wake pertenece al control plane y no puede mover la rama que los jobs intentan integrar.
+6. El workflow `Worker Requests Wake` se activa desde `worker/requests` y envia el job publicado como preferido. El workflow `Worker Runtime Recovery Probe` queda reservado para `workflow_dispatch` y self-heal programado, sin commits trigger en Desarrollo. Ambos llaman `POST /api/internal/worker/wake` enviando:
    - `X-Worker-Queue-Sha: <HEAD worker/requests>`
-   - `X-Worker-Preferred-Job-Id: <job_id>`
-7. El endpoint debe validar el SHA de la cola, registrar el job preferido con expiracion y preservar cualquier job activo sano. Nunca debe interrumpir un job activo.
+   - `X-Worker-Preferred-Job-Id: <job_id>` cuando exista una preferencia explicita.
+7. El endpoint debe validar el SHA de la cola, registrar el job preferido con expiracion y preservar cualquier job activo sano. Nunca debe interrumpir un job activo ni requerir una mutacion de `Edarsahub_Desarrollo`.
 8. El dispatcher debe:
    - ejecutar primero el job preferido cuando aparezca en `pending`;
    - esperar brevemente por ese job si el intake aun no lo materializo;
@@ -41,4 +41,4 @@ La preferencia no es preemption. Si existe otro job activo con heartbeat sano, e
 
 ## Regla para ChatGPT
 
-Para cada nuevo comando que requiera Universal Worker, ChatGPT debe ejecutar la secuencia completa de publicacion, verificacion, wake preferido y comprobacion de resultado. No debe crear variantes R2/R3/R4 de forma repetitiva mientras exista un job valido en curso o pendiente, salvo que exista un rechazo terminal que requiera una correccion de contrato.
+Para cada nuevo comando que requiera Universal Worker, ChatGPT debe publicar y verificar el job y comprobar su lifecycle. Si el push a `worker/requests` activa correctamente el control plane y el job entra a pending/processing, no debe emitir otro wake. Si el runtime requiere recovery, debe usar el control plane sin crear commits en `Edarsahub_Desarrollo`. No debe crear variantes R2/R3/R4 mientras exista un job valido en curso o pendiente, salvo rechazo terminal que requiera una correccion de contrato.

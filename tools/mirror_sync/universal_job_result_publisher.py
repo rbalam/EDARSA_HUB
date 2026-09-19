@@ -22,6 +22,7 @@ from typing import Any
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
 STATE = ROOT / ".git" / "universal-worker-queue"
 RESULTS = STATE / "results"
+REJECTED = STATE / "rejected"
 PUBLISHED = STATE / "published"
 QUEUE_BRANCH = os.environ.get("EDARSAHUB_QUEUE_BRANCH", "worker/requests")
 RESULT_BRANCH = os.environ.get(
@@ -424,7 +425,7 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
         "quality_gate", "files_changed", "summary_es", "blockers",
         "percent_complete", "certification", "production_touched",
         "operation", "dry_run", "units", "canonical_sql_mutation",
-        "operation_summary",
+        "operation_summary", "reasons", "received_at_utc", "source",
     )
     public = {key: result.get(key) for key in allowed if key in result}
     public["published_at_utc"] = now()
@@ -870,8 +871,16 @@ def publish_one(path: Path) -> bool:
         f"{last_error or 'UNKNOWN'}"
     )
 
+def publishable_paths() -> list[Path]:
+    """Return terminal artifacts with dispatcher results taking precedence."""
+    by_name = {path.name: path for path in REJECTED.glob("*.json")}
+    by_name.update({path.name: path for path in RESULTS.glob("*.json")})
+    return [by_name[name] for name in sorted(by_name)]
+
+
 def main() -> int:
     RESULTS.mkdir(parents=True, exist_ok=True)
+    REJECTED.mkdir(parents=True, exist_ok=True)
     PUBLISH_LOCK.parent.mkdir(parents=True, exist_ok=True)
 
     with PUBLISH_LOCK.open("a+", encoding="utf-8") as lock_handle:
@@ -891,7 +900,7 @@ def main() -> int:
                 f"{RESULT_BATCH_SIZE}"
             )
 
-        for path in sorted(RESULTS.glob("*.json")):
+        for path in publishable_paths():
             marker = PUBLISHED / path.name
 
             # Un resultado ya certificado es terminal.

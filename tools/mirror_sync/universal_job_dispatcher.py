@@ -1177,8 +1177,49 @@ def process_one(path: Path) -> int:
             if ok:
                 result["status"] = "INTEGRATED"; result["git_sync_status"] = "CERTIFIED_GIT_SYNC"; result["development_sha"] = final_head; result["percent_complete"] = 95; result["certification"] = "PENDING_AUDIT_EVIDENCE"; result["summary_es"] = "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada."; break
             terminal = detail.split(":",1)[0]
-            if terminal in {"REMOTE_MOVED_RETRY_REQUIRED","GIT_DIVERGENCE_BLOCKED","GIT_SCOPE_VIOLATION","GIT_PUSH_FAILED","GIT_LOCK_BUSY"}: result["status"] = terminal
-            result["blockers"].append(detail); break
+            if terminal in {"REMOTE_MOVED_RETRY_REQUIRED", "GIT_PUSH_FAILED"}:
+                git("fetch", REMOTE, DEV_BRANCH)
+                remote_now = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
+                if remote_now != execution_base_sha:
+                    if not git_is_ancestor(execution_base_sha, remote_now):
+                        result["status"] = "GIT_DIVERGENCE_BLOCKED"
+                        result["blockers"].append(
+                            f"REMOTE_ADVANCE_NOT_DESCENDANT:base={execution_base_sha}:remote={remote_now}"
+                        )
+                        break
+                    concurrent_paths = git_changed_paths(execution_base_sha, remote_now)
+                    replay_policy = evaluate_scope_advance(
+                        execution_base_sha,
+                        remote_now,
+                        requested_paths,
+                        concurrent_paths,
+                    )
+                    accumulated_integration.append({
+                        "decision": replay_policy.get("decision"),
+                        "remote_after_failed_push": remote_now,
+                        "concurrent_head_changes": concurrent_paths,
+                        "replay_attempt": replay_attempt,
+                    })
+                    result["concurrency"]["integration"] = accumulated_integration
+                    result["concurrent_head_changes"] = sorted({
+                        p
+                        for step in accumulated_integration
+                        for p in (step.get("concurrent_head_changes") or [])
+                    })
+                    if replay_policy.get("decision") == "SAFE_REPLAY":
+                        execution_base_sha = remote_now
+                        result["remote_at_start"] = remote_now
+                        continue
+                    conflicts = ",".join(replay_policy.get("scope_conflicts") or [])
+                    result["status"] = "CONCURRENT_SCOPE_CONFLICT"
+                    result["blockers"].append(
+                        f"CONCURRENT_SCOPE_CONFLICT:base={execution_base_sha}:remote={remote_now}:paths={conflicts}"
+                    )
+                    break
+            if terminal in {"REMOTE_MOVED_RETRY_REQUIRED","GIT_DIVERGENCE_BLOCKED","GIT_SCOPE_VIOLATION","GIT_PUSH_FAILED","GIT_LOCK_BUSY"}:
+                result["status"] = terminal
+            result["blockers"].append(detail)
+            break
         else:
             result["blockers"].append("CONCURRENT_REPLAY_EXHAUSTED")
 

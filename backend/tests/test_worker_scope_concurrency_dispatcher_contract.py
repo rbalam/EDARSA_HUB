@@ -27,7 +27,7 @@ def test_integration_rechecks_scope_and_replays_only_when_safe():
 
 def test_read_only_can_tolerate_unrelated_repository_advance():
     src = _source()
-    assert 'allow_empty_scope_advance=(mode in {"READ_ONLY_SQL", READ_ONLY_MODE})' in src
+    assert 'allow_empty_scope_advance=(mode in {"READ_ONLY_SQL", READ_ONLY_MODE, FRONTEND_BUILD_CERTIFICATION_MODE})' in src
 
 
 def test_production_remains_explicitly_untouched_in_worker_results():

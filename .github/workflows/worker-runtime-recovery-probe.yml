@@ -2,15 +2,14 @@ name: Worker Runtime Recovery Probe
 # Manual retrigger 2026-09-17T13:27-06:00. Recupera el Universal Worker usando como prueba autoritativa el endpoint real de wake para Gate22A-R3.
 
 on:
-  push:
-    branches:
-      - Edarsahub_Desarrollo
-    paths:
-      - '.github/workflows/worker-runtime-recovery-probe.yml'
-      - 'worker_queue/config/runtime-recovery.json'
-      - 'worker_queue/triggers/runtime-recovery/**'
+  schedule:
+    - cron: '*/5 * * * *'
   workflow_dispatch:
     inputs:
+      preferred_job_id:
+        description: 'Job existente en worker/requests que debe recibir preferencia'
+        required: false
+        type: string
       preview_url:
         description: 'Override opcional de URL publica del runtime'
         required: false
@@ -36,16 +35,14 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Resolve preferred job from runtime-recovery trigger
+      - name: Resolve preferred job from control-plane input
         id: preferred
         shell: bash
+        env:
+          INPUT_PREFERRED_JOB_ID: ${{ inputs.preferred_job_id || '' }}
         run: |
           set -euo pipefail
-          TRIGGER="$(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep '^worker_queue/triggers/runtime-recovery/' | tail -n 1 || true)"
-          JOB_ID=""
-          if [ -n "$TRIGGER" ] && [ -r "$TRIGGER" ]; then
-            JOB_ID="$(jq -r '.existing_job_id // empty' "$TRIGGER")"
-          fi
+          JOB_ID="${INPUT_PREFERRED_JOB_ID:-}"
           if [ -n "$JOB_ID" ] && ! [[ "$JOB_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$ ]]; then
             echo 'INVALID_PREFERRED_JOB_ID'
             exit 14
