@@ -1,4 +1,5 @@
 name: Worker Wake Endpoint Bootstrap
+# Retrigger 2026-09-19T02:57-06:00: resilient marker for missing wake router mount recovery.
 # Retrigger 2026-09-18T21:16-06:00: restore missing wake router mount for existing Cavas certification pickup.
 # Manual retrigger 2026-09-18T20:05-06:00: restore missing /api/internal/worker/wake mount after R24E-R8 worktree cleanup.
 # Manual retrigger for R24F DESIGN-CONTRACT wake endpoint recovery.
@@ -38,14 +39,12 @@ jobs:
           path = Path("backend/server.py")
           text = path.read_text(encoding="utf-8")
           include_line = 'app.include_router(worker_runtime_wake_router, prefix="/api")'
-          marker = '# Startup: Iniciar scheduler'
+          legacy_marker = '# Startup: Iniciar scheduler'
+          fallback_marker = 'api_router = APIRouter(prefix="/api")'
 
           if include_line in text:
               print("WORKER_WAKE_ROUTER_ALREADY_MOUNTED=1")
               raise SystemExit(0)
-
-          if marker not in text:
-              raise SystemExit("WORKER_WAKE_MOUNT_MARKER_NOT_FOUND")
 
           block = "\n".join([
               "# =============================================================================",
@@ -60,7 +59,15 @@ jobs:
               "",
               "",
           ])
-          path.write_text(text.replace(marker, block + marker, 1), encoding="utf-8")
+
+          if legacy_marker in text:
+              text = text.replace(legacy_marker, block + legacy_marker, 1)
+          elif fallback_marker in text:
+              text = text.replace(fallback_marker, fallback_marker + "\n\n" + block, 1)
+          else:
+              raise SystemExit("WORKER_WAKE_MOUNT_MARKER_NOT_FOUND")
+
+          path.write_text(text, encoding="utf-8")
           print("WORKER_WAKE_ROUTER_MOUNTED=1")
           PY
 
