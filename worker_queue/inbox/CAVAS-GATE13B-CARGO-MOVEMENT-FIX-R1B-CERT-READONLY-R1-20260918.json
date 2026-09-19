@@ -1,0 +1,73 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE13B-CARGO-MOVEMENT-FIX-R1B-CERT-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ebb60bb5bca8595e631284f084b87c35f7748d32",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar en READ_ONLY el fix integrado de trazabilidad cargo<->movimiento de Cavas en SHA ebb60bb5bca8595e631284f084b87c35f7748d32. Confirmar codigo exacto, py_compile/tests backend, que el historico SQL inconsistente no fue alterado por el fix y que no hubo cambios adicionales ni Produccion. No ejecutar UAT ni mutaciones SQL.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/cava_socios/service.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios.py",
+        "backend/tests/test_cava_socios_persona_link.py"
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "r1b_historical_inconsistent_row_unchanged",
+          "sql": "SELECT CONVERT(varchar(36),m.MovimientoID) AS MovimientoID,m.TipoMovimiento,m.GeneroCargo,m.MontoCargo,CONVERT(varchar(36),c.CargoID) AS CargoID,c.Monto AS CargoMonto,c.Impuesto,c.Total,c.EstatusCargo FROM dbo.CavaSocios_Movimientos m LEFT JOIN dbo.CavaSocios_Cargos c ON c.MovimientoID=m.MovimientoID WHERE m.MovimientoID=CONVERT(uniqueidentifier,N'59B30335-F619-4F60-94F2-0920F22CB72F');"
+        },
+        {
+          "name": "r1b_inconsistency_count_still_historical_only",
+          "sql": "SELECT COUNT_BIG(*) AS inconsistent_rows FROM dbo.CavaSocios_Movimientos m LEFT JOIN dbo.CavaSocios_Cargos c ON c.MovimientoID=m.MovimientoID WHERE (c.CargoID IS NOT NULL AND (ISNULL(m.GeneroCargo,0)<>1 OR ISNULL(m.MontoCargo,0)<>ISNULL(c.Monto,0))) OR (c.CargoID IS NULL AND (ISNULL(m.GeneroCargo,0)=1 OR ISNULL(m.MontoCargo,0)>0));"
+        },
+        {
+          "name": "r1b_candidate_baseline",
+          "sql": "SELECT CONVERT(varchar(36),SocioID) AS SocioID,CONVERT(varchar(36),EmpresaID) AS UnidadNegocioID,NumeroSocio,PersonaID,ClienteCRMID FROM dbo.CavaSocios_Socios WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/service.py"
+        ],
+        "search_terms": [
+          "Generar cargo por descorche si aplica y reflejarlo en el movimiento",
+          "GeneroCargo = 1",
+          "MontoCargo = %s",
+          "_crear_cargo",
+          "registrar_consumo"
+        ],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No SQL DDL or DML",
+    "No file mutations",
+    "No Production",
+    "No RBAC changes",
+    "Do not backfill historical rows",
+    "Do not rerun Gate13B UAT",
+    "Gate13B R2 remains blocked until this certification is PASS/100%/blockers=[]"
+  ]
+}
