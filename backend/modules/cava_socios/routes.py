@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel, Field
 from typing import Dict, List, Optional, Any
 from fastapi.responses import StreamingResponse
+from uuid import UUID
 import io
 import logging
 
@@ -38,15 +39,24 @@ def _resolve_cava_scope(
     if not context:
         raise HTTPException(status_code=403, detail="Contexto Cavas no autorizado")
 
-    active_unit = str(context.get("unidad_activa") or "").strip()
+    active_unit_raw = context.get("unidad_activa")
+    try:
+        active_unit = str(UUID(str(active_unit_raw).strip()))
+    except (ValueError, TypeError, AttributeError):
+        raise HTTPException(status_code=403, detail="Unidad de negocio no autorizada")
+
     allowed_units = context.get("unidades_permitidas") or []
-    selected = next(
-        (
-            unit for unit in allowed_units
-            if str(unit.get("UnidadNegocioID") or "").strip() == active_unit
-        ),
-        None,
-    )
+    selected = None
+    for unit in allowed_units:
+        try:
+            allowed_unit = str(
+                UUID(str(unit.get("UnidadNegocioID") or "").strip())
+            )
+        except (ValueError, TypeError, AttributeError):
+            continue
+        if allowed_unit == active_unit:
+            selected = unit
+            break
 
     if not selected:
         raise HTTPException(status_code=403, detail="Unidad de negocio no autorizada")
