@@ -54,6 +54,7 @@ COMERCIAL_RANGE_RESYNC_MODE = "COMERCIAL_RANGE_RESYNC"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
 ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
 SQL_MIGRATION_DEVELOPMENT_MODE = "SQL_MIGRATION_DEVELOPMENT"
+FRONTEND_BUILD_CERTIFICATION_MODE = "FRONTEND_BUILD_CERTIFICATION"
 UNIT_CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 SOFTRESTAURANT_RESYNC_MAX_SECONDS = int(os.environ.get("EDARSAHUB_SOFTRESTAURANT_RESYNC_MAX_SECONDS", "21600"))
@@ -537,7 +538,7 @@ def process_one(path: Path) -> int:
         requested_paths = sorted({str(action.get("path")) for action in (job.get("actions") or []) if action.get("path")})
         mode = str(job.get("mode") or "")
         git_mutating = requires_writer_lock(mode)
-        if mode in {READ_ONLY_MODE, "READ_ONLY_SQL"}:
+        if mode in {READ_ONLY_MODE, "READ_ONLY_SQL", FRONTEND_BUILD_CERTIFICATION_MODE}:
             current_head = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
         elif git_mutating:
             try:
@@ -557,12 +558,12 @@ def process_one(path: Path) -> int:
             if not git_is_ancestor(expected_base, current_head):
                 raise RuntimeError(f"BASE_NOT_ANCESTOR:expected={expected_base}:actual={current_head}")
             changed = git_changed_paths(expected_base, current_head)
-            pickup_policy = evaluate_scope_advance(expected_base, current_head, requested_paths, changed, allow_empty_scope_advance=(mode in {"READ_ONLY_SQL", READ_ONLY_MODE}))
+            pickup_policy = evaluate_scope_advance(expected_base, current_head, requested_paths, changed, allow_empty_scope_advance=(mode in {"READ_ONLY_SQL", READ_ONLY_MODE, FRONTEND_BUILD_CERTIFICATION_MODE}))
             if pickup_policy["decision"] not in {"SAFE_REPLAY", "EXACT_BASE"}:
                 conflicts = ",".join(pickup_policy.get("scope_conflicts") or [])
                 raise RuntimeError(f"CONCURRENT_SCOPE_CONFLICT:expected={expected_base}:actual={current_head}:paths={conflicts}")
         else:
-            pickup_policy = evaluate_scope_advance(expected_base, current_head, requested_paths, [], allow_empty_scope_advance=(mode in {"READ_ONLY_SQL", READ_ONLY_MODE}))
+            pickup_policy = evaluate_scope_advance(expected_base, current_head, requested_paths, [], allow_empty_scope_advance=(mode in {"READ_ONLY_SQL", READ_ONLY_MODE, FRONTEND_BUILD_CERTIFICATION_MODE}))
         base_sha = current_head
         result["requested_base_sha"] = expected_base
         result["base_sha"] = base_sha
@@ -629,6 +630,45 @@ def process_one(path: Path) -> int:
                 result["certification"] = "CERTIFIED_READ_ONLY"
                 result["summary_es"] = "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion."
             else:
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+            return 0
+
+        if mode == FRONTEND_BUILD_CERTIFICATION_MODE:
+            if job.get("actions") not in (None, []):
+                raise RuntimeError("FRONTEND_BUILD_CERTIFICATION_ACTIONS_FORBIDDEN")
+            checks = job.get("checks") or []
+            allowed_frontend_cert_checks = {"frontend_build", "git_diff_check", "repository_contract_audit"}
+            if not checks:
+                raise RuntimeError("FRONTEND_BUILD_CERTIFICATION_CHECK_REQUIRED")
+            if not any(isinstance(c, dict) and c.get("type") == "frontend_build" for c in checks):
+                raise RuntimeError("FRONTEND_BUILD_CERTIFICATION_FRONTEND_BUILD_REQUIRED")
+            if any(not isinstance(c, dict) or c.get("type") not in allowed_frontend_cert_checks for c in checks):
+                raise RuntimeError("FRONTEND_BUILD_CERTIFICATION_ONLY_ALLOWED_CHECKS")
+            status_before = git("status", "--porcelain=v1", "--untracked-files=all", cwd=ROOT).stdout
+            check_results = []
+            for check in checks:
+                check_result = run_check(ROOT, check, readonly=True)
+                check_results.append(check_result)
+                if check_result["status"] != "PASS":
+                    result["blockers"].append(f"check_failed:{check.get('type')}")
+                    break
+            status_after = git("status", "--porcelain=v1", "--untracked-files=all", cwd=ROOT).stdout
+            if status_after != status_before:
+                result["blockers"].append("frontend_build_certification_repo_mutation_detected")
+            result["checks"] = check_results
+            result["files_changed"] = []
+            result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
+            result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
+            result["work_completion"] = "COMPLETE" if not result["blockers"] else "INCOMPLETE"
+            if not result["blockers"]:
+                result["status"] = "FRONTEND_BUILD_CERTIFIED"
+                result["percent_complete"] = 100
+                result["certification"] = "CERTIFIED_FRONTEND_BUILD"
+                result["certification_basis"] = "FRONTEND_BUILD_CERTIFICATION_NON_PRODUCT_MUTATING"
+                result["summary_es"] = "El Worker universal ejecuto frontend_build como certificacion no mutante de frontend, sin acciones de producto, sin cambios tracked/untracked del repositorio y sin tocar Produccion."
+            else:
+                result["status"] = "FRONTEND_BUILD_FAILED"
                 result["percent_complete"] = 0
                 result["certification"] = "NOT_CERTIFIED"
             return 0

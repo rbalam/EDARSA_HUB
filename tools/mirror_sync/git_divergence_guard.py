@@ -65,7 +65,7 @@ def mutation_policy(state: dict[str, Any], *, allow_local_ahead: bool = False) -
     return {"allowed": False, "terminal_status": "GIT_DIVERGENCE_BLOCKED", "reason": "UNKNOWN_GIT_STATE"}
 
 def requires_writer_lock(mode: str) -> bool:
-    return str(mode or "MUTATION") not in {"READ_ONLY","READ_ONLY_SQL","SOFTRESTAURANT_FULL_HISTORY_RESYNC","MPRO_FULL_HISTORY_RESYNC","ISCAM_DETAIL_BACKFILL","ISCAM_PAYMENTS_ONLY_RESYNC","SQL_MIGRATION_DEVELOPMENT"}
+    return str(mode or "MUTATION") not in {"READ_ONLY","READ_ONLY_SQL","SOFTRESTAURANT_FULL_HISTORY_RESYNC","MPRO_FULL_HISTORY_RESYNC","ISCAM_DETAIL_BACKFILL","ISCAM_PAYMENTS_ONLY_RESYNC","SQL_MIGRATION_DEVELOPMENT","FRONTEND_BUILD_CERTIFICATION"}
 
 def _pid_alive(pid: int) -> bool:
     if pid <= 0: return False

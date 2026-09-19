@@ -50,6 +50,7 @@ COMERCIAL_RANGE_RESYNC_MODE = "COMERCIAL_RANGE_RESYNC"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
 ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
 SQL_MIGRATION_DEVELOPMENT_MODE = "SQL_MIGRATION_DEVELOPMENT"
+FRONTEND_BUILD_CERTIFICATION_MODE = "FRONTEND_BUILD_CERTIFICATION"
 UNIT_CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 MAX_ACTIONS = int(os.environ.get("EDARSAHUB_JOB_MAX_ACTIONS", "100"))
@@ -310,6 +311,9 @@ def validate(job: Any) -> list[str]:
         else:
             for index, check in enumerate(preflight_checks, 1):
                 errors.extend(validate_check(check, index))
+    elif mode == FRONTEND_BUILD_CERTIFICATION_MODE:
+        if actions not in (None, []):
+            errors.append("FRONTEND_BUILD_CERTIFICATION_ACTIONS_FORBIDDEN")
     elif mode == MPRO_FULL_HISTORY_MODE:
         if actions not in (None, []):
             errors.append("MPRO_RESYNC_ACTIONS_FORBIDDEN")
@@ -371,6 +375,13 @@ def validate(job: Any) -> list[str]:
             errors.append("SQL_MIGRATION_POST_AUDIT_REQUIRED")
         elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
             errors.append("SQL_MIGRATION_POST_ONLY_SQL_AUDIT_ALLOWED")
+    elif mode == FRONTEND_BUILD_CERTIFICATION_MODE:
+        if not isinstance(checks, list) or not checks:
+            errors.append("FRONTEND_BUILD_CERTIFICATION_CHECK_REQUIRED")
+        elif not any(isinstance(c, dict) and c.get("type") == "frontend_build" for c in checks):
+            errors.append("FRONTEND_BUILD_CERTIFICATION_FRONTEND_BUILD_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") not in {"frontend_build", "git_diff_check", "repository_contract_audit"} for c in checks):
+            errors.append("FRONTEND_BUILD_CERTIFICATION_ONLY_ALLOWED_CHECKS")
     elif mode == MPRO_FULL_HISTORY_MODE:
         if not isinstance(checks, list) or not checks:
             errors.append("MPRO_RESYNC_AUDIT_REQUIRED")
