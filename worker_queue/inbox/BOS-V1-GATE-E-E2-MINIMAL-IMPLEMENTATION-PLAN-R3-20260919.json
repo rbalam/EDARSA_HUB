@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-V1-GATE-E-E2-MINIMAL-IMPLEMENTATION-PLAN-R3-20260919",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "83037bfbef037522e4b773f82af7e831c8651cc8",
+  "production_allowed": false,
+  "objective": "Materializar exclusivamente el plan minimo de implementacion Gate E a partir del mapping E1 certificado, sin implementar codigo. Definir REUSE/EXTEND/MISSING, owners, archivos candidatos y secuencia quirurgica para cerrar los cuatro gaps.",
+  "acceptance": [
+    "Crear solamente docs/BOS/certifications/BOS_V1_GATE_E_E2_MINIMAL_IMPLEMENTATION_PLAN_V1.md.",
+    "Clasificar CAUSAL_EXPLANATION_LAYER como EXTEND_EXISTING con orquestacion causal faltante, reutilizando drilldown/auditoria/provenance/freshness.",
+    "Clasificar EXECUTIVE_PRIORITY_AGGREGATION como EXTEND_EXISTING con agregador cross-domain faltante, reutilizando workflows/SLA/prioridades existentes.",
+    "Clasificar BOS_RECOMMENDATION_CONTRACT como runtime MISSING, reutilizando policy, AI routing, auditoria y fuentes canonicas; no crear motor LLM autonomo.",
+    "Clasificar RECOMMENDATION_TO_AUTHORIZED_ACTION_BRIDGE como EXTEND_EXISTING, reutilizando agent_capability_policy, agent_procedure_policy, agent_execution_gate, RBAC, workflows y Universal Worker; prohibir nuevo executor.",
+    "Definir archivos candidatos fuera de backend/core para nueva orquestacion funcional siempre que sea posible.",
+    "No autorizar nuevas tablas, DDL, endpoints, permisos o jobs en este Gate.",
+    "Definir E3 en incrementos atomicos separados y ordenados.",
+    "git_diff_check debe pasar y production_touched=false."
+  ],
+  "constraints": [
+    "No nuevo discovery.",
+    "No codigo funcional.",
+    "No SQL DDL/DML.",
+    "No Mongo operativo.",
+    "No LIVE administrativo.",
+    "No Produccion.",
+    "No crecer backend/core.",
+    "No duplicar RBAC, workflow, scheduler, recommendation execution ni Universal Worker."
+  ],
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/BOS/certifications/BOS_V1_GATE_E_E2_MINIMAL_IMPLEMENTATION_PLAN_V1.md",
+      "content": "# BOS V1 Gate E - E2 Minimal Implementation Plan V1\n\nEstado: PLAN ONLY / NO IMPLEMENTATION\nFecha: 2026-09-17\n\nFuentes certificadas:\n- BOS-V1-GATE-E-E1-CONTRACT-CAPABILITY-MAPPING-R1-20260917\n- BOS-V1-GATE-E-EXECUTIVE-BOS-DESIGN-CONTRACT-R2-20260917\n- BOS-V1-GATE-E-EXECUTIVE-BOS-GAP-MATRIX-R1-20260917\n\n## Regla\n\n`REUSE -> CONSOLIDATE -> EXTRACT -> EXTEND -> CREATE_ONLY_WHEN_PROVEN_MISSING`\n\nEste Gate no autoriza codigo, DDL, endpoints, permisos, jobs ni Produccion.\n\n## 1. Resultado E1\n\n### A. CAUSAL_EXPLANATION_LAYER\n\nClasificacion:\n`EXTEND_EXISTING + MISSING_ORCHESTRATION`\n\nREUSE probado:\n- Decision Dashboard y drilldowns existentes.\n- auditoria SQL-first.\n- provenance/evidence patterns.\n- freshness/stale/FechaOperacion.\n- eventos y trazabilidad existentes.\n\nMISSING probado:\n- una orquestacion ejecutiva que produzca claim, evidence_refs, contributing_factors, confidence_class, limitations y NOT_ENOUGH_EVIDENCE.\n- no existe un runtime general de causalidad; drilldown no es causalidad.\n\nImplementacion minima propuesta:\n- bounded context nuevo o extension dentro de un modulo BOS ejecutivo/direction, NO backend/core.\n- servicio puro que reciba evidencias ya resueltas y clasifique HECHO/CORRELACION/INFERENCIA.\n- no persistir inicialmente si puede ser derivado on-demand de fuentes canonicas.\n- sin LLM obligatorio; LLM solo podria redactar sobre una estructura determinista ya construida.\n\n## 2. EXECUTIVE_PRIORITY_AGGREGATION\n\nClasificacion:\n`EXTEND_EXISTING + MISSING_CROSS_DOMAIN_AGGREGATOR`\n\nREUSE probado:\n- workflows.\n- SLA.\n- prioridades.\n- tareas/responsables.\n- vencimientos y escalamiento.\n- notificaciones.\n- objetos fuente por dominio.\n\nMISSING probado:\n- agregador ejecutivo cross-domain.\n- normalizacion comun de severidad/impacto/vencimiento sin duplicar lifecycle.\n\nImplementacion minima propuesta:\n- adaptadores de lectura por dominio hacia un DTO ejecutivo comun.\n- agregador read-only que referencia source_domain + source_object_ref.\n- prioridad explicable; no hardcodear pesos globales.\n- configuracion futura solo si evidencia demuestra necesidad.\n- no nueva tabla de tareas ejecutivas.\n\n## 3. BOS_RECOMMENDATION_CONTRACT\n\nClasificacion:\n`MISSING_RUNTIME_CONTRACT + REUSE_INFRASTRUCTURE`\n\nREUSE probado:\n- agent_capability_policy.\n- agent_procedure_policy.\n- agent_execution_gate.\n- AI gateway/routing.\n- IA Assistant como superficie conversacional.\n- auditoria/evidence.\n- fuentes SQL-first.\n\nMISSING probado:\n- runtime con recommendation_id, rationale, evidence_refs, expected_impact, risk_level, confidence_class, validity, eligible_actions y confirmation requirements.\n- no existe evidencia de recommendation runtime empresarial operativo.\n\nImplementacion minima propuesta:\n- recomendaciones deterministas primero.\n- LLM nunca fuente de hechos.\n- LLM opcional solo para explicacion/redaccion.\n- recomendacion sin evidencia suficiente => no emitir.\n- stale/freshness obligatorio.\n- no persistencia nueva hasta demostrar necesidad de historial operacional.\n\n## 4. RECOMMENDATION_TO_AUTHORIZED_ACTION_BRIDGE\n\nClasificacion:\n`EXTEND_EXISTING`\n\nREUSE probado:\n- RBAC.\n- agent_capability_policy.\n- agent_procedure_policy.\n- agent_execution_gate.\n- workflows de dominio.\n- Universal Worker.\n- idempotencia/guardas y auditoria existentes.\n\nMISSING minimo:\n- adaptador que traduzca eligible_action declarativa a una capacidad/procedure ya allowlisted.\n- enlace auditable recommendation_id -> requested action -> policy decision -> outcome.\n\nRegla:\nNO crear nuevo executor.\nEl bridge selecciona y solicita una capacidad existente; la ejecucion sigue perteneciendo al workflow/domain service/Universal Worker canonico.\n\n## 5. Ownership propuesto\n\nNo crecer `backend/core`.\n\nCandidatos preferidos:\n- `backend/modules/bos_executive/` o bounded context equivalente si ya existe owner canonico al momento de E3.\n- adaptadores dentro de modulos fuente cuando solo expongan un DTO read-only.\n- frontend: extender Tablero Ejecutivo/Direccion como consumidor, no fuente de verdad.\n\nCore existente solo se REUSA:\n- policy.\n- execution gate.\n- auditoria comun.\n- scheduler kernel.\n- SQL/identity/context abstractions.\n\n## 6. Secuencia E3 atomica\n\n### E3A - Executive Evidence DTO + causal explanation\nSolo contratos/servicio read-only + tests.\nSin persistencia.\n\n### E3B - Cross-domain priority adapters + aggregator\nSolo lectura.\nSin duplicar tareas/workflows.\n\n### E3C - Deterministic recommendation service\nConstruye recomendacion desde finding/priority item.\nSin ejecucion.\n\n### E3D - Authorized action bridge\nMapeo allowlisted hacia policy/procedure/execution channel existente.\nDefault deny.\nSin nuevo executor.\n\n### E3E - Frontend executive integration\nMostrar:\n- por que.\n- que atender.\n- recomendacion.\n- acciones elegibles/autorizables.\nNo ejecutar automaticamente.\n\n### E3F - E2E certification\nValidar las seis preguntas con fixtures/casos controlados en Desarrollo.\nProduccion prohibida.\n\n## 7. Condiciones fail-closed\n\n- sin evidencia => NOT_ENOUGH_EVIDENCE.\n- datos stale => marcar stale.\n- sin permiso => accion no elegible.\n- policy deny => no ejecutar.\n- procedure desconocida => no ejecutar.\n- recomendacion expirada => no ejecutar.\n- ausencia de idempotencia cuando sea requerida => no ejecutar.\n- acciones de pago/financieras => Gate especifico adicional.\n\n## 8. Prohibiciones\n\n- no nuevo RBAC.\n- no nuevo scheduler.\n- no nuevo workflow engine.\n- no nuevo Worker.\n- no nuevo action executor.\n- no Mongo operativo.\n- no LIVE administrativo.\n- no LLM generando SQL.\n- no tablas nuevas sin evidencia posterior.\n- no crecimiento de backend/core.\n\n## 9. Estado\n\n`E1_MAPPING=CERTIFIED_READ_ONLY`\n`E2_PLAN_READY=YES`\n`E3_IMPLEMENTATION_STARTED=NO`\n`GATE_E_CERTIFIED=NO`\n`PRODUCTION_TOUCHED=false`\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
