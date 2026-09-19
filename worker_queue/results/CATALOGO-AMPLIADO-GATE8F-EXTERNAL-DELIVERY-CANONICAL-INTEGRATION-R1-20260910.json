@@ -1,0 +1,21 @@
+{
+  "certification": "NOT_CERTIFIED",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CATALOGO-AMPLIADO-GATE8F-EXTERNAL-DELIVERY-CANONICAL-INTEGRATION-R1-20260910",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-19T07:14:28Z",
+  "reasons": [
+    "INVALID_SCHEMA",
+    "ACTIONS_REQUIRED"
+  ],
+  "received_at_utc": "2026-09-10T20:37:00.769137+00:00",
+  "schema": "edarsahub.worker-rejection.v2",
+  "source": "worker_queue/inbox/CATALOGO-AMPLIADO-GATE8F-EXTERNAL-DELIVERY-CANONICAL-INTEGRATION-R1-20260910.json",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "status": "REJECTED",
+  "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto.",
+  "work_completion": "NOT_CERTIFIED"
+}
