@@ -1,0 +1,81 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSA-AI-GATE1-CAPABILITY-DISCOVERY-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "AI-1 READ_ONLY capability discovery for EDARSA AI Platform. Inventory existing canonical AI Gateway, Execution Gate, Agent Harness/planner/router/runtime, Universal Worker, Scheduler, Secret Manager, object storage, RBAC, workflows/approvals, AI callers/providers/models, usage/cost/evaluation/dataset/decision-memory/tool-gateway capabilities and architectural debt. Return repository evidence only; no functional changes. Classify findings for subsequent architecture work as REUSE, EXTEND, ALIGN, CREATE_CANDIDATE, DO_NOT_TOUCH where evidence permits.",
+  "human_summary_language": "es",
+  "requester": {
+    "source": "chatgpt",
+    "project": "EDARSA AI Platform",
+    "gate": "AI-1"
+  },
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "frontend/src",
+          "tools",
+          "docs/BOS",
+          "docs/ARCHITECTURE"
+        ],
+        "search_terms": [
+          "ai_gateway",
+          "AI Gateway",
+          "agent_execution_gate",
+          "agent_harness",
+          "agent_runtime",
+          "ModelCandidate",
+          "ModelRouteRequest",
+          "provider",
+          "model",
+          "openai",
+          "anthropic",
+          "gemini",
+          "emergentintegrations",
+          "ollama",
+          "vllm",
+          "llama",
+          "Secret Manager",
+          "secret_manager",
+          "scheduler",
+          "Universal Worker",
+          "object_storage",
+          "RBAC",
+          "workflow",
+          "approval",
+          "usage",
+          "cost",
+          "benchmark",
+          "evaluation",
+          "dataset",
+          "decision memory",
+          "tool gateway"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.md",
+          "*.json",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx"
+        ],
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*"
+        ],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
