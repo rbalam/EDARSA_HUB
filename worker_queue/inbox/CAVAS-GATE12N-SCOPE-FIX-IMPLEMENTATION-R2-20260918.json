@@ -1,0 +1,72 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12N-SCOPE-FIX-IMPLEMENTATION-R2-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "892d58c03bae99d447e2b78840b062823d331798",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Implementar exclusivamente el fix quirurgico certificado de scope Cavas. Mantener la autorizacion mediante RBACContextService y usar el UnidadNegocioID UUID autorizado como scope operativo enviado a los servicios Cava, porque CavaSocios_*.EmpresaID es UNIQUEIDENTIFIER de unidad. No tocar RBAC global, Usuario_RolesContexto, Sistema_Empresas ni schema SQL. No reintentar UAT en este job.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/cava_socios/routes.py",
+      "old": "def _resolve_cava_scope(\n    current_user: Dict,\n    unidad_negocio_pk: Optional[str],\n) -> Dict[str, Any]:\n    \"\"\"Resuelve unidad y empresa exclusivamente desde el contexto RBAC SQL.\"\"\"\n    user_with_sql_id = enrich_current_user_with_sql_id(current_user)\n    context = context_service.get_user_context(\n        user_with_sql_id,\n        unidad_negocio_id=unidad_negocio_pk,\n    )\n\n    if not context:\n        raise HTTPException(status_code=403, detail=\"Contexto Cavas no autorizado\")\n\n    active_unit = str(context.get(\"unidad_activa\") or \"\").strip()\n    allowed_units = context.get(\"unidades_permitidas\") or []\n    selected = next(\n        (\n            unit for unit in allowed_units\n            if str(unit.get(\"UnidadNegocioID\") or \"\").strip() == active_unit\n        ),\n        None,\n    )\n\n    if not selected:\n        raise HTTPException(status_code=403, detail=\"Unidad de negocio no autorizada\")\n\n    empresa_id = selected.get(\"EmpresaID\")\n    if empresa_id in (None, \"\"):\n        raise HTTPException(\n            status_code=409,\n            detail=\"La unidad no tiene empresa canónica configurada para Cavas\",\n        )\n\n    return {\"empresa_id\": empresa_id, \"unidad_negocio_pk\": active_unit}\n",
+      "new": "def _resolve_cava_scope(\n    current_user: Dict,\n    unidad_negocio_pk: Optional[str],\n) -> Dict[str, Any]:\n    \"\"\"Resuelve el scope operativo de Cavas desde la unidad autorizada por RBAC SQL.\"\"\"\n    user_with_sql_id = enrich_current_user_with_sql_id(current_user)\n    context = context_service.get_user_context(\n        user_with_sql_id,\n        unidad_negocio_id=unidad_negocio_pk,\n    )\n\n    if not context:\n        raise HTTPException(status_code=403, detail=\"Contexto Cavas no autorizado\")\n\n    active_unit = str(context.get(\"unidad_activa\") or \"\").strip()\n    allowed_units = context.get(\"unidades_permitidas\") or []\n    selected = next(\n        (\n            unit for unit in allowed_units\n            if str(unit.get(\"UnidadNegocioID\") or \"\").strip() == active_unit\n        ),\n        None,\n    )\n\n    if not selected:\n        raise HTTPException(status_code=403, detail=\"Unidad de negocio no autorizada\")\n\n    # CavaSocios_*.EmpresaID es UNIQUEIDENTIFIER y representa el\n    # UnidadNegocioID autorizado. No mezclarlo con EmpresaID INT corporativo.\n    return {\"empresa_id\": active_unit, \"unidad_negocio_pk\": active_unit}\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_cava_socios.py",
+      "old": "    @pytest.mark.unit\n    @patch(\"modules.cava_socios.routes.context_service.get_user_context\")\n    @patch(\"modules.cava_socios.routes.enrich_current_user_with_sql_id\")\n    def test_resolve_cava_scope_success(self, mock_enrich, mock_get_context):\n        mock_user = {\"id\": \"user-123\", \"email\": \"test@edarsa.com\"}\n        mock_enrich.return_value = mock_user\n        mock_get_context.return_value = {\n            \"unidad_activa\": \"UNIT-01\",\n            \"unidades_permitidas\": [\n                {\"UnidadNegocioID\": \"UNIT-01\", \"EmpresaID\": \"EMP-99\"}\n            ],\n        }\n\n        scope = _resolve_cava_scope(mock_user, \"UNIT-01\")\n        assert scope[\"empresa_id\"] == \"EMP-99\"\n        assert scope[\"unidad_negocio_pk\"] == \"UNIT-01\"\n\n    @pytest.mark.unit\n    @patch(\"modules.cava_socios.routes.context_service.get_user_context\")\n    @patch(\"modules.cava_socios.routes.enrich_current_user_with_sql_id\")\n    def test_resolve_cava_scope_unauthorized_unit(self, mock_enrich, mock_get_context):\n        mock_user = {\"id\": \"user-123\"}\n        mock_enrich.return_value = mock_user\n        mock_get_context.return_value = {\n            \"unidad_activa\": \"UNIT-02\",\n            \"unidades_permitidas\": [\n                {\"UnidadNegocioID\": \"UNIT-01\", \"EmpresaID\": \"EMP-99\"}\n            ],\n        }\n\n        with pytest.raises(HTTPException) as exc_info:\n            _resolve_cava_scope(mock_user, \"UNIT-02\")\n        assert exc_info.value.status_code == 403\n\n    @pytest.mark.unit\n    @patch(\"modules.cava_socios.routes.context_service.get_user_context\")\n    @patch(\"modules.cava_socios.routes.enrich_current_user_with_sql_id\")\n    def test_resolve_cava_scope_missing_empresa(self, mock_enrich, mock_get_context):\n        mock_user = {\"id\": \"user-123\"}\n        mock_enrich.return_value = mock_user\n        mock_get_context.return_value = {\n            \"unidad_activa\": \"UNIT-01\",\n            \"unidades_permitidas\": [\n                {\"UnidadNegocioID\": \"UNIT-01\", \"EmpresaID\": None}\n            ],\n        }\n\n        with pytest.raises(HTTPException) as exc_info:\n            _resolve_cava_scope(mock_user, \"UNIT-01\")\n        assert exc_info.value.status_code == 409\n",
+      "new": "    @pytest.mark.unit\n    @patch(\"modules.cava_socios.routes.context_service.get_user_context\")\n    @patch(\"modules.cava_socios.routes.enrich_current_user_with_sql_id\")\n    def test_resolve_cava_scope_success(self, mock_enrich, mock_get_context):\n        mock_user = {\"id\": \"user-123\", \"email\": \"test@edarsa.com\"}\n        mock_enrich.return_value = mock_user\n        mock_get_context.return_value = {\n            \"unidad_activa\": \"UNIT-01\",\n            \"unidades_permitidas\": [\n                {\"UnidadNegocioID\": \"UNIT-01\", \"EmpresaID\": \"EMP-99\"}\n            ],\n        }\n\n        scope = _resolve_cava_scope(mock_user, \"UNIT-01\")\n        assert scope[\"empresa_id\"] == \"UNIT-01\"\n        assert scope[\"unidad_negocio_pk\"] == \"UNIT-01\"\n\n    @pytest.mark.unit\n    @patch(\"modules.cava_socios.routes.context_service.get_user_context\")\n    @patch(\"modules.cava_socios.routes.enrich_current_user_with_sql_id\")\n    def test_resolve_cava_scope_unauthorized_unit(self, mock_enrich, mock_get_context):\n        mock_user = {\"id\": \"user-123\"}\n        mock_enrich.return_value = mock_user\n        mock_get_context.return_value = {\n            \"unidad_activa\": \"UNIT-02\",\n            \"unidades_permitidas\": [\n                {\"UnidadNegocioID\": \"UNIT-01\", \"EmpresaID\": \"EMP-99\"}\n            ],\n        }\n\n        with pytest.raises(HTTPException) as exc_info:\n            _resolve_cava_scope(mock_user, \"UNIT-02\")\n        assert exc_info.value.status_code == 403\n\n    @pytest.mark.unit\n    @patch(\"modules.cava_socios.routes.context_service.get_user_context\")\n    @patch(\"modules.cava_socios.routes.enrich_current_user_with_sql_id\")\n    def test_resolve_cava_scope_uses_unit_when_corporate_empresa_missing(self, mock_enrich, mock_get_context):\n        mock_user = {\"id\": \"user-123\"}\n        mock_enrich.return_value = mock_user\n        mock_get_context.return_value = {\n            \"unidad_activa\": \"UNIT-01\",\n            \"unidades_permitidas\": [\n                {\"UnidadNegocioID\": \"UNIT-01\", \"EmpresaID\": None}\n            ],\n        }\n\n        scope = _resolve_cava_scope(mock_user, \"UNIT-01\")\n        assert scope[\"empresa_id\"] == \"UNIT-01\"\n        assert scope[\"unidad_negocio_pk\"] == \"UNIT-01\"\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/cava_socios/routes.py",
+        "backend/tests/test_cava_socios.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios.py",
+        "backend/tests/test_cava_socios_persona_link.py"
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "scope_fix_candidate_clean",
+          "sql": "SELECT CONVERT(varchar(36),SocioID) AS SocioID,CONVERT(varchar(36),EmpresaID) AS UnidadNegocioID,PersonaID,ClienteCRMID FROM dbo.CavaSocios_Socios WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        },
+        {
+          "name": "scope_fix_baseline_counts",
+          "sql": "SELECT (SELECT COUNT_BIG(*) FROM dbo.Gobierno_Persona) AS total_personas,(SELECT COUNT_BIG(*) FROM dbo.Gobierno_PersonaVinculo) AS total_vinculos,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Socios WHERE PersonaID IS NOT NULL) AS socios_vinculados;"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "Development only",
+    "Module-local surgical fix only",
+    "No DDL or DML",
+    "No UAT retry in this job",
+    "Do not modify RBACContextService",
+    "Do not modify Usuario_RolesContexto",
+    "Do not modify Sistema_Empresas",
+    "Do not change permissions roles users menus units or companies",
+    "No Production",
+    "EDARSAHUB SQL Server remains source of truth",
+    "MongoDB prohibited",
+    "Base SHA must match current Edarsahub_Desarrollo before mutation",
+    "Only backend/modules/cava_socios/routes.py and backend/tests/test_cava_socios.py may change"
+  ]
+}
