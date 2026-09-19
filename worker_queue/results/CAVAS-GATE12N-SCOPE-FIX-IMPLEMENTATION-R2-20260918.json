@@ -1,0 +1,76 @@
+{
+  "base_sha": "892d58c03bae99d447e2b78840b062823d331798",
+  "blockers": [
+    "REMOTE_MOVED_RETRY_REQUIRED"
+  ],
+  "candidate_sha": "4c93a3af186aef2eb087b34a13c00c3fb9ebde50",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-19T02:10:42Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/cava_socios/routes.py",
+    "backend/tests/test_cava_socios.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE12N-SCOPE-FIX-IMPLEMENTATION-R2-20260918",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-19T02:11:10Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "SocioID",
+              "UnidadNegocioID",
+              "PersonaID",
+              "ClienteCRMID"
+            ],
+            "name": "scope_fix_candidate_clean",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58",
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_personas",
+              "total_vinculos",
+              "socios_vinculados"
+            ],
+            "name": "scope_fix_baseline_counts",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0",
+                "0",
+                "0"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-19T02:10:11Z",
+  "status": "REMOTE_MOVED_RETRY_REQUIRED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
