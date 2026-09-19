@@ -1,0 +1,161 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-FASE6-IDEMPOTENCIA-BALANCE-MUTATION-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "1058f01d002cc118a042643da95883f8d1e413f6",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias"
+  },
+  "objective": "Corregir quirurgicamente Fase 6 Tablajerias dentro del scope certificado: idempotencia de movimientos/costeo/poliza, MERMA canonica compatible, poliza Debe=Haber sin costo merma hardcodeado y pruebas aisladas sin SQL real. No tocar SQL, Produccion, Scheduler, NetPay, RBAC/permisos, menu ni layout.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/tablajeria/fase6_service.py",
+      "old": "class TipoMovimiento(str, Enum):\n    SALIDA_INSUMO = \"SALIDA_INSUMO\"\n    ENTRADA_DERIVADO = \"ENTRADA_DERIVADO\"\n    SALIDA_MERMA = \"SALIDA_MERMA\"\n    AJUSTE_INVENTARIO = \"AJUSTE_INVENTARIO\"",
+      "new": "class TipoMovimiento(str, Enum):\n    SALIDA_INSUMO = \"SALIDA_INSUMO\"\n    ENTRADA_DERIVADO = \"ENTRADA_DERIVADO\"\n    MERMA = \"MERMA\"\n    # Compatibilidad: el contrato operativo canonico es MERMA.\n    SALIDA_MERMA = \"MERMA\"\n    AJUSTE_INVENTARIO = \"AJUSTE_INVENTARIO\"",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/tablajeria/fase6_service.py",
+      "old": "    def _now_utc(self) -> datetime:\n        return datetime.now(timezone.utc)\n    \n    # =========================================================================\n    # CONFIGURACIÓN CONTABLE\n    # =========================================================================",
+      "new": "    def _now_utc(self) -> datetime:\n        return datetime.now(timezone.utc)\n\n    def _decimal_money(self, value: Any) -> Decimal:\n        \"\"\"Normaliza importes para comparaciones contables deterministas.\"\"\"\n        return Decimal(str(value or 0)).quantize(Decimal(\"0.01\"))\n\n    def _fetch_existing_inventory_movements(self, cursor, orden_id: str) -> List[Dict[str, Any]]:\n        \"\"\"Devuelve movimientos ya generados para evitar duplicados.\"\"\"\n        cursor.execute(\"\"\"\n            SELECT MovimientoID, TipoMovimiento, ProductoCodigo, ProductoNombre,\n                   Cantidad, LoteProducto, Referencia\n            FROM Tablajeria_MovimientosInventario\n            WHERE OrdenID = %s\n            ORDER BY FechaMovimiento, MovimientoID\n        \"\"\", (orden_id,))\n        rows = cursor.fetchall() or []\n        return [\n            {\n                \"movimiento_id\": row.get('MovimientoID'),\n                \"tipo\": row.get('TipoMovimiento'),\n                \"producto\": row.get('ProductoCodigo'),\n                \"producto_nombre\": row.get('ProductoNombre'),\n                \"cantidad\": float(row.get('Cantidad') or 0),\n                \"lote\": row.get('LoteProducto'),\n                \"referencia\": row.get('Referencia')\n            }\n            for row in rows\n        ]\n\n    def _fetch_existing_costeo(self, cursor, orden_id: str) -> Optional[Dict[str, Any]]:\n        \"\"\"Devuelve el costeo existente de la orden para operación idempotente.\"\"\"\n        cursor.execute(\"\"\"\n            SELECT TOP 1 CosteoID, OrdenID, CostoTotalProduccion,\n                   CostoUnitarioPromedio, ReglaCosteoAplicada, FechaCosteo\n            FROM Tablajeria_CosteoProduccion\n            WHERE OrdenID = %s\n            ORDER BY FechaCosteo DESC, CosteoID DESC\n        \"\"\", (orden_id,))\n        row = cursor.fetchone()\n        return dict(row) if row else None\n\n    def _fetch_existing_poliza(self, cursor, orden_id: str, tipo_poliza: str) -> Optional[Dict[str, Any]]:\n        \"\"\"Devuelve la poliza existente para evitar duplicar asientos.\"\"\"\n        cursor.execute(\"\"\"\n            SELECT TOP 1 PolizaID, NumeroPoliza, TipoPoliza, FechaPoliza,\n                   Concepto, MontoTotal, EstatusPoliza\n            FROM Tablajeria_PolizasContables\n            WHERE OrdenID = %s AND TipoPoliza = %s\n            ORDER BY FechaCreacion DESC, PolizaID DESC\n        \"\"\", (orden_id, tipo_poliza))\n        row = cursor.fetchone()\n        return dict(row) if row else None\n\n    def _fetch_poliza_asientos(self, cursor, poliza_id: str) -> List[Dict[str, Any]]:\n        cursor.execute(\"\"\"\n            SELECT NumeroLinea, CuentaContable, Debe, Haber, Referencia\n            FROM Tablajeria_PolizasDetalle\n            WHERE PolizaID = %s\n            ORDER BY NumeroLinea\n        \"\"\", (poliza_id,))\n        rows = cursor.fetchall() or []\n        return [\n            {\n                \"linea\": row.get('NumeroLinea'),\n                \"cuenta\": row.get('CuentaContable'),\n                \"debe\": float(row.get('Debe') or 0),\n                \"haber\": float(row.get('Haber') or 0),\n                \"referencia\": row.get('Referencia')\n            }\n            for row in rows\n        ]\n\n    def _validar_balance_asientos(self, asientos: List[Dict[str, Any]]) -> None:\n        debe = self._decimal_money(sum(Decimal(str(a.get(\"debe\", 0) or 0)) for a in asientos))\n        haber = self._decimal_money(sum(Decimal(str(a.get(\"haber\", 0) or 0)) for a in asientos))\n        if debe != haber:\n            raise ValueError(f\"DEBE_HABER_DESCUADRADO: debe={debe} haber={haber}\")\n    \n    # =========================================================================\n    # CONFIGURACIÓN CONTABLE\n    # =========================================================================",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/tablajeria/fase6_service.py",
+      "old": "                    o.InsumoBaseCodigo, o.InsumoBaseNombre, o.LoteInsumo,\n                    o.CantidadBaseReal, o.MermaRealKg,\n                    o.EstatusOrden, o.FechaOperacionMexico",
+      "new": "                    o.InsumoBaseCodigo, o.InsumoBaseNombre, o.LoteInsumo,\n                    o.CantidadBaseReal, o.MermaRealKg,\n                    o.EstatusOrden, o.FechaOperacionMexico,\n                    o.MovimientoInventarioGenerado",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/tablajeria/fase6_service.py",
+      "old": "            if orden['EstatusOrden'] not in ('CERRADA', 'PENDIENTE_AUTORIZACION'):\n                raise ValueError(f\"Solo se puede afectar inventario de órdenes cerradas. Estatus: {orden['EstatusOrden']}\")\n            \n            config = self.obtener_config_contable(str(orden['EmpresaID']))",
+      "new": "            if orden['EstatusOrden'] not in ('CERRADA', 'PENDIENTE_AUTORIZACION'):\n                raise ValueError(f\"Solo se puede afectar inventario de órdenes cerradas. Estatus: {orden['EstatusOrden']}\")\n\n            movimientos_existentes = self._fetch_existing_inventory_movements(cursor, orden_id)\n            if orden.get('MovimientoInventarioGenerado') or movimientos_existentes:\n                logger.info(f\"[FASE6] Inventario ya afectado para orden {orden['FolioOrden']}\")\n                return {\n                    \"orden_id\": orden_id,\n                    \"folio\": orden['FolioOrden'],\n                    \"idempotente\": True,\n                    \"movimientos_generados\": 0,\n                    \"movimientos_existentes\": len(movimientos_existentes),\n                    \"detalle\": movimientos_existentes\n                }\n            \n            config = self.obtener_config_contable(str(orden['EmpresaID']))",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/tablajeria/fase6_service.py",
+      "old": "            # 3. SALIDA_MERMA - Mermas (si las hay)",
+      "new": "            # 3. MERMA - Mermas (si las hay)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/tablajeria/fase6_service.py",
+      "old": "                    mov_id, orden_id, TipoMovimiento.SALIDA_MERMA.value,",
+      "new": "                    mov_id, orden_id, TipoMovimiento.MERMA.value,",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/tablajeria/fase6_service.py",
+      "old": "                    \"tipo\": TipoMovimiento.SALIDA_MERMA.value,",
+      "new": "                    \"tipo\": TipoMovimiento.MERMA.value,",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/tablajeria/fase6_service.py",
+      "old": "            if not orden['CantidadBaseReal']:\n                raise ValueError(\"Orden sin cantidad real registrada\")\n            \n            # Calcular costo total del insumo",
+      "new": "            if not orden['CantidadBaseReal']:\n                raise ValueError(\"Orden sin cantidad real registrada\")\n\n            costeo_existente = self._fetch_existing_costeo(cursor, orden_id)\n            if costeo_existente:\n                logger.info(f\"[FASE6] Costeo ya existente para orden {orden['FolioOrden']}\")\n                return {\n                    \"costeo_id\": costeo_existente.get('CosteoID'),\n                    \"orden_id\": orden_id,\n                    \"folio\": orden['FolioOrden'],\n                    \"idempotente\": True,\n                    \"regla_aplicada\": costeo_existente.get('ReglaCosteoAplicada'),\n                    \"resumen\": {\n                        \"costo_total\": float(costeo_existente.get('CostoTotalProduccion') or 0),\n                        \"costo_unitario_promedio\": float(costeo_existente.get('CostoUnitarioPromedio') or 0)\n                    },\n                    \"detalles\": []\n                }\n            \n            # Calcular costo total del insumo",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/tablajeria/fase6_service.py",
+      "old": "            config = self.obtener_config_contable(str(costeo['EmpresaID']))\n            \n            if not config.generar_poliza_automatica:\n                return {\"mensaje\": \"Generación automática de pólizas deshabilitada\"}\n            \n            poliza_id = str(uuid.uuid4())",
+      "new": "            config = self.obtener_config_contable(str(costeo['EmpresaID']))\n\n            poliza_existente = self._fetch_existing_poliza(cursor, orden_id, TipoPoliza.PRODUCCION.value)\n            if poliza_existente:\n                logger.info(f\"[FASE6] Póliza ya existente para orden {costeo['FolioOrden']}\")\n                return {\n                    \"poliza_id\": poliza_existente.get('PolizaID'),\n                    \"numero_poliza\": poliza_existente.get('NumeroPoliza'),\n                    \"tipo\": poliza_existente.get('TipoPoliza'),\n                    \"fecha\": str(poliza_existente.get('FechaPoliza')),\n                    \"concepto\": poliza_existente.get('Concepto'),\n                    \"monto_total\": float(poliza_existente.get('MontoTotal') or 0),\n                    \"asientos\": self._fetch_poliza_asientos(cursor, poliza_existente.get('PolizaID')),\n                    \"estatus\": poliza_existente.get('EstatusPoliza'),\n                    \"idempotente\": True\n                }\n            \n            if not config.generar_poliza_automatica:\n                return {\"mensaje\": \"Generación automática de pólizas deshabilitada\"}\n\n            cursor.execute(\"\"\"\n                SELECT\n                    SUM(CASE WHEN TipoDerivado = 'MERMA' THEN CostoAsignado ELSE 0 END) AS CostoMerma,\n                    SUM(CASE WHEN TipoDerivado <> 'MERMA' THEN CostoAsignado ELSE 0 END) AS CostoProductos\n                FROM Tablajeria_CosteoDetalle\n                WHERE CosteoID = %s\n            \"\"\", (costeo['CosteoID'],))\n            totales_poliza = cursor.fetchone() or {}\n            \n            poliza_id = str(uuid.uuid4())",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/tablajeria/fase6_service.py",
+      "old": "            # 1. Cargo: Almacén Productos Terminados\n            costo_productos = float(costeo['CostoTotalProduccion'] or 0) - float(costeo.get('MermaRealKg') or 0) * 10  # Estimado merma",
+      "new": "            # 1. Cargo: Almacén Productos Terminados\n            costo_productos_dec = self._decimal_money(totales_poliza.get('CostoProductos'))\n            costo_merma_dec = self._decimal_money(totales_poliza.get('CostoMerma'))\n            monto_total_dec = self._decimal_money(monto_total)\n            if costo_productos_dec == 0 and costo_merma_dec == 0:\n                costo_productos_dec = monto_total_dec\n            if self._decimal_money(costo_productos_dec + costo_merma_dec) != monto_total_dec:\n                costo_productos_dec = monto_total_dec - costo_merma_dec\n            costo_productos = float(costo_productos_dec)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/tablajeria/fase6_service.py",
+      "old": "            if costeo.get('MermaRealKg') and float(costeo['MermaRealKg']) > 0:\n                costo_merma = float(costeo['MermaRealKg']) * float(costeo['CostoUnitarioInsumo'] or 0)",
+      "new": "            if costo_merma_dec > 0:\n                costo_merma = float(costo_merma_dec)",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/tablajeria/fase6_service.py",
+      "old": "            asientos.append({\n                \"linea\": linea, \"cuenta\": config.cuenta_almacen_insumos,\n                \"debe\": 0, \"haber\": monto_total\n            })\n            \n            conn.commit()",
+      "new": "            asientos.append({\n                \"linea\": linea, \"cuenta\": config.cuenta_almacen_insumos,\n                \"debe\": 0, \"haber\": monto_total\n            })\n\n            self._validar_balance_asientos(asientos)\n            \n            conn.commit()",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_tablajeria_fase6_service_unit.py",
+      "content": "from pathlib import Path\n\n\nSOURCE = Path(__file__).resolve().parents[1] / \"modules\" / \"tablajeria\" / \"fase6_service.py\"\n\n\ndef _source() -> str:\n    return SOURCE.read_text(encoding=\"utf-8\")\n\n\ndef test_fase6_merma_contract_is_canonical_and_compatible():\n    text = _source()\n    assert 'MERMA = \"MERMA\"' in text\n    assert 'SALIDA_MERMA = \"MERMA\"' in text\n    assert 'TipoMovimiento.MERMA.value' in text\n\n\ndef test_fase6_idempotency_guards_exist_without_sql_runtime():\n    text = _source()\n    assert '_fetch_existing_inventory_movements' in text\n    assert '_fetch_existing_costeo' in text\n    assert '_fetch_existing_poliza' in text\n    assert 'MovimientoInventarioGenerado' in text\n    assert '\"idempotente\": True' in text\n\n\ndef test_fase6_poliza_balance_has_no_hardcoded_merma_cost():\n    text = _source()\n    assert '* 10' not in text\n    assert '_validar_balance_asientos' in text\n    assert 'DEBE_HABER_DESCUADRADO' in text\n    assert \"SUM(CASE WHEN TipoDerivado = 'MERMA'\" in text\n\n\ndef test_fase6_scope_does_not_touch_forbidden_runtime_modules():\n    text = _source()\n    forbidden = [\n        'scheduler.add_job',\n        'netpay',\n        'enterpriseNavigationRegistry',\n    ]\n    for token in forbidden:\n        assert token not in text.lower()\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/tablajeria/fase6_service.py",
+        "backend/tests/test_tablajeria_fase6_service_unit.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_tablajeria_fase6_service_unit.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/tablajeria/fase6_service.py",
+          "backend/tests/test_tablajeria_fase6_service_unit.py"
+        ],
+        "search_terms": [
+          "MERMA",
+          "SALIDA_MERMA",
+          "idempotente",
+          "_fetch_existing_inventory_movements",
+          "_fetch_existing_costeo",
+          "_fetch_existing_poliza",
+          "_validar_balance_asientos",
+          "DEBE_HABER_DESCUADRADO",
+          "Tablajeria_CosteoDetalle",
+          "CostoMerma",
+          "CostoProductos"
+        ],
+        "max_results": 120
+      }
+    }
+  ],
+  "constraints": [
+    "Only backend/modules/tablajeria/fase6_service.py and backend/tests/test_tablajeria_fase6_service_unit.py may change",
+    "No SQL files",
+    "No Production",
+    "No Scheduler",
+    "No NetPay",
+    "No RBAC or permissions changes",
+    "No menu or layout changes",
+    "No business endpoint calls",
+    "No live administrative dashboards"
+  ]
+}
