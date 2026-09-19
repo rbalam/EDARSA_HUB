@@ -1,0 +1,66 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12N-UAT-R3-CERT-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "83037bfbef037522e4b773f82af7e831c8651cc8",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar en modo READ_ONLY la UAT R3 de Gate12N ya integrada y con quality_gate PASS. Confirmar que el candidato SOC-00001 regreso al baseline, que no quedaron Personas/Vinculos UAT12N, que la FK permanece trusted y que el archivo UAT corresponde al flujo exacto crear Persona -> vincular -> validar -> desvincular -> cleanup. No repetir la UAT ni ejecutar mutaciones.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "uat_r3_cert_candidate",
+          "sql": "SELECT CONVERT(varchar(36),SocioID) AS SocioID,CONVERT(varchar(36),EmpresaID) AS UnidadNegocioID,NumeroSocio,Estatus,Activo,PersonaID,ClienteCRMID FROM dbo.CavaSocios_Socios WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        },
+        {
+          "name": "uat_r3_cert_counts",
+          "sql": "SELECT (SELECT COUNT_BIG(*) FROM dbo.Gobierno_Persona) AS total_personas,(SELECT COUNT_BIG(*) FROM dbo.Gobierno_PersonaVinculo) AS total_vinculos,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Socios WHERE PersonaID IS NOT NULL) AS socios_vinculados;"
+        },
+        {
+          "name": "uat_r3_cert_residuals",
+          "sql": "SELECT (SELECT COUNT_BIG(*) FROM dbo.Gobierno_Persona WHERE RFC LIKE N'UAT12N%') AS personas_uat12n,(SELECT COUNT_BIG(*) FROM dbo.Gobierno_PersonaVinculo v INNER JOIN dbo.Gobierno_Persona p ON p.PersonaID=v.PersonaID WHERE p.RFC LIKE N'UAT12N%') AS vinculos_uat12n;"
+        },
+        {
+          "name": "uat_r3_cert_fk",
+          "sql": "SELECT name,is_disabled,is_not_trusted FROM sys.foreign_keys WHERE name=N'FK_CavaSocios_Socios_GobiernoPersona';"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/tests/test_cava_socios_gate12n_uat_controlled.py",
+          "backend/modules/cava_socios/routes.py",
+          "backend/modules/cava_socios/persona_link_service.py"
+        ],
+        "search_terms": [
+          "crear_persona_y_vincular",
+          "desvincular_persona",
+          "_cleanup_uat",
+          "_resolve_cava_scope",
+          "UAT12N"
+        ],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "Do not rerun UAT",
+    "No file mutations",
+    "No DDL or DML",
+    "No RBAC changes",
+    "No permission role user menu company or unit changes",
+    "No Production",
+    "Certification must fail closed if any residue remains"
+  ]
+}
