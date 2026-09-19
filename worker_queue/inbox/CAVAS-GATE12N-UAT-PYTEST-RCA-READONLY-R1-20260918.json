@@ -1,0 +1,73 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12N-UAT-PYTEST-RCA-READONLY-R1-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "22d5613dc13ac471603b33eba863fb18cb616224",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Aislar la causa exacta del pytest fallido de CAVAS-GATE12N-UAT-CONTROLLED-EXECUTION-R1 sin reintentar la UAT ni ejecutar mutaciones. Verificar el primer punto de fallo entre el current_user real, enrich_current_user_with_sql_id, RBACContextService.get_user_context y routes._resolve_cava_scope para Nestor Oxte en 130MID. Confirmar especificamente si Usuario_RolesContexto.EmpresaID NULL provoca que selected.EmpresaID sea NULL y que _resolve_cava_scope lance HTTP 409 antes de cualquier llamada mutante. No corregir nada en este job.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/routes.py",
+          "backend/modules/rbac_context_sql/context_service.py",
+          "backend/core/auth/sql_user_identity.py",
+          "backend/core/rbac/middleware.py"
+        ],
+        "search_terms": [
+          "_resolve_cava_scope",
+          "get_user_context",
+          "unidad_activa",
+          "unidades_permitidas",
+          "EmpresaID",
+          "La unidad no tiene empresa canónica configurada para Cavas",
+          "enrich_current_user_with_sql_id",
+          "Usuario_RolesContexto"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 300
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "pytest_rca_user_context_row",
+          "sql": "SELECT u.UsuarioID,CONVERT(varchar(36),u.PublicUUID) AS PublicUUID,u.Email,u.NombreCompleto,CONVERT(varchar(36),urc.UnidadNegocioID) AS UnidadNegocioID,urc.EmpresaID,urc.RolID,urc.Activo FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesContexto urc ON urc.UsuarioID=u.UsuarioID WHERE u.Email=N'noxte@alpyc.com' AND urc.UnidadNegocioID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        },
+        {
+          "name": "pytest_rca_unit_metadata",
+          "sql": "SELECT CONVERT(varchar(36),id) AS UnidadNegocioID,codigo,nombre,CONVERT(varchar(36),server_id) AS server_id,sucursal_origen_id,activo FROM dbo.Unidades_Negocio WHERE id=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        },
+        {
+          "name": "pytest_rca_company_metadata_by_code",
+          "sql": "SELECT EmpresaID,CodigoEmpresa,NombreEmpresa,Activo FROM dbo.Sistema_Empresas WHERE UPPER(LTRIM(RTRIM(CodigoEmpresa)))=N'130MID';"
+        },
+        {
+          "name": "pytest_rca_candidate_still_clean",
+          "sql": "SELECT CONVERT(varchar(36),SocioID) AS SocioID,CONVERT(varchar(36),EmpresaID) AS UnidadNegocioID,PersonaID,ClienteCRMID FROM dbo.CavaSocios_Socios WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "Development only",
+    "Do not rerun UAT",
+    "Do not create Persona",
+    "No DDL or DML",
+    "No code changes",
+    "No permission role user menu unit or company changes",
+    "No Production",
+    "Identify exact pytest root cause only",
+    "EDARSAHUB SQL Server remains source of truth"
+  ]
+}
