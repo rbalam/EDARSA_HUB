@@ -1,0 +1,25 @@
+{
+  "certification": "NOT_CERTIFIED",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "ricardo-worker-runtime-recovery-v4-20260826",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-19T08:11:13Z",
+  "reasons": [
+    "INVALID_SCHEMA",
+    "INVALID_TARGET_REPO",
+    "INVALID_TARGET_BRANCH",
+    "OBJECTIVE_REQUIRED",
+    "SUMMARY_LANGUAGE_MUST_BE_ES",
+    "ACTIONS_REQUIRED"
+  ],
+  "received_at_utc": "2026-08-26T14:39:17.172789+00:00",
+  "schema": "edarsahub.worker-rejection.v2",
+  "source": "worker_queue/inbox/ricardo-worker-runtime-recovery-v4-20260826.json",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "status": "REJECTED",
+  "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto.",
+  "work_completion": "NOT_CERTIFIED"
+}
