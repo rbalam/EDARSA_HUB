@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "9d274fa69c3eb16f6b63ebf5436a7783fdcb5949",
-  "generated_at_utc": "2026-09-19T04:33:59Z",
+  "generated_at_utc": "2026-09-19T04:35:18Z",
   "history": {
     "done_total_local": 710,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3365,
+      "age_seconds": 3444,
       "job_id": "CAVAS-GATE12N-SCOPE-FIX-R2B-CERT-READONLY-R1-20260918",
       "reasons": [
         "CHECK_4_REQUEST_REQUIRED"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3363,
+      "age_seconds": 3442,
       "job_id": "EDARSAHUB-RUNTIME-PREVIEW-WAKE-ENDPOINT-INFRA-CORRECTION-R1-20260918",
       "reasons": [
         "REQUESTER_EMAIL_INVALID",
@@ -32,37 +32,37 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1236,
+      "age_seconds": 1315,
       "job_id": "CAVAS-GATE12N-SCOPE-FIX-R2B-CERT-READONLY-R2-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 564,
+      "age_seconds": 643,
       "job_id": "CAVAS-GATE12N-UAT-CONTROLLED-EXECUTION-R2-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 201,
+      "age_seconds": 280,
       "job_id": "CAVAS-GATE12N-UAT-CONTROLLED-EXECUTION-R2B-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3361,
+      "age_seconds": 3440,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-DESIGN-CONTRACT-READONLY-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 7,
+      "age_seconds": 86,
       "job_id": "REPLAY-EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-DESIGN-CONTRACT-READONLY-R1-20260919T0434Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 156,
+      "age_seconds": 235,
       "job_id": "UNIVERSAL-WORKER-READONLY-MUTATION-EVIDENCE-R1-20260918",
       "reason": null,
       "state": "RESULT_READY"
@@ -80,8 +80,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-19T04:33:54Z",
-    "last_receive_utc": "2026-09-19T04:33:57Z",
+    "last_cycle_utc": "2026-09-19T04:35:13Z",
+    "last_receive_utc": "2026-09-19T04:35:16Z",
     "last_terminal_utc": "2026-09-19T04:33:51Z",
     "pid": "375524"
   },
