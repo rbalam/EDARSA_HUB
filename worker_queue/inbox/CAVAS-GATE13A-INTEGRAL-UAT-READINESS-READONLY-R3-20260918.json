@@ -1,0 +1,98 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE13A-INTEGRAL-UAT-READINESS-READONLY-R3-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b79d63aa1f6db8ae70d25158fd286dc37989f72d",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Reemitir Gate13A readiness integral backend/SQL/repositorio de Cavas corrigiendo exclusivamente las consultas READ_ONLY para usar el esquema canonico real: CavaSocios_Botellas, CavaSocios_Movimientos y CavaSocios_Cargos. Mantener mismo alcance funcional de Dashboard, Socios, Persona-Link, Botellas, Inventario, Consumos, Kardex, reportes, permisos, multiunidad y errores. No mutar datos, codigo ni Produccion.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/cava_socios/routes.py",
+        "backend/modules/cava_socios/service.py",
+        "backend/modules/cava_socios/persona_link_service.py",
+        "backend/modules/cava_socios/report_service.py",
+        "backend/modules/cava_socios/notification_service.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios.py",
+        "backend/tests/test_cava_socios_persona_link.py",
+        "backend/tests/test_cava_socios_gate12n_uat_controlled.py"
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "gate13a_r3_candidate",
+          "sql": "SELECT CONVERT(varchar(36),SocioID) AS SocioID,CONVERT(varchar(36),EmpresaID) AS UnidadNegocioID,NumeroSocio,Estatus,Activo,PersonaID,ClienteCRMID FROM dbo.CavaSocios_Socios WHERE SocioID=CONVERT(uniqueidentifier,N'62CA4D8A-F4B7-4C66-BE8C-2C13C7445A58') AND EmpresaID=CONVERT(uniqueidentifier,N'19E076FB-C6DE-4EA5-84AB-1CAA9E86082C');"
+        },
+        {
+          "name": "gate13a_r3_counts",
+          "sql": "SELECT (SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Socios) AS socios,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Botellas) AS botellas,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Movimientos) AS movimientos,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Cargos) AS cargos,(SELECT COUNT_BIG(*) FROM dbo.Gobierno_Persona) AS personas,(SELECT COUNT_BIG(*) FROM dbo.Gobierno_PersonaVinculo) AS persona_vinculos;"
+        },
+        {
+          "name": "gate13a_r3_rbac",
+          "sql": "SELECT urc.UsuarioID,urc.RolID,CONVERT(varchar(36),urc.UnidadNegocioID) AS UnidadNegocioID,urc.EmpresaID,urc.Activo FROM dbo.Usuario_RolesContexto urc WHERE urc.UsuarioID=4 AND urc.Activo=1;"
+        },
+        {
+          "name": "gate13a_r3_fk",
+          "sql": "SELECT OBJECT_NAME(fk.parent_object_id) AS child_table,fk.name,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk WHERE fk.parent_object_id IN (OBJECT_ID(N'dbo.CavaSocios_Socios'),OBJECT_ID(N'dbo.CavaSocios_Botellas'),OBJECT_ID(N'dbo.CavaSocios_Cargos'),OBJECT_ID(N'dbo.CavaSocios_Movimientos')) ORDER BY child_table,fk.name;"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios",
+          "backend/tests/test_cava_socios.py",
+          "backend/tests/test_cava_socios_persona_link.py",
+          "frontend/src/pages/cava-socios",
+          "frontend/src/App.js",
+          "frontend/src/config/enterpriseMenuConfig.js"
+        ],
+        "search_terms": [
+          "/api/cava-socios",
+          "CAVA_SOCIOS_VER",
+          "CAVA_SOCIOS_CREAR",
+          "CAVA_SOCIOS_EDITAR",
+          "unidad_negocio_pk",
+          "PersonaLinkCard",
+          "inventario",
+          "kardex",
+          "consumos",
+          "reportes",
+          "CorporateFiltersProvider",
+          "useAccessContext",
+          "CavaSocios_Movimientos",
+          "CavaSocios_Botellas",
+          "CavaSocios_Cargos"
+        ],
+        "max_results": 300
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No file mutations",
+    "No DDL or DML",
+    "No Production",
+    "No RBAC mutations",
+    "No user role permission menu company or unit changes",
+    "Use canonical CavaSocios tables only",
+    "Frontend build certification remains a separate Gate13A component",
+    "Gate13B remains blocked until backend readiness and frontend build certification both pass"
+  ]
+}
