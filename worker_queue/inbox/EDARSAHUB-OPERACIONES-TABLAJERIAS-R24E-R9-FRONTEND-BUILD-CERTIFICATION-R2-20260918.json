@@ -1,0 +1,92 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R9-FRONTEND-BUILD-CERTIFICATION-R2-20260918",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "FRONTEND_BUILD_CERTIFICATION",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias-r24e"
+  },
+  "objective": "Repetir certificacion frontend_build de R24E Lotes Proveedor despues de certificar el fix del publicador de resultados EDARSAHUB-WORKER-FRONTEND-BUILD-RESULT-PUBLISHER-CERT-FIX-R1-20260918. Debe emitir CERTIFIED_FRONTEND_BUILD si el build pasa sin cambios de repositorio. No modificar producto, backend funcional, SQL, Produccion, Scheduler, NetPay, Centro de Control, permisos, menu/layout ni publicar R24F.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "frontend_build",
+      "path": "frontend"
+    },
+    {
+      "type": "git_diff_check",
+      "allowed_paths": [],
+      "forbidden_paths": [
+        "backend/**",
+        "database/**",
+        "db/**",
+        "sql/**",
+        "migrations/**",
+        "scripts/**",
+        "tools/**",
+        ".github/**",
+        "frontend/src/App.js",
+        "frontend/src/config/enterpriseNavigationRegistry.json",
+        "frontend/src/config/enterpriseMenuConfig.js",
+        "frontend/src/pages/tablajeria/**",
+        "frontend/src/components/**",
+        "frontend/src/layout/**",
+        "frontend/src/router/**",
+        "frontend/src/services/**"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+          "frontend/src/App.js",
+          "frontend/src/config/enterpriseNavigationRegistry.json"
+        ],
+        "search_terms": [
+          "LotesProveedorPage",
+          "/tablajeria/lotes-proveedor",
+          "tablajeria.lotes_proveedor",
+          "/tablajeria/lotes-proveedor/rendimientos",
+          "/tablajeria/reclamos-proveedor"
+        ],
+        "include_patterns": [
+          "*.js",
+          "*.jsx",
+          "*.json"
+        ],
+        "exclude_patterns": [
+          "node_modules/*",
+          "build/*",
+          "dist/*"
+        ],
+        "max_results": 500
+      }
+    }
+  ],
+  "expected_result": {
+    "status": "FRONTEND_BUILD_CERTIFIED",
+    "certification": "CERTIFIED_FRONTEND_BUILD",
+    "quality_gate": "PASS",
+    "tests": "PASS",
+    "production_touched": false,
+    "files_changed": []
+  },
+  "hard_guards": {
+    "no_r24f": true,
+    "no_product_mutation": true,
+    "no_backend_functional": true,
+    "no_sql": true,
+    "no_production": true,
+    "no_scheduler": true,
+    "no_netpay": true,
+    "no_permissions": true,
+    "no_menu_layout_changes": true
+  }
+}
