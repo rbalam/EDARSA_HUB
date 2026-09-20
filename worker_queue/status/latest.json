@@ -1,10 +1,10 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "6cdb06ad073a9b96c70ced95c03489c435d7b8f1",
-  "generated_at_utc": "2026-09-20T02:34:03Z",
+  "generated_at_utc": "2026-09-20T02:35:24Z",
   "history": {
     "done_total_local": 749,
-    "pending_total_local": 0,
+    "pending_total_local": 1,
     "processing_total_local": 0,
     "rejected_total_local": 685,
     "results_total_local": 1273
@@ -13,26 +13,32 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 368,
+      "age_seconds": 2,
+      "job_id": "CAVAS-GATE16A-UNIVERSAL-INTEROPERABILITY-MIGRATION-DISCOVERY-READONLY-R1B-20260919",
+      "reason": null,
+      "state": "PENDING"
+    },
+    {
+      "age_seconds": 449,
       "job_id": "EDARSA-AI-GATE1-CAPABILITY-DISCOVERY-R2-20260919",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "oldest_pending_age_seconds": 0,
+  "oldest_pending_age_seconds": 2,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
-  "queue_pending": 0,
+  "queue_pending": 1,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 1,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-20T02:34:03Z",
-    "last_receive_utc": "2026-09-20T02:33:58Z",
+    "last_cycle_utc": "2026-09-20T02:35:20Z",
+    "last_receive_utc": "2026-09-20T02:35:23Z",
     "last_terminal_utc": "2026-09-20T02:27:54Z",
     "pid": "34397"
   },
