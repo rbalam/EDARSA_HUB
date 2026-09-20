@@ -13,8 +13,9 @@ STATE = Path(os.environ.get("EDARSAHUB_BOOTSTRAP_STATE", "/var/lib/edarsahub-boo
 REMOTE = os.environ.get("EDARSAHUB_REMOTE", "origin")
 DEV = os.environ.get("EDARSAHUB_DEV_BRANCH", "Edarsahub_Desarrollo")
 SERVICE = os.environ.get("EDARSAHUB_SUPERVISOR_SERVICE", "edarsahub-mirror-sync")
+WORKER_SERVICE = os.environ.get("EDARSAHUB_UNIVERSAL_WORKER_SERVICE", "edarsahub-universal-worker")
 INTERVAL = int(os.environ.get("EDARSAHUB_BOOTSTRAP_INTERVAL", "20"))
-MAX_STALE = int(os.environ.get("EDARSAHUB_BOOTSTRAP_MAX_STALE", "90"))
+MAX_STALE = int(os.environ.get("EDARSAHUB_BOOTSTRAP_MAX_STALE", "60"))
 RUNTIME = APP / ".git" / "universal-worker-queue" / "runtime"
 MIRROR_STATE = APP / ".git" / "mirror-sync"
 MIRROR_ENABLE = MIRROR_STATE / "ENABLED"
@@ -88,10 +89,10 @@ def mirror_authorization() -> dict:
     return {"authorized": True, "state": "AUTHORIZED"}
 
 
-def supervisor_restart(reason: str) -> bool:
-    result = run(["supervisorctl", "restart", SERVICE], cwd=APP, timeout=30)
+def supervisor_restart(reason: str, service: str = SERVICE) -> bool:
+    result = run(["supervisorctl", "restart", service], cwd=APP, timeout=30)
     ok = result.returncode == 0
-    audit("SUPERVISOR_RESTART", reason=reason, ok=ok, output=result.stdout[-1000:])
+    audit("SUPERVISOR_RESTART", reason=reason, service=service, ok=ok, output=result.stdout[-1000:])
     return ok
 
 
@@ -144,11 +145,14 @@ def cycle() -> dict:
     # itself is never authorization.
     if auth["authorized"] and ff.get("state") == "FF_APPLIED":
         restarted = supervisor_restart("FAST_FORWARD_APPLIED")
-    elif stale:
+    if stale:
+        restarted = supervisor_restart("WORKER_HEARTBEAT_STALE", WORKER_SERVICE) or restarted
         audit(
-            "UNIVERSAL_WORKER_STALE_OBSERVED",
+            "UNIVERSAL_WORKER_STALE_RECOVERY",
             worker_receive_age_seconds=age,
-            action="DEFER_TO_CANONICAL_WORKER_OWNER",
+            action="SUPERVISOR_RESTART",
+            service=WORKER_SERVICE,
+            restarted=restarted,
         )
 
     payload = {
@@ -159,7 +163,7 @@ def cycle() -> dict:
         "worker_receive_age_seconds": age,
         "worker_stale": stale,
         "restart_requested": restarted,
-        "worker_restart_owner": "EXTERNAL_CANONICAL_OWNER",
+        "worker_restart_owner": "BOOTSTRAP_WATCHDOG_SUPERVISOR_FALLBACK",
         "production_touched": False,
     }
     STATUS.write_text(
