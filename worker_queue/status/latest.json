@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "5d49a1388267248630f7af564309ca89f6cd1176",
-  "generated_at_utc": "2026-09-20T04:04:34Z",
+  "generated_at_utc": "2026-09-20T04:06:03Z",
   "history": {
     "done_total_local": 759,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 216,
+      "age_seconds": 304,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-DRY-RUN-READONLY-R1-20260920",
       "reasons": [
         "CHECK_1_REQUEST_REQUIRED"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3359,
+      "age_seconds": 3448,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-PACKAGE-MANIFEST-READONLY-R1-20260920",
       "reasons": [
         "REQUESTER_RBAC_DENIED:REQUESTER_RBAC_LOOKUP_FAILED"
@@ -31,43 +31,43 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3340,
+      "age_seconds": 3428,
       "job_id": "CAVAS-GATE16C-MIGRATION-HISTORY-ENGINE-MINIMAL-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2214,
+      "age_seconds": 2303,
       "job_id": "CAVAS-GATE16D-UNIVERSAL-CONNECTOR-ADAPTER-SDK-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 178,
+      "age_seconds": 267,
       "job_id": "CAVAS-GATE16E-EVIDENCE-CHAIN-OF-CUSTODY-MINIMAL-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 8,
+      "age_seconds": 96,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-DRY-RUN-READONLY-R1B-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2683,
+      "age_seconds": 2772,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-PACKAGE-MANIFEST-READONLY-R1B-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2376,
+      "age_seconds": 2465,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-PATCH-PLAN-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1902,
+      "age_seconds": 1991,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-PATCH-PLAN-READONLY-R1B-20260920",
       "reason": null,
       "state": "RESULT_READY"
@@ -85,8 +85,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-20T04:04:29Z",
-    "last_receive_utc": "2026-09-20T04:04:30Z",
+    "last_cycle_utc": "2026-09-20T04:05:59Z",
+    "last_receive_utc": "2026-09-20T04:05:54Z",
     "last_terminal_utc": "2026-09-20T04:04:26Z",
     "pid": "59"
   },
