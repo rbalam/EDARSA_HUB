@@ -1,0 +1,96 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-CERTIFICATION-MODE-R2D-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3a784313a0db9fa46e10bef48f396449b9a33c35",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias"
+  },
+  "objective": "Certificar exclusivamente la capacidad actual del Universal Worker para ejecutar frontend_build despues del hardening de evidencia de fallas. No modificar producto, no crear archivos, no ejecutar SQL, no tocar Produccion, no tocar Mongo, no publicar R24E-R9 ni R24F. actions debe permanecer vacio. Esta corrida solo debe producir evidencia terminal de frontend_build, git_diff_check y repository_contract_audit sobre Edarsahub_Desarrollo limpio y alineado.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "frontend_build"
+    },
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "frontend/package.json",
+          "frontend/src",
+          "scripts",
+          "backend/tests/test_worker_frontend_build_failure_evidence.py"
+        ],
+        "search_terms": [
+          "frontend_build",
+          "frontend_build_evidence",
+          "sanitize_frontend_build_evidence",
+          "output_tail",
+          "redacted_sensitive_line",
+          "git_diff_check",
+          "repository_contract_audit",
+          "validate:navigation",
+          "ENTERPRISE_NAVIGATION_GUARDIAN",
+          "edarsahub.worker-job.v2",
+          "target_repo",
+          "target_branch",
+          "production_allowed",
+          "human_summary_language",
+          "requester",
+          "email"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.json"
+        ],
+        "exclude_patterns": [
+          "**/__pycache__/**",
+          "**/node_modules/**"
+        ],
+        "max_results": 1000
+      }
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL",
+    "No DDL or DML",
+    "No Mongo runtime",
+    "No product behavior changes",
+    "No business logic changes",
+    "No schema changes",
+    "No R24E-R9 publication",
+    "No R24F publication",
+    "Actions must remain empty",
+    "Frontend build certification evidence only",
+    "Requester email is required",
+    "Third check must include repository_contract_audit.request"
+  ],
+  "required_output": [
+    "frontend_build_result",
+    "frontend_build_evidence_if_failed",
+    "git_diff_check_result",
+    "repository_contract_audit_result",
+    "quality_gate",
+    "certification",
+    "blockers",
+    "production_touched_false_confirmed"
+  ]
+}
