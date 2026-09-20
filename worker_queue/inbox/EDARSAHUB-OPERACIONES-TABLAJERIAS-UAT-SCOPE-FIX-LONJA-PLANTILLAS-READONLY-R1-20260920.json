@@ -1,0 +1,199 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-SCOPE-FIX-LONJA-PLANTILLAS-READONLY-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "7f0a832404b311893ab8632612dbd9d5b77098dd",
+  "production_base_sha": "935ea169613aa9f010e0ae92eedfd2870c18a2a7",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias"
+  },
+  "objective": "Auditar en modo solo lectura los hallazgos UAT de Tablajerias y generar un Scope Fix quirurgico para corregir el flujo real: seleccion de unidad de negocio, seleccion individual de lonjas no procesadas, traspaso por lonja a almacenes de produccion/cocina y almacen general/MPR, precarga de derivados desde plantillas, plantillas editables/creables/versionadas, doble control kg/pz, calculo automatico por gramaje definido, SKU pieza con costo cero, SKU kg/gr con costo prorrateado y SKU de costo fijo sin prorrateo. No modificar codigo, no ejecutar SQL, no tocar Produccion, no desplegar, no tocar Scheduler, NetPay, RBAC transversal, menu/layout ni workflows.",
+  "actions": [],
+  "uat_findings": {
+    "human_uat_status": "FAIL_CON_OBSERVACIONES",
+    "production_status": "NO_GO",
+    "findings": [
+      "No se pueden seleccionar unidades de negocio.",
+      "No se deben seleccionar lonjas automaticamente; deben seleccionarse individualmente.",
+      "Debe listarse la relacion de lonjas disponibles en almacen, no procesadas, con peso/costo/lote/almacen.",
+      "El flujo operativo debe ser lonja por lonja, no mezclado.",
+      "Los traspasos a almacenes de produccion/cocina y almacen general/MPR se hacen por lonja.",
+      "Al seleccionar una lonja, el sistema debe devolver nombre, peso, costo, lote y datos de origen.",
+      "Los productos derivados deben precargarse desde la plantilla configurada.",
+      "El chef solo captura pz y/o kg resultantes.",
+      "Todo corte requiere doble control kg/gr y pz.",
+      "Si el corte tiene gramaje definido, el chef captura piezas y el sistema calcula kg/gr.",
+      "Ejemplo: corazon de filete 500 g, chef captura 3 pz, sistema calcula 1500 g.",
+      "Debe existir SKU de piezas con entrada a costo cero y SKU kg/gr con costo prorrateado.",
+      "SKU con costo fijo, como chicharron de rib eye e infartitos, no deben recibir prorrateo desde la lonja.",
+      "Las plantillas no se pueden crear, editar ni modificar; deben poder administrarse con versionado.",
+      "No deben sobrescribirse plantillas historicas usadas por ordenes reales; se debe crear nueva version."
+    ]
+  },
+  "prior_certifications": [
+    {
+      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-DRY-RUN-READONLY-R1B-20260920",
+      "expected": "CERTIFIED_READ_ONLY"
+    },
+    {
+      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-GO-NOGO-READONLY-R1B-20260920",
+      "expected": "CERTIFIED_READ_ONLY"
+    },
+    {
+      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-OPERATIVO-FINAL-READONLY-R1-20260920",
+      "expected": "CERTIFIED_READ_ONLY"
+    },
+    {
+      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-ACTA-CIERRE-READONLY-R1-20260920",
+      "expected": "CERTIFIED_READ_ONLY"
+    }
+  ],
+  "required_output": [
+    "dictamen_uat_fail_con_observaciones",
+    "brecha_funcional_exacta",
+    "archivos_afectados_candidatos",
+    "modelo_de_datos_requerido",
+    "reglas_de_inventario_por_lonja",
+    "reglas_de_costeo_prorrateado_vs_costo_fijo",
+    "reglas_de_doble_unidad_kg_pz",
+    "reglas_de_plantillas_editables_versionadas",
+    "endpoints_api_necesarios",
+    "ux_necesaria",
+    "rbac_y_auditoria_requerida_sin_cambiar_rbac_transversal",
+    "plan_implementacion_quirurgico",
+    "riesgos_y_no_go",
+    "criterios_uat_corregido",
+    "confirmacion_produccion_no_autorizada"
+  ],
+  "included_paths": [
+    "backend/modules/tablajeria",
+    "backend/modules/tablajeria/fase6_service.py",
+    "backend/modules/tablajeria/routes.py",
+    "backend/modules/tablajeria/lote_proveedor_service.py",
+    "backend/modules/tablajeria/ordenes_service.py",
+    "backend/modules/tablajeria/schemas.py",
+    "backend/modules/tablajeria/sql",
+    "backend/tests/test_tablajeria_fase6_service_unit.py",
+    "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+    "frontend/src/pages/tablajeria",
+    "frontend/src/pages/tablajeria/LotesProveedorPage.jsx"
+  ],
+  "excluded_scope": [
+    "Produccion",
+    "SQL manual",
+    "deploy",
+    "full Edarsahub_Desarrollo promotion",
+    ".github/workflows",
+    "backend/core/scheduler",
+    "NetPay",
+    "RBAC/permisos transversal",
+    "menu/layout transversal",
+    "frontend app shell/global navigation",
+    "integrations_center",
+    "integrations_runtime",
+    "cavas",
+    "catalogo_ampliado",
+    "bos_executive",
+    "agent_harness"
+  ],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/tablajeria",
+          "backend/modules/tablajeria/fase6_service.py",
+          "backend/modules/tablajeria/routes.py",
+          "backend/modules/tablajeria/lote_proveedor_service.py",
+          "backend/modules/tablajeria/ordenes_service.py",
+          "backend/modules/tablajeria/schemas.py",
+          "backend/modules/tablajeria/sql",
+          "backend/tests/test_tablajeria_fase6_service_unit.py",
+          "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+          "frontend/src/pages/tablajeria",
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx"
+        ],
+        "search_terms": [
+          "Tablajeria",
+          "plantilla",
+          "plantillas",
+          "publicar_plantilla",
+          "listar_plantillas",
+          "obtener_plantilla",
+          "unidad",
+          "unidad_negocio",
+          "empresa_id",
+          "sucursal",
+          "almacen",
+          "almacen_origen",
+          "almacen_destino",
+          "lonja",
+          "lote",
+          "lotes-proveedor",
+          "no procesada",
+          "procesada",
+          "captura-directa",
+          "ordenes",
+          "derivados",
+          "rendimiento",
+          "merma",
+          "gramaje",
+          "peso",
+          "kg",
+          "pz",
+          "pieza",
+          "costo_fijo",
+          "costo fijo",
+          "prorrateo",
+          "prorrateado",
+          "costo cero",
+          "SKU",
+          "chicharron",
+          "rib eye",
+          "infartitos",
+          "version",
+          "auditoria",
+          "get_current_user",
+          "procesar_cierre_completo",
+          "afectar_inventario_orden",
+          "calcular_costeo_orden",
+          "generar_poliza_produccion"
+        ],
+        "max_results": 300
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          ".github/workflows",
+          "backend/core/scheduler",
+          "backend/modules/integrations_center",
+          "backend/modules/integrations_runtime",
+          "frontend/src/App.js",
+          "frontend/src/components/layout"
+        ],
+        "search_terms": [
+          "workflow",
+          "scheduler",
+          "NetPay",
+          "RBAC",
+          "permisos",
+          "menu",
+          "layout"
+        ],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
