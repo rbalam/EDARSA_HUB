@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "7395aa4c9b46e8348294a2c750a5058ca34e654f",
-  "generated_at_utc": "2026-09-20T14:41:49Z",
+  "generated_at_utc": "2026-09-20T14:43:05Z",
   "history": {
     "done_total_local": 771,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 439,
+      "age_seconds": 515,
       "job_id": "CAVAS-GATE16I-BLIND-AUDIT-MINIMAL-OPERATIONAL-IMPLEMENTATION-R1-20260920",
       "reasons": [
         "ACTION_1_INVALID_TYPE",
@@ -23,43 +23,43 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 895,
+      "age_seconds": 971,
       "job_id": "CAVAS-GATE16G-BLIND-AUDIT-OPERATIONAL-WORKFLOW-READINESS-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 699,
+      "age_seconds": 775,
       "job_id": "CAVAS-GATE16H-BLIND-AUDIT-OPERATIONAL-IMPLEMENTATION-CONTRACT-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 70,
+      "age_seconds": 146,
       "job_id": "CAVAS-GATE16I-BLIND-AUDIT-MINIMAL-OPERATIONAL-IMPLEMENTATION-R2-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 5,
+      "age_seconds": 81,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-SCOPE-FIX-LONJA-PLANTILLAS-FRONTEND-MUTATION-R3-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1045,
+      "age_seconds": 1121,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-SCOPE-FIX-LONJA-PLANTILLAS-IMPLEMENTATION-MUTATION-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 476,
+      "age_seconds": 552,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-SCOPE-FIX-LONJA-PLANTILLAS-IMPLEMENTATION-MUTATION-R2-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1749,
+      "age_seconds": 1825,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-SCOPE-FIX-LONJA-PLANTILLAS-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
@@ -77,8 +77,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-20T14:41:43Z",
-    "last_receive_utc": "2026-09-20T14:41:47Z",
+    "last_cycle_utc": "2026-09-20T14:43:00Z",
+    "last_receive_utc": "2026-09-20T14:42:55Z",
     "last_terminal_utc": "2026-09-20T14:41:43Z",
     "pid": "59"
   },
