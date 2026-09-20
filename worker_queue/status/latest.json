@@ -1,7 +1,10 @@
 {
+  "ahead_count": 0,
+  "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "cb832d6b9555b82819e8165f5793a8c0c86d1b29",
-  "generated_at_utc": "2026-09-20T20:56:15Z",
+  "convergence_status": "SYNC",
+  "development_sha": "07476de9813fabee6867212216495495517c06bc",
+  "generated_at_utc": "2026-09-20T20:57:40Z",
   "history": {
     "done_total_local": 780,
     "pending_total_local": 0,
@@ -13,30 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3477,
+      "age_seconds": 3562,
       "job_id": "CAVAS-GATE16J-BLIND-AUDIT-MINIMAL-UI-IMPLEMENTATION-R4-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1889,
+      "age_seconds": 1975,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-NEXT-WORKER-INTAKE-READONLY-R1-20260920T1423",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 913,
+      "age_seconds": 998,
       "job_id": "EDARSAHUB-WORKER-LOCAL-AHEAD-RECOVERY-DESIGN-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 6,
+      "age_seconds": 92,
       "job_id": "EDARSAHUB-WORKER-LOCAL-AHEAD-RECOVERY-IMPLEMENTATION-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
+  "local_development_sha": "07476de9813fabee6867212216495495517c06bc",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -46,11 +50,12 @@
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 4,
   "queue_running": 0,
+  "remote_development_sha": "07476de9813fabee6867212216495495517c06bc",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-20T20:56:09Z",
-    "last_receive_utc": "2026-09-20T20:56:10Z",
+    "last_cycle_utc": "2026-09-20T20:57:38Z",
+    "last_receive_utc": "2026-09-20T20:57:33Z",
     "last_terminal_utc": "2026-09-20T20:56:08Z",
     "pid": "183756"
   },
