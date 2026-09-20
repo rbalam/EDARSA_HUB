@@ -16339,6 +16339,7 @@ async def retirar_perfil_usuario(
 app.include_router(api_router)
 
 # WORKER: endpoint autenticado de runtime wake
+# Runtime reload marker 2026-09-20: fuerza recarga Preview sin cambio funcional; Produccion fuera de alcance.
 from modules.worker_runtime_wake.routes import router as worker_runtime_wake_router
 app.include_router(worker_runtime_wake_router, prefix="/api")
 
