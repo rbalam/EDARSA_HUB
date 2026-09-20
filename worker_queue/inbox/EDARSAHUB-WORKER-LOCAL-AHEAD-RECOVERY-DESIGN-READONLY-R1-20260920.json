@@ -1,0 +1,69 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-LOCAL-AHEAD-RECOVERY-DESIGN-READONLY-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6411f1cbaf0ac069ba68074996fec3f319643e22",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Diseñar y certificar en READ_ONLY una capacidad canónica del Universal Worker para recuperar LOCAL_AHEAD_ONLY cuando el commit local fue creado por un writer autorizado de EDARSAHUB. Debe preservar refs/evidencia, demostrar ownership, exigir worktree limpio, branch canonica, remote ancestor, writer lock, secret/size guards, push fast-forward normal, postcheck topology 0/0 y fail-closed cuando ownership no sea demostrable. También separar en health local_development_sha vs remote_development_sha, ahead_count, behind_count y convergence_status. Analizar específicamente el estado actual donde /app está 1 commit ahead con cb832d6b9555b82819e8165f5793a8c0c86d1b29 creado por EDARSAHUB Worker Publisher y origin/Edarsahub_Desarrollo está en 6411f1cbaf0ac069ba68074996fec3f319643e22. No mutar repositorio, no reset/clean/stash/force, no tocar Producción, no tocar Cavas.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/git_divergence_guard.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/mirror_sync_worker.sh",
+          "tools/mirror_sync/publish_local_snapshot.sh",
+          "tools/mirror_sync/finalize_local_snapshot.sh",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "backend/modules/worker_runtime_wake/routes.py",
+          "backend/tests/test_git_divergence_guard_r1.py",
+          "backend/tests/test_worker_universal_queue_sla_contract.py",
+          "backend/tests/test_worker_control_plane_contract.py",
+          "docs/architecture/GIT_DIVERGENCE_GUARD_R1.md"
+        ],
+        "search_terms": [
+          "LOCAL_AHEAD_ONLY",
+          "allow_local_ahead",
+          "LOCAL_AHEAD_OWNERSHIP_UNPROVEN",
+          "EXPLICIT_LOCAL_OWNER_POLICY",
+          "acquire_git_writer_lock",
+          "EDARSA_ALLOW_PUSH",
+          "update-ref",
+          "recovery ref",
+          "ahead_count",
+          "behind_count",
+          "development_sha",
+          "REMOTE_DEV",
+          "LOCAL_HEAD"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.md"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No file changes",
+    "No reset",
+    "No clean",
+    "No stash",
+    "No merge/rebase/force push",
+    "No Production",
+    "No Cavas changes",
+    "Must define deterministic ownership proof for authorized local-ahead commits",
+    "Must define rollback/recovery ref and topology 0/0 certification"
+  ]
+}
