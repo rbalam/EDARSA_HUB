@@ -1,31 +1,45 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "111cc69429f1f1b3ee23623c53ab23500ca5fcef",
-  "generated_at_utc": "2026-09-20T16:22:10Z",
+  "generated_at_utc": "2026-09-20T16:23:33Z",
   "history": {
     "done_total_local": 772,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 694,
+    "rejected_total_local": 695,
     "results_total_local": 1302
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1057,
+      "age_seconds": 30,
+      "job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-CERTIFICATION-MODE-R2B-20260920",
+      "reasons": [
+        "INVALID_SCHEMA",
+        "INVALID_TARGET_REPO",
+        "INVALID_TARGET_BRANCH",
+        "PRODUCTION_MUST_BE_FALSE",
+        "SUMMARY_LANGUAGE_MUST_BE_ES",
+        "CHECK_3_REQUEST_REQUIRED"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 1140,
       "job_id": "BOS-AGENT-HARNESS-V1-RH-SOLICITUDES-CANONICAL-MAPPING-PREFLIGHT-GATE30-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1060,
+      "age_seconds": 1143,
       "job_id": "CAVAS-GATE16J-BLIND-AUDIT-MINIMAL-UI-IMPLEMENTATION-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1038,
+      "age_seconds": 1120,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-SCOPE-FIX-LONJA-PLANTILLAS-FRONTEND-MUTATION-R3B-20260920",
       "reason": null,
       "state": "RESULT_READY"
@@ -37,14 +51,14 @@
   "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 0,
+  "queue_rejected_recent": 1,
   "queue_result_ready_recent": 3,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-20T16:22:06Z",
-    "last_receive_utc": "2026-09-20T16:22:10Z",
+    "last_cycle_utc": "2026-09-20T16:23:30Z",
+    "last_receive_utc": "2026-09-20T16:23:25Z",
     "last_terminal_utc": "2026-09-20T16:04:52Z",
     "pid": "43043"
   },
