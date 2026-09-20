@@ -1,32 +1,38 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "6cdb06ad073a9b96c70ced95c03489c435d7b8f1",
-  "generated_at_utc": "2026-09-20T02:47:39Z",
+  "generated_at_utc": "2026-09-20T02:49:03Z",
   "history": {
-    "done_total_local": 750,
+    "done_total_local": 751,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 686,
-    "results_total_local": 1275
+    "results_total_local": 1276
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 705,
+      "age_seconds": 789,
       "job_id": "CAVAS-GATE16A-UNIVERSAL-INTEROPERABILITY-MIGRATION-DISCOVERY-READONLY-R1B-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1184,
+      "age_seconds": 1268,
       "job_id": "EDARSA-AI-GATE1-CAPABILITY-DISCOVERY-R2-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 436,
+      "age_seconds": 519,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-CANDIDATE-ISOLATION-READONLY-R1B-20260919",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 20,
+      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-CANDIDATE-ISOLATION-READONLY-R1C-20260919",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -38,14 +44,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-20T02:47:35Z",
-    "last_receive_utc": "2026-09-20T02:47:38Z",
-    "last_terminal_utc": "2026-09-20T02:40:23Z",
+    "last_cycle_utc": "2026-09-20T02:49:00Z",
+    "last_receive_utc": "2026-09-20T02:49:03Z",
+    "last_terminal_utc": "2026-09-20T02:48:42Z",
     "pid": "34397"
   },
   "schema": "edarsahub.worker-health.v3",
