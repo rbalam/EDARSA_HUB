@@ -1,0 +1,58 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-FAILURE-EVIDENCE-HARDENING-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "111cc69429f1f1b3ee23623c53ab23500ca5fcef",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Eliminar demoras operativas al diagnosticar frontend_build fallidos. Publicar en worker/results evidencia sanitizada y acotada del frontend_build (status, returncode y ultimos 4000 caracteres), redactando lineas potencialmente sensibles. No alterar ejecucion de builds ni producto; solo observabilidad del Universal Worker. Produccion fuera de alcance.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "old": "GENERIC_READ_ONLY_CHECKS = frozenset({\"py_compile\", \"pytest\", \"git_diff_check\"})\n",
+      "new": "\ndef sanitize_frontend_build_evidence(result: dict[str, Any]) -> dict[str, Any] | None:\n    \"\"\"Expose only the tail needed to diagnose frontend build failures.\n\n    Never publishes environment variables or raw executor metadata.\n    Potentially sensitive lines are replaced before publication.\n    \"\"\"\n    evidence = []\n    sensitive_tokens = (\"secret\", \"token\", \"password\", \"authorization\", \"cookie\", \"apikey\", \"api_key\")\n    for check in result.get(\"checks\") or []:\n        if not isinstance(check, dict) or check.get(\"type\") != \"frontend_build\":\n            continue\n        raw = str(check.get(\"output\") or \"\")\n        safe_lines = []\n        for line in raw.splitlines():\n            lowered = line.lower()\n            if any(token in lowered for token in sensitive_tokens):\n                safe_lines.append(\"[REDACTED_SENSITIVE_LINE]\")\n            else:\n                safe_lines.append(line)\n        tail = \"\\n\".join(safe_lines)[-4000:]\n        evidence.append({\n            \"status\": check.get(\"status\"),\n            \"returncode\": check.get(\"returncode\"),\n            \"started_at_utc\": check.get(\"started_at_utc\"),\n            \"completed_at_utc\": check.get(\"completed_at_utc\"),\n            \"output_tail\": tail,\n        })\n    return {\"checks\": evidence} if evidence else None\n\n\nGENERIC_READ_ONLY_CHECKS = frozenset({\"py_compile\", \"pytest\", \"git_diff_check\"})\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "old": "    repository_evidence = sanitize_repository_evidence(result)\n    if repository_evidence is not None:\n        public[\"repository_contract_evidence\"] = repository_evidence\n\n    evidence = certification_evidence(result)\n",
+      "new": "    repository_evidence = sanitize_repository_evidence(result)\n    if repository_evidence is not None:\n        public[\"repository_contract_evidence\"] = repository_evidence\n    frontend_build_evidence = sanitize_frontend_build_evidence(result)\n    if frontend_build_evidence is not None:\n        public[\"frontend_build_evidence\"] = frontend_build_evidence\n\n    evidence = certification_evidence(result)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_frontend_build_failure_evidence.py",
+      "content": "import importlib.util\nfrom pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[2]\nPUBLISHER = ROOT / \"tools\" / \"mirror_sync\" / \"universal_job_result_publisher.py\"\n\n\ndef _load():\n    spec = importlib.util.spec_from_file_location(\"worker_result_publisher_frontend_evidence\", PUBLISHER)\n    module = importlib.util.module_from_spec(spec)\n    assert spec.loader is not None\n    spec.loader.exec_module(module)\n    return module\n\n\ndef test_frontend_build_failure_evidence_is_published_and_redacted():\n    m = _load()\n    result = {\n        \"schema\": \"edarsahub.worker-result.v2\",\n        \"job_id\": \"TEST\",\n        \"status\": \"GIT_TESTS_FAILED\",\n        \"certification\": \"NOT_CERTIFIED\",\n        \"percent_complete\": 80,\n        \"production_touched\": False,\n        \"checks\": [\n            {\n                \"type\": \"frontend_build\",\n                \"status\": \"FAIL\",\n                \"returncode\": 1,\n                \"started_at_utc\": \"2026-09-20T00:00:00Z\",\n                \"completed_at_utc\": \"2026-09-20T00:00:01Z\",\n                \"output\": \"Failed to compile.\\nModule not found: Error: Can't resolve './Missing'\\nTOKEN=should-not-leak\",\n            }\n        ],\n    }\n    public = m.sanitize(result)\n    evidence = public[\"frontend_build_evidence\"][\"checks\"][0]\n    assert evidence[\"status\"] == \"FAIL\"\n    assert evidence[\"returncode\"] == 1\n    assert \"Failed to compile\" in evidence[\"output_tail\"]\n    assert \"Missing\" in evidence[\"output_tail\"]\n    assert \"should-not-leak\" not in evidence[\"output_tail\"]\n    assert \"[REDACTED_SENSITIVE_LINE]\" in evidence[\"output_tail\"]\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "backend/tests/test_worker_frontend_build_failure_evidence.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_frontend_build_failure_evidence.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No product behavior changes",
+    "No secret publication",
+    "Frontend build output limited to 4000 characters",
+    "Sensitive lines redacted",
+    "No change to frontend_build execution contract"
+  ]
+}
