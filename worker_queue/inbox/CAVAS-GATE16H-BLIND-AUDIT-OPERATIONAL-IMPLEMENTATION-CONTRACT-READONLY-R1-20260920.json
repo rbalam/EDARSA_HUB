@@ -1,0 +1,148 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE16H-BLIND-AUDIT-OPERATIONAL-IMPLEMENTATION-CONTRACT-READONLY-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "373a10e9473b71614be2f4b2ee10e61a1b614011",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Definir y certificar en READ_ONLY el contrato canonico de implementacion operativa para Auditoria Ciega de Cavas, continuando Gate16G. Debe traducir la readiness ya certificada a un diseño ejecutable de backend y frontend sin implementar cambios todavia. Definir bounded ownership, endpoints y contratos request/response, service orchestration, estados de workflow, RBAC backend por empresa/unidad/almacen, evidencia y chain-of-custody, idempotencia, concurrencia, FechaOperacion y zona horaria, manejo de errores, rollback logico, UX simple para personal no tecnico, criterios de UAT y secuencia de implementacion minima. Reutilizar blind_audit.py, evidence_chain.py, adapter_sdk.py, migration_engine.py, core.object_storage y core.ai_gateway_policy_adapter/ai_execution_gate. Prohibido IA productiva, proveedor/modelo hardcodeado, uploads nuevos, DDL/DML, autoajustes de inventario, creacion/fusion automatica de identidades o duplicacion de helpers/endpoints existentes.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/blind_audit.py",
+          "backend/modules/cava_socios/evidence_chain.py",
+          "backend/modules/cava_socios/adapter_sdk.py",
+          "backend/modules/cava_socios/migration_engine.py",
+          "backend/modules/cava_socios/routes.py",
+          "backend/modules/cava_socios/service.py",
+          "backend/modules/cava_socios/persona_link_service.py",
+          "backend/tests",
+          "backend/core/object_storage",
+          "backend/core/ai_gateway_policy_adapter.py",
+          "backend/core/ai_execution_gate.py",
+          "backend/core/rbac.py",
+          "backend/modules/rbac_context_sql",
+          "frontend/src/pages",
+          "frontend/src/components",
+          "docs/CAVAS/CAVAS_GATE16F_BLIND_AUDIT_CV_READINESS.md"
+        ],
+        "search_terms": [
+          "blind_audit",
+          "BlindAuditStatus",
+          "BlindObservation",
+          "AuditFinding",
+          "REVIEW_REQUIRED",
+          "DIFFERENCE",
+          "CONFIRMED",
+          "reconcile_blind_audit",
+          "evidence_chain",
+          "EvidenceReference",
+          "build_evidence",
+          "verify_chain",
+          "object_storage",
+          "ai_gateway_policy_adapter",
+          "ai_execution_gate",
+          "EmpresaID",
+          "UnidadNegocioID",
+          "AlmacenID",
+          "FechaOperacion",
+          "timezone",
+          "idempot",
+          "concurrency",
+          "lock",
+          "version",
+          "etag",
+          "get_current_user",
+          "context_service",
+          "permission",
+          "RBAC",
+          "inventario-fisico",
+          "ajuste",
+          "movimiento",
+          "CavaSocios_Botellas",
+          "CavaSocios_Movimientos",
+          "HTTPException",
+          "409",
+          "403",
+          "404",
+          "422"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.md"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1500
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios",
+          "frontend/src/pages",
+          "frontend/src/components"
+        ],
+        "search_terms": [
+          "auditoria ciega",
+          "blind audit",
+          "inventory count",
+          "inventario fisico",
+          "camera",
+          "photo",
+          "image",
+          "evidence",
+          "hallazgo",
+          "difference",
+          "review_required",
+          "confirm",
+          "reconcile",
+          "adjustment",
+          "approval"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No code changes",
+    "No SQL",
+    "No DDL or DML",
+    "No Production",
+    "No Mongo runtime",
+    "No new storage subsystem",
+    "Reuse canonical helpers and connections",
+    "Reuse core.object_storage",
+    "Reuse core.ai_gateway_policy_adapter and ai_execution_gate",
+    "No hardcoded AI provider/model",
+    "No automatic inventory adjustments",
+    "No automatic Persona/Cliente creation or merge",
+    "SocioID remains membership identity",
+    "RBAC enforced by backend for empresa/unidad/almacen",
+    "Use FechaOperacion and canonical timezone where applicable",
+    "UX must be operable by non-technical personnel",
+    "No duplicate endpoints/services/helpers",
+    "Core slimming and bounded context rules apply"
+  ]
+}
