@@ -10,6 +10,11 @@ DEV_BRANCH = "Edarsahub_Desarrollo"
 REMOTE = "origin"
 LOCK_NAME = "git-writer.lock.d"
 DEFAULT_LOCK_TTL_SECONDS = 7200
+AUTHORIZED_LOCAL_AHEAD_EMAILS = {
+    "worker-publisher@edarsahub.local",
+    "worker@edarsahub.local",
+}
+MAX_AUTHORIZED_LOCAL_AHEAD_COMMITS = 20
 
 class GitGuardError(RuntimeError):
     def __init__(self, code: str, evidence: dict[str, Any] | None = None):
@@ -94,6 +99,63 @@ def release_writer_lock(repo: Path, token: dict[str, Any]) -> None:
     (lock_dir/"owner.json").unlink()
     try: lock_dir.rmdir()
     except OSError as exc: raise GitGuardError("GIT_LOCK_BUSY", {"reason":"LOCK_DIRECTORY_NOT_EMPTY","lock_dir":str(lock_dir)}) from exc
+
+def prove_authorized_local_ahead(repo: Path, state: dict[str, Any]) -> dict[str, Any]:
+    if state.get("current_branch") != DEV_BRANCH:
+        raise GitGuardError("LOCAL_AHEAD_OWNERSHIP_UNPROVEN", {"reason": "WRONG_CANONICAL_BRANCH"})
+    if state.get("worktree_dirty"):
+        raise GitGuardError("GIT_WORKTREE_NOT_CLEAN", state)
+    if state.get("classification") != "LOCAL_AHEAD_ONLY":
+        raise GitGuardError("LOCAL_AHEAD_OWNERSHIP_UNPROVEN", {"reason": "NOT_LOCAL_AHEAD_ONLY", "classification": state.get("classification")})
+    if state.get("merge_base") != state.get("remote_head"):
+        raise GitGuardError("LOCAL_AHEAD_OWNERSHIP_UNPROVEN", {"reason": "REMOTE_NOT_ANCESTOR", "state": state})
+    ahead = int(state.get("ahead_count") or 0)
+    commits = list(state.get("local_only_commits") or [])
+    if ahead < 1 or ahead > MAX_AUTHORIZED_LOCAL_AHEAD_COMMITS or len(commits) != ahead:
+        raise GitGuardError("LOCAL_AHEAD_OWNERSHIP_UNPROVEN", {"reason": "UNSAFE_AHEAD_COUNT", "ahead_count": ahead, "enumerated_commits": len(commits)})
+    evidence = []
+    for sha in commits:
+        parents = _run(repo, "rev-list", "--parents", "-n", "1", sha).stdout.strip().split()
+        if len(parents) != 2:
+            raise GitGuardError("LOCAL_AHEAD_OWNERSHIP_UNPROVEN", {"reason": "NON_LINEAR_LOCAL_COMMIT", "commit": sha, "parent_count": max(0, len(parents) - 1)})
+        meta = _run(repo, "show", "-s", "--format=%H%x00%ae%x00%ce", sha).stdout.rstrip("\n").split("\x00")
+        if len(meta) != 3:
+            raise GitGuardError("LOCAL_AHEAD_OWNERSHIP_UNPROVEN", {"reason": "COMMIT_IDENTITY_UNREADABLE", "commit": sha})
+        _, author_email, committer_email = meta
+        author_email = author_email.strip().lower()
+        committer_email = committer_email.strip().lower()
+        if author_email not in AUTHORIZED_LOCAL_AHEAD_EMAILS or committer_email not in AUTHORIZED_LOCAL_AHEAD_EMAILS:
+            raise GitGuardError("LOCAL_AHEAD_OWNERSHIP_UNPROVEN", {
+                "reason": "UNAUTHORIZED_COMMIT_IDENTITY",
+                "commit": sha,
+                "author_email": author_email,
+                "committer_email": committer_email,
+            })
+        evidence.append({"commit": sha, "author_email": author_email, "committer_email": committer_email})
+    return {"classification":"LOCAL_AHEAD_ONLY","ownership":"AUTHORIZED_EDARSAHUB_WRITER","ahead_count":ahead,"remote_head":state["remote_head"],"local_head":state["local_head"],"commits":evidence}
+
+def recover_authorized_local_ahead(repo: Path, state: dict[str, Any], *, job_id: str, owner: str) -> dict[str, Any]:
+    lock_dir = _git_dir(repo.resolve()) / "universal-worker-queue" / LOCK_NAME
+    current_lock = _read_json(lock_dir / "owner.json")
+    if current_lock.get("job_id") != job_id or current_lock.get("owner") != owner:
+        raise GitGuardError("GIT_LOCK_BUSY", {"reason": "LOCAL_AHEAD_RECOVERY_REQUIRES_OWNED_WRITER_LOCK", "current": current_lock})
+    proof = prove_authorized_local_ahead(repo, state)
+    local, remote = proof["local_head"], proof["remote_head"]
+    recovery_branch = f"recovery/authorized-local-ahead/{local[:12]}"
+    remote_recovery = _run(repo, "ls-remote", REMOTE, f"refs/heads/{recovery_branch}", check=False).stdout.strip().split()
+    if remote_recovery:
+        if remote_recovery[0] != local:
+            raise GitGuardError("LOCAL_AHEAD_OWNERSHIP_UNPROVEN", {"reason": "RECOVERY_BRANCH_COLLISION", "branch": recovery_branch, "remote_sha": remote_recovery[0], "local_sha": local})
+    else:
+        preserved = authorized_push(repo,args=["push", REMOTE, f"{local}:refs/heads/{recovery_branch}"],job_id=job_id,owner=owner)
+        if preserved.returncode != 0:
+            raise GitGuardError("GIT_PUSH_FAILED", {"reason": "RECOVERY_REF_PUSH_FAILED", "branch": recovery_branch, "output": (preserved.stdout or "")[-2000:]})
+    compare_and_swap(repo, remote)
+    published = authorized_push(repo,args=["push", REMOTE, f"{local}:refs/heads/{DEV_BRANCH}"],job_id=job_id,owner=owner)
+    if published.returncode != 0:
+        raise GitGuardError("GIT_PUSH_FAILED", {"reason": "LOCAL_AHEAD_FAST_FORWARD_PUSH_FAILED", "output": (published.stdout or "")[-2000:]})
+    post = post_push_verify(repo, local)
+    return {"proof": proof, "recovery_branch": recovery_branch, "post_push": post}
 
 def compare_and_swap(repo: Path, remote_at_start: str) -> str:
     _run(repo,"fetch",REMOTE,DEV_BRANCH); now=_run(repo,"rev-parse",f"{REMOTE}/{DEV_BRANCH}").stdout.strip()

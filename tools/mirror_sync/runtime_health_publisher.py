@@ -216,7 +216,19 @@ def runtime_summary() -> dict[str, str | None]:
 
 
 def payload() -> dict:
+    git("fetch", REMOTE, "Edarsahub_Desarrollo")
     head = git("rev-parse", "HEAD").stdout.strip()
+    remote_head = git("rev-parse", f"{REMOTE}/Edarsahub_Desarrollo").stdout.strip()
+    counts = git("rev-list", "--left-right", "--count", f"{head}...{remote_head}").stdout.split()
+    ahead_count, behind_count = (int(counts[0]), int(counts[1])) if len(counts) == 2 else (-1, -1)
+    if ahead_count == 0 and behind_count == 0:
+        convergence_status = "SYNC"
+    elif ahead_count > 0 and behind_count == 0:
+        convergence_status = "LOCAL_AHEAD_ONLY"
+    elif ahead_count == 0 and behind_count > 0:
+        convergence_status = "REMOTE_AHEAD_ONLY"
+    else:
+        convergence_status = "DIVERGED"
     jobs = queue_jobs()
     active = [job for job in jobs if job["state"] in {"PENDING", "RUNNING", "BLOCKED"}]
     pending_only = [job for job in jobs if job["state"] == "PENDING"]
@@ -226,7 +238,12 @@ def payload() -> dict:
         "schema": "edarsahub.worker-health.v3",
         "generated_at_utc": now(),
         "worker": "ONLINE",
-        "development_sha": head,
+        "development_sha": remote_head,
+        "local_development_sha": head,
+        "remote_development_sha": remote_head,
+        "ahead_count": ahead_count,
+        "behind_count": behind_count,
+        "convergence_status": convergence_status,
         "branch": git("branch", "--show-current").stdout.strip(),
         "queue_pending": sum(j["state"] == "PENDING" for j in jobs),
         "queue_depth": len(active),

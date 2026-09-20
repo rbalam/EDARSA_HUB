@@ -41,6 +41,17 @@ def test_case_11_readonly_does_not_require_writer_lock(tmp_path):
 def test_case_12_out_of_scope_file_fails(tmp_path):
  m=load_guard();_,l,_=setup_pair(tmp_path);base=g(l,'rev-parse','HEAD').stdout.strip();commit(l,'allowed','a');commit(l,'extra','b');head=g(l,'rev-parse','HEAD').stdout.strip()
  with pytest.raises(m.GitGuardError,match='GIT_SCOPE_VIOLATION'): m.validate_commit_scope(l,base,head,{'allowed'})
+def test_case_13_authorized_local_ahead_recovery_preserves_and_converges(tmp_path):
+ m=load_guard();_,l,_=setup_pair(tmp_path);install_push_guard(l);g(l,'config','user.email','worker-publisher@edarsahub.local');g(l,'config','user.name','EDARSAHUB Worker Publisher');commit(l,'owned','x');state=m.inspect_repository(l,fetch=True);token=m.acquire_writer_lock(l,job_id='case13',owner='universal-worker',owner_pid=os.getpid())
+ try:
+  evidence=m.recover_authorized_local_ahead(l,state,job_id='case13',owner='universal-worker')
+  assert evidence['post_push']['topology']=='0/0';head=g(l,'rev-parse','HEAD').stdout.strip();assert g(l,'rev-parse','origin/Edarsahub_Desarrollo').stdout.strip()==head;assert g(l,'ls-remote','origin',f"refs/heads/{evidence['recovery_branch']}").stdout.split()[0]==head
+ finally:m.release_writer_lock(l,token)
+def test_case_14_unknown_local_ahead_owner_is_rejected(tmp_path):
+ m=load_guard();_,l,_=setup_pair(tmp_path);commit(l,'unknown','x');state=m.inspect_repository(l,fetch=True);token=m.acquire_writer_lock(l,job_id='case14',owner='universal-worker',owner_pid=os.getpid())
+ try:
+  with pytest.raises(m.GitGuardError,match='LOCAL_AHEAD_OWNERSHIP_UNPROVEN'):m.recover_authorized_local_ahead(l,state,job_id='case14',owner='universal-worker')
+ finally:m.release_writer_lock(l,token)
 def executable_lines(path): return '\n'.join(x.strip() for x in path.read_text().splitlines() if x.strip() and not x.lstrip().startswith('#'))
 def test_runtime_contract_has_no_destructive_commands_or_persistent_push_guard():
  c=executable_lines(APPLY);assert 'git merge --ff-only' not in c and 'git pull' not in c and 'reset --hard' not in c and 'git clean' not in c;assert 'EDARSA_ALLOW_PUSH="1"' not in SUPERVISOR.read_text();assert 'export EDARSA_ALLOW_PUSH=1' not in BACKUP.read_text();assert 'export EDARSA_ALLOW_PUSH=1' not in FINALIZER.read_text();assert 'edarsahub_acquire_git_writer_lock' in FINALIZER.read_text() and 'edarsahub_release_git_writer_lock' in FINALIZER.read_text()

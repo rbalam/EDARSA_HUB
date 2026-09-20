@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from worker_concurrency import evaluate_scope_advance
-from git_divergence_guard import (GitGuardError, acquire_writer_lock, compare_and_swap, inspect_repository, mutation_policy, post_push_verify, release_writer_lock, requires_writer_lock, scoped_push_env, validate_commit_scope)
+from git_divergence_guard import (GitGuardError, acquire_writer_lock, compare_and_swap, inspect_repository, mutation_policy, post_push_verify, recover_authorized_local_ahead, release_writer_lock, requires_writer_lock, scoped_push_env, validate_commit_scope)
 
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
 STATE = ROOT / ".git" / "universal-worker-queue"
@@ -545,8 +545,17 @@ def process_one(path: Path) -> int:
                 git_writer_lock = acquire_writer_lock(ROOT, job_id=job_id, owner="universal-worker", owner_pid=os.getpid())
             except GitGuardError as exc:
                 result["status"] = exc.code; result["git_guard_error"] = exc.evidence; raise RuntimeError(exc.code) from exc
-            git_state = inspect_repository(ROOT, fetch=True); git_policy = mutation_policy(git_state)
+            git_state = inspect_repository(ROOT, fetch=True)
             result.update({"git_guard_start":git_state,"branch":git_state["current_branch"],"remote_at_start":git_state["remote_head"],"local_at_start":git_state["local_head"],"merge_base_at_start":git_state["merge_base"],"ahead_at_start":git_state["ahead_count"],"behind_at_start":git_state["behind_count"],"dirty_state":{"worktree_dirty":git_state["worktree_dirty"],"staged_count":git_state["staged_count"],"unstaged_count":git_state["unstaged_count"],"untracked_count":git_state["untracked_count"]},"lock_owner":{k:git_writer_lock.get(k) for k in ("job_id","owner","owner_pid","created_at_utc")}})
+            if git_state["classification"] == "LOCAL_AHEAD_ONLY":
+                try:
+                    result["local_ahead_recovery"] = recover_authorized_local_ahead(ROOT, git_state, job_id=job_id, owner="universal-worker")
+                    git_state = inspect_repository(ROOT, fetch=True)
+                except GitGuardError as exc:
+                    result["status"] = exc.code
+                    result["git_guard_error"] = exc.evidence
+                    raise RuntimeError(exc.code) from exc
+            git_policy = mutation_policy(git_state)
             if not git_policy["allowed"]:
                 result["status"] = git_policy["terminal_status"]; result["git_guard_reason"] = git_policy["reason"]; raise RuntimeError(git_policy["reason"])
             current_head = git_state["remote_head"]
