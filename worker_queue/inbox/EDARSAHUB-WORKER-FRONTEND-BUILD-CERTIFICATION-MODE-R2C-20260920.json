@@ -1,0 +1,84 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-CERTIFICATION-MODE-R2C-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "111cc69429f1f1b3ee23623c53ab23500ca5fcef",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "objective": "Certificar en modo READ_ONLY la capacidad actual del Universal Worker para ejecutar frontend_build, git_diff_check y repository_contract_audit sobre Edarsahub_Desarrollo limpio y alineado. No publicar R24E-R9 ni R24F. No modificar codigo, no ejecutar SQL, no tocar Produccion, no tocar Mongo, no tocar backend funcional ni reglas de negocio. Esta corrida solo produce evidencia de build/capacidad.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "frontend_build"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "frontend/package.json",
+          "frontend/src",
+          "scripts"
+        ],
+        "search_terms": [
+          "frontend_build",
+          "git_diff_check",
+          "repository_contract_audit",
+          "validate:navigation",
+          "ENTERPRISE_NAVIGATION_GUARDIAN",
+          "edarsahub.worker-job.v2",
+          "target_repo",
+          "target_branch",
+          "production_allowed",
+          "human_summary_language"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.json"
+        ],
+        "exclude_patterns": [
+          "**/__pycache__/**",
+          "**/node_modules/**"
+        ],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No code changes",
+    "No SQL",
+    "No DDL or DML",
+    "No Production",
+    "No Mongo runtime",
+    "No R24E-R9 publication",
+    "No R24F publication",
+    "Actions must remain empty",
+    "Frontend build evidence only"
+  ],
+  "required_output": [
+    "frontend_build_result",
+    "repository_contract_audit_result",
+    "git_diff_check_result",
+    "production_allowed_false_confirmed",
+    "production_touched_false_confirmed",
+    "quality_gate",
+    "certification"
+  ],
+  "requester": {
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias"
+  },
+  "created_at_utc": "2026-09-20T18:45:22.914214+00:00"
+}
