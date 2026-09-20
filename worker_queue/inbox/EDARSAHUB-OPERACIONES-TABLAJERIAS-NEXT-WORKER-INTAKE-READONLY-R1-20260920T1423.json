@@ -1,0 +1,105 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-NEXT-WORKER-INTAKE-READONLY-R1-20260920T1423",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6411f1cbaf0ac069ba68074996fec3f319643e22",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias"
+  },
+  "objective": "Retomar el proyecto Tablajerias desde ChatGPT Classic usando exclusivamente Universal Worker como autoridad operativa. Leer el estado actual certificado de R24E, R24F, compatibilidad R24E+R24F y release/go-no-go existente; consolidar el siguiente movimiento tecnico recomendado sin abrir gate funcional nuevo, sin mutar repositorio, sin ejecutar SQL y sin tocar Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/tablajeria/fase6_service.py",
+          "backend/modules/tablajeria/routes.py",
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+          "backend/tests/test_tablajeria_fase6_service_unit.py",
+          "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+          "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py",
+          "docs/TABLAJERIA_UAT_SCOPE_FIX_LONJA_PLANTILLAS_IMPLEMENTATION_R1.md",
+          "backend/modules/tablajeria/sql/uatscope_lonja_plantillas.sql"
+        ],
+        "search_terms": [
+          "tablajeria",
+          "R24E",
+          "R24F",
+          "release",
+          "go-nogo",
+          "lonja",
+          "plantillas",
+          "lotes proveedor",
+          "fase6",
+          "costeo",
+          "inventario",
+          "poliza",
+          "merma",
+          "idempotente",
+          "sql_first",
+          "get_sql_connection",
+          "frontend"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.jsx",
+          "*.md",
+          "*.sql"
+        ],
+        "exclude_patterns": [
+          "**/__pycache__/**",
+          "**/node_modules/**"
+        ],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_tablajeria_fase6_service_unit.py",
+        "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+        "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No actions",
+    "No code changes",
+    "No SQL execution",
+    "No DDL or DML execution",
+    "No Production",
+    "No Mongo runtime",
+    "No Scheduler changes",
+    "No NetPay changes",
+    "No new functional gate",
+    "No release deployment",
+    "No Emergent implementation",
+    "ChatGPT Classic orchestration only",
+    "Universal Worker is the authority"
+  ],
+  "required_output": [
+    "current_tablajerias_state",
+    "certified_jobs_referenced",
+    "technical_go_nogo_state",
+    "validated_artifacts",
+    "tests_summary",
+    "production_touched_false_confirmed",
+    "remaining_risks",
+    "next_worker_action_recommended",
+    "human_decision_required_before_production",
+    "blockers"
+  ],
+  "created_at_utc": "2026-09-20T20:23:00Z"
+}
