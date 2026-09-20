@@ -1,45 +1,45 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "7f0a832404b311893ab8632612dbd9d5b77098dd",
-  "generated_at_utc": "2026-09-20T14:24:23Z",
+  "development_sha": "373a10e9473b71614be2f4b2ee10e61a1b614011",
+  "generated_at_utc": "2026-09-20T14:25:45Z",
   "history": {
-    "done_total_local": 766,
+    "done_total_local": 767,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 690,
-    "results_total_local": 1293
+    "results_total_local": 1294
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 703,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-SCOPE-FIX-LONJA-PLANTILLAS-READONLY-R1-20260920",
+      "age_seconds": 81,
+      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-SCOPE-FIX-LONJA-PLANTILLAS-IMPLEMENTATION-MUTATION-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 8,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-SCOPE-FIX-LONJA-PLANTILLAS-IMPLEMENTATION-MUTATION-R1-20260920",
+      "age_seconds": 786,
+      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-SCOPE-FIX-LONJA-PLANTILLAS-READONLY-R1-20260920",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
-  "queue_running": 1,
+  "queue_result_ready_recent": 2,
+  "queue_running": 0,
   "runtime": {
-    "current_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-SCOPE-FIX-LONJA-PLANTILLAS-IMPLEMENTATION-MUTATION-R1-20260920",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-20T14:24:19Z",
-    "last_receive_utc": "2026-09-20T14:24:22Z",
-    "last_terminal_utc": "2026-09-20T14:12:39Z",
+    "last_cycle_utc": "2026-09-20T14:25:42Z",
+    "last_receive_utc": "2026-09-20T14:25:37Z",
+    "last_terminal_utc": "2026-09-20T14:24:24Z",
     "pid": "59"
   },
   "schema": "edarsahub.worker-health.v3",
