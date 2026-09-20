@@ -1,0 +1,88 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE16I-BLIND-AUDIT-MINIMAL-OPERATIONAL-IMPLEMENTATION-R2-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "19ee196151f0e947e03c3c35cc1ced95acbb5012",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Corregir Gate16I-R1 rechazado usando exclusivamente acciones/checks soportados por el Universal Worker. Implementar una capacidad minima y no mutante de reconciliacion operativa de auditoria ciega sobre inventario canonico existente. El endpoint debe usar RBAC/unidad ya canonicos, leer inventario mediante CavaSociosService, ejecutar blind_audit.py, devolver CONFIRMED/DIFFERENCE/REVIEW_REQUIRED, fingerprint determinista de idempotencia y prohibir implicitamente cualquier ajuste o movimiento automatico. No DDL, no DML adicional, no IA productiva, no uploads, no frontend, no Produccion. El scope de almacen no se simula: se mantiene ubicacion como filtro operativo existente hasta que exista resolver canonico almacen<->unidad/servidor certificado.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/cava_socios/blind_audit_operational_service.py",
+      "content": "\"\"\"Orquestacion minima, sin escrituras, para auditoria ciega de Cavas.\n\nGate 16I mantiene este servicio stateless: lee inventario canonico por medio del\nservicio existente y reconcilia observaciones con blind_audit. No persiste,\nno ajusta inventario y no crea movimientos.\n\"\"\"\nfrom __future__ import annotations\n\nimport hashlib\nimport json\nfrom typing import Any, Dict, Iterable, Mapping\n\nfrom .blind_audit import BlindObservation, ExpectedBottle, reconcile_blind_audit\n\n\nclass CavaBlindAuditOperationalService:\n    \"\"\"Adapta inventario canonico existente al dominio puro de auditoria ciega.\"\"\"\n\n    def reconcile(\n        self,\n        *,\n        inventory_rows: Iterable[Mapping[str, Any]],\n        observations: Iterable[Mapping[str, Any]],\n        observation_to_bottle: Mapping[str, str],\n        idempotency_key: str,\n        level_tolerance_pct: float = 5.0,\n        min_recognition_confidence: float = 0.90,\n    ) -> Dict[str, Any]:\n        key = str(idempotency_key or \"\").strip()\n        if not key:\n            raise ValueError(\"idempotency_key es requerido\")\n\n        inventory = tuple(inventory_rows)\n        observed = tuple(observations)\n\n        expected = tuple(\n            ExpectedBottle(\n                bottle_id=str(row.get(\"botella_id\") or \"\").strip(),\n                expected_quantity=1,\n                expected_level_pct=(\n                    float(row[\"porcentaje_restante\"])\n                    if row.get(\"porcentaje_restante\") is not None\n                    else None\n                ),\n            )\n            for row in inventory\n            if str(row.get(\"botella_id\") or \"\").strip()\n        )\n\n        blind_observations = tuple(\n            BlindObservation(\n                observation_id=str(row.get(\"observation_id\") or \"\").strip(),\n                observed_reference=str(row.get(\"observed_reference\") or \"\").strip(),\n                observed_quantity=int(row.get(\"observed_quantity\", 1)),\n                observed_level_pct=(\n                    float(row[\"observed_level_pct\"])\n                    if row.get(\"observed_level_pct\") is not None\n                    else None\n                ),\n                evidence_id=(\n                    str(row[\"evidence_id\"]).strip()\n                    if row.get(\"evidence_id\") is not None\n                    else None\n                ),\n                recognition_confidence=(\n                    float(row[\"recognition_confidence\"])\n                    if row.get(\"recognition_confidence\") is not None\n                    else None\n                ),\n            )\n            for row in observed\n        )\n\n        result = reconcile_blind_audit(\n            expected,\n            blind_observations,\n            observation_to_bottle=dict(observation_to_bottle),\n            level_tolerance_pct=level_tolerance_pct,\n            min_recognition_confidence=min_recognition_confidence,\n        )\n\n        statuses = [finding.status.value for finding in result.findings]\n        if statuses and all(status == \"MATCH\" for status in statuses):\n            outcome = \"CONFIRMED\"\n        elif \"REVIEW_REQUIRED\" in statuses:\n            outcome = \"REVIEW_REQUIRED\"\n        else:\n            outcome = \"DIFFERENCE\"\n\n        fingerprint_payload = {\n            \"idempotency_key\": key,\n            \"expected\": [\n                {\n                    \"bottle_id\": item.bottle_id,\n                    \"expected_quantity\": item.expected_quantity,\n                    \"expected_level_pct\": item.expected_level_pct,\n                }\n                for item in expected\n            ],\n            \"observations\": [\n                {\n                    \"observation_id\": item.observation_id,\n                    \"observed_reference\": item.observed_reference,\n                    \"observed_quantity\": item.observed_quantity,\n                    \"observed_level_pct\": item.observed_level_pct,\n                    \"evidence_id\": item.evidence_id,\n                    \"recognition_confidence\": item.recognition_confidence,\n                }\n                for item in blind_observations\n            ],\n            \"mapping\": dict(sorted(observation_to_bottle.items())),\n        }\n        fingerprint = hashlib.sha256(\n            json.dumps(\n                fingerprint_payload,\n                sort_keys=True,\n                separators=(\",\", \":\"),\n                ensure_ascii=False,\n            ).encode(\"utf-8\")\n        ).hexdigest()\n\n        return {\n            \"outcome\": outcome,\n            \"requires_review\": result.requires_review,\n            \"clean\": result.clean,\n            \"idempotency_key\": key,\n            \"request_fingerprint\": fingerprint,\n            \"findings\": [\n                {\n                    \"status\": finding.status.value,\n                    \"expected_bottle_id\": finding.expected_bottle_id,\n                    \"observation_id\": finding.observation_id,\n                    \"expected_quantity\": finding.expected_quantity,\n                    \"observed_quantity\": finding.observed_quantity,\n                    \"expected_level_pct\": finding.expected_level_pct,\n                    \"observed_level_pct\": finding.observed_level_pct,\n                    \"reason\": finding.reason,\n                }\n                for finding in result.findings\n            ],\n            \"automatic_inventory_adjustment\": False,\n            \"automatic_inventory_movement\": False,\n        }\n\n\n_service = CavaBlindAuditOperationalService()\n\n\ndef get_cava_blind_audit_operational_service() -> CavaBlindAuditOperationalService:\n    return _service\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_cava_socios_blind_audit_operational_service.py",
+      "content": "from modules.cava_socios.blind_audit_operational_service import (\n    CavaBlindAuditOperationalService,\n)\n\n\ndef _service():\n    return CavaBlindAuditOperationalService()\n\n\ndef test_gate16i_clean_audit_is_confirmed_and_non_mutating():\n    result = _service().reconcile(\n        inventory_rows=[\n            {\"botella_id\": \"B1\", \"porcentaje_restante\": 75.0},\n        ],\n        observations=[\n            {\n                \"observation_id\": \"O1\",\n                \"observed_reference\": \"manual:B1\",\n                \"observed_quantity\": 1,\n                \"observed_level_pct\": 74.0,\n            }\n        ],\n        observation_to_bottle={\"O1\": \"B1\"},\n        idempotency_key=\"audit-001\",\n    )\n    assert result[\"outcome\"] == \"CONFIRMED\"\n    assert result[\"clean\"] is True\n    assert result[\"automatic_inventory_adjustment\"] is False\n    assert result[\"automatic_inventory_movement\"] is False\n\n\ndef test_gate16i_difference_never_adjusts_inventory():\n    result = _service().reconcile(\n        inventory_rows=[\n            {\"botella_id\": \"B1\", \"porcentaje_restante\": 80.0},\n        ],\n        observations=[\n            {\n                \"observation_id\": \"O1\",\n                \"observed_reference\": \"manual:B1\",\n                \"observed_quantity\": 1,\n                \"observed_level_pct\": 40.0,\n            }\n        ],\n        observation_to_bottle={\"O1\": \"B1\"},\n        idempotency_key=\"audit-002\",\n    )\n    assert result[\"outcome\"] == \"DIFFERENCE\"\n    assert result[\"automatic_inventory_adjustment\"] is False\n    assert result[\"automatic_inventory_movement\"] is False\n\n\ndef test_gate16i_low_confidence_requires_review():\n    result = _service().reconcile(\n        inventory_rows=[\n            {\"botella_id\": \"B1\", \"porcentaje_restante\": 80.0},\n        ],\n        observations=[\n            {\n                \"observation_id\": \"O1\",\n                \"observed_reference\": \"candidate:B1\",\n                \"observed_quantity\": 1,\n                \"observed_level_pct\": 80.0,\n                \"recognition_confidence\": 0.25,\n            }\n        ],\n        observation_to_bottle={\"O1\": \"B1\"},\n        idempotency_key=\"audit-003\",\n    )\n    assert result[\"outcome\"] == \"REVIEW_REQUIRED\"\n    assert result[\"requires_review\"] is True\n\n\ndef test_gate16i_same_request_has_same_fingerprint():\n    kwargs = dict(\n        inventory_rows=[{\"botella_id\": \"B1\", \"porcentaje_restante\": 100.0}],\n        observations=[\n            {\n                \"observation_id\": \"O1\",\n                \"observed_reference\": \"manual:B1\",\n                \"observed_quantity\": 1,\n                \"observed_level_pct\": 100.0,\n            }\n        ],\n        observation_to_bottle={\"O1\": \"B1\"},\n        idempotency_key=\"audit-idempotent\",\n    )\n    first = _service().reconcile(**kwargs)\n    second = _service().reconcile(**kwargs)\n    assert first[\"request_fingerprint\"] == second[\"request_fingerprint\"]\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/cava_socios/routes.py",
+      "old": "from .service import get_cava_socios_service\nfrom .persona_link_service import get_cava_socios_persona_link_service\n",
+      "new": "from .service import get_cava_socios_service\nfrom .persona_link_service import get_cava_socios_persona_link_service\nfrom .blind_audit_operational_service import get_cava_blind_audit_operational_service\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/cava_socios/routes.py",
+      "old": "class InventarioFisicoAplicarRequest(BaseModel):\n    \"\"\"Schema para conciliar y aplicar ajustes de inventario físico al Kardex.\"\"\"\n    conteos: List[InventarioFisicoItem]\n    observaciones_generales: Optional[str] = \"Auditoría física de cava\"\n\n\n\n# ==================== ENDPOINTS SOCIOS ====================\n",
+      "new": "class InventarioFisicoAplicarRequest(BaseModel):\n    \"\"\"Schema para conciliar y aplicar ajustes de inventario físico al Kardex.\"\"\"\n    conteos: List[InventarioFisicoItem]\n    observaciones_generales: Optional[str] = \"Auditoría física de cava\"\n\n\nclass BlindAuditObservationInput(BaseModel):\n    \"\"\"Captura ciega: no expone inventario esperado al operador.\"\"\"\n    observation_id: str = Field(..., min_length=1, max_length=120)\n    observed_reference: str = Field(..., min_length=1, max_length=255)\n    observed_quantity: int = Field(default=1, ge=0)\n    observed_level_pct: Optional[float] = Field(default=None, ge=0, le=100)\n    evidence_id: Optional[str] = Field(default=None, max_length=160)\n    recognition_confidence: Optional[float] = Field(default=None, ge=0, le=1)\n\n\nclass BlindAuditReconcileRequest(BaseModel):\n    \"\"\"Reconciliacion sin escrituras ni ajustes automaticos.\"\"\"\n    socio_id: Optional[str] = None\n    ubicacion: Optional[str] = Field(default=None, max_length=200)\n    idempotency_key: str = Field(..., min_length=1, max_length=160)\n    observations: List[BlindAuditObservationInput]\n    observation_to_bottle: Dict[str, str]\n    level_tolerance_pct: float = Field(default=5.0, ge=0, le=100)\n    min_recognition_confidence: float = Field(default=0.90, ge=0, le=1)\n\n\n@router.post(\"/auditorias-ciegas/reconciliar\")\nasync def reconciliar_auditoria_ciega(\n    data: BlindAuditReconcileRequest,\n    unidad_negocio_pk: Optional[str] = Query(None),\n    current_user: Dict = Depends(require_explicit_permission(\"CAVA_SOCIOS_VER\")),\n):\n    \"\"\"Compara captura ciega contra inventario canonico sin modificar existencias.\"\"\"\n    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)\n    cava_service = get_cava_socios_service()\n    inventory = cava_service.obtener_inventario_global(\n        empresa_id=scope[\"empresa_id\"],\n        ubicacion=data.ubicacion,\n        estatus=\"EN_CAVA\",\n        socio_id=data.socio_id,\n        skip=0,\n        limit=1000,\n    )\n    rows = inventory.get(\"botellas\") or []\n    if not rows:\n        raise HTTPException(status_code=404, detail=\"No hay inventario elegible para auditar\")\n\n    audit_service = get_cava_blind_audit_operational_service()\n    try:\n        result = audit_service.reconcile(\n            inventory_rows=rows,\n            observations=[item.model_dump() for item in data.observations],\n            observation_to_bottle=data.observation_to_bottle,\n            idempotency_key=data.idempotency_key,\n            level_tolerance_pct=data.level_tolerance_pct,\n            min_recognition_confidence=data.min_recognition_confidence,\n        )\n    except ValueError as exc:\n        raise HTTPException(status_code=422, detail=str(exc))\n\n    return {\n        **result,\n        \"empresa_id\": scope[\"empresa_id\"],\n        \"unidad_negocio_pk\": scope[\"unidad_negocio_pk\"],\n        \"socio_id\": data.socio_id,\n        \"ubicacion\": data.ubicacion,\n    }\n\n\n# ==================== ENDPOINTS SOCIOS ====================\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/cava_socios/blind_audit_operational_service.py",
+        "backend/modules/cava_socios/routes.py",
+        "backend/tests/test_cava_socios_blind_audit_operational_service.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios_blind_audit.py",
+        "backend/tests/test_cava_socios_blind_audit_operational_service.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/blind_audit_operational_service.py",
+          "backend/modules/cava_socios/blind_audit.py",
+          "backend/modules/cava_socios/routes.py",
+          "backend/tests/test_cava_socios_blind_audit_operational_service.py"
+        ],
+        "search_terms": [
+          "reconciliar_auditoria_ciega",
+          "CAVA_SOCIOS_VER",
+          "_resolve_cava_scope",
+          "obtener_inventario_global",
+          "REVIEW_REQUIRED",
+          "DIFFERENCE",
+          "CONFIRMED",
+          "automatic_inventory_adjustment",
+          "automatic_inventory_movement",
+          "idempotency_key",
+          "request_fingerprint",
+          "aplicar_ajustes_inventario_fisico",
+          "registrar_consumo"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
