@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE16B-CANONICAL-INTEROPERABILITY-MIGRATION-CONTRACT-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6cdb06ad073a9b96c70ced95c03489c435d7b8f1",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Gate 16B: materializar exclusivamente el contrato canónico proveedor-neutral de interoperabilidad, homologación y migración histórica de Cavas, reutilizando la evidencia certificada en Gate16A. No crear tablas, endpoints, jobs, conectores ni tocar SQL/Producción.",
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/CAVAS/CAVAS_GATE16B_CANONICAL_INTEROPERABILITY_MIGRATION_CONTRACT.md",
+      "content": "# EDARSAHUB BOS — Cavas Gate 16B\n## Contrato canónico de interoperabilidad, homologación y migración histórica\n\nEstado: DESIGN CONTRACT\nDominio propietario: Cavas / Integración Universal EDARSAHUB\nFuente de verdad: EDARSAHUB SQL Server\nProducción: fuera de alcance de este Gate\n\n## 1. Objetivo\n\nDefinir el contrato proveedor-neutral para que EDARSAHUB BOS Cavas pueda:\n\n1. convivir de forma continua con Soft Restaurant, MPRO y futuros sistemas;\n2. importar historia desde Kavasoft, legacy, CSV/Excel, APIs y otros orígenes autorizados;\n3. preservar la historia disponible sin convertirla en un simple saldo inicial;\n4. homologar personas, clientes, productos, botellas, ubicaciones y movimientos contra entidades canónicas EDARSAHUB;\n5. garantizar idempotencia, procedencia, reconciliación, trazabilidad, rollback lógico y exportabilidad;\n6. evitar lógica específica de proveedor dentro del dominio Cavas.\n\nEste contrato no autoriza DDL, DML, endpoints, conectores ni sincronizaciones reales.\n\n## 2. Principios vinculantes\n\n- EDARSAHUB SQL Server es el cerebro y la única fuente operativa canónica.\n- MongoDB no es fuente operativa.\n- El dominio Cavas no conoce detalles de Soft Restaurant, MPRO, Kavasoft ni otro proveedor.\n- Cada proveedor se implementa mediante adapter.\n- Los conectores existentes de Soft Restaurant y MPRO deben reutilizar infraestructura canónica antes de crear cualquier nueva conexión.\n- RBAC, empresa, unidad, usuario y permisos se resuelven con contratos existentes.\n- Personas/clientes se homologan contra Gobierno_Persona, Gobierno_PersonaVinculo y Cliente_Catalogo cuando aplique.\n- Productos se homologan contra el catálogo canónico existente; una importación no puede crear productos indiscriminadamente.\n- Fecha original del hecho y fecha de importación son conceptos distintos.\n- Reprocesar el mismo dato no puede duplicar entidades ni movimientos.\n- Ninguna migración se certifica sin reconciliación cuantitativa y de identidad.\n- Todo dato importado conserva procedencia suficiente para explicar de dónde vino y cómo fue transformado.\n- Los datos del cliente deben poder exportarse mediante contratos documentados; no se usará lock-in por secuestro de información.\n\n## 3. Modos de operación\n\n### 3.1 CONTINUOUS_SYNC\nEl sistema externo continúa activo. EDARSAHUB recibe cambios incrementales y homologa al modelo canónico.\n\n### 3.2 HISTORICAL_MIGRATION\nEl sistema anterior será reemplazado total o parcialmente. Se importa la historia disponible, preservando fechas y referencias originales.\n\n### 3.3 HYBRID_CUTOVER\nSe realiza backfill histórico y posteriormente sincronización incremental hasta una fecha/hora de corte. Después del delta final y la reconciliación, EDARSAHUB continúa como autoridad operativa definida para el alcance migrado.\n\n### 3.4 MANUAL_FILE_IMPORT\nImportación controlada desde CSV/XLSX/JSON u otro formato documentado. Siempre requiere dry-run y validación previa.\n\n## 4. Contratos lógicos\n\nLos siguientes nombres son contratos de dominio. Gate 16B no obliga a crear tablas con estos nombres.\n\n### SourceSystem\n\nIdentifica la familia del proveedor u origen.\n\nCampos lógicos mínimos:\n\n- source_system_code\n- display_name\n- adapter_code\n- adapter_version\n- capabilities\n- active\n\nEjemplos de códigos permitidos por adapters futuros: SOFTRESTAURANT, MPRO, KAVASOFT, CSV, LEGACY_API.\nNo se deben usar condicionales de proveedor dentro de Cavas.\n\n### SourceInstance\n\nRepresenta una instalación/origen concreto.\n\n- source_instance_id\n- source_system_code\n- empresa_id\n- unidad_negocio_id cuando aplique\n- connection_reference o import_reference\n- timezone\n- currency\n- locale\n- operational_status\n\nLas credenciales nunca viven en este contrato ni se hardcodean.\n\n### MigrationBatch\n\nUnidad auditable de migración o backfill.\n\n- migration_batch_id\n- source_instance_id\n- mode\n- requested_by\n- started_at\n- completed_at\n- status\n- mapping_version\n- adapter_version\n- dry_run\n- cutoff_at opcional\n- counts_received\n- counts_accepted\n- counts_rejected\n- counts_conflicted\n- reconciliation_status\n\nEstados mínimos: DRAFT, DRY_RUN, REVIEW_REQUIRED, APPROVED, RUNNING, RECONCILING, CERTIFIED, FAILED, ROLLED_BACK.\n\n### ExternalEntityReference\n\nMapea una entidad externa con su entidad canónica.\n\nClave lógica idempotente:\n\n(source_instance_id, entity_type, source_record_id)\n\nCampos:\n\n- source_instance_id\n- entity_type\n- source_record_id\n- canonical_entity_type\n- canonical_entity_id\n- mapping_status\n- match_method\n- match_confidence opcional\n- first_seen_at\n- last_seen_at\n- source_checksum\n- mapping_version\n\n### ProvenanceRecord\n\nExplica el linaje de un dato importado.\n\n- source_system\n- source_instance_id\n- source_entity\n- source_record_id\n- source_transaction_id opcional\n- source_line_id opcional\n- original_occurred_at\n- original_created_at opcional\n- imported_at\n- adapter_version\n- mapping_version\n- migration_batch_id\n- source_checksum\n- canonical_entity_type\n- canonical_entity_id\n- transformation_notes estructuradas\n\nRegla: original_occurred_at nunca debe reemplazarse por imported_at.\n\n### MappingDecision\n\nResultado de homologación.\n\nEstados:\n\n- EXACT_MATCH\n- APPROVED_EQUIVALENCE\n- PROBABLE_MATCH\n- NEW_CANONICAL_REQUIRED\n- CONFLICT\n- REJECTED\n\nPROBABLE_MATCH y CONFLICT requieren revisión humana cuando impliquen crear o fusionar identidad canónica.\n\n### ReconciliationResult\n\nDebe poder comparar por batch:\n\n- personas/socios\n- botellas\n- movimientos\n- cantidades/niveles\n- cargos si aplican\n- evidencias\n- registros rechazados/conflictivos\n\nLa certificación exige explicar cualquier diferencia. Cero diferencia no es obligatoria cuando el origen contiene registros inválidos, pero toda diferencia debe quedar clasificada y aprobada.\n\n### MigrationCheckpoint\n\nPermite reanudar procesos sin duplicación.\n\n- migration_batch_id\n- stream/entity_type\n- cursor/checkpoint\n- source_high_watermark\n- canonical_high_watermark\n- updated_at\n\n## 5. Identidad y deduplicación\n\n### Personas y socios\n\nPrioridad conceptual de matching:\n\n1. identificador externo previamente vinculado;\n2. identificadores oficiales válidos cuando el contrato legal lo permita;\n3. email/teléfono normalizados como señales, nunca como prueba universal por sí solos;\n4. nombre y otros atributos únicamente como match probabilístico;\n5. revisión humana para ambigüedad.\n\nNo se deben crear catálogos paralelos a Gobierno_Persona / Cliente_Catalogo.\n\n### Productos\n\nEl adapter entrega una referencia externa normalizada. El motor de homologación decide:\n\n- producto canónico exacto;\n- equivalencia aprobada;\n- probable;\n- requiere alta mediante flujo canónico de catálogo;\n- rechazado.\n\nLa migración no crea SKUs arbitrariamente.\n\n### Botellas\n\nUna botella física requiere identidad propia aunque varias botellas compartan producto/SKU. La procedencia debe poder distinguir botella física, producto y movimiento.\n\n## 6. Historia de Cavas\n\nGate 16A confirmó que el dominio existente ya contiene conceptos como REGULARIZACION_HISTORICA, source_system e historical_reference. Gate 16B los reconoce como base y exige extenderlos de forma compatible, no duplicarlos.\n\nLa historia disponible debe preservar, cuando el origen lo provea:\n\n- socio/propietario;\n- botella;\n- producto;\n- entrada/alta;\n- movimientos;\n- consumos;\n- ajustes;\n- cambios de ubicación;\n- cargos/descorches;\n- fechas originales;\n- observaciones;\n- referencias externas;\n- evidencias y fotografías;\n- estado/nivel resultante.\n\nUna importación de saldo inicial es un fallback documentado, no equivalente a una migración histórica completa.\n\n## 7. Evidencias\n\nLas evidencias externas deben conservar:\n\n- referencia del origen;\n- checksum;\n- fecha original;\n- fecha de ingestión;\n- tipo MIME;\n- tamaño;\n- relación con entidad/movimiento;\n- estado de validación;\n- referencia al almacenamiento canónico.\n\nEl binario no debe duplicarse en SQL si existe Object Storage canónico apto. Gate posterior certificará la implementación real.\n\n## 8. Idempotencia\n\nToda operación de ingestión debe poder ser reintentada.\n\nReglas:\n\n- misma SourceInstance + entity_type + source_record_id no crea una segunda entidad canónica;\n- para eventos/transacciones se añade source_transaction_id/source_line_id cuando el proveedor lo soporte;\n- checksum detecta cambios del mismo registro externo;\n- una corrección del origen produce actualización/versionado controlado, no duplicación silenciosa;\n- los adapters deben declarar su estrategia de high-watermark/cursor.\n\n## 9. Dry-run obligatorio\n\nAntes de escribir datos de una migración:\n\n1. conectar o cargar archivo;\n2. detectar esquema/versión;\n3. parsear;\n4. normalizar;\n5. mapear;\n6. calcular matches y conflictos;\n7. producir resumen cuantitativo;\n8. mostrar errores;\n9. no escribir entidades operativas;\n10. exigir aprobación para ejecutar cuando corresponda.\n\n## 10. Cutover\n\nSecuencia canónica:\n\nBACKFILL -> DELTA -> PRE-CUTOVER RECONCILIATION -> FREEZE/CUTOFF -> FINAL DELTA -> FINAL RECONCILIATION -> CERTIFICATION -> GO-LIVE -> POSTCHECK\n\nNo se permite declarar completada una migración por el simple hecho de terminar el import.\n\n## 11. Rollback\n\nEl rollback debe distinguir:\n\n- rollback de batch aún no certificado;\n- corrección de mapping;\n- reversión de entidades creadas exclusivamente por el batch cuando sea seguro;\n- preservación de entidades canónicas preexistentes;\n- jamás borrar historia ajena al batch.\n\nCada registro escrito por un batch debe ser trazable al migration_batch_id o mecanismo equivalente.\n\n## 12. Exportabilidad\n\nEDARSAHUB debe poder entregar, según permisos:\n\n- socios/personas referenciables;\n- botellas;\n- inventario;\n- movimientos;\n- cargos;\n- ubicaciones;\n- evidencias o referencias;\n- provenance;\n- mappings externos.\n\nLos formatos concretos se definirán en gates de implementación.\n\n## 13. Adapter Contract\n\nTodo adapter debe implementar conceptualmente:\n\n- discover()\n- validate_connection_or_payload()\n- capabilities()\n- extract_full()\n- extract_delta(checkpoint)\n- normalize()\n- source_identity()\n- source_checksum()\n- health()\n- close()\n\nEl adapter no puede:\n\n- escribir directamente a tablas Cavas;\n- crear usuarios/roles/permisos;\n- resolver por sí mismo identidades canónicas;\n- almacenar secretos;\n- saltarse el motor de homologación;\n- declarar una migración certificada.\n\n## 14. Reutilización obligatoria\n\nAntes de implementar Gate 16C/16D se debe reutilizar o extender, cuando exista evidencia:\n\n- core.sql_first.connection_factory;\n- RBAC y scope corporativo canónicos;\n- connection resolver/registry;\n- infraestructura de adapters Soft Restaurant/MPRO;\n- Gobierno_Persona y Gobierno_PersonaVinculo;\n- Cliente_Catalogo;\n- catálogo canónico de productos;\n- Scheduler;\n- Object Storage/evidencias;\n- auditoría/logging;\n- timezone, currency y locale canónicos.\n\nSi una capacidad no está certificada como existente, Gate posterior debe marcarla NEW_REQUIRED en lugar de duplicarla silenciosamente.\n\n## 15. Límites de bounded context\n\nCavas es propietario de:\n\n- custodia;\n- socio-cava;\n- botella física;\n- ubicación de cava;\n- movimiento de cava;\n- consumo;\n- cargo propio del dominio;\n- historia y reconciliación de Cavas.\n\nIntegración Universal es propietaria de:\n\n- adapters;\n- source instances;\n- checkpoints;\n- ingestion;\n- provenance transversal;\n- contratos de interoperabilidad.\n\nCRM/Gobierno es propietario de identidad de persona/cliente.\nCatálogo es propietario de producto/SKU.\nCore conserva únicamente infraestructura transversal.\n\n## 16. Criterios de cierre de Gate 16B\n\nGate 16B se considera cerrado cuando:\n\n- este contrato existe en el repositorio;\n- no introduce proveedor hardcodeado en lógica Cavas;\n- no crea tablas/endpoints/jobs;\n- pasa git diff check;\n- el contrato es consistente con REGULARIZACION_HISTORICA/source_system/historical_reference existentes;\n- deja explícitos idempotencia, provenance, dry-run, reconciliación, cutover, rollback y exportabilidad;\n- Production no fue tocada.\n\nSiguiente Gate autorizado tras certificación: Gate 16C — diseño/implementación mínima del Migration & History Engine conforme a este contrato.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/cava_socios/domain.py",
+        "backend/modules/cava_socios/service.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios_domain.py",
+        "backend/tests/test_cava_socios.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "docs/CAVAS/CAVAS_GATE16B_CANONICAL_INTEROPERABILITY_MIGRATION_CONTRACT.md",
+          "backend/modules/cava_socios/domain.py",
+          "backend/modules/cava_socios/service.py",
+          "backend/core",
+          "backend/modules"
+        ],
+        "search_terms": [
+          "REGULARIZACION_HISTORICA",
+          "source_system",
+          "historical_reference",
+          "SoftRestaurant",
+          "MPRO",
+          "Cliente_Catalogo",
+          "Gobierno_Persona",
+          "connection_resolver",
+          "object_storage"
+        ],
+        "include_patterns": [
+          "*.md",
+          "*.py"
+        ],
+        "exclude_patterns": [
+          "*.env",
+          "*secret*",
+          "*password*"
+        ],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "Only create/update the Gate16B architecture contract document",
+    "No SQL DDL/DML",
+    "No endpoints, routes, jobs, adapters or frontend",
+    "No Production",
+    "No hardcoded provider logic inside Cavas",
+    "No duplicate CRM/person/product/RBAC/connection/scheduler/storage infrastructure",
+    "EDARSAHUB SQL Server remains the canonical source of truth",
+    "Preserve compatibility with existing Cavas domain"
+  ]
+}
