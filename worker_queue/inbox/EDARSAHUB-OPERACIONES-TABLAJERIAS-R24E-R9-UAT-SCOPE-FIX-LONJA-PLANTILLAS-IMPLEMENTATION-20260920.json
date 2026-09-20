@@ -1,0 +1,94 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R9-UAT-SCOPE-FIX-LONJA-PLANTILLAS-IMPLEMENTATION-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6411f1cbaf0ac069ba68074996fec3f319643e22",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias"
+  },
+  "objective": "R24E-R9: publicar job real del Universal Worker para implementar de forma quirurgica el Scope Fix UAT de Tablajerias con actions reales. Mantener SQL versionado sin ejecucion, no tocar Produccion, no deploy, no Scheduler, no NetPay, no RBAC transversal, no menu/layout transversal, no R24F. Ejecutar frontend_build como parte del job real, mas git_diff_check, pytest y repository_contract_audit. Implementar de forma quirurgica en Desarrollo el Scope Fix UAT de Tablajerias: seleccion de unidad/contexto operativo, seleccion individual de lonjas disponibles no procesadas, CRUD/versionado minimo de plantillas, doble control kg/pz, gramaje por pieza, SKU pieza costo cero, SKU kg/gr prorrateado y SKU con costo fijo. No tocar Produccion, no ejecutar SQL, no deploy, no Scheduler, no NetPay, no RBAC transversal, no menu/layout transversal.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "docs/TABLAJERIA_UAT_SCOPE_FIX_LONJA_PLANTILLAS_IMPLEMENTATION_R1.md",
+      "content": "# EDARSAHUB BOS - Tablajerias UAT Scope Fix Lonja + Plantillas Implementation R1\n\nEstado: implementation scaffold en Desarrollo.\n\nProduccion: NO tocada.\nSQL: NO ejecutado.\nDeploy: NO ejecutado.\n\n## Hallazgos UAT bloqueantes\n\n1. No se pueden seleccionar unidades de negocio.\n2. No se pueden seleccionar lonjas individualmente.\n3. Las lonjas deben listarse disponibles/no procesadas desde almacen.\n4. Se requiere una orden por lonja.\n5. Los derivados deben precargarse desde plantilla.\n6. Todo corte requiere doble control kg/pz.\n7. Si hay gramaje definido, chef captura piezas y sistema calcula kg/g.\n8. SKU pieza entra con costo cero.\n9. SKU kg/gr recibe costo prorrateado.\n10. SKU con costo fijo no participa en prorrateo.\n11. Plantillas deben poder crearse, editarse, duplicarse, versionarse e inactivarse.\n\n## Implementacion requerida\n\nBackend:\n- Agregar endpoints de contextos operativos sin hardcodear unidad.\n- Agregar endpoint de lonjas disponibles/no procesadas.\n- Agregar POST/PUT/DUPLICAR/INACTIVAR plantillas.\n- Mantener version historica: plantilla publicada no se sobrescribe, se duplica/versiona.\n\nSchemas:\n- Agregar sku_kg_codigo, sku_pieza_codigo, gramaje_por_pieza_gramos, piezas_reales, costo_fijo, costo_fijo_unitario, prorratea_costo, lonja_id, almacen_origen_id, almacen_destino_id.\n\nSQL versionado:\n- Agregar tabla/columnas de lonjas disponibles y doble control sin ejecutar automaticamente.\n\nFrontend:\n- Exponer seleccion de unidad/contexto operativo.\n- Exponer seleccion de lonja individual.\n- Exponer creacion/edicion/duplicado/inactivacion de plantillas.\n\n## Criterio de cierre\n\nUAT no puede pasar hasta que estos puntos queden implementados y reprobados en Preview/Desarrollo.\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/modules/tablajeria/sql/uatscope_lonja_plantillas.sql",
+      "content": "/*\nEDARSA HUB - Tablajeria UAT Scope Fix Lonja Individual + Plantillas\nSQL versionado. NO ejecutar automaticamente contra Produccion.\nEDARSAHUB SQL Server sigue siendo fuente canonica.\n*/\n\nIF OBJECT_ID('dbo.Tablajeria_LonjasDisponibles', 'U') IS NULL\nBEGIN\n    CREATE TABLE dbo.Tablajeria_LonjasDisponibles (\n        LonjaID UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID() PRIMARY KEY,\n        EmpresaID UNIQUEIDENTIFIER NULL,\n        UnidadNegocioID UNIQUEIDENTIFIER NULL,\n        SucursalID UNIQUEIDENTIFIER NULL,\n        AlmacenOrigenID UNIQUEIDENTIFIER NULL,\n        AlmacenDestinoID UNIQUEIDENTIFIER NULL,\n        LoteProveedor NVARCHAR(120) NULL,\n        LoteInterno NVARCHAR(120) NULL,\n        InsumoBaseCodigo NVARCHAR(80) NOT NULL,\n        InsumoBaseNombre NVARCHAR(250) NULL,\n        PesoLonjaKg DECIMAL(18,4) NOT NULL,\n        CostoUnitario DECIMAL(18,6) NULL,\n        CostoTotal DECIMAL(18,4) NULL,\n        Estatus NVARCHAR(30) NOT NULL DEFAULT 'DISPONIBLE',\n        OrdenTablajeID UNIQUEIDENTIFIER NULL,\n        FechaRecepcionUTC DATETIME2 NULL,\n        FechaProcesadaUTC DATETIME2 NULL,\n        Activo BIT NOT NULL DEFAULT 1,\n        UsuarioAltaID UNIQUEIDENTIFIER NULL,\n        FechaAltaUTC DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()\n    );\nEND;\nGO\n\nIF COL_LENGTH('dbo.Operaciones_Tablaje_PlantillasDetalle', 'SkuKgCodigo') IS NULL\nBEGIN\n    ALTER TABLE dbo.Operaciones_Tablaje_PlantillasDetalle ADD\n        SkuKgCodigo NVARCHAR(80) NULL,\n        SkuPiezaCodigo NVARCHAR(80) NULL,\n        UnidadPesoCodigo NVARCHAR(20) NULL,\n        UnidadPiezaCodigo NVARCHAR(20) NULL,\n        GramajePorPiezaGramos DECIMAL(18,4) NULL,\n        CostoFijo BIT NOT NULL CONSTRAINT DF_TablajeDetalle_CostoFijo DEFAULT 0,\n        CostoFijoUnitario DECIMAL(18,6) NULL,\n        ProrrateaCosto BIT NOT NULL CONSTRAINT DF_TablajeDetalle_ProrrateaCosto DEFAULT 1;\nEND;\nGO\n\nIF COL_LENGTH('dbo.Operaciones_Tablaje_Ordenes', 'LonjaID') IS NULL\nBEGIN\n    ALTER TABLE dbo.Operaciones_Tablaje_Ordenes ADD\n        LonjaID UNIQUEIDENTIFIER NULL,\n        LoteRendimientoID UNIQUEIDENTIFIER NULL,\n        AlmacenOrigenID UNIQUEIDENTIFIER NULL,\n        AlmacenDestinoID UNIQUEIDENTIFIER NULL,\n        PesoLonjaKg DECIMAL(18,4) NULL;\nEND;\nGO\n\nIF COL_LENGTH('dbo.Operaciones_Tablaje_OrdenesDetalle', 'PiezasReales') IS NULL\nBEGIN\n    ALTER TABLE dbo.Operaciones_Tablaje_OrdenesDetalle ADD\n        PiezasReales DECIMAL(18,4) NULL,\n        GramajePorPiezaGramos DECIMAL(18,4) NULL,\n        SkuKgCodigo NVARCHAR(80) NULL,\n        SkuPiezaCodigo NVARCHAR(80) NULL,\n        CostoFijo BIT NOT NULL CONSTRAINT DF_TablajeOrdenDetalle_CostoFijo DEFAULT 0,\n        CostoFijoUnitario DECIMAL(18,6) NULL,\n        ProrrateaCosto BIT NOT NULL CONSTRAINT DF_TablajeOrdenDetalle_ProrrateaCosto DEFAULT 1;\nEND;\nGO\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\n\ndef read(path: str) -> str:\n    return (ROOT / path).read_text(encoding='utf-8')\n\ndef test_uat_scope_fix_contract_files_exist():\n    sql = read('backend/modules/tablajeria/sql/uatscope_lonja_plantillas.sql')\n    doc = read('docs/TABLAJERIA_UAT_SCOPE_FIX_LONJA_PLANTILLAS_IMPLEMENTATION_R1.md')\n    for token in ['Tablajeria_LonjasDisponibles', 'SkuKgCodigo', 'SkuPiezaCodigo', 'GramajePorPiezaGramos', 'CostoFijo', 'ProrrateaCosto']:\n        assert token in sql\n    for token in ['lonjas individualmente', 'doble control kg/pz', 'plantillas', 'Produccion: NO tocada']:\n        assert token in doc\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "frontend_build"
+    },
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "docs",
+          "backend/modules/tablajeria",
+          "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py"
+        ],
+        "search_terms": [
+          "lonja",
+          "plantillas",
+          "unidad",
+          "kg",
+          "pz",
+          "gramaje",
+          "SkuKgCodigo",
+          "SkuPiezaCodigo",
+          "CostoFijo",
+          "ProrrateaCosto",
+          "Tablajeria_LonjasDisponibles"
+        ],
+        "include_patterns": [
+          "docs/**",
+          "backend/modules/tablajeria/**",
+          "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py"
+        ],
+        "exclude_patterns": [
+          "**/__pycache__/**"
+        ],
+        "max_results": 500
+      }
+    }
+  ],
+  "source_job": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-SCOPE-FIX-LONJA-PLANTILLAS-IMPLEMENTATION-MUTATION-R1-20260920",
+  "created_at_utc": "2026-09-20T19:08:17.284775+00:00",
+  "constraints": [
+    "No Production",
+    "No SQL execution",
+    "No deploy",
+    "No Scheduler changes",
+    "No NetPay changes",
+    "No RBAC transversal changes",
+    "No menu/layout transversal changes",
+    "No R24F publication",
+    "SQL files are versioned only and must not be executed automatically",
+    "Frontend build must run inside this action-bearing mutation job"
+  ]
+}
