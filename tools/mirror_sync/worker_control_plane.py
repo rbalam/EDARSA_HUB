@@ -45,8 +45,9 @@ REMOTE = os.environ.get("EDARSAHUB_QUEUE_REMOTE", "origin")
 DEV_BRANCH = "Edarsahub_Desarrollo"
 INTERVAL = int(os.environ.get("EDARSAHUB_CONTROL_PLANE_INTERVAL", "15"))
 HEARTBEAT_STALE = int(os.environ.get("EDARSAHUB_WORKER_HEARTBEAT_STALE_SECONDS", "60"))
-CLAIM_GRACE = int(os.environ.get("EDARSAHUB_AGENT_CLAIM_GRACE_SECONDS", "300"))
-PROCESSING_GRACE = int(os.environ.get("EDARSAHUB_PROCESSING_REQUEUE_SECONDS", "2100"))
+CLAIM_GRACE = int(os.environ.get("EDARSAHUB_AGENT_CLAIM_GRACE_SECONDS", "90"))
+PROCESSING_GRACE = int(os.environ.get("EDARSAHUB_PROCESSING_REQUEUE_SECONDS", "120"))
+WORKER_SERVICE = os.environ.get("EDARSAHUB_UNIVERSAL_WORKER_SERVICE", "edarsahub-universal-worker")
 EXPECTED_GENERATION_RE = re.compile(r'^RUNTIME_GENERATION="([^"]+)"', re.MULTILINE)
 PID_RE = re.compile(r'(?i)["\']?pid["\']?\s*[:=]\s*["\']?(\d+)')
 WORKER_TOKEN_RE = re.compile(r"worker-[A-Za-z0-9._-]{3,160}")
@@ -126,22 +127,25 @@ def expected_generation() -> str:
 
 
 def request_universal_restart(reason: str) -> bool:
-    candidates = [RUNTIME / "pid", RUNTIME / "parent_child_pid"]
-    signalled = False
-    for path in candidates:
-        raw = read_text(path)
-        if not raw.isdigit():
-            continue
-        pid = int(raw)
-        if not pid_alive(pid):
-            continue
-        try:
-            os.kill(pid, signal.SIGTERM)
-            audit("UNIVERSAL_RESTART_REQUESTED", reason=reason, pid=pid)
-            signalled = True
-        except OSError as exc:
-            audit("UNIVERSAL_RESTART_SIGNAL_FAILED", reason=reason, pid=pid, error=str(exc))
-    return signalled
+    env_name = (
+        os.environ.get("EDARSA_ENV")
+        or os.environ.get("APP_ENV")
+        or os.environ.get("ENVIRONMENT")
+        or "PREVIEW"
+    ).upper()
+    if "PROD" in env_name:
+        audit("UNIVERSAL_RESTART_BLOCKED_PRODUCTION_ENV", reason=reason, environment=env_name)
+        return False
+    result = run(["supervisorctl", "restart", WORKER_SERVICE], timeout=30)
+    ok = result.returncode == 0
+    audit(
+        "UNIVERSAL_RESTART_REQUESTED",
+        reason=reason,
+        service=WORKER_SERVICE,
+        ok=ok,
+        output=result.stdout[-1000:],
+    )
+    return ok
 
 
 def heal_runtime_generation_and_heartbeat() -> dict[str, Any]:
