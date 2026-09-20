@@ -1,0 +1,64 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE16J-R2-FRONTEND-BUILD-RCA-READONLY-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "111cc69429f1f1b3ee23623c53ab23500ca5fcef",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Aislar exclusivamente la causa real del frontend_build fallido de CAVAS-GATE16J-BLIND-AUDIT-MINIMAL-UI-IMPLEMENTATION-R2-20260920. No modificar archivos, no republicar 16J-R3, no cambiar alcance funcional. Leer la evidencia local/raw disponible del resultado R2 y auditar los contratos frontend relacionados para identificar el primer error de compilacion/build verificable, archivo/linea/simbolo implicado y causa probable. Produccion fuera de alcance.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          ".git/universal-worker-queue/results/CAVAS-GATE16J-BLIND-AUDIT-MINIMAL-UI-IMPLEMENTATION-R2-20260920.json",
+          "frontend/src/pages/cava-socios/InventarioCava.jsx",
+          "frontend/src/pages/cava-socios/CavaNavHeader.jsx",
+          "frontend/src/pages/cava-socios/index.js",
+          "frontend/src/App.js",
+          "frontend/src/components/ui/card.jsx",
+          "frontend/src/components/ui/select.jsx",
+          "frontend/src/hooks/useAccessContext.js",
+          "frontend/src/filters"
+        ],
+        "search_terms": [
+          "frontend_build",
+          "returncode",
+          "output",
+          "error",
+          "Failed to compile",
+          "Module not found",
+          "export",
+          "CardDescription",
+          "useAccessContext",
+          "CorporateFiltersProvider",
+          "SelectItem",
+          "CavaNavHeader",
+          "BlindAuditCava"
+        ],
+        "include_patterns": [
+          "*.json",
+          "*.js",
+          "*.jsx"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No file changes",
+    "No frontend implementation",
+    "No retry R3",
+    "No Production",
+    "Report exact first build error if present in raw evidence",
+    "If raw evidence is inaccessible, report that limitation and identify only evidence-backed candidate causes"
+  ]
+}
