@@ -1,11 +1,11 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "19ee196151f0e947e03c3c35cc1ced95acbb5012",
-  "generated_at_utc": "2026-09-20T14:39:05Z",
+  "generated_at_utc": "2026-09-20T14:40:28Z",
   "history": {
     "done_total_local": 770,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 691,
     "results_total_local": 1297
   },
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 276,
+      "age_seconds": 359,
       "job_id": "CAVAS-GATE16I-BLIND-AUDIT-MINIMAL-OPERATIONAL-IMPLEMENTATION-R1-20260920",
       "reasons": [
         "ACTION_1_INVALID_TYPE",
@@ -23,50 +23,56 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 731,
+      "age_seconds": 814,
       "job_id": "CAVAS-GATE16G-BLIND-AUDIT-OPERATIONAL-WORKFLOW-READINESS-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 535,
+      "age_seconds": 618,
       "job_id": "CAVAS-GATE16H-BLIND-AUDIT-OPERATIONAL-IMPLEMENTATION-CONTRACT-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 881,
+      "age_seconds": 964,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-SCOPE-FIX-LONJA-PLANTILLAS-IMPLEMENTATION-MUTATION-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 313,
+      "age_seconds": 395,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-SCOPE-FIX-LONJA-PLANTILLAS-IMPLEMENTATION-MUTATION-R2-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1586,
+      "age_seconds": 1669,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-SCOPE-FIX-LONJA-PLANTILLAS-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1,
+      "job_id": "CAVAS-GATE16I-BLIND-AUDIT-MINIMAL-OPERATIONAL-IMPLEMENTATION-R2-20260920",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
   "queue_result_ready_recent": 5,
-  "queue_running": 0,
+  "queue_running": 1,
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "CAVAS-GATE16I-BLIND-AUDIT-MINIMAL-OPERATIONAL-IMPLEMENTATION-R2-20260920",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-20T14:38:57Z",
-    "last_receive_utc": "2026-09-20T14:39:02Z",
+    "last_cycle_utc": "2026-09-20T14:40:25Z",
+    "last_receive_utc": "2026-09-20T14:40:20Z",
     "last_terminal_utc": "2026-09-20T14:33:52Z",
     "pid": "59"
   },
