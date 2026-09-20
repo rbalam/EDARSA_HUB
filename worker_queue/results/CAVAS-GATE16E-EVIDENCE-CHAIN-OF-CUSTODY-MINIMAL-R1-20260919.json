@@ -1,0 +1,284 @@
+{
+  "base_sha": "6184be004def4ed74b6899cbef1c0c66e35914f0",
+  "blockers": [],
+  "candidate_sha": "5d49a1388267248630f7af564309ca89f6cd1176",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-20T04:01:36Z",
+  "development_sha": "5d49a1388267248630f7af564309ca89f6cd1176",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/cava_socios/evidence_chain.py",
+    "backend/tests/test_cava_socios_evidence_chain.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE16E-EVIDENCE-CHAIN-OF-CUSTODY-MINIMAL-R1-20260919",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-20T04:02:14Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "datetime",
+              "enum",
+              "hashlib",
+              "json",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evidence",
+              "sha256",
+              "storage_reference"
+            ],
+            "path": "backend/modules/cava_socios/evidence_chain.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EvidenceKind",
+              "EvidenceReference",
+              "__post_init__",
+              "_require_aware",
+              "build_evidence",
+              "chain_hash",
+              "historical_evidence_metadata",
+              "sha256_bytes",
+              "verify_chain",
+              "verify_content"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.connection_factory",
+              "datetime",
+              "logging",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "foto_evidencia",
+              "foto_url",
+              "fotoevidenciaurl",
+              "fotoingresourl"
+            ],
+            "path": "backend/modules/cava_socios/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CavaSociosService",
+              "_crear_cargo",
+              "_generar_numero_socio",
+              "_get_connection",
+              "actualizar_socio",
+              "aplicar_ajustes_inventario_fisico",
+              "crear_socio",
+              "get_cava_socios_service",
+              "listar_clientes_canonicos",
+              "listar_socios",
+              "obtener_cargos_socio",
+              "obtener_dashboard",
+              "obtener_etiqueta_botella",
+              "obtener_historial_consumos_global",
+              "obtener_hoja_inventario_fisico",
+              "obtener_inventario_global",
+              "obtener_kardex",
+              "obtener_movimientos_socio",
+              "obtener_socio",
+              "promover_cliente_canonico",
+              "registrar_botella",
+              "registrar_consumo",
+              "registrar_inventario_inicial",
+              "sincronizar_clientes_canonicos"
+            ],
+            "tables_referenced": [
+              "CavaSocios_Socios",
+              "Cliente_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.auth.sql_user_identity",
+              "core.rbac",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "logging",
+              "modules.rbac_context_sql.context_service",
+              "notification_service",
+              "persona_link_service",
+              "pydantic",
+              "report_service",
+              "service",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "foto_evidencia",
+              "foto_url"
+            ],
+            "path": "backend/modules/cava_socios/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/botellas/{botella_id}/consumo",
+              "/botellas/{botella_id}/etiqueta",
+              "/clientes-canonicos",
+              "/clientes-canonicos/sync",
+              "/consumos",
+              "/dashboard",
+              "/inventario",
+              "/inventario-fisico/aplicar",
+              "/inventario-fisico/hoja",
+              "/inventario-inicial",
+              "/kardex",
+              "/personas-canonicas",
+              "/reportes/socio/{socio_id}/consumos",
+              "/reportes/socio/{socio_id}/estado-cuenta",
+              "/reportes/socio/{socio_id}/ficha",
+              "/socios",
+              "/socios/promover-cliente",
+              "/socios/{socio_id}",
+              "/socios/{socio_id}/botellas",
+              "/socios/{socio_id}/enviar-reporte",
+              "/socios/{socio_id}/enviar-todos-reportes",
+              "/socios/{socio_id}/persona-link",
+              "/socios/{socio_id}/persona-link/crear-persona"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BotellaCreate",
+              "ConsumoCreate",
+              "EnvioReporteRequest",
+              "InventarioFisicoAplicarRequest",
+              "InventarioFisicoItem",
+              "InventarioInicialBotellaItem",
+              "InventarioInicialCreate",
+              "PersonaCreateLinkRequest",
+              "PersonaExistingLinkRequest",
+              "PromoverClienteCreate",
+              "SincronizarClientesRequest",
+              "SocioCreate",
+              "SocioUpdate",
+              "_resolve_cava_actor",
+              "_resolve_cava_scope",
+              "actualizar_socio",
+              "aplicar_ajustes_inventario_fisico",
+              "crear_persona_y_vincular",
+              "crear_socio",
+              "descargar_estado_cuenta",
+              "descargar_ficha_socio",
+              "descargar_historial_consumos",
+              "desvincular_persona",
+              "enviar_reporte_socio",
+              "enviar_todos_reportes_socio",
+              "get_dashboard",
+              "listar_clientes_canonicos",
+              "listar_personas_canonicas",
+              "listar_socios",
+              "obtener_consumos",
+              "obtener_etiqueta_botella",
+              "obtener_hoja_inventario_fisico",
+              "obtener_inventario",
+              "obtener_kardex",
+              "obtener_persona_link",
+              "obtener_socio",
+              "promover_cliente_canonico",
+              "registrar_botella",
+              "registrar_consumo",
+              "registrar_inventario_inicial",
+              "sincronizar_clientes_canonicos",
+              "vincular_persona_existente"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "os",
+              "pymssql"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "fotoevidenciaurl",
+              "fotoingresourl"
+            ],
+            "path": "backend/scripts/create_cava_socios_tables.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "create_tables",
+              "get_connection"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "object storage"
+            ],
+            "path": "docs/CAVAS/CAVAS_GATE16B_CANONICAL_INTEROPERABILITY_MIGRATION_CONTRACT.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 5,
+          "scanned_files": 5,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-20T04:00:57Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
