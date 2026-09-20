@@ -1,0 +1,127 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE16G-BLIND-AUDIT-OPERATIONAL-WORKFLOW-READINESS-READONLY-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "373a10e9473b71614be2f4b2ee10e61a1b614011",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Continuar Cavas despues de Gate16F certificado. Auditar exclusivamente en READ_ONLY la brecha para convertir blind_audit.py, evidence_chain.py, adapter_sdk.py y migration_engine.py en un flujo operativo completo y simple para usuarios no tecnicos, sin implementar todavia IA real, uploads, DDL/DML, endpoints/UI ni ajustes automaticos. Definir ownership canonico, endpoints necesarios, contratos request/response, RBAC por empresa/unidad/almacen, workflow de auditoria ciega, estados REVIEW_REQUIRED/DIFFERENCE/CONFIRMED, uso obligatorio de core.object_storage y core.ai_gateway_policy_adapter, trazabilidad de evidencia 16E, FechaOperacion/zona horaria, idempotencia, concurrencia, rollback logico y criterios UAT. Confirmar que cualquier reconocimiento IA solo propone hallazgos y nunca crea/fusiona identidades ni ajusta inventario automaticamente.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/blind_audit.py",
+          "backend/modules/cava_socios/evidence_chain.py",
+          "backend/modules/cava_socios/adapter_sdk.py",
+          "backend/modules/cava_socios/migration_engine.py",
+          "backend/modules/cava_socios/routes.py",
+          "backend/modules/cava_socios/service.py",
+          "backend/core/object_storage",
+          "backend/core/ai_gateway_policy_adapter.py",
+          "backend/core/ai_execution_gate.py",
+          "frontend/src/pages",
+          "docs/CAVAS/CAVAS_GATE16B_CANONICAL_INTEROPERABILITY_MIGRATION_CONTRACT.md",
+          "docs/CAVAS/CAVAS_GATE16F_BLIND_AUDIT_CV_READINESS.md"
+        ],
+        "search_terms": [
+          "blind_audit",
+          "evidence_chain",
+          "REVIEW_REQUIRED",
+          "DIFFERENCE",
+          "CONFIRMED",
+          "object_storage",
+          "ai_gateway_policy_adapter",
+          "ai_execution_gate",
+          "VISION_IMAGE_ANALYSIS",
+          "EmpresaID",
+          "UnidadNegocioID",
+          "AlmacenID",
+          "FechaOperacion",
+          "timezone",
+          "idempot",
+          "auditoria",
+          "inventario",
+          "ajuste",
+          "hallazgo",
+          "evidencia",
+          "RBAC",
+          "permission",
+          "cava",
+          "CavaSocios_Botellas",
+          "CavaSocios_Movimientos"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.md"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios",
+          "frontend/src",
+          "backend/core"
+        ],
+        "search_terms": [
+          "upload",
+          "evidence",
+          "photo",
+          "camera",
+          "vision",
+          "image",
+          "review_required",
+          "blind audit",
+          "auditoria ciega",
+          "inventario fisico",
+          "inventory count",
+          "descuadre",
+          "difference",
+          "reconcile",
+          "adjustment"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No code changes",
+    "No SQL",
+    "No DDL or DML",
+    "No Production",
+    "No Mongo runtime",
+    "No new storage subsystem",
+    "Reuse core.object_storage",
+    "Reuse core.ai_gateway_policy_adapter and execution gate",
+    "No hardcoded AI provider or model",
+    "No automatic inventory adjustments",
+    "No automatic canonical identity creation or merge",
+    "SocioID remains membership identity",
+    "RBAC backend-enforced by empresa/unidad/almacen",
+    "Operational UX must be usable by non-technical personnel",
+    "Do not duplicate existing endpoints/services/helpers"
+  ]
+}
