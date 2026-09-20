@@ -1,0 +1,89 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE16C-MIGRATION-HISTORY-ENGINE-MINIMAL-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "50381c6c712e41aedabcca094738d161c4148ff9",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Gate 16C: implementar el motor minimo, puro y proveedor-neutral de migracion/historia de Cavas conforme al contrato certificado 16B. Debe aportar identidad externa idempotente, checksum estable, dry-run, decisiones de mapping, reconciliacion con diferencias aprobadas y proyeccion compatible a REGULARIZACION_HISTORICA. Sin SQL, conexiones, endpoints, adapters, jobs, frontend ni Produccion.",
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/cava_socios/migration_engine.py",
+      "content": "\"\"\"Motor puro de migracion e historia para Cavas.\n\nNo accede a SQL, no resuelve conexiones, no conoce proveedores y no escribe\nentidades canonicas. Implementa contratos deterministas de Gate 16B para que\nadapters y servicios posteriores puedan reutilizar una sola semantica.\n\"\"\"\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom datetime import datetime\nfrom enum import Enum\nimport hashlib\nimport json\nfrom typing import Any, Callable, Iterable, Mapping, Optional\n\nfrom .domain import BottleOrigin, BottleOriginEvidence\n\n\nclass MigrationMode(str, Enum):\n    CONTINUOUS_SYNC = \"CONTINUOUS_SYNC\"\n    HISTORICAL_MIGRATION = \"HISTORICAL_MIGRATION\"\n    HYBRID_CUTOVER = \"HYBRID_CUTOVER\"\n    MANUAL_FILE_IMPORT = \"MANUAL_FILE_IMPORT\"\n\n\nclass MappingStatus(str, Enum):\n    EXACT_MATCH = \"EXACT_MATCH\"\n    APPROVED_EQUIVALENCE = \"APPROVED_EQUIVALENCE\"\n    PROBABLE_MATCH = \"PROBABLE_MATCH\"\n    NEW_CANONICAL_REQUIRED = \"NEW_CANONICAL_REQUIRED\"\n    CONFLICT = \"CONFLICT\"\n    REJECTED = \"REJECTED\"\n\n\n@dataclass(frozen=True)\nclass SourceIdentity:\n    source_instance_id: str\n    entity_type: str\n    source_record_id: str\n    source_transaction_id: Optional[str] = None\n    source_line_id: Optional[str] = None\n\n    def idempotency_key(self) -> str:\n        parts = [\n            _required(self.source_instance_id, \"source_instance_id\"),\n            _required(self.entity_type, \"entity_type\"),\n            _required(self.source_record_id, \"source_record_id\"),\n            (self.source_transaction_id or \"\").strip(),\n            (self.source_line_id or \"\").strip(),\n        ]\n        return \"|\".join(parts)\n\n\n@dataclass(frozen=True)\nclass ExternalRecord:\n    identity: SourceIdentity\n    source_system: str\n    payload: Mapping[str, Any]\n    original_occurred_at: datetime\n    original_created_at: Optional[datetime] = None\n\n    def __post_init__(self) -> None:\n        _required(self.source_system, \"source_system\")\n        _require_aware(self.original_occurred_at, \"original_occurred_at\")\n        if self.original_created_at is not None:\n            _require_aware(self.original_created_at, \"original_created_at\")\n\n    @property\n    def checksum(self) -> str:\n        return canonical_payload_checksum(self.payload)\n\n\n@dataclass(frozen=True)\nclass MappingDecision:\n    status: MappingStatus\n    canonical_entity_type: Optional[str] = None\n    canonical_entity_id: Optional[str] = None\n    reason: Optional[str] = None\n\n    @property\n    def requires_review(self) -> bool:\n        return self.status in {MappingStatus.PROBABLE_MATCH, MappingStatus.CONFLICT}\n\n    @property\n    def accepted_for_execution(self) -> bool:\n        return self.status in {\n            MappingStatus.EXACT_MATCH,\n            MappingStatus.APPROVED_EQUIVALENCE,\n            MappingStatus.NEW_CANONICAL_REQUIRED,\n        }\n\n\n@dataclass(frozen=True)\nclass DryRunItem:\n    record: ExternalRecord\n    decision: MappingDecision\n\n\n@dataclass(frozen=True)\nclass DryRunSummary:\n    mode: MigrationMode\n    items: tuple[DryRunItem, ...]\n    received: int\n    accepted: int\n    review_required: int\n    rejected: int\n\n    @property\n    def execution_ready(self) -> bool:\n        return self.received > 0 and self.review_required == 0 and self.rejected == 0\n\n\n@dataclass(frozen=True)\nclass ReconciliationMetric:\n    name: str\n    source_count: int\n    canonical_count: int\n    difference: int\n    approved_difference: int\n\n    @property\n    def reconciled(self) -> bool:\n        return self.difference == self.approved_difference\n\n\n@dataclass(frozen=True)\nclass ReconciliationResult:\n    metrics: tuple[ReconciliationMetric, ...]\n\n    @property\n    def certifiable(self) -> bool:\n        return bool(self.metrics) and all(metric.reconciled for metric in self.metrics)\n\n\ndef canonical_payload_checksum(payload: Mapping[str, Any]) -> str:\n    \"\"\"Checksum estable para detectar replay/cambio del mismo registro externo.\"\"\"\n    encoded = json.dumps(\n        payload,\n        ensure_ascii=False,\n        sort_keys=True,\n        separators=(\",\", \":\"),\n        default=_json_default,\n    ).encode(\"utf-8\")\n    return hashlib.sha256(encoded).hexdigest()\n\n\ndef plan_dry_run(\n    records: Iterable[ExternalRecord],\n    *,\n    mode: MigrationMode,\n    resolver: Callable[[ExternalRecord], MappingDecision],\n) -> DryRunSummary:\n    \"\"\"Clasifica registros sin escribir datos operativos.\"\"\"\n    items = tuple(DryRunItem(record=record, decision=resolver(record)) for record in records)\n    keys = [item.record.identity.idempotency_key() for item in items]\n    if len(keys) != len(set(keys)):\n        raise ValueError(\"dry-run contiene identidades externas duplicadas\")\n\n    accepted = sum(1 for item in items if item.decision.accepted_for_execution)\n    review_required = sum(1 for item in items if item.decision.requires_review)\n    rejected = sum(1 for item in items if item.decision.status == MappingStatus.REJECTED)\n\n    return DryRunSummary(\n        mode=mode,\n        items=items,\n        received=len(items),\n        accepted=accepted,\n        review_required=review_required,\n        rejected=rejected,\n    )\n\n\ndef reconcile_counts(\n    source_counts: Mapping[str, int],\n    canonical_counts: Mapping[str, int],\n    *,\n    approved_differences: Optional[Mapping[str, int]] = None,\n) -> ReconciliationResult:\n    \"\"\"Reconcilia conteos; toda diferencia no cero debe estar aprobada explicitamente.\"\"\"\n    approved = approved_differences or {}\n    names = sorted(set(source_counts) | set(canonical_counts))\n    metrics = []\n    for name in names:\n        source = _non_negative_int(source_counts.get(name, 0), f\"source_counts[{name}]\")\n        canonical = _non_negative_int(canonical_counts.get(name, 0), f\"canonical_counts[{name}]\")\n        approved_difference = int(approved.get(name, 0))\n        metrics.append(\n            ReconciliationMetric(\n                name=name,\n                source_count=source,\n                canonical_count=canonical,\n                difference=canonical - source,\n                approved_difference=approved_difference,\n            )\n        )\n    return ReconciliationResult(metrics=tuple(metrics))\n\n\ndef historical_origin_evidence(\n    record: ExternalRecord,\n    *,\n    historical_reference: str,\n    source_unit_id: Optional[str] = None,\n) -> BottleOriginEvidence:\n    \"\"\"Proyecta procedencia externa al contrato historico ya existente de Cavas.\"\"\"\n    return BottleOriginEvidence(\n        origin=BottleOrigin.REGULARIZACION_HISTORICA,\n        source_unit_id=source_unit_id,\n        source_transaction_id=record.identity.source_transaction_id,\n        source_line_id=record.identity.source_line_id,\n        source_system=record.source_system,\n        historical_reference=_required(historical_reference, \"historical_reference\"),\n    )\n\n\ndef _required(value: str, name: str) -> str:\n    normalized = str(value or \"\").strip()\n    if not normalized:\n        raise ValueError(f\"{name} es requerido\")\n    return normalized\n\n\ndef _require_aware(value: datetime, name: str) -> None:\n    if value.tzinfo is None or value.utcoffset() is None:\n        raise ValueError(f\"{name} debe incluir zona horaria\")\n\n\ndef _non_negative_int(value: Any, name: str) -> int:\n    number = int(value)\n    if number < 0:\n        raise ValueError(f\"{name} no puede ser negativo\")\n    return number\n\n\ndef _json_default(value: Any) -> str:\n    if isinstance(value, datetime):\n        if value.tzinfo is None or value.utcoffset() is None:\n            raise ValueError(\"datetime en payload debe incluir zona horaria\")\n        return value.isoformat()\n    raise TypeError(f\"tipo no serializable para checksum: {type(value).__name__}\")\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_cava_socios_migration_engine.py",
+      "content": "from datetime import datetime, timezone\n\nimport pytest\n\nfrom modules.cava_socios.domain import BottleOrigin, validate_origin_evidence\nfrom modules.cava_socios.migration_engine import (\n    ExternalRecord,\n    MappingDecision,\n    MappingStatus,\n    MigrationMode,\n    SourceIdentity,\n    canonical_payload_checksum,\n    historical_origin_evidence,\n    plan_dry_run,\n    reconcile_counts,\n)\n\n\ndef _record(record_id: str = \"B-1\", payload=None):\n    return ExternalRecord(\n        identity=SourceIdentity(\n            source_instance_id=\"legacy-130mid\",\n            entity_type=\"BOTTLE\",\n            source_record_id=record_id,\n            source_transaction_id=\"TX-10\",\n            source_line_id=\"1\",\n        ),\n        source_system=\"LEGACY_CAVA\",\n        payload=payload or {\"nivel\": 75, \"producto\": \"VINO-X\"},\n        original_occurred_at=datetime(2021, 5, 4, 18, 30, tzinfo=timezone.utc),\n    )\n\n\ndef test_idempotency_key_is_provider_neutral_and_stable():\n    identity = _record().identity\n    assert identity.idempotency_key() == \"legacy-130mid|BOTTLE|B-1|TX-10|1\"\n\n\ndef test_checksum_is_order_independent():\n    a = canonical_payload_checksum({\"b\": 2, \"a\": 1})\n    b = canonical_payload_checksum({\"a\": 1, \"b\": 2})\n    assert a == b\n\n\ndef test_original_occurred_at_requires_timezone():\n    with pytest.raises(ValueError, match=\"zona horaria\"):\n        ExternalRecord(\n            identity=SourceIdentity(\"i\", \"BOTTLE\", \"1\"),\n            source_system=\"LEGACY\",\n            payload={},\n            original_occurred_at=datetime(2020, 1, 1),\n        )\n\n\ndef test_dry_run_is_ready_only_without_unresolved_records():\n    rows = [_record(\"1\"), _record(\"2\")]\n    summary = plan_dry_run(\n        rows,\n        mode=MigrationMode.HISTORICAL_MIGRATION,\n        resolver=lambda row: MappingDecision(\n            MappingStatus.EXACT_MATCH,\n            canonical_entity_type=\"BOTTLE\",\n            canonical_entity_id=f\"CAN-{row.identity.source_record_id}\",\n        ),\n    )\n    assert summary.received == 2\n    assert summary.accepted == 2\n    assert summary.execution_ready is True\n\n\ndef test_dry_run_requires_review_for_probable_match():\n    summary = plan_dry_run(\n        [_record()],\n        mode=MigrationMode.MANUAL_FILE_IMPORT,\n        resolver=lambda _: MappingDecision(MappingStatus.PROBABLE_MATCH),\n    )\n    assert summary.review_required == 1\n    assert summary.execution_ready is False\n\n\ndef test_dry_run_rejects_duplicate_external_identity():\n    row = _record()\n    with pytest.raises(ValueError, match=\"duplicadas\"):\n        plan_dry_run(\n            [row, row],\n            mode=MigrationMode.HISTORICAL_MIGRATION,\n            resolver=lambda _: MappingDecision(MappingStatus.EXACT_MATCH),\n        )\n\n\ndef test_reconciliation_requires_explicitly_approved_difference():\n    failed = reconcile_counts(\n        {\"botellas\": 10, \"movimientos\": 20},\n        {\"botellas\": 9, \"movimientos\": 20},\n    )\n    assert failed.certifiable is False\n\n    approved = reconcile_counts(\n        {\"botellas\": 10, \"movimientos\": 20},\n        {\"botellas\": 9, \"movimientos\": 20},\n        approved_differences={\"botellas\": -1},\n    )\n    assert approved.certifiable is True\n\n\ndef test_historical_projection_preserves_existing_cavas_contract():\n    evidence = historical_origin_evidence(\n        _record(),\n        historical_reference=\"legacy:cava:B-1\",\n    )\n    assert evidence.origin == BottleOrigin.REGULARIZACION_HISTORICA\n    assert evidence.source_system == \"LEGACY_CAVA\"\n    assert evidence.source_transaction_id == \"TX-10\"\n    assert evidence.historical_reference == \"legacy:cava:B-1\"\n    validate_origin_evidence(evidence)\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/cava_socios/migration_engine.py",
+        "backend/tests/test_cava_socios_migration_engine.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios_migration_engine.py",
+        "backend/tests/test_cava_socios_domain.py",
+        "backend/tests/test_cava_socios.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/migration_engine.py",
+          "backend/modules/cava_socios/domain.py",
+          "backend/modules/integrations_center/service.py",
+          "docs/CAVAS/CAVAS_GATE16B_CANONICAL_INTEROPERABILITY_MIGRATION_CONTRACT.md"
+        ],
+        "search_terms": [
+          "provider",
+          "SoftRestaurant",
+          "MPRO",
+          "KAVASOFT",
+          "REGULARIZACION_HISTORICA",
+          "source_system",
+          "historical_reference",
+          "idempotency",
+          "reconcile",
+          "connection"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.md"
+        ],
+        "exclude_patterns": [
+          "*.env",
+          "*secret*",
+          "*password*"
+        ],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "Cavas bounded context only for history/reconciliation semantics",
+    "No SQL DDL/DML and no SQL connection",
+    "No endpoints, routes, adapters, scheduler jobs or frontend",
+    "No provider-specific branches or hardcoded vendor behavior",
+    "Do not duplicate integrations_center or connection_resolver",
+    "Reuse BottleOrigin.REGULARIZACION_HISTORICA and BottleOriginEvidence",
+    "All original event datetimes must preserve timezone",
+    "Dry-run must have no side effects",
+    "Reprocessing identity must be deterministic",
+    "Production forbidden",
+    "EDARSAHUB SQL Server remains the future persistence source of truth"
+  ]
+}
