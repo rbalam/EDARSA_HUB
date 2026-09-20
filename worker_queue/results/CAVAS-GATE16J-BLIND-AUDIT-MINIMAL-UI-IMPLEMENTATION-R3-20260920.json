@@ -1,0 +1,41 @@
+{
+  "base_sha": "6411f1cbaf0ac069ba68074996fec3f319643e22",
+  "blockers": [
+    "check_failed:frontend_build"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-20T19:12:07Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "frontend/src/App.js",
+    "frontend/src/pages/cava-socios/BlindAuditCava.jsx",
+    "frontend/src/pages/cava-socios/CavaNavHeader.jsx",
+    "frontend/src/pages/cava-socios/index.js"
+  ],
+  "frontend_build_evidence": {
+    "checks": [
+      {
+        "completed_at_utc": "2026-09-20T19:12:07Z",
+        "output_tail": "yarn run v1.22.22\n$ yarn validate:navigation && yarn install --frozen-lockfile --non-interactive --ignore-scripts --prefer-offline\n$ node scripts/validate_enterprise_navigation.js && node scripts/validate_executive_navigation.js\nENTERPRISE_NAVIGATION_GUARDIAN=FAIL\nERROR=NEW_ROUTE_WITHOUT_ENTERPRISE_CLASSIFICATION:/cava-socios/auditoria-ciega\nerror Command failed with exit code 1.\ninfo Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.\nerror Command failed with exit code 1.\ninfo Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.",
+        "returncode": 1,
+        "started_at_utc": "2026-09-20T19:12:05Z",
+        "status": "FAIL"
+      }
+    ]
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE16J-BLIND-AUDIT-MINIMAL-UI-IMPLEMENTATION-R3-20260920",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-20T19:12:23Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-20T19:12:02Z",
+  "status": "GIT_TESTS_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
