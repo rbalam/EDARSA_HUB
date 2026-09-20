@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "7f0a832404b311893ab8632612dbd9d5b77098dd",
-  "generated_at_utc": "2026-09-20T04:22:26Z",
+  "generated_at_utc": "2026-09-20T04:23:44Z",
   "history": {
     "done_total_local": 760,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1287,
+      "age_seconds": 1366,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-DRY-RUN-READONLY-R1-20260920",
       "reasons": [
         "CHECK_1_REQUEST_REQUIRED"
@@ -22,43 +22,43 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3286,
+      "age_seconds": 3364,
       "job_id": "CAVAS-GATE16D-UNIVERSAL-CONNECTOR-ADAPTER-SDK-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1249,
+      "age_seconds": 1328,
       "job_id": "CAVAS-GATE16E-EVIDENCE-CHAIN-OF-CUSTODY-MINIMAL-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 238,
+      "age_seconds": 316,
       "job_id": "CAVAS-GATE16F-BLIND-AUDIT-CV-READINESS-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1079,
+      "age_seconds": 1158,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-DRY-RUN-READONLY-R1B-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 277,
+      "age_seconds": 356,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-GO-NOGO-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3447,
+      "age_seconds": 3526,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-PATCH-PLAN-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2973,
+      "age_seconds": 3052,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-PATCH-PLAN-READONLY-R1B-20260920",
       "reason": null,
       "state": "RESULT_READY"
@@ -76,8 +76,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-20T04:22:21Z",
-    "last_receive_utc": "2026-09-20T04:22:24Z",
+    "last_cycle_utc": "2026-09-20T04:23:43Z",
+    "last_receive_utc": "2026-09-20T04:23:38Z",
     "last_terminal_utc": "2026-09-20T04:18:27Z",
     "pid": "59"
   },
