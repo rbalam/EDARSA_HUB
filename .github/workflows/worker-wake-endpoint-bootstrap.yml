@@ -1,3 +1,4 @@
+# Recovery retrigger 2026-09-20T21:28Z: restore canonical wake endpoint after runtime 404; preserve queued jobs and Production.
 # Recovery retrigger 2026-09-20T15:36Z: restore canonical wake endpoint after runtime 404; preserve queued jobs and Production.
 name: Worker Wake Endpoint Bootstrap
 # Retrigger 2026-09-19T09:25Z: restore missing public wake endpoint for existing Cavas Gate16A pickup; no new job.
