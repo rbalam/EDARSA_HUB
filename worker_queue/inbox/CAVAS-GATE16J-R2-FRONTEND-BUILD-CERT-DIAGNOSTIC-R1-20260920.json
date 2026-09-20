@@ -1,0 +1,48 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE16J-R2-FRONTEND-BUILD-CERT-DIAGNOSTIC-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3a784313a0db9fa46e10bef48f396449b9a33c35",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Diagnosticar de forma canonica y no mutante el frontend_build relacionado con Gate16J-R2 usando FRONTEND_BUILD_CERTIFICATION ya endurecido para publicar evidencia sanitizada del error real. No corregir codigo, no publicar R3, no cambiar alcance. Validar build real y wiring de Cavas Auditoria Ciega contra el frontend actual. Produccion fuera de alcance.",
+  "mode": "FRONTEND_BUILD_CERTIFICATION",
+  "actions": [],
+  "checks": [
+    {
+      "type": "frontend_build"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/cava-socios",
+          "frontend/src/App.js",
+          "backend/modules/cava_socios/routes.py"
+        ],
+        "search_terms": [
+          "BlindAuditCava",
+          "auditoria-ciega",
+          "auditorias-ciegas/reconciliar",
+          "CorporateFiltersProvider",
+          "useAccessContext",
+          "CavaNavHeader"
+        ],
+        "max_results": 300
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "Certification and diagnosis only",
+    "No product actions",
+    "No file mutations",
+    "No SQL mutations",
+    "No Production",
+    "Do not publish Gate16J R3",
+    "Report frontend build error exactly through sanitized evidence"
+  ]
+}
