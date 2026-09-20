@@ -1,0 +1,74 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-P0-SELFHEAL-CERT-READONLY-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "1f2fdb36774749fc48a1e78ba0bc2b6ddddbcdd0",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar READ_ONLY el P0 de recuperación autónoma del Universal Worker: servicio Supervisor instalado/autostart/autorestart, bootstrap watchdog independiente de mirror-sync capaz de reiniciar worker stale <=60s, control plane con recovery por Supervisor y processing grace 120s, intake 5s, sin dependencia obligatoria del endpoint HTTP wake. Verificar que se preservan las salvaguardas Git y que Producción no se toca.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/bootstrap/edarsahub_bootstrap_watchdog.py",
+        "tools/mirror_sync/worker_control_plane.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_universal_worker_external_owner_contract.py",
+        "backend/tests/test_bootstrap_watchdog_safety_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/bootstrap/install_bootstrap_watchdog.sh",
+          "tools/bootstrap/edarsahub_bootstrap_watchdog.py",
+          "tools/mirror_sync/edarsahub-universal-worker.conf",
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/mirror_sync/universal_job_worker.sh",
+          "backend/tests/test_universal_worker_external_owner_contract.py",
+          "backend/tests/test_bootstrap_watchdog_safety_contract.py"
+        ],
+        "search_terms": [
+          "edarsahub-universal-worker",
+          "autostart=true",
+          "autorestart=true",
+          "UNIVERSAL_WORKER_INTAKE_SECONDS=\"5\"",
+          "MAX_STALE",
+          "WORKER_HEARTBEAT_STALE",
+          "BOOTSTRAP_WATCHDOG_SUPERVISOR_FALLBACK",
+          "PROCESSING_GRACE",
+          "supervisorctl",
+          "production_touched"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.conf"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No file changes",
+    "No Production",
+    "No Cavas changes",
+    "No weakening Git guards",
+    "Certification requires tests PASS and repository audit PASS"
+  ]
+}
