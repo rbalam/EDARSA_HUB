@@ -1,19 +1,19 @@
 {
   "branch": "Edarsahub_Desarrollo",
-  "development_sha": "6184be004def4ed74b6899cbef1c0c66e35914f0",
-  "generated_at_utc": "2026-09-20T04:01:13Z",
+  "development_sha": "5d49a1388267248630f7af564309ca89f6cd1176",
+  "generated_at_utc": "2026-09-20T04:02:42Z",
   "history": {
-    "done_total_local": 757,
+    "done_total_local": 758,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 689,
-    "results_total_local": 1283
+    "results_total_local": 1284
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 14,
+      "age_seconds": 103,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-DRY-RUN-READONLY-R1-20260920",
       "reasons": [
         "CHECK_1_REQUEST_REQUIRED"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3158,
+      "age_seconds": 3247,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-PACKAGE-MANIFEST-READONLY-R1-20260920",
       "reasons": [
         "REQUESTER_RBAC_DENIED:REQUESTER_RBAC_LOOKUP_FAILED"
@@ -31,57 +31,57 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3138,
+      "age_seconds": 3227,
       "job_id": "CAVAS-GATE16C-MIGRATION-HISTORY-ENGINE-MINIMAL-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2013,
+      "age_seconds": 2102,
       "job_id": "CAVAS-GATE16D-UNIVERSAL-CONNECTOR-ADAPTER-SDK-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2482,
+      "age_seconds": 65,
+      "job_id": "CAVAS-GATE16E-EVIDENCE-CHAIN-OF-CUSTODY-MINIMAL-R1-20260919",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2571,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-PACKAGE-MANIFEST-READONLY-R1B-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2175,
+      "age_seconds": 2264,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-PATCH-PLAN-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1700,
+      "age_seconds": 1790,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-PATCH-PLAN-READONLY-R1B-20260920",
       "reason": null,
       "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 15,
-      "job_id": "CAVAS-GATE16E-EVIDENCE-CHAIN-OF-CUSTODY-MINIMAL-R1-20260919",
-      "reason": null,
-      "state": "RUNNING"
     }
   ],
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 2,
-  "queue_result_ready_recent": 5,
-  "queue_running": 1,
+  "queue_result_ready_recent": 6,
+  "queue_running": 0,
   "runtime": {
-    "current_job_id": "CAVAS-GATE16E-EVIDENCE-CHAIN-OF-CUSTODY-MINIMAL-R1-20260919",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-20T04:01:12Z",
-    "last_receive_utc": "2026-09-20T04:01:07Z",
-    "last_terminal_utc": "2026-09-20T03:32:52Z",
+    "last_cycle_utc": "2026-09-20T04:02:41Z",
+    "last_receive_utc": "2026-09-20T04:02:36Z",
+    "last_terminal_utc": "2026-09-20T04:01:36Z",
     "pid": "59"
   },
   "schema": "edarsahub.worker-health.v3",
