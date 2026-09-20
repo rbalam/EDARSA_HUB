@@ -1,0 +1,94 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE16I-BLIND-AUDIT-MINIMAL-OPERATIONAL-IMPLEMENTATION-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "19ee196151f0e947e03c3c35cc1ced95acbb5012",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Implementar la capacidad minima operativa de Auditoria Ciega de Cavas conforme a Gate16F/16G/16H ya certificados. Mantener el bounded context cava_socios y reutilizar blind_audit.py, evidence_chain.py y helpers canonicos. Implementar exclusivamente la orquestacion backend minima y contratos API necesarios para iniciar/capturar/reconciliar/consultar una auditoria ciega sin IA productiva, sin uploads nuevos y sin autoajustes de inventario. Backend debe imponer RBAC por empresa/unidad/almacen usando contexto canonico existente, FechaOperacion/zona horaria canonica, idempotencia y control de concurrencia apropiados. Estados deben preservar REVIEW_REQUIRED/DIFFERENCE/CONFIRMED y cualquier diferencia debe producir hallazgo, nunca ajuste automatico. Reutilizar servicios/endpoints existentes cuando corresponda y no duplicar core. Agregar pruebas deterministas del flujo y contratos de seguridad. No tocar Produccion.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "chatgpt_exact_changes",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios",
+          "backend/tests"
+        ],
+        "instructions": "Aplicar cambios quirurgicos y reversibles para Gate16I. Antes de editar, inspeccionar rutas/services/tests existentes y reutilizar contratos canonicos. Implementar la capa minima de orquestacion backend de auditoria ciega sobre blind_audit.py/evidence_chain.py; exponer solo endpoints estrictamente necesarios mediante routes.py o modulo de rutas ya canonico; resolver actor/scope con helpers existentes; validar empresa/unidad/almacen en backend; usar FechaOperacion y timezone canonicos donde aplique; incorporar idempotencia y conflicto de concurrencia sin crear infraestructura paralela; diferencias solo generan hallazgos/REVIEW_REQUIRED/DIFFERENCE y nunca llaman aplicar_ajustes_inventario_fisico ni escriben movimientos de inventario automaticamente. No implementar proveedor IA, vision real, upload binario, object storage nuevo, Persona/Cliente automaticos ni frontend en este Gate. Agregar tests unitarios/contractuales deterministas. Mantener core slim."
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "backend_tests",
+      "request": {
+        "paths": [
+          "backend/tests"
+        ],
+        "match_terms": [
+          "cava",
+          "blind",
+          "audit"
+        ]
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios",
+          "backend/tests"
+        ],
+        "search_terms": [
+          "blind_audit",
+          "REVIEW_REQUIRED",
+          "DIFFERENCE",
+          "CONFIRMED",
+          "AuditFinding",
+          "EmpresaID",
+          "UnidadNegocioID",
+          "AlmacenID",
+          "FechaOperacion",
+          "idempot",
+          "concurrency",
+          "409",
+          "permission",
+          "RBAC",
+          "evidence_chain",
+          "aplicar_ajustes_inventario_fisico",
+          "CavaSocios_Movimientos"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No Mongo runtime",
+    "No DDL",
+    "No schema migration",
+    "No new storage subsystem",
+    "No AI provider/model integration",
+    "No binary uploads",
+    "No frontend changes in this Gate",
+    "No automatic inventory adjustments",
+    "No automatic inventory movements from audit findings",
+    "No automatic Persona/Cliente creation or merge",
+    "SocioID remains membership identity",
+    "Backend-enforced RBAC by empresa/unidad/almacen",
+    "Reuse canonical SQL/helpers/context",
+    "Use FechaOperacion/canonical timezone where applicable",
+    "No duplicate services/endpoints/helpers",
+    "Core remains slim",
+    "Changes must be surgical, reversible and tested"
+  ]
+}
