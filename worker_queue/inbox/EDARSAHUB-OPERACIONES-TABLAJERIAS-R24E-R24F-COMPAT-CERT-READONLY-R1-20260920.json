@@ -1,0 +1,93 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R24F-COMPAT-CERT-READONLY-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6411f1cbaf0ac069ba68074996fec3f319643e22",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias"
+  },
+  "objective": "Certificar compatibilidad current-head entre R24E y R24F de Tablajerias. R24E ya quedo materializado y certificado por idempotencia READ_ONLY; R24F ya quedo integrado con frontend_build PASS y certificacion final READ_ONLY PASS. Esta corrida solo verifica que el HEAD actual contiene los artefactos esperados de ambos gates sin cambios, sin SQL execution, sin Produccion y sin nueva mutacion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "docs/TABLAJERIA_UAT_SCOPE_FIX_LONJA_PLANTILLAS_IMPLEMENTATION_R1.md",
+          "backend/modules/tablajeria/sql/uatscope_lonja_plantillas.sql",
+          "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py",
+          "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx"
+        ],
+        "search_terms": [
+          "R24E",
+          "R24F",
+          "tablajeria",
+          "lonja",
+          "plantillas",
+          "lotes proveedor",
+          "LotesProveedorPage",
+          "uatscope",
+          "SQL versionado",
+          "no ejecutar",
+          "frontend_build PASS",
+          "CERTIFIED_READ_ONLY"
+        ],
+        "include_patterns": [
+          "*.md",
+          "*.sql",
+          "*.py",
+          "*.jsx",
+          "*.js",
+          "*.json"
+        ],
+        "exclude_patterns": [
+          "**/__pycache__/**",
+          "**/node_modules/**"
+        ],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py",
+        "backend/tests/test_tablajeria_r24f_uat_preview_static.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No actions",
+    "No code changes",
+    "No SQL execution",
+    "No DDL or DML execution",
+    "No Production",
+    "No Mongo runtime",
+    "No Scheduler changes",
+    "No NetPay changes",
+    "No retry mutation",
+    "Frontend build intentionally excluded because current Worker rejects frontend_build in READ_ONLY",
+    "Compatibility certification only"
+  ],
+  "required_output": [
+    "repository_contract_audit_result",
+    "pytest_result",
+    "git_diff_check_result",
+    "quality_gate",
+    "certification",
+    "production_touched_false_confirmed",
+    "blockers"
+  ],
+  "created_at_utc": "2026-09-20T19:18:54.665106+00:00"
+}
