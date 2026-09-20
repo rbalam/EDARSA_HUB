@@ -1,0 +1,99 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE16J-BLIND-AUDIT-MINIMAL-UI-IMPLEMENTATION-R3-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6411f1cbaf0ac069ba68074996fec3f319643e22",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Retry terminal controlado de Gate16J-R2 despues de certificar el frontend base y endurecer la evidencia de frontend_build. Mantener exactamente el mismo alcance funcional: UI minima operativa de Auditoria Ciega sobre Gate16I; captura fisica ciega sin mostrar esperado; cierre de captura; identificacion posterior contra inventario canonico; reconciliacion mediante POST /api/cava-socios/auditorias-ciegas/reconciliar; visualizacion clara de CONFIRMED/DIFFERENCE/REVIEW_REQUIRED. functional_scope_changed=false. Reutilizar CorporateFiltersProvider, useAccessContext, CavaNavHeader, api canonico y componentes existentes. No crear backend, no autoajustar inventario, no IA productiva, no uploads, no Produccion.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "frontend/src/pages/cava-socios/BlindAuditCava.jsx",
+      "content": "import React, { useMemo, useState } from 'react';\nimport { AlertCircle, CheckCircle2, ClipboardCheck, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';\nimport api from '@/lib/api';\nimport { Button } from '@/components/ui/button';\nimport { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';\nimport { Input } from '@/components/ui/input';\nimport { Label } from '@/components/ui/label';\nimport {\n  Select,\n  SelectContent,\n  SelectItem,\n  SelectTrigger,\n  SelectValue,\n} from '@/components/ui/select';\nimport {\n  CorporateFiltersProvider,\n  useCorporateFilters,\n} from '../../filters';\nimport { useAccessContext } from '../../hooks/useAccessContext';\nimport CavaNavHeader from './CavaNavHeader';\n\nconst newObservation = () => ({\n  observation_id: `OBS-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,\n  observed_reference: '',\n  observed_quantity: 1,\n  observed_level_pct: 100,\n  evidence_id: '',\n});\n\nfunction BlindAuditCavaContent() {\n  const { selected, loading: filtersLoading } = useCorporateFilters();\n  const { context, loading: contextLoading, error: contextError } = useAccessContext();\n  const unidadNegocioPk = selected?.unidades_negocio || context?.unidad_activa || '';\n\n  const [step, setStep] = useState('CAPTURE');\n  const [observations, setObservations] = useState([newObservation()]);\n  const [inventory, setInventory] = useState([]);\n  const [mapping, setMapping] = useState({});\n  const [loading, setLoading] = useState(false);\n  const [result, setResult] = useState(null);\n  const [error, setError] = useState(null);\n\n  const canLockCapture = useMemo(\n    () => observations.length > 0 && observations.every((item) => item.observed_reference.trim()),\n    [observations]\n  );\n\n  const updateObservation = (index, field, value) => {\n    setObservations((current) => current.map((item, idx) => (\n      idx === index ? { ...item, [field]: value } : item\n    )));\n  };\n\n  const addObservation = () => {\n    setObservations((current) => [...current, newObservation()]);\n  };\n\n  const removeObservation = (index) => {\n    setObservations((current) => current.filter((_, idx) => idx !== index));\n  };\n\n  const lockCapture = async () => {\n    if (!unidadNegocioPk || !canLockCapture) return;\n    setLoading(true);\n    setError(null);\n    try {\n      const params = new URLSearchParams({\n        unidad_negocio_pk: unidadNegocioPk,\n        estatus: 'EN_CAVA',\n        skip: '0',\n        limit: '1000',\n      });\n      const response = await api.get(`/cava-socios/inventario?${params}`);\n      setInventory(response.data?.botellas || []);\n      setStep('IDENTIFY');\n    } catch (err) {\n      setError(err?.response?.data?.detail || 'No se pudo cargar el inventario para la etapa de identificación.');\n    } finally {\n      setLoading(false);\n    }\n  };\n\n  const reconcile = async () => {\n    if (!unidadNegocioPk) return;\n    const missingMappings = observations.some((item) => !mapping[item.observation_id]);\n    if (missingMappings) {\n      setError('Identifica cada observación antes de comparar.');\n      return;\n    }\n\n    setLoading(true);\n    setError(null);\n    try {\n      const response = await api.post(\n        `/cava-socios/auditorias-ciegas/reconciliar?unidad_negocio_pk=${encodeURIComponent(unidadNegocioPk)}`,\n        {\n          idempotency_key: `blind-audit-${unidadNegocioPk}-${Date.now()}`,\n          observations: observations.map((item) => ({\n            ...item,\n            observed_quantity: Number(item.observed_quantity || 0),\n            observed_level_pct: item.observed_level_pct === '' ? null : Number(item.observed_level_pct),\n            evidence_id: item.evidence_id?.trim() || null,\n          })),\n          observation_to_bottle: mapping,\n          level_tolerance_pct: 5,\n          min_recognition_confidence: 0.9,\n        }\n      );\n      setResult(response.data);\n      setStep('RESULT');\n    } catch (err) {\n      setError(err?.response?.data?.detail || 'No se pudo reconciliar la auditoría ciega.');\n    } finally {\n      setLoading(false);\n    }\n  };\n\n  const resetAudit = () => {\n    setStep('CAPTURE');\n    setObservations([newObservation()]);\n    setInventory([]);\n    setMapping({});\n    setResult(null);\n    setError(null);\n  };\n\n  const outcomeLabel = {\n    CONFIRMED: 'Coincidencia confirmada',\n    DIFFERENCE: 'Se detectaron diferencias',\n    REVIEW_REQUIRED: 'Requiere revisión humana',\n  }[result?.outcome] || result?.outcome;\n\n  return (\n    <div className=\"p-6 space-y-6\" data-testid=\"blind-audit-cava-page\">\n      <CavaNavHeader\n        title=\"Auditoría Ciega de Cavas\"\n        subtitle=\"Captura primero lo observado; el inventario esperado se revela solo después de cerrar la captura.\"\n      />\n\n      {(error || contextError) && (\n        <div className=\"p-4 rounded-xl bg-red-50 text-red-700 border border-red-200 flex items-center gap-2\">\n          <AlertCircle className=\"h-5 w-5\" />\n          <span>{error || contextError?.message}</span>\n        </div>\n      )}\n\n      <div className=\"grid grid-cols-1 md:grid-cols-3 gap-3\">\n        {[\n          ['CAPTURE', '1. Captura ciega'],\n          ['IDENTIFY', '2. Identificar'],\n          ['RESULT', '3. Resultado'],\n        ].map(([key, label]) => (\n          <Card key={key} className={step === key ? 'border-purple-600' : ''}>\n            <CardContent className=\"p-4 text-sm font-medium\">{label}</CardContent>\n          </Card>\n        ))}\n      </div>\n\n      {step === 'CAPTURE' && (\n        <Card>\n          <CardHeader>\n            <CardTitle>Captura lo que ves físicamente</CardTitle>\n            <CardDescription>\n              En esta etapa no se muestra el inventario teórico. Registra cada botella observada y su nivel aproximado.\n            </CardDescription>\n          </CardHeader>\n          <CardContent className=\"space-y-4\">\n            {observations.map((item, index) => (\n              <div key={item.observation_id} className=\"grid grid-cols-1 md:grid-cols-12 gap-3 items-end border rounded-lg p-3\">\n                <div className=\"md:col-span-6\">\n                  <Label>Referencia observada</Label>\n                  <Input\n                    value={item.observed_reference}\n                    onChange={(e) => updateObservation(index, 'observed_reference', e.target.value)}\n                    placeholder=\"Etiqueta, marca, nombre o referencia visible\"\n                  />\n                </div>\n                <div className=\"md:col-span-2\">\n                  <Label>Cantidad</Label>\n                  <Input\n                    type=\"number\"\n                    min=\"0\"\n                    value={item.observed_quantity}\n                    onChange={(e) => updateObservation(index, 'observed_quantity', e.target.value)}\n                  />\n                </div>\n                <div className=\"md:col-span-3\">\n                  <Label>Nivel observado %</Label>\n                  <Input\n                    type=\"number\"\n                    min=\"0\"\n                    max=\"100\"\n                    value={item.observed_level_pct}\n                    onChange={(e) => updateObservation(index, 'observed_level_pct', e.target.value)}\n                  />\n                </div>\n                <div className=\"md:col-span-1\">\n                  <Button\n                    type=\"button\"\n                    variant=\"ghost\"\n                    size=\"icon\"\n                    onClick={() => removeObservation(index)}\n                    disabled={observations.length === 1}\n                    aria-label=\"Eliminar observación\"\n                  >\n                    <Trash2 className=\"h-4 w-4\" />\n                  </Button>\n                </div>\n              </div>\n            ))}\n\n            <div className=\"flex flex-wrap gap-2\">\n              <Button type=\"button\" variant=\"outline\" onClick={addObservation}>\n                <Plus className=\"h-4 w-4 mr-2\" />\n                Agregar observación\n              </Button>\n              <Button\n                type=\"button\"\n                onClick={lockCapture}\n                disabled={!canLockCapture || loading || filtersLoading || contextLoading || !unidadNegocioPk}\n              >\n                <ClipboardCheck className=\"h-4 w-4 mr-2\" />\n                Cerrar captura ciega\n              </Button>\n            </div>\n          </CardContent>\n        </Card>\n      )}\n\n      {step === 'IDENTIFY' && (\n        <Card>\n          <CardHeader>\n            <CardTitle>Identifica cada observación</CardTitle>\n            <CardDescription>\n              La captura ya quedó cerrada. Ahora relaciona cada observación con una botella del inventario canónico.\n            </CardDescription>\n          </CardHeader>\n          <CardContent className=\"space-y-4\">\n            {observations.map((item) => (\n              <div key={item.observation_id} className=\"grid grid-cols-1 md:grid-cols-2 gap-3 border rounded-lg p-3\">\n                <div>\n                  <p className=\"font-medium\">{item.observed_reference}</p>\n                  <p className=\"text-sm text-muted-foreground\">\n                    Cantidad {item.observed_quantity} · Nivel {item.observed_level_pct}%\n                  </p>\n                </div>\n                <Select\n                  value={mapping[item.observation_id] || ''}\n                  onValueChange={(value) => setMapping((current) => ({ ...current, [item.observation_id]: value }))}\n                >\n                  <SelectTrigger>\n                    <SelectValue placeholder=\"Seleccionar botella canónica\" />\n                  </SelectTrigger>\n                  <SelectContent>\n                    {inventory.map((bottle) => (\n                      <SelectItem key={bottle.botella_id} value={String(bottle.botella_id)}>\n                        {bottle.producto_nombre || 'Botella'} · {bottle.numero_socio || 'Sin socio'} · {bottle.ubicacion || 'Sin ubicación'}\n                      </SelectItem>\n                    ))}\n                  </SelectContent>\n                </Select>\n              </div>\n            ))}\n\n            <div className=\"flex flex-wrap gap-2\">\n              <Button variant=\"outline\" onClick={resetAudit}>\n                <RotateCcw className=\"h-4 w-4 mr-2\" />\n                Reiniciar\n              </Button>\n              <Button onClick={reconcile} disabled={loading || inventory.length === 0}>\n                <Search className=\"h-4 w-4 mr-2\" />\n                Comparar contra inventario\n              </Button>\n            </div>\n          </CardContent>\n        </Card>\n      )}\n\n      {step === 'RESULT' && result && (\n        <Card>\n          <CardHeader>\n            <CardTitle className=\"flex items-center gap-2\">\n              {result.outcome === 'CONFIRMED' ? <CheckCircle2 className=\"h-5 w-5 text-emerald-600\" /> : <AlertCircle className=\"h-5 w-5 text-amber-600\" />}\n              {outcomeLabel}\n            </CardTitle>\n            <CardDescription>\n              La auditoría no aplicó ajustes ni movimientos de inventario automáticamente.\n            </CardDescription>\n          </CardHeader>\n          <CardContent className=\"space-y-3\">\n            {(result.findings || []).map((finding, index) => (\n              <div key={index} className=\"border rounded-lg p-3\">\n                <div className=\"font-medium\">{finding.status}</div>\n                <div className=\"text-sm text-muted-foreground\">{finding.reason}</div>\n                <div className=\"text-xs text-muted-foreground mt-1\">\n                  Esperado: {finding.expected_level_pct ?? '—'}% · Observado: {finding.observed_level_pct ?? '—'}%\n                </div>\n              </div>\n            ))}\n\n            <Button variant=\"outline\" onClick={resetAudit}>\n              <RotateCcw className=\"h-4 w-4 mr-2\" />\n              Nueva auditoría\n            </Button>\n          </CardContent>\n        </Card>\n      )}\n    </div>\n  );\n}\n\nexport default function BlindAuditCava() {\n  return (\n    <CorporateFiltersProvider scope=\"cava_socios\">\n      <BlindAuditCavaContent />\n    </CorporateFiltersProvider>\n  );\n}\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/index.js",
+      "old": "export { default as ConsumosCava } from './ConsumosCava';\n",
+      "new": "export { default as ConsumosCava } from './ConsumosCava';\nexport { default as BlindAuditCava } from './BlindAuditCava';\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/App.js",
+      "old": "import { CavaSociosDashboard, SociosList, SocioDetail, SocioForm, InventarioCava, ConsumosCava } from '@/pages/cava-socios';",
+      "new": "import { CavaSociosDashboard, SociosList, SocioDetail, SocioForm, InventarioCava, ConsumosCava, BlindAuditCava } from '@/pages/cava-socios';",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/App.js",
+      "old": "              <Route path=\"cava-socios/consumos\" element={<ConsumosCava />} />",
+      "new": "              <Route path=\"cava-socios/consumos\" element={<ConsumosCava />} />\n              <Route path=\"cava-socios/auditoria-ciega\" element={<BlindAuditCava />} />",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/cava-socios/CavaNavHeader.jsx",
+      "old": "    { label: 'Auditoría Física', path: '/cava-socios/inventario?tab=fisico', icon: ClipboardCheck, active: currentPath === '/cava-socios/inventario' && currentTab === 'fisico' },",
+      "new": "    { label: 'Auditoría Física', path: '/cava-socios/inventario?tab=fisico', icon: ClipboardCheck, active: currentPath === '/cava-socios/inventario' && currentTab === 'fisico' },\n    { label: 'Auditoría Ciega', path: '/cava-socios/auditoria-ciega', icon: ClipboardCheck, active: currentPath === '/cava-socios/auditoria-ciega' },",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "frontend_build"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/cava-socios/BlindAuditCava.jsx",
+          "frontend/src/pages/cava-socios/CavaNavHeader.jsx",
+          "frontend/src/pages/cava-socios/index.js",
+          "frontend/src/App.js",
+          "backend/modules/cava_socios/routes.py"
+        ],
+        "search_terms": [
+          "BlindAuditCava",
+          "auditoria-ciega",
+          "auditorias-ciegas/reconciliar",
+          "CAPTURE",
+          "IDENTIFY",
+          "RESULT",
+          "CONFIRMED",
+          "DIFFERENCE",
+          "REVIEW_REQUIRED",
+          "CorporateFiltersProvider",
+          "useAccessContext",
+          "unidad_negocio_pk",
+          "automatic_inventory",
+          "aplicar_ajustes_inventario_fisico"
+        ],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No backend changes",
+    "No SQL",
+    "No DDL/DML",
+    "No AI provider/model integration",
+    "No uploads/object storage work in this Gate",
+    "No automatic inventory adjustments or movements",
+    "Capture step must not reveal canonical expected inventory",
+    "Canonical inventory may be shown only after capture is locked",
+    "Reuse existing frontend api and filters",
+    "UI must be operable by non-technical personnel"
+  ],
+  "retry_of": "CAVAS-GATE16J-BLIND-AUDIT-MINIMAL-UI-IMPLEMENTATION-R2-20260920",
+  "retry_reason": "R2 terminal GIT_TESTS_FAILED:frontend_build; base frontend subsequently CERTIFIED_FRONTEND_BUILD and worker frontend failure evidence hardened",
+  "functional_scope_changed": false
+}
