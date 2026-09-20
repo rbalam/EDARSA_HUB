@@ -1,0 +1,96 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE16F-BLIND-AUDIT-CV-READINESS-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "5d49a1388267248630f7af564309ca89f6cd1176",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "human_summary_language": "es",
+  "objective": "Gate 16F: implementar auditoria ciega determinista y contrato de Computer Vision readiness de Cavas. Captura/observacion no debe recibir inventario esperado; la comparacion ocurre despues. Baja confianza requiere revision. Reutilizar core.object_storage y AI Gateway como dependencias futuras sin llamar modelos ni storage en este gate.",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/cava_socios/blind_audit.py",
+      "content": "\"\"\"Auditoria ciega y contrato de readiness de vision para Cavas.\n\nEste modulo NO llama modelos de IA, NO accede a object storage y NO conoce\nproveedores. Implementa la semantica determinista que posteriormente consumira\ncore.object_storage + AI Gateway.\n\"\"\"\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom enum import Enum\nfrom typing import Iterable, Mapping, Optional, Sequence\n\n\nclass BlindAuditStatus(str, Enum):\n    MATCH = \"MATCH\"\n    MISSING = \"MISSING\"\n    UNEXPECTED = \"UNEXPECTED\"\n    QUANTITY_MISMATCH = \"QUANTITY_MISMATCH\"\n    LEVEL_MISMATCH = \"LEVEL_MISMATCH\"\n    REVIEW_REQUIRED = \"REVIEW_REQUIRED\"\n\n\n@dataclass(frozen=True)\nclass ExpectedBottle:\n    bottle_id: str\n    expected_quantity: int = 1\n    expected_level_pct: Optional[float] = None\n\n    def __post_init__(self) -> None:\n        _required(self.bottle_id, \"bottle_id\")\n        if self.expected_quantity < 0:\n            raise ValueError(\"expected_quantity no puede ser negativo\")\n        _validate_pct(self.expected_level_pct, \"expected_level_pct\")\n\n\n@dataclass(frozen=True)\nclass BlindObservation:\n    observation_id: str\n    observed_reference: str\n    observed_quantity: int = 1\n    observed_level_pct: Optional[float] = None\n    evidence_id: Optional[str] = None\n    recognition_confidence: Optional[float] = None\n\n    def __post_init__(self) -> None:\n        _required(self.observation_id, \"observation_id\")\n        _required(self.observed_reference, \"observed_reference\")\n        if self.observed_quantity < 0:\n            raise ValueError(\"observed_quantity no puede ser negativo\")\n        _validate_pct(self.observed_level_pct, \"observed_level_pct\")\n        if self.recognition_confidence is not None and not (0.0 <= self.recognition_confidence <= 1.0):\n            raise ValueError(\"recognition_confidence fuera de rango\")\n\n\n@dataclass(frozen=True)\nclass AuditFinding:\n    status: BlindAuditStatus\n    expected_bottle_id: Optional[str]\n    observation_id: Optional[str]\n    expected_quantity: int\n    observed_quantity: int\n    expected_level_pct: Optional[float]\n    observed_level_pct: Optional[float]\n    reason: str\n\n\n@dataclass(frozen=True)\nclass BlindAuditResult:\n    findings: tuple[AuditFinding, ...]\n\n    @property\n    def clean(self) -> bool:\n        return bool(self.findings) and all(f.status == BlindAuditStatus.MATCH for f in self.findings)\n\n    @property\n    def requires_review(self) -> bool:\n        return any(f.status == BlindAuditStatus.REVIEW_REQUIRED for f in self.findings)\n\n\n@dataclass(frozen=True)\nclass VisionReadinessRequest:\n    evidence_id: str\n    storage_reference: str\n    required_capabilities: frozenset[str]\n    data_classification: str\n    max_cost_usd: float\n    correlation_id: str\n\n    def __post_init__(self) -> None:\n        _required(self.evidence_id, \"evidence_id\")\n        _required(self.storage_reference, \"storage_reference\")\n        _required(self.data_classification, \"data_classification\")\n        _required(self.correlation_id, \"correlation_id\")\n        if not self.required_capabilities:\n            raise ValueError(\"required_capabilities es requerido\")\n        if self.max_cost_usd < 0:\n            raise ValueError(\"max_cost_usd no puede ser negativo\")\n\n\n@dataclass(frozen=True)\nclass VisionRecognitionCandidate:\n    external_reference: str\n    confidence: float\n    attributes: Mapping[str, object]\n\n    def __post_init__(self) -> None:\n        _required(self.external_reference, \"external_reference\")\n        if not (0.0 <= self.confidence <= 1.0):\n            raise ValueError(\"confidence fuera de rango\")\n\n\ndef reconcile_blind_audit(\n    expected: Iterable[ExpectedBottle],\n    observations: Iterable[BlindObservation],\n    *,\n    observation_to_bottle: Mapping[str, str],\n    level_tolerance_pct: float = 5.0,\n    min_recognition_confidence: float = 0.90,\n) -> BlindAuditResult:\n    \"\"\"Compara observacion ciega contra esperado DESPUES de capturar.\n\n    observation_to_bottle debe provenir de una etapa de identificacion separada\n    (manual o IA autorizada). La captura ciega nunca recibe el esperado.\n    \"\"\"\n    if level_tolerance_pct < 0:\n        raise ValueError(\"level_tolerance_pct no puede ser negativo\")\n    if not (0.0 <= min_recognition_confidence <= 1.0):\n        raise ValueError(\"min_recognition_confidence fuera de rango\")\n\n    exp = {item.bottle_id: item for item in expected}\n    if len(exp) != len(tuple(expected)):\n        raise ValueError(\"expected contiene bottle_id duplicado\")\n\n    obs_list = tuple(observations)\n    if len({o.observation_id for o in obs_list}) != len(obs_list):\n        raise ValueError(\"observations contiene observation_id duplicado\")\n\n    matched_expected: set[str] = set()\n    findings: list[AuditFinding] = []\n\n    for obs in obs_list:\n        bottle_id = observation_to_bottle.get(obs.observation_id)\n        if not bottle_id or bottle_id not in exp:\n            findings.append(AuditFinding(\n                BlindAuditStatus.UNEXPECTED, None, obs.observation_id, 0,\n                obs.observed_quantity, None, obs.observed_level_pct,\n                \"observacion sin correspondencia canonica\",\n            ))\n            continue\n\n        item = exp[bottle_id]\n        matched_expected.add(bottle_id)\n\n        if obs.recognition_confidence is not None and obs.recognition_confidence < min_recognition_confidence:\n            status = BlindAuditStatus.REVIEW_REQUIRED\n            reason = \"confianza de reconocimiento insuficiente\"\n        elif item.expected_quantity != obs.observed_quantity:\n            status = BlindAuditStatus.QUANTITY_MISMATCH\n            reason = \"cantidad observada distinta\"\n        elif _level_mismatch(item.expected_level_pct, obs.observed_level_pct, level_tolerance_pct):\n            status = BlindAuditStatus.LEVEL_MISMATCH\n            reason = \"nivel observado fuera de tolerancia\"\n        else:\n            status = BlindAuditStatus.MATCH\n            reason = \"coincidencia\"\n\n        findings.append(AuditFinding(\n            status, bottle_id, obs.observation_id,\n            item.expected_quantity, obs.observed_quantity,\n            item.expected_level_pct, obs.observed_level_pct, reason,\n        ))\n\n    for bottle_id, item in exp.items():\n        if bottle_id not in matched_expected:\n            findings.append(AuditFinding(\n                BlindAuditStatus.MISSING, bottle_id, None,\n                item.expected_quantity, 0,\n                item.expected_level_pct, None,\n                \"botella esperada no observada\",\n            ))\n\n    return BlindAuditResult(findings=tuple(findings))\n\n\ndef validate_vision_candidates(\n    candidates: Sequence[VisionRecognitionCandidate],\n    *,\n    min_confidence: float,\n) -> tuple[VisionRecognitionCandidate, ...]:\n    \"\"\"Filtra candidatos para revision; no toma decisiones canonicas.\"\"\"\n    if not (0.0 <= min_confidence <= 1.0):\n        raise ValueError(\"min_confidence fuera de rango\")\n    return tuple(c for c in candidates if c.confidence >= min_confidence)\n\n\ndef _level_mismatch(expected: Optional[float], observed: Optional[float], tolerance: float) -> bool:\n    if expected is None and observed is None:\n        return False\n    if expected is None or observed is None:\n        return True\n    return abs(expected - observed) > tolerance\n\n\ndef _validate_pct(value: Optional[float], name: str) -> None:\n    if value is not None and not (0.0 <= value <= 100.0):\n        raise ValueError(f\"{name} fuera de rango\")\n\n\ndef _required(value: str, name: str) -> str:\n    normalized = str(value or \"\").strip()\n    if not normalized:\n        raise ValueError(f\"{name} es requerido\")\n    return normalized\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_cava_socios_blind_audit.py",
+      "content": "import pytest\n\nfrom modules.cava_socios.blind_audit import (\n    BlindAuditStatus,\n    BlindObservation,\n    ExpectedBottle,\n    VisionReadinessRequest,\n    VisionRecognitionCandidate,\n    reconcile_blind_audit,\n    validate_vision_candidates,\n)\n\n\ndef test_blind_audit_clean_match():\n    result = reconcile_blind_audit(\n        [ExpectedBottle(\"B1\", 1, 75.0)],\n        [BlindObservation(\"O1\", \"photo-1\", 1, 73.0, recognition_confidence=0.98)],\n        observation_to_bottle={\"O1\": \"B1\"},\n        level_tolerance_pct=5,\n    )\n    assert result.clean is True\n    assert result.findings[0].status == BlindAuditStatus.MATCH\n\n\ndef test_blind_audit_detects_missing_and_unexpected():\n    result = reconcile_blind_audit(\n        [ExpectedBottle(\"B1\"), ExpectedBottle(\"B2\")],\n        [BlindObservation(\"O1\", \"unknown\")],\n        observation_to_bottle={},\n    )\n    statuses = {f.status for f in result.findings}\n    assert BlindAuditStatus.UNEXPECTED in statuses\n    assert BlindAuditStatus.MISSING in statuses\n\n\ndef test_blind_audit_detects_quantity_and_level_mismatch():\n    qty = reconcile_blind_audit(\n        [ExpectedBottle(\"B1\", 2, 80)],\n        [BlindObservation(\"O1\", \"x\", 1, 80, recognition_confidence=0.99)],\n        observation_to_bottle={\"O1\": \"B1\"},\n    )\n    assert qty.findings[0].status == BlindAuditStatus.QUANTITY_MISMATCH\n\n    level = reconcile_blind_audit(\n        [ExpectedBottle(\"B1\", 1, 80)],\n        [BlindObservation(\"O1\", \"x\", 1, 60, recognition_confidence=0.99)],\n        observation_to_bottle={\"O1\": \"B1\"},\n        level_tolerance_pct=5,\n    )\n    assert level.findings[0].status == BlindAuditStatus.LEVEL_MISMATCH\n\n\ndef test_low_recognition_confidence_requires_review_not_auto_match():\n    result = reconcile_blind_audit(\n        [ExpectedBottle(\"B1\", 1, 80)],\n        [BlindObservation(\"O1\", \"x\", 1, 80, recognition_confidence=0.50)],\n        observation_to_bottle={\"O1\": \"B1\"},\n        min_recognition_confidence=0.90,\n    )\n    assert result.requires_review is True\n    assert result.findings[0].status == BlindAuditStatus.REVIEW_REQUIRED\n\n\ndef test_vision_request_is_provider_neutral():\n    req = VisionReadinessRequest(\n        evidence_id=\"E1\",\n        storage_reference=\"obj://cavas/e1.jpg\",\n        required_capabilities=frozenset({\"VISION_IMAGE_ANALYSIS\", \"BOTTLE_RECOGNITION\"}),\n        data_classification=\"INTERNAL\",\n        max_cost_usd=0.25,\n        correlation_id=\"AUD-1\",\n    )\n    assert \"VISION_IMAGE_ANALYSIS\" in req.required_capabilities\n\n\ndef test_vision_candidate_filter_does_not_make_canonical_decision():\n    rows = (\n        VisionRecognitionCandidate(\"sku-a\", 0.95, {\"label\": \"A\"}),\n        VisionRecognitionCandidate(\"sku-b\", 0.40, {\"label\": \"B\"}),\n    )\n    kept = validate_vision_candidates(rows, min_confidence=0.90)\n    assert [x.external_reference for x in kept] == [\"sku-a\"]\n\n\ndef test_invalid_percentages_and_confidence_fail_closed():\n    with pytest.raises(ValueError):\n        ExpectedBottle(\"B1\", 1, 101)\n    with pytest.raises(ValueError):\n        BlindObservation(\"O1\", \"x\", recognition_confidence=1.5)\n"
+    },
+    {
+      "type": "write_file",
+      "path": "docs/CAVAS/CAVAS_GATE16F_BLIND_AUDIT_CV_READINESS.md",
+      "content": "# Cavas Gate 16F — Blind Audit + Computer Vision Readiness\n\n## Decisión\n- Auditoría ciega: implementación determinista dentro de Cavas.\n- Evidencia binaria: REUSE `core.object_storage`; no crear storage paralelo.\n- Autorización/routing de visión: REUSE `core.ai_gateway_policy_adapter` + execution gate.\n- Provider/model concreto: fuera de alcance.\n- Reconocimiento IA nunca crea/fusiona identidad canónica por sí solo.\n\n## Flujo objetivo\n1. Operador captura sin visualizar inventario esperado.\n2. Evidencia se referencia por el contrato de 16E.\n3. Identificación puede ser manual o por IA autorizada.\n4. Sólo después se compara contra esperado.\n5. Baja confianza => REVIEW_REQUIRED.\n6. Diferencias => hallazgos, nunca ajustes automáticos de inventario.\n7. Futuro ajuste requiere workflow/autorización independiente.\n\n## Readiness de visión\nLa futura llamada deberá pedir capability (p.ej. VISION_IMAGE_ANALYSIS) al AI Gateway; no hardcodear OpenAI/Gemini/modelo. El gateway decide provider/model por policy, scopes, data classification, riesgo y budget.\n\n## Alcance no implementado\n- llamadas reales de IA;\n- prompts/modelos;\n- uploads;\n- DDL/DML;\n- endpoints/UI;\n- autoajustes;\n- reconocimiento productivo.\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/cava_socios/blind_audit.py",
+        "backend/tests/test_cava_socios_blind_audit.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios_blind_audit.py",
+        "backend/tests/test_cava_socios_evidence_chain.py",
+        "backend/tests/test_cava_socios_adapter_sdk.py",
+        "backend/tests/test_cava_socios_migration_engine.py",
+        "backend/tests/test_cava_socios_domain.py",
+        "backend/tests/test_cava_socios.py",
+        "backend/tests/test_ai_gateway_policy_adapter.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/blind_audit.py",
+          "backend/modules/cava_socios/evidence_chain.py",
+          "backend/core/object_storage.py",
+          "backend/core/ai_gateway_policy_adapter.py",
+          "backend/core/agent_execution_gate.py",
+          "docs/CAVAS/CAVAS_GATE16F_BLIND_AUDIT_CV_READINESS.md"
+        ],
+        "search_terms": [
+          "VISION_IMAGE_ANALYSIS",
+          "object_storage",
+          "authorize_model_route",
+          "provider",
+          "model",
+          "REVIEW_REQUIRED",
+          "expected",
+          "observation"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.md"
+        ],
+        "exclude_patterns": [
+          "*.env",
+          "*secret*",
+          "*password*"
+        ],
+        "max_results": 250
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "Blind capture cannot receive expected inventory",
+    "No automatic inventory adjustment",
+    "No actual AI/provider/model call",
+    "No hardcoded provider/model",
+    "Reuse core.object_storage only as documented dependency; no storage calls in this gate",
+    "Reuse AI Gateway/execution gate for future vision authorization",
+    "Low-confidence recognition must fail closed to human review",
+    "No SQL DDL/DML, endpoints, frontend or scheduler",
+    "Production forbidden"
+  ]
+}
