@@ -1,3 +1,4 @@
+# recovery trigger 2026-09-20T21:31Z retry local-ahead cert after wake-endpoint bootstrap; no Production
 # recovery trigger 2026-09-20T21:00Z local-ahead certification intake pickup; preserve certification job; no Production
 # recovery trigger 2026-09-20T20:50Z intake pickup recovery for Tablajerias queue; preserve jobs; no Production
 # recovery trigger 2026-09-20T16:06Z after mirror/emergent-live fast-forward; preserve R3B and Cavas 16J; no Production
