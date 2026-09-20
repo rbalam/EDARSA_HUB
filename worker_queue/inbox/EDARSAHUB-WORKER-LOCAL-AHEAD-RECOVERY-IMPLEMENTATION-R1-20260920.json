@@ -1,0 +1,116 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-LOCAL-AHEAD-RECOVERY-IMPLEMENTATION-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "cb832d6b9555b82819e8165f5793a8c0c86d1b29",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Implementar la capacidad canónica y fail-closed para recuperar LOCAL_AHEAD_ONLY cuando todos los commits locales fueron creados por writers EDARSAHUB autorizados, sin reset/clean/stash/merge/rebase/force. Debe operar bajo writer lock existente, probar ownership determinísticamente por author/committer allowlist + topología + worktree limpio + commits lineales, preservar primero una rama remota recovery/authorized-local-ahead/<sha12>, hacer compare-and-swap del remoto, publicar fast-forward a Edarsahub_Desarrollo con EDARSA_ALLOW_PUSH scoped, verificar topology 0/0 y bloquear cualquier ownership no demostrable. Integrar esta recuperación en el dispatcher antes de mutation_policy. Mejorar worker health separando local_development_sha, remote_development_sha, ahead_count, behind_count y convergence_status; development_sha debe representar el remoto canónico para compatibilidad. Agregar pruebas de recuperación autorizada y rechazo no autorizado. No tocar Producción ni dominios funcionales.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/git_divergence_guard.py",
+      "old": "DEFAULT_LOCK_TTL_SECONDS = 7200\n",
+      "new": "DEFAULT_LOCK_TTL_SECONDS = 7200\nAUTHORIZED_LOCAL_AHEAD_EMAILS = {\n    \"worker-publisher@edarsahub.local\",\n    \"worker@edarsahub.local\",\n}\nMAX_AUTHORIZED_LOCAL_AHEAD_COMMITS = 20\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/git_divergence_guard.py",
+      "old": "def compare_and_swap(repo: Path, remote_at_start: str) -> str:\n    _run(repo,\"fetch\",REMOTE,DEV_BRANCH); now=_run(repo,\"rev-parse\",f\"{REMOTE}/{DEV_BRANCH}\").stdout.strip()\n    if now != remote_at_start: raise GitGuardError(\"REMOTE_MOVED_RETRY_REQUIRED\", {\"remote_at_start\":remote_at_start,\"remote_now\":now})\n    return now\n",
+      "new": "def prove_authorized_local_ahead(repo: Path, state: dict[str, Any]) -> dict[str, Any]:\n    if state.get(\"current_branch\") != DEV_BRANCH:\n        raise GitGuardError(\"LOCAL_AHEAD_OWNERSHIP_UNPROVEN\", {\"reason\": \"WRONG_CANONICAL_BRANCH\"})\n    if state.get(\"worktree_dirty\"):\n        raise GitGuardError(\"GIT_WORKTREE_NOT_CLEAN\", state)\n    if state.get(\"classification\") != \"LOCAL_AHEAD_ONLY\":\n        raise GitGuardError(\"LOCAL_AHEAD_OWNERSHIP_UNPROVEN\", {\"reason\": \"NOT_LOCAL_AHEAD_ONLY\", \"classification\": state.get(\"classification\")})\n    if state.get(\"merge_base\") != state.get(\"remote_head\"):\n        raise GitGuardError(\"LOCAL_AHEAD_OWNERSHIP_UNPROVEN\", {\"reason\": \"REMOTE_NOT_ANCESTOR\", \"state\": state})\n    ahead = int(state.get(\"ahead_count\") or 0)\n    commits = list(state.get(\"local_only_commits\") or [])\n    if ahead < 1 or ahead > MAX_AUTHORIZED_LOCAL_AHEAD_COMMITS or len(commits) != ahead:\n        raise GitGuardError(\"LOCAL_AHEAD_OWNERSHIP_UNPROVEN\", {\"reason\": \"UNSAFE_AHEAD_COUNT\", \"ahead_count\": ahead, \"enumerated_commits\": len(commits)})\n    evidence = []\n    for sha in commits:\n        parents = _run(repo, \"rev-list\", \"--parents\", \"-n\", \"1\", sha).stdout.strip().split()\n        if len(parents) != 2:\n            raise GitGuardError(\"LOCAL_AHEAD_OWNERSHIP_UNPROVEN\", {\"reason\": \"NON_LINEAR_LOCAL_COMMIT\", \"commit\": sha, \"parent_count\": max(0, len(parents) - 1)})\n        meta = _run(repo, \"show\", \"-s\", \"--format=%H%x00%ae%x00%ce\", sha).stdout.rstrip(\"\\n\").split(\"\\x00\")\n        if len(meta) != 3:\n            raise GitGuardError(\"LOCAL_AHEAD_OWNERSHIP_UNPROVEN\", {\"reason\": \"COMMIT_IDENTITY_UNREADABLE\", \"commit\": sha})\n        _, author_email, committer_email = meta\n        author_email = author_email.strip().lower()\n        committer_email = committer_email.strip().lower()\n        if author_email not in AUTHORIZED_LOCAL_AHEAD_EMAILS or committer_email not in AUTHORIZED_LOCAL_AHEAD_EMAILS:\n            raise GitGuardError(\"LOCAL_AHEAD_OWNERSHIP_UNPROVEN\", {\n                \"reason\": \"UNAUTHORIZED_COMMIT_IDENTITY\",\n                \"commit\": sha,\n                \"author_email\": author_email,\n                \"committer_email\": committer_email,\n            })\n        evidence.append({\"commit\": sha, \"author_email\": author_email, \"committer_email\": committer_email})\n    return {\"classification\":\"LOCAL_AHEAD_ONLY\",\"ownership\":\"AUTHORIZED_EDARSAHUB_WRITER\",\"ahead_count\":ahead,\"remote_head\":state[\"remote_head\"],\"local_head\":state[\"local_head\"],\"commits\":evidence}\n\ndef recover_authorized_local_ahead(repo: Path, state: dict[str, Any], *, job_id: str, owner: str) -> dict[str, Any]:\n    lock_dir = _git_dir(repo.resolve()) / \"universal-worker-queue\" / LOCK_NAME\n    current_lock = _read_json(lock_dir / \"owner.json\")\n    if current_lock.get(\"job_id\") != job_id or current_lock.get(\"owner\") != owner:\n        raise GitGuardError(\"GIT_LOCK_BUSY\", {\"reason\": \"LOCAL_AHEAD_RECOVERY_REQUIRES_OWNED_WRITER_LOCK\", \"current\": current_lock})\n    proof = prove_authorized_local_ahead(repo, state)\n    local, remote = proof[\"local_head\"], proof[\"remote_head\"]\n    recovery_branch = f\"recovery/authorized-local-ahead/{local[:12]}\"\n    remote_recovery = _run(repo, \"ls-remote\", REMOTE, f\"refs/heads/{recovery_branch}\", check=False).stdout.strip().split()\n    if remote_recovery:\n        if remote_recovery[0] != local:\n            raise GitGuardError(\"LOCAL_AHEAD_OWNERSHIP_UNPROVEN\", {\"reason\": \"RECOVERY_BRANCH_COLLISION\", \"branch\": recovery_branch, \"remote_sha\": remote_recovery[0], \"local_sha\": local})\n    else:\n        preserved = authorized_push(repo,args=[\"push\", REMOTE, f\"{local}:refs/heads/{recovery_branch}\"],job_id=job_id,owner=owner)\n        if preserved.returncode != 0:\n            raise GitGuardError(\"GIT_PUSH_FAILED\", {\"reason\": \"RECOVERY_REF_PUSH_FAILED\", \"branch\": recovery_branch, \"output\": (preserved.stdout or \"\")[-2000:]})\n    compare_and_swap(repo, remote)\n    published = authorized_push(repo,args=[\"push\", REMOTE, f\"{local}:refs/heads/{DEV_BRANCH}\"],job_id=job_id,owner=owner)\n    if published.returncode != 0:\n        raise GitGuardError(\"GIT_PUSH_FAILED\", {\"reason\": \"LOCAL_AHEAD_FAST_FORWARD_PUSH_FAILED\", \"output\": (published.stdout or \"\")[-2000:]})\n    post = post_push_verify(repo, local)\n    return {\"proof\": proof, \"recovery_branch\": recovery_branch, \"post_push\": post}\n\ndef compare_and_swap(repo: Path, remote_at_start: str) -> str:\n    _run(repo,\"fetch\",REMOTE,DEV_BRANCH); now=_run(repo,\"rev-parse\",f\"{REMOTE}/{DEV_BRANCH}\").stdout.strip()\n    if now != remote_at_start: raise GitGuardError(\"REMOTE_MOVED_RETRY_REQUIRED\", {\"remote_at_start\":remote_at_start,\"remote_now\":now})\n    return now\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "from git_divergence_guard import (GitGuardError, acquire_writer_lock, compare_and_swap, inspect_repository, mutation_policy, post_push_verify, release_writer_lock, requires_writer_lock, scoped_push_env, validate_commit_scope)",
+      "new": "from git_divergence_guard import (GitGuardError, acquire_writer_lock, compare_and_swap, inspect_repository, mutation_policy, post_push_verify, recover_authorized_local_ahead, release_writer_lock, requires_writer_lock, scoped_push_env, validate_commit_scope)"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "            git_state = inspect_repository(ROOT, fetch=True); git_policy = mutation_policy(git_state)\n            result.update({\"git_guard_start\":git_state,\"branch\":git_state[\"current_branch\"],\"remote_at_start\":git_state[\"remote_head\"],\"local_at_start\":git_state[\"local_head\"],\"merge_base_at_start\":git_state[\"merge_base\"],\"ahead_at_start\":git_state[\"ahead_count\"],\"behind_at_start\":git_state[\"behind_count\"],\"dirty_state\":{\"worktree_dirty\":git_state[\"worktree_dirty\"],\"staged_count\":git_state[\"staged_count\"],\"unstaged_count\":git_state[\"unstaged_count\"],\"untracked_count\":git_state[\"untracked_count\"]},\"lock_owner\":{k:git_writer_lock.get(k) for k in (\"job_id\",\"owner\",\"owner_pid\",\"created_at_utc\")}})\n            if not git_policy[\"allowed\"]:\n",
+      "new": "            git_state = inspect_repository(ROOT, fetch=True)\n            result.update({\"git_guard_start\":git_state,\"branch\":git_state[\"current_branch\"],\"remote_at_start\":git_state[\"remote_head\"],\"local_at_start\":git_state[\"local_head\"],\"merge_base_at_start\":git_state[\"merge_base\"],\"ahead_at_start\":git_state[\"ahead_count\"],\"behind_at_start\":git_state[\"behind_count\"],\"dirty_state\":{\"worktree_dirty\":git_state[\"worktree_dirty\"],\"staged_count\":git_state[\"staged_count\"],\"unstaged_count\":git_state[\"unstaged_count\"],\"untracked_count\":git_state[\"untracked_count\"]},\"lock_owner\":{k:git_writer_lock.get(k) for k in (\"job_id\",\"owner\",\"owner_pid\",\"created_at_utc\")}})\n            if git_state[\"classification\"] == \"LOCAL_AHEAD_ONLY\":\n                try:\n                    result[\"local_ahead_recovery\"] = recover_authorized_local_ahead(ROOT, git_state, job_id=job_id, owner=\"universal-worker\")\n                    git_state = inspect_repository(ROOT, fetch=True)\n                except GitGuardError as exc:\n                    result[\"status\"] = exc.code\n                    result[\"git_guard_error\"] = exc.evidence\n                    raise RuntimeError(exc.code) from exc\n            git_policy = mutation_policy(git_state)\n            if not git_policy[\"allowed\"]:\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/runtime_health_publisher.py",
+      "old": "def payload() -> dict:\n    head = git(\"rev-parse\", \"HEAD\").stdout.strip()\n    jobs = queue_jobs()\n",
+      "new": "def payload() -> dict:\n    git(\"fetch\", REMOTE, \"Edarsahub_Desarrollo\")\n    head = git(\"rev-parse\", \"HEAD\").stdout.strip()\n    remote_head = git(\"rev-parse\", f\"{REMOTE}/Edarsahub_Desarrollo\").stdout.strip()\n    counts = git(\"rev-list\", \"--left-right\", \"--count\", f\"{head}...{remote_head}\").stdout.split()\n    ahead_count, behind_count = (int(counts[0]), int(counts[1])) if len(counts) == 2 else (-1, -1)\n    if ahead_count == 0 and behind_count == 0:\n        convergence_status = \"SYNC\"\n    elif ahead_count > 0 and behind_count == 0:\n        convergence_status = \"LOCAL_AHEAD_ONLY\"\n    elif ahead_count == 0 and behind_count > 0:\n        convergence_status = \"REMOTE_AHEAD_ONLY\"\n    else:\n        convergence_status = \"DIVERGED\"\n    jobs = queue_jobs()\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/runtime_health_publisher.py",
+      "old": "        \"worker\": \"ONLINE\",\n        \"development_sha\": head,\n        \"branch\": git(\"branch\", \"--show-current\").stdout.strip(),\n",
+      "new": "        \"worker\": \"ONLINE\",\n        \"development_sha\": remote_head,\n        \"local_development_sha\": head,\n        \"remote_development_sha\": remote_head,\n        \"ahead_count\": ahead_count,\n        \"behind_count\": behind_count,\n        \"convergence_status\": convergence_status,\n        \"branch\": git(\"branch\", \"--show-current\").stdout.strip(),\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_git_divergence_guard_r1.py",
+      "old": "def test_case_12_out_of_scope_file_fails(tmp_path):\n m=load_guard();_,l,_=setup_pair(tmp_path);base=g(l,'rev-parse','HEAD').stdout.strip();commit(l,'allowed','a');commit(l,'extra','b');head=g(l,'rev-parse','HEAD').stdout.strip()\n with pytest.raises(m.GitGuardError,match='GIT_SCOPE_VIOLATION'): m.validate_commit_scope(l,base,head,{'allowed'})\n",
+      "new": "def test_case_12_out_of_scope_file_fails(tmp_path):\n m=load_guard();_,l,_=setup_pair(tmp_path);base=g(l,'rev-parse','HEAD').stdout.strip();commit(l,'allowed','a');commit(l,'extra','b');head=g(l,'rev-parse','HEAD').stdout.strip()\n with pytest.raises(m.GitGuardError,match='GIT_SCOPE_VIOLATION'): m.validate_commit_scope(l,base,head,{'allowed'})\ndef test_case_13_authorized_local_ahead_recovery_preserves_and_converges(tmp_path):\n m=load_guard();_,l,_=setup_pair(tmp_path);install_push_guard(l);g(l,'config','user.email','worker-publisher@edarsahub.local');g(l,'config','user.name','EDARSAHUB Worker Publisher');commit(l,'owned','x');state=m.inspect_repository(l,fetch=True);token=m.acquire_writer_lock(l,job_id='case13',owner='universal-worker',owner_pid=os.getpid())\n try:\n  evidence=m.recover_authorized_local_ahead(l,state,job_id='case13',owner='universal-worker')\n  assert evidence['post_push']['topology']=='0/0';head=g(l,'rev-parse','HEAD').stdout.strip();assert g(l,'rev-parse','origin/Edarsahub_Desarrollo').stdout.strip()==head;assert g(l,'ls-remote','origin',f\"refs/heads/{evidence['recovery_branch']}\").stdout.split()[0]==head\n finally:m.release_writer_lock(l,token)\ndef test_case_14_unknown_local_ahead_owner_is_rejected(tmp_path):\n m=load_guard();_,l,_=setup_pair(tmp_path);commit(l,'unknown','x');state=m.inspect_repository(l,fetch=True);token=m.acquire_writer_lock(l,job_id='case14',owner='universal-worker',owner_pid=os.getpid())\n try:\n  with pytest.raises(m.GitGuardError,match='LOCAL_AHEAD_OWNERSHIP_UNPROVEN'):m.recover_authorized_local_ahead(l,state,job_id='case14',owner='universal-worker')\n finally:m.release_writer_lock(l,token)\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/git_divergence_guard.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/runtime_health_publisher.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_git_divergence_guard_r1.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/git_divergence_guard.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "backend/tests/test_git_divergence_guard_r1.py"
+        ],
+        "search_terms": [
+          "recover_authorized_local_ahead",
+          "prove_authorized_local_ahead",
+          "LOCAL_AHEAD_OWNERSHIP_UNPROVEN",
+          "recovery/authorized-local-ahead",
+          "compare_and_swap",
+          "CERTIFIED_GIT_SYNC",
+          "local_development_sha",
+          "remote_development_sha",
+          "convergence_status",
+          "force"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No reset --hard",
+    "No git clean",
+    "No stash",
+    "No merge",
+    "No rebase",
+    "No force push",
+    "Recovery only for linear LOCAL_AHEAD_ONLY with clean worktree and allowlisted EDARSAHUB writer identities",
+    "Must preserve remote recovery branch before Development fast-forward",
+    "Must use writer lock and compare-and-swap",
+    "Unknown ownership must remain fail-closed",
+    "No functional-domain changes"
+  ]
+}
