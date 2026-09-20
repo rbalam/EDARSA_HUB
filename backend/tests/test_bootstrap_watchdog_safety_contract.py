@@ -98,3 +98,10 @@ def test_mirror_enable_requires_health_gate_before_clearing_kill_switch():
     assert 'rm -f "$PERSISTENT_STOP" "$TEMP_STOP"' in text
     assert text.index('git status --porcelain=v1 --untracked-files=all') < text.index('rm -f "$PERSISTENT_STOP" "$TEMP_STOP"')
     assert "MIRROR_SYNC_HEALTH_GATE=PASS" in text
+
+
+def test_bootstrap_installs_and_starts_universal_worker_independently():
+    text = INSTALLER.read_text(encoding="utf-8")
+    assert 'WORKER_SERVICE="edarsahub-universal-worker"' in text
+    assert 'edarsahub-universal-worker.conf' in text
+    assert 'supervisorctl restart "$WORKER_SERVICE" || supervisorctl start "$WORKER_SERVICE"' in text
