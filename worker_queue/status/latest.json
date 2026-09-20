@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "7f0a832404b311893ab8632612dbd9d5b77098dd",
-  "generated_at_utc": "2026-09-20T13:22:22Z",
+  "generated_at_utc": "2026-09-20T13:23:41Z",
   "history": {
     "done_total_local": 765,
     "pending_total_local": 0,
@@ -13,25 +13,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1922,
+      "age_seconds": 2001,
       "job_id": "CAVAS-GATE12K-PERSONA-LINK-BACKEND-CERT-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1183,
+      "age_seconds": 1261,
       "job_id": "CAVAS-GATE12M-PERSONA-LINK-E2E-CANARY-R2-FINAL-CERT-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1381,
+      "age_seconds": 1460,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-ACTA-CIERRE-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1917,
+      "age_seconds": 1996,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-OPERATIVO-FINAL-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
@@ -49,8 +49,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-20T13:22:15Z",
-    "last_receive_utc": "2026-09-20T13:22:18Z",
+    "last_cycle_utc": "2026-09-20T13:23:36Z",
+    "last_receive_utc": "2026-09-20T13:23:39Z",
     "last_terminal_utc": "2026-09-20T13:02:39Z",
     "pid": "59"
   },
