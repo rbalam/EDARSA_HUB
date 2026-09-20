@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "6cdb06ad073a9b96c70ced95c03489c435d7b8f1",
-  "generated_at_utc": "2026-09-20T02:46:17Z",
+  "generated_at_utc": "2026-09-20T02:47:39Z",
   "history": {
     "done_total_local": 750,
     "pending_total_local": 0,
@@ -13,19 +13,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 623,
+      "age_seconds": 705,
       "job_id": "CAVAS-GATE16A-UNIVERSAL-INTEROPERABILITY-MIGRATION-DISCOVERY-READONLY-R1B-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1103,
+      "age_seconds": 1184,
       "job_id": "EDARSA-AI-GATE1-CAPABILITY-DISCOVERY-R2-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 354,
+      "age_seconds": 436,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-CANDIDATE-ISOLATION-READONLY-R1B-20260919",
       "reason": null,
       "state": "RESULT_READY"
@@ -43,8 +43,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-20T02:46:12Z",
-    "last_receive_utc": "2026-09-20T02:46:16Z",
+    "last_cycle_utc": "2026-09-20T02:47:35Z",
+    "last_receive_utc": "2026-09-20T02:47:38Z",
     "last_terminal_utc": "2026-09-20T02:40:23Z",
     "pid": "34397"
   },
