@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import WorkerConsole from '@/pages/WorkerConsole';
 import Login from '@/pages/Login';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
@@ -110,6 +111,7 @@ function App() {
       <BrowserRouter>
         <div className="App">
           <Routes>
+          <Route path="/worker-console" element={<ProtectedRoute><WorkerConsole /></ProtectedRoute>} />
           <Route path="/admin" element={<AdminHub />} />
           <Route path="/admin/centro-excepciones" element={<CentroExcepciones />} />
           <Route path="/admin/dashboard-ejecutivo" element={<DashboardEjecutivo />} />

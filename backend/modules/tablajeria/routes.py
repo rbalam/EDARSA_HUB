@@ -32,7 +32,6 @@ from .ordenes_service import TablajeriaOrdenesService
 from core.security import get_current_user
 from core.config.edarsahub_config import get_edarsahub_sql_config
 from core.sql_first.db import get_sql_connection
-from core.sql_first.db import get_sql_connection
 
 logger = logging.getLogger(__name__)
 
@@ -1332,7 +1331,6 @@ async def guardar_config_contable(
 # ============================================================================
 
 from .dashboard_service import get_tablajeria_dashboard_service
-from core.sql_first.db import get_sql_connection
 
 
 @router.get("/dashboard/kpis")

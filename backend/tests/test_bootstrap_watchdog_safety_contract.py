@@ -3,7 +3,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 BOOTSTRAP = ROOT / "tools/bootstrap/edarsahub_bootstrap_watchdog.py"
 INSTALLER = ROOT / "tools/bootstrap/install_bootstrap_watchdog.sh"
-MIRROR_CONF = ROOT / "tools/mirror_sync/supervisor/edarsahub-mirror-sync.conf"\nMIRROR_START = ROOT / "tools/mirror_sync/mirror_sync_start.sh"
+MIRROR_CONF = ROOT / "tools/mirror_sync/supervisor/edarsahub-mirror-sync.conf"
+MIRROR_START = ROOT / "tools/mirror_sync/mirror_sync_start.sh"
 
 
 def body() -> str:

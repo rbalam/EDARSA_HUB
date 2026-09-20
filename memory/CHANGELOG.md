@@ -739,3 +739,10 @@ Verificado: cURL (toggle desactivar/reactivar, revocación de sesiones, bloqueo 
 - BLINDAJE auto-sync: `tools/bootstrap/edarsahub_bootstrap_watchdog.py` `safe_fast_forward` ya NO hace `git stash` del worktree; si hay cambios sin commitear DIFIERE (state DEFERRED_LOCAL_DIRTY, preserved=True). Así nunca vuelve a descartar trabajo del pod. Workers siguen detenidos (autostart=false) hasta que el usuario haga Save to GitHub.
 - NOTA: se creó un usuario de prueba `qa9882@e.mx` (rol Usuario, password Test1234!) en Usuario_Catalogo durante la verificación de SEC-001; se puede borrar.
 
+
+## 2026-06 — Universal Worker Console (Fase 1, SOLO LECTURA)
+- Backend `modules/worker_console` (router `/api/worker/console/*`, auth JWT obligatorio): dashboard, jobs/{state}, lifecycle/{job_id}, result/{job_id}, tablajerias/checklist, audit, validate (contrato v2 sin escribir).
+- Contrato v2: READ_ONLY exige actions=[] (validador). Intérprete lee certification/quality_gate/blockers/production_touched/files_changed; published/* parsea marcador clave=valor.
+- Checklist Tablajerías lee results reales de los 7 job_id -> GO técnico READ_ONLY, production_touched=false, next_decision=autorización humana. NO autoriza Producción.
+- Frontend `pages/WorkerConsole.jsx` en ruta `/worker-console` (5 tabs). Tests 5/5 OK (tests/test_worker_console_contract.py). README: docs/WORKER_CONSOLE_README.md.
+- Fase 2 pendiente (SUPERADMIN): publicador, Go/No-Go, limpieza preferred_job, checklist publicable.

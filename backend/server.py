@@ -16343,6 +16343,10 @@ app.include_router(api_router)
 from modules.worker_runtime_wake.routes import router as worker_runtime_wake_router
 app.include_router(worker_runtime_wake_router, prefix="/api")
 
+# EDARSAHUB Universal Worker Console (Fase 1, solo lectura)
+from modules.worker_console.routes import router as worker_console_router
+app.include_router(worker_console_router, prefix="/api")
+
 # FASE6: health canónico V1.0 (SQL-First / NO-LIVE) -> /api/health/v1
 app.include_router(health_v1_router, prefix="/api")
 

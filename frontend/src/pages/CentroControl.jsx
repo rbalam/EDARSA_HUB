@@ -986,7 +986,7 @@ const CentroControl = () => {
                     const cfg = tipoConfig[cambio.tipo] || tipoConfig.cambio_codigo;
                     
                     return (
-                      <div key={regresion.id || `regresion-${idx}`} className={`p-4 rounded-lg ${cfg.bg} border ${cfg.border}`}>
+                      <div key={cambio.id || `regresion-${idx}`} className={`p-4 rounded-lg ${cfg.bg} border ${cfg.border}`}>
                         <div className="flex items-start gap-3">
                           <span className="text-xl">{cfg.icon}</span>
                           <div className="flex-1">

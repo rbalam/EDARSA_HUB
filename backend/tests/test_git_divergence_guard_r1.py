@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[2]; GUARD=ROOT/'tools/mirror_sync/git_dive
 def load_guard():
  s=importlib.util.spec_from_file_location('g',GUARD); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
 def g(repo,*args,check=True,env=None):
- r=subprocess.run(['git',*args],cwd=repo,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,env=env,check=False);
+ r=subprocess.run(['git',*args],cwd=repo,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,env=env,check=False)
  if check and r.returncode!=0: raise AssertionError(r.stdout)
  return r
 def setup_pair(t):
@@ -24,7 +24,7 @@ def test_case_5_staged_blocks(tmp_path):
 def test_case_6_untracked_blocks(tmp_path):
  m=load_guard();_,l,_=setup_pair(tmp_path);(l/'x').write_text('x');s=m.inspect_repository(l,fetch=True);assert s['untracked_count']==1 and m.mutation_policy(s)['terminal_status']=='GIT_WORKTREE_NOT_CLEAN'
 def test_case_7_remote_moves_cancels_push(tmp_path):
- m=load_guard();_,l,p=setup_pair(tmp_path);start=m.inspect_repository(l,fetch=True)['remote_head'];commit(p,'moved','x');g(p,'push','origin','Edarsahub_Desarrollo');
+ m=load_guard();_,l,p=setup_pair(tmp_path);start=m.inspect_repository(l,fetch=True)['remote_head'];commit(p,'moved','x');g(p,'push','origin','Edarsahub_Desarrollo')
  with pytest.raises(m.GitGuardError,match='REMOTE_MOVED_RETRY_REQUIRED'): m.compare_and_swap(l,start)
 def install_push_guard(repo):
  h=repo/'.git/hooks/pre-push';h.write_text('#!/bin/sh\n[ "${EDARSA_ALLOW_PUSH:-}" = 1 ] || { echo PUSH_DENIED; exit 9; }\n');h.chmod(0o755)
@@ -33,13 +33,13 @@ def test_case_8_push_without_guard_fails_no_pass(tmp_path):
 def test_case_9_authorized_fast_forward_topology_zero(tmp_path):
  m=load_guard();_,l,_=setup_pair(tmp_path);install_push_guard(l);commit(l,'ok','x');r=m.authorized_push(l,args=['push','origin','HEAD:refs/heads/Edarsahub_Desarrollo'],job_id='case9',owner='test');assert r.returncode==0;e=m.post_push_verify(l,g(l,'rev-parse','HEAD').stdout.strip());assert e['topology']=='0/0' and e['terminal_status']=='CERTIFIED_GIT_SYNC'
 def test_case_10_two_writers_only_one_lock(tmp_path):
- m=load_guard();_,l,_=setup_pair(tmp_path);a=m.acquire_writer_lock(l,job_id='a',owner='one',owner_pid=os.getpid());
+ m=load_guard();_,l,_=setup_pair(tmp_path);a=m.acquire_writer_lock(l,job_id='a',owner='one',owner_pid=os.getpid())
  with pytest.raises(m.GitGuardError,match='GIT_LOCK_BUSY'): m.acquire_writer_lock(l,job_id='b',owner='two',owner_pid=os.getpid())
  m.release_writer_lock(l,a)
 def test_case_11_readonly_does_not_require_writer_lock(tmp_path):
  m=load_guard();_,l,_=setup_pair(tmp_path);a=m.acquire_writer_lock(l,job_id='w',owner='one',owner_pid=os.getpid());assert m.requires_writer_lock('READ_ONLY') is False and m.requires_writer_lock('MUTATION') is True;m.release_writer_lock(l,a)
 def test_case_12_out_of_scope_file_fails(tmp_path):
- m=load_guard();_,l,_=setup_pair(tmp_path);base=g(l,'rev-parse','HEAD').stdout.strip();commit(l,'allowed','a');commit(l,'extra','b');head=g(l,'rev-parse','HEAD').stdout.strip();
+ m=load_guard();_,l,_=setup_pair(tmp_path);base=g(l,'rev-parse','HEAD').stdout.strip();commit(l,'allowed','a');commit(l,'extra','b');head=g(l,'rev-parse','HEAD').stdout.strip()
  with pytest.raises(m.GitGuardError,match='GIT_SCOPE_VIOLATION'): m.validate_commit_scope(l,base,head,{'allowed'})
 def executable_lines(path): return '\n'.join(x.strip() for x in path.read_text().splitlines() if x.strip() and not x.lstrip().startswith('#'))
 def test_runtime_contract_has_no_destructive_commands_or_persistent_push_guard():
