@@ -16,6 +16,7 @@ import logging
 
 from .service import get_cava_socios_service
 from .persona_link_service import get_cava_socios_persona_link_service
+from .blind_audit_operational_service import get_cava_blind_audit_operational_service
 from core.auth.sql_user_identity import enrich_current_user_with_sql_id
 from core.rbac import require_explicit_permission
 from modules.rbac_context_sql.context_service import RBACContextService
@@ -215,6 +216,69 @@ class InventarioFisicoAplicarRequest(BaseModel):
     conteos: List[InventarioFisicoItem]
     observaciones_generales: Optional[str] = "Auditoría física de cava"
 
+
+class BlindAuditObservationInput(BaseModel):
+    """Captura ciega: no expone inventario esperado al operador."""
+    observation_id: str = Field(..., min_length=1, max_length=120)
+    observed_reference: str = Field(..., min_length=1, max_length=255)
+    observed_quantity: int = Field(default=1, ge=0)
+    observed_level_pct: Optional[float] = Field(default=None, ge=0, le=100)
+    evidence_id: Optional[str] = Field(default=None, max_length=160)
+    recognition_confidence: Optional[float] = Field(default=None, ge=0, le=1)
+
+
+class BlindAuditReconcileRequest(BaseModel):
+    """Reconciliacion sin escrituras ni ajustes automaticos."""
+    socio_id: Optional[str] = None
+    ubicacion: Optional[str] = Field(default=None, max_length=200)
+    idempotency_key: str = Field(..., min_length=1, max_length=160)
+    observations: List[BlindAuditObservationInput]
+    observation_to_bottle: Dict[str, str]
+    level_tolerance_pct: float = Field(default=5.0, ge=0, le=100)
+    min_recognition_confidence: float = Field(default=0.90, ge=0, le=1)
+
+
+@router.post("/auditorias-ciegas/reconciliar")
+async def reconciliar_auditoria_ciega(
+    data: BlindAuditReconcileRequest,
+    unidad_negocio_pk: Optional[str] = Query(None),
+    current_user: Dict = Depends(require_explicit_permission("CAVA_SOCIOS_VER")),
+):
+    """Compara captura ciega contra inventario canonico sin modificar existencias."""
+    scope = _resolve_cava_scope(current_user, unidad_negocio_pk)
+    cava_service = get_cava_socios_service()
+    inventory = cava_service.obtener_inventario_global(
+        empresa_id=scope["empresa_id"],
+        ubicacion=data.ubicacion,
+        estatus="EN_CAVA",
+        socio_id=data.socio_id,
+        skip=0,
+        limit=1000,
+    )
+    rows = inventory.get("botellas") or []
+    if not rows:
+        raise HTTPException(status_code=404, detail="No hay inventario elegible para auditar")
+
+    audit_service = get_cava_blind_audit_operational_service()
+    try:
+        result = audit_service.reconcile(
+            inventory_rows=rows,
+            observations=[item.model_dump() for item in data.observations],
+            observation_to_bottle=data.observation_to_bottle,
+            idempotency_key=data.idempotency_key,
+            level_tolerance_pct=data.level_tolerance_pct,
+            min_recognition_confidence=data.min_recognition_confidence,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+    return {
+        **result,
+        "empresa_id": scope["empresa_id"],
+        "unidad_negocio_pk": scope["unidad_negocio_pk"],
+        "socio_id": data.socio_id,
+        "ubicacion": data.ubicacion,
+    }
 
 
 # ==================== ENDPOINTS SOCIOS ====================
