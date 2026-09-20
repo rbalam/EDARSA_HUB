@@ -1,3 +1,4 @@
+# recovery trigger 2026-09-20T15:51Z after backend-tree reload attempt; preserve R3B and Cavas 16J; no Production
 # recovery trigger 2026-09-20T15:40Z stale R3B runtime; preserve queued Cavas 16J; no Production
 name: Universal Worker Wake Now
 # recovery trigger 2026-09-17T19:27-06:00 gate5d dedicated-writer contract ff-refresh
