@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "3a784313a0db9fa46e10bef48f396449b9a33c35",
-  "generated_at_utc": "2026-09-20T18:59:56Z",
+  "generated_at_utc": "2026-09-20T19:01:23Z",
   "history": {
     "done_total_local": 774,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1822,
+      "age_seconds": 1908,
       "job_id": "CAVAS-GATE16J-R2-FRONTEND-BUILD-RCA-READONLY-R1-20260920",
       "reasons": [
         "CHECK_1_INVALID_PATHS"
@@ -22,7 +22,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 864,
+      "age_seconds": 950,
       "job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-CERTIFICATION-MODE-R2C-20260920",
       "reasons": [
         "REQUESTER_EMAIL_INVALID",
@@ -32,31 +32,31 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2209,
+      "age_seconds": 2296,
       "job_id": "CAVAS-GATE16J-BLIND-AUDIT-MINIMAL-UI-IMPLEMENTATION-R2-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 383,
+      "age_seconds": 469,
       "job_id": "CAVAS-GATE16J-R2-FRONTEND-BUILD-CERT-DIAGNOSTIC-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 695,
+      "age_seconds": 782,
       "job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-FAILURE-EVIDENCE-HARDENING-CERT-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 843,
+      "age_seconds": 930,
       "job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-FAILURE-EVIDENCE-HARDENING-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 84,
+      "age_seconds": 170,
       "job_id": "EDARSAHUB-PREVIEW-OPAQUE-CROSSORIGIN-RUNTIME-ERROR-CONTAINMENT-R1-20260920",
       "reason": null,
       "state": "RUNNING"
@@ -74,8 +74,8 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-PREVIEW-OPAQUE-CROSSORIGIN-RUNTIME-ERROR-CONTAINMENT-R1-20260920",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-20T18:59:49Z",
-    "last_receive_utc": "2026-09-20T18:59:52Z",
+    "last_cycle_utc": "2026-09-20T19:01:16Z",
+    "last_receive_utc": "2026-09-20T19:01:21Z",
     "last_terminal_utc": "2026-09-20T18:53:33Z",
     "pid": "56"
   },
