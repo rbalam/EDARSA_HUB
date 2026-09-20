@@ -1,0 +1,213 @@
+{
+  "base_sha": "28f321af16a3512233c5ab3c16b8e2b26ceb4a33",
+  "blockers": [],
+  "candidate_sha": "6184be004def4ed74b6899cbef1c0c66e35914f0",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-20T03:27:39Z",
+  "development_sha": "6184be004def4ed74b6899cbef1c0c66e35914f0",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/cava_socios/adapter_sdk.py",
+    "backend/tests/test_cava_socios_adapter_sdk.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE16D-UNIVERSAL-CONNECTOR-ADAPTER-SDK-R1-20260919",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-20T03:28:22Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "migration_engine",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "adapter_code",
+              "checkpoint",
+              "connection_reference",
+              "extract_delta",
+              "extract_full",
+              "mpro",
+              "softrestaurant"
+            ],
+            "path": "backend/modules/cava_socios/adapter_sdk.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AdapterCapabilities",
+              "AdapterCheckpoint",
+              "AdapterContext",
+              "AdapterHealth",
+              "CavasSourceAdapter",
+              "ExtractionBatch",
+              "__post_init__",
+              "adapter_code",
+              "adapter_manifest",
+              "adapter_version",
+              "capabilities",
+              "discover",
+              "extract_delta",
+              "extract_full",
+              "health",
+              "validate_adapter_contract",
+              "validate_context",
+              "validate_extraction"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.integrations_center",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "api.admin_core_connections",
+              "collections",
+              "core.rbac_helper_sql",
+              "core.server_registry",
+              "modules.api_connections.repository",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "api_key",
+              "password"
+            ],
+            "path": "backend/modules/integrations_center/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_attach_health",
+              "_bool",
+              "_id_key",
+              "_normalize_connection",
+              "_scope_sucursales",
+              "get_catalogs",
+              "get_communications_summary",
+              "get_connection_detail",
+              "get_overview",
+              "list_connections"
+            ],
+            "tables_referenced": [
+              "Servidores_ConexionEstado",
+              "Servidores_Conexiones"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.connection_resolver.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.config.edarsahub_sql",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.unidades_service",
+              "dataclasses",
+              "datetime",
+              "enum",
+              "logging",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "api_key",
+              "mpro",
+              "password",
+              "softrestaurant"
+            ],
+            "path": "backend/core/connection_resolver.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ConnectionOrigin",
+              "ConnectionResolver",
+              "MetricType",
+              "ResolvedSource",
+              "SourceType",
+              "SystemType",
+              "__init__",
+              "__new__",
+              "_get_api_config",
+              "_get_db",
+              "_get_server_config",
+              "_log_resolution",
+              "get_connection_resolver",
+              "get_resolution_matrix",
+              "get_safe_dict",
+              "health_check",
+              "is_valid",
+              "resolve_source"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "adapter_code",
+              "checkpoint",
+              "connection_reference",
+              "extract_delta",
+              "extract_full",
+              "kavasoft",
+              "mpro",
+              "softrestaurant"
+            ],
+            "path": "docs/CAVAS/CAVAS_GATE16B_CANONICAL_INTEROPERABILITY_MIGRATION_CONTRACT.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 4,
+          "scanned_files": 5,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-20T03:27:00Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
