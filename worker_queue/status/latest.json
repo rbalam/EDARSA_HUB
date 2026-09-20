@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "5d49a1388267248630f7af564309ca89f6cd1176",
-  "generated_at_utc": "2026-09-20T04:15:42Z",
+  "generated_at_utc": "2026-09-20T04:17:02Z",
   "history": {
     "done_total_local": 759,
     "pending_total_local": 0,
@@ -13,7 +13,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 884,
+      "age_seconds": 964,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-DRY-RUN-READONLY-R1-20260920",
       "reasons": [
         "CHECK_1_REQUEST_REQUIRED"
@@ -22,37 +22,37 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2883,
+      "age_seconds": 2962,
       "job_id": "CAVAS-GATE16D-UNIVERSAL-CONNECTOR-ADAPTER-SDK-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 846,
+      "age_seconds": 926,
       "job_id": "CAVAS-GATE16E-EVIDENCE-CHAIN-OF-CUSTODY-MINIMAL-R1-20260919",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 676,
+      "age_seconds": 756,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-DRY-RUN-READONLY-R1B-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3352,
+      "age_seconds": 3431,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-PACKAGE-MANIFEST-READONLY-R1B-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3044,
+      "age_seconds": 3124,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-PATCH-PLAN-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2570,
+      "age_seconds": 2650,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RELEASE-PATCH-PLAN-READONLY-R1B-20260920",
       "reason": null,
       "state": "RESULT_READY"
@@ -70,8 +70,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-20T04:15:36Z",
-    "last_receive_utc": "2026-09-20T04:15:40Z",
+    "last_cycle_utc": "2026-09-20T04:17:01Z",
+    "last_receive_utc": "2026-09-20T04:16:56Z",
     "last_terminal_utc": "2026-09-20T04:04:26Z",
     "pid": "59"
   },
