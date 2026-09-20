@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "6411f1cbaf0ac069ba68074996fec3f319643e22",
-  "generated_at_utc": "2026-09-20T19:31:54Z",
+  "generated_at_utc": "2026-09-20T19:33:12Z",
   "history": {
     "done_total_local": 777,
     "pending_total_local": 0,
@@ -13,13 +13,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 514,
+      "age_seconds": 592,
       "job_id": "CAVAS-GATE16J-BLIND-AUDIT-MINIMAL-UI-IMPLEMENTATION-R4-20260920",
       "reason": "El worker no termino esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 2782,
+      "age_seconds": 2860,
       "job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-CERTIFICATION-MODE-R2C-20260920",
       "reasons": [
         "REQUESTER_EMAIL_INVALID",
@@ -29,7 +29,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1813,
+      "age_seconds": 1891,
       "job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-CERTIFICATION-MODE-R2D-20260920",
       "reasons": [
         "ACTIONS_REQUIRED"
@@ -38,55 +38,55 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1187,
+      "age_seconds": 1265,
       "job_id": "CAVAS-GATE16J-BLIND-AUDIT-MINIMAL-UI-IMPLEMENTATION-R3-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2301,
+      "age_seconds": 2379,
       "job_id": "CAVAS-GATE16J-R2-FRONTEND-BUILD-CERT-DIAGNOSTIC-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1107,
+      "age_seconds": 1185,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-IDEMPOTENT-CERT-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1339,
+      "age_seconds": 1417,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R10-UAT-SCOPE-FIX-LONJA-PLANTILLAS-IMPLEMENTATION-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 772,
+      "age_seconds": 850,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R24F-COMPAT-CERT-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1401,
+      "age_seconds": 1479,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R9-UAT-SCOPE-FIX-LONJA-PLANTILLAS-IMPLEMENTATION-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1772,
+      "age_seconds": 1850,
       "job_id": "EDARSAHUB-PREVIEW-OPAQUE-CROSSORIGIN-RUNTIME-ERROR-CONTAINMENT-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2613,
+      "age_seconds": 2691,
       "job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-FAILURE-EVIDENCE-HARDENING-CERT-READONLY-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2761,
+      "age_seconds": 2839,
       "job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-FAILURE-EVIDENCE-HARDENING-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
@@ -104,8 +104,8 @@
   "runtime": {
     "current_job_id": "CAVAS-GATE16J-BLIND-AUDIT-MINIMAL-UI-IMPLEMENTATION-R4-20260920",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-20T19:31:51Z",
-    "last_receive_utc": "2026-09-20T19:31:54Z",
+    "last_cycle_utc": "2026-09-20T19:33:09Z",
+    "last_receive_utc": "2026-09-20T19:33:12Z",
     "last_terminal_utc": "2026-09-20T19:19:02Z",
     "pid": "56"
   },
