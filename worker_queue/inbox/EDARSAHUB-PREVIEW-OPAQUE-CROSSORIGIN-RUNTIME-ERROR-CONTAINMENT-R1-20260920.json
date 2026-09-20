@@ -1,0 +1,56 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PREVIEW-OPAQUE-CROSSORIGIN-RUNTIME-ERROR-CONTAINMENT-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3a784313a0db9fa46e10bef48f396449b9a33c35",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Contener exclusivamente errores opacos cross-origin del runtime Preview que llegan como 'Script error.' sin filename ni Error object y disparan el overlay de React, preservando todos los errores first-party. Mantener emergent-main.js y PostHog intactos. No eliminar dependencias de Emergent, no ocultar errores de la aplicacion, no tocar Produccion. Validar frontend_build real.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/public/index.html",
+      "old": "        <script>window.addEventListener(\"error\",function(e){if(e.error instanceof DOMException&&e.error.name===\"DataCloneError\"&&e.message&&e.message.includes(\"PerformanceServerTiming\")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>",
+      "new": "        <script>\n            // EDARSAHUB runtime guard: only contains known browser/platform noise.\n            // First-party application errors are never swallowed.\n            window.addEventListener(\"error\", function (event) {\n                var isKnownPerformanceCloneError =\n                    event.error instanceof DOMException &&\n                    event.error.name === \"DataCloneError\" &&\n                    event.message &&\n                    event.message.includes(\"PerformanceServerTiming\");\n\n                var isOpaqueCrossOriginScriptError =\n                    event.message === \"Script error.\" &&\n                    !event.filename &&\n                    (event.error === null || event.error === undefined);\n\n                if (isKnownPerformanceCloneError || isOpaqueCrossOriginScriptError) {\n                    if (isOpaqueCrossOriginScriptError && window.console && console.warn) {\n                        console.warn(\"[EDARSAHUB_RUNTIME_GUARD] Opaque cross-origin script error contained\");\n                    }\n                    event.stopImmediatePropagation();\n                    event.preventDefault();\n                }\n            }, true);\n        </script>",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "frontend_build"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/public/index.html"
+        ],
+        "search_terms": [
+          "Script error.",
+          "event.filename",
+          "event.error === null",
+          "DataCloneError",
+          "PerformanceServerTiming",
+          "emergent-main.js",
+          "posthog.init",
+          "EDARSAHUB_RUNTIME_GUARD"
+        ],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "Do not remove or modify emergent-main.js",
+    "Do not remove or modify PostHog",
+    "Do not swallow first-party application errors",
+    "Only contain opaque cross-origin Script error events without filename/error object",
+    "No Cavas changes",
+    "No SQL"
+  ]
+}
