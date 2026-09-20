@@ -1,0 +1,134 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-SCOPE-FIX-LONJA-PLANTILLAS-FRONTEND-MUTATION-R3B-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "7395aa4c9b46e8348294a2c750a5058ca34e654f",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "13. Produccion",
+    "chat": "tablajerias"
+  },
+  "objective": "Reintentar R3 frontend corrigiendo whitespace detectado por git_diff_check. Alcance unico: PlantillasPage.jsx y OrdenesPage.jsx para crear/editar/duplicar/publicar plantillas y operar lonja individual con empresa/unidad/almacenes, doble control kg/pz y gramaje. No tocar Produccion, no ejecutar SQL, no deploy, no Scheduler, no NetPay, no RBAC/menu/layout transversal.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/tablajeria/PlantillasPage.jsx",
+      "expected_count": 1,
+      "old": "  const publicarPlantilla = async (plantillaId) => {\n    try {\n      await api.put(`/tablajeria/plantillas/${plantillaId}/publicar`);\n      toast.success('Plantilla publicada');\n      fetchPlantillas();\n      if (selectedPlantilla?.PlantillaID === plantillaId) {\n        fetchPlantillaDetalle(plantillaId);\n      }\n    } catch (err) {\n      toast.error(err.response?.data?.detail || 'Error publicando');\n    }\n  };",
+      "new": "  const publicarPlantilla = async (plantillaId) => {\n    try {\n      await api.put(`/tablajeria/plantillas/${plantillaId}/publicar`);\n      toast.success('Plantilla publicada');\n      fetchPlantillas();\n      if (selectedPlantilla?.PlantillaID === plantillaId) {\n        fetchPlantillaDetalle(plantillaId);\n      }\n    } catch (err) {\n      toast.error(err.response?.data?.detail || 'Error publicando');\n    }\n  };\n\n  const crearPlantillaBorrador = async () => {\n    const empresaId = prompt('EmpresaID para la plantilla:');\n    if (!empresaId) return;\n    const codigo = prompt('Codigo de plantilla:');\n    if (!codigo) return;\n    const nombre = prompt('Nombre de plantilla:');\n    if (!nombre) return;\n    const insumoCodigo = prompt('SKU/codigo de lonja base:') || null;\n    const insumoNombre = prompt('Nombre de lonja base:') || insumoCodigo || 'Lonja base';\n    try {\n      await api.post('/tablajeria/plantillas', {\n        empresa_id: empresaId,\n        codigo_plantilla: codigo,\n        nombre_plantilla: nombre,\n        insumo_base_codigo: insumoCodigo,\n        insumo_base_nombre: insumoNombre,\n        unidad_base_codigo: 'KG',\n        cantidad_base_estandar: 1,\n        detalles: []\n      });\n      toast.success('Plantilla creada en borrador');\n      fetchPlantillas();\n    } catch (err) {\n      toast.error(err.response?.data?.detail || 'Error creando plantilla');\n    }\n  };\n\n  const editarPlantillaBasica = async () => {\n    if (!selectedPlantilla?.PlantillaID) {\n      toast.error('Selecciona una plantilla');\n      return;\n    }\n    const nuevoNombre = prompt('Nuevo nombre:', selectedPlantilla.NombrePlantilla || '');\n    if (!nuevoNombre) return;\n    const rendimiento = prompt('Rendimiento esperado %:', selectedPlantilla.RendimientoEsperadoPorcentaje || '');\n    const merma = prompt('Merma esperada %:', selectedPlantilla.MermaEsperadaPorcentaje || '');\n    const payload = { nombre_plantilla: nuevoNombre };\n    if (rendimiento) payload.rendimiento_esperado_porcentaje = Number(rendimiento);\n    if (merma) payload.merma_esperada_porcentaje = Number(merma);\n    try {\n      await api.put(`/tablajeria/plantillas/${selectedPlantilla.PlantillaID}`, payload);\n      toast.success('Plantilla actualizada');\n      fetchPlantillas();\n      fetchPlantillaDetalle(selectedPlantilla.PlantillaID);\n    } catch (err) {\n      toast.error(err.response?.data?.detail || 'Error editando plantilla');\n    }\n  };\n\n  const duplicarPlantillaSeleccionada = async () => {\n    if (!selectedPlantilla?.PlantillaID) {\n      toast.error('Selecciona una plantilla');\n      return;\n    }\n    const codigo = prompt('Codigo de nueva version:', `${selectedPlantilla.CodigoPlantilla || 'PLANTILLA'}-V${Number(selectedPlantilla.VersionActual || 1) + 1}`);\n    if (!codigo) return;\n    const nombre = prompt('Nombre de nueva version:', `${selectedPlantilla.NombrePlantilla || 'Plantilla'} v${Number(selectedPlantilla.VersionActual || 1) + 1}`);\n    if (!nombre) return;\n    try {\n      const response = await api.post(`/tablajeria/plantillas/${selectedPlantilla.PlantillaID}/duplicar`, {\n        codigo_plantilla: codigo,\n        nombre_plantilla: nombre,\n        descripcion: selectedPlantilla.Descripcion || null,\n        motivo_version: 'Version creada desde UAT frontend R3B'\n      });\n      toast.success('Version de plantilla creada');\n      fetchPlantillas();\n      if (response.data?.plantilla_id) fetchPlantillaDetalle(response.data.plantilla_id);\n    } catch (err) {\n      toast.error(err.response?.data?.detail || 'Error duplicando plantilla');\n    }\n  };"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/tablajeria/PlantillasPage.jsx",
+      "expected_count": 1,
+      "old": "        <Button onClick={fetchPlantillas} variant=\"outline\" size=\"sm\">\n          <RefreshCw className=\"h-4 w-4 mr-2\" />\n          Actualizar\n        </Button>",
+      "new": "        <div className=\"flex gap-2\">\n          <Button onClick={crearPlantillaBorrador} size=\"sm\">\n            Crear plantilla\n          </Button>\n          <Button onClick={fetchPlantillas} variant=\"outline\" size=\"sm\">\n            <RefreshCw className=\"h-4 w-4 mr-2\" />\n            Actualizar\n          </Button>\n        </div>"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/tablajeria/PlantillasPage.jsx",
+      "expected_count": 1,
+      "old": "                  {/* Acciones */}\n                  {['SINCRONIZADA', 'VALIDADA', 'BORRADOR'].includes(selectedPlantilla.Estatus) && (\n                    <Button \n                      className=\"w-full\"\n                      onClick={() => publicarPlantilla(selectedPlantilla.PlantillaID)}\n                    >\n                      <CheckCircle className=\"h-4 w-4 mr-2\" />\n                      Publicar Plantilla\n                    </Button>\n                  )}",
+      "new": "                  {/* Acciones */}\n                  <div className=\"space-y-2\">\n                    {['BORRADOR', 'OBSERVADA'].includes(selectedPlantilla.Estatus) && (\n                      <Button className=\"w-full\" variant=\"outline\" onClick={editarPlantillaBasica}>\n                        Editar plantilla\n                      </Button>\n                    )}\n                    <Button className=\"w-full\" variant=\"outline\" onClick={duplicarPlantillaSeleccionada}>\n                      Duplicar / nueva version\n                    </Button>\n                    {['SINCRONIZADA', 'VALIDADA', 'BORRADOR'].includes(selectedPlantilla.Estatus) && (\n                      <Button\n                        className=\"w-full\"\n                        onClick={() => publicarPlantilla(selectedPlantilla.PlantillaID)}\n                      >\n                        <CheckCircle className=\"h-4 w-4 mr-2\" />\n                        Publicar Plantilla\n                      </Button>\n                    )}\n                  </div>"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/tablajeria/OrdenesPage.jsx",
+      "expected_count": 1,
+      "old": "  const [ordenes, setOrdenes] = useState([]);\n  const [plantillas, setPlantillas] = useState([]);",
+      "new": "  const [ordenes, setOrdenes] = useState([]);\n  const [plantillas, setPlantillas] = useState([]);\n  const [lonjasDisponibles, setLonjasDisponibles] = useState([]);"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/tablajeria/OrdenesPage.jsx",
+      "expected_count": 1,
+      "old": "  const [formCrear, setFormCrear] = useState({\n    plantilla_id: '',\n    cantidad_base_planeada: '',\n    lote_insumo: '',\n    observaciones: ''\n  });",
+      "new": "  const emptyFormCrear = {\n    empresa_id: '',\n    unidad_negocio_pk: '',\n    almacen_origen_id: '',\n    almacen_destino_id: '',\n    plantilla_id: '',\n    cantidad_base_planeada: '',\n    lote_insumo: '',\n    lonja_id: '',\n    lonja_codigo: '',\n    lonja_nombre: '',\n    lonja_peso_kg: '',\n    lonja_costo_total: '',\n    observaciones: ''\n  };\n\n  const [formCrear, setFormCrear] = useState(emptyFormCrear);"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/tablajeria/OrdenesPage.jsx",
+      "expected_count": 1,
+      "old": "  const fetchPlantillas = async () => {\n    try {\n      const response = await api.get('/tablajeria/plantillas?estatus=PUBLICADA&limit=100');\n      // También incluir SINCRONIZADA y VALIDADA para pruebas\n      const response2 = await api.get('/tablajeria/plantillas?estatus=SINCRONIZADA&limit=100');\n      const response3 = await api.get('/tablajeria/plantillas?estatus=VALIDADA&limit=100');\n      const all = [\n        ...(response.data.plantillas || []),\n        ...(response2.data.plantillas || []),\n        ...(response3.data.plantillas || [])\n      ];\n      setPlantillas(all);\n    } catch (err) {\n      console.error('Error fetching plantillas:', err);\n    }\n  };",
+      "new": "  const fetchPlantillas = async () => {\n    try {\n      const response = await api.get('/tablajeria/plantillas?estatus=PUBLICADA&limit=100');\n      // También incluir SINCRONIZADA y VALIDADA para pruebas\n      const response2 = await api.get('/tablajeria/plantillas?estatus=SINCRONIZADA&limit=100');\n      const response3 = await api.get('/tablajeria/plantillas?estatus=VALIDADA&limit=100');\n      const all = [\n        ...(response.data.plantillas || []),\n        ...(response2.data.plantillas || []),\n        ...(response3.data.plantillas || [])\n      ];\n      setPlantillas(all);\n    } catch (err) {\n      console.error('Error fetching plantillas:', err);\n    }\n  };\n\n  const getLonja = (lonja, keys) => {\n    for (const key of keys) {\n      if (lonja?.[key] !== undefined && lonja?.[key] !== null && lonja?.[key] !== '') return lonja[key];\n    }\n    return '';\n  };\n\n  const fetchLonjasDisponibles = async () => {\n    try {\n      const params = new URLSearchParams({ limit: '100' });\n      if (formCrear.empresa_id) params.append('empresa_id', formCrear.empresa_id);\n      if (formCrear.unidad_negocio_pk) params.append('unidad_negocio_pk', formCrear.unidad_negocio_pk);\n      if (formCrear.almacen_origen_id) params.append('almacen_origen_id', formCrear.almacen_origen_id);\n      const response = await api.get(`/tablajeria/lonjas-disponibles?${params}`);\n      setLonjasDisponibles(response.data.lonjas || []);\n      toast.success(`Lonjas disponibles: ${response.data.total || 0}`);\n    } catch (err) {\n      toast.error(err.response?.data?.detail || 'Error cargando lonjas disponibles');\n    }\n  };\n\n  const seleccionarLonja = (lonjaId) => {\n    const lonja = lonjasDisponibles.find((item) => String(getLonja(item, ['lonja_id', 'LonjaID', 'LoteID', 'id'])) === String(lonjaId));\n    if (!lonja) {\n      setFormCrear({ ...formCrear, lonja_id: lonjaId });\n      return;\n    }\n    const pesoKg = getLonja(lonja, ['peso_kg', 'PesoKg', 'PesoKG', 'CantidadKg', 'CantidadBaseKg']);\n    setFormCrear({\n      ...formCrear,\n      empresa_id: formCrear.empresa_id || getLonja(lonja, ['empresa_id', 'EmpresaID']),\n      unidad_negocio_pk: formCrear.unidad_negocio_pk || getLonja(lonja, ['unidad_negocio_pk', 'UnidadNegocioID']),\n      almacen_origen_id: formCrear.almacen_origen_id || getLonja(lonja, ['almacen_origen_id', 'AlmacenOrigenID', 'AlmacenID']),\n      lonja_id: lonjaId,\n      lonja_codigo: getLonja(lonja, ['insumo_base_codigo', 'InsumoBaseCodigo', 'ProductoCodigo', 'Codigo']),\n      lonja_nombre: getLonja(lonja, ['insumo_base_nombre', 'InsumoBaseNombre', 'ProductoNombre', 'Nombre']),\n      lonja_peso_kg: pesoKg,\n      lonja_costo_total: getLonja(lonja, ['costo_total', 'CostoTotal', 'ImporteCosto']),\n      lote_insumo: getLonja(lonja, ['lote_insumo', 'LoteInsumo', 'LoteProveedor', 'LoteInterno']),\n      cantidad_base_planeada: pesoKg\n    });\n  };"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/tablajeria/OrdenesPage.jsx",
+      "expected_count": 1,
+      "old": "      const plantilla = plantillas.find(p => p.PlantillaID === formCrear.plantilla_id);\n      const response = await api.post('/tablajeria/ordenes', {\n        empresa_id: plantilla?.EmpresaID || '00000000-0000-0000-0000-000000000001',\n        plantilla_id: formCrear.plantilla_id,\n        fecha_operacion_mexico: new Date().toISOString().split('T')[0],\n        cantidad_base_planeada: parseFloat(formCrear.cantidad_base_planeada),\n        lote_insumo: formCrear.lote_insumo || null,\n        observaciones: formCrear.observaciones || null\n      });",
+      "new": "      const plantilla = plantillas.find(p => p.PlantillaID === formCrear.plantilla_id);\n      const empresaId = formCrear.empresa_id || plantilla?.EmpresaID;\n      if (!empresaId) {\n        toast.error('Selecciona o captura empresa/unidad antes de crear la orden');\n        return;\n      }\n      const response = await api.post('/tablajeria/ordenes', {\n        empresa_id: empresaId,\n        unidad_negocio_pk: formCrear.unidad_negocio_pk || plantilla?.UnidadNegocioID || null,\n        plantilla_id: formCrear.plantilla_id,\n        fecha_operacion_mexico: new Date().toISOString().split('T')[0],\n        cantidad_base_planeada: parseFloat(formCrear.cantidad_base_planeada),\n        lote_insumo: formCrear.lote_insumo || null,\n        almacen_origen_id: formCrear.almacen_origen_id || null,\n        almacen_destino_id: formCrear.almacen_destino_id || null,\n        lonja_id: formCrear.lonja_id || null,\n        lonja_codigo: formCrear.lonja_codigo || null,\n        lonja_nombre: formCrear.lonja_nombre || null,\n        lonja_peso_kg: formCrear.lonja_peso_kg ? parseFloat(formCrear.lonja_peso_kg) : null,\n        lonja_costo_total: formCrear.lonja_costo_total ? parseFloat(formCrear.lonja_costo_total) : null,\n        observaciones: formCrear.observaciones || null\n      });"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/tablajeria/OrdenesPage.jsx",
+      "expected_count": 1,
+      "old": "      setShowCrearModal(false);\n      setFormCrear({ plantilla_id: '', cantidad_base_planeada: '', lote_insumo: '', observaciones: '' });\n      fetchOrdenes();",
+      "new": "      setShowCrearModal(false);\n      setFormCrear(emptyFormCrear);\n      setLonjasDisponibles([]);\n      fetchOrdenes();"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/tablajeria/OrdenesPage.jsx",
+      "expected_count": 1,
+      "old": "      detalles: orden.detalles?.map(d => ({\n        orden_detalle_id: d.OrdenDetalleID,\n        nombre: d.ProductoDerivadoNombre,\n        tipo: d.TipoDerivado,\n        cantidad_esperada: d.CantidadEsperada,\n        cantidad_real: '',\n        peso_real_kg: ''\n      })) || []",
+      "new": "      detalles: orden.detalles?.map(d => ({\n        orden_detalle_id: d.OrdenDetalleID,\n        nombre: d.ProductoDerivadoNombre,\n        tipo: d.TipoDerivado,\n        cantidad_esperada: d.CantidadEsperada,\n        cantidad_real: '',\n        peso_real_kg: '',\n        piezas_reales: '',\n        gramaje_pieza_g: d.GramajePiezaG || d.gramaje_pieza_g || '',\n        sku_kg_codigo: d.SkuKgCodigo || d.SKUKgCodigo || d.sku_kg_codigo || '',\n        sku_pieza_codigo: d.SkuPiezaCodigo || d.SKUPiezaCodigo || d.sku_pieza_codigo || '',\n        costo_fijo: Boolean(d.CostoFijo || d.costo_fijo),\n        prorratea_costo: d.ProrrateaCosto !== false\n      })) || []"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/tablajeria/OrdenesPage.jsx",
+      "expected_count": 1,
+      "old": "      const detalles = formResultados.detalles\n        .filter(d => d.cantidad_real)\n        .map(d => ({\n          orden_detalle_id: d.orden_detalle_id,\n          cantidad_real: parseFloat(d.cantidad_real),\n          peso_real_kg: d.peso_real_kg ? parseFloat(d.peso_real_kg) : null\n        }));",
+      "new": "      const detalles = formResultados.detalles\n        .filter(d => d.cantidad_real || d.peso_real_kg || d.piezas_reales)\n        .map(d => ({\n          orden_detalle_id: d.orden_detalle_id,\n          cantidad_real: d.cantidad_real ? parseFloat(d.cantidad_real) : null,\n          peso_real_kg: d.peso_real_kg ? parseFloat(d.peso_real_kg) : null,\n          piezas_reales: d.piezas_reales ? parseFloat(d.piezas_reales) : null,\n          gramaje_pieza_g: d.gramaje_pieza_g ? parseFloat(d.gramaje_pieza_g) : null,\n          sku_kg_codigo: d.sku_kg_codigo || null,\n          sku_pieza_codigo: d.sku_pieza_codigo || null,\n          costo_fijo: d.costo_fijo,\n          prorratea_costo: d.prorratea_costo\n        }));"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/tablajeria/OrdenesPage.jsx",
+      "expected_count": 1,
+      "old": "          <Button onClick={() => setShowCrearModal(true)} size=\"sm\">\n            <Plus className=\"h-4 w-4 mr-2\" />\n            Nueva Orden\n          </Button>",
+      "new": "          <Button onClick={() => { setShowCrearModal(true); fetchLonjasDisponibles(); }} size=\"sm\">\n            <Plus className=\"h-4 w-4 mr-2\" />\n            Nueva Orden\n          </Button>"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/tablajeria/OrdenesPage.jsx",
+      "expected_count": 1,
+      "old": "            <div>\n              <Label>Cantidad Base Planeada *</Label>\n              <Input\n                type=\"number\"\n                step=\"0.01\"\n                value={formCrear.cantidad_base_planeada}\n                onChange={(e) => setFormCrear({...formCrear, cantidad_base_planeada: e.target.value})}\n                placeholder=\"Ej: 10.5\"\n              />\n            </div>\n            <div>\n              <Label>Lote de Insumo</Label>",
+      "new": "            <div className=\"grid grid-cols-2 gap-3\">\n              <div>\n                <Label>Empresa *</Label>\n                <Input\n                  value={formCrear.empresa_id}\n                  onChange={(e) => setFormCrear({...formCrear, empresa_id: e.target.value})}\n                  placeholder=\"EmpresaID\"\n                />\n              </div>\n              <div>\n                <Label>Unidad de negocio</Label>\n                <Input\n                  value={formCrear.unidad_negocio_pk}\n                  onChange={(e) => setFormCrear({...formCrear, unidad_negocio_pk: e.target.value})}\n                  placeholder=\"UnidadNegocioID\"\n                />\n              </div>\n            </div>\n            <div className=\"grid grid-cols-2 gap-3\">\n              <div>\n                <Label>Almacen origen</Label>\n                <Input\n                  value={formCrear.almacen_origen_id}\n                  onChange={(e) => setFormCrear({...formCrear, almacen_origen_id: e.target.value})}\n                  placeholder=\"Almacen lonja\"\n                />\n              </div>\n              <div>\n                <Label>Almacen destino / cocina</Label>\n                <Input\n                  value={formCrear.almacen_destino_id}\n                  onChange={(e) => setFormCrear({...formCrear, almacen_destino_id: e.target.value})}\n                  placeholder=\"Almacen produccion\"\n                />\n              </div>\n            </div>\n            <div>\n              <div className=\"flex items-center justify-between mb-1\">\n                <Label>Lonja individual no procesada</Label>\n                <Button type=\"button\" variant=\"outline\" size=\"sm\" onClick={fetchLonjasDisponibles}>Buscar lonjas</Button>\n              </div>\n              <select\n                value={formCrear.lonja_id}\n                onChange={(e) => seleccionarLonja(e.target.value)}\n                className=\"w-full px-3 py-2 border rounded-md text-sm\"\n              >\n                <option value=\"\">Seleccionar lonja disponible...</option>\n                {lonjasDisponibles.map((lonja, idx) => {\n                  const id = String(getLonja(lonja, ['lonja_id', 'LonjaID', 'LoteID', 'id']) || idx);\n                  const nombre = getLonja(lonja, ['insumo_base_nombre', 'InsumoBaseNombre', 'ProductoNombre', 'Nombre']) || 'Lonja';\n                  const lote = getLonja(lonja, ['lote_insumo', 'LoteInsumo', 'LoteProveedor', 'LoteInterno']) || 'sin lote';\n                  const peso = getLonja(lonja, ['peso_kg', 'PesoKg', 'PesoKG', 'CantidadKg', 'CantidadBaseKg']) || '-';\n                  return <option key={id} value={id}>{nombre} · {lote} · {peso} kg</option>;\n                })}\n              </select>\n              {formCrear.lonja_id && (\n                <p className=\"text-xs text-zinc-500 mt-1\">{formCrear.lonja_nombre || formCrear.lonja_codigo} · {formCrear.lote_insumo || 'sin lote'} · {formCrear.lonja_peso_kg || '-'} kg</p>\n              )}\n            </div>\n            <div>\n              <Label>Cantidad Base Planeada *</Label>\n              <Input\n                type=\"number\"\n                step=\"0.001\"\n                value={formCrear.cantidad_base_planeada}\n                onChange={(e) => setFormCrear({...formCrear, cantidad_base_planeada: e.target.value})}\n                placeholder=\"Peso real de la lonja\"\n              />\n            </div>\n            <div>\n              <Label>Lote de Insumo</Label>"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/tablajeria/OrdenesPage.jsx",
+      "expected_count": 1,
+      "old": "                      <div className=\"w-24\">\n                        <Input\n                          type=\"number\"\n                          step=\"0.01\"\n                          placeholder=\"Real\"\n                          value={d.cantidad_real}\n                          onChange={(e) => {\n                            const updated = [...formResultados.detalles];\n                            updated[idx].cantidad_real = e.target.value;\n                            setFormResultados({...formResultados, detalles: updated});\n                          }}\n                        />\n                      </div>",
+      "new": "                      <div className=\"w-24\">\n                        <Input\n                          type=\"number\"\n                          step=\"1\"\n                          placeholder=\"Pz\"\n                          value={d.piezas_reales}\n                          onChange={(e) => {\n                            const updated = [...formResultados.detalles];\n                            updated[idx].piezas_reales = e.target.value;\n                            const gramaje = Number(updated[idx].gramaje_pieza_g || 0);\n                            if (gramaje > 0 && e.target.value) {\n                              const kg = (Number(e.target.value) * gramaje) / 1000;\n                              updated[idx].peso_real_kg = kg.toFixed(3);\n                              updated[idx].cantidad_real = kg.toFixed(3);\n                            }\n                            setFormResultados({...formResultados, detalles: updated});\n                          }}\n                        />\n                      </div>\n                      <div className=\"w-28\">\n                        <Input\n                          type=\"number\"\n                          step=\"0.001\"\n                          placeholder=\"Kg\"\n                          value={d.peso_real_kg}\n                          onChange={(e) => {\n                            const updated = [...formResultados.detalles];\n                            updated[idx].peso_real_kg = e.target.value;\n                            updated[idx].cantidad_real = e.target.value;\n                            setFormResultados({...formResultados, detalles: updated});\n                          }}\n                        />\n                        <p className=\"text-[10px] text-zinc-500 mt-1\">{d.gramaje_pieza_g ? `${d.gramaje_pieza_g} g/pz` : 'kg manual'}</p>\n                      </div>"
+    }
+  ],
+  "checks": [
+    {"type": "git_diff_check"},
+    {"type": "frontend_build", "directory": "frontend"},
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/tablajeria/PlantillasPage.jsx",
+          "frontend/src/pages/tablajeria/OrdenesPage.jsx"
+        ],
+        "search_terms": [
+          "crearPlantillaBorrador",
+          "duplicarPlantillaSeleccionada",
+          "editarPlantillaBasica",
+          "lonjas-disponibles",
+          "seleccionarLonja",
+          "piezas_reales",
+          "gramaje_pieza_g",
+          "almacen_destino_id"
+        ],
+        "max_results": 50
+      }
+    }
+  ]
+}
