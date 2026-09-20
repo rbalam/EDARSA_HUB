@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "111cc69429f1f1b3ee23623c53ab23500ca5fcef",
-  "generated_at_utc": "2026-09-20T16:16:41Z",
+  "generated_at_utc": "2026-09-20T16:17:58Z",
   "history": {
     "done_total_local": 772,
     "pending_total_local": 1,
@@ -13,31 +13,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 74,
+      "age_seconds": 150,
       "job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-CERTIFICATION-MODE-R2-20260920",
       "reason": null,
       "state": "PENDING"
     },
     {
-      "age_seconds": 728,
+      "age_seconds": 805,
       "job_id": "BOS-AGENT-HARNESS-V1-RH-SOLICITUDES-CANONICAL-MAPPING-PREFLIGHT-GATE30-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 731,
+      "age_seconds": 808,
       "job_id": "CAVAS-GATE16J-BLIND-AUDIT-MINIMAL-UI-IMPLEMENTATION-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 708,
+      "age_seconds": 785,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-UAT-SCOPE-FIX-LONJA-PLANTILLAS-FRONTEND-MUTATION-R3B-20260920",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "oldest_pending_age_seconds": 74,
+  "oldest_pending_age_seconds": 150,
   "production_touched": false,
   "queue_blocked": 0,
   "queue_depth": 1,
@@ -49,8 +49,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-20T16:16:38Z",
-    "last_receive_utc": "2026-09-20T16:16:41Z",
+    "last_cycle_utc": "2026-09-20T16:17:56Z",
+    "last_receive_utc": "2026-09-20T16:17:51Z",
     "last_terminal_utc": "2026-09-20T16:04:52Z",
     "pid": "43043"
   },
