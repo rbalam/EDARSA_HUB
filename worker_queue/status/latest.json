@@ -1,7 +1,7 @@
 {
   "branch": "Edarsahub_Desarrollo",
   "development_sha": "cb832d6b9555b82819e8165f5793a8c0c86d1b29",
-  "generated_at_utc": "2026-09-20T20:31:21Z",
+  "generated_at_utc": "2026-09-20T20:34:09Z",
   "history": {
     "done_total_local": 778,
     "pending_total_local": 0,
@@ -13,13 +13,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1983,
+      "age_seconds": 2151,
       "job_id": "CAVAS-GATE16J-BLIND-AUDIT-MINIMAL-UI-IMPLEMENTATION-R4-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 395,
+      "age_seconds": 563,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-NEXT-WORKER-INTAKE-READONLY-R1-20260920T1423",
       "reason": null,
       "state": "RESULT_READY"
@@ -37,8 +37,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-20T20:31:21Z",
-    "last_receive_utc": "2026-09-20T20:31:16Z",
+    "last_cycle_utc": "2026-09-20T20:34:09Z",
+    "last_receive_utc": "2026-09-20T20:34:04Z",
     "last_terminal_utc": "2026-09-20T20:24:45Z",
     "pid": "183756"
   },
