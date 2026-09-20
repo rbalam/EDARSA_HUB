@@ -1,0 +1,88 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE16E-EVIDENCE-CHAIN-OF-CUSTODY-MINIMAL-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6184be004def4ed74b6899cbef1c0c66e35914f0",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Gate 16E: implementar la cadena de custodia minima y pura para evidencias de Cavas. Debe modelar referencias de almacenamiento, hash SHA-256 del contenido, timestamps con timezone, actor/dispositivo opcionales, procedencia historica y encadenamiento anti-tamper. Debe ser compatible con FotoIngresoURL/FotoEvidenciaURL existentes sin crear un Object Storage paralelo. Sin SQL, uploads, endpoints, storage real, frontend ni Produccion.",
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/cava_socios/evidence_chain.py",
+      "content": "\"\"\"Cadena de custodia pura para evidencias de Cavas.\n\nNo almacena binarios, no resuelve URLs, no escribe SQL y no conoce proveedores.\nModela integridad, procedencia y encadenamiento auditable sobre referencias\nexternas/almacenadas por infraestructura canonica.\n\"\"\"\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom datetime import datetime\nfrom enum import Enum\nimport hashlib\nimport json\nfrom typing import Any, Mapping, Optional\n\n\nclass EvidenceKind(str, Enum):\n    BOTTLE_ENTRY = \"BOTTLE_ENTRY\"\n    MOVEMENT = \"MOVEMENT\"\n    CONSUMPTION = \"CONSUMPTION\"\n    AUDIT = \"AUDIT\"\n    HISTORICAL_IMPORT = \"HISTORICAL_IMPORT\"\n\n\n@dataclass(frozen=True)\nclass EvidenceReference:\n    evidence_id: str\n    kind: EvidenceKind\n    subject_type: str\n    subject_id: str\n    occurred_at: datetime\n    captured_at: datetime\n    storage_reference: str\n    content_sha256: str\n    mime_type: str\n    source_system: Optional[str] = None\n    source_record_id: Optional[str] = None\n    actor_id: Optional[str] = None\n    device_reference: Optional[str] = None\n    previous_chain_hash: Optional[str] = None\n    metadata: Optional[Mapping[str, Any]] = None\n\n    def __post_init__(self) -> None:\n        for value, name in [\n            (self.evidence_id, \"evidence_id\"),\n            (self.subject_type, \"subject_type\"),\n            (self.subject_id, \"subject_id\"),\n            (self.storage_reference, \"storage_reference\"),\n            (self.content_sha256, \"content_sha256\"),\n            (self.mime_type, \"mime_type\"),\n        ]:\n            if not str(value or \"\").strip():\n                raise ValueError(f\"{name} es requerido\")\n        _require_aware(self.occurred_at, \"occurred_at\")\n        _require_aware(self.captured_at, \"captured_at\")\n        if len(self.content_sha256) != 64 or any(c not in \"0123456789abcdefABCDEF\" for c in self.content_sha256):\n            raise ValueError(\"content_sha256 debe ser SHA-256 hexadecimal\")\n\n    @property\n    def chain_hash(self) -> str:\n        payload = {\n            \"evidence_id\": self.evidence_id,\n            \"kind\": self.kind.value,\n            \"subject_type\": self.subject_type,\n            \"subject_id\": self.subject_id,\n            \"occurred_at\": self.occurred_at.isoformat(),\n            \"captured_at\": self.captured_at.isoformat(),\n            \"storage_reference\": self.storage_reference,\n            \"content_sha256\": self.content_sha256.lower(),\n            \"mime_type\": self.mime_type,\n            \"source_system\": self.source_system,\n            \"source_record_id\": self.source_record_id,\n            \"actor_id\": self.actor_id,\n            \"device_reference\": self.device_reference,\n            \"previous_chain_hash\": self.previous_chain_hash,\n            \"metadata\": dict(self.metadata or {}),\n        }\n        encoded = json.dumps(payload, sort_keys=True, separators=(\",\", \":\"), ensure_ascii=False).encode(\"utf-8\")\n        return hashlib.sha256(encoded).hexdigest()\n\n\ndef sha256_bytes(content: bytes) -> str:\n    return hashlib.sha256(content).hexdigest()\n\n\ndef build_evidence(\n    *,\n    evidence_id: str,\n    kind: EvidenceKind,\n    subject_type: str,\n    subject_id: str,\n    occurred_at: datetime,\n    captured_at: datetime,\n    storage_reference: str,\n    content: bytes,\n    mime_type: str,\n    source_system: Optional[str] = None,\n    source_record_id: Optional[str] = None,\n    actor_id: Optional[str] = None,\n    device_reference: Optional[str] = None,\n    previous: Optional[EvidenceReference] = None,\n    metadata: Optional[Mapping[str, Any]] = None,\n) -> EvidenceReference:\n    return EvidenceReference(\n        evidence_id=evidence_id,\n        kind=kind,\n        subject_type=subject_type,\n        subject_id=subject_id,\n        occurred_at=occurred_at,\n        captured_at=captured_at,\n        storage_reference=storage_reference,\n        content_sha256=sha256_bytes(content),\n        mime_type=mime_type,\n        source_system=source_system,\n        source_record_id=source_record_id,\n        actor_id=actor_id,\n        device_reference=device_reference,\n        previous_chain_hash=previous.chain_hash if previous else None,\n        metadata=metadata,\n    )\n\n\ndef verify_chain(*items: EvidenceReference) -> bool:\n    if not items:\n        return False\n    previous_hash: Optional[str] = None\n    for item in items:\n        if item.previous_chain_hash != previous_hash:\n            return False\n        previous_hash = item.chain_hash\n    return True\n\n\ndef verify_content(reference: EvidenceReference, content: bytes) -> bool:\n    return sha256_bytes(content) == reference.content_sha256.lower()\n\n\ndef historical_evidence_metadata(\n    *,\n    source_system: str,\n    source_record_id: str,\n    imported_at: datetime,\n    migration_batch_id: Optional[str] = None,\n) -> Mapping[str, str]:\n    _require_aware(imported_at, \"imported_at\")\n    result = {\n        \"source_system\": str(source_system or \"\").strip(),\n        \"source_record_id\": str(source_record_id or \"\").strip(),\n        \"imported_at\": imported_at.isoformat(),\n    }\n    if not result[\"source_system\"] or not result[\"source_record_id\"]:\n        raise ValueError(\"source_system y source_record_id son requeridos\")\n    if migration_batch_id:\n        result[\"migration_batch_id\"] = str(migration_batch_id)\n    return result\n\n\ndef _require_aware(value: datetime, name: str) -> None:\n    if value.tzinfo is None or value.utcoffset() is None:\n        raise ValueError(f\"{name} debe incluir zona horaria\")\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_cava_socios_evidence_chain.py",
+      "content": "from datetime import datetime, timezone\n\nimport pytest\n\nfrom modules.cava_socios.evidence_chain import (\n    EvidenceKind,\n    EvidenceReference,\n    build_evidence,\n    historical_evidence_metadata,\n    sha256_bytes,\n    verify_chain,\n    verify_content,\n)\n\n\nNOW = datetime(2026, 9, 19, 20, 0, tzinfo=timezone.utc)\n\n\ndef test_build_and_verify_content():\n    content = b\"photo-bytes\"\n    ref = build_evidence(\n        evidence_id=\"E1\",\n        kind=EvidenceKind.BOTTLE_ENTRY,\n        subject_type=\"BOTTLE\",\n        subject_id=\"B1\",\n        occurred_at=NOW,\n        captured_at=NOW,\n        storage_reference=\"legacy-url://photo/1\",\n        content=content,\n        mime_type=\"image/jpeg\",\n    )\n    assert ref.content_sha256 == sha256_bytes(content)\n    assert verify_content(ref, content) is True\n    assert verify_content(ref, b\"tampered\") is False\n\n\ndef test_chain_detects_reordering_or_missing_link():\n    first = build_evidence(\n        evidence_id=\"E1\",\n        kind=EvidenceKind.BOTTLE_ENTRY,\n        subject_type=\"BOTTLE\",\n        subject_id=\"B1\",\n        occurred_at=NOW,\n        captured_at=NOW,\n        storage_reference=\"ref://1\",\n        content=b\"1\",\n        mime_type=\"image/jpeg\",\n    )\n    second = build_evidence(\n        evidence_id=\"E2\",\n        kind=EvidenceKind.CONSUMPTION,\n        subject_type=\"BOTTLE\",\n        subject_id=\"B1\",\n        occurred_at=NOW,\n        captured_at=NOW,\n        storage_reference=\"ref://2\",\n        content=b\"2\",\n        mime_type=\"image/jpeg\",\n        previous=first,\n    )\n    assert verify_chain(first, second) is True\n    assert verify_chain(second, first) is False\n\n\ndef test_metadata_change_changes_chain_hash():\n    base = dict(\n        evidence_id=\"E1\",\n        kind=EvidenceKind.AUDIT,\n        subject_type=\"BOTTLE\",\n        subject_id=\"B1\",\n        occurred_at=NOW,\n        captured_at=NOW,\n        storage_reference=\"ref://1\",\n        content_sha256=sha256_bytes(b\"x\"),\n        mime_type=\"image/jpeg\",\n    )\n    a = EvidenceReference(**base, metadata={\"nivel\": 75})\n    b = EvidenceReference(**base, metadata={\"nivel\": 50})\n    assert a.chain_hash != b.chain_hash\n\n\ndef test_timestamps_must_be_timezone_aware():\n    with pytest.raises(ValueError, match=\"zona horaria\"):\n        EvidenceReference(\n            evidence_id=\"E1\",\n            kind=EvidenceKind.AUDIT,\n            subject_type=\"BOTTLE\",\n            subject_id=\"B1\",\n            occurred_at=datetime(2026, 1, 1),\n            captured_at=NOW,\n            storage_reference=\"ref://1\",\n            content_sha256=sha256_bytes(b\"x\"),\n            mime_type=\"image/jpeg\",\n        )\n\n\ndef test_historical_metadata_preserves_source_and_import_time():\n    meta = historical_evidence_metadata(\n        source_system=\"LEGACY_CAVA\",\n        source_record_id=\"PHOTO-99\",\n        imported_at=NOW,\n        migration_batch_id=\"MIG-1\",\n    )\n    assert meta[\"source_system\"] == \"LEGACY_CAVA\"\n    assert meta[\"source_record_id\"] == \"PHOTO-99\"\n    assert meta[\"migration_batch_id\"] == \"MIG-1\"\n\n\ndef test_invalid_hash_rejected():\n    with pytest.raises(ValueError, match=\"SHA-256\"):\n        EvidenceReference(\n            evidence_id=\"E1\",\n            kind=EvidenceKind.AUDIT,\n            subject_type=\"BOTTLE\",\n            subject_id=\"B1\",\n            occurred_at=NOW,\n            captured_at=NOW,\n            storage_reference=\"ref://1\",\n            content_sha256=\"abc\",\n            mime_type=\"image/jpeg\",\n        )\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/cava_socios/evidence_chain.py",
+        "backend/tests/test_cava_socios_evidence_chain.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios_evidence_chain.py",
+        "backend/tests/test_cava_socios_adapter_sdk.py",
+        "backend/tests/test_cava_socios_migration_engine.py",
+        "backend/tests/test_cava_socios_domain.py",
+        "backend/tests/test_cava_socios.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/evidence_chain.py",
+          "backend/modules/cava_socios/service.py",
+          "backend/modules/cava_socios/routes.py",
+          "backend/scripts/create_cava_socios_tables.py",
+          "docs/CAVAS/CAVAS_GATE16B_CANONICAL_INTEROPERABILITY_MIGRATION_CONTRACT.md"
+        ],
+        "search_terms": [
+          "FotoIngresoURL",
+          "FotoEvidenciaURL",
+          "foto_evidencia",
+          "foto_url",
+          "sha256",
+          "storage_reference",
+          "Object Storage",
+          "evidence"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.md"
+        ],
+        "exclude_patterns": [
+          "*.env",
+          "*secret*",
+          "*password*"
+        ],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "Do not create or assume a new object storage provider",
+    "No SQL DDL/DML and no SQL connection",
+    "No uploads/downloads/network calls",
+    "No endpoints/routes/frontend/scheduler",
+    "Preserve compatibility with existing evidence URL fields",
+    "Historical evidence must preserve original source reference",
+    "All timestamps timezone-aware",
+    "Tamper detection must be deterministic",
+    "Production forbidden"
+  ]
+}
