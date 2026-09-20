@@ -1,0 +1,23 @@
+{
+  "base_sha": "6411f1cbaf0ac069ba68074996fec3f319643e22",
+  "blockers": [
+    "GIT_SCOPE_VIOLATION:extra=;missing=backend/modules/tablajeria/sql/uatscope_lonja_plantillas.sql,backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py,docs/TABLAJERIA_UAT_SCOPE_FIX_LONJA_PLANTILLAS_IMPLEMENTATION_R1.md"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-20T19:09:35Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R10-UAT-SCOPE-FIX-LONJA-PLANTILLAS-IMPLEMENTATION-20260920",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-20T19:09:46Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-20T19:09:30Z",
+  "status": "GIT_SCOPE_VIOLATION",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "work_completion": "NOT_CERTIFIED"
+}
