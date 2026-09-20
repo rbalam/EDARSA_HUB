@@ -1,0 +1,73 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-LOCAL-AHEAD-RECOVERY-CERT-READONLY-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "07476de9813fabee6867212216495495517c06bc",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar en READ_ONLY el SHA 07476de9813fabee6867212216495495517c06bc que implementa la recuperación canónica de LOCAL_AHEAD_ONLY. Verificar recuperación autorizada, fail-closed para ownership no demostrado, preservación recovery ref antes del fast-forward, writer lock, compare-and-swap, ausencia de reset/clean/stash/merge/rebase/force y la nueva telemetría local_development_sha/remote_development_sha/ahead_count/behind_count/convergence_status. No modificar archivos, no tocar Producción y no avanzar Cavas.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/git_divergence_guard.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "backend/tests/test_git_divergence_guard_r1.py"
+        ],
+        "search_terms": [
+          "recover_authorized_local_ahead",
+          "prove_authorized_local_ahead",
+          "AUTHORIZED_LOCAL_AHEAD_EMAILS",
+          "LOCAL_AHEAD_OWNERSHIP_UNPROVEN",
+          "recovery/authorized-local-ahead",
+          "compare_and_swap",
+          "CERTIFIED_GIT_SYNC",
+          "local_development_sha",
+          "remote_development_sha",
+          "ahead_count",
+          "behind_count",
+          "convergence_status",
+          "reset --hard",
+          "git clean",
+          "stash",
+          "rebase",
+          "force"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_git_divergence_guard_r1.py"
+      ]
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/git_divergence_guard.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/runtime_health_publisher.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No file changes",
+    "No Production",
+    "No Cavas changes",
+    "Certification requires PASS tests and fail-closed ownership behavior"
+  ]
+}
