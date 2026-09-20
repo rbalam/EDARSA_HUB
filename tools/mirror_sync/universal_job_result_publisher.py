@@ -198,6 +198,37 @@ def sanitize_repository_evidence(result: dict[str, Any]) -> dict[str, Any] | Non
     return {"checks": sanitized_checks} if sanitized_checks else None
 
 
+
+def sanitize_frontend_build_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
+    """Expose only the tail needed to diagnose frontend build failures.
+
+    Never publishes environment variables or raw executor metadata.
+    Potentially sensitive lines are replaced before publication.
+    """
+    evidence = []
+    sensitive_tokens = ("secret", "token", "password", "authorization", "cookie", "apikey", "api_key")
+    for check in result.get("checks") or []:
+        if not isinstance(check, dict) or check.get("type") != "frontend_build":
+            continue
+        raw = str(check.get("output") or "")
+        safe_lines = []
+        for line in raw.splitlines():
+            lowered = line.lower()
+            if any(token in lowered for token in sensitive_tokens):
+                safe_lines.append("[REDACTED_SENSITIVE_LINE]")
+            else:
+                safe_lines.append(line)
+        tail = "\n".join(safe_lines)[-4000:]
+        evidence.append({
+            "status": check.get("status"),
+            "returncode": check.get("returncode"),
+            "started_at_utc": check.get("started_at_utc"),
+            "completed_at_utc": check.get("completed_at_utc"),
+            "output_tail": tail,
+        })
+    return {"checks": evidence} if evidence else None
+
+
 GENERIC_READ_ONLY_CHECKS = frozenset({"py_compile", "pytest", "git_diff_check"})
 
 
@@ -439,6 +470,9 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
     repository_evidence = sanitize_repository_evidence(result)
     if repository_evidence is not None:
         public["repository_contract_evidence"] = repository_evidence
+    frontend_build_evidence = sanitize_frontend_build_evidence(result)
+    if frontend_build_evidence is not None:
+        public["frontend_build_evidence"] = frontend_build_evidence
 
     evidence = certification_evidence(result)
 
