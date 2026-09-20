@@ -1,0 +1,64 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-FAILURE-EVIDENCE-HARDENING-CERT-READONLY-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3a784313a0db9fa46e10bef48f396449b9a33c35",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar READ_ONLY el hardening ya integrado que publica evidencia sanitizada de frontend_build fallidos. Verificar implementacion, redaccion de secretos, limite de 4000 caracteres, pruebas y ausencia de cambios adicionales. No modificar producto ni Produccion.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "backend/tests/test_worker_frontend_build_failure_evidence.py"
+        ],
+        "search_terms": [
+          "sanitize_frontend_build_evidence",
+          "frontend_build_evidence",
+          "output_tail",
+          "4000",
+          "REDACTED_SENSITIVE_LINE",
+          "secret",
+          "token",
+          "password",
+          "authorization",
+          "cookie",
+          "apikey",
+          "api_key"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "backend/tests/test_worker_frontend_build_failure_evidence.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_frontend_build_failure_evidence.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY",
+    "No file changes",
+    "No Production",
+    "No product behavior changes"
+  ]
+}
