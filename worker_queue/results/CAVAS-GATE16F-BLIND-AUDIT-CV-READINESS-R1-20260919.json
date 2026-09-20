@@ -1,0 +1,227 @@
+{
+  "base_sha": "5d49a1388267248630f7af564309ca89f6cd1176",
+  "blockers": [],
+  "candidate_sha": "7f0a832404b311893ab8632612dbd9d5b77098dd",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-20T04:18:27Z",
+  "development_sha": "7f0a832404b311893ab8632612dbd9d5b77098dd",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/cava_socios/blind_audit.py",
+    "backend/tests/test_cava_socios_blind_audit.py",
+    "docs/CAVAS/CAVAS_GATE16F_BLIND_AUDIT_CV_READINESS.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE16F-BLIND-AUDIT-CV-READINESS-R1-20260919",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-20T04:18:43Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "enum",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "expected",
+              "model",
+              "object_storage",
+              "observation",
+              "review_required"
+            ],
+            "path": "backend/modules/cava_socios/blind_audit.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AuditFinding",
+              "BlindAuditResult",
+              "BlindAuditStatus",
+              "BlindObservation",
+              "ExpectedBottle",
+              "VisionReadinessRequest",
+              "VisionRecognitionCandidate",
+              "__post_init__",
+              "_level_mismatch",
+              "_required",
+              "_validate_pct",
+              "clean",
+              "reconcile_blind_audit",
+              "requires_review",
+              "validate_vision_candidates"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "datetime",
+              "enum",
+              "hashlib",
+              "json",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "model"
+            ],
+            "path": "backend/modules/cava_socios/evidence_chain.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EvidenceKind",
+              "EvidenceReference",
+              "__post_init__",
+              "_require_aware",
+              "build_evidence",
+              "chain_hash",
+              "historical_evidence_metadata",
+              "sha256_bytes",
+              "verify_chain",
+              "verify_content"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.object_storage.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "logging",
+              "os",
+              "requests"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "object_storage"
+            ],
+            "path": "backend/core/object_storage.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_emergent_key",
+              "get_object",
+              "init_storage",
+              "put_object"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.ai_gateway_policy_adapter.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_procedure_policy",
+              "dataclasses",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "authorize_model_route",
+              "model",
+              "provider"
+            ],
+            "path": "backend/core/ai_gateway_policy_adapter.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ModelCandidate",
+              "ModelRouteDecision",
+              "ModelRouteRequest",
+              "PreparedModelRoute",
+              "_candidate_scope",
+              "_estimate_cost",
+              "authorize_model_route"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.agent_execution_gate.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_reach_policy_adapter",
+              "core.ai_gateway_policy_adapter",
+              "dataclasses",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "authorize_model_route",
+              "model"
+            ],
+            "path": "backend/core/agent_execution_gate.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ExecutionGateDecision",
+              "_requester_reasons",
+              "authorize_ai_inference_execution",
+              "authorize_external_research_execution"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "model",
+              "object_storage",
+              "provider",
+              "review_required",
+              "vision_image_analysis"
+            ],
+            "path": "docs/CAVAS/CAVAS_GATE16F_BLIND_AUDIT_CV_READINESS.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 6,
+          "scanned_files": 6,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-20T04:17:50Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
