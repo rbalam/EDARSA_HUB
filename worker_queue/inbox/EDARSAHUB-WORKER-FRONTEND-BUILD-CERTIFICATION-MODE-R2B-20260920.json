@@ -1,0 +1,56 @@
+{
+  "schema": "edarsahub.worker.job-request.v1",
+  "job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-CERTIFICATION-MODE-R2B-20260920",
+  "source_job": "EDARSAHUB-WORKER-FRONTEND-BUILD-CERTIFICATION-MODE-R1-20260918",
+  "branch": "Edarsahub_Desarrollo",
+  "head_at_publish": "111cc69429f1f1b3ee23623c53ab23500ca5fcef",
+  "module": "worker",
+  "area": "universal_worker",
+  "gate": "FRONTEND_BUILD_CERTIFICATION_MODE_R2B",
+  "mode": "FRONTEND_BUILD_CERTIFICATION",
+  "mutation_class": "BUILD_ONLY_CERTIFICATION",
+  "objective": "Certificar el modo canonico FRONTEND_BUILD_CERTIFICATION del Universal Worker publicando por la ruta canonica worker_queue/inbox para que universal_job_bridge genere el pending envelope valido. No publicar R24E-R9 ni R24F. No tocar Produccion, SQL, Mongo, backend funcional ni logica de producto.",
+  "production_touched": false,
+  "actions": [],
+  "checks": [
+    {
+      "type": "frontend_build",
+      "required": true,
+      "expected": "PASS"
+    },
+    {
+      "type": "git_diff_check",
+      "required": true,
+      "expected": "PASS"
+    },
+    {
+      "type": "repository_contract_audit",
+      "required": true,
+      "expected": "PASS"
+    }
+  ],
+  "guardrails": [
+    "NO_PRODUCTION_TOUCH",
+    "NO_DB_CONNECTIONS",
+    "NO_SQL_MUTATION",
+    "NO_MONGO",
+    "NO_HARDCODE",
+    "NO_R24F",
+    "NO_PRODUCT_CODE_MUTATION",
+    "NO_SCHEMA_MUTATION",
+    "NO_BUSINESS_LOGIC_CHANGE",
+    "ACTIONS_MUST_BE_EMPTY",
+    "BUILD_ONLY_CERTIFICATION",
+    "PUBLISH_VIA_WORKER_QUEUE_INBOX_ONLY"
+  ],
+  "expected_result": {
+    "certification": "CERTIFIED",
+    "quality_gate": "PASS",
+    "frontend_build": "PASS",
+    "git_diff_check": "PASS",
+    "repository_contract_audit": "PASS",
+    "production_touched": false,
+    "blockers": []
+  },
+  "created_at_utc": "2026-09-20T16:22:53.485776+00:00"
+}
