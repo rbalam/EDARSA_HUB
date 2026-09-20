@@ -1,0 +1,73 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-P0-HARDENING-DESIGN-READONLY-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9a880bfc92905345351d0ced6e5087f4816aafe2",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar y diseñar el endurecimiento P0 del Universal Worker para operación autónoma, rápida y tolerante a fallos. El control plane debe quedar independiente del backend Preview y de mirror-sync; el intake debe seguir polling autónomo; HTTP wake será solo acelerador/fallback. Definir recuperación inmediata de PID muerto y writer-lock huérfano, SLA de pickup <=30s, processing huérfano 90-120s con un único retry seguro, observabilidad de cursor/pickup/result publisher, y pruebas de crash/restart. Mantener las protecciones Git actuales: writer lock, CAS, isolated worktrees, LOCAL_AHEAD ownership proof, recovery refs, scope guard y postcheck 0/0. No tocar Producción ni dominios funcionales.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/universal_job_worker.sh",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/mirror_sync/worker_runtime_reconciler.py",
+          "tools/mirror_sync/mirror_sync_worker.sh",
+          "backend/modules/worker_runtime_wake/routes.py",
+          ".github/workflows/worker-requests-wake.yml",
+          ".github/workflows/universal-worker-wake-now.yml",
+          ".github/workflows/worker-wake-endpoint-bootstrap.yml",
+          "backend/tests/test_worker_control_plane_contract.py",
+          "backend/tests/test_worker_universal_queue_sla_contract.py",
+          "backend/tests/test_worker_mirror_single_owner_contract.py"
+        ],
+        "search_terms": [
+          "UNIVERSAL_WORKER_INTAKE_SECONDS",
+          "last_receive_utc",
+          "last_cycle_utc",
+          "PROCESSING_GRACE",
+          "HEARTBEAT_STALE",
+          "git-writer.lock",
+          "current_job_id",
+          "worker_control_plane.py",
+          "mirror-sync",
+          "worker_runtime_wake",
+          "preferred_job",
+          "result_publisher",
+          "LOCAL_AHEAD_ONLY",
+          "processing_stale_after_single_requeue",
+          "supervisorctl"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.yml",
+          "*.yaml"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1500
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No file changes",
+    "No Production",
+    "No Cavas changes",
+    "No weakening Git safety guards",
+    "Design must eliminate hard dependency on backend Preview and mirror-sync for Worker recovery",
+    "Design must specify deterministic SLAs and fail-closed behavior"
+  ]
+}
