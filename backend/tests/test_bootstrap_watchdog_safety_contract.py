@@ -61,11 +61,12 @@ def test_mirror_supervisor_does_not_autostart():
     assert "autorestart=true" in text
 
 
-def test_bootstrap_does_not_own_universal_worker_restart():
+def test_bootstrap_can_recover_stale_universal_worker_without_mirror_dependency():
     text = body()
-    assert "DEFER_TO_CANONICAL_WORKER_OWNER" in text
-    assert "EXTERNAL_CANONICAL_OWNER" in text
-    assert 'supervisor_restart("WORKER_HEARTBEAT_STALE")' not in text
+    assert 'WORKER_SERVICE = os.environ.get("EDARSAHUB_UNIVERSAL_WORKER_SERVICE", "edarsahub-universal-worker")' in text
+    assert "UNIVERSAL_WORKER_STALE_RECOVERY" in text
+    assert "BOOTSTRAP_WATCHDOG_SUPERVISOR_FALLBACK" in text
+    assert 'supervisor_restart("WORKER_HEARTBEAT_STALE", WORKER_SERVICE)' in text
 
 
 def test_bootstrap_may_restart_mirror_only_after_ff():
