@@ -1,0 +1,126 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "000-EDARSAHUB-WORKER-INTAKE-PICKUP-RECOVERY-READONLY-R1-20260920T1435",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6411f1cbaf0ac069ba68074996fec3f319643e22",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "priority": "P0",
+  "requester": {
+    "source": "chatgpt_classic",
+    "project": "13. Produccion",
+    "chat": "tablajerias"
+  },
+  "objective": "Auditar en READ_ONLY por que el Universal Worker no ha tomado el job EDARSAHUB-OPERACIONES-TABLAJERIAS-NEXT-WORKER-INTAKE-READONLY-R1-20260920T1423. Determinar estado real de intake/pickup del worker, runtime, preferred_job, locks, jobs 000 de mayor prioridad, freshness de status/latest.json y rutas de cola. No mutar nada. No limpiar nada. No tocar Produccion. No tocar Tablajerias. Entregar diagnostico operativo y siguiente accion segura.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "worker_intake_audit",
+      "request": {
+        "branch": "worker/requests",
+        "target_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-NEXT-WORKER-INTAKE-READONLY-R1-20260920T1423",
+        "inspect_paths": [
+          "worker_queue/inbox",
+          "worker_queue/processing",
+          "worker_queue/results",
+          "worker_queue/rejected",
+          "worker_queue/status/latest.json",
+          ".git/universal-worker-queue/pending",
+          ".git/universal-worker-queue/processing",
+          ".git/universal-worker-queue/results",
+          ".git/universal-worker-queue/done",
+          ".git/universal-worker-queue/published",
+          ".git/universal-worker-queue/rejected",
+          ".git/universal-worker-queue/preferred_job"
+        ],
+        "questions": [
+          "Is the worker process alive?",
+          "Is status/latest.json stale?",
+          "Is worker/requests being fetched by runtime?",
+          "Is the target job still only in inbox?",
+          "Is there processing/result/rejected state for target job?",
+          "Is a preferred_job active or orphaned?",
+          "Are 000-prefixed jobs starving normal jobs?",
+          "Is there a lock/worktree preventing pickup?",
+          "Is schema v2 accepted by current intake?",
+          "Is the job path worker_queue/inbox correct for current worker?"
+        ]
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "worker_queue/README.md",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/mirror_sync_worker.sh",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "backend/modules/worker_console",
+          "backend/modules/worker_runtime_wake/routes.py",
+          "backend/tests/test_worker_universal_queue_sla_contract.py",
+          "backend/tests/test_worker_control_plane_contract.py"
+        ],
+        "search_terms": [
+          "worker_queue/inbox",
+          "preferred_job",
+          "current_job_id",
+          "status/latest.json",
+          "last_cycle_utc",
+          "last_receive_utc",
+          "RESULT_READY",
+          "processing",
+          "rejected",
+          "schema v2",
+          "edarsahub.worker-job.v2",
+          "priority",
+          "000"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.md",
+          "*.json"
+        ],
+        "exclude_patterns": [
+          "**/__pycache__/**",
+          "**/node_modules/**"
+        ],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty",
+    "No file changes in Edarsahub_Desarrollo",
+    "No SQL execution",
+    "No DDL or DML execution",
+    "No Production",
+    "No Tablajerias mutation",
+    "No Scheduler changes",
+    "No NetPay changes",
+    "No preferred_job cleanup unless separately authorized later",
+    "No deleting queue files",
+    "No reset, clean, stash, force push, merge or rebase",
+    "No secrets or credentials in output"
+  ],
+  "required_output": [
+    "worker_alive",
+    "status_latest_freshness",
+    "target_job_state",
+    "pickup_blocker_root_cause",
+    "preferred_job_state",
+    "queue_priority_starvation_assessment",
+    "schema_v2_acceptance_assessment",
+    "lock_or_worktree_state",
+    "production_touched_false_confirmed",
+    "safe_next_action",
+    "blockers"
+  ],
+  "created_at_utc": "2026-09-20T20:35:00Z"
+}
