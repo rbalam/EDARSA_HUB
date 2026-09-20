@@ -1,0 +1,73 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12K-PERSONA-LINK-BACKEND-CERT-READONLY-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "7f0a832404b311893ab8632612dbd9d5b77098dd",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar exclusivamente en READ_ONLY que la implementación backend existente de Gate12K para CavaSocios -> Gobierno_Persona está completa, canónica y no duplica identidades. Verificar servicio persona_link_service.py, endpoints de routes.py, pruebas existentes, RBAC, transacciones, idempotencia, bloqueo de reemplazo implícito, creación explícita de Persona, vínculo opcional Cliente vía Gobierno_PersonaVinculo, desvinculación sin borrar registros canónicos y ausencia de matching automático por nombre/email/teléfono. Confirmar además que la base sigue con 2 socios, 0 PersonaID asignados, 0 Gobierno_Persona y 0 Gobierno_PersonaVinculo, sin tocar Producción ni escribir SQL.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/persona_link_service.py",
+          "backend/modules/cava_socios/routes.py",
+          "backend/tests/test_cava_socios_persona_link.py",
+          "backend/modules/cava_socios/service.py"
+        ],
+        "search_terms": [
+          "CavaSociosPersonaLinkService",
+          "buscar_personas",
+          "obtener_link",
+          "vincular_persona_existente",
+          "crear_persona_y_vincular",
+          "desvincular_persona",
+          "WITH (UPDLOCK, HOLDLOCK)",
+          "Gobierno_PersonaVinculo",
+          "Gobierno_Persona",
+          "PersonaID",
+          "ClienteID",
+          "CAVA_SOCIOS_VER",
+          "CAVA_SOCIOS_EDITAR",
+          "desvincule explícitamente",
+          "no se creará una identidad duplicada",
+          "DELETE"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "identity_guard",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS db_user,ORIGINAL_LOGIN() AS original_login;"
+        },
+        {
+          "name": "cava_socios_link_state",
+          "sql": "SELECT COUNT_BIG(*) AS total_socios,SUM(CASE WHEN PersonaID IS NULL THEN 1 ELSE 0 END) AS sin_persona,SUM(CASE WHEN PersonaID IS NOT NULL THEN 1 ELSE 0 END) AS con_persona FROM dbo.CavaSocios_Socios;"
+        },
+        {
+          "name": "persona_state",
+          "sql": "SELECT COUNT_BIG(*) AS total_personas FROM dbo.Gobierno_Persona;"
+        },
+        {
+          "name": "persona_vinculo_state",
+          "sql": "SELECT COUNT_BIG(*) AS total_vinculos FROM dbo.Gobierno_PersonaVinculo;"
+        },
+        {
+          "name": "cava_persona_fk_state",
+          "sql": "SELECT fk.name AS fk_name,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk WHERE fk.parent_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND fk.name=N'FK_CavaSocios_Socios_GobiernoPersona';"
+        }
+      ]
+    }
+  ]
+}
