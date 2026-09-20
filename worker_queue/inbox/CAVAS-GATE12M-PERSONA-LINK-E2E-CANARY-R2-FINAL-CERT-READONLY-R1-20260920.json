@@ -1,0 +1,93 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE12M-PERSONA-LINK-E2E-CANARY-R2-FINAL-CERT-READONLY-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "7f0a832404b311893ab8632612dbd9d5b77098dd",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Cerrar exclusivamente el hueco documental de Gate12M mediante certificacion READ_ONLY del estado ya integrado por CAVAS-GATE12M-PERSONA-LINK-E2E-CANARY-R2-20260918. No reejecutar el canario ni modificar codigo/SQL/datos. Verificar que la prueba canaria integrada sigue presente y conserva el contrato BOS Socio -> Gobierno_Persona, que la limpieza en finally evita residuos, que no existe matching automatico por nombre/email/telefono, que SocioID sigue siendo identidad de membresia, que Botellas/Cargos/Movimientos permanecen por SocioID, y que el estado fisico actual no muestra residuos de Persona/PersonaVinculo/socios vinculados atribuibles al canario. Produccion prohibida.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/tests/test_cava_socios_persona_link_gate12m_canary.py",
+          "backend/modules/cava_socios/persona_link_service.py",
+          "backend/modules/cava_socios/routes.py",
+          "backend/modules/cava_socios/service.py",
+          "backend/database/migrations/20260910_cavas_socios_persona_link.sql"
+        ],
+        "search_terms": [
+          "test_gate12m_single_controlled_persona_link_canary",
+          "_cleanup_canary",
+          "finally",
+          "Gobierno_Persona",
+          "Gobierno_PersonaVinculo",
+          "PersonaID",
+          "SocioID",
+          "ClienteCRMID",
+          "crear_persona_y_vincular",
+          "desvincular_persona",
+          "vincular_persona_existente",
+          "matching",
+          "NombreCompleto",
+          "Email",
+          "Telefono"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sql"
+        ],
+        "exclude_patterns": [],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "identity_guard",
+          "sql": "SELECT DB_NAME() AS database_name,SUSER_SNAME() AS login_name,USER_NAME() AS db_user,ORIGINAL_LOGIN() AS original_login;"
+        },
+        {
+          "name": "cava_socios_link_state",
+          "sql": "SELECT COUNT_BIG(*) AS total_socios,SUM(CASE WHEN PersonaID IS NULL THEN 1 ELSE 0 END) AS socios_sin_persona,SUM(CASE WHEN PersonaID IS NOT NULL THEN 1 ELSE 0 END) AS socios_con_persona FROM dbo.CavaSocios_Socios;"
+        },
+        {
+          "name": "persona_state",
+          "sql": "SELECT COUNT_BIG(*) AS total_personas FROM dbo.Gobierno_Persona;"
+        },
+        {
+          "name": "persona_vinculo_state",
+          "sql": "SELECT COUNT_BIG(*) AS total_vinculos FROM dbo.Gobierno_PersonaVinculo;"
+        },
+        {
+          "name": "cava_persona_fk_state",
+          "sql": "SELECT fk.name AS fk_name,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk WHERE fk.parent_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND fk.name=N'FK_CavaSocios_Socios_GobiernoPersona';"
+        },
+        {
+          "name": "child_socios_fk_state",
+          "sql": "SELECT OBJECT_NAME(fk.parent_object_id) AS child_table,fk.name AS fk_name,fk.is_disabled,fk.is_not_trusted FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id WHERE fk.referenced_object_id=OBJECT_ID(N'dbo.CavaSocios_Socios') AND OBJECT_NAME(fk.parent_object_id) IN (N'CavaSocios_Botellas',N'CavaSocios_Cargos',N'CavaSocios_Movimientos') AND pc.name=N'SocioID' AND rc.name=N'SocioID' ORDER BY child_table;"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No canary rerun",
+    "No code changes",
+    "No SQL writes",
+    "No DDL",
+    "No backfill",
+    "No Persona creation",
+    "No PersonaVinculo creation",
+    "No automatic matching by NombreCompleto Email or Telefono",
+    "SocioID remains membership identity",
+    "Botellas Cargos Movimientos remain linked by SocioID",
+    "Production forbidden",
+    "No Mongo runtime"
+  ]
+}
