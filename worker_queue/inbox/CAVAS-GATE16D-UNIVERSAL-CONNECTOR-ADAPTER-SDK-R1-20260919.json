@@ -1,0 +1,90 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE16D-UNIVERSAL-CONNECTOR-ADAPTER-SDK-R1-20260919",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "28f321af16a3512233c5ab3c16b8e2b26ceb4a33",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Gate 16D: implementar el SDK proveedor-neutral del Universal Cavas Connector, exclusivamente como contrato puro de adapters sobre el Migration Engine certificado en 16C. Debe definir capacidades, contexto por referencia de conexion, health, full/delta extraction, checkpoints, validacion de instancia y manifest. Sin resolver conexiones, sin secretos, sin SQL, sin adapters de proveedor concretos, sin endpoints ni Scheduler.",
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/modules/cava_socios/adapter_sdk.py",
+      "content": "\"\"\"SDK proveedor-neutral para adapters de Cavas.\n\nNo resuelve conexiones, no contiene secretos, no escribe SQL y no conoce\nproveedores concretos. Las conexiones se obtienen fuera de este SDK mediante\nla infraestructura canonica de EDARSAHUB.\n\"\"\"\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom typing import Iterable, Mapping, Optional, Protocol, Sequence, runtime_checkable\n\nfrom .migration_engine import ExternalRecord\n\n\n@dataclass(frozen=True)\nclass AdapterCapabilities:\n    full_extract: bool\n    delta_extract: bool\n    evidence_extract: bool = False\n    supports_checkpoint: bool = False\n    supports_historical_timestamps: bool = True\n\n\n@dataclass(frozen=True)\nclass AdapterContext:\n    source_instance_id: str\n    connection_reference: Optional[str]\n    timezone: str\n    currency: Optional[str] = None\n    locale: Optional[str] = None\n\n    def __post_init__(self) -> None:\n        if not str(self.source_instance_id or \"\").strip():\n            raise ValueError(\"source_instance_id es requerido\")\n        if not str(self.timezone or \"\").strip():\n            raise ValueError(\"timezone es requerido\")\n\n\n@dataclass(frozen=True)\nclass AdapterHealth:\n    ok: bool\n    code: str = \"OK\"\n    message: Optional[str] = None\n\n\n@dataclass(frozen=True)\nclass AdapterCheckpoint:\n    value: str\n\n    def __post_init__(self) -> None:\n        if not str(self.value or \"\").strip():\n            raise ValueError(\"checkpoint vacio\")\n\n\n@dataclass(frozen=True)\nclass ExtractionBatch:\n    records: tuple[ExternalRecord, ...]\n    next_checkpoint: Optional[AdapterCheckpoint] = None\n\n    def __post_init__(self) -> None:\n        keys = [record.identity.idempotency_key() for record in self.records]\n        if len(keys) != len(set(keys)):\n            raise ValueError(\"adapter produjo identidades externas duplicadas\")\n\n\n@runtime_checkable\nclass CavasSourceAdapter(Protocol):\n    \"\"\"Contrato implementado por adapters SoftRestaurant/MPRO/legacy futuros.\"\"\"\n\n    @property\n    def adapter_code(self) -> str: ...\n\n    @property\n    def adapter_version(self) -> str: ...\n\n    def capabilities(self) -> AdapterCapabilities: ...\n\n    def validate_context(self, context: AdapterContext) -> None: ...\n\n    def health(self, context: AdapterContext) -> AdapterHealth: ...\n\n    def discover(self, context: AdapterContext) -> Mapping[str, object]: ...\n\n    def extract_full(self, context: AdapterContext) -> ExtractionBatch: ...\n\n    def extract_delta(\n        self,\n        context: AdapterContext,\n        checkpoint: AdapterCheckpoint,\n    ) -> ExtractionBatch: ...\n\n\ndef validate_adapter_contract(adapter: CavasSourceAdapter) -> None:\n    \"\"\"Valida identidad/capacidades sin abrir conexiones.\"\"\"\n    code = str(getattr(adapter, \"adapter_code\", \"\") or \"\").strip()\n    version = str(getattr(adapter, \"adapter_version\", \"\") or \"\").strip()\n    if not code:\n        raise ValueError(\"adapter_code es requerido\")\n    if not version:\n        raise ValueError(\"adapter_version es requerido\")\n\n    caps = adapter.capabilities()\n    if caps.delta_extract and not caps.supports_checkpoint:\n        raise ValueError(\"delta_extract requiere supports_checkpoint\")\n\n\ndef validate_extraction(\n    batch: ExtractionBatch,\n    *,\n    expected_source_instance_id: str,\n) -> None:\n    \"\"\"Impide que un adapter mezcle instancias en un mismo contexto.\"\"\"\n    wanted = str(expected_source_instance_id or \"\").strip()\n    if not wanted:\n        raise ValueError(\"expected_source_instance_id es requerido\")\n\n    for record in batch.records:\n        if record.identity.source_instance_id != wanted:\n            raise ValueError(\"adapter devolvio registro de otra source_instance\")\n\n\ndef adapter_manifest(adapter: CavasSourceAdapter) -> Mapping[str, object]:\n    validate_adapter_contract(adapter)\n    caps = adapter.capabilities()\n    return {\n        \"adapter_code\": adapter.adapter_code,\n        \"adapter_version\": adapter.adapter_version,\n        \"capabilities\": {\n            \"full_extract\": caps.full_extract,\n            \"delta_extract\": caps.delta_extract,\n            \"evidence_extract\": caps.evidence_extract,\n            \"supports_checkpoint\": caps.supports_checkpoint,\n            \"supports_historical_timestamps\": caps.supports_historical_timestamps,\n        },\n    }\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_cava_socios_adapter_sdk.py",
+      "content": "from datetime import datetime, timezone\n\nimport pytest\n\nfrom modules.cava_socios.adapter_sdk import (\n    AdapterCapabilities,\n    AdapterCheckpoint,\n    AdapterContext,\n    AdapterHealth,\n    ExtractionBatch,\n    adapter_manifest,\n    validate_adapter_contract,\n    validate_extraction,\n)\nfrom modules.cava_socios.migration_engine import ExternalRecord, SourceIdentity\n\n\nclass FakeAdapter:\n    adapter_code = \"FAKE\"\n    adapter_version = \"1.0\"\n\n    def capabilities(self):\n        return AdapterCapabilities(\n            full_extract=True,\n            delta_extract=True,\n            supports_checkpoint=True,\n        )\n\n    def validate_context(self, context):\n        return None\n\n    def health(self, context):\n        return AdapterHealth(ok=True)\n\n    def discover(self, context):\n        return {\"entities\": [\"BOTTLE\"]}\n\n    def extract_full(self, context):\n        return ExtractionBatch((_record(context.source_instance_id),))\n\n    def extract_delta(self, context, checkpoint):\n        return ExtractionBatch(\n            (_record(context.source_instance_id),),\n            next_checkpoint=AdapterCheckpoint(\"2\"),\n        )\n\n\ndef _record(source_instance_id=\"source-1\"):\n    return ExternalRecord(\n        identity=SourceIdentity(source_instance_id, \"BOTTLE\", \"B-1\"),\n        source_system=\"FAKE\",\n        payload={\"nivel\": 100},\n        original_occurred_at=datetime(2024, 1, 1, tzinfo=timezone.utc),\n    )\n\n\ndef test_adapter_contract_and_manifest():\n    adapter = FakeAdapter()\n    validate_adapter_contract(adapter)\n    manifest = adapter_manifest(adapter)\n    assert manifest[\"adapter_code\"] == \"FAKE\"\n    assert manifest[\"capabilities\"][\"supports_checkpoint\"] is True\n\n\ndef test_delta_requires_checkpoint_capability():\n    class Invalid(FakeAdapter):\n        def capabilities(self):\n            return AdapterCapabilities(full_extract=True, delta_extract=True, supports_checkpoint=False)\n\n    with pytest.raises(ValueError, match=\"supports_checkpoint\"):\n        validate_adapter_contract(Invalid())\n\n\ndef test_context_requires_timezone_and_instance():\n    with pytest.raises(ValueError, match=\"source_instance_id\"):\n        AdapterContext(\"\", None, \"America/Merida\")\n    with pytest.raises(ValueError, match=\"timezone\"):\n        AdapterContext(\"x\", None, \"\")\n\n\ndef test_batch_rejects_duplicate_external_identity():\n    row = _record()\n    with pytest.raises(ValueError, match=\"duplicadas\"):\n        ExtractionBatch((row, row))\n\n\ndef test_validate_extraction_rejects_cross_instance_mix():\n    batch = ExtractionBatch((_record(\"other\"),))\n    with pytest.raises(ValueError, match=\"otra source_instance\"):\n        validate_extraction(batch, expected_source_instance_id=\"source-1\")\n\n\ndef test_fake_adapter_full_and_delta_are_provider_neutral():\n    adapter = FakeAdapter()\n    context = AdapterContext(\"source-1\", \"connection-uuid\", \"America/Merida\", \"MXN\", \"es-MX\")\n    adapter.validate_context(context)\n    assert adapter.health(context).ok is True\n    full = adapter.extract_full(context)\n    validate_extraction(full, expected_source_instance_id=\"source-1\")\n    delta = adapter.extract_delta(context, AdapterCheckpoint(\"1\"))\n    validate_extraction(delta, expected_source_instance_id=\"source-1\")\n    assert delta.next_checkpoint.value == \"2\"\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/cava_socios/adapter_sdk.py",
+        "backend/tests/test_cava_socios_adapter_sdk.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios_adapter_sdk.py",
+        "backend/tests/test_cava_socios_migration_engine.py",
+        "backend/tests/test_cava_socios_domain.py",
+        "backend/tests/test_cava_socios.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/adapter_sdk.py",
+          "backend/modules/cava_socios/migration_engine.py",
+          "backend/modules/integrations_center/service.py",
+          "backend/core/connection_resolver.py",
+          "docs/CAVAS/CAVAS_GATE16B_CANONICAL_INTEROPERABILITY_MIGRATION_CONTRACT.md"
+        ],
+        "search_terms": [
+          "adapter_code",
+          "extract_full",
+          "extract_delta",
+          "checkpoint",
+          "connection_reference",
+          "password",
+          "api_key",
+          "SoftRestaurant",
+          "MPRO",
+          "KAVASOFT",
+          "get_sql_connection"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.md"
+        ],
+        "exclude_patterns": [
+          "*.env",
+          "*secret*",
+          "*password*"
+        ],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No provider-specific adapter implementation in this gate",
+    "No second connection registry or credentials store",
+    "Connection reference only; actual resolution remains canonical EDARSAHUB infrastructure",
+    "No SQL DDL/DML or SQL connection",
+    "No endpoints/routes/frontend/scheduler",
+    "No secrets in adapter context or manifest",
+    "No hardcoded SoftRestaurant/MPRO/Kavasoft behavior",
+    "Reuse migration_engine ExternalRecord and SourceIdentity",
+    "Production forbidden"
+  ]
+}
