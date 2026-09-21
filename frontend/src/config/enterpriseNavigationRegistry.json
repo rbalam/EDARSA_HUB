@@ -947,6 +947,15 @@
       "status": "active",
       "legacy": true
     },
+    "sistema.worker_console": {
+      "groupId": "plataforma-integraciones",
+      "sectionId": "administracion-seguridad",
+      "label": "Universal Worker Console",
+      "expectedPath": "/worker-console",
+      "order": 30,
+      "status": "active",
+      "releasedAt": "2026-09-20"
+    },
     "sistema.asignaciones": {
       "groupId": "plataforma-integraciones",
       "sectionId": "administracion-seguridad",
