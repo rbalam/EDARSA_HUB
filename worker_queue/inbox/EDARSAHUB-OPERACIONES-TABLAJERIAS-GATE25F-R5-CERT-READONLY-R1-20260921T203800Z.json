@@ -1,0 +1,48 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-R5-CERT-READONLY-R1-20260921T203800Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "dcc04e7f0931b885bae3abc1acfbb917bde720d5",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "priority": "P0",
+  "objective": "Certificar Gate25F-R5 en solo lectura: validar markers actuales de LotesProveedorPage y emitir resultado terminal de certificacion.",
+  "context": {
+    "target_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-R5-MUTATION-FUNCTIONAL-SURGICAL-FIX-PYTEST-20260921T191500Z",
+    "target_sha": "dcc04e7f0931b885bae3abc1acfbb917bde720d5",
+    "expected_changed_file": "frontend/src/pages/tablajeria/LotesProveedorPage.jsx"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx"
+        ],
+        "search_terms": [
+          "Prioridad operativa",
+          "Rendimiento prom.",
+          "Abrir prioridad",
+          "Sin registros con los filtros actuales"
+        ],
+        "include_patterns": ["*.jsx"],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "required_output": [
+    "status",
+    "quality_gate",
+    "percent_complete",
+    "frontend_markers_confirmed",
+    "files_changed_exact_confirmed",
+    "blockers"
+  ],
+  "created_at_utc": "2026-09-21T20:38:00Z"
+}
