@@ -1,0 +1,148 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1B-SERIAL-SLOT-INTEGRATION-MUTATION-R1-20260921",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "489678d39ba6edd0f2f89e7d97f70c2143cc6c09",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Gate4B1B Mutation R1: integrar el runtime canonico de slots al flujo real del Universal Worker de forma estrictamente serial y fail-closed. Crear exactamente un slot por job (readonly-1 para modos no mutantes y mutation-1 para los demas), marcar RUNNING, mantener current_job_id como proyeccion legacy, marcar TERMINALIZING y liberar el slot al terminalizar. No activar paralelismo. Mantener READ_ONLY=1, MUTATION=1, GLOBAL_GIT_WRITER, Agent Guard, Artifact Guard, divergence guards y lifecycle semantics sin debilitarlos.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "from worker_concurrency import evaluate_scope_advance\nfrom git_divergence_guard import (GitGuardError, acquire_writer_lock, compare_and_swap, inspect_repository, mutation_policy, post_push_verify, recover_authorized_local_ahead, release_writer_lock, requires_writer_lock, scoped_push_env, validate_commit_scope)\n",
+      "new": "from worker_concurrency import evaluate_scope_advance\nfrom worker_scheduling import normalize_metadata\nfrom worker_slot_runtime import create_slot, release_slot, update_slot_state\nfrom git_divergence_guard import (GitGuardError, acquire_writer_lock, compare_and_swap, inspect_repository, mutation_policy, post_push_verify, recover_authorized_local_ahead, release_writer_lock, requires_writer_lock, scoped_push_env, validate_commit_scope)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "    worktree: Path | None = None\n    branch = \"\"\n    agent_guard_claim_created = False\n    git_writer_lock: dict[str, Any] | None = None\n",
+      "new": "    worktree: Path | None = None\n    branch = \"\"\n    agent_guard_claim_created = False\n    git_writer_lock: dict[str, Any] | None = None\n    slot_id: str | None = None\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        requested_paths = sorted({str(action.get(\"path\")) for action in (job.get(\"actions\") or []) if action.get(\"path\")})\n        mode = str(job.get(\"mode\") or \"\")\n        git_mutating = requires_writer_lock(mode)\n",
+      "new": "        requested_paths = sorted({str(action.get(\"path\")) for action in (job.get(\"actions\") or []) if action.get(\"path\")})\n        mode = str(job.get(\"mode\") or \"\")\n        scheduling = normalize_metadata(job)\n        slot_class = \"READ_ONLY\" if mode in {READ_ONLY_MODE, \"READ_ONLY_SQL\", FRONTEND_BUILD_CERTIFICATION_MODE} else \"MUTATION\"\n        slot_id = \"readonly-1\" if slot_class == \"READ_ONLY\" else \"mutation-1\"\n        create_slot(\n            slot_id=slot_id,\n            slot_class=slot_class,\n            job_id=job_id,\n            mode=mode,\n            project_id=scheduling.project_id,\n            bounded_context=scheduling.bounded_context,\n            resource_claims=list(scheduling.resource_claims),\n            conflict_domains=list(scheduling.conflict_domains),\n            worker_pid=os.getpid(),\n            execution_pid=os.getpid(),\n            legacy_defaults=scheduling.legacy_defaults,\n        )\n        update_slot_state(slot_id, \"RUNNING\", execution_pid=os.getpid())\n        result[\"slot_id\"] = slot_id\n        result[\"slot_class\"] = slot_class\n        result[\"parallel_execution_enabled\"] = False\n        git_mutating = requires_writer_lock(mode)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "    finally:\n        if agent_guard_claim_created:\n",
+      "new": "    finally:\n        if slot_id is not None:\n            try:\n                update_slot_state(slot_id, \"TERMINALIZING\", execution_pid=os.getpid())\n                release_slot(slot_id)\n                result[\"slot_release\"] = \"PASS\"\n            except Exception as exc:\n                result[\"slot_release\"] = \"FAIL\"\n                result[\"blockers\"].append(f\"slot_release_failed:{type(exc).__name__}:{exc}\")\n                result[\"quality_gate\"] = \"FAIL\"\n                result[\"certification\"] = \"NOT_CERTIFIED\"\n        else:\n            result[\"slot_release\"] = \"NOT_REQUIRED\"\n        if agent_guard_claim_created:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/worker_slot_runtime.py",
+      "old": "    now = _utc_now()\n\n    payload = {\n",
+      "new": "    path = slot_path(slot_id)\n    if path.exists():\n        raise SlotRuntimeError(\"SLOT_ALREADY_CLAIMED\")\n\n    now = _utc_now()\n\n    payload = {\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_universal_queue_sla_contract.py",
+      "old": "def test_dispatcher_tracks_runtime_and_only_releases_created_claims():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'agent_guard_claim_created = False' in text\n    assert 'agent_guard_claim_created = True' in text\n    assert 'if agent_guard_claim_created:' in text\n    assert 'agent_guard_release\"] = \"NOT_REQUIRED\"' in text\n    assert 'current_job_id' in text\n    assert 'last_terminal_utc' in text\n\n\n",
+      "new": "def test_dispatcher_tracks_runtime_and_only_releases_created_claims():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'agent_guard_claim_created = False' in text\n    assert 'agent_guard_claim_created = True' in text\n    assert 'if agent_guard_claim_created:' in text\n    assert 'agent_guard_release\"] = \"NOT_REQUIRED\"' in text\n    assert 'current_job_id' in text\n    assert 'last_terminal_utc' in text\n\n\ndef test_dispatcher_uses_serial_slot_runtime_without_parallel_execution():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'from worker_slot_runtime import create_slot, release_slot, update_slot_state' in text\n    assert 'slot_id = \"readonly-1\" if slot_class == \"READ_ONLY\" else \"mutation-1\"' in text\n    assert 'create_slot(' in text\n    assert 'update_slot_state(slot_id, \"RUNNING\"' in text\n    assert 'update_slot_state(slot_id, \"TERMINALIZING\"' in text\n    assert 'release_slot(slot_id)' in text\n    assert 'result[\"parallel_execution_enabled\"] = False' in text\n\n\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_slot_runtime_contract.py",
+      "old": "def test_slot_runtime_is_fail_closed_and_atomic():\n    value = text()\n    assert \"CORRUPT_SLOT_RUNTIME\" in value\n    assert \"LEGACY_CURRENT_JOB_PROJECTION_CONFLICT\" in value\n    assert \"tempfile.NamedTemporaryFile\" in value\n    assert \"handle.flush()\" in value\n    assert \"os.fsync\" in value\n    assert \"os.replace\" in value\n\n\n",
+      "new": "def test_slot_runtime_is_fail_closed_and_atomic():\n    value = text()\n    assert \"CORRUPT_SLOT_RUNTIME\" in value\n    assert \"SLOT_ALREADY_CLAIMED\" in value\n    assert \"LEGACY_CURRENT_JOB_PROJECTION_CONFLICT\" in value\n    assert \"tempfile.NamedTemporaryFile\" in value\n    assert \"handle.flush()\" in value\n    assert \"os.fsync\" in value\n    assert \"os.replace\" in value\n\n\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/worker_scheduling.py",
+        "tools/mirror_sync/worker_slot_runtime.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_slot_runtime_contract.py",
+        "backend/tests/test_multiproject_shadow_scheduler.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_universal_worker_external_owner_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/worker_scheduling.py",
+          "tools/mirror_sync/worker_slot_runtime.py",
+          "backend/tests/test_worker_universal_queue_sla_contract.py",
+          "backend/tests/test_worker_slot_runtime_contract.py"
+        ],
+        "search_terms": [
+          "worker_slot_runtime",
+          "create_slot",
+          "release_slot",
+          "update_slot_state",
+          "readonly-1",
+          "mutation-1",
+          "SLOT_ALREADY_CLAIMED",
+          "current_job_id",
+          "GLOBAL_GIT_WRITER",
+          "agent_guard",
+          "parallel_execution_enabled",
+          "production_touched"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "No Cavas functional changes",
+    "No Tablajerias functional changes",
+    "No NetPay changes",
+    "Do not modify universal_job_worker.sh",
+    "Do not modify worker_runtime_reconciler.py",
+    "Do not modify runtime_health_publisher.py",
+    "Do not modify worker_control_plane.py",
+    "Do not modify multiproject_shadow_scheduler.py",
+    "Do not weaken Repository Artifact Guard",
+    "Do not weaken Agent Guard",
+    "Do not weaken GLOBAL_GIT_WRITER",
+    "Do not weaken Git divergence guards",
+    "Do not change lifecycle semantics",
+    "READ_ONLY effective capacity remains 1",
+    "MUTATION effective capacity remains 1",
+    "PARALLEL_EXECUTION_ENABLED remains NO",
+    "Exactly one runtime slot may be active because dispatcher execution remains serial",
+    "Existing slot file must fail closed with SLOT_ALREADY_CLAIMED",
+    "current_job_id remains legacy compatibility projection",
+    "Slot must transition CLAIMED to RUNNING to TERMINALIZING then release",
+    "Slot release failure must fail certification but must not bypass terminal result handling",
+    "No runtime slot files may be committed",
+    "Only declared files may change",
+    "production_touched must remain false"
+  ]
+}
