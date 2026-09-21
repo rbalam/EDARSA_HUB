@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-ORIGEN-0827-DETAIL-BACKFILL-R3-CARLOS-20260921T2222Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ed795194bf6fa859ee29027e40c842052f9b376d",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "priority": "P0",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V2",
+    "chat": "20260921-Reportes ISCAM"
+  },
+  "objective": "Reparar y certificar el detalle ISCAM de ORIGEN 2026-08-27 usando el extractor MPRO corregido hasta ed795194bf6fa859ee29027e40c842052f9b376d, incluido soporte fail-safe para header sin detalle de producto. Runtime V2 es la referencia canónica 86192.88 ventas, 29 tickets y 71 pax. Escribir solo si OK_HEADER_CANONICO y verificar después que todos los deltas sean cero.",
+  "actions": [],
+  "units": [
+    "ORIGEN"
+  ],
+  "fecha_inicio": "2026-08-27",
+  "fecha_fin": "2026-08-28",
+  "dry_run": false,
+  "confirm_detail_backfill": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "cert_origen_0827_runtime_vs_detail",
+          "sql": "WITH r AS (SELECT SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) ventas, SUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets, SUM(CAST(ISNULL(pax_total,0) AS bigint)) pax FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion>='2026-08-27' AND fecha_operacion<'2026-08-28'), d0 AS (SELECT numero_ticket,SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) venta,MAX(CAST(ISNULL(pax,0) AS bigint)) pax FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion>='2026-08-27' AND fecha_operacion<'2026-08-28' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY numero_ticket), d AS (SELECT SUM(venta) ventas, COUNT(*) tickets, SUM(pax) pax FROM d0) SELECT ISNULL(r.ventas,0) ventas_runtime,ISNULL(d.ventas,0) ventas_detalle,ISNULL(r.ventas,0)-ISNULL(d.ventas,0) delta_ventas,ISNULL(r.tickets,0) tickets_runtime,ISNULL(d.tickets,0) tickets_detalle,ISNULL(r.tickets,0)-ISNULL(d.tickets,0) delta_tickets,ISNULL(r.pax,0) pax_runtime,ISNULL(d.pax,0) pax_detalle,ISNULL(r.pax,0)-ISNULL(d.pax,0) delta_pax FROM r CROSS JOIN d"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No tocar Runtime V2/header",
+    "Solo 2026-08-27",
+    "No Sync_Sales legacy",
+    "Fail closed si queda cualquier delta"
+  ],
+  "expected_output": {
+    "status": "OPERATIONAL_COMPLETE",
+    "quality_gate": "PASS",
+    "certification": "CERTIFIED_OPERATIONAL",
+    "production_touched": false
+  },
+  "created_at_utc": "2026-09-21T22:22:00Z"
+}
