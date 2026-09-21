@@ -1,0 +1,105 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-REGRESSION-RUNTIME-AUTH-AUDIT-CARLOS-20260921T2136Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "dcc04e7f0931b885bae3abc1acfbb917bde720d5",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "priority": "P0",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V2",
+    "chat": "20260921-Reportes ISCAM"
+  },
+  "objective": "Diagnostico integral y unico previo a correccion de la regresion actual de Inteligencia Comercial > Reportes ISCAM en Preview/Emergent. Partir del baseline certificado 11/09/2026 branch baseline/iscam-all-reports-ok-20260911 commit ff11d2e4ce2e248324458206e7ea0b262b29b394 y comparar solo los componentes relacionados. Verificar tres fallas sin modificar codigo ni datos: (1) falsos cierres de sesion al cambiar de reporte en 1-2 minutos, con foco en que frontend/src/portal-inteligencia/api/client.js usa una instancia axios dedicada y debe mantener el mismo refresh/retry de auth que frontend/src/lib/api.js sin confundir 401 reales con errores operativos; (2) reportes agrupados dejaron de generarse aunque ReportesISCAMPage.jsx sigue enviando group_by y espera agrupado; auditar contratos backend de cuentas/comandas/formas-pago/formas-pago/por-ticket y claves de respuesta; (3) ORIGEN agosto 2026 muestra detail_stale de 1 dia, gap 29 cheques y 86193 MXN y el backfill devuelve dias bloqueados contra Runtime V2; identificar fecha exacta y deltas diarios en EDARSAHUB y determinar si es ausencia total de detalle o mismatch. No relajar validaciones ni ocultar banners. Entregar causa raiz por cada falla, evidencia concreta, archivos exactos a modificar, propuesta de parche determinista minima y orden de ejecucion para un solo job MUTATION posterior. Confirmar tambien si el codigo de ReportesISCAMPage.jsx/client.js cambio o no desde el baseline. No Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/lib/api.js",
+          "frontend/src/portal-inteligencia/api/client.js",
+          "frontend/src/portal-inteligencia/App.jsx",
+          "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+          "backend/modules/inteligencia_comercial/iscam_routes.py",
+          "backend/api/admin_scheduler_resync.py",
+          "backend/scripts/backfill_detalle_producto_pendientes.py",
+          "backend/scripts/poblar_ventas_detalle_producto_canonico.py"
+        ],
+        "search_terms": [
+          "coordinatedRefresh",
+          "interceptors.response",
+          "SESION_EXPIRADA",
+          "group_by",
+          "agrupado",
+          "detail_stale",
+          "OK_HEADER_CANONICO",
+          "dias_bloqueados",
+          "detail_only",
+          "intel_portal_guard",
+          "getToken"
+        ],
+        "include_patterns": [
+          "*.js",
+          "*.jsx",
+          "*.py"
+        ],
+        "exclude_patterns": [
+          "**/__pycache__/**",
+          "**/node_modules/**"
+        ],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "iscam_origen_agosto_runtime_vs_detalle_diario",
+          "sql": "WITH runtime AS ( SELECT CAST(fecha_operacion AS date) AS fecha_operacion, SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS ventas_runtime, SUM(CAST(ISNULL(tickets_total,0) AS bigint)) AS tickets_runtime, SUM(CAST(ISNULL(pax_total,0) AS bigint)) AS pax_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion>='2026-08-01' AND fecha_operacion<'2026-09-01' GROUP BY CAST(fecha_operacion AS date) ), detalle_ticket AS ( SELECT CAST(fecha_operacion AS date) AS fecha_operacion, numero_ticket, SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) AS ventas_ticket, MAX(CAST(ISNULL(pax,0) AS bigint)) AS pax_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion>='2026-08-01' AND fecha_operacion<'2026-09-01' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY CAST(fecha_operacion AS date), numero_ticket ), detalle AS ( SELECT fecha_operacion, SUM(ventas_ticket) AS ventas_detalle, COUNT(*) AS tickets_detalle, SUM(pax_ticket) AS pax_detalle FROM detalle_ticket GROUP BY fecha_operacion ) SELECT CONVERT(varchar(10),COALESCE(r.fecha_operacion,d.fecha_operacion),120) AS fecha_operacion, ISNULL(r.ventas_runtime,0) AS ventas_runtime, ISNULL(d.ventas_detalle,0) AS ventas_detalle, ISNULL(r.ventas_runtime,0)-ISNULL(d.ventas_detalle,0) AS delta_ventas, ISNULL(r.tickets_runtime,0) AS tickets_runtime, ISNULL(d.tickets_detalle,0) AS tickets_detalle, ISNULL(r.tickets_runtime,0)-ISNULL(d.tickets_detalle,0) AS delta_tickets, ISNULL(r.pax_runtime,0) AS pax_runtime, ISNULL(d.pax_detalle,0) AS pax_detalle, ISNULL(r.pax_runtime,0)-ISNULL(d.pax_detalle,0) AS delta_pax FROM runtime r FULL OUTER JOIN detalle d ON d.fecha_operacion=r.fecha_operacion WHERE ABS(ISNULL(r.ventas_runtime,0)-ISNULL(d.ventas_detalle,0))>0.05 OR ISNULL(r.tickets_runtime,0)<>ISNULL(d.tickets_detalle,0) OR ISNULL(r.pax_runtime,0)<>ISNULL(d.pax_detalle,0) ORDER BY fecha_operacion"
+        },
+        {
+          "name": "iscam_origen_agosto_detalle_ajustes_por_dia",
+          "sql": "SELECT CONVERT(varchar(10),CAST(fecha_operacion AS date),120) AS fecha_operacion, COUNT(*) AS lineas, COUNT(DISTINCT numero_ticket) AS tickets_detalle, SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) AS ventas_detalle, SUM(CASE WHEN producto_codigo_fuente LIKE '__ISCAM_AJUSTE_%' THEN CAST(ISNULL(importe_neto,0) AS decimal(19,4)) ELSE 0 END) AS ajustes_iscam, COUNT(DISTINCT CASE WHEN producto_codigo_fuente LIKE '__ISCAM_AJUSTE_%' THEN numero_ticket END) AS tickets_con_ajuste FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion>='2026-08-01' AND fecha_operacion<'2026-09-01' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY CAST(fecha_operacion AS date) ORDER BY fecha_operacion"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY absoluto",
+    "No modificar codigo",
+    "No escribir SQL",
+    "No Production",
+    "No force-push",
+    "No ocultar ni desactivar guards de conciliacion",
+    "No hardcodear totales como solucion",
+    "No reactivar Sync_Sales legacy",
+    "No duplicar consultas POS",
+    "Usar baseline ff11d2e4ce2e248324458206e7ea0b262b29b394 como referencia funcional",
+    "La salida debe proponer un solo parche determinista posterior, no una cadena de experimentos"
+  ],
+  "expected_output": {
+    "status": "READ_ONLY_COMPLETE",
+    "quality_gate": "PASS",
+    "certification": "CERTIFIED_READ_ONLY",
+    "production_touched": false,
+    "must_include": [
+      "session_root_cause",
+      "grouped_reports_root_cause",
+      "runtime_v2_blocked_day",
+      "runtime_vs_detail_daily_delta",
+      "files_to_change_exact",
+      "deterministic_mutation_plan",
+      "baseline_comparison",
+      "safe_next_action"
+    ]
+  },
+  "created_at_utc": "2026-09-21T21:36:00Z"
+}
