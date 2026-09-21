@@ -1,0 +1,98 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4-PREFLIGHT-READONLY-R1-20260921",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a2bd1be64a1b9392921a23351ecc68549c6e278a",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar READ_ONLY el runtime y codigo real del Universal Worker para preparar Gate4 multiproyecto. Determinar el parche minimo, canonico y reversible necesario para separar CLAIM de EXECUTION, reducir dispatcher.lock exclusivamente al claim atomico, habilitar arquitectura inicial de hasta 4 slots READ_ONLY y mantener exactamente 1 MUTATION global. No implementar cambios. Identificar archivos, funciones, contratos, dependencias, riesgos, pruebas y rollback. Mantener compatibilidad worker-job.v2 legacy, Agent Guard, git divergence guard, worktrees, GLOBAL_GIT_WRITER y autoridad actual del Universal Worker.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/universal_job_worker.sh",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/worker_concurrency.py",
+          "tools/mirror_sync/multiproject_shadow_scheduler.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "tools/mirror_sync/worker_runtime_reconciler.py",
+          "backend/tests",
+          "docs/BOS"
+        ],
+        "search_terms": [
+          "dispatch",
+          "dispatch_loop",
+          "process_one",
+          "dispatcher.lock",
+          "LOCK_FILE",
+          "pending",
+          "processing",
+          "current_job_id",
+          "preferred_job",
+          "git-writer.lock",
+          "GLOBAL_GIT_WRITER",
+          "LEGACY_GLOBAL",
+          "worker_concurrency",
+          "resource_claims",
+          "conflict_domains",
+          "project_id",
+          "bounded_context",
+          "fairness_weight",
+          "max_parallelism",
+          "heartbeat",
+          "slot",
+          "reconcile",
+          "result_publisher",
+          "health",
+          "worktree",
+          "Agent Guard",
+          "SAFE_REPLAY",
+          "CONCURRENT_SCOPE_CONFLICT"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.conf",
+          "*.md"
+        ],
+        "exclude_patterns": [],
+        "max_results": 5000
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_multiproject_shadow_scheduler.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No file changes",
+    "No SQL",
+    "No Mongo",
+    "No Production",
+    "Do not modify universal worker runtime",
+    "Do not restart supervisor",
+    "Do not mutate lifecycle",
+    "Do not create slots yet",
+    "Do not enable parallel MUTATION",
+    "Do not remove GLOBAL_GIT_WRITER",
+    "Do not weaken Agent Guard",
+    "Do not weaken git divergence guard",
+    "Do not change Cavas",
+    "Do not change Tablajerias",
+    "Do not change NetPay",
+    "Worker-job.v2 legacy compatibility is mandatory",
+    "Return sufficient repository evidence to design deterministic replace_text/write_file actions"
+  ]
+}
