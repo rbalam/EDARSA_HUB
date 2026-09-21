@@ -11,7 +11,7 @@
  * el portal maneje sus propios estados de sesión. Sin mocks.
  */
 import axios from 'axios';
-import { getToken } from '../../lib/api';
+import api, { getToken } from '../../lib/api';
 
 const API_URL = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const INTEL_SESSION_FLAG = 'edarsa_intel_session';
@@ -75,7 +75,10 @@ export async function logoutIntel() {
 export async function apiGet(path, params) {
   if (!haySesion()) return { estado: ESTADO.SIN_SESION, data: null, status: 0 };
   try {
-    const res = await intelApi.get(path, { params });
+    // Sesion interna: reutilizar el cliente central para conservar refresh/retry coordinado.
+    // Sesion externa: mantener el cliente dedicado con cookie httpOnly del portal.
+    const client = getToken() ? api : intelApi;
+    const res = await client.get(path, { params });
     return { estado: ESTADO.OK, data: res.data, status: res.status };
   } catch (err) {
     const status = err?.response?.status;
@@ -89,7 +92,10 @@ export async function apiGet(path, params) {
 export async function apiPost(path, payload, config = {}) {
   if (!haySesion()) return { estado: ESTADO.SIN_SESION, data: null, status: 0 };
   try {
-    const res = await intelApi.post(path, payload, config);
+    // Sesion interna: reutilizar el cliente central para conservar refresh/retry coordinado.
+    // Sesion externa: mantener el cliente dedicado con cookie httpOnly del portal.
+    const client = getToken() ? api : intelApi;
+    const res = await client.post(path, payload, config);
     return { estado: ESTADO.OK, data: res.data, status: res.status };
   } catch (err) {
     const status = err?.response?.status;
