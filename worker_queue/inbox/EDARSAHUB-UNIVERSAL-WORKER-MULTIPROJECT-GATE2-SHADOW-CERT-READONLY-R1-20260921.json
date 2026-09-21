@@ -1,0 +1,70 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE2-SHADOW-CERT-READONLY-R1-20260921",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a2bd1be64a1b9392921a23351ecc68549c6e278a",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificación READ_ONLY final de Gate2 Shadow Scheduler integrado en SHA a2bd1be64a1b9392921a23351ecc68549c6e278a. Exigir PASS/100% y blockers=[] verificando: tests del shadow scheduler, compatibilidad worker-job.v2 legacy conservadora, ausencia total de ejecución/mutación de cola en shadow, autoridad exclusiva del Universal Worker actual, no cambios en worker/dispatcher/bridge/supervisor, y topology sincronizada. No modificar archivos, no SQL, no Producción.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_multiproject_shadow_scheduler.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/multiproject_shadow_scheduler.py",
+          "backend/tests/test_multiproject_shadow_scheduler.py",
+          "docs/BOS/UNIVERSAL_WORKER_MULTIPROJECT_SHADOW_SCHEDULER_V1.md",
+          "tools/mirror_sync/universal_job_worker.sh",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/edarsahub-universal-worker.conf"
+        ],
+        "search_terms": [
+          "SHADOW_ONLY",
+          "authoritative_executor",
+          "LEGACY_GLOBAL",
+          "GLOBAL_GIT_WRITER",
+          "project_id",
+          "bounded_context",
+          "resource_claims",
+          "conflict_domains",
+          "fairness_weight",
+          "max_parallelism",
+          "executed_jobs",
+          "queue_mutations",
+          "production_touched"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.conf",
+          "*.md"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No file changes",
+    "No SQL",
+    "No Production",
+    "Universal Worker current runtime remains authoritative",
+    "Shadow scheduler must execute zero jobs and mutate zero queue files",
+    "No modification of worker, dispatcher, bridge or supervisor",
+    "Certification must be PASS + 100% + blockers=[] before Gate4"
+  ]
+}
