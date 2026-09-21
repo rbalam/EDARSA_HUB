@@ -1,0 +1,53 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-CONSOLE-ENTERPRISE-NAV-FRONTEND-CERT-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "0d8a30b67edc0d45c7465e46270197acabfdbd0d",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar exclusivamente el frontend y la clasificación Enterprise de /worker-console ya integrada en SHA 0d8a30b67edc0d45c7465e46270197acabfdbd0d. Confirmar ENTERPRISE_NAVIGATION_GUARDIAN=PASS, build frontend PASS, clasificación canónica en Plataforma e Integraciones > Administración y Seguridad, topology 0/0 y ausencia de cambios de Cavas, backend, SQL o Producción.",
+  "mode": "FRONTEND_BUILD_CERTIFICATION",
+  "actions": [],
+  "checks": [
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/config/enterpriseNavigationRegistry.json",
+          "frontend/src/App.js",
+          "frontend/src/pages/WorkerConsole.jsx"
+        ],
+        "search_terms": [
+          "sistema.worker_console",
+          "/worker-console",
+          "Universal Worker Console",
+          "plataforma-integraciones",
+          "administracion-seguridad"
+        ],
+        "include_patterns": [
+          "*.json",
+          "*.js",
+          "*.jsx"
+        ],
+        "exclude_patterns": [],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No Cavas changes",
+    "No backend changes",
+    "No SQL",
+    "No route behavior changes",
+    "Certification only"
+  ]
+}
