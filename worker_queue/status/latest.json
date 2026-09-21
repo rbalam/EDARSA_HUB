@@ -1,10 +1,10 @@
 {
   "ahead_count": 0,
-  "behind_count": 4,
+  "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "REMOTE_AHEAD_ONLY",
+  "convergence_status": "SYNC",
   "development_sha": "5e293b3e90b225c48f0130443cbbfd454e1b5bb5",
-  "generated_at_utc": "2026-09-21T23:54:06Z",
+  "generated_at_utc": "2026-09-21T23:55:46Z",
   "history": {
     "done_total_local": 825,
     "pending_total_local": 0,
@@ -15,7 +15,7 @@
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [],
-  "local_development_sha": "778bf6011be9d548918e185db7621ab9544b90aa",
+  "local_development_sha": "5e293b3e90b225c48f0130443cbbfd454e1b5bb5",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -29,10 +29,10 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T23:53:54Z",
-    "last_receive_utc": "2026-09-21T23:54:02Z",
+    "last_cycle_utc": "2026-09-21T23:55:43Z",
+    "last_receive_utc": "2026-09-21T23:55:46Z",
     "last_terminal_utc": "2026-09-21T22:44:07Z",
-    "pid": "189"
+    "pid": "7655"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
