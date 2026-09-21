@@ -1,0 +1,59 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25C-FRONTEND-BUILD-CERT-R1-20260921T034112Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "0d8a30b67edc0d45c7465e46270197acabfdbd0d",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "FRONTEND_BUILD_CERTIFICATION",
+  "priority": "P1",
+  "objective": "Gate25C Frontend Build Certification para Tablajerias. Certificar que el frontend actual compila con la integracion visible de Tablajerias/LotesProveedor despues de Gate25B Go-NoGo certificado. No modificar codigo. No ejecutar SQL. No tocar Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+          "frontend/src/App.js",
+          "frontend/src/pages/CentroControl.jsx",
+          "frontend/src/pages/Compras.js",
+          "backend/modules/tablajeria/routes.py",
+          "docs/TABLAJERIA_UAT_SCOPE_FIX_LONJA_PLANTILLAS_IMPLEMENTATION_R1.md"
+        ],
+        "search_terms": [
+          "tablajeria",
+          "LotesProveedorPage",
+          "frontend",
+          "CentroControl",
+          "Compras",
+          "lotes proveedor",
+          "lonja",
+          "plantillas"
+        ],
+        "include_patterns": [],
+        "exclude_patterns": [],
+        "max_results": 800
+      }
+    }
+  ],
+  "expected_outputs": {
+    "terminal_status": "FRONTEND_BUILD_CERTIFIED",
+    "certification": "CERTIFIED_FRONTEND_BUILD",
+    "quality_gate": "PASS",
+    "tests": "PASS",
+    "percent_complete": 100,
+    "production_touched": false,
+    "files_changed": [],
+    "blockers": []
+  },
+  "created_at_utc": "2026-09-21T03:41:13.054559+00:00"
+}
