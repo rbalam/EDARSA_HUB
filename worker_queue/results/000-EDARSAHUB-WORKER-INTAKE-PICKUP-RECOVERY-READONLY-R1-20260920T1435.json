@@ -1,22 +1,23 @@
 {
+  "base_sha": "39f11f3bc249120dfcfb8239ceedd6af34147be5",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED"
+  ],
   "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-21T02:48:24Z",
+  "executor": "chatgpt-deterministic",
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "000-EDARSAHUB-WORKER-INTAKE-PICKUP-RECOVERY-READONLY-R1-20260920T1435",
   "percent_complete": 0,
   "production_touched": false,
-  "published_at_utc": "2026-09-20T20:58:26Z",
-  "reasons": [
-    "REQUESTER_EMAIL_INVALID",
-    "READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED",
-    "CHECK_1_INVALID_TYPE"
-  ],
-  "received_at_utc": "2026-09-20T20:58:18.301229+00:00",
-  "schema": "edarsahub.worker-rejection.v2",
-  "source": "worker_queue/inbox/000-EDARSAHUB-WORKER-INTAKE-PICKUP-RECOVERY-READONLY-R1-20260920T1435.json",
+  "published_at_utc": "2026-09-21T03:30:07Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
   "source_repo": "rbalam/EDARSA_HUB",
-  "status": "REJECTED",
-  "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto.",
+  "started_at_utc": "2026-09-21T02:48:24Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
   "work_completion": "NOT_CERTIFIED"
 }
