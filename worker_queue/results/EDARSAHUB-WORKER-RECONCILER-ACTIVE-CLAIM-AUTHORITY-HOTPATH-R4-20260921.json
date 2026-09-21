@@ -1,0 +1,136 @@
+{
+  "base_sha": "95bbeaf17569fb8bb61ebc0c27806372b311ec2b",
+  "blockers": [],
+  "candidate_sha": "3b15e09d1b02276dbc95e5deaef16e11c72d7bcc",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-21T18:39:46Z",
+  "development_sha": "3b15e09d1b02276dbc95e5deaef16e11c72d7bcc",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py",
+    "tools/mirror_sync/worker_runtime_reconciler.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-WORKER-RECONCILER-ACTIVE-CLAIM-AUTHORITY-HOTPATH-R4-20260921",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-21T18:40:00Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "json",
+              "os",
+              "pathlib",
+              "shutil",
+              "subprocess",
+              "tempfile",
+              "time",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "_branch_integration_cache",
+              "_cycle_remote_head",
+              "active",
+              "branch_is_integrated",
+              "claim_terminal",
+              "guard_claims",
+              "guard_state_worktrees",
+              "prepare_integration_snapshot",
+              "process_references",
+              "production_touched",
+              "safe_releasable",
+              "worktree_clean"
+            ],
+            "path": "tools/mirror_sync/worker_runtime_reconciler.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "age_seconds",
+              "atomic_json",
+              "branch_is_integrated",
+              "claim_task_id",
+              "claim_terminal",
+              "dispatcher_running",
+              "git",
+              "guard_claims",
+              "load_result",
+              "main",
+              "now",
+              "parse_guard_claims",
+              "parse_iso",
+              "prepare_integration_snapshot",
+              "process_references",
+              "reconcile_claims",
+              "recover_orphan_processing",
+              "release_claim",
+              "run",
+              "safe_releasable",
+              "worktree_clean"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "_branch_integration_cache",
+              "_cycle_remote_head",
+              "active",
+              "branch_is_integrated",
+              "guard_claims",
+              "guard_state_worktrees",
+              "prepare_integration_snapshot",
+              "process_references",
+              "worktree_clean"
+            ],
+            "path": "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_reconciler_derives_job_id_without_task_id",
+              "test_reconciler_fetches_development_once_per_cycle_and_caches_branch_checks",
+              "test_reconciler_integration_snapshot_fails_closed",
+              "test_reconciler_keeps_surgical_safety_guards",
+              "test_reconciler_uses_active_claim_authority_only"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 2,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-21T18:39:40Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
