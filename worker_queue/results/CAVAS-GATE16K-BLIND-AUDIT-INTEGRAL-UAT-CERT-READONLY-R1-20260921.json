@@ -1,0 +1,334 @@
+{
+  "base_sha": "305786aa03450d9f1e7573d093a26c91664f6cc2",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-21T04:41:56Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE16K-BLIND-AUDIT-INTEGRAL-UAT-CERT-READONLY-R1-20260921",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-21T04:42:09Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "enum",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "result",
+              "review_required"
+            ],
+            "path": "backend/modules/cava_socios/blind_audit.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AuditFinding",
+              "BlindAuditResult",
+              "BlindAuditStatus",
+              "BlindObservation",
+              "ExpectedBottle",
+              "VisionReadinessRequest",
+              "VisionRecognitionCandidate",
+              "__post_init__",
+              "_level_mismatch",
+              "_required",
+              "_validate_pct",
+              "clean",
+              "reconcile_blind_audit",
+              "requires_review",
+              "validate_vision_candidates"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "blind_audit",
+              "hashlib",
+              "json",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "automatic_inventory_adjustment",
+              "automatic_inventory_movement",
+              "confirmed",
+              "difference",
+              "request_fingerprint",
+              "result",
+              "review_required"
+            ],
+            "path": "backend/modules/cava_socios/blind_audit_operational_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CavaBlindAuditOperationalService",
+              "get_cava_blind_audit_operational_service",
+              "reconcile"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "blind_audit_operational_service",
+              "core.auth.sql_user_identity",
+              "core.rbac",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "logging",
+              "modules.rbac_context_sql.context_service",
+              "notification_service",
+              "persona_link_service",
+              "pydantic",
+              "report_service",
+              "service",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "_resolve_cava_scope",
+              "aplicar_ajustes_inventario_fisico",
+              "auditorias-ciegas/reconciliar",
+              "result",
+              "unidad_negocio_pk"
+            ],
+            "path": "backend/modules/cava_socios/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/auditorias-ciegas/reconciliar",
+              "/botellas/{botella_id}/consumo",
+              "/botellas/{botella_id}/etiqueta",
+              "/clientes-canonicos",
+              "/clientes-canonicos/sync",
+              "/consumos",
+              "/dashboard",
+              "/inventario",
+              "/inventario-fisico/aplicar",
+              "/inventario-fisico/hoja",
+              "/inventario-inicial",
+              "/kardex",
+              "/personas-canonicas",
+              "/reportes/socio/{socio_id}/consumos",
+              "/reportes/socio/{socio_id}/estado-cuenta",
+              "/reportes/socio/{socio_id}/ficha",
+              "/socios",
+              "/socios/promover-cliente",
+              "/socios/{socio_id}",
+              "/socios/{socio_id}/botellas",
+              "/socios/{socio_id}/enviar-reporte",
+              "/socios/{socio_id}/enviar-todos-reportes",
+              "/socios/{socio_id}/persona-link",
+              "/socios/{socio_id}/persona-link/crear-persona"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BlindAuditObservationInput",
+              "BlindAuditReconcileRequest",
+              "BotellaCreate",
+              "ConsumoCreate",
+              "EnvioReporteRequest",
+              "InventarioFisicoAplicarRequest",
+              "InventarioFisicoItem",
+              "InventarioInicialBotellaItem",
+              "InventarioInicialCreate",
+              "PersonaCreateLinkRequest",
+              "PersonaExistingLinkRequest",
+              "PromoverClienteCreate",
+              "SincronizarClientesRequest",
+              "SocioCreate",
+              "SocioUpdate",
+              "_resolve_cava_actor",
+              "_resolve_cava_scope",
+              "actualizar_socio",
+              "aplicar_ajustes_inventario_fisico",
+              "crear_persona_y_vincular",
+              "crear_socio",
+              "descargar_estado_cuenta",
+              "descargar_ficha_socio",
+              "descargar_historial_consumos",
+              "desvincular_persona",
+              "enviar_reporte_socio",
+              "enviar_todos_reportes_socio",
+              "get_dashboard",
+              "listar_clientes_canonicos",
+              "listar_personas_canonicas",
+              "listar_socios",
+              "obtener_consumos",
+              "obtener_etiqueta_botella",
+              "obtener_hoja_inventario_fisico",
+              "obtener_inventario",
+              "obtener_kardex",
+              "obtener_persona_link",
+              "obtener_socio",
+              "promover_cliente_canonico",
+              "reconciliar_auditoria_ciega",
+              "registrar_botella",
+              "registrar_consumo",
+              "registrar_inventario_inicial",
+              "sincronizar_clientes_canonicos",
+              "vincular_persona_existente"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.cava_socios.blind_audit",
+              "pytest"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "result",
+              "review_required"
+            ],
+            "path": "backend/tests/test_cava_socios_blind_audit.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_blind_audit_clean_match",
+              "test_blind_audit_detects_missing_and_unexpected",
+              "test_blind_audit_detects_quantity_and_level_mismatch",
+              "test_invalid_percentages_and_confidence_fail_closed",
+              "test_low_recognition_confidence_requires_review_not_auto_match",
+              "test_vision_candidate_filter_does_not_make_canonical_decision",
+              "test_vision_request_is_provider_neutral"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "modules.cava_socios.blind_audit_operational_service"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "automatic_inventory_adjustment",
+              "automatic_inventory_movement",
+              "confirmed",
+              "difference",
+              "request_fingerprint",
+              "result",
+              "review_required"
+            ],
+            "path": "backend/tests/test_cava_socios_blind_audit_operational_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_service",
+              "test_gate16i_clean_audit_is_confirmed_and_non_mutating",
+              "test_gate16i_difference_never_adjusts_inventory",
+              "test_gate16i_low_confidence_requires_review",
+              "test_gate16i_same_request_has_same_fingerprint"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "auditorias-ciegas/reconciliar",
+              "capture",
+              "confirmed",
+              "difference",
+              "identify",
+              "result",
+              "review_required",
+              "unidad_negocio_pk"
+            ],
+            "path": "frontend/src/pages/cava-socios/BlindAuditCava.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "/cava-socios/auditoria-ciega"
+            ],
+            "path": "frontend/src/pages/cava-socios/CavaNavHeader.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "/cava-socios/auditoria-ciega"
+            ],
+            "path": "frontend/src/config/enterpriseNavigationRegistry.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 8,
+          "scanned_files": 8,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-21T04:41:54Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
