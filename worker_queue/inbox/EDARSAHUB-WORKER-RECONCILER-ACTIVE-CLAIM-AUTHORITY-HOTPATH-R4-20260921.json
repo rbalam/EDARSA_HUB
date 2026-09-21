@@ -1,0 +1,128 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-RECONCILER-ACTIVE-CLAIM-AUTHORITY-HOTPATH-R4-20260921",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "95bbeaf17569fb8bb61ebc0c27806372b311ec2b",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Corregir quirurgicamente worker_runtime_reconciler para usar como autoridad de claims exclusivamente claims Agent Guard ACTIVE, evitando tratar state/worktrees como claims. Eliminar la invocacion inexistente del subcomando claims. Mantener fail-closed, introducir un unico fetch de Edarsahub_Desarrollo por ciclo y cache de branch_is_integrated por ciclo. Preservar claim_terminal, process_references, worktree_clean, lifecycle, Agent Guard y Produccion intacta. No implementar Gate4B1 slots ni habilitar paralelismo.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/worker_runtime_reconciler.py",
+      "old": "PYTHON = Path(\"/root/.venv/bin/python\")\n\ndef now() -> str:\n",
+      "new": "PYTHON = Path(\"/root/.venv/bin/python\")\n\n_CYCLE_REMOTE_HEAD: str | None = None\n_BRANCH_INTEGRATION_CACHE: dict[str, bool] = {}\n\ndef now() -> str:\n",
+      "expected_count": 1,
+      "expected_sha256": "53914d5d8b8b5bab0db44ed6349adba039439d3cbff2978594311dd9867dabab"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/worker_runtime_reconciler.py",
+      "old": "def guard_claims() -> list[dict[str, Any]]:\n    claims: list[dict[str, Any]] = []\n    if GUARD.is_file() and PYTHON.is_file():\n        for command in ([str(PYTHON), str(GUARD), \"status\"], [str(PYTHON), str(GUARD), \"claims\"]):\n            try: result = run(command, timeout=20)\n            except Exception: continue\n            claims.extend(parse_guard_claims(result.stdout))\n            if claims: break\n    if GUARD_STATE_WORKTREES.is_dir():\n        for path in sorted(GUARD_STATE_WORKTREES.glob(\"*.json\")):\n            try: value = json.loads(path.read_text(encoding=\"utf-8\"))\n            except Exception: continue\n            if isinstance(value, dict):\n                value = dict(value)\n                value.setdefault(\"claim_file\", str(path))\n                claims.append(value)\n    deduped: list[dict[str, Any]] = []\n    seen: set[tuple[str, str, str]] = set()\n    for claim in claims:\n        key = (str(claim.get(\"agent_id\") or \"\"), str(claim.get(\"branch\") or \"\"), str(claim.get(\"worktree\") or \"\"))\n        if key in seen: continue\n        seen.add(key); deduped.append(claim)\n    return deduped\n",
+      "new": "def guard_claims() -> list[dict[str, Any]]:\n    claims: list[dict[str, Any]] = []\n\n    if GUARD.is_file() and PYTHON.is_file():\n        try:\n            result = run([str(PYTHON), str(GUARD), \"status\"], timeout=20)\n        except Exception:\n            result = None\n\n        if result is not None and result.returncode == 0:\n            claims.extend(parse_guard_claims(result.stdout))\n\n    claim_state_dir = ROOT / \".git\" / \"agent-guard\" / \"state\" / \"claims\"\n    if claim_state_dir.is_dir():\n        for path in sorted(claim_state_dir.glob(\"*.json\")):\n            try:\n                value = json.loads(path.read_text(encoding=\"utf-8\"))\n            except Exception:\n                continue\n\n            if not isinstance(value, dict):\n                continue\n\n            if str(value.get(\"status\") or \"\").strip().upper() != \"ACTIVE\":\n                continue\n\n            claim = dict(value)\n            claim.setdefault(\"claim_file\", str(path))\n            claims.append(claim)\n\n    deduped: list[dict[str, Any]] = []\n    seen: set[tuple[str, str, str]] = set()\n\n    for claim in claims:\n        key = (\n            str(claim.get(\"agent_id\") or \"\"),\n            str(claim.get(\"branch\") or \"\"),\n            str(claim.get(\"worktree\") or \"\"),\n        )\n        if key in seen:\n            continue\n        seen.add(key)\n        deduped.append(claim)\n\n    return deduped\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/worker_runtime_reconciler.py",
+      "old": "def branch_is_integrated(branch: str) -> bool:\n    if not branch: return False\n    git(\"fetch\", REMOTE, DEV_BRANCH); head = git(\"rev-parse\", branch); remote = git(\"rev-parse\", f\"{REMOTE}/{DEV_BRANCH}\")\n    if head.returncode != 0 or remote.returncode != 0: return False\n    return git(\"merge-base\", \"--is-ancestor\", head.stdout.strip(), remote.stdout.strip()).returncode == 0\n",
+      "new": "def prepare_integration_snapshot() -> bool:\n    global _CYCLE_REMOTE_HEAD\n\n    _BRANCH_INTEGRATION_CACHE.clear()\n    _CYCLE_REMOTE_HEAD = None\n\n    fetched = git(\"fetch\", REMOTE, DEV_BRANCH)\n    if fetched.returncode != 0:\n        return False\n\n    remote = git(\"rev-parse\", f\"{REMOTE}/{DEV_BRANCH}\")\n    if remote.returncode != 0:\n        return False\n\n    resolved = remote.stdout.strip()\n    if not resolved:\n        return False\n\n    _CYCLE_REMOTE_HEAD = resolved\n    return True\n\n\ndef branch_is_integrated(branch: str) -> bool:\n    if not branch:\n        return False\n\n    cached = _BRANCH_INTEGRATION_CACHE.get(branch)\n    if cached is not None:\n        return cached\n\n    if not _CYCLE_REMOTE_HEAD:\n        _BRANCH_INTEGRATION_CACHE[branch] = False\n        return False\n\n    head = git(\"rev-parse\", \"--verify\", branch)\n    if head.returncode != 0:\n        _BRANCH_INTEGRATION_CACHE[branch] = False\n        return False\n\n    integrated = (\n        git(\n            \"merge-base\",\n            \"--is-ancestor\",\n            head.stdout.strip(),\n            _CYCLE_REMOTE_HEAD,\n        ).returncode\n        == 0\n    )\n    _BRANCH_INTEGRATION_CACHE[branch] = integrated\n    return integrated\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/worker_runtime_reconciler.py",
+      "old": "def main() -> int:\n    RUNTIME.mkdir(parents=True, exist_ok=True)\n    payload = {\"schema\": \"edarsahub.worker-runtime-reconciler.v1\", \"generated_at_utc\": now(), \"orphan_processing\": recover_orphan_processing(), \"claims\": reconcile_claims(), \"production_touched\": False}\n    atomic_json(RUNTIME / \"reconciler.json\", payload); (RUNTIME / \"last_reconcile_utc\").write_text(now() + \"\\n\", encoding=\"utf-8\")\n    print(json.dumps(payload, ensure_ascii=False, sort_keys=True)); return 0\n",
+      "new": "def main() -> int:\n    RUNTIME.mkdir(parents=True, exist_ok=True)\n\n    integration_snapshot_ready = prepare_integration_snapshot()\n\n    payload = {\n        \"schema\": \"edarsahub.worker-runtime-reconciler.v1\",\n        \"generated_at_utc\": now(),\n        \"integration_snapshot_ready\": integration_snapshot_ready,\n        \"orphan_processing\": recover_orphan_processing(),\n        \"claims\": reconcile_claims(),\n        \"production_touched\": False,\n    }\n\n    atomic_json(RUNTIME / \"reconciler.json\", payload)\n    (RUNTIME / \"last_reconcile_utc\").write_text(\n        now() + \"\\n\",\n        encoding=\"utf-8\",\n    )\n    print(json.dumps(payload, ensure_ascii=False, sort_keys=True))\n    return 0\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py",
+      "old": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nTARGET = ROOT / 'tools/mirror_sync/worker_runtime_reconciler.py'\n\n\ndef test_reconciler_covers_state_worktree_claims():\n    text = TARGET.read_text(encoding='utf-8')\n    assert 'GUARD_STATE_WORKTREES' in text\n    assert 'glob(\"*.json\")' in text\n    assert 'registered_at' in text\n\n\ndef test_reconciler_derives_job_id_without_task_id():\n    text = TARGET.read_text(encoding='utf-8')\n    assert 'def claim_task_id' in text\n    assert 'agent/worker/' in text\n    assert 'worker-' in text\n\n\ndef test_reconciler_keeps_surgical_safety_guards():\n    text = TARGET.read_text(encoding='utf-8')\n    assert 'WORK_NOT_TERMINAL_OR_INTEGRATED' in text\n    assert 'LIVE_PROCESS_REFERENCES_WORKTREE' in text\n    assert 'WORKTREE_NOT_CLEAN' in text\n    assert 'git(\"branch\", \"-d\", branch)' in text\n    assert 'git(\"branch\", \"-D\", branch)' not in text\n",
+      "new": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nTARGET = ROOT / 'tools/mirror_sync/worker_runtime_reconciler.py'\n\n\ndef test_reconciler_uses_active_claim_authority_only():\n    text = TARGET.read_text(encoding='utf-8')\n    assert 'state\" / \"claims\"' in text\n    assert 'status\") or \"\").strip().upper() != \"ACTIVE\"' in text\n    guard_start = text.index(\"def guard_claims()\")\n    guard_end = text.index(\"\\ndef parse_iso\", guard_start)\n    guard_block = text[guard_start:guard_end]\n    assert 'GUARD_STATE_WORKTREES.glob' not in guard_block\n    assert '\"claims\"]' not in guard_block\n\n\ndef test_reconciler_derives_job_id_without_task_id():\n    text = TARGET.read_text(encoding='utf-8')\n    assert 'def claim_task_id' in text\n    assert 'agent/worker/' in text\n    assert 'worker-' in text\n\n\ndef test_reconciler_keeps_surgical_safety_guards():\n    text = TARGET.read_text(encoding='utf-8')\n    assert 'WORK_NOT_TERMINAL_OR_INTEGRATED' in text\n    assert 'LIVE_PROCESS_REFERENCES_WORKTREE' in text\n    assert 'WORKTREE_NOT_CLEAN' in text\n    assert 'git(\"branch\", \"-d\", branch)' in text\n    assert 'git(\"branch\", \"-D\", branch)' not in text\n\n\ndef test_reconciler_fetches_development_once_per_cycle_and_caches_branch_checks():\n    text = TARGET.read_text(encoding=\"utf-8\")\n\n    assert \"def prepare_integration_snapshot() -> bool:\" in text\n    assert \"_CYCLE_REMOTE_HEAD\" in text\n    assert \"_BRANCH_INTEGRATION_CACHE\" in text\n    assert '_BRANCH_INTEGRATION_CACHE.get(branch)' in text\n\n    prepare_start = text.index(\"def prepare_integration_snapshot() -> bool:\")\n    prepare_end = text.index(\"\\ndef branch_is_integrated\", prepare_start)\n    prepare_block = text[prepare_start:prepare_end]\n\n    assert prepare_block.count('git(\"fetch\", REMOTE, DEV_BRANCH)') == 1\n\n    branch_start = text.index(\"def branch_is_integrated(branch: str) -> bool:\")\n    branch_end = text.index(\"\\ndef worktree_clean\", branch_start)\n    branch_block = text[branch_start:branch_end]\n\n    assert 'git(\"fetch\"' not in branch_block\n    assert '\"merge-base\",' in branch_block\n    assert '\"--is-ancestor\",' in branch_block\n\n\ndef test_reconciler_integration_snapshot_fails_closed():\n    text = TARGET.read_text(encoding=\"utf-8\")\n\n    assert \"integration_snapshot_ready = prepare_integration_snapshot()\" in text\n    assert 'if not _CYCLE_REMOTE_HEAD:' in text\n    assert '_BRANCH_INTEGRATION_CACHE[branch] = False' in text\n    assert '\"integration_snapshot_ready\": integration_snapshot_ready' in text\n",
+      "expected_count": 1,
+      "expected_sha256": "579299f8ebd3a859f91dad5b9cc939c12bb49b55b3d5ae353b0d8858833df425"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/worker_runtime_reconciler.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_universal_worker_external_owner_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/worker_runtime_reconciler.py",
+          "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py"
+        ],
+        "search_terms": [
+          "guard_claims",
+          "state/claims",
+          "ACTIVE",
+          "GUARD_STATE_WORKTREES",
+          "prepare_integration_snapshot",
+          "_CYCLE_REMOTE_HEAD",
+          "_BRANCH_INTEGRATION_CACHE",
+          "branch_is_integrated",
+          "git fetch",
+          "safe_releasable",
+          "claim_terminal",
+          "process_references",
+          "worktree_clean",
+          "production_touched"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "No Cavas functional changes",
+    "No Tablajerias functional changes",
+    "No NetPay changes",
+    "Do not touch universal_job_worker.sh",
+    "Do not change lifecycle semantics",
+    "Do not delete claim files",
+    "Do not delete worktree state files",
+    "Do not run git worktree prune",
+    "Do not weaken Agent Guard",
+    "Do not weaken claim_terminal",
+    "Do not weaken process_references",
+    "Do not weaken worktree_clean",
+    "Do not enable parallel execution",
+    "Do not implement Gate4B1 slots",
+    "Agent Guard ACTIVE claims are authoritative",
+    "Released claims must not be reconciled as active",
+    "state/worktrees must not be promoted to claims",
+    "Exactly one development fetch per reconciler cycle",
+    "Branch integration cache is process-cycle ephemeral only",
+    "Fetch failure must fail closed",
+    "Only declared files may change",
+    "production_touched must remain false"
+  ]
+}
