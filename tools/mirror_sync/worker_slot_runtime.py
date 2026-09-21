@@ -251,6 +251,10 @@ def create_slot(
     execution_pid: int = 0,
     legacy_defaults: bool,
 ) -> dict[str, Any]:
+    path = slot_path(slot_id)
+    if path.exists():
+        raise SlotRuntimeError("SLOT_ALREADY_CLAIMED")
+
     now = _utc_now()
 
     payload = {

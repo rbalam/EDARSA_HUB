@@ -26,6 +26,8 @@ from pathlib import Path
 from typing import Any
 
 from worker_concurrency import evaluate_scope_advance
+from worker_scheduling import normalize_metadata
+from worker_slot_runtime import create_slot, release_slot, update_slot_state
 from git_divergence_guard import (GitGuardError, acquire_writer_lock, compare_and_swap, inspect_repository, mutation_policy, post_push_verify, recover_authorized_local_ahead, release_writer_lock, requires_writer_lock, scoped_push_env, validate_commit_scope)
 
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
@@ -535,12 +537,33 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
     branch = ""
     agent_guard_claim_created = False
     git_writer_lock: dict[str, Any] | None = None
+    slot_id: str | None = None
     try:
         if job.get("schema") != "edarsahub.worker-job.v2":
             raise ValueError("UNSUPPORTED_JOB_SCHEMA")
 
         requested_paths = sorted({str(action.get("path")) for action in (job.get("actions") or []) if action.get("path")})
         mode = str(job.get("mode") or "")
+        scheduling = normalize_metadata(job)
+        slot_class = "READ_ONLY" if mode in {READ_ONLY_MODE, "READ_ONLY_SQL", FRONTEND_BUILD_CERTIFICATION_MODE} else "MUTATION"
+        slot_id = "readonly-1" if slot_class == "READ_ONLY" else "mutation-1"
+        create_slot(
+            slot_id=slot_id,
+            slot_class=slot_class,
+            job_id=job_id,
+            mode=mode,
+            project_id=scheduling.project_id,
+            bounded_context=scheduling.bounded_context,
+            resource_claims=list(scheduling.resource_claims),
+            conflict_domains=list(scheduling.conflict_domains),
+            worker_pid=os.getpid(),
+            execution_pid=os.getpid(),
+            legacy_defaults=scheduling.legacy_defaults,
+        )
+        update_slot_state(slot_id, "RUNNING", execution_pid=os.getpid())
+        result["slot_id"] = slot_id
+        result["slot_class"] = slot_class
+        result["parallel_execution_enabled"] = False
         git_mutating = requires_writer_lock(mode)
         if mode in {READ_ONLY_MODE, "READ_ONLY_SQL", FRONTEND_BUILD_CERTIFICATION_MODE}:
             current_head = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}").stdout.strip()
@@ -1248,6 +1271,18 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
         result["quality_gate"] = "FAIL"
         result["summary_es"] = "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada."
     finally:
+        if slot_id is not None:
+            try:
+                update_slot_state(slot_id, "TERMINALIZING", execution_pid=os.getpid())
+                release_slot(slot_id)
+                result["slot_release"] = "PASS"
+            except Exception as exc:
+                result["slot_release"] = "FAIL"
+                result["blockers"].append(f"slot_release_failed:{type(exc).__name__}:{exc}")
+                result["quality_gate"] = "FAIL"
+                result["certification"] = "NOT_CERTIFIED"
+        else:
+            result["slot_release"] = "NOT_REQUIRED"
         if agent_guard_claim_created:
             release_ok, release_detail = release_agent_guard_claim(job_id)
             result["agent_guard_release"] = "PASS" if release_ok else "FAIL"

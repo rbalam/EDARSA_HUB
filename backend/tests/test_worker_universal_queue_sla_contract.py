@@ -24,6 +24,17 @@ def test_dispatcher_tracks_runtime_and_only_releases_created_claims():
     assert 'last_terminal_utc' in text
 
 
+def test_dispatcher_uses_serial_slot_runtime_without_parallel_execution():
+    text = DISPATCHER.read_text(encoding='utf-8')
+    assert 'from worker_slot_runtime import create_slot, release_slot, update_slot_state' in text
+    assert 'slot_id = "readonly-1" if slot_class == "READ_ONLY" else "mutation-1"' in text
+    assert 'create_slot(' in text
+    assert 'update_slot_state(slot_id, "RUNNING"' in text
+    assert 'update_slot_state(slot_id, "TERMINALIZING"' in text
+    assert 'release_slot(slot_id)' in text
+    assert 'result["parallel_execution_enabled"] = False' in text
+
+
 def test_dispatcher_claim_is_atomic_and_execution_is_outside_lock():
     text = DISPATCHER.read_text(encoding='utf-8')
     assert 'def claim_one() -> Path | None:' in text

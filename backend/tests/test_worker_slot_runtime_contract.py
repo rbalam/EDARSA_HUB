@@ -32,6 +32,7 @@ def test_gate4b1_effective_capacity_remains_serial_per_class():
 def test_slot_runtime_is_fail_closed_and_atomic():
     value = text()
     assert "CORRUPT_SLOT_RUNTIME" in value
+    assert "SLOT_ALREADY_CLAIMED" in value
     assert "LEGACY_CURRENT_JOB_PROJECTION_CONFLICT" in value
     assert "tempfile.NamedTemporaryFile" in value
     assert "handle.flush()" in value
