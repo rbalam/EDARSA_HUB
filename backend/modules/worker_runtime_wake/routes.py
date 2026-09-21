@@ -40,8 +40,7 @@ _JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 WORKER_TREE_STATE = RUNTIME_DIR / "active_worker_code_tree_sha"
 WORKER_CODE_TREE_SPEC = "HEAD:tools/mirror_sync"
 GIT_GUARD_PATH = REPO_ROOT / "tools" / "mirror_sync" / "git_divergence_guard.py"
-WAKE_ROUTE_VERSION = "r33-canonical-ff-refresh"
-# Runtime reload marker bootstrap-35667070788-1: force Preview backend reload for canonical worker wake endpoint.
+WAKE_ROUTE_VERSION = "r34-startup-selfheal"
 _SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 
 
@@ -242,10 +241,10 @@ def _register_preferred_job(job_id: str, queue_sha: str) -> str | None:
     return value
 
 
-def _restart_worker() -> None:
+def _run_supervisor_worker_action(action: str) -> subprocess.CompletedProcess[str]:
     try:
-        completed = subprocess.run(
-            ["supervisorctl", "restart", WORKER_SERVICE],
+        return subprocess.run(
+            ["supervisorctl", action, WORKER_SERVICE],
             cwd=str(REPO_ROOT),
             check=False,
             capture_output=True,
@@ -255,14 +254,61 @@ def _restart_worker() -> None:
     except (OSError, subprocess.SubprocessError) as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="worker restart unavailable",
+            detail="worker supervisor unavailable",
         ) from exc
 
-    if completed.returncode != 0:
+
+def _restart_worker() -> None:
+    completed = _run_supervisor_worker_action("restart")
+    if completed.returncode == 0:
+        return
+
+    started = _run_supervisor_worker_action("start")
+    if started.returncode != 0:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="worker restart failed",
         )
+
+
+def _is_production_environment() -> bool:
+    env_name = (
+        os.environ.get("EDARSA_ENV")
+        or os.environ.get("APP_ENV")
+        or os.environ.get("ENVIRONMENT")
+        or "PREVIEW"
+    ).upper()
+    return "PROD" in env_name
+
+
+def ensure_worker_runtime_on_preview_startup() -> dict[str, object]:
+    """Recover a stale Universal Worker whenever the Preview backend starts.
+
+    This does not depend on the public wake endpoint. The endpoint cannot
+    repair itself when the deployed backend is stale, so backend startup is
+    the local recovery boundary.
+    """
+    if _is_production_environment():
+        return {
+            "state": "SKIPPED_PRODUCTION_ENV",
+            "production_touched": False,
+        }
+
+    heartbeat_age = _heartbeat_age_seconds()
+    if heartbeat_age is not None and heartbeat_age <= 90:
+        return {
+            "state": "ALREADY_HEALTHY",
+            "heartbeat_age_seconds": round(heartbeat_age, 3),
+            "production_touched": False,
+        }
+
+    _restart_worker()
+    return {
+        "state": "WORKER_RESTART_REQUESTED",
+        "heartbeat_age_seconds": round(heartbeat_age, 3) if heartbeat_age is not None else None,
+        "service": WORKER_SERVICE,
+        "production_touched": False,
+    }
 
 
 @router.post("/internal/worker/wake", status_code=status.HTTP_202_ACCEPTED)

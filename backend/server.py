@@ -16340,7 +16340,10 @@ app.include_router(api_router)
 
 # WORKER: endpoint autenticado de runtime wake
 # Runtime reload marker 2026-09-20: fuerza recarga Preview sin cambio funcional; Produccion fuera de alcance.
-from modules.worker_runtime_wake.routes import router as worker_runtime_wake_router
+from modules.worker_runtime_wake.routes import (
+    router as worker_runtime_wake_router,
+    ensure_worker_runtime_on_preview_startup,
+)
 app.include_router(worker_runtime_wake_router, prefix="/api")
 
 # EDARSAHUB Universal Worker Console (Fase 1, solo lectura)
@@ -16784,21 +16787,20 @@ except Exception as e:
     logger.warning(f"Error registrando SQL Compat Bridge router: {e}")
 
 
-# =============================================================================
-# UNIVERSAL WORKER - WAKE INTERNO CANONICO
-# =============================================================================
-try:
-    from modules.worker_runtime_wake.routes import router as worker_runtime_wake_router
-    app.include_router(worker_runtime_wake_router, prefix="/api")
-    logger.info("Universal Worker wake router registrado")
-except Exception as e:
-    logger.warning(f"Error registrando Universal Worker wake router: {e}")
+# UNIVERSAL WORKER: el router se registra una sola vez arriba.
+# El arranque del backend actua como frontera local de auto-recuperacion del Worker.
 
 
 # Startup: Iniciar scheduler
 @app.on_event("startup")
 async def startup_scheduler():
-    """Inicia el scheduler de jobs automáticos."""
+    """Inicia el scheduler y recupera el Universal Worker en Preview."""
+    try:
+        worker_runtime_state = ensure_worker_runtime_on_preview_startup()
+        logger.info(f"Universal Worker startup self-heal: {worker_runtime_state}")
+    except Exception as e:
+        logger.warning(f"Universal Worker startup self-heal no disponible: {e}")
+
     try:
         from core.scheduler import start_scheduler
         await start_scheduler(db)  # MongoDB ELIMINADO - StubDatabase para compatibilidad
