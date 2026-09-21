@@ -1,0 +1,96 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1B-SERIAL-SLOT-INTEGRATION-CERT-READONLY-R1-20260921",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6bde053b57e8caf7e7dbe00432b9a25266d48478",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "objective": "Certificar READ_ONLY el cierre de Gate4B1B Mutation R1 ya integrada. Validar en el HEAD exacto que la integracion serial de worker_slot_runtime al dispatcher conserva lifecycle y compatibilidad legacy, usa exactamente readonly-1 o mutation-1 segun clase, transiciona CLAIMED/RUNNING/TERMINALIZING y libera slot, falla cerrado con SLOT_ALREADY_CLAIMED, mantiene current_job_id legacy, no habilita paralelismo, conserva capacidades READ_ONLY=1 y MUTATION=1, y no debilita GLOBAL_GIT_WRITER, Agent Guard, Repository Artifact Guard ni divergence guards. Produccion debe permanecer intacta.",
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/worker_scheduling.py",
+        "tools/mirror_sync/worker_slot_runtime.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_slot_runtime_contract.py",
+        "backend/tests/test_multiproject_shadow_scheduler.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_universal_worker_external_owner_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/worker_scheduling.py",
+          "tools/mirror_sync/worker_slot_runtime.py",
+          "backend/tests/test_worker_universal_queue_sla_contract.py",
+          "backend/tests/test_worker_slot_runtime_contract.py"
+        ],
+        "search_terms": [
+          "worker_slot_runtime",
+          "create_slot",
+          "release_slot",
+          "update_slot_state",
+          "readonly-1",
+          "mutation-1",
+          "SLOT_ALREADY_CLAIMED",
+          "current_job_id",
+          "GLOBAL_GIT_WRITER",
+          "agent_guard",
+          "parallel_execution_enabled",
+          "production_touched"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty",
+    "No repository mutation",
+    "No lifecycle mutation outside normal READ_ONLY result publication",
+    "No runtime slot creation",
+    "No claim mutation",
+    "No worktree mutation",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "No Production",
+    "Do not restart supervisor",
+    "Do not enable parallel execution",
+    "READ_ONLY effective capacity remains 1",
+    "MUTATION effective capacity remains 1",
+    "Do not weaken Agent Guard",
+    "Do not weaken Repository Artifact Guard",
+    "Do not weaken GLOBAL_GIT_WRITER",
+    "Do not weaken Git divergence guards",
+    "Do not change lifecycle semantics",
+    "worker_scheduling.py remains canonical scheduling authority",
+    "worker_slot_runtime.py remains fail-closed",
+    "SLOT_ALREADY_CLAIMED fail-closed contract must remain present",
+    "current_job_id legacy compatibility must remain present",
+    "production_touched must remain false",
+    "Do not advance beyond Gate4B1B until this certification reaches 100 percent with blockers empty"
+  ]
+}
