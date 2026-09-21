@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "12c6c18de619854e5fe8f33e87bff7b63eaa93fe",
-  "generated_at_utc": "2026-09-21T16:39:43Z",
+  "generated_at_utc": "2026-09-21T16:41:03Z",
   "history": {
     "done_total_local": 798,
     "pending_total_local": 0,
@@ -16,55 +16,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2547,
+      "age_seconds": 2628,
       "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C1-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2540,
+      "age_seconds": 2621,
       "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C2-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2535,
+      "age_seconds": 2616,
       "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C3-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2531,
+      "age_seconds": 2612,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-MUTATION-FUNCTIONAL-SURGICAL-R2-20260921T154300Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 28,
+      "age_seconds": 109,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-MUTATION-FUNCTIONAL-SURGICAL-R3-20260921T160100Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1871,
+      "age_seconds": 1951,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE0-ARCH-AUDIT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1629,
+      "age_seconds": 1709,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE1-SHADOW-SCHEDULER-DESIGN-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 103,
+      "age_seconds": 183,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE2-SHADOW-IMPLEMENTATION-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 95,
+      "age_seconds": 176,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE3-SCOPE-LOCK-PLAN-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
@@ -84,8 +84,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T16:39:36Z",
-    "last_receive_utc": "2026-09-21T16:39:40Z",
+    "last_cycle_utc": "2026-09-21T16:41:03Z",
+    "last_receive_utc": "2026-09-21T16:40:58Z",
     "last_terminal_utc": "2026-09-21T16:39:14Z",
     "pid": "190"
   },
