@@ -1,0 +1,115 @@
+{
+  "job": {
+    "schema": "edarsahub.worker-job.v2",
+    "job_id": "EDARSAHUB-WORKER-RECONCILER-HOTPATH-SINGLE-FETCH-CACHE-R1-20260921",
+    "target_repo": "rbalam/EDARSA_HUB",
+    "target_branch": "Edarsahub_Desarrollo",
+    "base_sha": "95bbeaf17569fb8bb61ebc0c27806372b311ec2b",
+    "production_allowed": false,
+    "human_summary_language": "es",
+    "objective": "Corregir quirurgicamente el hot path de worker_runtime_reconciler eliminando git fetch repetitivo por claim. Realizar exactamente un fetch de Edarsahub_Desarrollo por ciclo, resolver una vez remote HEAD y cachear decisiones branch_is_integrated. Mantener fail-closed, Agent Guard, lifecycle, worktree safety y Produccion intacta. No implementar todavia Gate4B1 slots.",
+    "mode": "MUTATION",
+    "actions": [
+      {
+        "type": "replace_text",
+        "path": "tools/mirror_sync/worker_runtime_reconciler.py",
+        "old": "PYTHON = Path(\"/root/.venv/bin/python\")\n\ndef now() -> str:\n",
+        "new": "PYTHON = Path(\"/root/.venv/bin/python\")\n\n_CYCLE_REMOTE_HEAD: str | None = None\n_BRANCH_INTEGRATION_CACHE: dict[str, bool] = {}\n\ndef now() -> str:\n",
+        "expected_count": 1,
+        "expected_sha256": "53914d5d8b8b5bab0db44ed6349adba039439d3cbff2978594311dd9867dabab"
+      },
+      {
+        "type": "replace_text",
+        "path": "tools/mirror_sync/worker_runtime_reconciler.py",
+        "old": "def branch_is_integrated(branch: str) -> bool:\n    if not branch: return False\n    git(\"fetch\", REMOTE, DEV_BRANCH); head = git(\"rev-parse\", branch); remote = git(\"rev-parse\", f\"{REMOTE}/{DEV_BRANCH}\")\n    if head.returncode != 0 or remote.returncode != 0: return False\n    return git(\"merge-base\", \"--is-ancestor\", head.stdout.strip(), remote.stdout.strip()).returncode == 0\n",
+        "new": "def prepare_integration_snapshot() -> bool:\n    global _CYCLE_REMOTE_HEAD\n    _BRANCH_INTEGRATION_CACHE.clear()\n    _CYCLE_REMOTE_HEAD = None\n\n    fetched = git(\"fetch\", REMOTE, DEV_BRANCH)\n    if fetched.returncode != 0:\n        return False\n\n    remote = git(\"rev-parse\", f\"{REMOTE}/{DEV_BRANCH}\")\n    if remote.returncode != 0:\n        return False\n\n    resolved = remote.stdout.strip()\n    if not resolved:\n        return False\n\n    _CYCLE_REMOTE_HEAD = resolved\n    return True\n\n\ndef branch_is_integrated(branch: str) -> bool:\n    if not branch:\n        return False\n\n    cached = _BRANCH_INTEGRATION_CACHE.get(branch)\n    if cached is not None:\n        return cached\n\n    if not _CYCLE_REMOTE_HEAD:\n        _BRANCH_INTEGRATION_CACHE[branch] = False\n        return False\n\n    head = git(\"rev-parse\", \"--verify\", branch)\n    if head.returncode != 0:\n        _BRANCH_INTEGRATION_CACHE[branch] = False\n        return False\n\n    integrated = (\n        git(\n            \"merge-base\",\n            \"--is-ancestor\",\n            head.stdout.strip(),\n            _CYCLE_REMOTE_HEAD,\n        ).returncode\n        == 0\n    )\n    _BRANCH_INTEGRATION_CACHE[branch] = integrated\n    return integrated\n",
+        "expected_count": 1
+      },
+      {
+        "type": "replace_text",
+        "path": "tools/mirror_sync/worker_runtime_reconciler.py",
+        "old": "def main() -> int:\n    RUNTIME.mkdir(parents=True, exist_ok=True)\n    payload = {\"schema\": \"edarsahub.worker-runtime-reconciler.v1\", \"generated_at_utc\": now(), \"orphan_processing\": recover_orphan_processing(), \"claims\": reconcile_claims(), \"production_touched\": False}\n    atomic_json(RUNTIME / \"reconciler.json\", payload); (RUNTIME / \"last_reconcile_utc\").write_text(now() + \"\\n\", encoding=\"utf-8\")\n    print(json.dumps(payload, ensure_ascii=False, sort_keys=True)); return 0\n",
+        "new": "def main() -> int:\n    RUNTIME.mkdir(parents=True, exist_ok=True)\n    integration_snapshot_ready = prepare_integration_snapshot()\n    payload = {\n        \"schema\": \"edarsahub.worker-runtime-reconciler.v1\",\n        \"generated_at_utc\": now(),\n        \"integration_snapshot_ready\": integration_snapshot_ready,\n        \"orphan_processing\": recover_orphan_processing(),\n        \"claims\": reconcile_claims(),\n        \"production_touched\": False,\n    }\n    atomic_json(RUNTIME / \"reconciler.json\", payload)\n    (RUNTIME / \"last_reconcile_utc\").write_text(now() + \"\\n\", encoding=\"utf-8\")\n    print(json.dumps(payload, ensure_ascii=False, sort_keys=True))\n    return 0\n",
+        "expected_count": 1
+      },
+      {
+        "type": "replace_text",
+        "path": "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py",
+        "old": "",
+        "new": "\n\ndef test_reconciler_fetches_development_once_per_cycle_and_caches_branch_checks():\n    text = RECONCILER.read_text(encoding=\"utf-8\")\n    assert \"def prepare_integration_snapshot() -> bool:\" in text\n    assert \"_CYCLE_REMOTE_HEAD\" in text\n    assert \"_BRANCH_INTEGRATION_CACHE\" in text\n    assert '_BRANCH_INTEGRATION_CACHE.get(branch)' in text\n    assert 'git(\"fetch\", REMOTE, DEV_BRANCH)' in text\n\n    branch_start = text.index(\"def branch_is_integrated(branch: str) -> bool:\")\n    branch_end = text.index(\"\\ndef worktree_clean\", branch_start)\n    branch_block = text[branch_start:branch_end]\n\n    assert 'git(\"fetch\"' not in branch_block\n    assert '\"merge-base\",' in branch_block\n    assert '\"--is-ancestor\",' in branch_block\n\n\ndef test_reconciler_integration_snapshot_fails_closed():\n    text = RECONCILER.read_text(encoding=\"utf-8\")\n    assert \"integration_snapshot_ready = prepare_integration_snapshot()\" in text\n    assert 'if not _CYCLE_REMOTE_HEAD:' in text\n    assert '_BRANCH_INTEGRATION_CACHE[branch] = False' in text\n    assert '\"integration_snapshot_ready\": integration_snapshot_ready' in text\n",
+        "expected_count": 1,
+        "expected_sha256": "579299f8ebd3a859f91dad5b9cc939c12bb49b55b3d5ae353b0d8858833df425"
+      }
+    ],
+    "checks": [
+      {
+        "type": "py_compile",
+        "paths": [
+          "tools/mirror_sync/worker_runtime_reconciler.py"
+        ]
+      },
+      {
+        "type": "pytest",
+        "paths": [
+          "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py",
+          "backend/tests/test_worker_three_properties_contract.py",
+          "backend/tests/test_worker_control_plane_contract.py",
+          "backend/tests/test_universal_worker_external_owner_contract.py"
+        ]
+      },
+      {
+        "type": "repository_contract_audit",
+        "request": {
+          "paths": [
+            "tools/mirror_sync/worker_runtime_reconciler.py",
+            "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py"
+          ],
+          "search_terms": [
+            "prepare_integration_snapshot",
+            "_CYCLE_REMOTE_HEAD",
+            "_BRANCH_INTEGRATION_CACHE",
+            "branch_is_integrated",
+            "git fetch",
+            "merge-base",
+            "safe_releasable",
+            "worktree_clean",
+            "process_references",
+            "production_touched"
+          ],
+          "include_patterns": [
+            "*.py"
+          ],
+          "exclude_patterns": [],
+          "max_results": 500
+        }
+      },
+      {
+        "type": "git_diff_check"
+      }
+    ],
+    "constraints": [
+      "No Production",
+      "No SQL",
+      "No Mongo",
+      "No frontend",
+      "No Cavas functional changes",
+      "No Tablajerias functional changes",
+      "No NetPay changes",
+      "Do not touch universal_job_worker.sh",
+      "Do not change lifecycle semantics",
+      "Do not delete claims merely because they are old",
+      "Do not remove worktrees unless existing safety contract authorizes it",
+      "Do not weaken Agent Guard",
+      "Do not weaken worktree_clean",
+      "Do not weaken process_references",
+      "Do not weaken claim_terminal",
+      "Do not enable parallel execution",
+      "Do not implement Gate4B1 slots yet",
+      "Exactly one development fetch per reconciler cycle",
+      "branch integration cache must be per process cycle only",
+      "fetch failure must fail closed",
+      "production_touched must remain false",
+      "Only declared files may change"
+    ]
+  }
+}
