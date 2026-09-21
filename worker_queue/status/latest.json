@@ -4,11 +4,11 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "6bde053b57e8caf7e7dbe00432b9a25266d48478",
-  "generated_at_utc": "2026-09-21T19:17:24Z",
+  "generated_at_utc": "2026-09-21T19:18:41Z",
   "history": {
     "done_total_local": 814,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 730,
     "results_total_local": 1370
   },
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3428,
+      "age_seconds": 3505,
       "job_id": "EDARSAHUB-WORKER-RECONCILER-HOTPATH-SINGLE-FETCH-CACHE-R1-20260921",
       "reasons": [
         "INVALID_SCHEMA",
@@ -32,7 +32,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2924,
+      "age_seconds": 3000,
       "job_id": "EDARSAHUB-WORKER-RECONCILER-HOTPATH-SINGLE-FETCH-CACHE-R2-20260921",
       "reasons": [
         "ACTION_4_OLD_REQUIRED"
@@ -41,100 +41,106 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 428,
+      "age_seconds": 505,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-R4-MUTATION-FUNCTIONAL-SURGICAL-20260921T190900Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1935,
+      "age_seconds": 2012,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1-DELTA-PREFLIGHT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 741,
+      "age_seconds": 818,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-R4-CERT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1754,
+      "age_seconds": 1831,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-SCHEDULING-SLOT-FOUNDATION-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1533,
+      "age_seconds": 1610,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-SCHEDULING-SLOT-FOUNDATION-R2-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1342,
+      "age_seconds": 1419,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-SCHEDULING-SLOT-FOUNDATION-R3-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 884,
+      "age_seconds": 960,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-SCHEDULING-SLOT-FOUNDATION-R4-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 83,
+      "age_seconds": 160,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1B-SERIAL-SLOT-INTEGRATION-CERT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 334,
+      "age_seconds": 410,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1B-SERIAL-SLOT-INTEGRATION-MUTATION-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 527,
+      "age_seconds": 604,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1B-SERIAL-SLOT-INTEGRATION-PREFLIGHT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 712,
+      "age_seconds": 788,
       "job_id": "EDARSAHUB-WORKER-GIT-LOCK-PICKUP-DIAG-READONLY-R1C-20260921T180500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2258,
+      "age_seconds": 2335,
       "job_id": "EDARSAHUB-WORKER-RECONCILER-ACTIVE-CLAIM-AUTHORITY-HOTPATH-R4-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2738,
+      "age_seconds": 2815,
       "job_id": "EDARSAHUB-WORKER-RECONCILER-HOTPATH-SINGLE-FETCH-CACHE-R3-20260921",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 76,
+      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-R5-MUTATION-FUNCTIONAL-SURGICAL-FIX-PYTEST-20260921T191500Z",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "local_development_sha": "6bde053b57e8caf7e7dbe00432b9a25266d48478",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 2,
   "queue_result_ready_recent": 13,
-  "queue_running": 0,
+  "queue_running": 1,
   "remote_development_sha": "6bde053b57e8caf7e7dbe00432b9a25266d48478",
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-R5-MUTATION-FUNCTIONAL-SURGICAL-FIX-PYTEST-20260921T191500Z",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T19:17:23Z",
-    "last_receive_utc": "2026-09-21T19:17:18Z",
+    "last_cycle_utc": "2026-09-21T19:18:36Z",
+    "last_receive_utc": "2026-09-21T19:18:40Z",
     "last_terminal_utc": "2026-09-21T19:16:01Z",
     "pid": "208476"
   },
