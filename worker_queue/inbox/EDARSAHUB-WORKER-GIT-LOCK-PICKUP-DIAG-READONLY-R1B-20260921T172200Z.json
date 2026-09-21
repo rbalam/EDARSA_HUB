@@ -1,0 +1,170 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-GIT-LOCK-PICKUP-DIAG-READONLY-R1B-20260921T172200Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a2bd1be64a1b9392921a23351ecc68549c6e278a",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "priority": "P0",
+  "requester": {
+    "source": "chatgpt_classic",
+    "project": "13. Produccion",
+    "chat": "tablajerias"
+  },
+  "objective": "Diagnosticar por que Gate25F-R3 cerro con GIT_LOCK_BUSY y determinar si el writer lock esta activo, stale, libre o tomado por otro job. Este R1B corrige el rechazo de R1 quitando el wrapper envelope y publicando un worker-job.v2 directo. No ejecutar mutaciones funcionales. No preparar Gate25F-R4. No tocar SQL ni Produccion.",
+  "context": {
+    "previous_rejected_job_id": "EDARSAHUB-WORKER-GIT-LOCK-PICKUP-DIAG-READONLY-R1-20260921T165800Z",
+    "previous_rejection_reasons": [
+      "INVALID_SCHEMA",
+      "INVALID_JOB_ID",
+      "INVALID_TARGET_REPO",
+      "INVALID_TARGET_BRANCH",
+      "PRODUCTION_MUST_BE_FALSE",
+      "OBJECTIVE_REQUIRED",
+      "SUMMARY_LANGUAGE_MUST_BE_ES",
+      "ACTIONS_REQUIRED"
+    ],
+    "previous_rejection_cause": "R1 fue publicado como edarsahub.worker-envelope.v1 y el runtime valido el top-level. R1B publica worker-job.v2 directo.",
+    "blocked_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-MUTATION-FUNCTIONAL-SURGICAL-R3-20260921T160100Z",
+    "blocked_status": "GIT_LOCK_BUSY",
+    "blocked_blocker": "dispatcher_exception:RuntimeError:GIT_LOCK_BUSY",
+    "blocked_percent_complete": 0,
+    "blocked_production_touched": false,
+    "next_functional_gate_blocked": "Gate25F-R4",
+    "next_functional_gate_allowed_only_if": "LOCK_FREE confirmed with evidence"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "worker_intake_audit",
+      "request": {
+        "branch": "worker/requests",
+        "target_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-MUTATION-FUNCTIONAL-SURGICAL-R3-20260921T160100Z",
+        "inspect_paths": [
+          ".git/index.lock",
+          ".git/universal-worker-queue/pending",
+          ".git/universal-worker-queue/processing",
+          ".git/universal-worker-queue/results",
+          ".git/universal-worker-queue/done",
+          ".git/universal-worker-queue/published",
+          ".git/universal-worker-queue/rejected",
+          ".git/universal-worker-queue/rejected_history",
+          ".git/universal-worker-queue/preferred_job",
+          ".git/universal-worker-queue/locks",
+          "worker_queue/inbox",
+          "worker_queue/processing",
+          "worker_queue/results",
+          "worker_queue/rejected",
+          "worker_queue/status/latest.json"
+        ],
+        "questions": [
+          "Does .git/index.lock exist?",
+          "If index.lock exists, what is its timestamp and apparent owner?",
+          "Are there active git processes?",
+          "Is there a current writer owner?",
+          "Is there a job in local processing that owns GLOBAL_GIT_WRITER?",
+          "Is the lock active, stale, free or unknown?",
+          "Is status/latest.json stale or current?",
+          "Is worker/requests being fetched by runtime?",
+          "Is Gate25F-R3 terminal already published and what blocker did it report?",
+          "Are pending or processing jobs using GLOBAL_GIT_WRITER?",
+          "Did Edarsahub_Desarrollo change after base_sha a2bd1be64a1b9392921a23351ecc68549c6e278a?",
+          "What is the safe decision for Gate25F-R4?"
+        ]
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/mirror_sync_worker.sh",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "tools/mirror_sync/multiproject_shadow_scheduler.py",
+          "backend/modules/worker_console",
+          "backend/modules/worker_runtime_wake/routes.py",
+          "backend/tests/test_worker_universal_queue_sla_contract.py",
+          "backend/tests/test_worker_control_plane_contract.py",
+          "backend/tests/test_multiproject_shadow_scheduler.py"
+        ],
+        "search_terms": [
+          "GIT_LOCK_BUSY",
+          "index.lock",
+          "GLOBAL_GIT_WRITER",
+          "current_job_id",
+          "preferred_job",
+          "status/latest.json",
+          "last_cycle_utc",
+          "last_receive_utc",
+          "processing",
+          "pending",
+          "rejected",
+          "worker_intake_audit",
+          "edarsahub.worker-job.v2",
+          "READ_ONLY_ACTIONS_MUST_BE_EMPTY_LIST"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.md",
+          "*.json"
+        ],
+        "exclude_patterns": [
+          "**/__pycache__/**",
+          "**/node_modules/**"
+        ],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty list",
+    "No file changes in Edarsahub_Desarrollo",
+    "No SQL execution",
+    "No DDL or DML execution",
+    "No Production",
+    "No backend mutation",
+    "No frontend mutation",
+    "No Scheduler changes",
+    "No NetPay changes",
+    "No deleting queue files",
+    "No moving lifecycle files",
+    "No cleanup of locks unless separately authorized later",
+    "No reset, clean, stash, force push, merge or rebase",
+    "No secrets or credentials in output",
+    "No Gate25F-R4 publication from this job",
+    "No Gate25G publication from this job"
+  ],
+  "required_output": [
+    "lock_state: LOCK_ACTIVE / LOCK_STALE / LOCK_FREE / UNKNOWN",
+    "owner_job_id if exists",
+    "index_lock_exists",
+    "index_lock_timestamp_utc if exists",
+    "active_git_processes",
+    "worker_alive",
+    "current_writer_owner",
+    "local_lifecycle_state",
+    "status_latest_freshness",
+    "global_git_writer_jobs",
+    "development_branch_current_sha",
+    "production_touched_false_confirmed",
+    "sql_touched_false_confirmed",
+    "safe_decision_for_gate25f_r4",
+    "blockers"
+  ],
+  "expected_terminal": {
+    "certification": "CERTIFIED_READ_ONLY",
+    "quality_gate": "PASS",
+    "production_touched": false,
+    "sql_touched": false,
+    "functional_mutation_touched": false
+  },
+  "created_at_utc": "2026-09-21T17:22:00Z"
+}
