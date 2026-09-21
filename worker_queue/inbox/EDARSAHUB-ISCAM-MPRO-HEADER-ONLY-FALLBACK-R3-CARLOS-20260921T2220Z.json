@@ -1,0 +1,78 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-MPRO-HEADER-ONLY-FALLBACK-R3-CARLOS-20260921T2220Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "405b3413c9366f0ca5be035e445e16c68bc26edd",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "priority": "P0",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V2",
+    "chat": "20260921-Reportes ISCAM"
+  },
+  "objective": "Completar el contrato MPRO para tickets cuyo Venta_Encabezado final existe pero Comanda_Detalle no tiene línea monetaria disponible. Actualmente _extract_mpro genera HEADER_SIN_DETALLE con bruto 0 y _prorratear_mpro_por_ticket aborta todo el día, dejando 0 detalle aunque Runtime V2 y el header sean válidos. Para ese caso exclusivo, convertir la fila header-only en una línea técnica __ISCAM_AJUSTE_ENCABEZADO__ por el neto final del ticket, cantidad 0, precio 0 y bruto=neto para no fabricar descuento. Debe quedar excluida de vistas de producto por el prefijo __ISCAM_AJUSTE_. Mantener fail-closed para cualquier otro caso de bruto 0 que no sea HEADER_SIN_DETALLE. No hardcodear ORIGEN, fecha ni importes.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "        gross_total = _q4(sum(gross_values, Decimal(\"0\")))\n        if gross_total <= 0:\n            raise RuntimeError(\n                f\"MPRO: ticket sin detalle monetario distribuible: {ticket_key}\"\n            )\n\n        allocations: List[Decimal] = []",
+      "new": "        gross_total = _q4(sum(gross_values, Decimal(\"0\")))\n        if gross_total <= 0:\n            header_only = all(\n                _s(row.get(\"producto_codigo_fuente\")).upper() == \"HEADER_SIN_DETALLE\"\n                for _, row in items\n            )\n            if not header_only:\n                raise RuntimeError(\n                    f\"MPRO: ticket sin detalle monetario distribuible: {ticket_key}\"\n                )\n\n            # El encabezado final existe pero el POS no expone líneas de producto.\n            # No se inventa producto: se conserva el ticket como ajuste técnico,\n            # excluido de vistas de productos por el prefijo __ISCAM_AJUSTE_.\n            for index, (_, row) in enumerate(items):\n                line_net = target_net if index == 0 else Decimal(\"0\")\n                row[\"producto_codigo_fuente\"] = SOFT_AJUSTE_ENCABEZADO\n                row[\"producto_nombre\"] = \"AJUSTE MPRO: HEADER SIN DETALLE DE PRODUCTO\"\n                row[\"cantidad\"] = Decimal(\"0\")\n                row[\"precio_unitario\"] = Decimal(\"0\")\n                row[\"importe_bruto\"] = line_net\n                row[\"importe_neto\"] = line_net\n                row[\"descuento_prorrateado\"] = Decimal(\"0\")\n            continue\n\n        allocations: List[Decimal] = []",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_mpro_header_authority_r93.py",
+      "old": "def test_mpro_zero_final_header_distributes_zero_without_inventing_sales():\n    out = _prorratear_mpro_por_ticket([\n        _row(\"A\", \"80\", \"0\", \"80\"),\n        _row(\"B\", \"20\", \"0\", \"80\"),\n    ])\n    assert sum(x[\"importe_neto\"] for x in out) == Decimal(\"0.0000\")\n\n\ndef test_mpro_detail_join_is_scoped_to_same_branch():",
+      "new": "def test_mpro_zero_final_header_distributes_zero_without_inventing_sales():\n    out = _prorratear_mpro_por_ticket([\n        _row(\"A\", \"80\", \"0\", \"80\"),\n        _row(\"B\", \"20\", \"0\", \"80\"),\n    ])\n    assert sum(x[\"importe_neto\"] for x in out) == Decimal(\"0.0000\")\n\n\ndef test_mpro_header_without_product_detail_becomes_technical_adjustment():\n    row = _row(\"HEADER_SIN_DETALLE\", \"0\", \"125\", \"0\")\n    out = _prorratear_mpro_por_ticket([row])\n    assert out[0][\"producto_codigo_fuente\"] == \"__ISCAM_AJUSTE_ENCABEZADO__\"\n    assert out[0][\"cantidad\"] == Decimal(\"0\")\n    assert out[0][\"importe_bruto\"] == Decimal(\"125.0000\")\n    assert out[0][\"importe_neto\"] == Decimal(\"125.0000\")\n\n\ndef test_mpro_zero_gross_non_header_still_fails_closed():\n    import pytest\n    with pytest.raises(RuntimeError, match=\"sin detalle monetario distribuible\"):\n        _prorratear_mpro_por_ticket([_row(\"PRODUCTO_REAL\", \"0\", \"125\", \"0\")])\n\n\ndef test_mpro_detail_join_is_scoped_to_same_branch():",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+        "backend/tests/test_iscam_mpro_header_authority_r93.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_mpro_header_authority_r93.py",
+        "backend/tests/test_iscam_no_prorate_adjustments_r49.py",
+        "backend/tests/test_iscam_header_folio_parent_r92.py"
+      ]
+    },
+    {
+      "type": "git_diff_check",
+      "allowed_files_exact": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+        "backend/tests/test_iscam_mpro_header_authority_r93.py"
+      ],
+      "forbidden_paths": [
+        "frontend",
+        "backend/database/migrations",
+        "Edarsahub_Produccion"
+      ]
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL writes in mutation",
+    "No hardcode de ORIGEN/fecha/importes",
+    "No inventar productos",
+    "Ajuste técnico debe usar prefijo __ISCAM_AJUSTE_",
+    "Fail closed para bruto cero que no sea HEADER_SIN_DETALLE",
+    "Runtime V2 sigue siendo validación final"
+  ],
+  "expected_output": {
+    "status": "INTEGRATED",
+    "quality_gate": "PASS",
+    "production_touched": false
+  },
+  "created_at_utc": "2026-09-21T22:20:00Z"
+}
