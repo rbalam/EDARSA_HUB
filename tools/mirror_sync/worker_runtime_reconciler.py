@@ -34,6 +34,9 @@ GUARD = ROOT / ".git" / "agent-guard" / "bin" / "agent_guard.py"
 GUARD_STATE_WORKTREES = ROOT / ".git" / "agent-guard" / "state" / "worktrees"
 PYTHON = Path("/root/.venv/bin/python")
 
+_CYCLE_REMOTE_HEAD: str | None = None
+_BRANCH_INTEGRATION_CACHE: dict[str, bool] = {}
+
 def now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -104,26 +107,48 @@ def parse_guard_claims(text: str) -> list[dict[str, Any]]:
 
 def guard_claims() -> list[dict[str, Any]]:
     claims: list[dict[str, Any]] = []
+
     if GUARD.is_file() and PYTHON.is_file():
-        for command in ([str(PYTHON), str(GUARD), "status"], [str(PYTHON), str(GUARD), "claims"]):
-            try: result = run(command, timeout=20)
-            except Exception: continue
+        try:
+            result = run([str(PYTHON), str(GUARD), "status"], timeout=20)
+        except Exception:
+            result = None
+
+        if result is not None and result.returncode == 0:
             claims.extend(parse_guard_claims(result.stdout))
-            if claims: break
-    if GUARD_STATE_WORKTREES.is_dir():
-        for path in sorted(GUARD_STATE_WORKTREES.glob("*.json")):
-            try: value = json.loads(path.read_text(encoding="utf-8"))
-            except Exception: continue
-            if isinstance(value, dict):
-                value = dict(value)
-                value.setdefault("claim_file", str(path))
-                claims.append(value)
+
+    claim_state_dir = ROOT / ".git" / "agent-guard" / "state" / "claims"
+    if claim_state_dir.is_dir():
+        for path in sorted(claim_state_dir.glob("*.json")):
+            try:
+                value = json.loads(path.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+
+            if not isinstance(value, dict):
+                continue
+
+            if str(value.get("status") or "").strip().upper() != "ACTIVE":
+                continue
+
+            claim = dict(value)
+            claim.setdefault("claim_file", str(path))
+            claims.append(claim)
+
     deduped: list[dict[str, Any]] = []
     seen: set[tuple[str, str, str]] = set()
+
     for claim in claims:
-        key = (str(claim.get("agent_id") or ""), str(claim.get("branch") or ""), str(claim.get("worktree") or ""))
-        if key in seen: continue
-        seen.add(key); deduped.append(claim)
+        key = (
+            str(claim.get("agent_id") or ""),
+            str(claim.get("branch") or ""),
+            str(claim.get("worktree") or ""),
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(claim)
+
     return deduped
 
 def parse_iso(value: Any) -> float | None:
@@ -132,11 +157,56 @@ def parse_iso(value: Any) -> float | None:
     try: return datetime.fromisoformat(text.replace("Z", "+00:00")).timestamp()
     except Exception: return None
 
+def prepare_integration_snapshot() -> bool:
+    global _CYCLE_REMOTE_HEAD
+
+    _BRANCH_INTEGRATION_CACHE.clear()
+    _CYCLE_REMOTE_HEAD = None
+
+    fetched = git("fetch", REMOTE, DEV_BRANCH)
+    if fetched.returncode != 0:
+        return False
+
+    remote = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}")
+    if remote.returncode != 0:
+        return False
+
+    resolved = remote.stdout.strip()
+    if not resolved:
+        return False
+
+    _CYCLE_REMOTE_HEAD = resolved
+    return True
+
+
 def branch_is_integrated(branch: str) -> bool:
-    if not branch: return False
-    git("fetch", REMOTE, DEV_BRANCH); head = git("rev-parse", branch); remote = git("rev-parse", f"{REMOTE}/{DEV_BRANCH}")
-    if head.returncode != 0 or remote.returncode != 0: return False
-    return git("merge-base", "--is-ancestor", head.stdout.strip(), remote.stdout.strip()).returncode == 0
+    if not branch:
+        return False
+
+    cached = _BRANCH_INTEGRATION_CACHE.get(branch)
+    if cached is not None:
+        return cached
+
+    if not _CYCLE_REMOTE_HEAD:
+        _BRANCH_INTEGRATION_CACHE[branch] = False
+        return False
+
+    head = git("rev-parse", "--verify", branch)
+    if head.returncode != 0:
+        _BRANCH_INTEGRATION_CACHE[branch] = False
+        return False
+
+    integrated = (
+        git(
+            "merge-base",
+            "--is-ancestor",
+            head.stdout.strip(),
+            _CYCLE_REMOTE_HEAD,
+        ).returncode
+        == 0
+    )
+    _BRANCH_INTEGRATION_CACHE[branch] = integrated
+    return integrated
 
 def worktree_clean(path: Path) -> bool:
     if not path.exists(): return True
@@ -201,8 +271,24 @@ def reconcile_claims() -> list[dict[str, Any]]:
 
 def main() -> int:
     RUNTIME.mkdir(parents=True, exist_ok=True)
-    payload = {"schema": "edarsahub.worker-runtime-reconciler.v1", "generated_at_utc": now(), "orphan_processing": recover_orphan_processing(), "claims": reconcile_claims(), "production_touched": False}
-    atomic_json(RUNTIME / "reconciler.json", payload); (RUNTIME / "last_reconcile_utc").write_text(now() + "\n", encoding="utf-8")
-    print(json.dumps(payload, ensure_ascii=False, sort_keys=True)); return 0
+
+    integration_snapshot_ready = prepare_integration_snapshot()
+
+    payload = {
+        "schema": "edarsahub.worker-runtime-reconciler.v1",
+        "generated_at_utc": now(),
+        "integration_snapshot_ready": integration_snapshot_ready,
+        "orphan_processing": recover_orphan_processing(),
+        "claims": reconcile_claims(),
+        "production_touched": False,
+    }
+
+    atomic_json(RUNTIME / "reconciler.json", payload)
+    (RUNTIME / "last_reconcile_utc").write_text(
+        now() + "\n",
+        encoding="utf-8",
+    )
+    print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+    return 0
 
 if __name__ == "__main__": raise SystemExit(main())
