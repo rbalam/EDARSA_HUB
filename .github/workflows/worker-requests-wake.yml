@@ -43,11 +43,11 @@ jobs:
           fi
 
           RUNTIME_URL='https://erp-crm-enterprise-1.preview.emergentagent.com'
-          RESULT_PATH="worker_queue/results/\${JOB_ID}.json"
+          RESULT_PATH="worker_queue/results/${JOB_ID}.json"
 
           job_is_terminal() {
             git fetch --quiet origin worker/results:refs/remotes/origin/worker/results 2>/dev/null || return 1
-            git cat-file -e "origin/worker/results:\${RESULT_PATH}" 2>/dev/null
+            git cat-file -e "origin/worker/results:${RESULT_PATH}" 2>/dev/null
           }
 
           for attempt in 1 2 3 4 5 6; do
@@ -80,6 +80,16 @@ jobs:
             echo "PREFERRED_JOB_ID=$JOB_ID"
 
             if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "202" ]; then
+              exit 0
+            fi
+
+            if [ "$HTTP_CODE" = "429" ]; then
+              echo "WAKE_COOLDOWN_ACCEPTED"
+              exit 0
+            fi
+
+            if [ "$HTTP_CODE" = "409" ] && grep -qi 'worker wake already in progress' /tmp/wake.json 2>/dev/null; then
+              echo "WAKE_ALREADY_IN_PROGRESS_ACCEPTED"
               exit 0
             fi
 
