@@ -1,0 +1,105 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1B-SERIAL-SLOT-INTEGRATION-PREFLIGHT-READONLY-R1-20260921",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "489678d39ba6edd0f2f89e7d97f70c2143cc6c09",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar en modo estrictamente READ_ONLY los puntos exactos de integracion para Gate4B1B despues del cierre certificado de Gate4B1A. Determinar el cambio minimo para conectar worker_slot_runtime.py al flujo real del Universal Worker manteniendo ejecucion serial: READ_ONLY=1, MUTATION=1, PARALLEL_EXECUTION_ENABLED=NO. Identificar contratos actuales de dispatcher, worker shell, lifecycle, current_job_id legacy projection, heartbeat/state del slot, runtime health, control plane y reconciler. No modificar archivos, lifecycle, slots, claims, worktrees, SQL ni Produccion.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/worker_scheduling.py",
+          "tools/mirror_sync/worker_slot_runtime.py",
+          "tools/mirror_sync/multiproject_shadow_scheduler.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/universal_job_worker.sh",
+          "tools/mirror_sync/worker_runtime_reconciler.py",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "backend/tests/test_worker_slot_runtime_contract.py",
+          "backend/tests/test_multiproject_shadow_scheduler.py",
+          "backend/tests/test_worker_universal_queue_sla_contract.py",
+          "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py",
+          "backend/tests/test_worker_control_plane_contract.py",
+          "backend/tests/test_worker_three_properties_contract.py",
+          "backend/tests/test_universal_worker_external_owner_contract.py"
+        ],
+        "search_terms": [
+          "worker_slot_runtime",
+          "current_job_id",
+          "current-job",
+          "heartbeat",
+          "processing",
+          "terminal",
+          "result",
+          "dispatcher",
+          "slot",
+          "readonly_slots_capacity",
+          "mutation_slots_capacity",
+          "GLOBAL_GIT_WRITER",
+          "Agent Guard",
+          "production_touched",
+          "legacy",
+          "runtime_health",
+          "reconciler"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1500
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_slot_runtime_contract.py",
+        "backend/tests/test_multiproject_shadow_scheduler.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_universal_worker_external_owner_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must be empty",
+    "No repository changes",
+    "No lifecycle mutation",
+    "No runtime slot creation",
+    "No claim mutation",
+    "No worktree mutation",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "No Produccion",
+    "No Cavas functional changes",
+    "No Tablajerias functional changes",
+    "No NetPay changes",
+    "Do not restart supervisor",
+    "Do not enable parallel execution",
+    "READ_ONLY effective capacity remains 1",
+    "MUTATION effective capacity remains 1",
+    "Do not weaken Agent Guard",
+    "Do not weaken Repository Artifact Guard",
+    "Do not weaken GLOBAL_GIT_WRITER",
+    "Do not weaken Git divergence guards",
+    "Do not change lifecycle semantics",
+    "worker-job.v2 legacy compatibility mandatory",
+    "worker_scheduling.py remains canonical scheduling authority",
+    "worker_slot_runtime.py remains fail-closed",
+    "production_touched must remain false"
+  ]
+}
