@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "a2bd1be64a1b9392921a23351ecc68549c6e278a",
-  "generated_at_utc": "2026-09-21T17:04:18Z",
+  "generated_at_utc": "2026-09-21T17:05:36Z",
   "history": {
     "done_total_local": 800,
     "pending_total_local": 0,
@@ -16,49 +16,49 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1504,
+      "age_seconds": 1581,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-MUTATION-FUNCTIONAL-SURGICAL-R3-20260921T160100Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3346,
+      "age_seconds": 3424,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE0-ARCH-AUDIT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3104,
+      "age_seconds": 3182,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE1-SHADOW-SCHEDULER-DESIGN-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 52,
+      "age_seconds": 130,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE2-SHADOW-CERT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1578,
+      "age_seconds": 1656,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE2-SHADOW-IMPLEMENTATION-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 693,
+      "age_seconds": 771,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE2-SHADOW-IMPLEMENTATION-R2-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 268,
+      "age_seconds": 346,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE2-SHADOW-IMPLEMENTATION-R3-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1571,
+      "age_seconds": 1648,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE3-SCOPE-LOCK-PLAN-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
@@ -78,8 +78,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T17:04:13Z",
-    "last_receive_utc": "2026-09-21T17:04:17Z",
+    "last_cycle_utc": "2026-09-21T17:05:35Z",
+    "last_receive_utc": "2026-09-21T17:05:30Z",
     "last_terminal_utc": "2026-09-21T17:03:26Z",
     "pid": "134548"
   },
