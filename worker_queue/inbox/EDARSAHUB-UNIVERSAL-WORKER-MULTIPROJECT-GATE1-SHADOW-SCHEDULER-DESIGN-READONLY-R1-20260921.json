@@ -1,0 +1,72 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE1-SHADOW-SCHEDULER-DESIGN-READONLY-R1-20260921",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "12c6c18de619854e5fe8f33e87bff7b63eaa93fe",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Gate1 de transición multiproyecto: diseñar y certificar en READ_ONLY el contrato exacto del Scheduler multiproyecto en SHADOW MODE, sin ejecutar jobs ni reemplazar el Universal Worker actual. El diseño debe reutilizar worker-job.v2, scope-aware replay, Agent Guard, git writer guard, worktrees, lifecycle y health existentes. Definir metadata backward-compatible opcional: project_id, bounded_context, resource_claims, conflict_domains, priority_class, fairness_weight, max_parallelism. Definir algoritmo determinista de admisión: READ_ONLY paralelizable cuando no reclama recursos exclusivos; MUTATION paralela solo con scopes/recursos disjuntos; CORE/global registry/writer resources serializados. Definir weighted fair queue para evitar starvation, compatibilidad de jobs legacy sin metadata mediante defaults conservadores, shadow decision log, métricas por proyecto/slot, rollback inmediato al dispatcher actual y criterios de promoción a Gate2. No implementar todavía.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/universal_job_worker.sh",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/worker_concurrency.py",
+          "tools/mirror_sync/git_divergence_guard.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "tools/mirror_sync/edarsahub-universal-worker.conf",
+          "docs/BOS/BOS_AGENT_HARNESS_MASTER_ARCHITECTURE_V1.md"
+        ],
+        "search_terms": [
+          "edarsahub.worker-job.v2",
+          "evaluate_scope_advance",
+          "SAFE_REPLAY",
+          "CONCURRENT_SCOPE_CONFLICT",
+          "preferred_job",
+          "dispatcher.lock",
+          "git-writer.lock",
+          "Agent Guard",
+          "worktree",
+          "current_job_id",
+          "runtime_health_publisher",
+          "result_publisher",
+          "max_concurrency"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.conf",
+          "*.md"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1500
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No implementation",
+    "No file changes",
+    "No SQL",
+    "No Production",
+    "Current Universal Worker must remain authoritative executor",
+    "Shadow scheduler must be observation-only",
+    "Backward compatibility with existing worker-job.v2 jobs is mandatory",
+    "No separate worker per project",
+    "No global preferred_job starvation in target design",
+    "Legacy jobs without project metadata must receive safe conservative defaults",
+    "CORE/global resources must remain serialized",
+    "Promotion to Gate2 requires explicit PASS + 100%"
+  ]
+}
