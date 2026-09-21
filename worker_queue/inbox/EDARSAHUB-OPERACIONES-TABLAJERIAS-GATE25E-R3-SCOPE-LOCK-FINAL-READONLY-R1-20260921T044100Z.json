@@ -1,0 +1,143 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25E-R3-SCOPE-LOCK-FINAL-READONLY-R1-20260921T044100Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "305786aa03450d9f1e7573d093a26c91664f6cc2",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "priority": "P1",
+  "objective": "Gate25E-R3 Scope Lock final para Tablajerias. Cerrar el alcance quirurgico exacto de Gate25F sin repetir diagnostico, sin mutar codigo, sin ejecutar SQL y sin tocar Produccion. Gate25F quedara limitado a una mutacion funcional frontend-first sobre LotesProveedorPage y su ruta canonica /tablajeria/lotes-proveedor, usando endpoints backend ya existentes y manteniendo SQL Server como fuente canonica.",
+  "actions": [],
+  "checks": [
+    {"type": "git_diff_check"},
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_tablajeria_fase6_service_unit.py",
+        "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+        "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/App.js",
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+          "backend/modules/tablajeria/routes.py",
+          "backend/modules/tablajeria/fase6_service.py",
+          "backend/tests/test_tablajeria_fase6_service_unit.py",
+          "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+          "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py",
+          "docs/TABLAJERIA_UAT_SCOPE_FIX_LONJA_PLANTILLAS_IMPLEMENTATION_R1.md"
+        ],
+        "search_terms": [
+          "tablajeria/lotes-proveedor",
+          "LotesProveedorPage",
+          "lotes proveedor",
+          "lonja",
+          "plantillas",
+          "reclamos proveedor",
+          "drilldown",
+          "rendimientos",
+          "sql_first",
+          "get_sql_connection",
+          "get_current_user",
+          "RBAC",
+          "scope lock",
+          "Gate25F"
+        ],
+        "include_patterns": [],
+        "exclude_patterns": [],
+        "max_results": 1200
+      }
+    }
+  ],
+  "expected_outputs": {
+    "terminal_status": "READ_ONLY_COMPLETE",
+    "certification": "CERTIFIED_READ_ONLY",
+    "quality_gate": "PASS",
+    "tests": "PASS",
+    "percent_complete": 100,
+    "production_touched": false,
+    "files_changed": [],
+    "blockers": []
+  },
+  "scope_lock_final": {
+    "next_gate": "Gate25F Mutation Functional Surgical",
+    "gate25f_objective": "Mejorar funcionalmente la pantalla LotesProveedorPage en /tablajeria/lotes-proveedor para dejar una experiencia operable de consulta/seguimiento de lotes de proveedor, rendimientos, lonjas, plantillas, drilldown y reclamos, consumiendo solamente endpoints backend ya existentes.",
+    "target_screen_or_route": {
+      "frontend_route": "/tablajeria/lotes-proveedor",
+      "primary_component": "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+      "route_registry": "frontend/src/App.js",
+      "backend_api_owner": "backend/modules/tablajeria/routes.py"
+    },
+    "backend_frontend_contract": {
+      "frontend_must_consume_existing_backend_only": true,
+      "allowed_existing_backend_routes": [
+        "/lotes-proveedor/rendimientos",
+        "/lotes-proveedor/{lote_rendimiento_id}/drilldown",
+        "/lotes-proveedor/{lote_rendimiento_id}/reclamos",
+        "/lonjas-disponibles",
+        "/plantillas"
+      ],
+      "backend_security_contract": "RBAC remains enforced by backend through get_current_user and corporate filters; frontend must not decide access.",
+      "data_contract": "SQL Server remains canonical source through existing sql_first/get_sql_connection paths; no Mongo operational source and no hardcoded companies, units, warehouses or IDs."
+    },
+    "files_allowed_to_change_in_gate25f": [
+      "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+      "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py",
+      "backend/tests/test_tablajeria_r24f_uat_preview_static.py"
+    ],
+    "files_forbidden_in_gate25f_without_explicit_new_gate": [
+      "backend/modules/tablajeria/routes.py",
+      "backend/modules/tablajeria/fase6_service.py",
+      "backend/modules/tablajeria/sql/uatscope_lonja_plantillas.sql",
+      "frontend/src/App.js",
+      "scheduler/**/*",
+      "netpay/**/*",
+      "migrations/**/*"
+    ],
+    "tests_required_for_gate25f": [
+      "backend/tests/test_tablajeria_fase6_service_unit.py",
+      "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+      "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py",
+      "frontend build: yarn validate:navigation && yarn install --frozen-lockfile --non-interactive --ignore-scripts --prefer-offline && DISABLE_ESLINT_PLUGIN=true CI=false craco build"
+    ],
+    "rollback_plan": {
+      "type": "single_commit_revert_or_restore_changed_files",
+      "required_evidence": [
+        "git diff limited to allowed files",
+        "no SQL changes",
+        "no production branch changes",
+        "no Scheduler/NetPay changes",
+        "tests/build return to pre-mutation PASS state"
+      ]
+    },
+    "post_mutation_certification_criteria": {
+      "required_status": "CERTIFIED_POST_MUTATION",
+      "quality_gate": "PASS",
+      "tests": "PASS",
+      "percent_complete": 100,
+      "production_touched": false,
+      "sql_touched": false,
+      "blockers": [],
+      "frontend_build_required": true,
+      "repository_contract_audit_required": true
+    },
+    "hard_constraints": [
+      "No Production changes",
+      "No SQL execution in Gate25F unless separately authorized",
+      "No schema/table creation",
+      "No duplicate services",
+      "No hardcoded company/unit/warehouse/id",
+      "No Scheduler changes",
+      "No NetPay changes",
+      "SQL Server remains canonical source of truth",
+      "RBAC remains backend-enforced"
+    ]
+  },
+  "created_at_utc": "2026-09-21T04:41:00Z"
+}
