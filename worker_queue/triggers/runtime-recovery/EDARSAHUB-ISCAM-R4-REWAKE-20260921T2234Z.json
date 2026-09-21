@@ -1,0 +1,8 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Re-wake canonical Universal Worker for existing pending ISCAM safe-error-code R4 after no terminal result observed. Do not duplicate functional job, preserve active work, no Production.",
+  "existing_job_id": "EDARSAHUB-ISCAM-BACKFILL-SAFE-ERROR-CODE-R4-CARLOS-20260921T2230Z",
+  "requested_by": "carlosruz@edarsa.com.mx",
+  "request_source": "chatgpt",
+  "production_touched": false
+}
