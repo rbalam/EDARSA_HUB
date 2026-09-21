@@ -1,0 +1,32 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE16L-PYTEST-DIAG-A-READONLY-R1-20260921",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2146579a70beef26ca6ed464bb19efab95ba2f73",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Diagnóstico READ_ONLY de Gate16L. Ejecutar exclusivamente el subconjunto pytest CAVAS-GATE16L-PYTEST-DIAG-A-READONLY-R1-20260921 para aislar la prueba exacta que bloqueó la auditoría transversal Cavas V1. No modificar archivos, no SQL, no Producción.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios.py",
+        "backend/tests/test_cava_socios_persona_link.py",
+        "backend/tests/test_cava_socios_domain.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No file changes",
+    "No SQL",
+    "No Production",
+    "Diagnostic only"
+  ]
+}
