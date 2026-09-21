@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "dcc04e7f0931b885bae3abc1acfbb917bde720d5",
-  "generated_at_utc": "2026-09-21T19:50:36Z",
+  "generated_at_utc": "2026-09-21T19:51:48Z",
   "history": {
     "done_total_local": 816,
     "pending_total_local": 0,
@@ -16,67 +16,67 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2419,
+      "age_seconds": 2492,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-R4-MUTATION-FUNCTIONAL-SURGICAL-20260921T190900Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1872,
+      "age_seconds": 1944,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-R5-MUTATION-FUNCTIONAL-SURGICAL-FIX-PYTEST-20260921T191500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2733,
+      "age_seconds": 2805,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-R4-CERT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3525,
+      "age_seconds": 3597,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-SCHEDULING-SLOT-FOUNDATION-R2-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3333,
+      "age_seconds": 3406,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-SCHEDULING-SLOT-FOUNDATION-R3-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2875,
+      "age_seconds": 2948,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-SCHEDULING-SLOT-FOUNDATION-R4-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2075,
+      "age_seconds": 2147,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1B-SERIAL-SLOT-INTEGRATION-CERT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2325,
+      "age_seconds": 2398,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1B-SERIAL-SLOT-INTEGRATION-MUTATION-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2519,
+      "age_seconds": 2591,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1B-SERIAL-SLOT-INTEGRATION-PREFLIGHT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1652,
+      "age_seconds": 1725,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1C-RUNTIME-OBSERVABILITY-PREFLIGHT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2703,
+      "age_seconds": 2775,
       "job_id": "EDARSAHUB-WORKER-GIT-LOCK-PICKUP-DIAG-READONLY-R1C-20260921T180500Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -96,8 +96,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T19:50:31Z",
-    "last_receive_utc": "2026-09-21T19:50:33Z",
+    "last_cycle_utc": "2026-09-21T19:51:44Z",
+    "last_receive_utc": "2026-09-21T19:51:46Z",
     "last_terminal_utc": "2026-09-21T19:23:03Z",
     "pid": "208476"
   },
