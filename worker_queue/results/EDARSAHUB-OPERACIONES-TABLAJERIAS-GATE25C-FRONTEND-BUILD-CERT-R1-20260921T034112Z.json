@@ -1,0 +1,297 @@
+{
+  "base_sha": "0d8a30b67edc0d45c7465e46270197acabfdbd0d",
+  "blockers": [],
+  "certification": "CERTIFIED_FRONTEND_BUILD",
+  "certification_basis": "FRONTEND_BUILD_CERTIFICATION_PASS_PLUS_NON_MUTATING_RESULT",
+  "completed_at_utc": "2026-09-21T03:43:27Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "frontend_build_evidence": {
+    "checks": [
+      {
+        "completed_at_utc": "2026-09-21T03:43:27Z",
+        "output_tail": "yarn run v1.22.22\n$ yarn validate:navigation && yarn install --frozen-lockfile --non-interactive --ignore-scripts --prefer-offline\n$ node scripts/validate_enterprise_navigation.js && node scripts/validate_executive_navigation.js\nENTERPRISE_NAVIGATION_GUARDIAN=PASS\nGROUPS=8\nMODULE_MAPPINGS=28\nMENU_MAPPINGS=72\nPLANNED_ITEMS=54\nREGISTERED_FUTURE_TABS=0\nNEW_BADGE_DAYS=30\nEXECUTIVE_NAVIGATION_GUARD=PASS\nMAIN_ROUTE=/tablero-ejecutivo\nMAIN_COMPONENT=TableroEjecutivo\nADMIN_ROUTE=/admin/dashboard-ejecutivo\nADMIN_COMPONENT=DashboardEjecutivo\nEXECUTIVE_TABS=comercial,finanzas,rh,bsc\nADMIN_ROUTE_IN_ENTERPRISE_MENU=NO\n[1/4] Resolving packages...\nsuccess Already up-to-date.\n$ DISABLE_ESLINT_PLUGIN=true CI=false craco build\nCannot find ESLint plugin (ESLintWebpackPlugin).\nCreating an optimized production build...\nBrowserslist: browsers data (caniuse-lite) is 9 months old. Please run:\n  npx update-browserslist-db@latest\n  Why you should do it regularly: https://github.com/browserslist/update-db#readme\nBrowserslist: browsers data (caniuse-lite) is 9 months old. Please run:\n  npx update-browserslist-db@latest\n  Why you should do it regularly: https://github.com/browserslist/update-db#readme\nCompiled successfully.\n\nFile sizes after gzip:\n\n  1.05 MB   build/static/js/main.ef1dacdc.js\n  46.3 kB   build/static/js/52.4caabcbd.chunk.js\n  43.45 kB  build/static/js/239.72faa5a0.chunk.js\n  23.84 kB  build/static/css/main.c2ceef8f.css\n  8.71 kB   build/static/js/82.6c24bbb8.chunk.js\n\nThe bundle size is significantly larger than recommended.\nConsider reducing it with code splitting: https://goo.gl/9VhYWB\nYou can also analyze the project dependencies: https://goo.gl/LeUzfb\n\nThe project was built assuming it is hosted at /.\nYou can control this with the homepage field in your package.json.\n\nThe build folder is ready to be deployed.\nYou may serve it with a static server:\n\n  yarn global add serve\n  serve -s build\n\nFind out more about deployment here:\n\n  https://cra.link/deployment\n\nDone in 100.02s.",
+        "returncode": 0,
+        "started_at_utc": "2026-09-21T03:41:47Z",
+        "status": "PASS"
+      }
+    ]
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25C-FRONTEND-BUILD-CERT-R1-20260921T034112Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-21T03:43:29Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "frontend",
+              "lotes proveedor",
+              "lotesproveedorpage",
+              "tablajeria"
+            ],
+            "path": "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "centrocontrol",
+              "compras",
+              "frontend",
+              "lotesproveedorpage",
+              "plantillas",
+              "tablajeria"
+            ],
+            "path": "frontend/src/App.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "centrocontrol",
+              "compras",
+              "frontend"
+            ],
+            "path": "frontend/src/pages/CentroControl.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "sap",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "compras",
+              "frontend"
+            ],
+            "path": "frontend/src/pages/Compras.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.tablajeria",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.security",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "csv",
+              "dashboard_service",
+              "datetime",
+              "decimal",
+              "fase6_service",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "json",
+              "logging",
+              "lote_proveedor_service",
+              "ordenes_service",
+              "os",
+              "pydantic",
+              "pymssql",
+              "schemas",
+              "sync_service",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "lonja",
+              "plantillas",
+              "tablajeria"
+            ],
+            "path": "backend/modules/tablajeria/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/dashboard/alertas",
+              "/dashboard/kpis",
+              "/dashboard/rendimientos-plantilla",
+              "/dashboard/resumen-costeo",
+              "/dashboard/tendencia",
+              "/dashboard/top-mermas",
+              "/fase6/config-contable/{empresa_id}",
+              "/lonjas-disponibles",
+              "/lotes-proveedor/rendimientos",
+              "/lotes-proveedor/{lote_rendimiento_id}/drilldown",
+              "/lotes-proveedor/{lote_rendimiento_id}/reclamos",
+              "/ordenes",
+              "/ordenes-stats",
+              "/ordenes/captura-directa",
+              "/ordenes/{orden_id}",
+              "/ordenes/{orden_id}/autorizar",
+              "/ordenes/{orden_id}/cancelar",
+              "/ordenes/{orden_id}/cerrar",
+              "/ordenes/{orden_id}/fase6/afectar-inventario",
+              "/ordenes/{orden_id}/fase6/calcular-costeo",
+              "/ordenes/{orden_id}/fase6/generar-poliza",
+              "/ordenes/{orden_id}/fase6/procesar-cierre",
+              "/ordenes/{orden_id}/iniciar",
+              "/ordenes/{orden_id}/resultados",
+              "/plantillas",
+              "/plantillas/{plantilla_id}",
+              "/plantillas/{plantilla_id}/duplicar",
+              "/plantillas/{plantilla_id}/publicar",
+              "/reclamos-proveedor",
+              "/reportes/costeo",
+              "/reportes/mermas",
+              "/reportes/ordenes",
+              "/stats",
+              "/sync/ejecutar",
+              "/sync/log",
+              "/sync/servidores"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AutorizarOrdenRequest",
+              "CancelarOrdenRequest",
+              "CerrarOrdenRequest",
+              "ReclamoProveedorCreateRequest",
+              "ResultadosOrdenRequest",
+              "_current_user_id",
+              "_detalle_observaciones",
+              "_get_ordenes_service",
+              "afectar_inventario",
+              "autorizar_orden",
+              "calcular_costeo",
+              "cancelar_orden",
+              "cerrar_orden",
+              "crear_orden",
+              "crear_orden_captura_directa",
+              "crear_plantilla",
+              "crear_reclamo_lote_proveedor",
+              "duplicar_plantilla",
+              "editar_plantilla",
+              "ejecutar_sincronizacion",
+              "exportar_costeo",
+              "exportar_mermas",
+              "exportar_ordenes",
+              "generar_poliza",
+              "get_alertas_rendimiento",
+              "get_connection",
+              "get_dashboard_kpis",
+              "get_rendimientos_por_plantilla",
+              "get_resumen_costeo",
+              "get_tendencia_rendimientos",
+              "get_top_mermas",
+              "guardar_config_contable",
+              "iniciar_ejecucion_orden",
+              "listar_lonjas_disponibles",
+              "listar_ordenes",
+              "listar_plantillas",
+              "listar_reclamos_proveedor",
+              "listar_rendimientos_lote_proveedor",
+              "listar_servidores_tablajeria",
+              "obtener_config_contable",
+              "obtener_drilldown_lote_proveedor",
+              "obtener_estadisticas",
+              "obtener_estadisticas_ordenes",
+              "obtener_orden",
+              "obtener_plantilla",
+              "obtener_sync_log",
+              "procesar_cierre_fase6",
+              "publicar_plantilla",
+              "registrar_resultados_orden"
+            ],
+            "tables_referenced": [
+              "Tablajeria_LonjasDisponibles"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "frontend",
+              "lonja",
+              "plantillas",
+              "tablajeria"
+            ],
+            "path": "docs/TABLAJERIA_UAT_SCOPE_FIX_LONJA_PLANTILLAS_IMPLEMENTATION_R1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 6,
+          "scanned_files": 6,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-21T03:41:47Z",
+  "status": "FRONTEND_BUILD_CERTIFIED",
+  "summary_es": "El Worker universal ejecuto frontend_build como certificacion no mutante de frontend, sin acciones de producto, sin cambios tracked/untracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
