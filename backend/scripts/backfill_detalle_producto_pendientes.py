@@ -101,6 +101,29 @@ def _detalle_concilia(
     )
 
 
+def _safe_error_code(exc: Exception) -> str:
+    text = str(exc or "").upper()
+    rules = (
+        ("TICKET SIN DETALLE MONETARIO DISTRIBUIBLE", "MPRO_NO_DISTRIBUTABLE_DETAIL"),
+        ("VENTA NETA INCONSISTENTE", "MPRO_INCONSISTENT_HEADER_NET"),
+        ("IMPORTE BRUTO NEGATIVO", "MPRO_NEGATIVE_GROSS"),
+        ("RESIDUO DE PRORRATEO INVALIDO", "MPRO_INVALID_ALLOCATION_RESIDUAL"),
+        ("VENTA NETA DISTRIBUIDA NO CONCILIA", "MPRO_ALLOCATION_TOTAL_MISMATCH"),
+        ("INVALID COLUMN", "POS_SCHEMA_INVALID_COLUMN"),
+        ("INVALID OBJECT", "POS_SCHEMA_INVALID_OBJECT"),
+        ("DEADLOCK", "POS_DEADLOCK"),
+        ("1205", "POS_DEADLOCK"),
+        ("LOGIN FAILED", "POS_LOGIN_FAILED"),
+        ("SIN CONEXIÓN POS", "POS_CONNECTION_UNAVAILABLE"),
+        ("SIN CONEXION POS", "POS_CONNECTION_UNAVAILABLE"),
+        ("REQUIERE SUCURSAL_ORIGEN_ID", "MPRO_BRANCH_MISSING"),
+    )
+    for needle, code in rules:
+        if needle in text:
+            return code
+    return f"{type(exc).__name__.upper()}_UNCLASSIFIED"
+
+
 def ejecutar_backfill(
     fecha_inicio: date,
     fecha_fin: date,
@@ -202,7 +225,8 @@ def ejecutar_backfill(
                     "status": "ERROR",
                     "unidad": unidad_codigo,
                     "fecha_operacion": dia,
-                    "error": str(exc),
+                    "error_type": type(exc).__name__,
+                    "error_code": _safe_error_code(exc),
                     "filas_insertadas": 0,
                 }
 
@@ -221,8 +245,10 @@ def ejecutar_backfill(
                 "delta_pax": result.get("delta_pax"),
                 "filas_insertadas": int(result.get("filas_insertadas") or 0),
             }
-            if result.get("error"):
-                item["error"] = result["error"]
+            if result.get("error_type"):
+                item["error_type"] = str(result["error_type"])
+            if result.get("error_code"):
+                item["error_code"] = str(result["error_code"])
 
             unidad_resumen["dias"].append(item)
 

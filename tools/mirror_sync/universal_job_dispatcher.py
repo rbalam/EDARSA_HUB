@@ -173,7 +173,7 @@ def summarize_iscam_detail_backfill_output(output: str) -> dict[str, Any]:
                         "ventas_runtime", "ventas_pos", "delta_ventas",
                         "tickets_runtime", "tickets_pos", "delta_tickets",
                         "pax_runtime", "pax_pos", "delta_pax",
-                        "filas_insertadas",
+                        "filas_insertadas", "error_type", "error_code",
                     )
                     if key in day
                 })
