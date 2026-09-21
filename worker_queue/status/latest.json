@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "0d8a30b67edc0d45c7465e46270197acabfdbd0d",
-  "generated_at_utc": "2026-09-21T03:50:52Z",
+  "generated_at_utc": "2026-09-21T03:52:09Z",
   "history": {
     "done_total_local": 787,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 816,
+      "age_seconds": 892,
       "job_id": "EDARSAHUB-WORKER-CONSOLE-ENTERPRISE-NAV-CERT-READONLY-R1-20260920",
       "reasons": [
         "READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED"
@@ -25,37 +25,37 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 882,
+      "age_seconds": 958,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25A-FUNCTIONAL-CERT-READONLY-R1-20260921T033540Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 698,
+      "age_seconds": 774,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25B-GONOGO-CERT-READONLY-R1-20260921T033842Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 445,
+      "age_seconds": 521,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25C-FRONTEND-BUILD-CERT-R1-20260921T034112Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 254,
+      "age_seconds": 330,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25D-PREVIEW-UAT-CERT-READONLY-R1-20260921T034500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1085,
+      "age_seconds": 1162,
       "job_id": "EDARSAHUB-WORKER-CONSOLE-ENTERPRISE-NAV-CLASSIFICATION-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 129,
+      "age_seconds": 205,
       "job_id": "EDARSAHUB-WORKER-CONSOLE-ENTERPRISE-NAV-FRONTEND-CERT-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
@@ -75,8 +75,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T03:50:49Z",
-    "last_receive_utc": "2026-09-21T03:50:51Z",
+    "last_cycle_utc": "2026-09-21T03:52:04Z",
+    "last_receive_utc": "2026-09-21T03:52:07Z",
     "last_terminal_utc": "2026-09-21T03:48:43Z",
     "pid": "195"
   },
