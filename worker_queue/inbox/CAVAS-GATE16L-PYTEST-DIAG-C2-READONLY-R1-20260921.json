@@ -1,0 +1,30 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C2-READONLY-R1-20260921",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2146579a70beef26ca6ed464bb19efab95ba2f73",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Aislar exclusivamente la falla pytest de Gate16L ejecutando backend/tests/test_cava_socios_blind_audit_operational_service.py. Diagnóstico READ_ONLY, sin cambios de archivos, sin SQL, sin Producción. Devolver PASS o la prueba exacta que falla.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios_blind_audit_operational_service.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No file changes",
+    "No SQL",
+    "No Production",
+    "Diagnostic only"
+  ]
+}
