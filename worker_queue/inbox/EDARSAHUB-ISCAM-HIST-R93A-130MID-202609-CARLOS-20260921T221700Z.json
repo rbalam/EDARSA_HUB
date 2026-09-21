@@ -1,0 +1,34 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-ISCAM-HIST-R93A-130MID-202609-CARLOS-20260921T221700Z",
+  "created_at_utc":"2026-09-21T22:17:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"91ba170d546889455451ce6a6b30e23266ae441b",
+  "production_allowed":false,
+  "mode":"ISCAM_DETAIL_BACKFILL",
+  "units":["130MID"],
+  "fecha_inicio":"2026-09-01",
+  "fecha_fin":"2026-09-13",
+  "dry_run":false,
+  "confirm_detail_backfill":true,
+  "actions":[],
+  "objective":"Retry estrecho de R93 tras bloqueo transitorio de fetch/ref Git. Procesar 130MID del 2026-09-01 al 2026-09-12 inclusive, omitiendo dias ya reconciliados y dias sin Runtime. Escribir solo reparaciones seguras del detalle canonico. Nunca tocar Produccion.",
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "source":"EDARSAHUB",
+      "max_rows":200,
+      "queries":[
+        {
+          "name":"postcheck_130mid_202609",
+          "sql":"WITH rt AS (SELECT CAST(fecha_operacion AS date) fecha,SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) ventas_runtime,SUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets_runtime,SUM(CAST(ISNULL(pax_total,0) AS bigint)) pax_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='130MID' AND CAST(fecha_operacion AS date)>='2026-09-01' AND CAST(fecha_operacion AS date)<'2026-09-13' GROUP BY CAST(fecha_operacion AS date)), dt_ticket AS (SELECT CAST(fecha_operacion AS date) fecha,numero_ticket,SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) venta_ticket,MAX(CAST(ISNULL(pax,0) AS bigint)) pax_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='130MID' AND CAST(fecha_operacion AS date)>='2026-09-01' AND CAST(fecha_operacion AS date)<'2026-09-13' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY CAST(fecha_operacion AS date),numero_ticket), dt AS (SELECT fecha,SUM(venta_ticket) ventas_detalle,COUNT(*) tickets_detalle,SUM(pax_ticket) pax_detalle FROM dt_ticket GROUP BY fecha) SELECT TOP (200) rt.fecha,rt.ventas_runtime,ISNULL(dt.ventas_detalle,0) ventas_detalle,rt.tickets_runtime,ISNULL(dt.tickets_detalle,0) tickets_detalle,rt.pax_runtime,ISNULL(dt.pax_detalle,0) pax_detalle,CASE WHEN ABS(rt.ventas_runtime-ISNULL(dt.ventas_detalle,0))<=0.05 AND rt.tickets_runtime=ISNULL(dt.tickets_detalle,0) AND rt.pax_runtime=ISNULL(dt.pax_detalle,0) THEN 'OK' ELSE 'PENDIENTE' END estado FROM rt LEFT JOIN dt ON dt.fecha=rt.fecha ORDER BY rt.fecha"
+        }
+      ]
+    }
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
