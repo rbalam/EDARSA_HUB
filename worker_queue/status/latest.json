@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "778bf6011be9d548918e185db7621ab9544b90aa",
-  "generated_at_utc": "2026-09-21T22:41:58Z",
+  "generated_at_utc": "2026-09-21T22:43:10Z",
   "history": {
     "done_total_local": 824,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2648,
+      "age_seconds": 2721,
       "job_id": "EDARSAHUB-ISCAM-MPRO-HEADER-AUTHORITY-FIX-CARLOS-20260921T2205Z",
       "reasons": [
         "REQUESTER_RBAC_DENIED:REQUESTER_RBAC_LOOKUP_FAILED"
@@ -25,85 +25,85 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3365,
+      "age_seconds": 3437,
       "job_id": "EDARSAHUB-ISCAM-AUTH-GROUPED-REGRESSION-FIX-CARLOS-20260921T2145Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1751,
+      "age_seconds": 1824,
       "job_id": "EDARSAHUB-ISCAM-BACKFILL-SAFE-ERROR-CODE-R4-CARLOS-20260921T2230Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1711,
+      "age_seconds": 1783,
       "job_id": "EDARSAHUB-ISCAM-HIST-R93-130MID-202609-CARLOS-20260921T221500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1509,
+      "age_seconds": 1582,
       "job_id": "EDARSAHUB-ISCAM-HIST-R93A-130MID-202609-CARLOS-20260921T221700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2573,
+      "age_seconds": 2645,
       "job_id": "EDARSAHUB-ISCAM-MPRO-HEADER-AUTHORITY-FIX-R2-CARLOS-20260921T2210Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2409,
+      "age_seconds": 2482,
       "job_id": "EDARSAHUB-ISCAM-MPRO-HEADER-ONLY-FALLBACK-R3-CARLOS-20260921T2220Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 531,
+      "age_seconds": 603,
       "job_id": "EDARSAHUB-ISCAM-MPRO-OPTIONAL-DISCOUNT-COLUMNS-FIX-R8-CARLOS-20260921T2232Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 997,
+      "age_seconds": 1070,
       "job_id": "EDARSAHUB-ISCAM-MPRO-SCHEMA-COLUMN-FIX-R6-CARLOS-20260921T2224Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1273,
+      "age_seconds": 1346,
       "job_id": "EDARSAHUB-ISCAM-ORIGEN-0827-BACKFILL-R5-CARLOS-20260921T2220Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 783,
+      "age_seconds": 856,
       "job_id": "EDARSAHUB-ISCAM-ORIGEN-0827-BACKFILL-R7-CARLOS-20260921T2226Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 211,
+      "age_seconds": 283,
       "job_id": "EDARSAHUB-ISCAM-ORIGEN-0827-BACKFILL-R9-CARLOS-20260921T2237Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3528,
+      "age_seconds": 3600,
       "job_id": "EDARSAHUB-ISCAM-ORIGEN-0827-DETAIL-BACKFILL-CARLOS-20260921T2143Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2523,
+      "age_seconds": 2596,
       "job_id": "EDARSAHUB-ISCAM-ORIGEN-0827-DETAIL-BACKFILL-R2-CARLOS-20260921T2212Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2374,
+      "age_seconds": 2447,
       "job_id": "EDARSAHUB-ISCAM-ORIGEN-0827-DETAIL-BACKFILL-R3-CARLOS-20260921T2222Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -123,8 +123,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T22:41:53Z",
-    "last_receive_utc": "2026-09-21T22:41:55Z",
+    "last_cycle_utc": "2026-09-21T22:43:07Z",
+    "last_receive_utc": "2026-09-21T22:43:09Z",
     "last_terminal_utc": "2026-09-21T22:38:27Z",
     "pid": "4106"
   },
