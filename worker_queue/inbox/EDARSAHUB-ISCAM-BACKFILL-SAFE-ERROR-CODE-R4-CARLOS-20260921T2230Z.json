@@ -1,0 +1,88 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-BACKFILL-SAFE-ERROR-CODE-R4-CARLOS-20260921T2230Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ed795194bf6fa859ee29027e40c842052f9b376d",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "priority": "P0",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V2",
+    "chat": "20260921-Reportes ISCAM"
+  },
+  "objective": "Cerrar la falta de observabilidad del backfill ISCAM: cuando el extractor POS lanza excepción, el resultado público solo muestra ERROR y oculta la categoría, impidiendo una corrección determinista. Añadir clasificación segura de errores sin publicar mensajes crudos, secretos, host, credenciales ni SQL. Publicar únicamente error_type y error_code en operation_summary por día. Esto no cambia datos ni lógica de negocio.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/backfill_detalle_producto_pendientes.py",
+      "old": "def _detalle_concilia(\n    detalle: Optional[Dict[str, Any]],\n    runtime: Dict[str, Any],\n) -> bool:\n    if not detalle:\n        return False\n\n    delta = abs(_d(detalle.get(\"ventas\")) - _d(runtime.get(\"ventas\")))\n    return (\n        delta <= TOLERANCIA_VENTAS\n        and int(detalle.get(\"tickets\") or 0) == int(runtime.get(\"tickets\") or 0)\n        and int(detalle.get(\"pax\") or 0) == int(runtime.get(\"pax\") or 0)\n    )\n\n\ndef ejecutar_backfill(",
+      "new": "def _detalle_concilia(\n    detalle: Optional[Dict[str, Any]],\n    runtime: Dict[str, Any],\n) -> bool:\n    if not detalle:\n        return False\n\n    delta = abs(_d(detalle.get(\"ventas\")) - _d(runtime.get(\"ventas\")))\n    return (\n        delta <= TOLERANCIA_VENTAS\n        and int(detalle.get(\"tickets\") or 0) == int(runtime.get(\"tickets\") or 0)\n        and int(detalle.get(\"pax\") or 0) == int(runtime.get(\"pax\") or 0)\n    )\n\n\ndef _safe_error_code(exc: Exception) -> str:\n    text = str(exc or \"\").upper()\n    rules = (\n        (\"TICKET SIN DETALLE MONETARIO DISTRIBUIBLE\", \"MPRO_NO_DISTRIBUTABLE_DETAIL\"),\n        (\"VENTA NETA INCONSISTENTE\", \"MPRO_INCONSISTENT_HEADER_NET\"),\n        (\"IMPORTE BRUTO NEGATIVO\", \"MPRO_NEGATIVE_GROSS\"),\n        (\"RESIDUO DE PRORRATEO INVALIDO\", \"MPRO_INVALID_ALLOCATION_RESIDUAL\"),\n        (\"VENTA NETA DISTRIBUIDA NO CONCILIA\", \"MPRO_ALLOCATION_TOTAL_MISMATCH\"),\n        (\"INVALID COLUMN\", \"POS_SCHEMA_INVALID_COLUMN\"),\n        (\"INVALID OBJECT\", \"POS_SCHEMA_INVALID_OBJECT\"),\n        (\"DEADLOCK\", \"POS_DEADLOCK\"),\n        (\"1205\", \"POS_DEADLOCK\"),\n        (\"LOGIN FAILED\", \"POS_LOGIN_FAILED\"),\n        (\"SIN CONEXIÓN POS\", \"POS_CONNECTION_UNAVAILABLE\"),\n        (\"SIN CONEXION POS\", \"POS_CONNECTION_UNAVAILABLE\"),\n        (\"REQUIERE SUCURSAL_ORIGEN_ID\", \"MPRO_BRANCH_MISSING\"),\n    )\n    for needle, code in rules:\n        if needle in text:\n            return code\n    return f\"{type(exc).__name__.upper()}_UNCLASSIFIED\"\n\n\ndef ejecutar_backfill(",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/backfill_detalle_producto_pendientes.py",
+      "old": "            except Exception as exc:\n                result = {\n                    \"status\": \"ERROR\",\n                    \"unidad\": unidad_codigo,\n                    \"fecha_operacion\": dia,\n                    \"error\": str(exc),\n                    \"filas_insertadas\": 0,\n                }",
+      "new": "            except Exception as exc:\n                result = {\n                    \"status\": \"ERROR\",\n                    \"unidad\": unidad_codigo,\n                    \"fecha_operacion\": dia,\n                    \"error_type\": type(exc).__name__,\n                    \"error_code\": _safe_error_code(exc),\n                    \"filas_insertadas\": 0,\n                }",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/backfill_detalle_producto_pendientes.py",
+      "old": "            if result.get(\"error\"):\n                item[\"error\"] = result[\"error\"]",
+      "new": "            if result.get(\"error_type\"):\n                item[\"error_type\"] = str(result[\"error_type\"])\n            if result.get(\"error_code\"):\n                item[\"error_code\"] = str(result[\"error_code\"])",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "                        \"pax_runtime\", \"pax_pos\", \"delta_pax\",\n                        \"filas_insertadas\",",
+      "new": "                        \"pax_runtime\", \"pax_pos\", \"delta_pax\",\n                        \"filas_insertadas\", \"error_type\", \"error_code\",",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/backfill_detalle_producto_pendientes.py",
+        "tools/mirror_sync/universal_job_dispatcher.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_softrestaurant_sanitized_failure_evidence.py"
+      ]
+    },
+    {
+      "type": "git_diff_check",
+      "allowed_files_exact": [
+        "backend/scripts/backfill_detalle_producto_pendientes.py",
+        "tools/mirror_sync/universal_job_dispatcher.py"
+      ],
+      "forbidden_paths": [
+        "frontend",
+        "backend/database/migrations",
+        "Edarsahub_Produccion"
+      ]
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL writes",
+    "No raw exception messages in published summary",
+    "No credentials/hosts/SQL in error evidence",
+    "No cambio de lógica de conciliación"
+  ],
+  "expected_output": {
+    "status": "INTEGRATED",
+    "quality_gate": "PASS",
+    "production_touched": false
+  },
+  "created_at_utc": "2026-09-21T22:30:00Z"
+}
