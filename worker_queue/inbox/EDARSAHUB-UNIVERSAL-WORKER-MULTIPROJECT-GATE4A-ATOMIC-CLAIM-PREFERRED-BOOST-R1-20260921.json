@@ -1,0 +1,98 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4A-ATOMIC-CLAIM-PREFERRED-BOOST-R1-20260921",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a2bd1be64a1b9392921a23351ecc68549c6e278a",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Gate4A multiproyecto: separar de forma quirurgica el CLAIM del EXECUTION sin habilitar aun concurrencia real. dispatcher.lock debe cubrir solo seleccion y pending->processing atomico. process_one debe ejecutar el job ya reclamado fuera del lock. preferred_job pasa a ser boost y nunca freeze global: si el preferred ya no esta pending, se limpia y continua la seleccion normal. Mantener comportamiento serial actual, compatibilidad legacy, Agent Guard, git guards y GLOBAL_GIT_WRITER.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "def process_one(path: Path) -> int:\n    envelope = load_envelope(path)\n    job = envelope[\"job\"]\n    job_id = str(job.get(\"job_id\") or \"\")\n    if not JOB_ID_RE.fullmatch(job_id):\n        raise ValueError(\"INVALID_JOB_ID\")\n    processing = PROCESSING / path.name\n    os.replace(path, processing)\n    RUNTIME.mkdir(parents=True, exist_ok=True)\n    (RUNTIME / \"current_job_id\").write_text(job_id + \"\\n\", encoding=\"utf-8\")\n",
+      "new": "def process_one(path: Path, *, already_claimed: bool = False) -> int:\n    envelope = load_envelope(path)\n    job = envelope[\"job\"]\n    job_id = str(job.get(\"job_id\") or \"\")\n    if not JOB_ID_RE.fullmatch(job_id):\n        raise ValueError(\"INVALID_JOB_ID\")\n    processing = path if already_claimed else PROCESSING / path.name\n    if already_claimed:\n        if path.parent != PROCESSING:\n            raise ValueError(\"CLAIMED_JOB_NOT_IN_PROCESSING\")\n    else:\n        os.replace(path, processing)\n    RUNTIME.mkdir(parents=True, exist_ok=True)\n    (RUNTIME / \"current_job_id\").write_text(job_id + \"\\n\", encoding=\"utf-8\")\n",
+      "expected_count": 1,
+      "expected_sha256": "07682502d5762e338e8af93ad831f8ac17e573a8a39135dde1c5f35467c447de"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "def _select_pending_job(jobs: list[Path]) -> tuple[Path | None, bool]:\n    preferred = _load_preferred_job()\n    if preferred is not None:\n        preferred_id = str(preferred[\"job_id\"])\n        for path in jobs:\n            if path.stem == preferred_id:\n                print(f\"UNIVERSAL_DISPATCHER=PREFERRED_JOB_SELECTED JOB_ID={preferred_id}\")\n                return path, True\n        print(f\"UNIVERSAL_DISPATCHER=WAITING_PREFERRED_JOB JOB_ID={preferred_id}\")\n        return None, True\n    if not jobs:\n        return None, False\n    return jobs[0], False\n\n\ndef dispatch() -> int:\n    ensure_dirs()\n    with LOCK_FILE.open(\"a+\") as lock:\n        try:\n            fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)\n        except BlockingIOError:\n            print(\"UNIVERSAL_DISPATCHER=BUSY\")\n            return 0\n        jobs = sorted(PENDING.glob(\"*.json\"))\n        selected, is_preferred = _select_pending_job(jobs)\n        if selected is None:\n            if is_preferred:\n                return 0\n            print(\"UNIVERSAL_DISPATCHER=NO_PENDING_JOBS\")\n            return 0\n        rc = process_one(selected)\n        if is_preferred:\n            try:\n                PREFERRED_JOB_PATH.unlink()\n            except OSError:\n                pass\n        return rc\n",
+      "new": "def _select_pending_job(jobs: list[Path]) -> tuple[Path | None, bool]:\n    preferred = _load_preferred_job()\n    if preferred is not None:\n        preferred_id = str(preferred[\"job_id\"])\n        for path in jobs:\n            if path.stem == preferred_id:\n                print(f\"UNIVERSAL_DISPATCHER=PREFERRED_JOB_SELECTED JOB_ID={preferred_id}\")\n                return path, True\n        try:\n            PREFERRED_JOB_PATH.unlink()\n        except OSError:\n            pass\n        print(f\"UNIVERSAL_DISPATCHER=PREFERRED_JOB_STALE_IGNORED JOB_ID={preferred_id}\")\n    if not jobs:\n        return None, False\n    return jobs[0], False\n\n\ndef claim_one() -> Path | None:\n    with LOCK_FILE.open(\"a+\") as lock:\n        try:\n            fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)\n        except BlockingIOError:\n            print(\"UNIVERSAL_DISPATCHER=BUSY\")\n            return None\n\n        jobs = sorted(PENDING.glob(\"*.json\"))\n        selected, is_preferred = _select_pending_job(jobs)\n\n        if selected is None:\n            print(\"UNIVERSAL_DISPATCHER=NO_PENDING_JOBS\")\n            return None\n\n        processing = PROCESSING / selected.name\n        os.replace(selected, processing)\n\n        if is_preferred:\n            try:\n                PREFERRED_JOB_PATH.unlink()\n            except OSError:\n                pass\n\n        print(f\"UNIVERSAL_DISPATCHER=CLAIMED JOB_ID={selected.stem}\")\n        return processing\n\n\ndef dispatch() -> int:\n    ensure_dirs()\n    claimed = claim_one()\n    if claimed is None:\n        return 0\n    return process_one(claimed, already_claimed=True)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_universal_queue_sla_contract.py",
+      "old": "def test_dispatcher_tracks_runtime_and_only_releases_created_claims():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'agent_guard_claim_created = False' in text\n    assert 'agent_guard_claim_created = True' in text\n    assert 'if agent_guard_claim_created:' in text\n    assert 'agent_guard_release\"] = \"NOT_REQUIRED\"' in text\n    assert 'current_job_id' in text\n    assert 'last_terminal_utc' in text\n",
+      "new": "def test_dispatcher_tracks_runtime_and_only_releases_created_claims():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'agent_guard_claim_created = False' in text\n    assert 'agent_guard_claim_created = True' in text\n    assert 'if agent_guard_claim_created:' in text\n    assert 'agent_guard_release\"] = \"NOT_REQUIRED\"' in text\n    assert 'current_job_id' in text\n    assert 'last_terminal_utc' in text\n\n\ndef test_dispatcher_claim_is_atomic_and_execution_is_outside_lock():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'def claim_one() -> Path | None:' in text\n    assert 'with LOCK_FILE.open(\"a+\") as lock:' in text\n    assert 'os.replace(selected, processing)' in text\n    assert 'return process_one(claimed, already_claimed=True)' in text\n    claim_start = text.index('def claim_one() -> Path | None:')\n    dispatch_start = text.index('def dispatch() -> int:')\n    claim_block = text[claim_start:dispatch_start]\n    assert 'process_one(' not in claim_block\n\n\ndef test_preferred_job_is_boost_not_global_freeze():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'PREFERRED_JOB_STALE_IGNORED' in text\n    assert 'WAITING_PREFERRED_JOB' not in text\n    assert 'return jobs[0], False' in text\n",
+      "expected_count": 1,
+      "expected_sha256": "770737dafa32152273da741a60400d67e25ab30e68ef17531778de4fc1b44c5e"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_worker_scope_concurrency_dispatcher_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_multiproject_shadow_scheduler.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "backend/tests/test_worker_universal_queue_sla_contract.py"
+        ],
+        "search_terms": [
+          "claim_one",
+          "already_claimed",
+          "dispatcher.lock",
+          "PREFERRED_JOB_STALE_IGNORED",
+          "current_job_id",
+          "processing",
+          "GLOBAL_GIT_WRITER",
+          "production_touched"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 500
+      }
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No Cavas functional changes",
+    "No Tablajerias functional changes",
+    "No NetPay changes",
+    "Do not change universal_job_worker.sh",
+    "Do not enable READ_ONLY parallel execution yet",
+    "Do not enable concurrent MUTATION",
+    "Do not remove GLOBAL_GIT_WRITER",
+    "Do not weaken Agent Guard",
+    "Do not weaken git divergence guard",
+    "dispatcher.lock must cover claim only",
+    "preferred_job must be priority boost, never global freeze",
+    "Execution remains serial in Gate4A",
+    "Only the two declared files may change"
+  ]
+}
