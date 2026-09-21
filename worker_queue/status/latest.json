@@ -4,19 +4,19 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "95bbeaf17569fb8bb61ebc0c27806372b311ec2b",
-  "generated_at_utc": "2026-09-21T18:27:40Z",
+  "generated_at_utc": "2026-09-21T18:28:54Z",
   "history": {
     "done_total_local": 806,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 724,
+    "rejected_total_local": 725,
     "results_total_local": 1357
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 895,
+      "age_seconds": 970,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RECONCILER-HOTPATH-EXACT-PATCH-READONLY-R1-20260921",
       "reasons": [
         "INVALID_SCHEMA",
@@ -32,7 +32,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1652,
+      "age_seconds": 1727,
       "job_id": "EDARSAHUB-WORKER-GIT-LOCK-PICKUP-DIAG-READONLY-R1B-20260921T172200Z",
       "reasons": [
         "REQUESTER_EMAIL_INVALID",
@@ -43,7 +43,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 443,
+      "age_seconds": 518,
       "job_id": "EDARSAHUB-WORKER-RECONCILER-HOTPATH-SINGLE-FETCH-CACHE-R1-20260921",
       "reasons": [
         "INVALID_SCHEMA",
@@ -59,43 +59,52 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2921,
+      "age_seconds": 13,
+      "job_id": "EDARSAHUB-WORKER-RECONCILER-HOTPATH-SINGLE-FETCH-CACHE-R2-20260921",
+      "reasons": [
+        "ACTION_4_OLD_REQUIRED"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 2995,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4-PREFLIGHT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2604,
+      "age_seconds": 2678,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4A-ATOMIC-CLAIM-PREFERRED-BOOST-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2467,
+      "age_seconds": 2542,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4A-ATOMIC-CLAIM-PREFERRED-BOOST-R2-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2367,
+      "age_seconds": 2441,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4A-CERT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1924,
+      "age_seconds": 1999,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B-SLOTS-RUNTIME-PREFLIGHT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1446,
+      "age_seconds": 1520,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1-EXACT-PATCH-DISCOVERY-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 681,
+      "age_seconds": 756,
       "job_id": "EDARSAHUB-WORKER-RECONCILER-HOTPATH-DIAG-READONLY-R2-20260921",
       "reason": null,
       "state": "RESULT_READY"
@@ -108,15 +117,15 @@
   "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 3,
+  "queue_rejected_recent": 4,
   "queue_result_ready_recent": 7,
   "queue_running": 0,
   "remote_development_sha": "95bbeaf17569fb8bb61ebc0c27806372b311ec2b",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T18:27:38Z",
-    "last_receive_utc": "2026-09-21T18:27:33Z",
+    "last_cycle_utc": "2026-09-21T18:28:52Z",
+    "last_receive_utc": "2026-09-21T18:28:54Z",
     "last_terminal_utc": "2026-09-21T18:16:18Z",
     "pid": "214"
   },
