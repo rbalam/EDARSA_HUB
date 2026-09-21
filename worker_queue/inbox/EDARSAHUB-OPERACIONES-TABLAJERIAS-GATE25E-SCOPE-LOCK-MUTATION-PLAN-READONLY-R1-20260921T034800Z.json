@@ -1,0 +1,95 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25E-SCOPE-LOCK-MUTATION-PLAN-READONLY-R1-20260921T034800Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "8a491bcfbe87250d38459439005c91a06763d384",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "priority": "P1",
+  "objective": "Gate25E Scope Lock + Mutation Plan para Tablajerias. Definir y certificar, sin mutaciones, el alcance quirurgico del siguiente cambio funcional. El plan debe respetar SQL Server como fuente canonica, no duplicar tablas ni servicios, mantener RBAC/backend como autoridad, no tocar Scheduler/NetPay, no tocar Produccion y no ejecutar SQL. No modificar codigo. No crear tablas. No publicar cambios funcionales.",
+  "actions": [],
+  "checks": [
+    {"type": "git_diff_check"},
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_tablajeria_fase6_service_unit.py",
+        "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+        "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/tablajeria/routes.py",
+          "backend/modules/tablajeria/fase6_service.py",
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+          "backend/modules/tablajeria/sql/uatscope_lonja_plantillas.sql",
+          "backend/tests/test_tablajeria_fase6_service_unit.py",
+          "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+          "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py",
+          "docs/TABLAJERIA_UAT_SCOPE_FIX_LONJA_PLANTILLAS_IMPLEMENTATION_R1.md"
+        ],
+        "search_terms": [
+          "tablajeria",
+          "scope",
+          "mutation plan",
+          "sql_first",
+          "get_sql_connection",
+          "RBAC",
+          "get_current_user",
+          "lonja",
+          "plantillas",
+          "lotes proveedor",
+          "reclamos proveedor",
+          "fase6",
+          "costeo",
+          "inventario",
+          "poliza",
+          "preview",
+          "uat"
+        ],
+        "include_patterns": [],
+        "exclude_patterns": [],
+        "max_results": 1200
+      }
+    }
+  ],
+  "expected_outputs": {
+    "terminal_status": "READ_ONLY_COMPLETE",
+    "certification": "CERTIFIED_READ_ONLY",
+    "quality_gate": "PASS",
+    "tests": "PASS",
+    "percent_complete": 100,
+    "production_touched": false,
+    "files_changed": [],
+    "blockers": []
+  },
+  "scope_lock_requirements": {
+    "next_gate": "Gate25F Mutation Functional Surgical",
+    "mutation_allowed_in_this_gate": false,
+    "sql_allowed_in_this_gate": false,
+    "production_allowed_in_this_gate": false,
+    "must_define": [
+      "target_screen_or_route",
+      "backend_frontend_contract",
+      "files_allowed_to_change_in_next_gate",
+      "tests_required_for_next_gate",
+      "rollback_plan",
+      "post_mutation_certification_criteria"
+    ],
+    "hard_constraints": [
+      "SQL Server remains canonical source of truth",
+      "No Mongo as operational source",
+      "No hardcoded companies, units, warehouses or IDs",
+      "RBAC enforced by backend",
+      "No Scheduler or NetPay changes",
+      "No Production changes",
+      "No duplicate tables or duplicate services"
+    ]
+  },
+  "created_at_utc": "2026-09-21T03:48:00Z"
+}
