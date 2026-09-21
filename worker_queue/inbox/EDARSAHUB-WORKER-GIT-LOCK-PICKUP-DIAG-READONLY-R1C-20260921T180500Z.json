@@ -1,0 +1,119 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-GIT-LOCK-PICKUP-DIAG-READONLY-R1C-20260921T180500Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3b15e09d1b02276dbc95e5deaef16e11c72d7bcc",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "priority": "P0",
+  "objective": "Auditar en READ_ONLY el contrato y evidencia disponible del runtime que genero GIT_LOCK_BUSY para Gate25F-R3, despues de rechazos R1/R1B. Este R1C usa contrato minimo valido: sin envelope, sin requester, actions vacio y solo checks permitidos. No diagnostica procesos vivos si el runtime no soporta ese check. No publicar Gate25F-R4 ni Gate25G. No tocar SQL ni Produccion.",
+  "context": {
+    "previous_rejected_job_id": "EDARSAHUB-WORKER-GIT-LOCK-PICKUP-DIAG-READONLY-R1B-20260921T172200Z",
+    "previous_rejection_reasons": [
+      "REQUESTER_EMAIL_INVALID",
+      "READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED",
+      "CHECK_1_INVALID_TYPE"
+    ],
+    "correction": "Eliminar requester completo y eliminar worker_intake_audit. Mantener solo repository_contract_audit y git_diff_check.",
+    "blocked_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-MUTATION-FUNCTIONAL-SURGICAL-R3-20260921T160100Z",
+    "blocked_status": "GIT_LOCK_BUSY",
+    "blocked_blocker": "dispatcher_exception:RuntimeError:GIT_LOCK_BUSY",
+    "blocked_percent_complete": 0,
+    "blocked_production_touched": false,
+    "next_functional_gate_blocked": "Gate25F-R4",
+    "next_functional_gate_allowed_only_if": "contract audit PASS and base_sha refreshed; LOCK_FREE cannot be fully confirmed by R1C if live runtime checks are unsupported"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/mirror_sync_worker.sh",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "tools/mirror_sync/multiproject_shadow_scheduler.py",
+          "backend/modules/worker_console",
+          "backend/modules/worker_runtime_wake/routes.py",
+          "backend/tests/test_worker_universal_queue_sla_contract.py",
+          "backend/tests/test_worker_control_plane_contract.py",
+          "backend/tests/test_multiproject_shadow_scheduler.py",
+          "worker_queue/status/latest.json"
+        ],
+        "search_terms": [
+          "GIT_LOCK_BUSY",
+          "index.lock",
+          "GLOBAL_GIT_WRITER",
+          "current_job_id",
+          "preferred_job",
+          "status/latest.json",
+          "last_cycle_utc",
+          "last_receive_utc",
+          "processing",
+          "pending",
+          "rejected",
+          "edarsahub.worker-job.v2",
+          "READ_ONLY_ACTIONS_MUST_BE_EMPTY_LIST",
+          "repository_contract_audit",
+          "git_diff_check"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.md",
+          "*.json"
+        ],
+        "exclude_patterns": [
+          "**/__pycache__/**",
+          "**/node_modules/**"
+        ],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty list",
+    "No file changes in Edarsahub_Desarrollo",
+    "No SQL execution",
+    "No DDL or DML execution",
+    "No Production",
+    "No backend mutation",
+    "No frontend mutation",
+    "No Scheduler changes",
+    "No NetPay changes",
+    "No deleting queue files",
+    "No moving lifecycle files",
+    "No cleanup of locks unless separately authorized later",
+    "No reset, clean, stash, force push, merge or rebase",
+    "No secrets or credentials in output",
+    "No Gate25F-R4 publication from this job",
+    "No Gate25G publication from this job"
+  ],
+  "required_output": [
+    "contract_acceptance_status",
+    "repository_evidence_for_git_lock_busy",
+    "repository_evidence_for_global_git_writer",
+    "repository_evidence_for_status_latest_freshness",
+    "development_branch_current_sha",
+    "production_touched_false_confirmed",
+    "sql_touched_false_confirmed",
+    "limitations_of_r1c_live_lock_visibility",
+    "safe_decision_for_gate25f_r4",
+    "blockers"
+  ],
+  "expected_terminal": {
+    "certification": "CERTIFIED_READ_ONLY",
+    "quality_gate": "PASS",
+    "production_touched": false,
+    "sql_touched": false,
+    "functional_mutation_touched": false
+  },
+  "created_at_utc": "2026-09-21T18:05:00Z"
+}
