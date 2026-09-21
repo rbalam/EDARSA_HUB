@@ -6,7 +6,7 @@
   "base_sha": "dcc04e7f0931b885bae3abc1acfbb917bde720d5",
   "production_allowed": false,
   "human_summary_language": "es",
-  "objective": "Gate4B1C Mutation R1 quirurgico. Exponer el runtime serial de slots ya integrado en Gate4B1B dentro de runtime_health_publisher y worker_control_plane, reutilizando worker_slot_runtime.py como unica autoridad canonica. Incorporar una proyeccion observable fail-closed que no cree, reclame, actualice ni libere slots. Mantener current_job_id legacy, capacidades efectivas READ_ONLY=1 y MUTATION=1, parallel_execution_enabled=false y todos los guards existentes. No tocar Produccion, SQL, Mongo, frontend ni dominios funcionales.",
+  "objective": "Gate4B1C Mutation R1 quirurgico. Exponer el runtime serial de slots ya integrado en Gate4B1B dentro de runtime_health_publisher y worker_control_plane, reutilizando worker_slot_runtime.py como unica autoridad canonica. La observabilidad debe ser fail-closed y conservar evidencia corrupta: reportar BLOCKED sin borrar, reparar, reclamar, actualizar ni liberar slots. Mantener current_job_id legacy, capacidades efectivas READ_ONLY=1 y MUTATION=1, paralelismo desactivado y todos los guards existentes. No tocar Produccion, SQL, Mongo, frontend ni dominios funcionales.",
   "mode": "MUTATION",
   "actions": [
     {
@@ -14,16 +14,14 @@
       "path": "tools/mirror_sync/worker_slot_runtime.py",
       "old": "def slot_runtime_summary() -> dict[str, Any]:\n    slots = load_active_slots()\n\n    readonly = [\n        slot\n        for slot in slots\n        if slot[\"slot_class\"] == \"READ_ONLY\"\n    ]\n\n    mutation = [\n        slot\n        for slot in slots\n        if slot[\"slot_class\"] == \"MUTATION\"\n    ]\n\n    return {\n        \"active_slots\": len(slots),\n        \"readonly_slots_active\": len(readonly),\n        \"readonly_slots_capacity\": 1,\n        \"mutation_slots_active\": len(mutation),\n        \"mutation_slots_capacity\": 1,\n        \"slot_job_ids\": [\n            slot[\"job_id\"]\n            for slot in slots\n        ],\n        \"slot_states\": {\n            slot[\"slot_id\"]: slot[\"state\"]\n            for slot in slots\n        },\n    }\n",
       "new": "def slot_runtime_summary() -> dict[str, Any]:\n    slots = load_active_slots()\n\n    readonly = [\n        slot\n        for slot in slots\n        if slot[\"slot_class\"] == \"READ_ONLY\"\n    ]\n\n    mutation = [\n        slot\n        for slot in slots\n        if slot[\"slot_class\"] == \"MUTATION\"\n    ]\n\n    return {\n        \"active_slots\": len(slots),\n        \"readonly_slots_active\": len(readonly),\n        \"readonly_slots_capacity\": 1,\n        \"mutation_slots_active\": len(mutation),\n        \"mutation_slots_capacity\": 1,\n        \"slot_job_ids\": [\n            slot[\"job_id\"]\n            for slot in slots\n        ],\n        \"slot_states\": {\n            slot[\"slot_id\"]: slot[\"state\"]\n            for slot in slots\n        },\n    }\n\n\ndef observable_slot_runtime_summary() -> dict[str, Any]:\n    \"\"\"Return fail-closed slot observability without mutating runtime state.\"\"\"\n    try:\n        summary = slot_runtime_summary()\n    except SlotRuntimeError as exc:\n        return {\n            \"slot_runtime_status\": \"BLOCKED\",\n            \"slot_runtime_error\": str(exc),\n            \"active_slots\": None,\n            \"readonly_slots_active\": None,\n            \"readonly_slots_capacity\": 1,\n            \"mutation_slots_active\": None,\n            \"mutation_slots_capacity\": 1,\n            \"slot_job_ids\": [],\n            \"slot_states\": {},\n        }\n\n    return {\n        \"slot_runtime_status\": \"READY\",\n        **summary,\n    }\n",
-      "expected_count": 1,
-      "expected_sha256": "99145ad9cf75e1727ce097d6002954ab3401a614"
+      "expected_count": 1
     },
     {
       "type": "replace_text",
       "path": "tools/mirror_sync/runtime_health_publisher.py",
       "old": "from pathlib import Path\nimport tempfile\n",
       "new": "from pathlib import Path\nimport tempfile\n\nfrom worker_slot_runtime import observable_slot_runtime_summary\n",
-      "expected_count": 1,
-      "expected_sha256": "4a6bb8f6d290ee3e9a1ee4c663f91c3e3838cc71"
+      "expected_count": 1
     },
     {
       "type": "replace_text",
@@ -37,8 +35,7 @@
       "path": "tools/mirror_sync/worker_control_plane.py",
       "old": "from pathlib import Path\nfrom typing import Any\n",
       "new": "from pathlib import Path\nfrom typing import Any\n\nfrom worker_slot_runtime import observable_slot_runtime_summary\n",
-      "expected_count": 1,
-      "expected_sha256": "83c34dd366e055f77497171b2a22925b5fb10de7"
+      "expected_count": 1
     },
     {
       "type": "replace_text",
@@ -52,24 +49,21 @@
       "path": "backend/tests/test_worker_slot_runtime_contract.py",
       "old": "def test_slot_runtime_has_no_git_sql_or_shell():\n    value = text()\n    assert \"subprocess\" not in value\n    assert \"git(\"not in value\n    assert \"sql\" not in value.lower()\n    assert \"shell=True\" not in value\n",
       "new": "def test_slot_runtime_has_no_git_sql_or_shell():\n    value = text()\n    assert \"subprocess\" not in value\n    assert \"git(\"not in value\n    assert \"sql\" not in value.lower()\n    assert \"shell=True\" not in value\n\n\ndef test_slot_runtime_exposes_fail_closed_observability_summary():\n    value = text()\n    assert \"def observable_slot_runtime_summary()\" in value\n    assert '\"slot_runtime_status\": \"READY\"' in value\n    assert '\"slot_runtime_status\": \"BLOCKED\"' in value\n    assert '\"readonly_slots_capacity\": 1' in value\n    assert '\"mutation_slots_capacity\": 1' in value\n",
-      "expected_count": 1,
-      "expected_sha256": "b9e102a6f3a429ea2e2bcfd1c493c7d5cee26f80"
+      "expected_count": 1
     },
     {
       "type": "replace_text",
       "path": "backend/tests/test_worker_control_plane_contract.py",
       "old": "def test_production_is_explicitly_out_of_scope():\n    text = CONTROL.read_text(encoding=\"utf-8\")\n    assert '\"production_touched\": False' in text\n    assert \"Edarsahub_Produccion\" not in text\n",
       "new": "def test_production_is_explicitly_out_of_scope():\n    text = CONTROL.read_text(encoding=\"utf-8\")\n    assert '\"production_touched\": False' in text\n    assert \"Edarsahub_Produccion\" not in text\n\n\ndef test_control_plane_exposes_serial_slot_observability_without_mutation():\n    text = CONTROL.read_text(encoding=\"utf-8\")\n    assert \"from worker_slot_runtime import observable_slot_runtime_summary\" in text\n    assert '\"slots\": observable_slot_runtime_summary()' in text\n    assert \"create_slot(\" not in text\n    assert \"release_slot(\" not in text\n",
-      "expected_count": 1,
-      "expected_sha256": "8677f1a22679565ce2444e4804ea46bda0a91da4"
+      "expected_count": 1
     },
     {
       "type": "replace_text",
       "path": "backend/tests/test_worker_universal_queue_sla_contract.py",
       "old": "def test_health_exposes_sla_metrics():\n    text = HEALTH.read_text(encoding='utf-8')\n    for token in ('queue_depth','oldest_pending_age_seconds','intake_sla_seconds','intake_sla_breached','current_job_id','last_terminal_utc'):\n        assert token in text\n",
       "new": "def test_health_exposes_sla_metrics():\n    text = HEALTH.read_text(encoding='utf-8')\n    for token in ('queue_depth','oldest_pending_age_seconds','intake_sla_seconds','intake_sla_breached','current_job_id','last_terminal_utc'):\n        assert token in text\n\n\ndef test_health_exposes_serial_slot_runtime_observability():\n    text = HEALTH.read_text(encoding='utf-8')\n    assert 'from worker_slot_runtime import observable_slot_runtime_summary' in text\n    assert 'runtime[\"slots\"] = observable_slot_runtime_summary()' in text\n",
-      "expected_count": 1,
-      "expected_sha256": "be4c9ecd396ce7ba34580d23ef0db9f18f8e672a"
+      "expected_count": 1
     }
   ],
   "checks": [
