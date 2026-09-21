@@ -3,56 +3,62 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "12c6c18de619854e5fe8f33e87bff7b63eaa93fe",
-  "generated_at_utc": "2026-09-21T16:58:17Z",
+  "development_sha": "a2bd1be64a1b9392921a23351ecc68549c6e278a",
+  "generated_at_utc": "2026-09-21T17:00:14Z",
   "history": {
-    "done_total_local": 798,
+    "done_total_local": 799,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 719,
-    "results_total_local": 1348
+    "results_total_local": 1349
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1142,
+      "age_seconds": 1259,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-MUTATION-FUNCTIONAL-SURGICAL-R3-20260921T160100Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2985,
+      "age_seconds": 3102,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE0-ARCH-AUDIT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2743,
+      "age_seconds": 2860,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE1-SHADOW-SCHEDULER-DESIGN-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1217,
+      "age_seconds": 1334,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE2-SHADOW-IMPLEMENTATION-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 332,
+      "age_seconds": 449,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE2-SHADOW-IMPLEMENTATION-R2-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1209,
+      "age_seconds": 24,
+      "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE2-SHADOW-IMPLEMENTATION-R3-20260921",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1326,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE3-SCOPE-LOCK-PLAN-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "12c6c18de619854e5fe8f33e87bff7b63eaa93fe",
+  "local_development_sha": "a2bd1be64a1b9392921a23351ecc68549c6e278a",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -60,16 +66,16 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 7,
   "queue_running": 0,
-  "remote_development_sha": "12c6c18de619854e5fe8f33e87bff7b63eaa93fe",
+  "remote_development_sha": "a2bd1be64a1b9392921a23351ecc68549c6e278a",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T16:58:13Z",
-    "last_receive_utc": "2026-09-21T16:58:16Z",
-    "last_terminal_utc": "2026-09-21T16:52:45Z",
-    "pid": "67599"
+    "last_cycle_utc": "2026-09-21T17:00:06Z",
+    "last_receive_utc": "2026-09-21T17:00:11Z",
+    "last_terminal_utc": "2026-09-21T16:59:50Z",
+    "pid": "134548"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
