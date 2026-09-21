@@ -1,0 +1,6 @@
+{
+  "schema":"edarsahub.runtime-recovery-trigger.v1",
+  "reason":"Preferred wake for retry EDARSAHUB-ISCAM-HIST-R93A-130MID-202609-CARLOS-20260921T221700Z after transient Git ref lock. Preserve any healthy active job, register this job as next preferred, never touch Production.",
+  "existing_job_id":"EDARSAHUB-ISCAM-HIST-R93A-130MID-202609-CARLOS-20260921T221700Z",
+  "production_touched":false
+}
