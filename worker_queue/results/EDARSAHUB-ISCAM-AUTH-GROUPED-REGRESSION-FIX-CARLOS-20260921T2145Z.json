@@ -1,0 +1,199 @@
+{
+  "base_sha": "dcc04e7f0931b885bae3abc1acfbb917bde720d5",
+  "blockers": [],
+  "candidate_sha": "1199f993848274570f94c6c5fc32dc481fb3fe97",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-21T21:45:52Z",
+  "development_sha": "1199f993848274570f94c6c5fc32dc481fb3fe97",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "frontend/src/portal-inteligencia/App.jsx",
+    "frontend/src/portal-inteligencia/api/client.js"
+  ],
+  "frontend_build_evidence": {
+    "checks": [
+      {
+        "completed_at_utc": "2026-09-21T21:45:49Z",
+        "output_tail": "yarn run v1.22.22\n$ yarn validate:navigation && yarn install --frozen-lockfile --non-interactive --ignore-scripts --prefer-offline\n$ node scripts/validate_enterprise_navigation.js && node scripts/validate_executive_navigation.js\nENTERPRISE_NAVIGATION_GUARDIAN=PASS\nGROUPS=8\nMODULE_MAPPINGS=28\nMENU_MAPPINGS=73\nPLANNED_ITEMS=54\nREGISTERED_FUTURE_TABS=0\nNEW_BADGE_DAYS=30\nEXECUTIVE_NAVIGATION_GUARD=PASS\nMAIN_ROUTE=/tablero-ejecutivo\nMAIN_COMPONENT=TableroEjecutivo\nADMIN_ROUTE=/admin/dashboard-ejecutivo\nADMIN_COMPONENT=DashboardEjecutivo\nEXECUTIVE_TABS=comercial,finanzas,rh,bsc\nADMIN_ROUTE_IN_ENTERPRISE_MENU=NO\n[1/4] Resolving packages...\n[2/4] Fetching packages...\n[3/4] Linking dependencies...\nwarning \" > react-day-picker@8.10.1\" has incorrect peer dependency \"date-fns@^2.28.0 || ^3.0.0\".\nwarning \" > react-day-picker@8.10.1\" has incorrect peer dependency \"react@^16.8.0 || ^17.0.0 || ^18.0.0\".\nwarning \" > @babel/plugin-proposal-private-property-in-object@7.21.11\" has unmet peer dependency \"@babel/core@^7.0.0-0\".\nwarning \"react-scripts > eslint-config-react-app > eslint-plugin-flowtype@8.0.3\" has unmet peer dependency \"@babel/plugin-syntax-flow@^7.14.5\".\nwarning \"react-scripts > eslint-config-react-app > eslint-plugin-flowtype@8.0.3\" has unmet peer dependency \"@babel/plugin-transform-react-jsx@^7.14.9\".\nwarning \"react-scripts > react-dev-utils > fork-ts-checker-webpack-plugin@6.5.3\" has unmet peer dependency \"typescript@>= 2.7\".\nwarning \"react-scripts > eslint-config-react-app > @typescript-eslint/eslint-plugin > tsutils@3.21.0\" has unmet peer dependency \"typescript@>=2.8.0 || >= 3.2.0-dev || >= 3.3.0-dev || >= 3.4.0-dev || >= 3.5.0-dev || >= 3.6.0-dev || >= 3.6.0-beta || >= 3.7.0-dev || >= 3.7.0-beta\".\nwarning \" > recharts@3.6.0\" has unmet peer dependency \"react-is@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0\".\nwarning \"@craco/craco > cosmiconfig-typescript-loader@1.0.9\" has unmet peer dependency \"@types/node@*\".\nwarning \"@craco/craco > cosmiconfig-typescript-loader@1.0.9\" has unmet peer dependency \"typescript@>=3\".\nwarning \"@craco/craco > cosmiconfig-typescript-loader > ts-node@10.9.2\" has unmet peer dependency \"@types/node@*\".\nwarning \"@craco/craco > cosmiconfig-typescript-loader > ts-node@10.9.2\" has unmet peer dependency \"typescript@>=2.7\".\nwarning Workspaces can only be enabled in private projects.\nwarning Workspaces can only be enabled in private projects.\n[4/4] Building fresh packages...\nwarning Ignored scripts due to flag.\n$ DISABLE_ESLINT_PLUGIN=true CI=false craco build\nCannot find ESLint plugin (ESLintWebpackPlugin).\nCreating an optimized production build...\nBrowserslist: browsers data (caniuse-lite) is 9 months old. Please run:\n  npx update-browserslist-db@latest\n  Why you should do it regularly: https://github.com/browserslist/update-db#readme\nBrowserslist: browsers data (caniuse-lite) is 9 months old. Please run:\n  npx update-browserslist-db@latest\n  Why you should do it regularly: https://github.com/browserslist/update-db#readme\nCompiled successfully.\n\nFile sizes after gzip:\n\n  1.05 MB   build/static/js/main.15e7e3ca.js\n  46.35 kB  build/static/js/239.e39fb35b.chunk.js\n  43.29 kB  build/static/js/455.ba0306d1.chunk.js\n  23.89 kB  build/static/css/main.4deffca7.css\n  8.73 kB   build/static/js/977.8591a78c.chunk.js\n\nThe bundle size is significantly larger than recommended.\nConsider reducing it with code splitting: https://goo.gl/9VhYWB\nYou can also analyze the project dependencies: https://goo.gl/LeUzfb\n\nThe project was built assuming it is hosted at /.\nYou can control this with the homepage field in your package.json.\n\nThe build folder is ready to be deployed.\nYou may serve it with a static server:\n\n  yarn global add serve\n  serve -s build\n\nFind out more about deployment here:\n\n  https://cra.link/deployment\n\nDone in 131.07s.",
+        "returncode": 0,
+        "started_at_utc": "2026-09-21T21:43:37Z",
+        "status": "PASS"
+      }
+    ]
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-AUTH-GROUPED-REGRESSION-FIX-CARLOS-20260921T2145Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-21T21:46:03Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "coordinatedrefresh"
+            ],
+            "path": "frontend/src/lib/api.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "const client = gettoken() ? api : intelapi"
+            ],
+            "path": "frontend/src/portal-inteligencia/api/client.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "esexterno ? intelapi : api",
+              "reportesiscampage"
+            ],
+            "path": "frontend/src/portal-inteligencia/App.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "agrupado",
+              "group_by",
+              "reportesiscampage"
+            ],
+            "path": "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.inteligencia_comercial",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "calendar",
+              "core.kpis_canonicos",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "logging",
+              "typing",
+              "zoneinfo"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "agrupado",
+              "group_by"
+            ],
+            "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/comandas",
+              "/cuentas",
+              "/cuentas/detalle",
+              "/formas-pago",
+              "/formas-pago/por-ticket",
+              "/freshness",
+              "/ventas-periodos",
+              "/ventas-periodos/productos",
+              "/ventas-periodos/tickets",
+              "/ventas-periodos/tipos-servicio"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_detail_coverage",
+              "_f",
+              "_formas_pago_desde_detalle",
+              "_iso",
+              "_nombre_unidad",
+              "_period_floor",
+              "_period_label",
+              "_period_next",
+              "_period_sql",
+              "_period_windows",
+              "_q",
+              "_rango_fechas",
+              "_shift_months",
+              "comandas_venta",
+              "cuenta_detalle",
+              "formas_pago_por_ticket",
+              "iscam_freshness",
+              "resumen_cuentas",
+              "ventas_formas_pago",
+              "ventas_periodos",
+              "ventas_periodos_productos",
+              "ventas_periodos_tickets",
+              "ventas_periodos_tipos_servicio"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Finanzas_CortesCaja",
+              "Finanzas_CortesCaja_DetallePagos",
+              "Sync_Sales",
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 5,
+          "scanned_files": 5,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-21T21:43:32Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
