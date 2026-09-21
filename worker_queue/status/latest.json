@@ -4,67 +4,67 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "12c6c18de619854e5fe8f33e87bff7b63eaa93fe",
-  "generated_at_utc": "2026-09-21T16:38:21Z",
+  "generated_at_utc": "2026-09-21T16:39:43Z",
   "history": {
     "done_total_local": 798,
     "pending_total_local": 0,
-    "processing_total_local": 1,
-    "rejected_total_local": 717,
-    "results_total_local": 1346
+    "processing_total_local": 0,
+    "rejected_total_local": 718,
+    "results_total_local": 1347
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1481,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-MUTATION-FUNCTIONAL-SURGICAL-R3-20260921T160100Z",
-      "reason": "El worker no termino esta orden dentro del tiempo esperado.",
-      "state": "BLOCKED"
-    },
-    {
-      "age_seconds": 2465,
+      "age_seconds": 2547,
       "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C1-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2458,
+      "age_seconds": 2540,
       "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C2-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2453,
+      "age_seconds": 2535,
       "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C3-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2449,
+      "age_seconds": 2531,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-MUTATION-FUNCTIONAL-SURGICAL-R2-20260921T154300Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1789,
+      "age_seconds": 28,
+      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-MUTATION-FUNCTIONAL-SURGICAL-R3-20260921T160100Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1871,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE0-ARCH-AUDIT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1547,
+      "age_seconds": 1629,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE1-SHADOW-SCHEDULER-DESIGN-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 21,
+      "age_seconds": 103,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE2-SHADOW-IMPLEMENTATION-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 13,
+      "age_seconds": 95,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE3-SCOPE-LOCK-PLAN-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
@@ -73,20 +73,20 @@
   "local_development_sha": "12c6c18de619854e5fe8f33e87bff7b63eaa93fe",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
-  "queue_blocked": 1,
-  "queue_depth": 1,
+  "queue_blocked": 0,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 8,
+  "queue_result_ready_recent": 9,
   "queue_running": 0,
   "remote_development_sha": "12c6c18de619854e5fe8f33e87bff7b63eaa93fe",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T16:38:19Z",
-    "last_receive_utc": "2026-09-21T16:38:14Z",
-    "last_terminal_utc": "2026-09-21T16:38:07Z",
+    "last_cycle_utc": "2026-09-21T16:39:36Z",
+    "last_receive_utc": "2026-09-21T16:39:40Z",
+    "last_terminal_utc": "2026-09-21T16:39:14Z",
     "pid": "190"
   },
   "schema": "edarsahub.worker-health.v3",
