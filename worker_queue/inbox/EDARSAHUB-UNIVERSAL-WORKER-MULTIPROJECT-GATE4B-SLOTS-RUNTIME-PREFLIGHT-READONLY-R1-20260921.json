@@ -1,0 +1,104 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B-SLOTS-RUNTIME-PREFLIGHT-READONLY-R1-20260921",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "95bbeaf17569fb8bb61ebc0c27806372b311ec2b",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar el repositorio y runtime real posterior a Gate4A para diseñar de forma\ndeterministica Gate4B, que habilitara hasta 4 ejecuciones READ_ONLY concurrentes\ny exactamente 1 MUTATION global.\n\nDeterminar el parche minimo, canonico, reversible y compatible con worker-job.v2\nnecesario para introducir slots reales sin romper lifecycle, reconciler, health,\nresult publisher, Agent Guard, git guards ni el Universal Worker actual.\n\nLa auditoria debe determinar especificamente:\n\n1. Como sustituir o extender runtime/current_job_id para multiples slots sin\n   romper consumidores legacy.\n\n2. Identificar todos los consumidores reales de current_job_id, incluyendo\n   runtime_health_publisher.py, worker_control_plane.py,\n   worker_runtime_reconciler.py, tests y cualquier helper adicional.\n\n3. Definir contrato atomico runtime/slots/<slot_id>.json incluyendo al menos:\n   slot_id, slot_class, job_id, mode, project_id, bounded_context,\n   claimed_at_utc, heartbeat_at_utc, worker_pid, execution_pid y state.\n\n4. Mantener current_job_id solo como compatibilidad legacy si es necesario,\n   nunca como autoridad multiproyecto.\n\n5. Seleccionar exclusivamente jobs READ_ONLY seguros para hasta cuatro slots.\n\n6. Reutilizar metadata certificada del Shadow Scheduler:\n   project_id, bounded_context, resource_claims, conflict_domains,\n   priority_class, fairness_weight y max_parallelism.\n\n7. Jobs legacy sin scheduling metadata deben seguir con defaults conservadores:\n   LEGACY_GLOBAL y GLOBAL_GIT_WRITER. No asumir paralelismo seguro.\n\n8. MUTATION debe continuar estrictamente serializada globalmente a capacidad 1.\n   No habilitar MUTATION concurrente aunque resource_claims sean disjuntos.\n\n9. Impedir doble claim del mismo pending.\n\n10. Impedir que slots READ_ONLY ejecuten accidentalmente MUTATION, READ_ONLY_SQL,\n    SQL migrations, resyncs u operaciones especiales cerradas.\n\n11. Diseñar heartbeat por slot y deteccion segura de slot vivo, execution muerta,\n    processing huerfano y slot stale.\n\n12. Adaptar conceptualmente worker_runtime_reconciler para reconocer processing\n    pertenecientes a slots vivos.\n\n13. Adaptar conceptualmente runtime_health_publisher para agregar:\n    active_slots, readonly_slots_active, readonly_slots_capacity,\n    mutation_slots_active, mutation_slots_capacity, slot_job_ids y\n    blocked/conflict state, preservando compatibilidad legacy.\n\n14. Diseñar shutdown limpio sin abandonar processing, perder evidencia ni dejar\n    locks/slots huerfanos.\n\n15. Comparar supervisor interno, procesos hijos gestionados por\n    universal_job_worker.sh y helper dedicado de slot execution. Determinar la\n    alternativa de menor acoplamiento y mayor aislamiento.\n\n16. Determinar archivos y funciones exactos de Gate4B.\n\n17. Determinar pruebas exactas requeridas antes de activar concurrencia real.\n\n18. Definir rollback inmediato a READ_ONLY=1 y MUTATION=1 sin perder lifecycle.\n\nNo implementar cambios durante este Gate.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/universal_job_worker.sh",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/multiproject_shadow_scheduler.py",
+          "tools/mirror_sync/worker_concurrency.py",
+          "tools/mirror_sync/worker_runtime_reconciler.py",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "backend/tests"
+        ],
+        "search_terms": [
+          "current_job_id",
+          "processing",
+          "claim_one",
+          "already_claimed",
+          "slot",
+          "slots",
+          "heartbeat",
+          "dispatch_loop",
+          "process_one",
+          "reconcile",
+          "processing_stale",
+          "orphan",
+          "worker_pid",
+          "execution_pid",
+          "resource_claims",
+          "conflict_domains",
+          "project_id",
+          "bounded_context",
+          "fairness_weight",
+          "max_parallelism",
+          "LEGACY_GLOBAL",
+          "GLOBAL_GIT_WRITER",
+          "READ_ONLY",
+          "MUTATION",
+          "preferred_job",
+          "production_touched"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh"
+        ],
+        "exclude_patterns": [],
+        "max_results": 5000
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_worker_scope_concurrency_dispatcher_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_multiproject_shadow_scheduler.py",
+        "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No file changes",
+    "No SQL",
+    "No Mongo",
+    "No Production",
+    "No Cavas changes",
+    "No Tablajerias changes",
+    "No NetPay changes",
+    "Do not restart supervisor",
+    "Do not activate slots yet",
+    "Do not launch parallel executors",
+    "Do not enable concurrent MUTATION",
+    "Do not remove GLOBAL_GIT_WRITER",
+    "Do not weaken Agent Guard",
+    "Do not weaken Git divergence guards",
+    "Do not bypass lifecycle",
+    "Do not create a worker per project",
+    "Universal Worker remains the single execution platform",
+    "Legacy worker-job.v2 compatibility is mandatory",
+    "current_job_id is compatibility metadata only, not multiproject authority",
+    "READ_ONLY slot eligibility must fail closed",
+    "READ_ONLY_SQL is not automatically eligible for parallel READ_ONLY slots",
+    "Return exact files, functions, contracts and tests for deterministic Gate4B mutation",
+    "Return rollback contract to READ_ONLY=1 and MUTATION=1"
+  ]
+}
