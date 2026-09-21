@@ -1022,6 +1022,7 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             FROM h
             LEFT JOIN Comanda_Detalle d WITH (NOLOCK)
                 ON d.Co_Folio = h.Vn_Documento
+               AND d.Sc_Cve_Sucursal = h.Sc_Cve_Sucursal
                AND ISNULL(d.Es_Cve_Estado, '') IN ('AC', 'FA')
             GROUP BY
                 h.Vn_Folio,
@@ -1104,7 +1105,13 @@ def _mpro_row_es_kpi_valido(row: Dict[str, Any]) -> bool:
 def _prorratear_mpro_por_ticket(
     src_rows: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
-    """Distribuye el descuento de la comanda entre productos MPRO."""
+    """Distribuye la venta final MPRO entre productos usando el header canónico.
+
+    Venta_Encabezado.Vn_Precio_Neto_Importe es la cifra final autoritativa.
+    Comanda_Detalle solo aporta la estructura/proporción de productos; su importe
+    bruto y Co_Descuento_Importe no pueden bloquear el detalle cuando existen
+    ajustes finales que no están representados como descuento de la comanda.
+    """
     rows = [dict(row) for row in src_rows]
     grouped: Dict[str, List[Tuple[int, Dict[str, Any]]]] = defaultdict(list)
 
@@ -1120,54 +1127,35 @@ def _prorratear_mpro_por_ticket(
 
     for ticket_key, items in grouped.items():
         net_values = {_q4(row.get("importe_neto_ticket")) for _, row in items}
-        discount_values = {_q4(row.get("descuento_comanda")) for _, row in items}
-
         if len(net_values) != 1:
             raise RuntimeError(
                 f"MPRO: venta neta inconsistente en ticket {ticket_key}"
             )
 
-        if len(discount_values) != 1:
-            raise RuntimeError(
-                f"MPRO: descuento inconsistente en ticket {ticket_key}"
-            )
-
         target_net = next(iter(net_values))
-        total_discount = next(iter(discount_values))
-        gross_values = [_q4(row.get("importe_bruto")) for _, row in items]
+        if target_net < 0:
+            raise RuntimeError(f"MPRO: venta neta negativa en ticket {ticket_key}")
 
+        gross_values = [_q4(row.get("importe_bruto")) for _, row in items]
         if any(value < 0 for value in gross_values):
             raise RuntimeError(f"MPRO: importe bruto negativo en ticket {ticket_key}")
 
         gross_total = _q4(sum(gross_values, Decimal("0")))
-
         if gross_total <= 0:
             raise RuntimeError(
                 f"MPRO: ticket sin detalle monetario distribuible: {ticket_key}"
             )
 
-        expected_discount = _q4(gross_total - target_net)
-
-        if expected_discount != total_discount:
-            raise RuntimeError(
-                "MPRO: no concilia bruto - descuento = neto: "
-                f"ticket={ticket_key}; bruto={gross_total}; "
-                f"descuento={total_discount}; neto={target_net}"
-            )
-
-        if total_discount < 0 or total_discount > gross_total:
-            raise RuntimeError(f"MPRO: descuento invalido en ticket {ticket_key}")
-
         allocations: List[Decimal] = []
         remainders: List[Decimal] = []
 
         for gross in gross_values:
-            raw = total_discount * gross / gross_total
+            raw = target_net * gross / gross_total
             base = raw.quantize(PRORRATEO_Q4, rounding=ROUND_DOWN)
             allocations.append(base)
             remainders.append(raw - base)
 
-        residual = _q4(total_discount - sum(allocations, Decimal("0")))
+        residual = _q4(target_net - sum(allocations, Decimal("0")))
         residual_units = int(
             (residual / PRORRATEO_Q4).to_integral_value(
                 rounding=ROUND_HALF_UP
@@ -1193,30 +1181,15 @@ def _prorratear_mpro_por_ticket(
             allocations[index] += PRORRATEO_Q4
 
         allocated_total = _q4(sum(allocations, Decimal("0")))
-        if allocated_total != total_discount:
+        if allocated_total != target_net:
             raise RuntimeError(
-                f"MPRO: descuento distribuido no concilia en ticket {ticket_key}"
+                f"MPRO: venta neta distribuida no concilia en ticket {ticket_key}"
             )
-
-        net_total = Decimal("0")
 
         for index, (_, row) in enumerate(items):
-            allocated_discount = _q4(allocations[index])
-            line_net = _q4(gross_values[index] - allocated_discount)
-
-            if line_net < 0:
-                raise RuntimeError(
-                    f"MPRO: importe neto negativo en ticket {ticket_key}"
-                )
-
-            row["descuento_prorrateado"] = allocated_discount
+            line_net = _q4(allocations[index])
+            row["descuento_prorrateado"] = _q4(gross_values[index] - line_net)
             row["importe_neto"] = line_net
-            net_total += line_net
-
-        if _q4(net_total) != target_net:
-            raise RuntimeError(
-                f"MPRO: suma neta por productos no concilia en ticket {ticket_key}"
-            )
 
     return rows
 
