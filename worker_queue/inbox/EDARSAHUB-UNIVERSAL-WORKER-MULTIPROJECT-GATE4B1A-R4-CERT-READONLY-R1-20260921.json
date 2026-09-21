@@ -1,0 +1,97 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-R4-CERT-READONLY-R1-20260921",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "489678d39ba6edd0f2f89e7d97f70c2143cc6c09",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar READ_ONLY el cierre de Gate4B1A R4 ya integrado. Validar que el commit 489678d39ba6edd0f2f89e7d97f70c2143cc6c09 conserva worker_scheduling.py como autoridad canonica unica, worker_slot_runtime.py fail-closed, multiproject_shadow_scheduler.py como adaptador legacy por delegacion, sibling resolution independiente de cwd, capacidad efectiva READ_ONLY=1 y MUTATION=1, sin paralelismo, sin tocar Produccion. Confirmar la integracion exacta sobre base 3b15e09d1b02276dbc95e5deaef16e11c72d7bcc, sin fuerza, reset ni rebase destructivo, y que no existe blocker funcional pendiente antes de Gate4B1B.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/worker_scheduling.py",
+          "tools/mirror_sync/worker_slot_runtime.py",
+          "tools/mirror_sync/multiproject_shadow_scheduler.py",
+          "backend/tests/test_worker_slot_runtime_contract.py"
+        ],
+        "search_terms": [
+          "SchedulingMeta",
+          "normalize_metadata",
+          "PRIORITY_ORDER",
+          "GLOBAL_CONFLICT_DOMAINS",
+          "claims_conflict",
+          "can_shadow_parallel",
+          "fairness_key",
+          "Path(__file__).resolve().with_name",
+          "spec_from_file_location",
+          "CORRUPT_SLOT_RUNTIME",
+          "LEGACY_CURRENT_JOB_PROJECTION_CONFLICT",
+          "readonly_slots_capacity",
+          "mutation_slots_capacity",
+          "GLOBAL_GIT_WRITER",
+          "production_touched"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_slot_runtime_contract.py",
+        "backend/tests/test_multiproject_shadow_scheduler.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_universal_worker_external_owner_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty",
+    "No repository mutation",
+    "No lifecycle mutation outside normal READ_ONLY result publication",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "No Production",
+    "No Cavas functional changes",
+    "No Tablajerias functional changes",
+    "No NetPay changes",
+    "Do not modify universal_job_worker.sh",
+    "Do not modify universal_job_dispatcher.py",
+    "Do not modify worker_runtime_reconciler.py",
+    "Do not modify runtime_health_publisher.py",
+    "Do not modify worker_control_plane.py",
+    "Do not weaken Repository Artifact Guard",
+    "Do not weaken Agent Guard",
+    "Do not weaken GLOBAL_GIT_WRITER",
+    "Do not weaken Git divergence guards",
+    "Do not change lifecycle semantics",
+    "CANONICAL_SCHEDULING_AUTHORITY=worker_scheduling.py",
+    "DUPLICATE_SCHEDULING_META_IMPLEMENTATION=NO",
+    "DUPLICATE_NORMALIZE_METADATA_IMPLEMENTATION=NO",
+    "LEGACY_API_AVAILABLE=YES",
+    "SIBLING_MODULE_RESOLUTION=PASS",
+    "CWD_DEPENDENCY=NO",
+    "GLOBAL_SYS_PATH_MUTATION=NO",
+    "PARALLEL_EXECUTION_ENABLED=NO",
+    "READ_ONLY_EFFECTIVE_CAPACITY=1",
+    "MUTATION_EFFECTIVE_CAPACITY=1",
+    "production_touched must remain false",
+    "Do not advance to Gate4B1B from this certification job"
+  ]
+}
