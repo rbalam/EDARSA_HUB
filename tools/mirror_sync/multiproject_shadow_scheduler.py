@@ -10,8 +10,10 @@ Shadow mode only:
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any, Iterable, NamedTuple
 
@@ -20,20 +22,28 @@ STATE = ROOT / ".git" / "universal-worker-queue"
 PENDING = STATE / "pending"
 PROCESSING = STATE / "processing"
 
-PRIORITY_ORDER = {"P0": 0, "P1": 10, "HIGH": 20, "NORMAL": 50, "LOW": 80}
-GLOBAL_CONFLICT_DOMAINS = {"CORE", "GLOBAL_GIT_WRITER", "GLOBAL_FRONTEND_REGISTRY", "GLOBAL_NAVIGATION"}
+# Canonical scheduling authority is loaded as a sibling module so this
+# adapter remains independent of cwd and implicit PYTHONPATH configuration.
+_SCHEDULING_PATH = Path(__file__).resolve().with_name("worker_scheduling.py")
+_SCHEDULING_SPEC = importlib.util.spec_from_file_location(
+    "edarsahub_worker_scheduling",
+    _SCHEDULING_PATH,
+)
+if _SCHEDULING_SPEC is None or _SCHEDULING_SPEC.loader is None:
+    raise ImportError("WORKER_SCHEDULING_SPEC_UNAVAILABLE")
+_worker_scheduling = importlib.util.module_from_spec(_SCHEDULING_SPEC)
+sys.modules[_SCHEDULING_SPEC.name] = _worker_scheduling
+_SCHEDULING_SPEC.loader.exec_module(_worker_scheduling)
 
 
-class SchedulingMeta(NamedTuple):
-    project_id: str
-    bounded_context: str
-    resource_claims: tuple[str, ...]
-    conflict_domains: tuple[str, ...]
-    priority_class: str
-    fairness_weight: int
-    max_parallelism: int
-    mode: str
-    legacy_defaults: bool
+# Public legacy names remain available here, but their values come from the
+# single canonical scheduling authority.
+PRIORITY_ORDER = _worker_scheduling.PRIORITY_ORDER
+GLOBAL_CONFLICT_DOMAINS = _worker_scheduling.GLOBAL_CONFLICT_DOMAINS
+
+
+# Preserve the historical scheduler API without defining a second model.
+SchedulingMeta = _worker_scheduling.SchedulingMeta
 
 
 def _norm(values: Iterable[Any]) -> tuple[str, ...]:
@@ -49,53 +59,18 @@ def _safe_int(value: Any, default: int, minimum: int = 1, maximum: int = 64) -> 
 
 
 def normalize_metadata(job: dict[str, Any]) -> SchedulingMeta:
-    sched = job.get("scheduling")
-    legacy = not isinstance(sched, dict)
-    sched = sched if isinstance(sched, dict) else {}
-
-    project_id = str(sched.get("project_id") or ("LEGACY_GLOBAL" if legacy else "UNSPECIFIED")).strip()
-    bounded_context = str(sched.get("bounded_context") or ("LEGACY_GLOBAL" if legacy else project_id)).strip()
-
-    claims = _norm(sched.get("resource_claims") or ())
-    domains = _norm(sched.get("conflict_domains") or ())
-    if legacy:
-        domains = ("GLOBAL_GIT_WRITER",)
-
-    priority = str(sched.get("priority_class") or "NORMAL").upper().strip()
-    if priority not in PRIORITY_ORDER:
-        priority = "NORMAL"
-
-    return SchedulingMeta(
-        project_id=project_id,
-        bounded_context=bounded_context,
-        resource_claims=claims,
-        conflict_domains=domains,
-        priority_class=priority,
-        fairness_weight=_safe_int(sched.get("fairness_weight"), 1),
-        max_parallelism=_safe_int(sched.get("max_parallelism"), 1),
-        mode=str(job.get("mode") or "").upper().strip(),
-        legacy_defaults=legacy,
-    )
+    """Legacy adapter to the canonical scheduling normalizer."""
+    return _worker_scheduling.normalize_metadata(job)
 
 
 def claims_conflict(a: SchedulingMeta, b: SchedulingMeta) -> bool:
-    ad = set(a.conflict_domains)
-    bd = set(b.conflict_domains)
-    if ad & bd:
-        return True
-    return bool(set(a.resource_claims) & set(b.resource_claims))
+    """Legacy adapter to the canonical scheduling conflict policy."""
+    return _worker_scheduling.claims_conflict(a, b)
 
 
 def can_shadow_parallel(a: SchedulingMeta, b: SchedulingMeta) -> bool:
-    if claims_conflict(a, b):
-        return False
-    if a.mode == "READ_ONLY" and b.mode == "READ_ONLY":
-        return True
-    if a.legacy_defaults or b.legacy_defaults:
-        return False
-    if not a.resource_claims or not b.resource_claims:
-        return False
-    return True
+    """Legacy adapter; Gate4B1A remains observation-only and serial at runtime."""
+    return _worker_scheduling.can_shadow_parallel(a, b)
 
 
 def load_envelopes(folder: Path) -> list[dict[str, Any]]:
@@ -114,13 +89,12 @@ def load_envelopes(folder: Path) -> list[dict[str, Any]]:
     return rows
 
 
-def fairness_key(row: dict[str, Any], served: dict[str, int] | None = None) -> tuple[Any, ...]:
-    served = served or {}
-    meta: SchedulingMeta = row["meta"]
-    project_served = int(served.get(meta.project_id, 0))
-    normalized_service = project_served / max(meta.fairness_weight, 1)
-    job_id = str(row["job"].get("job_id") or "")
-    return (PRIORITY_ORDER[meta.priority_class], normalized_service, meta.project_id, job_id)
+def fairness_key(
+    row: dict[str, Any],
+    served: dict[str, int] | None = None,
+) -> tuple[Any, ...]:
+    """Legacy adapter to the canonical weighted-fairness ordering."""
+    return _worker_scheduling.fairness_key(row, served)
 
 
 def choose_shadow_slots(
