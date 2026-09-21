@@ -1,0 +1,150 @@
+{
+  "schema": "edarsahub.worker-envelope.v1",
+  "received_at_utc": "2026-09-21T16:58:00Z",
+  "queue_branch": "worker/requests",
+  "queue_path": "worker_queue/inbox/EDARSAHUB-WORKER-GIT-LOCK-PICKUP-DIAG-READONLY-R1-20260921T165800Z.json",
+  "requester_authorization": {
+    "authorized_by": "user",
+    "source": "Usuario proporciono el Gate EDARSAHUB-WORKER-GIT-LOCK-PICKUP-DIAG-READONLY-R1 con objetivo, revisiones, restricciones y salida esperada.",
+    "production_allowed": false,
+    "sql_allowed": false,
+    "mutation_allowed": false
+  },
+  "job": {
+    "schema": "edarsahub.worker-job.v2",
+    "job_id": "EDARSAHUB-WORKER-GIT-LOCK-PICKUP-DIAG-READONLY-R1-20260921T165800Z",
+    "target_repo": "rbalam/EDARSA_HUB",
+    "target_branch": "Edarsahub_Desarrollo",
+    "base_sha": "a2bd1be64a1b9392921a23351ecc68549c6e278a",
+    "production_allowed": false,
+    "human_summary_language": "es",
+    "mode": "READ_ONLY",
+    "priority": "P0",
+    "objective": "Diagnosticar por que Gate25F-R3 cerro con GIT_LOCK_BUSY y determinar si el writer lock esta activo, stale, libre o tomado por otro job. No ejecutar mutaciones funcionales. No preparar Gate25F-R4. No tocar SQL ni Produccion.",
+    "context": {
+      "blocked_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-MUTATION-FUNCTIONAL-SURGICAL-R3-20260921T160100Z",
+      "blocked_status": "GIT_LOCK_BUSY",
+      "blocked_blocker": "dispatcher_exception:RuntimeError:GIT_LOCK_BUSY",
+      "blocked_percent_complete": 0,
+      "blocked_production_touched": false,
+      "next_functional_gate_blocked": "Gate25F-R4",
+      "next_functional_gate_allowed_only_if": "LOCK_FREE confirmed with evidence"
+    },
+    "diagnostic_scope": {
+      "must_review": [
+        ".git/index.lock si existe",
+        "procesos Git activos",
+        "lifecycle pending/processing/results",
+        "current writer owner si existe",
+        "jobs activos de Worker",
+        "latest/status real vs congelado",
+        "branch Edarsahub_Desarrollo actual",
+        "locks de Universal Worker",
+        "jobs multiproyecto usando GLOBAL_GIT_WRITER"
+      ],
+      "must_not_change": [
+        "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+        "backend/modules/tablajeria/routes.py",
+        "backend/modules/tablajeria/fase6_service.py",
+        "SQL files",
+        "Scheduler",
+        "NetPay",
+        "Production branch"
+      ]
+    },
+    "checks": [
+      {
+        "name": "git_lock_state_readonly",
+        "type": "readonly_runtime_probe",
+        "required": true,
+        "evidence_required": [
+          "index_lock_exists",
+          "index_lock_mtime_utc_if_exists",
+          "active_git_processes",
+          "lock_owner_job_id_if_known"
+        ]
+      },
+      {
+        "name": "worker_lifecycle_readonly",
+        "type": "readonly_lifecycle_probe",
+        "required": true,
+        "evidence_required": [
+          "pending_jobs",
+          "processing_jobs",
+          "recent_results",
+          "current_job_id_if_known"
+        ]
+      },
+      {
+        "name": "branch_state_readonly",
+        "type": "git_ref_check",
+        "required": true,
+        "branch": "Edarsahub_Desarrollo",
+        "expected_base_sha": "a2bd1be64a1b9392921a23351ecc68549c6e278a"
+      },
+      {
+        "name": "multiproject_conflict_domain_readonly",
+        "type": "readonly_queue_scan",
+        "required": true,
+        "search_terms": [
+          "GLOBAL_GIT_WRITER",
+          "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT",
+          "Gate25F",
+          "CAVAS"
+        ]
+      }
+    ],
+    "hard_constraints": {
+      "read_only": true,
+      "no_sql": true,
+      "no_production": true,
+      "no_backend_mutation": true,
+      "no_frontend_mutation": true,
+      "no_file_delete": true,
+      "no_lifecycle_move": true,
+      "no_scheduler_touch": true,
+      "no_netpay_touch": true,
+      "no_gate25f_r4_publish": true,
+      "no_gate25g_publish": true
+    },
+    "expected_outputs": {
+      "terminal_status_one_of": [
+        "LOCK_ACTIVE",
+        "LOCK_STALE",
+        "LOCK_FREE",
+        "UNKNOWN"
+      ],
+      "owner_job_id_required_if_known": true,
+      "timestamp_evidence_required": true,
+      "safe_decision_for_gate25f_r4_required": true,
+      "production_touched": false,
+      "sql_touched": false,
+      "files_changed": []
+    },
+    "acceptance_criteria": {
+      "quality_gate": "PASS",
+      "certification": "CERTIFIED_READ_ONLY",
+      "work_completion": "CERTIFIED_READ_ONLY",
+      "production_touched": false,
+      "sql_touched": false,
+      "mutation_count": 0
+    },
+    "scheduling": {
+      "project_id": "WORKER_RUNTIME",
+      "bounded_context": "universal_worker_runtime",
+      "resource_claims": [
+        ".git/index.lock",
+        ".git/universal-worker-queue",
+        "worker_queue/status/latest.json",
+        "worker_queue/results"
+      ],
+      "conflict_domains": [
+        "GLOBAL_GIT_WRITER",
+        "WORKER_RUNTIME"
+      ],
+      "priority_class": "P0",
+      "fairness_weight": 8,
+      "max_parallelism": 1
+    }
+  }
+}
