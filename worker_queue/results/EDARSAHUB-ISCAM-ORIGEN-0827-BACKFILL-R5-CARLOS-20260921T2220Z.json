@@ -1,0 +1,71 @@
+{
+  "base_sha": "a16400b13a196c3393780fa2ed481ec46ead9887",
+  "blockers": [
+    "iscam_detail_backfill_failed:rc=1"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-21T22:20:44Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-ORIGEN-0827-BACKFILL-R5-CARLOS-20260921T2220Z",
+  "operation": "ISCAM_DETAIL_BACKFILL",
+  "operation_summary": {
+    "dias_bloqueados": 1,
+    "dias_candidatos": 1,
+    "dias_evaluados": 1,
+    "dias_reparables": 0,
+    "dias_sin_runtime": 0,
+    "dias_ya_ok": 0,
+    "fecha_fin_exclusivo": "2026-08-28",
+    "fecha_inicio": "2026-08-27",
+    "filas_insertadas": 0,
+    "modo": "COMMIT",
+    "unidades": [
+      {
+        "bloqueados": 1,
+        "candidatos": 1,
+        "dias": [
+          {
+            "delta_pax": null,
+            "delta_tickets": null,
+            "delta_ventas": "",
+            "error_code": "POS_SCHEMA_INVALID_COLUMN",
+            "error_type": "ProgrammingError",
+            "fecha_operacion": "2026-08-27",
+            "filas_insertadas": 0,
+            "pax_pos": null,
+            "pax_runtime": 71,
+            "status": "ERROR",
+            "tickets_pos": null,
+            "tickets_runtime": 29,
+            "ventas_pos": "",
+            "ventas_runtime": "86192.88"
+          }
+        ],
+        "filas_insertadas": 0,
+        "reparables": 0,
+        "sin_runtime": 0,
+        "unidad": "ORIGEN",
+        "ya_ok": 0
+      }
+    ]
+  },
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-21T22:20:53Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-21T22:20:42Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "units": [
+    "ORIGEN"
+  ],
+  "work_completion": "NOT_CERTIFIED"
+}
