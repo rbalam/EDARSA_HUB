@@ -1022,7 +1022,6 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             FROM h
             LEFT JOIN Comanda_Detalle d WITH (NOLOCK)
                 ON d.Co_Folio = h.Vn_Documento
-               AND d.Sc_Cve_Sucursal = h.Sc_Cve_Sucursal
                AND ISNULL(d.Es_Cve_Estado, '') IN ('AC', 'FA')
             GROUP BY
                 h.Vn_Folio,

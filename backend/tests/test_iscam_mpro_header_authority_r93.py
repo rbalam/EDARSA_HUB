@@ -61,7 +61,8 @@ def test_mpro_zero_gross_non_header_still_fails_closed():
         _prorratear_mpro_por_ticket([_row("PRODUCTO_REAL", "0", "125", "0")])
 
 
-def test_mpro_detail_join_is_scoped_to_same_branch():
+def test_mpro_branch_filter_uses_header_schema_not_detail_column():
     text = DETAIL.read_text(encoding="utf-8")
     block = text.split("def _extract_mpro(", 1)[1].split("PRORRATEO_Q4", 1)[0]
-    assert "d.Sc_Cve_Sucursal = h.Sc_Cve_Sucursal" in block
+    assert "v.Sc_Cve_Sucursal = %s" in block
+    assert "d.Sc_Cve_Sucursal" not in block
