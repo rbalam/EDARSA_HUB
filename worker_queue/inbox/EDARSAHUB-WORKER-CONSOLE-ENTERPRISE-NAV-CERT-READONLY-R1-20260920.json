@@ -1,0 +1,53 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-CONSOLE-ENTERPRISE-NAV-CERT-READONLY-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "0d8a30b67edc0d45c7465e46270197acabfdbd0d",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar en READ_ONLY la corrección global del ENTERPRISE_NAVIGATION_GUARDIAN para /worker-console integrada en SHA 0d8a30b67edc0d45c7465e46270197acabfdbd0d. Verificar que /worker-console está clasificado canónicamente bajo Plataforma e Integraciones > Administración y Seguridad, que frontend_build/navigation guardian pasan y que no hubo cambios de Cavas, backend, SQL ni Producción.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "frontend_build"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/config/enterpriseNavigationRegistry.json",
+          "frontend/src/App.js",
+          "frontend/src/pages/WorkerConsole.jsx"
+        ],
+        "search_terms": [
+          "sistema.worker_console",
+          "/worker-console",
+          "Universal Worker Console",
+          "plataforma-integraciones",
+          "administracion-seguridad"
+        ],
+        "include_patterns": [
+          "*.json",
+          "*.js",
+          "*.jsx"
+        ],
+        "exclude_patterns": [],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No file changes",
+    "No Production",
+    "No Cavas changes",
+    "No backend changes",
+    "No SQL",
+    "Certification requires PASS + 100%"
+  ]
+}
