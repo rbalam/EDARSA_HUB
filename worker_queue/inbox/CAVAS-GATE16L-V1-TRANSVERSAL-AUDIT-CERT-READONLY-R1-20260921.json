@@ -1,0 +1,132 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE16L-V1-TRANSVERSAL-AUDIT-CERT-READONLY-R1-20260921",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b72bc3faff5054e99730eeb714f6947a7ebe8473",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Gate 16L: auditoría transversal READ_ONLY de CAVAS V1 posterior a Gate16K. Certificar de forma integral arquitectura, SQL canónico, RBAC/scope por unidad, socios/personas/clientes, botellas, inventario inicial, Kardex/movimientos, consumos/cargos, evidencias, migración/adapters, auditoría física/ciega, reportes y contratos de interoperabilidad. Ejecutar únicamente pruebas unitarias/no mutantes, auditoría SQL SELECT y auditoría de repositorio. No modificar archivos, no DDL/DML, no Producción. Emitir evidencia suficiente para decidir los últimos gates de cierre hacia CAVAS V1 GLOBAL 100%.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios.py",
+        "backend/tests/test_cava_socios_persona_link.py",
+        "backend/tests/test_cava_socios_domain.py",
+        "backend/tests/test_cava_socios_evidence_chain.py",
+        "backend/tests/test_cava_socios_adapter_sdk.py",
+        "backend/tests/test_cava_socios_blind_audit.py",
+        "backend/tests/test_cava_socios_blind_audit_operational_service.py",
+        "backend/tests/test_cava_socios_migration_engine.py",
+        "backend/tests/test_cavas_gate12e_bos_persona_link_contract.py"
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cavas_tables_present",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE s.name='dbo' AND t.name LIKE 'CavaSocios[_]%' ORDER BY t.name"
+        },
+        {
+          "name": "cavas_critical_columns",
+          "sql": "SELECT t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.is_nullable FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('CavaSocios_Socios','CavaSocios_Botellas','CavaSocios_Movimientos','CavaSocios_Cargos') ORDER BY t.name,c.column_id"
+        },
+        {
+          "name": "duplicate_socios_by_unit_number",
+          "sql": "SELECT EmpresaID,NumeroSocio,COUNT_BIG(*) AS n FROM dbo.CavaSocios_Socios WHERE NumeroSocio IS NOT NULL GROUP BY EmpresaID,NumeroSocio HAVING COUNT_BIG(*)>1"
+        },
+        {
+          "name": "orphan_bottles",
+          "sql": "SELECT COUNT_BIG(*) AS orphan_bottles FROM dbo.CavaSocios_Botellas b LEFT JOIN dbo.CavaSocios_Socios s ON s.SocioID=b.SocioID AND s.EmpresaID=b.EmpresaID WHERE b.SocioID IS NOT NULL AND s.SocioID IS NULL"
+        },
+        {
+          "name": "cross_scope_bottle_socios",
+          "sql": "SELECT COUNT_BIG(*) AS cross_scope_rows FROM dbo.CavaSocios_Botellas b JOIN dbo.CavaSocios_Socios s ON s.SocioID=b.SocioID WHERE b.EmpresaID<>s.EmpresaID"
+        },
+        {
+          "name": "orphan_movements",
+          "sql": "SELECT COUNT_BIG(*) AS orphan_movements FROM dbo.CavaSocios_Movimientos m LEFT JOIN dbo.CavaSocios_Botellas b ON b.BotellaID=m.BotellaID AND b.EmpresaID=m.EmpresaID WHERE m.BotellaID IS NOT NULL AND b.BotellaID IS NULL"
+        },
+        {
+          "name": "orphan_persona_links",
+          "sql": "SELECT COUNT_BIG(*) AS orphan_persona_links FROM dbo.CavaSocios_Socios s LEFT JOIN dbo.Gobierno_Persona p ON p.PersonaID=s.PersonaID WHERE s.PersonaID IS NOT NULL AND p.PersonaID IS NULL"
+        },
+        {
+          "name": "cavas_counts",
+          "sql": "SELECT (SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Socios) AS socios,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Botellas) AS botellas,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Movimientos) AS movimientos,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Cargos) AS cargos"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios",
+          "frontend/src/pages/cava-socios",
+          "frontend/src/config/enterpriseNavigationRegistry.json",
+          "docs/CAVAS/CAVAS_GATE16B_CANONICAL_INTEROPERABILITY_MIGRATION_CONTRACT.md",
+          "docs/CAVAS/CAVAS_GATE16F_BLIND_AUDIT_CV_READINESS.md"
+        ],
+        "search_terms": [
+          "CavaSocios_",
+          "_resolve_cava_scope",
+          "unidad_negocio_pk",
+          "CAVA_SOCIOS_VER",
+          "CAVA_SOCIOS_CREAR",
+          "CAVA_SOCIOS_EDITAR",
+          "Gobierno_Persona",
+          "Gobierno_PersonaVinculo",
+          "Cliente_Catalogo",
+          "PersonaID",
+          "SocioID",
+          "inventario-inicial",
+          "kardex",
+          "registrar_consumo",
+          "CavaSocios_Cargos",
+          "evidence",
+          "timezone",
+          "REGULARIZACION_HISTORICA",
+          "source_system",
+          "historical_reference",
+          "MigrationBatch",
+          "AdapterContext",
+          "auditorias-ciegas/reconciliar",
+          "automatic_inventory_adjustment",
+          "automatic_inventory_movement",
+          "reportes/socio",
+          "enviar-reporte",
+          "/cava-socios"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.json",
+          "*.md"
+        ],
+        "exclude_patterns": [],
+        "max_results": 2500
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No file changes",
+    "No Production",
+    "No SQL mutation, DDL or DML",
+    "No Mongo as source of truth",
+    "No automatic inventory adjustment from blind audit",
+    "Preserve canonical Socio/Persona/Cliente separation",
+    "Preserve RBAC and unit scope",
+    "No provider hardcode in Cavas domain",
+    "No opening Gate16M until this Gate is PASS and 100%"
+  ]
+}
