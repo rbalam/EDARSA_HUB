@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "305786aa03450d9f1e7573d093a26c91664f6cc2",
-  "generated_at_utc": "2026-09-21T04:38:48Z",
+  "generated_at_utc": "2026-09-21T04:40:04Z",
   "history": {
     "done_total_local": 789,
     "pending_total_local": 0,
@@ -16,49 +16,43 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 358,
+      "age_seconds": 434,
       "job_id": "CAVAS-GATE16J-BLIND-AUDIT-MINIMAL-UI-FRONTEND-CERT-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2575,
+      "age_seconds": 2652,
       "job_id": "CAVAS-GATE16J-BLIND-AUDIT-MINIMAL-UI-IMPLEMENTATION-R6-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3574,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25B-GONOGO-CERT-READONLY-R1-20260921T033842Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3321,
+      "age_seconds": 3397,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25C-FRONTEND-BUILD-CERT-R1-20260921T034112Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3130,
+      "age_seconds": 3206,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25D-PREVIEW-UAT-CERT-READONLY-R1-20260921T034500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 21,
+      "age_seconds": 97,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25E-R2-PYTEST-DIAG-READONLY-R1-20260921T043500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 351,
+      "age_seconds": 427,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25E-SCOPE-LOCK-MUTATION-PLAN-READONLY-R1-20260921T034800Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3005,
+      "age_seconds": 3081,
       "job_id": "EDARSAHUB-WORKER-CONSOLE-ENTERPRISE-NAV-FRONTEND-CERT-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
@@ -72,14 +66,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 8,
+  "queue_result_ready_recent": 7,
   "queue_running": 0,
   "remote_development_sha": "305786aa03450d9f1e7573d093a26c91664f6cc2",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T04:38:46Z",
-    "last_receive_utc": "2026-09-21T04:38:47Z",
+    "last_cycle_utc": "2026-09-21T04:40:03Z",
+    "last_receive_utc": "2026-09-21T04:39:58Z",
     "last_terminal_utc": "2026-09-21T04:38:27Z",
     "pid": "10297"
   },
