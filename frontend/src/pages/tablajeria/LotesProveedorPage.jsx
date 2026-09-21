@@ -58,7 +58,17 @@ export default function LotesProveedorPage() {
     const rojos = rows.filter(function red(row) { return String(row.Semaforo || '').toUpperCase() === 'ROJO'; }).length;
     const amarillos = rows.filter(function yellow(row) { return String(row.Semaforo || '').toUpperCase() === 'AMARILLO'; }).length;
     const abiertos = claims.filter(function open(claim) { return String(claim.Estatus || '').toUpperCase() === 'ABIERTO'; }).length;
-    return { impacto, rojos, amarillos, abiertos };
+    const kgBase = rows.reduce(function sumKg(acc, row) { return acc + Number(row.CantidadBaseKg || 0); }, 0);
+    const rendimientoRows = rows.filter(function hasRendimiento(row) { return row.RendimientoRealPorcentaje !== null && row.RendimientoRealPorcentaje !== undefined && row.RendimientoRealPorcentaje !== ''; });
+    const rendimientoPromedio = rendimientoRows.length
+      ? rendimientoRows.reduce(function sumRendimiento(acc, row) { return acc + Number(row.RendimientoRealPorcentaje || 0); }, 0) / rendimientoRows.length
+      : 0;
+    const critico = rows.slice().sort(function sortByRisk(a, b) {
+      const riskA = (String(a.Semaforo || '').toUpperCase() === 'ROJO' ? 1000000 : 0) + Math.abs(Number(a.ImpactoEconomico || 0));
+      const riskB = (String(b.Semaforo || '').toUpperCase() === 'ROJO' ? 1000000 : 0) + Math.abs(Number(b.ImpactoEconomico || 0));
+      return riskB - riskA;
+    })[0] || null;
+    return { impacto, rojos, amarillos, abiertos, kgBase, rendimientoPromedio, critico };
   }, [rows, claims]);
 
   function setFilter(name, value) {
@@ -170,7 +180,7 @@ export default function LotesProveedorPage() {
       <header style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' }}>
         <div>
           <h1 style={{ margin: 0 }}>Lotes proveedor</h1>
-          <p style={{ margin: '6px 0 0', color: '#4b5563' }}>Rendimiento, desviaciones, impacto económico y reclamos por lote de compra.</p>
+          <p style={{ margin: '6px 0 0', color: '#4b5563' }}>Rendimiento, desviaciones, impacto económico y reclamos por lote de compra; prioriza qué revisar primero en operación de sitio.</p>
         </div>
         <button type="button" onClick={refresh} disabled={loading} style={button}>{loading ? 'Cargando...' : 'Actualizar'}</button>
       </header>
@@ -178,11 +188,12 @@ export default function LotesProveedorPage() {
       {error ? <div role="alert" style={{ ...card, borderColor: '#fecaca', color: '#991b1b' }}>{error}</div> : null}
       {notice ? <div role="status" style={{ ...card, borderColor: '#bbf7d0', color: '#166534' }}>{notice}</div> : null}
 
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 12 }}>
         <div style={card}><small>Lotes visibles</small><strong style={{ display: 'block', fontSize: 24 }}>{asNumber(rows.length, 0)}</strong><small>Total: {asNumber(total, 0)}</small></div>
         <div style={card}><small>Impacto económico</small><strong style={{ display: 'block', fontSize: 24 }}>{asMoney(kpis.impacto)}</strong></div>
         <div style={card}><small>Alertas</small><strong style={{ display: 'block', fontSize: 24 }}>{asNumber(kpis.rojos + kpis.amarillos, 0)}</strong><small>Rojas: {kpis.rojos} · Amarillas: {kpis.amarillos}</small></div>
         <div style={card}><small>Reclamos abiertos</small><strong style={{ display: 'block', fontSize: 24 }}>{asNumber(kpis.abiertos, 0)}</strong></div>
+        <div style={card}><small>Rendimiento prom.</small><strong style={{ display: 'block', fontSize: 24 }}>{asNumber(kpis.rendimientoPromedio)}%</strong><small>Kg base: {asNumber(kpis.kgBase)}</small></div>
       </section>
 
       <section style={card}>
@@ -193,6 +204,22 @@ export default function LotesProveedorPage() {
           <label><span>Semáforo</span><select style={input} value={filters.semaforo} onChange={function handle(e) { setFilter('semaforo', e.target.value); }}>{SEMAFOROS.map(function map(value) { return <option key={value || 'TODOS'} value={value}>{value || 'TODOS'}</option>; })}</select></label>
           <button type="button" onClick={refresh} disabled={loading} style={secondary}>Aplicar</button>
         </div>
+      </section>
+
+      <section style={{ ...card, display: 'grid', gap: 8 }}>
+        <h2 style={{ margin: 0 }}>Prioridad operativa</h2>
+        {kpis.critico ? (
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: 12, alignItems: 'center' }}>
+            <div>
+              <strong>{kpis.critico.LoteProveedor || kpis.critico.LoteInterno || 'Lote crítico'}</strong>
+              <div style={{ color: '#6b7280', fontSize: 13 }}>{kpis.critico.ProveedorNombre || 'Sin proveedor'} · {kpis.critico.FolioOrdenTablaje || 'Sin orden'}</div>
+            </div>
+            <div><small>Semáforo</small><div><Badge value={kpis.critico.Semaforo} /></div></div>
+            <div><small>Impacto</small><strong style={{ display: 'block' }}>{asMoney(kpis.critico.ImpactoEconomico)}</strong></div>
+            <button type="button" style={secondary} onClick={function click() { openDetail(kpis.critico); }}>Abrir prioridad</button>
+          </div>
+        ) : <p style={{ margin: 0 }}>Sin lotes cargados para priorizar.</p>}
+        <small style={{ color: '#6b7280' }}>Criterio: primero semáforo rojo y después mayor impacto económico absoluto. El backend conserva RBAC y fuente canónica SQL Server.</small>
       </section>
 
       <section style={card}>
@@ -222,7 +249,7 @@ export default function LotesProveedorPage() {
             </tbody>
           </table>
         </div>
-        {!rows.length && !loading ? <p>Sin registros.</p> : null}
+        {!rows.length && !loading ? <p>Sin registros con los filtros actuales. Limpia filtros o actualiza para volver a consultar el backend.</p> : null}
       </section>
 
       <section style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
