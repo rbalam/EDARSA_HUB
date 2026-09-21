@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "489678d39ba6edd0f2f89e7d97f70c2143cc6c09",
-  "generated_at_utc": "2026-09-21T19:06:19Z",
+  "generated_at_utc": "2026-09-21T19:07:32Z",
   "history": {
     "done_total_local": 811,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3215,
+      "age_seconds": 3287,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RECONCILER-HOTPATH-EXACT-PATCH-READONLY-R1-20260921",
       "reasons": [
         "INVALID_SCHEMA",
@@ -32,7 +32,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2763,
+      "age_seconds": 2835,
       "job_id": "EDARSAHUB-WORKER-RECONCILER-HOTPATH-SINGLE-FETCH-CACHE-R1-20260921",
       "reasons": [
         "INVALID_SCHEMA",
@@ -48,7 +48,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2259,
+      "age_seconds": 2331,
       "job_id": "EDARSAHUB-WORKER-RECONCILER-HOTPATH-SINGLE-FETCH-CACHE-R2-20260921",
       "reasons": [
         "ACTION_4_OLD_REQUIRED"
@@ -57,61 +57,61 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1270,
+      "age_seconds": 1342,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1-DELTA-PREFLIGHT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 76,
+      "age_seconds": 148,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-R4-CERT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1089,
+      "age_seconds": 1161,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-SCHEDULING-SLOT-FOUNDATION-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 868,
+      "age_seconds": 941,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-SCHEDULING-SLOT-FOUNDATION-R2-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 677,
+      "age_seconds": 749,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-SCHEDULING-SLOT-FOUNDATION-R3-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 219,
+      "age_seconds": 291,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-SCHEDULING-SLOT-FOUNDATION-R4-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 47,
+      "age_seconds": 119,
       "job_id": "EDARSAHUB-WORKER-GIT-LOCK-PICKUP-DIAG-READONLY-R1C-20260921T180500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1593,
+      "age_seconds": 1665,
       "job_id": "EDARSAHUB-WORKER-RECONCILER-ACTIVE-CLAIM-AUTHORITY-HOTPATH-R4-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3001,
+      "age_seconds": 3073,
       "job_id": "EDARSAHUB-WORKER-RECONCILER-HOTPATH-DIAG-READONLY-R2-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2073,
+      "age_seconds": 2145,
       "job_id": "EDARSAHUB-WORKER-RECONCILER-HOTPATH-SINGLE-FETCH-CACHE-R3-20260921",
       "reason": null,
       "state": "RESULT_READY"
@@ -131,8 +131,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T19:06:14Z",
-    "last_receive_utc": "2026-09-21T19:06:15Z",
+    "last_cycle_utc": "2026-09-21T19:07:26Z",
+    "last_receive_utc": "2026-09-21T19:07:27Z",
     "last_terminal_utc": "2026-09-21T19:05:32Z",
     "pid": "172874"
   },
