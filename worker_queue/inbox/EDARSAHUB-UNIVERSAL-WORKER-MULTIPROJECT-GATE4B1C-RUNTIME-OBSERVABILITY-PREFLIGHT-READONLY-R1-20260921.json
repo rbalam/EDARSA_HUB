@@ -1,0 +1,98 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1C-RUNTIME-OBSERVABILITY-PREFLIGHT-READONLY-R1-20260921",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6bde053b57e8caf7e7dbe00432b9a25266d48478",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Gate4B1C preflight READ_ONLY. Auditar el HEAD exacto posterior a Gate4B1B certificado al 100% y determinar el delta minimo para exponer el runtime serial de slots en observabilidad/control plane sin activar paralelismo. Validar especificamente runtime_health_publisher.py y worker_control_plane.py frente a worker_slot_runtime.py y universal_job_dispatcher.py. Diseñar, no ejecutar, la integracion canonica de metricas/estado: active_slots, readonly_slots_active/capacity, mutation_slots_active/capacity, slot_job_ids, slot_states y proyeccion legacy current_job_id, preservando fail-closed, Agent Guard, Repository Artifact Guard, GLOBAL_GIT_WRITER, divergence guards y lifecycle. No tocar Produccion, SQL, Mongo, frontend ni dominios funcionales.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/worker_slot_runtime.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "backend/tests/test_worker_slot_runtime_contract.py",
+          "backend/tests/test_worker_control_plane_contract.py",
+          "backend/tests/test_worker_universal_queue_sla_contract.py"
+        ],
+        "search_terms": [
+          "slot_runtime_summary",
+          "active_slots",
+          "readonly_slots_active",
+          "readonly_slots_capacity",
+          "mutation_slots_active",
+          "mutation_slots_capacity",
+          "slot_job_ids",
+          "slot_states",
+          "current_job_id",
+          "worker_slot_runtime",
+          "runtime_health",
+          "control_plane",
+          "parallel_execution_enabled",
+          "GLOBAL_GIT_WRITER",
+          "production_touched"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_slot_runtime_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_universal_worker_external_owner_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty",
+    "No repository changes",
+    "No lifecycle mutation outside normal READ_ONLY result publication",
+    "No runtime slot creation",
+    "No claim mutation",
+    "No worktree mutation",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "No Production",
+    "No Cavas functional changes",
+    "No Tablajerias functional changes",
+    "No NetPay changes",
+    "Do not modify universal_job_worker.sh",
+    "Do not modify universal_job_dispatcher.py",
+    "Do not modify worker_runtime_reconciler.py",
+    "Do not modify runtime_health_publisher.py in preflight",
+    "Do not modify worker_control_plane.py in preflight",
+    "Do not enable parallel execution",
+    "READ_ONLY effective capacity remains 1",
+    "MUTATION effective capacity remains 1",
+    "worker_scheduling.py remains canonical scheduling authority",
+    "worker_slot_runtime.py remains canonical slot runtime authority",
+    "Preserve current_job_id legacy compatibility",
+    "Preserve SLOT_ALREADY_CLAIMED fail-closed behavior",
+    "Do not weaken Agent Guard",
+    "Do not weaken Repository Artifact Guard",
+    "Do not weaken GLOBAL_GIT_WRITER",
+    "Do not weaken Git divergence guards",
+    "production_touched must remain false",
+    "Only if CERTIFIED_READ_ONLY, PASS, 100 percent and blockers empty may Gate4B1C Mutation R1 be constructed"
+  ]
+}
