@@ -1,0 +1,98 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25E-R2-PYTEST-DIAG-READONLY-R1-20260921T043500Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "305786aa03450d9f1e7573d093a26c91664f6cc2",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "priority": "P1",
+  "objective": "Gate25E-R2 READ_ONLY para diagnosticar exclusivamente el fallo de pytest que bloqueo Gate25E. Devolver prueba exacta que fallo, archivo exacto, causa, clasificacion como falla real o desalineacion de scope, y plan quirurgico para corregir. No modificar codigo. No ejecutar SQL. No tocar Produccion. No publicar mutaciones.",
+  "actions": [],
+  "checks": [
+    {"type": "git_diff_check"},
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_tablajeria_fase6_service_unit.py",
+        "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+        "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/tests/test_tablajeria_fase6_service_unit.py",
+          "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+          "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py",
+          "backend/modules/tablajeria/fase6_service.py",
+          "backend/modules/tablajeria/routes.py",
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+          "docs/TABLAJERIA_UAT_SCOPE_FIX_LONJA_PLANTILLAS_IMPLEMENTATION_R1.md"
+        ],
+        "search_terms": [
+          "pytest",
+          "failed",
+          "tablajeria",
+          "fase6",
+          "preview",
+          "uat",
+          "lonja",
+          "plantillas",
+          "scope",
+          "mutation plan",
+          "get_sql_connection",
+          "sql_first",
+          "get_current_user"
+        ],
+        "include_patterns": [],
+        "exclude_patterns": [],
+        "max_results": 1200
+      }
+    }
+  ],
+  "expected_outputs": {
+    "terminal_status": "READ_ONLY_COMPLETE_OR_DIAGNOSTIC_BLOCKED",
+    "diagnostic_required": true,
+    "must_report": [
+      "exact_failed_test",
+      "exact_file",
+      "root_cause",
+      "real_failure_or_scope_misalignment",
+      "surgical_correction_plan"
+    ],
+    "production_touched": false,
+    "files_changed": [],
+    "blockers_allowed": [
+      "check_failed:pytest"
+    ]
+  },
+  "diagnostic_contract": {
+    "previous_failed_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25E-SCOPE-LOCK-MUTATION-PLAN-READONLY-R1-20260921T034800Z",
+    "previous_failure": "check_failed:pytest",
+    "mutation_allowed_in_this_gate": false,
+    "sql_allowed_in_this_gate": false,
+    "production_allowed_in_this_gate": false,
+    "output_required_es": [
+      "prueba exacta que fallo",
+      "archivo exacto",
+      "causa",
+      "si es falla real o desalineacion del scope",
+      "plan quirurgico para corregir"
+    ],
+    "hard_constraints": [
+      "No modificar codigo",
+      "No ejecutar SQL",
+      "No tocar Produccion",
+      "No Scheduler",
+      "No NetPay",
+      "No duplicar tablas",
+      "No duplicar servicios",
+      "SQL Server sigue como fuente canonica",
+      "RBAC por backend"
+    ]
+  },
+  "created_at_utc": "2026-09-21T04:35:00Z"
+}
