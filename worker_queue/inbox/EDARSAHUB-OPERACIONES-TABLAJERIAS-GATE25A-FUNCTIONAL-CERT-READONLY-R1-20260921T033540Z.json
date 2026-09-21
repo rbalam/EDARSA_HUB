@@ -1,0 +1,76 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25A-FUNCTIONAL-CERT-READONLY-R1-20260921T033540Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "0d8a30b67edc0d45c7465e46270197acabfdbd0d",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "priority": "P1",
+  "objective": "Certificar funcionalmente Tablajerias Gate25A en READ_ONLY despues del cierre del intake certificado. Validar que el modulo actual de Tablajerias mantiene contratos SQL-first, rutas funcionales, evidencias de Fase6/costeo/inventario/poliza/lonjas/plantillas/lotes proveedor, pruebas unitarias/UAT estaticas y sin mutaciones tracked. No tocar Produccion. No ejecutar SQL. No modificar codigo. No publicar cambios funcionales.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/tablajeria/routes.py",
+        "backend/modules/tablajeria/fase6_service.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_tablajeria_fase6_service_unit.py",
+        "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+        "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/tablajeria/fase6_service.py",
+          "backend/modules/tablajeria/routes.py",
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+          "backend/modules/tablajeria/sql/uatscope_lonja_plantillas.sql",
+          "backend/tests/test_tablajeria_fase6_service_unit.py",
+          "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+          "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py",
+          "docs/TABLAJERIA_UAT_SCOPE_FIX_LONJA_PLANTILLAS_IMPLEMENTATION_R1.md"
+        ],
+        "search_terms": [
+          "tablajeria",
+          "sql_first",
+          "get_sql_connection",
+          "fase6",
+          "costeo",
+          "inventario",
+          "poliza",
+          "merma",
+          "lonja",
+          "plantillas",
+          "lotes proveedor",
+          "reclamos proveedor"
+        ],
+        "include_patterns": [],
+        "exclude_patterns": [],
+        "max_results": 800
+      }
+    }
+  ],
+  "expected_outputs": {
+    "terminal_status": "READ_ONLY_COMPLETE",
+    "certification": "CERTIFIED_READ_ONLY",
+    "quality_gate": "PASS",
+    "tests": "PASS",
+    "percent_complete": 100,
+    "production_touched": false,
+    "files_changed": [],
+    "blockers": []
+  },
+  "created_at_utc": "2026-09-21T03:35:41.522410+00:00"
+}
