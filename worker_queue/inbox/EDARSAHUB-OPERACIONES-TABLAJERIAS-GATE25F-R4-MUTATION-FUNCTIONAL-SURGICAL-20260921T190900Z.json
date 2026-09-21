@@ -1,0 +1,161 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-R4-MUTATION-FUNCTIONAL-SURGICAL-20260921T190900Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "489678d39ba6edd0f2f89e7d97f70c2143cc6c09",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "priority": "P1",
+  "objective": "Integrar de forma quirurgica Gate25F-R4 para Lotes proveedor de Tablajerias: mejorar la vista frontend con KPIs operativos, prioridad operativa y empty state accionable. Reintento posterior a R3 GIT_LOCK_BUSY y R1C READ_ONLY PASS. No SQL, no Produccion, no backend mutation, no Scheduler, no NetPay, no Gate25G.",
+  "context": {
+    "previous_failed_mutation_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-MUTATION-FUNCTIONAL-SURGICAL-R3-20260921T160100Z",
+    "previous_failed_status": "GIT_LOCK_BUSY",
+    "previous_failed_blocker": "dispatcher_exception:RuntimeError:GIT_LOCK_BUSY",
+    "readonly_diagnostic_job_id": "EDARSAHUB-WORKER-GIT-LOCK-PICKUP-DIAG-READONLY-R1C-20260921T180500Z",
+    "readonly_diagnostic_status": "READ_ONLY_COMPLETE",
+    "readonly_diagnostic_quality_gate": "PASS",
+    "readonly_diagnostic_certification": "CERTIFIED_READ_ONLY",
+    "verified_current_target_file_still_old": true,
+    "verified_absent_new_markers": [
+      "Prioridad operativa",
+      "Rendimiento prom.",
+      "Abrir prioridad"
+    ],
+    "current_base_sha": "489678d39ba6edd0f2f89e7d97f70c2143cc6c09"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+      "expected_count": 1,
+      "old": "  const kpis = useMemo(function calculateKpis() {\n    const impacto = rows.reduce(function sum(acc, row) { return acc + Number(row.ImpactoEconomico || 0); }, 0);\n    const rojos = rows.filter(function red(row) { return String(row.Semaforo || '').toUpperCase() === 'ROJO'; }).length;\n    const amarillos = rows.filter(function yellow(row) { return String(row.Semaforo || '').toUpperCase() === 'AMARILLO'; }).length;\n    const abiertos = claims.filter(function open(claim) { return String(claim.Estatus || '').toUpperCase() === 'ABIERTO'; }).length;\n    return { impacto, rojos, amarillos, abiertos };\n  }, [rows, claims]);",
+      "new": "  const kpis = useMemo(function calculateKpis() {\n    const impacto = rows.reduce(function sum(acc, row) { return acc + Number(row.ImpactoEconomico || 0); }, 0);\n    const rojos = rows.filter(function red(row) { return String(row.Semaforo || '').toUpperCase() === 'ROJO'; }).length;\n    const amarillos = rows.filter(function yellow(row) { return String(row.Semaforo || '').toUpperCase() === 'AMARILLO'; }).length;\n    const abiertos = claims.filter(function open(claim) { return String(claim.Estatus || '').toUpperCase() === 'ABIERTO'; }).length;\n    const kgBase = rows.reduce(function sumKg(acc, row) { return acc + Number(row.CantidadBaseKg || 0); }, 0);\n    const rendimientoRows = rows.filter(function hasRendimiento(row) { return row.RendimientoRealPorcentaje !== null && row.RendimientoRealPorcentaje !== undefined && row.RendimientoRealPorcentaje !== ''; });\n    const rendimientoPromedio = rendimientoRows.length\n      ? rendimientoRows.reduce(function sumRendimiento(acc, row) { return acc + Number(row.RendimientoRealPorcentaje || 0); }, 0) / rendimientoRows.length\n      : 0;\n    const critico = rows.slice().sort(function sortByRisk(a, b) {\n      const riskA = (String(a.Semaforo || '').toUpperCase() === 'ROJO' ? 1000000 : 0) + Math.abs(Number(a.ImpactoEconomico || 0));\n      const riskB = (String(b.Semaforo || '').toUpperCase() === 'ROJO' ? 1000000 : 0) + Math.abs(Number(b.ImpactoEconomico || 0));\n      return riskB - riskA;\n    })[0] || null;\n    return { impacto, rojos, amarillos, abiertos, kgBase, rendimientoPromedio, critico };\n  }, [rows, claims]);"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+      "expected_count": 1,
+      "old": "          <p style={{ margin: '6px 0 0', color: '#4b5563' }}>Rendimiento, desviaciones, impacto económico y reclamos por lote de compra.</p>",
+      "new": "          <p style={{ margin: '6px 0 0', color: '#4b5563' }}>Rendimiento, desviaciones, impacto económico y reclamos por lote de compra; prioriza qué revisar primero en operación de sitio.</p>"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+      "expected_count": 1,
+      "old": "      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>\n        <div style={card}><small>Lotes visibles</small><strong style={{ display: 'block', fontSize: 24 }}>{asNumber(rows.length, 0)}</strong><small>Total: {asNumber(total, 0)}</small></div>\n        <div style={card}><small>Impacto económico</small><strong style={{ display: 'block', fontSize: 24 }}>{asMoney(kpis.impacto)}</strong></div>\n        <div style={card}><small>Alertas</small><strong style={{ display: 'block', fontSize: 24 }}>{asNumber(kpis.rojos + kpis.amarillos, 0)}</strong><small>Rojas: {kpis.rojos} · Amarillas: {kpis.amarillos}</small></div>\n        <div style={card}><small>Reclamos abiertos</small><strong style={{ display: 'block', fontSize: 24 }}>{asNumber(kpis.abiertos, 0)}</strong></div>\n      </section>",
+      "new": "      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 12 }}>\n        <div style={card}><small>Lotes visibles</small><strong style={{ display: 'block', fontSize: 24 }}>{asNumber(rows.length, 0)}</strong><small>Total: {asNumber(total, 0)}</small></div>\n        <div style={card}><small>Impacto económico</small><strong style={{ display: 'block', fontSize: 24 }}>{asMoney(kpis.impacto)}</strong></div>\n        <div style={card}><small>Alertas</small><strong style={{ display: 'block', fontSize: 24 }}>{asNumber(kpis.rojos + kpis.amarillos, 0)}</strong><small>Rojas: {kpis.rojos} · Amarillas: {kpis.amarillos}</small></div>\n        <div style={card}><small>Reclamos abiertos</small><strong style={{ display: 'block', fontSize: 24 }}>{asNumber(kpis.abiertos, 0)}</strong></div>\n        <div style={card}><small>Rendimiento prom.</small><strong style={{ display: 'block', fontSize: 24 }}>{asNumber(kpis.rendimientoPromedio)}%</strong><small>Kg base: {asNumber(kpis.kgBase)}</small></div>\n      </section>"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+      "expected_count": 1,
+      "old": "          <button type=\"button\" onClick={refresh} disabled={loading} style={secondary}>Aplicar</button>\n        </div>\n      </section>\n\n      <section style={card}>\n        <h2 style={{ marginTop: 0 }}>Rendimientos por lote</h2>",
+      "new": "          <button type=\"button\" onClick={refresh} disabled={loading} style={secondary}>Aplicar</button>\n        </div>\n      </section>\n\n      <section style={{ ...card, display: 'grid', gap: 8 }}>\n        <h2 style={{ margin: 0 }}>Prioridad operativa</h2>\n        {kpis.critico ? (\n          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: 12, alignItems: 'center' }}>\n            <div>\n              <strong>{kpis.critico.LoteProveedor || kpis.critico.LoteInterno || 'Lote crítico'}</strong>\n              <div style={{ color: '#6b7280', fontSize: 13 }}>{kpis.critico.ProveedorNombre || 'Sin proveedor'} · {kpis.critico.FolioOrdenTablaje || 'Sin orden'}</div>\n            </div>\n            <div><small>Semáforo</small><div><Badge value={kpis.critico.Semaforo} /></div></div>\n            <div><small>Impacto</small><strong style={{ display: 'block' }}>{asMoney(kpis.critico.ImpactoEconomico)}</strong></div>\n            <button type=\"button\" style={secondary} onClick={function click() { openDetail(kpis.critico); }}>Abrir prioridad</button>\n          </div>\n        ) : <p style={{ margin: 0 }}>Sin lotes cargados para priorizar.</p>}\n        <small style={{ color: '#6b7280' }}>Criterio: primero semáforo rojo y después mayor impacto económico absoluto. El backend conserva RBAC y fuente canónica SQL Server.</small>\n      </section>\n\n      <section style={card}>\n        <h2 style={{ marginTop: 0 }}>Rendimientos por lote</h2>"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+      "expected_count": 1,
+      "old": "        {!rows.length && !loading ? <p>Sin registros.</p> : null}",
+      "new": "        {!rows.length && !loading ? <p>Sin registros con los filtros actuales. Limpia filtros o actualiza para volver a consultar el backend.</p> : null}"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check",
+      "allowed_files_exact": [
+        "frontend/src/pages/tablajeria/LotesProveedorPage.jsx"
+      ],
+      "forbidden_paths": [
+        "backend/modules/tablajeria/routes.py",
+        "backend/modules/tablajeria/fase6_service.py",
+        "backend/database/migrations",
+        "frontend/src/App.js",
+        "scheduler",
+        "netpay",
+        "Edarsahub_Produccion"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+          "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py",
+          "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+          "backend/tests/test_tablajeria_functional_cert_static.py"
+        ],
+        "search_terms": [
+          "Prioridad operativa",
+          "Rendimiento prom.",
+          "Abrir prioridad",
+          "lotes-proveedor",
+          "SQL Server",
+          "RBAC",
+          "Scheduler",
+          "NetPay",
+          "Edarsahub_Produccion"
+        ],
+        "include_patterns": [
+          "*.jsx",
+          "*.py",
+          "*.json"
+        ],
+        "exclude_patterns": [
+          "**/__pycache__/**",
+          "**/node_modules/**"
+        ],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py",
+        "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+        "backend/tests/test_tablajeria_functional_cert_static.py"
+      ]
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    }
+  ],
+  "constraints": [
+    "No SQL",
+    "No Produccion",
+    "No backend mutation",
+    "No frontend files except frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+    "No Scheduler",
+    "No NetPay",
+    "No migrations",
+    "No App.js",
+    "No hardcoded companies, units or IDs",
+    "No Mongo operational source",
+    "Backend remains source of RBAC and SQL Server canonical source",
+    "If GIT_LOCK_BUSY occurs again, stop and publish terminal failure; do not retry blindly"
+  ],
+  "expected_output": {
+    "status": "INTEGRATED",
+    "quality_gate": "PASS",
+    "certification": "CERTIFIED_POST_MUTATION",
+    "production_touched": false,
+    "sql_touched": false,
+    "backend_touched": false,
+    "files_changed_exact": [
+      "frontend/src/pages/tablajeria/LotesProveedorPage.jsx"
+    ],
+    "must_include": [
+      "base_sha_used",
+      "commit_sha_after_mutation",
+      "files_changed",
+      "pytest_result",
+      "frontend_build_result",
+      "production_touched_false_confirmed",
+      "safe_next_action"
+    ]
+  },
+  "created_at_utc": "2026-09-21T19:09:00Z"
+}
