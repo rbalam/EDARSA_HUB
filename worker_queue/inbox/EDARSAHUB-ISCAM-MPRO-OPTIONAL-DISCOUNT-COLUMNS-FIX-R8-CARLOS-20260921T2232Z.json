@@ -1,0 +1,79 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-MPRO-OPTIONAL-DISCOUNT-COLUMNS-FIX-R8-CARLOS-20260921T2232Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d0f3f229d9b746b13b7d41ff681affc42fa308e0",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "priority": "P0",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V2",
+    "chat": "20260921-Reportes ISCAM"
+  },
+  "objective": "Eliminar del extractor de detalle MPRO las columnas opcionales de descuento que ya no participan en la conciliación después de R2/R3 y que pueden no existir en el esquema operativo de ORIGEN. Mantener exactamente la misma forma de filas usando constantes cero para descuento_comanda y descuento_ticket. Conservar Venta_Encabezado.Vn_Precio_Neto_Importe como autoridad monetaria, Co_Personas/Co_Propina para PAX/propina, Vn_Documento->Comanda.Co_Folio, filtro de sucursal en Venta_Encabezado y fallback HEADER_SIN_DETALLE. No tocar Runtime V2 ni otras rutas.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "                ISNULL(c.Co_Propina, 0) AS propina_ticket,\n                ISNULL(c.Co_Descuento_Importe, 0) AS descuento_comanda,\n                ISNULL(v.Vn_Descuento_Global_Importe, 0)\n                  + ISNULL(v.Vn_Descuento_Importe, 0) AS descuento_ticket",
+      "new": "                ISNULL(c.Co_Propina, 0) AS propina_ticket,\n                CAST(0 AS decimal(18,4)) AS descuento_comanda,\n                CAST(0 AS decimal(18,4)) AS descuento_ticket",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_mpro_header_authority_r93.py",
+      "old": "def test_mpro_branch_filter_uses_header_schema_not_detail_column():\n    text = DETAIL.read_text(encoding=\"utf-8\")\n    block = text.split(\"def _extract_mpro(\", 1)[1].split(\"PRORRATEO_Q4\", 1)[0]\n    assert \"v.Sc_Cve_Sucursal = %s\" in block\n    assert \"d.Sc_Cve_Sucursal\" not in block\n",
+      "new": "def test_mpro_branch_filter_uses_header_schema_not_detail_column():\n    text = DETAIL.read_text(encoding=\"utf-8\")\n    block = text.split(\"def _extract_mpro(\", 1)[1].split(\"PRORRATEO_Q4\", 1)[0]\n    assert \"v.Sc_Cve_Sucursal = %s\" in block\n    assert \"d.Sc_Cve_Sucursal\" not in block\n\n\ndef test_mpro_detail_extractor_does_not_depend_on_optional_discount_columns():\n    text = DETAIL.read_text(encoding=\"utf-8\")\n    block = text.split(\"def _extract_mpro(\", 1)[1].split(\"PRORRATEO_Q4\", 1)[0]\n    assert \"c.Co_Descuento_Importe\" not in block\n    assert \"v.Vn_Descuento_Global_Importe\" not in block\n    assert \"v.Vn_Descuento_Importe\" not in block\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+        "backend/tests/test_iscam_mpro_header_authority_r93.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_mpro_header_authority_r93.py",
+        "backend/tests/test_iscam_no_prorate_adjustments_r49.py",
+        "backend/tests/test_iscam_header_folio_parent_r92.py"
+      ]
+    },
+    {
+      "type": "git_diff_check",
+      "allowed_files_exact": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+        "backend/tests/test_iscam_mpro_header_authority_r93.py"
+      ],
+      "forbidden_paths": [
+        "frontend",
+        "backend/database/migrations",
+        "Edarsahub_Produccion"
+      ]
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL writes",
+    "No Runtime V2 writes",
+    "No hardcodes de ORIGEN, fecha o importes",
+    "Mantener Venta_Encabezado como autoridad monetaria",
+    "Mantener PAX y propina desde Comanda",
+    "No Sync_Sales legacy",
+    "No force-push"
+  ],
+  "expected_output": {
+    "status": "INTEGRATED",
+    "quality_gate": "PASS",
+    "production_touched": false
+  },
+  "created_at_utc": "2026-09-21T22:32:00Z"
+}
