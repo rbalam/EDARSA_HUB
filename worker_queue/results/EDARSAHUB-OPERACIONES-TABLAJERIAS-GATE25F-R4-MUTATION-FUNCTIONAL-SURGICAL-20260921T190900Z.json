@@ -1,0 +1,89 @@
+{
+  "base_sha": "489678d39ba6edd0f2f89e7d97f70c2143cc6c09",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-21T19:10:16Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "frontend/src/pages/tablajeria/LotesProveedorPage.jsx"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-R4-MUTATION-FUNCTIONAL-SURGICAL-20260921T190900Z",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-21T19:10:25Z",
+  "quality_gate": "FAIL",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "abrir prioridad",
+              "lotes-proveedor",
+              "prioridad operativa",
+              "rbac",
+              "rendimiento prom.",
+              "sql server"
+            ],
+            "path": "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "os",
+              "urllib.error",
+              "urllib.request"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "lotes-proveedor"
+            ],
+            "path": "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get",
+              "test_preview_api_health_is_reachable_without_sql_business_endpoints",
+              "test_preview_spa_route_for_lotes_proveedor_is_served_without_business_calls"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 3,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-21T19:10:13Z",
+  "status": "GIT_TESTS_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
