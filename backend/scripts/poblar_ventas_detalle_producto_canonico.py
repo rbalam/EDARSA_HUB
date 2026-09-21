@@ -1142,9 +1142,28 @@ def _prorratear_mpro_por_ticket(
 
         gross_total = _q4(sum(gross_values, Decimal("0")))
         if gross_total <= 0:
-            raise RuntimeError(
-                f"MPRO: ticket sin detalle monetario distribuible: {ticket_key}"
+            header_only = all(
+                _s(row.get("producto_codigo_fuente")).upper() == "HEADER_SIN_DETALLE"
+                for _, row in items
             )
+            if not header_only:
+                raise RuntimeError(
+                    f"MPRO: ticket sin detalle monetario distribuible: {ticket_key}"
+                )
+
+            # El encabezado final existe pero el POS no expone líneas de producto.
+            # No se inventa producto: se conserva el ticket como ajuste técnico,
+            # excluido de vistas de productos por el prefijo __ISCAM_AJUSTE_.
+            for index, (_, row) in enumerate(items):
+                line_net = target_net if index == 0 else Decimal("0")
+                row["producto_codigo_fuente"] = SOFT_AJUSTE_ENCABEZADO
+                row["producto_nombre"] = "AJUSTE MPRO: HEADER SIN DETALLE DE PRODUCTO"
+                row["cantidad"] = Decimal("0")
+                row["precio_unitario"] = Decimal("0")
+                row["importe_bruto"] = line_net
+                row["importe_neto"] = line_net
+                row["descuento_prorrateado"] = Decimal("0")
+            continue
 
         allocations: List[Decimal] = []
         remainders: List[Decimal] = []

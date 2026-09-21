@@ -46,6 +46,21 @@ def test_mpro_zero_final_header_distributes_zero_without_inventing_sales():
     assert sum(x["importe_neto"] for x in out) == Decimal("0.0000")
 
 
+def test_mpro_header_without_product_detail_becomes_technical_adjustment():
+    row = _row("HEADER_SIN_DETALLE", "0", "125", "0")
+    out = _prorratear_mpro_por_ticket([row])
+    assert out[0]["producto_codigo_fuente"] == "__ISCAM_AJUSTE_ENCABEZADO__"
+    assert out[0]["cantidad"] == Decimal("0")
+    assert out[0]["importe_bruto"] == Decimal("125.0000")
+    assert out[0]["importe_neto"] == Decimal("125.0000")
+
+
+def test_mpro_zero_gross_non_header_still_fails_closed():
+    import pytest
+    with pytest.raises(RuntimeError, match="sin detalle monetario distribuible"):
+        _prorratear_mpro_por_ticket([_row("PRODUCTO_REAL", "0", "125", "0")])
+
+
 def test_mpro_detail_join_is_scoped_to_same_branch():
     text = DETAIL.read_text(encoding="utf-8")
     block = text.split("def _extract_mpro(", 1)[1].split("PRORRATEO_Q4", 1)[0]
