@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "305786aa03450d9f1e7573d093a26c91664f6cc2",
-  "generated_at_utc": "2026-09-21T04:34:38Z",
+  "generated_at_utc": "2026-09-21T04:36:12Z",
   "history": {
     "done_total_local": 788,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3442,
+      "age_seconds": 3536,
       "job_id": "EDARSAHUB-WORKER-CONSOLE-ENTERPRISE-NAV-CERT-READONLY-R1-20260920",
       "reasons": [
         "READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED"
@@ -25,49 +25,43 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 108,
+      "age_seconds": 202,
       "job_id": "CAVAS-GATE16J-BLIND-AUDIT-MINIMAL-UI-FRONTEND-CERT-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2326,
+      "age_seconds": 2420,
       "job_id": "CAVAS-GATE16J-BLIND-AUDIT-MINIMAL-UI-IMPLEMENTATION-R6-20260920",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3508,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25A-FUNCTIONAL-CERT-READONLY-R1-20260921T033540Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3324,
+      "age_seconds": 3418,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25B-GONOGO-CERT-READONLY-R1-20260921T033842Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3071,
+      "age_seconds": 3165,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25C-FRONTEND-BUILD-CERT-R1-20260921T034112Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2880,
+      "age_seconds": 2974,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25D-PREVIEW-UAT-CERT-READONLY-R1-20260921T034500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 101,
+      "age_seconds": 195,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25E-SCOPE-LOCK-MUTATION-PLAN-READONLY-R1-20260921T034800Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2755,
+      "age_seconds": 2849,
       "job_id": "EDARSAHUB-WORKER-CONSOLE-ENTERPRISE-NAV-FRONTEND-CERT-R1-20260920",
       "reason": null,
       "state": "RESULT_READY"
@@ -81,14 +75,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 1,
-  "queue_result_ready_recent": 8,
+  "queue_result_ready_recent": 7,
   "queue_running": 0,
   "remote_development_sha": "305786aa03450d9f1e7573d093a26c91664f6cc2",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T04:34:36Z",
-    "last_receive_utc": "2026-09-21T04:34:38Z",
+    "last_cycle_utc": "2026-09-21T04:36:10Z",
+    "last_receive_utc": "2026-09-21T04:36:11Z",
     "last_terminal_utc": "2026-09-21T04:32:57Z",
     "pid": "10297"
   },
