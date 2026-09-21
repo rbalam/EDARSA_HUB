@@ -659,6 +659,16 @@
       "cluster": "Cava de Socios",
       "releasedAt": "2026-08-15"
     },
+    "cava.auditoria_ciega": {
+      "groupId": "portales-satelites",
+      "sectionId": "aplicaciones-satelite",
+      "label": "Auditoría Ciega",
+      "expectedPath": "/cava-socios/auditoria-ciega",
+      "order": 50,
+      "status": "active",
+      "cluster": "Cava de Socios",
+      "releasedAt": "2026-09-20"
+    },
     "coa.dashboard": {
       "groupId": "portales-satelites",
       "sectionId": "aplicaciones-satelite",

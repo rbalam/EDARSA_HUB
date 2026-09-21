@@ -64,7 +64,7 @@ import CapturaDirectaPage from '@/pages/tablajeria/CapturaDirectaPage';
 import LotesProveedorPage from '@/pages/tablajeria/LotesProveedorPage';
 
 // Cava de Socios
-import { CavaSociosDashboard, SociosList, SocioDetail, SocioForm, InventarioCava, ConsumosCava } from '@/pages/cava-socios';
+import { CavaSociosDashboard, SociosList, SocioDetail, SocioForm, InventarioCava, ConsumosCava, BlindAuditCava } from '@/pages/cava-socios';
 
 // Cavas Corporativas B2B
 import CavasCorporativasDashboard from '@/pages/cavas-corporativas/CavasCorporativasDashboard';
@@ -189,6 +189,7 @@ function App() {
               <Route path="cava-socios/socios/:id/editar" element={<SocioForm />} />
               <Route path="cava-socios/inventario" element={<InventarioCava />} />
               <Route path="cava-socios/consumos" element={<ConsumosCava />} />
+              <Route path="cava-socios/auditoria-ciega" element={<BlindAuditCava />} />
               {/* Cavas Corporativas B2B - reglas y RBAC permanecen en backend */}
               <Route path="cavas-corporativas" element={<CavasCorporativasDashboard />} />
               {/* Catalogo Ampliado - frontend consume exclusivamente /api/catalogo-ampliado */}
