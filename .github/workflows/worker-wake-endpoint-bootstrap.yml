@@ -37,41 +37,60 @@ jobs:
         run: |
           set -euo pipefail
           python - <<'PY'
+          import os
+          import re
           from pathlib import Path
 
-          path = Path("backend/server.py")
-          text = path.read_text(encoding="utf-8")
+          server = Path("backend/server.py")
+          routes = Path("backend/modules/worker_runtime_wake/routes.py")
+          server_text = server.read_text(encoding="utf-8")
+          routes_text = routes.read_text(encoding="utf-8")
+
           include_line = 'app.include_router(worker_runtime_wake_router, prefix="/api")'
           legacy_marker = '# Startup: Iniciar scheduler'
           fallback_marker = 'api_router = APIRouter(prefix="/api")'
 
-          if include_line in text:
-              print("WORKER_WAKE_ROUTER_ALREADY_MOUNTED=1")
-              raise SystemExit(0)
-
-          block = "\n".join([
-              "# =============================================================================",
-              "# UNIVERSAL WORKER - CONTROL DE RECUPERACION INTERNO",
-              "# =============================================================================",
-              "try:",
-              "    from modules.worker_runtime_wake.routes import router as worker_runtime_wake_router",
-              "    app.include_router(worker_runtime_wake_router, prefix=\"/api\")",
-              "    logger.info(\"Universal Worker wake router registrado\")",
-              "except Exception as e:",
-              "    logger.warning(f\"Error registrando Universal Worker wake router: {e}\")",
-              "",
-              "",
-          ])
-
-          if legacy_marker in text:
-              text = text.replace(legacy_marker, block + legacy_marker, 1)
-          elif fallback_marker in text:
-              text = text.replace(fallback_marker, fallback_marker + "\n\n" + block, 1)
+          if include_line not in server_text:
+              block = "\n".join([
+                  "# =============================================================================",
+                  "# UNIVERSAL WORKER - CONTROL DE RECUPERACION INTERNO",
+                  "# =============================================================================",
+                  "try:",
+                  "    from modules.worker_runtime_wake.routes import router as worker_runtime_wake_router",
+                  "    app.include_router(worker_runtime_wake_router, prefix=\"/api\")",
+                  "    logger.info(\"Universal Worker wake router registrado\")",
+                  "except Exception as e:",
+                  "    logger.warning(f\"Error registrando Universal Worker wake router: {e}\")",
+                  "",
+                  "",
+              ])
+              if legacy_marker in server_text:
+                  server_text = server_text.replace(legacy_marker, block + legacy_marker, 1)
+              elif fallback_marker in server_text:
+                  server_text = server_text.replace(fallback_marker, fallback_marker + "\n\n" + block, 1)
+              else:
+                  raise SystemExit("WORKER_WAKE_MOUNT_MARKER_NOT_FOUND")
+              server.write_text(server_text, encoding="utf-8")
+              print("WORKER_WAKE_ROUTER_MOUNTED=1")
           else:
-              raise SystemExit("WORKER_WAKE_MOUNT_MARKER_NOT_FOUND")
+              print("WORKER_WAKE_ROUTER_ALREADY_MOUNTED=1")
 
-          path.write_text(text, encoding="utf-8")
-          print("WORKER_WAKE_ROUTER_MOUNTED=1")
+          run_id = os.environ.get("GITHUB_RUN_ID", "manual")
+          run_attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "1")
+          marker = (
+              f"# Runtime reload marker bootstrap-{run_id}-{run_attempt}: "
+              "force Preview backend reload for canonical worker wake endpoint."
+          )
+          pattern = re.compile(r"^# Runtime reload marker.*$", re.MULTILINE)
+          if pattern.search(routes_text):
+              routes_text = pattern.sub(marker, routes_text, count=1)
+          else:
+              needle = "_SHA_RE = re.compile"
+              if needle not in routes_text:
+                  raise SystemExit("WORKER_WAKE_RELOAD_MARKER_ANCHOR_NOT_FOUND")
+              routes_text = routes_text.replace(needle, marker + "\n" + needle, 1)
+          routes.write_text(routes_text, encoding="utf-8")
+          print(f"WORKER_WAKE_RUNTIME_RELOAD_MARKER={run_id}-{run_attempt}")
           PY
 
       - name: Validate endpoint contract
@@ -83,20 +102,75 @@ jobs:
           grep -F 'app.include_router(worker_runtime_wake_router, prefix="/api")' backend/server.py
           grep -F 'WORKER_SERVICE = "edarsahub-universal-worker"' backend/modules/worker_runtime_wake/routes.py
           grep -F '["supervisorctl", "restart", WORKER_SERVICE]' backend/modules/worker_runtime_wake/routes.py
+          grep -F '# Runtime reload marker bootstrap-' backend/modules/worker_runtime_wake/routes.py
           git diff --check
 
       - name: Commit endpoint mount
         shell: bash
         run: |
           set -euo pipefail
-          if git diff --quiet -- backend/server.py; then
-            echo "NO_SERVER_CHANGE_REQUIRED=1"
+          if git diff --quiet -- backend/server.py backend/modules/worker_runtime_wake/routes.py; then
+            echo "NO_RUNTIME_RELOAD_CHANGE_REQUIRED=1"
             exit 0
           fi
           git config user.name "EDARSAHUB Bootstrap"
           git config user.email "bootstrap@edarsahub.local"
-          git add -- backend/server.py
-          git commit -m "fix(worker): mount guarded Universal Worker wake endpoint"
-          git fetch origin Edarsahub_Desarrollo
+          git add -- backend/server.py backend/modules/worker_runtime_wake/routes.py
+          git commit -m "fix(worker): force Preview wake endpoint runtime reload"
+          git fetch origin Edarsahub_Desarrollo mirror/emergent-live
           git rebase origin/Edarsahub_Desarrollo
           git push origin HEAD:Edarsahub_Desarrollo
+
+          DEV_SHA="$(git rev-parse HEAD)"
+          MIRROR_SHA="$(git rev-parse origin/mirror/emergent-live)"
+          if git merge-base --is-ancestor "$MIRROR_SHA" "$DEV_SHA"; then
+            git push origin "$DEV_SHA:refs/heads/mirror/emergent-live"
+            echo "MIRROR_FAST_FORWARD_APPLIED=1"
+          else
+            echo "MIRROR_FAST_FORWARD_SKIPPED_NON_FF=1"
+          fi
+
+      - name: Verify public wake endpoint reloaded
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUNTIME_URL='https://erp-crm-enterprise-1.preview.emergentagent.com'
+          FINAL_HTTP=000
+          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            QUEUE_SHA="$(git ls-remote origin refs/heads/worker/requests | awk '{print $1}')"
+            HTTP_CODE="$(curl --silent --show-error --location \
+              --connect-timeout 3 --max-time 10 \
+              --output /tmp/wake-probe.json --write-out '%{http_code}' \
+              --request POST "$RUNTIME_URL/api/internal/worker/wake" \
+              --header "X-Worker-Queue-Sha: $QUEUE_SHA" \
+              --header 'Content-Type: application/json' \
+              --data '{}' || true)"
+            FINAL_HTTP="$HTTP_CODE"
+            echo "PUBLIC_WAKE_PROBE_ATTEMPT=$attempt"
+            echo "PUBLIC_WAKE_HTTP_CODE=$HTTP_CODE"
+            cat /tmp/wake-probe.json 2>/dev/null || true
+            echo
+
+            case "$HTTP_CODE" in
+              200|202|429)
+                echo "PUBLIC_WAKE_ENDPOINT_RECOVERED=1"
+                exit 0
+                ;;
+              409)
+                if grep -qi 'worker wake already in progress' /tmp/wake-probe.json 2>/dev/null; then
+                  echo "PUBLIC_WAKE_ENDPOINT_RECOVERED=1"
+                  exit 0
+                fi
+                ;;
+            esac
+            sleep 10
+          done
+          echo "PUBLIC_WAKE_ENDPOINT_RECOVERY_FAILED=1"
+          echo "FINAL_HTTP=$FINAL_HTTP"
+          exit 12
+
+      - name: Confirm production untouched
+        if: always()
+        shell: bash
+        run: |
+          echo 'PRODUCTION_TOUCHED=NO'
