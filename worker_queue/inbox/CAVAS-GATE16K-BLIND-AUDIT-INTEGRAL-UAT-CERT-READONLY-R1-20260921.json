@@ -1,0 +1,73 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE16K-BLIND-AUDIT-INTEGRAL-UAT-CERT-READONLY-R1-20260921",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "305786aa03450d9f1e7573d093a26c91664f6cc2",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Gate 16K: certificar en READ_ONLY el cierre/UAT integral de Auditoria Ciega de Cavas sobre el Gate16J ya CERTIFIED_FRONTEND_BUILD. Validar motor y servicio operacional para CONFIRMED, DIFFERENCE y REVIEW_REQUIRED; idempotencia/fingerprint determinista; prohibicion de ajuste o movimiento automatico de inventario; contrato del endpoint /api/cava-socios/auditorias-ciegas/reconciliar; RBAC/scope canonico por unidad_negocio_pk; flujo UI CAPTURE->IDENTIFY->RESULT y ruta empresarial /cava-socios/auditoria-ciega. No SQL mutante, no cambios de archivos, no Produccion. Gate16K solo cierra con PASS, 100%, blockers=[] y production_touched=false.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios_blind_audit.py",
+        "backend/tests/test_cava_socios_blind_audit_operational_service.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/cava_socios/blind_audit.py",
+          "backend/modules/cava_socios/blind_audit_operational_service.py",
+          "backend/modules/cava_socios/routes.py",
+          "backend/tests/test_cava_socios_blind_audit.py",
+          "backend/tests/test_cava_socios_blind_audit_operational_service.py",
+          "frontend/src/pages/cava-socios/BlindAuditCava.jsx",
+          "frontend/src/pages/cava-socios/CavaNavHeader.jsx",
+          "frontend/src/config/enterpriseNavigationRegistry.json"
+        ],
+        "search_terms": [
+          "CONFIRMED",
+          "DIFFERENCE",
+          "REVIEW_REQUIRED",
+          "automatic_inventory_adjustment",
+          "automatic_inventory_movement",
+          "request_fingerprint",
+          "auditorias-ciegas/reconciliar",
+          "unidad_negocio_pk",
+          "_resolve_cava_scope",
+          "CAPTURE",
+          "IDENTIFY",
+          "RESULT",
+          "/cava-socios/auditoria-ciega",
+          "aplicar_ajustes_inventario_fisico"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.jsx",
+          "*.json"
+        ],
+        "exclude_patterns": [],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No Production",
+    "No file changes",
+    "No SQL mutation",
+    "No automatic inventory adjustments",
+    "No automatic inventory movements",
+    "No implicit Persona/Cliente matching",
+    "Preserve SocioID membership identity",
+    "Gate16K certification only; do not open global Cavas certification inside this job"
+  ]
+}
