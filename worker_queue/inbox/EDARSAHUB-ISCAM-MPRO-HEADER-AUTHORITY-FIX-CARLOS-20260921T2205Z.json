@@ -1,0 +1,90 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-MPRO-HEADER-AUTHORITY-FIX-CARLOS-20260921T2205Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "1199f993848274570f94c6c5fc32dc481fb3fe97",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "priority": "P0",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V2",
+    "chat": "20260921-Reportes ISCAM"
+  },
+  "objective": "Corregir la causa estructural que bloquea el backfill ISCAM de ORIGEN 2026-08-27. Para MPRO, Venta_Encabezado.Vn_Precio_Neto_Importe es la cifra final canónica y Comanda_Detalle solo define la estructura de productos. El código actual exige que bruto - Co_Descuento_Importe = venta final, lo cual contradice el ADR MPRO cuando existen ajustes finales no representados como descuento de comanda y aborta todo el día. Cambiar el prorrateo para distribuir exactamente el neto final del header entre las líneas de producto según su peso bruto, con residual determinista a 4 decimales. Además, acotar el JOIN de Comanda_Detalle por Sc_Cve_Sucursal para evitar contaminación entre sucursales. No tocar Runtime V2, no hardcodear ORIGEN ni importes y mantener fail-closed para tickets sin detalle monetario.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "LEFT JOIN Comanda_Detalle d WITH (NOLOCK)\n                ON d.Co_Folio = h.Vn_Documento\n               AND ISNULL(d.Es_Cve_Estado, '') IN ('AC', 'FA')",
+      "new": "LEFT JOIN Comanda_Detalle d WITH (NOLOCK)\n                ON d.Co_Folio = h.Vn_Documento\n               AND d.Sc_Cve_Sucursal = h.Sc_Cve_Sucursal\n               AND ISNULL(d.Es_Cve_Estado, '') IN ('AC', 'FA')",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "def _prorratear_mpro_por_ticket(\n    src_rows: List[Dict[str, Any]],\n) -> List[Dict[str, Any]]:\n    \"\"\"Distribuye el descuento de la comanda entre productos MPRO.\"\"\"\n    rows = [dict(row) for row in src_rows]\n    grouped: Dict[str, List[Tuple[int, Dict[str, Any]]]] = defaultdict(list)\n\n    for position, row in enumerate(rows):\n        if not _mpro_row_es_kpi_valido(row):\n            continue\n\n        ticket_key = _s(row.get(\"id_transaccion\"))\n        if not ticket_key:\n            raise RuntimeError(\"MPRO: fila valida sin id_transaccion\")\n\n        grouped[ticket_key].append((position, row))\n\n    for ticket_key, items in grouped.items():\n        net_values = {_q4(row.get(\"importe_neto_ticket\")) for _, row in items}\n        discount_values = {_q4(row.get(\"descuento_comanda\")) for _, row in items}\n\n        if len(net_values) != 1:\n            raise RuntimeError(\n                f\"MPRO: venta neta inconsistente en ticket {ticket_key}\"\n            )\n\n        if len(discount_values) != 1:\n            raise RuntimeError(\n                f\"MPRO: descuento inconsistente en ticket {ticket_key}\"\n            )\n\n        target_net = next(iter(net_values))\n        total_discount = next(iter(discount_values))\n        gross_values = [_q4(row.get(\"importe_bruto\")) for _, row in items]\n\n        if any(value < 0 for value in gross_values):\n            raise RuntimeError(f\"MPRO: importe bruto negativo en ticket {ticket_key}\")\n\n        gross_total = _q4(sum(gross_values, Decimal(\"0\")))\n\n        if gross_total <= 0:\n            raise RuntimeError(\n                f\"MPRO: ticket sin detalle monetario distribuible: {ticket_key}\"\n            )\n\n        expected_discount = _q4(gross_total - target_net)\n\n        if expected_discount != total_discount:\n            raise RuntimeError(\n                \"MPRO: no concilia bruto - descuento = neto: \"\n                f\"ticket={ticket_key}; bruto={gross_total}; \"\n                f\"descuento={total_discount}; neto={target_net}\"\n            )\n\n        if total_discount < 0 or total_discount > gross_total:\n            raise RuntimeError(f\"MPRO: descuento invalido en ticket {ticket_key}\")\n\n        allocations: List[Decimal] = []\n        remainders: List[Decimal] = []\n\n        for gross in gross_values:\n            raw = total_discount * gross / gross_total\n            base = raw.quantize(PRORRATEO_Q4, rounding=ROUND_DOWN)\n            allocations.append(base)\n            remainders.append(raw - base)\n\n        residual = _q4(total_discount - sum(allocations, Decimal(\"0\")))\n        residual_units = int(\n            (residual / PRORRATEO_Q4).to_integral_value(\n                rounding=ROUND_HALF_UP\n            )\n        )\n\n        if residual_units < 0 or residual_units > len(items):\n            raise RuntimeError(\n                f\"MPRO: residuo de prorrateo invalido en ticket {ticket_key}\"\n            )\n\n        ordered_indexes = sorted(\n            range(len(items)),\n            key=lambda index: (\n                -remainders[index],\n                _s(items[index][1].get(\"producto_codigo_fuente\")),\n                _s(items[index][1].get(\"producto_nombre\")),\n                items[index][0],\n            ),\n        )\n\n        for index in ordered_indexes[:residual_units]:\n            allocations[index] += PRORRATEO_Q4\n\n        allocated_total = _q4(sum(allocations, Decimal(\"0\")))\n        if allocated_total != total_discount:\n            raise RuntimeError(\n                f\"MPRO: descuento distribuido no concilia en ticket {ticket_key}\"\n            )\n\n        net_total = Decimal(\"0\")\n\n        for index, (_, row) in enumerate(items):\n            allocated_discount = _q4(allocations[index])\n            line_net = _q4(gross_values[index] - allocated_discount)\n\n            if line_net < 0:\n                raise RuntimeError(\n                    f\"MPRO: importe neto negativo en ticket {ticket_key}\"\n                )\n\n            row[\"descuento_prorrateado\"] = allocated_discount\n            row[\"importe_neto\"] = line_net\n            net_total += line_net\n\n        if _q4(net_total) != target_net:\n            raise RuntimeError(\n                f\"MPRO: suma neta por productos no concilia en ticket {ticket_key}\"\n            )\n\n    return rows",
+      "new": "def _prorratear_mpro_por_ticket(\n    src_rows: List[Dict[str, Any]],\n) -> List[Dict[str, Any]]:\n    \"\"\"Distribuye la venta final MPRO entre productos usando el header canónico.\n\n    Venta_Encabezado.Vn_Precio_Neto_Importe es la cifra final autoritativa.\n    Comanda_Detalle solo aporta la estructura/proporción de productos; su importe\n    bruto y Co_Descuento_Importe no pueden bloquear el detalle cuando existen\n    ajustes finales que no están representados como descuento de la comanda.\n    \"\"\"\n    rows = [dict(row) for row in src_rows]\n    grouped: Dict[str, List[Tuple[int, Dict[str, Any]]]] = defaultdict(list)\n\n    for position, row in enumerate(rows):\n        if not _mpro_row_es_kpi_valido(row):\n            continue\n\n        ticket_key = _s(row.get(\"id_transaccion\"))\n        if not ticket_key:\n            raise RuntimeError(\"MPRO: fila valida sin id_transaccion\")\n\n        grouped[ticket_key].append((position, row))\n\n    for ticket_key, items in grouped.items():\n        net_values = {_q4(row.get(\"importe_neto_ticket\")) for _, row in items}\n        if len(net_values) != 1:\n            raise RuntimeError(\n                f\"MPRO: venta neta inconsistente en ticket {ticket_key}\"\n            )\n\n        target_net = next(iter(net_values))\n        if target_net < 0:\n            raise RuntimeError(f\"MPRO: venta neta negativa en ticket {ticket_key}\")\n\n        gross_values = [_q4(row.get(\"importe_bruto\")) for _, row in items]\n        if any(value < 0 for value in gross_values):\n            raise RuntimeError(f\"MPRO: importe bruto negativo en ticket {ticket_key}\")\n\n        gross_total = _q4(sum(gross_values, Decimal(\"0\")))\n        if gross_total <= 0:\n            raise RuntimeError(\n                f\"MPRO: ticket sin detalle monetario distribuible: {ticket_key}\"\n            )\n\n        allocations: List[Decimal] = []\n        remainders: List[Decimal] = []\n\n        for gross in gross_values:\n            raw = target_net * gross / gross_total\n            base = raw.quantize(PRORRATEO_Q4, rounding=ROUND_DOWN)\n            allocations.append(base)\n            remainders.append(raw - base)\n\n        residual = _q4(target_net - sum(allocations, Decimal(\"0\")))\n        residual_units = int(\n            (residual / PRORRATEO_Q4).to_integral_value(\n                rounding=ROUND_HALF_UP\n            )\n        )\n\n        if residual_units < 0 or residual_units > len(items):\n            raise RuntimeError(\n                f\"MPRO: residuo de prorrateo invalido en ticket {ticket_key}\"\n            )\n\n        ordered_indexes = sorted(\n            range(len(items)),\n            key=lambda index: (\n                -remainders[index],\n                _s(items[index][1].get(\"producto_codigo_fuente\")),\n                _s(items[index][1].get(\"producto_nombre\")),\n                items[index][0],\n            ),\n        )\n\n        for index in ordered_indexes[:residual_units]:\n            allocations[index] += PRORRATEO_Q4\n\n        allocated_total = _q4(sum(allocations, Decimal(\"0\")))\n        if allocated_total != target_net:\n            raise RuntimeError(\n                f\"MPRO: venta neta distribuida no concilia en ticket {ticket_key}\"\n            )\n\n        for index, (_, row) in enumerate(items):\n            line_net = _q4(allocations[index])\n            row[\"descuento_prorrateado\"] = _q4(gross_values[index] - line_net)\n            row[\"importe_neto\"] = line_net\n\n    return rows",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_mpro_header_authority_r93.py",
+      "content": "from decimal import Decimal\nfrom pathlib import Path\n\nfrom scripts.poblar_ventas_detalle_producto_canonico import _prorratear_mpro_por_ticket\n\nROOT = Path(__file__).resolve().parents[2]\nDETAIL = ROOT / \"backend\" / \"scripts\" / \"poblar_ventas_detalle_producto_canonico.py\"\n\n\ndef _row(product, gross, target, descuento=\"0\"):\n    return {\n        \"id_transaccion\": \"MPRO:ORIGEN:1\",\n        \"numero_ticket\": \"1\",\n        \"es_kpi_valido\": 1,\n        \"importe_neto_ticket\": Decimal(target),\n        \"descuento_comanda\": Decimal(descuento),\n        \"importe_bruto\": Decimal(gross),\n        \"producto_codigo_fuente\": product,\n        \"producto_nombre\": product,\n    }\n\n\ndef test_mpro_uses_final_header_even_when_comanda_discount_does_not_explain_delta():\n    out = _prorratear_mpro_por_ticket([\n        _row(\"A\", \"100\", \"180\", \"0\"),\n        _row(\"B\", \"100\", \"180\", \"0\"),\n    ])\n    assert sum(x[\"importe_neto\"] for x in out) == Decimal(\"180.0000\")\n    assert [x[\"importe_neto\"] for x in out] == [Decimal(\"90.0000\"), Decimal(\"90.0000\")]\n\n\ndef test_mpro_header_total_is_preserved_with_rounding_residual():\n    out = _prorratear_mpro_por_ticket([\n        _row(\"A\", \"1\", \"1\", \"0\"),\n        _row(\"B\", \"1\", \"1\", \"0\"),\n        _row(\"C\", \"1\", \"1\", \"0\"),\n    ])\n    assert sum(x[\"importe_neto\"] for x in out) == Decimal(\"1.0000\")\n\n\ndef test_mpro_zero_final_header_distributes_zero_without_inventing_sales():\n    out = _prorratear_mpro_por_ticket([\n        _row(\"A\", \"80\", \"0\", \"80\"),\n        _row(\"B\", \"20\", \"0\", \"80\"),\n    ])\n    assert sum(x[\"importe_neto\"] for x in out) == Decimal(\"0.0000\")\n\n\ndef test_mpro_detail_join_is_scoped_to_same_branch():\n    text = DETAIL.read_text(encoding=\"utf-8\")\n    block = text.split(\"def _extract_mpro(\", 1)[1].split(\"PRORRATEO_Q4\", 1)[0]\n    assert \"d.Sc_Cve_Sucursal = h.Sc_Cve_Sucursal\" in block\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+        "backend/tests/test_iscam_mpro_header_authority_r93.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_mpro_header_authority_r93.py",
+        "backend/tests/test_iscam_no_prorate_adjustments_r49.py",
+        "backend/tests/test_iscam_header_folio_parent_r92.py"
+      ]
+    },
+    {
+      "type": "git_diff_check",
+      "allowed_files_exact": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+        "backend/tests/test_iscam_mpro_header_authority_r93.py"
+      ],
+      "forbidden_paths": [
+        "frontend",
+        "backend/database/migrations",
+        "Edarsahub_Produccion"
+      ]
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL writes in this mutation",
+    "No hardcode de ORIGEN, fecha, tickets ni importes",
+    "Venta_Encabezado sigue siendo autoridad monetaria",
+    "Comanda_Detalle solo aporta estructura de productos",
+    "No relajar validacion final contra Runtime V2",
+    "No Sync_Sales legacy",
+    "No force-push"
+  ],
+  "expected_output": {
+    "status": "INTEGRATED",
+    "quality_gate": "PASS",
+    "production_touched": false,
+    "must_include": [
+      "candidate_sha",
+      "development_sha",
+      "tests",
+      "files_changed"
+    ]
+  },
+  "created_at_utc": "2026-09-21T22:05:00Z"
+}
