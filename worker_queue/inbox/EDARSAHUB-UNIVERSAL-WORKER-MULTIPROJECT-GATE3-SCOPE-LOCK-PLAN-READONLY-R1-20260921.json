@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE3-SCOPE-LOCK-PLAN-READONLY-R1-20260921",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "12c6c18de619854e5fe8f33e87bff7b63eaa93fe",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Definir y bloquear el plan quirurgico de Gate3 para eliminar el encolamiento estructural del Universal Worker sin sustituir ni detener el runtime actual. Alcance: separar CLAIM de EXECUTION; hacer que dispatcher.lock proteja solo seleccion y claim atomico pending->processing; mantener process_one fuera del lock; introducir slots controlados empezando con 4 READ_ONLY + 1 MUTATION; mantener MUTATION serial global en primera fase; preservar git-writer guard, Agent Guard, worktrees, lifecycle, result publisher, health publisher y control plane; convertir preferred_job en boost de prioridad no bloqueo global; definir heartbeats por slot y agregador; definir fairness por project_id; conservar compatibilidad total con worker-job.v2 legacy mediante defaults conservadores. No implementar todavia. Entregar archivos exactos a modificar, invariantes, pruebas, rollback y secuencia de rollout shadow->read-only slots->mutation slots.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_universal_worker_scope_concurrency_policy.py",
+        "backend/tests/test_universal_worker_deterministic_replay_concurrency.py",
+        "backend/tests/test_worker_scope_concurrency_dispatcher_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/universal_job_worker.sh",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/worker_concurrency.py",
+          "tools/mirror_sync/git_divergence_guard.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "tools/mirror_sync/edarsahub-universal-worker.conf",
+          "tools/mirror_sync/multiproject_shadow_scheduler.py",
+          "backend/tests/test_multiproject_shadow_scheduler.py"
+        ],
+        "search_terms": [
+          "dispatcher.lock",
+          "process_one",
+          "pending",
+          "processing",
+          "current_job_id",
+          "preferred_job",
+          "git-writer.lock",
+          "SAFE_REPLAY",
+          "CONCURRENT_SCOPE_CONFLICT",
+          "SINGLE_WRITER",
+          "runtime_health_publisher",
+          "result_publisher",
+          "multiproject_shadow_scheduler",
+          "max_parallelism"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.conf"
+        ],
+        "exclude_patterns": [],
+        "max_results": 2000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No implementation in this gate",
+    "No file changes",
+    "No SQL",
+    "No Production",
+    "Do not stop or replace the current Universal Worker",
+    "Do not change Cavas, Tablajerias or any business domain",
+    "Phase 1 mutation execution remains globally serialized",
+    "READ_ONLY parallelism may be planned up to 4 slots",
+    "Backward compatibility with all existing worker-job.v2 requests is mandatory",
+    "Legacy jobs without scheduling metadata default to conservative serialization",
+    "Rollback must be immediate to current single-dispatcher behavior",
+    "Gate4 mutation implementation forbidden until Gate3 plan is PASS + 100%"
+  ]
+}
