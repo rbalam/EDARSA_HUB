@@ -1,0 +1,75 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-ORIGEN-0827-BACKFILL-R5-CARLOS-20260921T2220Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a16400b13a196c3393780fa2ed481ec46ead9887",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "priority": "P0",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V2",
+    "chat": "20260921-Reportes ISCAM"
+  },
+  "objective": "Ejecutar nuevamente y exclusivamente el backfill canónico de detalle ISCAM para ORIGEN, fecha operativa 2026-08-27, usando las correcciones MPRO R2/R3 ya integradas. Debe conservar Runtime V2 como autoridad de validación y terminar conciliando exactamente ventas 86192.88, 29 tickets y 71 pax, con deltas 0. No tocar ninguna otra fecha, unidad, Runtime V2, Sync_Sales legacy ni Producción.",
+  "actions": [],
+  "units": [
+    "ORIGEN"
+  ],
+  "fecha_inicio": "2026-08-27",
+  "fecha_fin": "2026-08-28",
+  "dry_run": false,
+  "confirm_detail_backfill": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "origen_0827_runtime_vs_detail_final",
+          "sql": "WITH r AS (SELECT CAST(SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS decimal(19,4)) ventas, SUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets, SUM(CAST(ISNULL(pax_total,0) AS bigint)) pax FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion>='2026-08-27' AND fecha_operacion<'2026-08-28'), d0 AS (SELECT numero_ticket,SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) venta,MAX(CAST(ISNULL(pax,0) AS bigint)) pax FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion>='2026-08-27' AND fecha_operacion<'2026-08-28' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY numero_ticket), d AS (SELECT CAST(ISNULL(SUM(venta),0) AS decimal(19,4)) ventas, COUNT_BIG(*) tickets, SUM(CAST(ISNULL(pax,0) AS bigint)) pax FROM d0) SELECT CAST(ISNULL(r.ventas,0) AS decimal(19,4)) AS ventas_runtime, CAST(ISNULL(d.ventas,0) AS decimal(19,4)) AS ventas_detalle, CAST(ISNULL(r.ventas,0)-ISNULL(d.ventas,0) AS decimal(19,4)) AS delta_ventas, ISNULL(r.tickets,0) AS tickets_runtime, ISNULL(d.tickets,0) AS tickets_detalle, ISNULL(r.tickets,0)-ISNULL(d.tickets,0) AS delta_tickets, ISNULL(r.pax,0) AS pax_runtime, ISNULL(d.pax,0) AS pax_detalle, ISNULL(r.pax,0)-ISNULL(d.pax,0) AS delta_pax, CASE WHEN ABS(ISNULL(r.ventas,0)-ISNULL(d.ventas,0))<=0.05 AND ISNULL(r.tickets,0)=ISNULL(d.tickets,0) AND ISNULL(r.pax,0)=ISNULL(d.pax,0) AND ABS(ISNULL(r.ventas,0)-86192.88)<=0.05 AND ISNULL(r.tickets,0)=29 AND ISNULL(r.pax,0)=71 THEN 'PASS' ELSE 'FAIL' END AS conciliacion_final FROM r CROSS JOIN d"
+        },
+        {
+          "name": "origen_0827_detail_row_count",
+          "sql": "SELECT COUNT_BIG(*) AS lineas_detalle, COUNT(DISTINCT numero_ticket) AS tickets_detalle, CAST(SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) AS decimal(19,4)) AS ventas_detalle, SUM(CASE WHEN producto_codigo_fuente LIKE '__ISCAM_AJUSTE_%' THEN 1 ELSE 0 END) AS lineas_ajuste FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='ORIGEN' AND fecha_operacion='2026-08-27' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "Solo ORIGEN",
+    "Solo fecha_operacion 2026-08-27",
+    "fecha_fin exclusiva 2026-08-28",
+    "No Production",
+    "No Runtime V2 writes",
+    "No Sync_Sales legacy",
+    "No cambios de código",
+    "No hardcode de filas o tickets",
+    "Escribir solo si pasa OK_HEADER_CANONICO",
+    "Fail closed ante cualquier diferencia",
+    "No reintentar otras fechas ni unidades"
+  ],
+  "expected_output": {
+    "status": "OPERATIONAL_COMPLETE",
+    "quality_gate": "PASS",
+    "certification": "CERTIFIED_OPERATIONAL",
+    "production_touched": false,
+    "must_include": [
+      "operation_summary",
+      "origen_0827_runtime_vs_detail_final",
+      "ventas_runtime",
+      "ventas_detalle",
+      "delta_ventas",
+      "tickets_runtime",
+      "tickets_detalle",
+      "delta_tickets",
+      "pax_runtime",
+      "pax_detalle",
+      "delta_pax",
+      "conciliacion_final"
+    ]
+  },
+  "created_at_utc": "2026-09-21T22:20:00Z"
+}
