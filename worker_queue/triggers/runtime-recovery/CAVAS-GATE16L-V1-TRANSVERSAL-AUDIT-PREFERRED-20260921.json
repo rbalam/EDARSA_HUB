@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Priorizar el job ya publicado CAVAS-GATE16L-V1-TRANSVERSAL-AUDIT-CERT-READONLY-R1-20260921 cuando termine el job activo actual. No interrumpir trabajo activo, no duplicar ni modificar el job funcional, no tocar Produccion.",
+  "preferred_job_id": "CAVAS-GATE16L-V1-TRANSVERSAL-AUDIT-CERT-READONLY-R1-20260921",
+  "production_touched": false
+}
