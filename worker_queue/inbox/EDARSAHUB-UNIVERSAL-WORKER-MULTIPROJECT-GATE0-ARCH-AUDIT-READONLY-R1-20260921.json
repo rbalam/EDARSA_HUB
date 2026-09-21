@@ -1,0 +1,81 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE0-ARCH-AUDIT-READONLY-R1-20260921",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "12c6c18de619854e5fe8f33e87bff7b63eaa93fe",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar en READ_ONLY la arquitectura actual del Universal Worker para diseñar una transición segura hacia ejecución multi-proyecto concurrente sin interrumpir el Worker actual. Identificar capacidades reutilizables existentes (scope-aware replay, Agent Guard, writer lock, lifecycle, health, control plane), cuellos de botella globales (single dispatcher, single writer, preferred_job global, health/result publisher single-writer, worktree/lock strategy) y definir un plan incremental shadow-mode -> scheduler multi-project -> slots concurrentes. No implementar todavía. No cambiar Cavas, Tablajerias ni otros dominios. No SQL. No Producción. La propuesta debe incluir project_id/bounded_context/resource_claims/conflict_domain/priority/fairness/max_parallelism, serialización de CORE y recursos globales, paralelismo READ_ONLY, compatibilidad retroactiva con jobs v2 existentes, observabilidad por slot/proyecto y rollback inmediato al Worker actual.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_universal_worker_scope_concurrency_policy.py",
+        "backend/tests/test_universal_worker_deterministic_replay_concurrency.py",
+        "backend/tests/test_worker_scope_concurrency_dispatcher_contract.py",
+        "backend/tests/test_universal_worker_external_owner_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/universal_job_worker.sh",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/worker_concurrency.py",
+          "tools/mirror_sync/git_divergence_guard.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "tools/mirror_sync/edarsahub-universal-worker.conf",
+          "backend/tests/test_universal_worker_scope_concurrency_policy.py",
+          "backend/tests/test_universal_worker_deterministic_replay_concurrency.py",
+          "backend/tests/test_worker_scope_concurrency_dispatcher_contract.py"
+        ],
+        "search_terms": [
+          "evaluate_scope_advance",
+          "SAFE_REPLAY",
+          "CONCURRENT_SCOPE_CONFLICT",
+          "git-writer.lock",
+          "preferred_job",
+          "dispatcher.lock",
+          "SINGLE_WRITER",
+          "current_job_id",
+          "PROCESSING_GRACE",
+          "MAX_CONCURRENCY_REPLAY_ATTEMPTS",
+          "UNIVERSAL_WORKER_INTAKE_SECONDS",
+          "runtime_health_publisher",
+          "result_publisher"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.conf"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1500
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No implementation in Gate0",
+    "No file changes",
+    "No SQL",
+    "No Production",
+    "Do not stop or replace the current Universal Worker",
+    "Do not modify Cavas or Tablajerias",
+    "Backward compatibility with edarsahub.worker-job.v2 is mandatory",
+    "Migration must support shadow mode and immediate rollback to current worker",
+    "No global preferred_job starvation in target design",
+    "Resource-level conflict detection must replace project-level blocking where safe",
+    "Global/core resources remain serialized"
+  ]
+}
