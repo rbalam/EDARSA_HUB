@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "a16400b13a196c3393780fa2ed481ec46ead9887",
-  "generated_at_utc": "2026-09-21T22:23:56Z",
+  "generated_at_utc": "2026-09-21T22:25:08Z",
   "history": {
     "done_total_local": 822,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1567,
+      "age_seconds": 1639,
       "job_id": "EDARSAHUB-ISCAM-MPRO-HEADER-AUTHORITY-FIX-CARLOS-20260921T2205Z",
       "reasons": [
         "REQUESTER_RBAC_DENIED:REQUESTER_RBAC_LOOKUP_FAILED"
@@ -25,85 +25,85 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2283,
+      "age_seconds": 2355,
       "job_id": "EDARSAHUB-ISCAM-AUTH-GROUPED-REGRESSION-FIX-CARLOS-20260921T2145Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 669,
+      "age_seconds": 742,
       "job_id": "EDARSAHUB-ISCAM-BACKFILL-SAFE-ERROR-CODE-R4-CARLOS-20260921T2230Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 629,
+      "age_seconds": 702,
       "job_id": "EDARSAHUB-ISCAM-HIST-R93-130MID-202609-CARLOS-20260921T221500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 427,
+      "age_seconds": 500,
       "job_id": "EDARSAHUB-ISCAM-HIST-R93A-130MID-202609-CARLOS-20260921T221700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1491,
+      "age_seconds": 1564,
       "job_id": "EDARSAHUB-ISCAM-MPRO-HEADER-AUTHORITY-FIX-R2-CARLOS-20260921T2210Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1327,
+      "age_seconds": 1400,
       "job_id": "EDARSAHUB-ISCAM-MPRO-HEADER-ONLY-FALLBACK-R3-CARLOS-20260921T2220Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 191,
+      "age_seconds": 264,
       "job_id": "EDARSAHUB-ISCAM-ORIGEN-0827-BACKFILL-R5-CARLOS-20260921T2220Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2446,
+      "age_seconds": 2518,
       "job_id": "EDARSAHUB-ISCAM-ORIGEN-0827-DETAIL-BACKFILL-CARLOS-20260921T2143Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1441,
+      "age_seconds": 1514,
       "job_id": "EDARSAHUB-ISCAM-ORIGEN-0827-DETAIL-BACKFILL-R2-CARLOS-20260921T2212Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1292,
+      "age_seconds": 1365,
       "job_id": "EDARSAHUB-ISCAM-ORIGEN-0827-DETAIL-BACKFILL-R3-CARLOS-20260921T2222Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2533,
+      "age_seconds": 2605,
       "job_id": "EDARSAHUB-ISCAM-REGRESSION-RUNTIME-AUTH-AUDIT-CARLOS-20260921T2136Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3382,
+      "age_seconds": 3454,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-R5-CERT-READONLY-R1-20260921T203800Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3371,
+      "age_seconds": 3444,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1C-RUNTIME-OBSERVABILITY-MUTATION-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3364,
+      "age_seconds": 3436,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1C-RUNTIME-OBSERVABILITY-MUTATION-R2-20260921",
       "reason": null,
       "state": "RESULT_READY"
@@ -123,8 +123,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T22:23:52Z",
-    "last_receive_utc": "2026-09-21T22:23:54Z",
+    "last_cycle_utc": "2026-09-21T22:25:05Z",
+    "last_receive_utc": "2026-09-21T22:25:07Z",
     "last_terminal_utc": "2026-09-21T22:20:44Z",
     "pid": "4106"
   },
