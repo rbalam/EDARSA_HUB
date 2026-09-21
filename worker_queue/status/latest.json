@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "dcc04e7f0931b885bae3abc1acfbb917bde720d5",
-  "generated_at_utc": "2026-09-21T19:27:48Z",
+  "generated_at_utc": "2026-09-21T19:29:01Z",
   "history": {
     "done_total_local": 816,
     "pending_total_local": 0,
@@ -16,100 +16,91 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3547,
-      "job_id": "EDARSAHUB-WORKER-RECONCILER-HOTPATH-SINGLE-FETCH-CACHE-R2-20260921",
-      "reasons": [
-        "ACTION_4_OLD_REQUIRED"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 1052,
+      "age_seconds": 1124,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-R4-MUTATION-FUNCTIONAL-SURGICAL-20260921T190900Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 504,
+      "age_seconds": 577,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-R5-MUTATION-FUNCTIONAL-SURGICAL-FIX-PYTEST-20260921T191500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2559,
+      "age_seconds": 2631,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1-DELTA-PREFLIGHT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1365,
+      "age_seconds": 1437,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-R4-CERT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2378,
+      "age_seconds": 2450,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-SCHEDULING-SLOT-FOUNDATION-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2157,
+      "age_seconds": 2230,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-SCHEDULING-SLOT-FOUNDATION-R2-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1966,
+      "age_seconds": 2038,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-SCHEDULING-SLOT-FOUNDATION-R3-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1507,
+      "age_seconds": 1580,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1A-SCHEDULING-SLOT-FOUNDATION-R4-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 707,
+      "age_seconds": 779,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1B-SERIAL-SLOT-INTEGRATION-CERT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 957,
+      "age_seconds": 1030,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1B-SERIAL-SLOT-INTEGRATION-MUTATION-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1151,
+      "age_seconds": 1223,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1B-SERIAL-SLOT-INTEGRATION-PREFLIGHT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 285,
+      "age_seconds": 357,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1C-RUNTIME-OBSERVABILITY-PREFLIGHT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1335,
+      "age_seconds": 1408,
       "job_id": "EDARSAHUB-WORKER-GIT-LOCK-PICKUP-DIAG-READONLY-R1C-20260921T180500Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2882,
+      "age_seconds": 2955,
       "job_id": "EDARSAHUB-WORKER-RECONCILER-ACTIVE-CLAIM-AUTHORITY-HOTPATH-R4-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3362,
+      "age_seconds": 3434,
       "job_id": "EDARSAHUB-WORKER-RECONCILER-HOTPATH-SINGLE-FETCH-CACHE-R3-20260921",
       "reason": null,
       "state": "RESULT_READY"
@@ -122,15 +113,15 @@
   "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 1,
+  "queue_rejected_recent": 0,
   "queue_result_ready_recent": 15,
   "queue_running": 0,
   "remote_development_sha": "dcc04e7f0931b885bae3abc1acfbb917bde720d5",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T19:27:43Z",
-    "last_receive_utc": "2026-09-21T19:27:44Z",
+    "last_cycle_utc": "2026-09-21T19:28:59Z",
+    "last_receive_utc": "2026-09-21T19:29:00Z",
     "last_terminal_utc": "2026-09-21T19:23:03Z",
     "pid": "208476"
   },
