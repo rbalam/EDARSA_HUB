@@ -23,9 +23,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          QUEUE_SHA="${GITHUB_SHA}"
-          test "${#QUEUE_SHA}" -eq 40
-
           JOB_PATH="$(git show --pretty='' --name-only "$GITHUB_SHA" | grep '^worker_queue/inbox/.*\.json$' | tail -n 1 || true)"
           if [ -z "$JOB_PATH" ]; then
             JOB_PATH="$(git log -n 1 --pretty='' --name-only -- worker_queue/inbox | grep '^worker_queue/inbox/.*\.json$' | head -n 1 || true)"
@@ -46,9 +43,27 @@ jobs:
           fi
 
           RUNTIME_URL='https://erp-crm-enterprise-1.preview.emergentagent.com'
+          RESULT_PATH="worker_queue/results/\${JOB_ID}.json"
+
+          job_is_terminal() {
+            git fetch --quiet origin worker/results:refs/remotes/origin/worker/results 2>/dev/null || return 1
+            git cat-file -e "origin/worker/results:\${RESULT_PATH}" 2>/dev/null
+          }
 
           for attempt in 1 2 3 4 5 6; do
             echo "WAKE_ATTEMPT=$attempt"
+
+            QUEUE_SHA="$(git ls-remote origin refs/heads/worker/requests | awk '{print $1}')"
+            if ! [[ "$QUEUE_SHA" =~ ^[0-9a-fA-F]{40}$ ]]; then
+              echo 'QUEUE_SHA_UNAVAILABLE'
+              if job_is_terminal; then
+                echo "JOB_ALREADY_TERMINAL=$JOB_ID"
+                exit 0
+              fi
+              if [ "$attempt" -lt 6 ]; then sleep 8; fi
+              continue
+            fi
+
             HTTP_CODE="$(curl --silent --show-error --location \
               --connect-timeout 5 --max-time 25 \
               --output /tmp/wake.json --write-out '%{http_code}' \
@@ -57,14 +72,28 @@ jobs:
               --header "X-Worker-Preferred-Job-Id: $JOB_ID" \
               --header 'Content-Type: application/json' \
               --data '{}' || true)"
+
             cat /tmp/wake.json 2>/dev/null || true
             echo
             echo "WAKE_HTTP_CODE=$HTTP_CODE"
+            echo "QUEUE_SHA=$QUEUE_SHA"
             echo "PREFERRED_JOB_ID=$JOB_ID"
+
             if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "202" ]; then
               exit 0
             fi
+
+            if job_is_terminal; then
+              echo "JOB_ALREADY_TERMINAL=$JOB_ID"
+              exit 0
+            fi
+
             if [ "$attempt" -lt 6 ]; then sleep 8; fi
           done
+
+          if job_is_terminal; then
+            echo "JOB_ALREADY_TERMINAL=$JOB_ID"
+            exit 0
+          fi
 
           exit 12
