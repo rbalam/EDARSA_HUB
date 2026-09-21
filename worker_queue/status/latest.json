@@ -4,31 +4,37 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "dcc04e7f0931b885bae3abc1acfbb917bde720d5",
-  "generated_at_utc": "2026-09-21T21:41:18Z",
+  "generated_at_utc": "2026-09-21T21:42:30Z",
   "history": {
-    "done_total_local": 817,
+    "done_total_local": 818,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 732,
-    "results_total_local": 1375
+    "results_total_local": 1376
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 824,
+      "age_seconds": 47,
+      "job_id": "EDARSAHUB-ISCAM-REGRESSION-RUNTIME-AUTH-AUDIT-CARLOS-20260921T2136Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 896,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-R5-CERT-READONLY-R1-20260921T203800Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 814,
+      "age_seconds": 886,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1C-RUNTIME-OBSERVABILITY-MUTATION-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 806,
+      "age_seconds": 878,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1C-RUNTIME-OBSERVABILITY-MUTATION-R2-20260921",
       "reason": null,
       "state": "RESULT_READY"
@@ -42,15 +48,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
   "remote_development_sha": "dcc04e7f0931b885bae3abc1acfbb917bde720d5",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T21:41:15Z",
-    "last_receive_utc": "2026-09-21T21:41:17Z",
-    "last_terminal_utc": "2026-09-21T21:27:51Z",
+    "last_cycle_utc": "2026-09-21T21:42:29Z",
+    "last_receive_utc": "2026-09-21T21:42:30Z",
+    "last_terminal_utc": "2026-09-21T21:41:42Z",
     "pid": "149"
   },
   "schema": "edarsahub.worker-health.v3",
