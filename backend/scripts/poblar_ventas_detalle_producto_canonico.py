@@ -982,9 +982,8 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
                 ISNULL(c.Co_Personas, 0) AS pax_ticket,
                 ISNULL(v.Vn_Precio_Neto_Importe, 0) AS importe_neto_ticket,
                 ISNULL(c.Co_Propina, 0) AS propina_ticket,
-                ISNULL(c.Co_Descuento_Importe, 0) AS descuento_comanda,
-                ISNULL(v.Vn_Descuento_Global_Importe, 0)
-                  + ISNULL(v.Vn_Descuento_Importe, 0) AS descuento_ticket
+                CAST(0 AS decimal(18,4)) AS descuento_comanda,
+                CAST(0 AS decimal(18,4)) AS descuento_ticket
             FROM Venta_Encabezado v WITH (NOLOCK)
             LEFT JOIN Comanda c WITH (NOLOCK)
                 ON c.Co_Folio = v.Vn_Documento

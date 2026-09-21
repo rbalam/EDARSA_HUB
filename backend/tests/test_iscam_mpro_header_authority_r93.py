@@ -66,3 +66,11 @@ def test_mpro_branch_filter_uses_header_schema_not_detail_column():
     block = text.split("def _extract_mpro(", 1)[1].split("PRORRATEO_Q4", 1)[0]
     assert "v.Sc_Cve_Sucursal = %s" in block
     assert "d.Sc_Cve_Sucursal" not in block
+
+
+def test_mpro_detail_extractor_does_not_depend_on_optional_discount_columns():
+    text = DETAIL.read_text(encoding="utf-8")
+    block = text.split("def _extract_mpro(", 1)[1].split("PRORRATEO_Q4", 1)[0]
+    assert "c.Co_Descuento_Importe" not in block
+    assert "v.Vn_Descuento_Global_Importe" not in block
+    assert "v.Vn_Descuento_Importe" not in block
