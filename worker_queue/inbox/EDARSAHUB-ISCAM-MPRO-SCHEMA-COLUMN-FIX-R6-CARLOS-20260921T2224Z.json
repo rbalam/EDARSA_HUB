@@ -1,0 +1,85 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-MPRO-SCHEMA-COLUMN-FIX-R6-CARLOS-20260921T2224Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a16400b13a196c3393780fa2ed481ec46ead9887",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "priority": "P0",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V2",
+    "chat": "20260921-Reportes ISCAM"
+  },
+  "objective": "Corregir el error POS_SCHEMA_INVALID_COLUMN detectado al ejecutar el backfill de ORIGEN 2026-08-27. La regresión fue introducida al agregar d.Sc_Cve_Sucursal en Comanda_Detalle; el extractor MPRO histórico validado filtra sucursal mediante Venta_Encabezado.Sc_Cve_Sucursal y Comanda_Detalle no expone esa columna en el esquema operativo usado por ORIGEN. Retirar únicamente esa referencia inválida, mantener el filtro canónico de sucursal en Venta_Encabezado y conservar todo el contrato R2/R3 de autoridad monetaria del header y fallback HEADER_SIN_DETALLE. No modificar Runtime V2 ni otras consultas.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "LEFT JOIN Comanda_Detalle d WITH (NOLOCK)\n                ON d.Co_Folio = h.Vn_Documento\n               AND d.Sc_Cve_Sucursal = h.Sc_Cve_Sucursal\n               AND ISNULL(d.Es_Cve_Estado, '') IN ('AC', 'FA')",
+      "new": "LEFT JOIN Comanda_Detalle d WITH (NOLOCK)\n                ON d.Co_Folio = h.Vn_Documento\n               AND ISNULL(d.Es_Cve_Estado, '') IN ('AC', 'FA')",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_mpro_header_authority_r93.py",
+      "old": "def test_mpro_detail_join_is_scoped_to_same_branch():\n    text = DETAIL.read_text(encoding=\"utf-8\")\n    block = text.split(\"def _extract_mpro(\", 1)[1].split(\"PRORRATEO_Q4\", 1)[0]\n    assert \"d.Sc_Cve_Sucursal = h.Sc_Cve_Sucursal\" in block\n",
+      "new": "def test_mpro_branch_filter_uses_header_schema_not_detail_column():\n    text = DETAIL.read_text(encoding=\"utf-8\")\n    block = text.split(\"def _extract_mpro(\", 1)[1].split(\"PRORRATEO_Q4\", 1)[0]\n    assert \"v.Sc_Cve_Sucursal = %s\" in block\n    assert \"d.Sc_Cve_Sucursal\" not in block\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+        "backend/tests/test_iscam_mpro_header_authority_r93.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_mpro_header_authority_r93.py",
+        "backend/tests/test_iscam_no_prorate_adjustments_r49.py",
+        "backend/tests/test_iscam_header_folio_parent_r92.py"
+      ]
+    },
+    {
+      "type": "git_diff_check",
+      "allowed_files_exact": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+        "backend/tests/test_iscam_mpro_header_authority_r93.py"
+      ],
+      "forbidden_paths": [
+        "frontend",
+        "backend/database/migrations",
+        "Edarsahub_Produccion"
+      ]
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL writes",
+    "No cambios a Runtime V2",
+    "No hardcodes de ORIGEN, fecha o importes",
+    "Mantener Venta_Encabezado como autoridad monetaria",
+    "Mantener filtro de sucursal en Venta_Encabezado",
+    "No Sync_Sales legacy",
+    "No force-push"
+  ],
+  "expected_output": {
+    "status": "INTEGRATED",
+    "quality_gate": "PASS",
+    "production_touched": false,
+    "must_include": [
+      "candidate_sha",
+      "development_sha",
+      "tests",
+      "files_changed"
+    ]
+  },
+  "created_at_utc": "2026-09-21T22:24:00Z"
+}
