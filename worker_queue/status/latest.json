@@ -4,49 +4,58 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "1199f993848274570f94c6c5fc32dc481fb3fe97",
-  "generated_at_utc": "2026-09-21T21:56:08Z",
+  "generated_at_utc": "2026-09-21T21:57:56Z",
   "history": {
     "done_total_local": 819,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 733,
+    "rejected_total_local": 734,
     "results_total_local": 1378
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 615,
+      "age_seconds": 7,
+      "job_id": "EDARSAHUB-ISCAM-MPRO-HEADER-AUTHORITY-FIX-CARLOS-20260921T2205Z",
+      "reasons": [
+        "REQUESTER_RBAC_DENIED:REQUESTER_RBAC_LOOKUP_FAILED"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 723,
       "job_id": "EDARSAHUB-ISCAM-AUTH-GROUPED-REGRESSION-FIX-CARLOS-20260921T2145Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 778,
+      "age_seconds": 886,
       "job_id": "EDARSAHUB-ISCAM-ORIGEN-0827-DETAIL-BACKFILL-CARLOS-20260921T2143Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 865,
+      "age_seconds": 973,
       "job_id": "EDARSAHUB-ISCAM-REGRESSION-RUNTIME-AUTH-AUDIT-CARLOS-20260921T2136Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1714,
+      "age_seconds": 1822,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-R5-CERT-READONLY-R1-20260921T203800Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1704,
+      "age_seconds": 1812,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1C-RUNTIME-OBSERVABILITY-MUTATION-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1696,
+      "age_seconds": 1804,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4B1C-RUNTIME-OBSERVABILITY-MUTATION-R2-20260921",
       "reason": null,
       "state": "RESULT_READY"
@@ -59,15 +68,15 @@
   "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 0,
+  "queue_rejected_recent": 1,
   "queue_result_ready_recent": 6,
   "queue_running": 0,
   "remote_development_sha": "1199f993848274570f94c6c5fc32dc481fb3fe97",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T21:56:05Z",
-    "last_receive_utc": "2026-09-21T21:56:07Z",
+    "last_cycle_utc": "2026-09-21T21:57:54Z",
+    "last_receive_utc": "2026-09-21T21:57:55Z",
     "last_terminal_utc": "2026-09-21T21:45:52Z",
     "pid": "149"
   },
