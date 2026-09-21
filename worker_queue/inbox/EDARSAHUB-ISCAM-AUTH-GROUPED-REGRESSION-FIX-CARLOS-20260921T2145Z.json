@@ -1,0 +1,136 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-AUTH-GROUPED-REGRESSION-FIX-CARLOS-20260921T2145Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "dcc04e7f0931b885bae3abc1acfbb917bde720d5",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "priority": "P0",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V2",
+    "chat": "20260921-Reportes ISCAM"
+  },
+  "objective": "Corregir de forma quirurgica la regresion de sesion en Inteligencia Comercial > Reportes ISCAM sin tocar la logica certificada de reportes. La causa confirmada es que el cliente dedicado frontend/src/portal-inteligencia/api/client.js trata cualquier 401 interno como SESION_EXPIRADA y no usa el refresh coordinado/retry ya implementado en frontend/src/lib/api.js. Para usuarios internos, enrutar apiGet/apiPost del portal por el cliente central `api`, que ya renueva y reintenta la sesion; conservar intelApi dedicado para usuarios externos con cookie del portal. En PortalInteligencia App, usar el cliente central para /auth/me del usuario interno y para /inteligencia/unidades cuando no es externo; conservar intelApi para externos. No modificar ReportesISCAMPage.jsx ni las rutas agrupadas porque la auditoria confirma que group_by y data.agrupado siguen implementados; el fallo visible al cambiar de reporte queda cubierto por la sesion y el detalle faltante se corrige en job separado de backfill. Mantener baseline funcional ff11d2e4ce2e248324458206e7ea0b262b29b394.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/api/client.js",
+      "old": "import { getToken } from '../../lib/api';",
+      "new": "import api, { getToken } from '../../lib/api';",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/api/client.js",
+      "old": "  try {\n    const res = await intelApi.get(path, { params });\n    return { estado: ESTADO.OK, data: res.data, status: res.status };",
+      "new": "  try {\n    // Sesion interna: reutilizar el cliente central para conservar refresh/retry coordinado.\n    // Sesion externa: mantener el cliente dedicado con cookie httpOnly del portal.\n    const client = getToken() ? api : intelApi;\n    const res = await client.get(path, { params });\n    return { estado: ESTADO.OK, data: res.data, status: res.status };",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/api/client.js",
+      "old": "  try {\n    const res = await intelApi.post(path, payload, config);\n    return { estado: ESTADO.OK, data: res.data, status: res.status };",
+      "new": "  try {\n    // Sesion interna: reutilizar el cliente central para conservar refresh/retry coordinado.\n    // Sesion externa: mantener el cliente dedicado con cookie httpOnly del portal.\n    const client = getToken() ? api : intelApi;\n    const res = await client.post(path, payload, config);\n    return { estado: ESTADO.OK, data: res.data, status: res.status };",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/App.jsx",
+      "old": "        const res = await intelApi.get('/inteligencia/unidades');",
+      "new": "        const client = esExterno ? intelApi : api;\n        const res = await client.get('/inteligencia/unidades');",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/App.jsx",
+      "old": "        const res = await intelApi.get('/auth/me');",
+      "new": "        const res = await api.get('/auth/me');",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/lib/api.js",
+          "frontend/src/portal-inteligencia/api/client.js",
+          "frontend/src/portal-inteligencia/App.jsx",
+          "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+          "backend/modules/inteligencia_comercial/iscam_routes.py"
+        ],
+        "search_terms": [
+          "coordinatedRefresh",
+          "const client = getToken() ? api : intelApi",
+          "esExterno ? intelApi : api",
+          "group_by",
+          "agrupado",
+          "ReportesISCAMPage"
+        ],
+        "include_patterns": [
+          "*.js",
+          "*.jsx",
+          "*.py"
+        ],
+        "exclude_patterns": [
+          "**/node_modules/**"
+        ],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "git_diff_check",
+      "allowed_files_exact": [
+        "frontend/src/portal-inteligencia/api/client.js",
+        "frontend/src/portal-inteligencia/App.jsx"
+      ],
+      "forbidden_paths": [
+        "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+        "backend/modules/inteligencia_comercial/iscam_routes.py",
+        "backend/api/admin_scheduler_resync.py",
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+        "backend/database/migrations",
+        "Edarsahub_Produccion"
+      ]
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL",
+    "No cambios a ReportesISCAMPage.jsx",
+    "No cambios a logica de agrupacion backend",
+    "No tocar baseline",
+    "No force-push",
+    "No desactivar autenticacion",
+    "No ampliar duracion de token como workaround",
+    "No hardcodes por usuario/unidad",
+    "Solo dos archivos frontend exactos",
+    "production_touched debe ser false"
+  ],
+  "expected_output": {
+    "status": "INTEGRATED",
+    "quality_gate": "PASS",
+    "certification": "CERTIFIED_POST_MUTATION",
+    "production_touched": false,
+    "files_changed_exact": [
+      "frontend/src/portal-inteligencia/api/client.js",
+      "frontend/src/portal-inteligencia/App.jsx"
+    ],
+    "must_include": [
+      "commit_sha_after_mutation",
+      "frontend_build_result",
+      "files_changed",
+      "production_touched_false_confirmed",
+      "safe_next_action"
+    ]
+  },
+  "created_at_utc": "2026-09-21T21:45:00Z"
+}
