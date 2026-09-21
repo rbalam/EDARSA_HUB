@@ -24,6 +24,25 @@ def test_dispatcher_tracks_runtime_and_only_releases_created_claims():
     assert 'last_terminal_utc' in text
 
 
+def test_dispatcher_claim_is_atomic_and_execution_is_outside_lock():
+    text = DISPATCHER.read_text(encoding='utf-8')
+    assert 'def claim_one() -> Path | None:' in text
+    assert 'with LOCK_FILE.open("a+") as lock:' in text
+    assert 'os.replace(selected, processing)' in text
+    assert 'return process_one(claimed, already_claimed=True)' in text
+    claim_start = text.index('def claim_one() -> Path | None:')
+    dispatch_start = text.index('def dispatch() -> int:')
+    claim_block = text[claim_start:dispatch_start]
+    assert 'process_one(' not in claim_block
+
+
+def test_preferred_job_is_boost_not_global_freeze():
+    text = DISPATCHER.read_text(encoding='utf-8')
+    assert 'PREFERRED_JOB_STALE_IGNORED' in text
+    assert 'WAITING_PREFERRED_JOB' not in text
+    assert 'return jobs[0], False' in text
+
+
 def test_stale_processing_is_requeued_once_then_terminal():
     text = CONTROL.read_text(encoding='utf-8')
     assert '_worker_stale_requeue_count' in text

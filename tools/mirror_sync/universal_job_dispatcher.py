@@ -516,14 +516,18 @@ def release_agent_guard_claim(job_id: str) -> tuple[bool, str]:
     return True, released.stdout[-1000:]
 
 
-def process_one(path: Path) -> int:
+def process_one(path: Path, *, already_claimed: bool = False) -> int:
     envelope = load_envelope(path)
     job = envelope["job"]
     job_id = str(job.get("job_id") or "")
     if not JOB_ID_RE.fullmatch(job_id):
         raise ValueError("INVALID_JOB_ID")
-    processing = PROCESSING / path.name
-    os.replace(path, processing)
+    processing = path if already_claimed else PROCESSING / path.name
+    if already_claimed:
+        if path.parent != PROCESSING:
+            raise ValueError("CLAIMED_JOB_NOT_IN_PROCESSING")
+    else:
+        os.replace(path, processing)
     RUNTIME.mkdir(parents=True, exist_ok=True)
     (RUNTIME / "current_job_id").write_text(job_id + "\n", encoding="utf-8")
     result: dict[str, Any] = {"schema": "edarsahub.worker-result.v2", "job_id": job_id, "started_at_utc": now(), "status": "BLOCKED", "executor": "chatgpt-deterministic", "production_touched": False, "blockers": [], "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial."}
@@ -1306,35 +1310,50 @@ def _select_pending_job(jobs: list[Path]) -> tuple[Path | None, bool]:
             if path.stem == preferred_id:
                 print(f"UNIVERSAL_DISPATCHER=PREFERRED_JOB_SELECTED JOB_ID={preferred_id}")
                 return path, True
-        print(f"UNIVERSAL_DISPATCHER=WAITING_PREFERRED_JOB JOB_ID={preferred_id}")
-        return None, True
+        try:
+            PREFERRED_JOB_PATH.unlink()
+        except OSError:
+            pass
+        print(f"UNIVERSAL_DISPATCHER=PREFERRED_JOB_STALE_IGNORED JOB_ID={preferred_id}")
     if not jobs:
         return None, False
     return jobs[0], False
 
 
-def dispatch() -> int:
-    ensure_dirs()
+def claim_one() -> Path | None:
     with LOCK_FILE.open("a+") as lock:
         try:
             fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             print("UNIVERSAL_DISPATCHER=BUSY")
-            return 0
+            return None
+
         jobs = sorted(PENDING.glob("*.json"))
         selected, is_preferred = _select_pending_job(jobs)
+
         if selected is None:
-            if is_preferred:
-                return 0
             print("UNIVERSAL_DISPATCHER=NO_PENDING_JOBS")
-            return 0
-        rc = process_one(selected)
+            return None
+
+        processing = PROCESSING / selected.name
+        os.replace(selected, processing)
+
         if is_preferred:
             try:
                 PREFERRED_JOB_PATH.unlink()
             except OSError:
                 pass
-        return rc
+
+        print(f"UNIVERSAL_DISPATCHER=CLAIMED JOB_ID={selected.stem}")
+        return processing
+
+
+def dispatch() -> int:
+    ensure_dirs()
+    claimed = claim_one()
+    if claimed is None:
+        return 0
+    return process_one(claimed, already_claimed=True)
 
 
 def main() -> int:
