@@ -1,65 +1,41 @@
 {
   "ahead_count": 0,
-  "behind_count": 0,
+  "behind_count": 1,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "SYNC",
-  "development_sha": "2146579a70beef26ca6ed464bb19efab95ba2f73",
-  "generated_at_utc": "2026-09-21T05:36:33Z",
+  "convergence_status": "REMOTE_AHEAD_ONLY",
+  "development_sha": "12c6c18de619854e5fe8f33e87bff7b63eaa93fe",
+  "generated_at_utc": "2026-09-21T15:57:34Z",
   "history": {
-    "done_total_local": 793,
+    "done_total_local": 795,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 714,
-    "results_total_local": 1338
+    "rejected_total_local": 716,
+    "results_total_local": 1342
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3277,
-      "job_id": "CAVAS-GATE16K-BLIND-AUDIT-INTEGRAL-UAT-CERT-READONLY-R1-20260921",
+      "age_seconds": 19,
+      "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C1-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1585,
-      "job_id": "CAVAS-GATE16L-PYTEST-DIAG-A-READONLY-R1-20260921",
+      "age_seconds": 12,
+      "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C2-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1578,
-      "job_id": "CAVAS-GATE16L-PYTEST-DIAG-B-READONLY-R1-20260921",
+      "age_seconds": 6,
+      "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C3-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1582,
-      "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C-READONLY-R1-20260921",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1764,
-      "job_id": "CAVAS-GATE16L-V1-TRANSVERSAL-AUDIT-CERT-READONLY-R1-20260921",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3486,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25E-R2-PYTEST-DIAG-READONLY-R1-20260921T043500Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3235,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25E-R3-SCOPE-LOCK-FINAL-READONLY-R1-20260921T044100Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 802,
-      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-MUTATION-FUNCTIONAL-SURGICAL-R1-20260921T044500Z",
+      "age_seconds": 2,
+      "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-MUTATION-FUNCTIONAL-SURGICAL-R2-20260921T154300Z",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -72,16 +48,16 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 8,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
-  "remote_development_sha": "2146579a70beef26ca6ed464bb19efab95ba2f73",
+  "remote_development_sha": "12c6c18de619854e5fe8f33e87bff7b63eaa93fe",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T05:36:31Z",
-    "last_receive_utc": "2026-09-21T05:36:32Z",
-    "last_terminal_utc": "2026-09-21T05:23:11Z",
-    "pid": "9766"
+    "last_cycle_utc": "2026-09-21T15:57:28Z",
+    "last_receive_utc": "2026-09-21T15:57:33Z",
+    "last_terminal_utc": "2026-09-21T15:57:31Z",
+    "pid": "236"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
