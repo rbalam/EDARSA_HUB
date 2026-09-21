@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  actions: write
 
 jobs:
   wake:
@@ -20,6 +21,8 @@ jobs:
 
       - name: Resolve preferred job and wake Universal Worker
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
@@ -100,6 +103,39 @@ jobs:
 
             if [ "$attempt" -lt 6 ]; then sleep 8; fi
           done
+
+          if job_is_terminal; then
+            echo "JOB_ALREADY_TERMINAL=$JOB_ID"
+            exit 0
+          fi
+
+          echo "WAKE_PRIMARY_ATTEMPTS_EXHAUSTED=1"
+          echo "DISPATCHING_WAKE_ENDPOINT_BOOTSTRAP=1"
+          BOOTSTRAP_CODE="$(curl --silent --show-error             --output /tmp/bootstrap.json --write-out '%{http_code}'             --request POST             --header "Authorization: Bearer $GH_TOKEN"             --header "Accept: application/vnd.github+json"             --header "X-GitHub-Api-Version: 2022-11-28"             "https://api.github.com/repos/rbalam/EDARSA_HUB/actions/workflows/worker-wake-endpoint-bootstrap.yml/dispatches"             --data '{"ref":"Edarsahub_Desarrollo"}' || true)"
+          echo "BOOTSTRAP_DISPATCH_HTTP_CODE=$BOOTSTRAP_CODE"
+
+          if [ "$BOOTSTRAP_CODE" = "204" ]; then
+            sleep 20
+            for attempt in 7 8 9; do
+              echo "WAKE_RECOVERY_ATTEMPT=$attempt"
+              QUEUE_SHA="$(git ls-remote origin refs/heads/worker/requests | awk '{print $1}')"
+              HTTP_CODE="$(curl --silent --show-error --location                 --connect-timeout 5 --max-time 25                 --output /tmp/wake.json --write-out '%{http_code}'                 --request POST "$RUNTIME_URL/api/internal/worker/wake"                 --header "X-Worker-Queue-Sha: $QUEUE_SHA"                 --header "X-Worker-Preferred-Job-Id: $JOB_ID"                 --header 'Content-Type: application/json'                 --data '{}' || true)"
+              cat /tmp/wake.json 2>/dev/null || true
+              echo
+              echo "WAKE_HTTP_CODE=$HTTP_CODE"
+              if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "202" ] || [ "$HTTP_CODE" = "429" ]; then
+                exit 0
+              fi
+              if [ "$HTTP_CODE" = "409" ] && grep -qi 'worker wake already in progress' /tmp/wake.json 2>/dev/null; then
+                exit 0
+              fi
+              if job_is_terminal; then
+                echo "JOB_ALREADY_TERMINAL=$JOB_ID"
+                exit 0
+              fi
+              if [ "$attempt" -lt 9 ]; then sleep 8; fi
+            done
+          fi
 
           if job_is_terminal; then
             echo "JOB_ALREADY_TERMINAL=$JOB_ID"
