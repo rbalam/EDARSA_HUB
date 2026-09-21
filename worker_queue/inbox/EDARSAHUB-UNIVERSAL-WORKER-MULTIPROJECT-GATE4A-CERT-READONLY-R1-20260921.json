@@ -1,0 +1,82 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE4A-CERT-READONLY-R1-20260921",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "95bbeaf17569fb8bb61ebc0c27806372b311ec2b",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificacion READ_ONLY final de Gate4A integrado en SHA 95bbeaf17569fb8bb61ebc0c27806372b311ec2b. Verificar que CLAIM y EXECUTION quedaron separados de forma conservadora: dispatcher.lock protege exclusivamente seleccion y pending->processing atomico; process_one ejecuta el processing ya reclamado fuera del lock; preferred_job funciona como boost y un preferred stale se ignora y elimina sin congelar la cola. Confirmar compatibilidad legacy, lifecycle terminal, Agent Guard, git divergence guards, GLOBAL_GIT_WRITER y comportamiento serial actual. No habilitar aun slots concurrentes.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_worker_scope_concurrency_dispatcher_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_multiproject_shadow_scheduler.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "backend/tests/test_worker_universal_queue_sla_contract.py",
+          "tools/mirror_sync/universal_job_worker.sh",
+          "tools/mirror_sync/multiproject_shadow_scheduler.py"
+        ],
+        "search_terms": [
+          "claim_one",
+          "already_claimed",
+          "dispatcher.lock",
+          "PREFERRED_JOB_STALE_IGNORED",
+          "WAITING_PREFERRED_JOB",
+          "pending",
+          "processing",
+          "current_job_id",
+          "GLOBAL_GIT_WRITER",
+          "dispatch_loop",
+          "production_touched"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No file changes",
+    "No SQL",
+    "No Mongo",
+    "No Production",
+    "No Cavas changes",
+    "No Tablajerias changes",
+    "No NetPay changes",
+    "Do not modify universal_job_worker.sh",
+    "Do not enable READ_ONLY concurrent slots yet",
+    "Do not enable concurrent MUTATION",
+    "Do not remove GLOBAL_GIT_WRITER",
+    "Do not weaken Agent Guard",
+    "Do not weaken git divergence guard",
+    "dispatcher.lock must protect claim only",
+    "preferred_job must be priority boost and never global freeze",
+    "Execution must remain serial during Gate4A",
+    "Certification requires PASS + 100% + blockers=[] + files_changed=[]"
+  ]
+}
