@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-CONSOLE-ENTERPRISE-NAV-CLASSIFICATION-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "39f11f3bc249120dfcfb8239ceedd6af34147be5",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Corregir exclusivamente el incumplimiento global del ENTERPRISE_NAVIGATION_GUARDIAN para /worker-console. Clasificar la ruta existente de Universal Worker Console en el registro Enterprise canónico bajo Plataforma e Integraciones > Administración y Seguridad. No modificar Cavas, no ampliar Worker Console, no backend, no SQL, no Producción. Después ejecutar frontend_build y auditoría contractual.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/config/enterpriseNavigationRegistry.json",
+      "old": "    \"sistema.asignaciones\": {\n      \"groupId\": \"plataforma-integraciones\",\n      \"sectionId\": \"administracion-seguridad\",\n      \"label\": \"Asignaciones\",\n      \"expectedPath\": \"/configuracion/asignaciones\",\n      \"order\": 40,\n      \"status\": \"active\",\n      \"legacy\": true\n    },\n",
+      "new": "    \"sistema.worker_console\": {\n      \"groupId\": \"plataforma-integraciones\",\n      \"sectionId\": \"administracion-seguridad\",\n      \"label\": \"Universal Worker Console\",\n      \"expectedPath\": \"/worker-console\",\n      \"order\": 30,\n      \"status\": \"active\",\n      \"releasedAt\": \"2026-09-20\"\n    },\n    \"sistema.asignaciones\": {\n      \"groupId\": \"plataforma-integraciones\",\n      \"sectionId\": \"administracion-seguridad\",\n      \"label\": \"Asignaciones\",\n      \"expectedPath\": \"/configuracion/asignaciones\",\n      \"order\": 40,\n      \"status\": \"active\",\n      \"legacy\": true\n    },\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "frontend_build"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/config/enterpriseNavigationRegistry.json",
+          "frontend/src/App.js",
+          "frontend/src/pages/WorkerConsole.jsx"
+        ],
+        "search_terms": [
+          "sistema.worker_console",
+          "/worker-console",
+          "Universal Worker Console",
+          "plataforma-integraciones",
+          "administracion-seguridad"
+        ],
+        "include_patterns": [
+          "*.json",
+          "*.js",
+          "*.jsx"
+        ],
+        "exclude_patterns": [],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No Cavas changes",
+    "No backend changes",
+    "No SQL",
+    "No route behavior changes",
+    "Only enterprise navigation classification for existing /worker-console route"
+  ]
+}
