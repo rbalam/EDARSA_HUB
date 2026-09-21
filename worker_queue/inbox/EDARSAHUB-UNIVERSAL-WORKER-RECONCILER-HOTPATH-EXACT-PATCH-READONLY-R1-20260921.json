@@ -1,0 +1,94 @@
+{
+  "job": {
+    "schema": "edarsahub.worker-job.v2",
+    "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RECONCILER-HOTPATH-EXACT-PATCH-READONLY-R1-20260921",
+    "target_repo": "rbalam/EDARSA_HUB",
+    "target_branch": "Edarsahub_Desarrollo",
+    "base_sha": "95bbeaf17569fb8bb61ebc0c27806372b311ec2b",
+    "production_allowed": false,
+    "human_summary_language": "es",
+    "objective": "Discovery READ_ONLY exacto para corregir el timeout persistente de worker_runtime_reconciler.py antes de Gate4B1. La evidencia real muestra WORKTREE_STATE_FILES=679, ACTIVE_CLAIM real=1, processing=0, /proc scan aprox 0.001s, Agent Guard status menor a 1s y single git fetch menor a 1s. El reconciler actual evalua gran cantidad de claims historicos y branch_is_integrated ejecuta git fetch dentro del hot path por claim. Diseñar parche minimo fail-closed que haga como maximo un fetch del development remote por ciclo, elimine fetch per-claim, preserve evidencia historica, no considere BRANCH_MISSING como seguro, no borre estado por edad, y mantenga claim_terminal, process_references, worktree_clean y Agent Guard. Debe determinar tambien si guard_claims debe distinguir live canonical claims de historical worktree evidence sin perder orphan recovery. No implementar slots en este gate.",
+    "mode": "READ_ONLY",
+    "actions": [],
+    "checks": [
+      {
+        "type": "repository_contract_audit",
+        "request": {
+          "paths": [
+            "tools/mirror_sync/worker_runtime_reconciler.py",
+            "tools/mirror_sync/universal_job_worker.sh",
+            "tools/mirror_sync/worker_control_plane.py",
+            "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py",
+            "backend/tests/test_worker_three_properties_contract.py",
+            "backend/tests/test_worker_control_plane_contract.py",
+            "backend/tests/test_universal_worker_external_owner_contract.py"
+          ],
+          "search_terms": [
+            "guard_claims",
+            "parse_guard_claims",
+            "branch_is_integrated",
+            "git fetch",
+            "safe_releasable",
+            "reconcile_claims",
+            "recover_orphan_processing",
+            "process_references",
+            "worktree_clean",
+            "claim_terminal",
+            "ACTIVE_CLAIM",
+            "GUARD_STATE_WORKTREES",
+            "CLAIM_STALE_SECONDS",
+            "ORPHAN_SECONDS",
+            "WORKER_RUNTIME_RECONCILER",
+            "UNIVERSAL_RECONCILE_TIMEOUT_SECONDS",
+            "production_touched"
+          ],
+          "include_patterns": [
+            "*.py",
+            "*.sh"
+          ],
+          "exclude_patterns": [],
+          "max_results": 1000
+        }
+      },
+      {
+        "type": "pytest",
+        "paths": [
+          "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py",
+          "backend/tests/test_worker_three_properties_contract.py",
+          "backend/tests/test_worker_control_plane_contract.py",
+          "backend/tests/test_universal_worker_external_owner_contract.py"
+        ]
+      },
+      {
+        "type": "git_diff_check"
+      }
+    ],
+    "constraints": [
+      "READ_ONLY only",
+      "actions must remain empty",
+      "No repository changes",
+      "No Production",
+      "No SQL",
+      "No Mongo",
+      "No supervisor restart",
+      "No claim release",
+      "No worktree removal",
+      "No lifecycle mutation",
+      "No git worktree prune",
+      "No branch deletion",
+      "No reset",
+      "No clean",
+      "No stash",
+      "No force",
+      "Do not increase timeout as primary fix",
+      "Do not implement Gate4B1 slots yet",
+      "Do not weaken Agent Guard",
+      "Do not weaken orphan safety",
+      "Do not treat BRANCH_MISSING as terminal success",
+      "Preserve historical evidence",
+      "Fetch development remote at most once per reconciler cycle in proposed design",
+      "branch_is_integrated must not perform network fetch per claim",
+      "Production_touched must remain false"
+    ]
+  }
+}
