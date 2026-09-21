@@ -4,84 +4,90 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "12c6c18de619854e5fe8f33e87bff7b63eaa93fe",
-  "generated_at_utc": "2026-09-21T16:16:53Z",
+  "generated_at_utc": "2026-09-21T16:38:21Z",
   "history": {
-    "done_total_local": 797,
-    "pending_total_local": 1,
+    "done_total_local": 798,
+    "pending_total_local": 0,
     "processing_total_local": 1,
-    "rejected_total_local": 716,
-    "results_total_local": 1344
+    "rejected_total_local": 717,
+    "results_total_local": 1346
   },
-  "intake_sla_breached": true,
+  "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 193,
+      "age_seconds": 1481,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-MUTATION-FUNCTIONAL-SURGICAL-R3-20260921T160100Z",
       "reason": "El worker no termino esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 33,
-      "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE2-SHADOW-IMPLEMENTATION-R1-20260921",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 1178,
+      "age_seconds": 2465,
       "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C1-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1171,
+      "age_seconds": 2458,
       "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C2-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1165,
+      "age_seconds": 2453,
       "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C3-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1161,
+      "age_seconds": 2449,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-MUTATION-FUNCTIONAL-SURGICAL-R2-20260921T154300Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 501,
+      "age_seconds": 1789,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE0-ARCH-AUDIT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 259,
+      "age_seconds": 1547,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE1-SHADOW-SCHEDULER-DESIGN-READONLY-R1-20260921",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 21,
+      "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE2-SHADOW-IMPLEMENTATION-R1-20260921",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 13,
+      "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE3-SCOPE-LOCK-PLAN-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
   "local_development_sha": "12c6c18de619854e5fe8f33e87bff7b63eaa93fe",
-  "oldest_pending_age_seconds": 33,
+  "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 1,
-  "queue_depth": 2,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
-  "queue_pending": 1,
+  "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
+  "queue_result_ready_recent": 8,
   "queue_running": 0,
   "remote_development_sha": "12c6c18de619854e5fe8f33e87bff7b63eaa93fe",
   "runtime": {
-    "current_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-MUTATION-FUNCTIONAL-SURGICAL-R3-20260921T160100Z",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T16:16:49Z",
-    "last_receive_utc": "2026-09-21T16:16:52Z",
-    "last_terminal_utc": "2026-09-21T16:12:33Z",
-    "pid": "236"
+    "last_cycle_utc": "2026-09-21T16:38:19Z",
+    "last_receive_utc": "2026-09-21T16:38:14Z",
+    "last_terminal_utc": "2026-09-21T16:38:07Z",
+    "pid": "190"
   },
   "schema": "edarsahub.worker-health.v3",
   "summary_es": "Estado operativo del worker. Los trabajos activos siempre se muestran; los terminales se muestran solo durante la ventana de retencion. La evidencia historica permanece conservada fuera de latest.json.",
