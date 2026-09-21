@@ -1,0 +1,706 @@
+{
+  "base_sha": "dcc04e7f0931b885bae3abc1acfbb917bde720d5",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-21T21:41:42Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-REGRESSION-RUNTIME-AUTH-AUDIT-CARLOS-20260921T2136Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-21T21:41:53Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "coordinatedrefresh",
+              "gettoken",
+              "interceptors.response"
+            ],
+            "path": "frontend/src/lib/api.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "gettoken",
+              "sesion_expirada"
+            ],
+            "path": "frontend/src/portal-inteligencia/api/client.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "gettoken",
+              "sesion_expirada"
+            ],
+            "path": "frontend/src/portal-inteligencia/App.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "agrupado",
+              "detail_only",
+              "detail_stale",
+              "group_by"
+            ],
+            "path": "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.inteligencia_comercial",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "calendar",
+              "core.kpis_canonicos",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "logging",
+              "typing",
+              "zoneinfo"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "agrupado",
+              "detail_stale",
+              "group_by",
+              "intel_portal_guard"
+            ],
+            "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/comandas",
+              "/cuentas",
+              "/cuentas/detalle",
+              "/formas-pago",
+              "/formas-pago/por-ticket",
+              "/freshness",
+              "/ventas-periodos",
+              "/ventas-periodos/productos",
+              "/ventas-periodos/tickets",
+              "/ventas-periodos/tipos-servicio"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_detail_coverage",
+              "_f",
+              "_formas_pago_desde_detalle",
+              "_iso",
+              "_nombre_unidad",
+              "_period_floor",
+              "_period_label",
+              "_period_next",
+              "_period_sql",
+              "_period_windows",
+              "_q",
+              "_rango_fechas",
+              "_shift_months",
+              "comandas_venta",
+              "cuenta_detalle",
+              "formas_pago_por_ticket",
+              "iscam_freshness",
+              "resumen_cuentas",
+              "ventas_formas_pago",
+              "ventas_periodos",
+              "ventas_periodos_productos",
+              "ventas_periodos_tickets",
+              "ventas_periodos_tipos_servicio"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Finanzas_CortesCaja",
+              "Finanzas_CortesCaja_DetallePagos",
+              "Sync_Sales",
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.query_catalog",
+              "core.rbac.middleware",
+              "core.scheduler.jobs.netpay_sync_job",
+              "core.security",
+              "core.server_registry",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "fastapi",
+              "json",
+              "logging",
+              "modules.comercial_v2.schemas",
+              "modules.comercial_v2.sync_comercial_edarsahub",
+              "modules.sistema.sync_catalogo_service",
+              "os",
+              "pydantic",
+              "pymssql",
+              "scripts.backfill_detalle_producto_pendientes",
+              "time",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "netpay",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "agrupado",
+              "detail_only"
+            ],
+            "path": "backend/api/admin_scheduler_resync.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/resync/catalogo",
+              "/resync/catalogo/{codigo}",
+              "/resync/catalogo/{codigo}/toggle",
+              "/resync/execute",
+              "/resync/history",
+              "/resync/options",
+              "/resync/resolve",
+              "/resync/retry-all",
+              "/resync/retry/{log_id}",
+              "/resync/validate"
+            ],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "ResolveRequest",
+              "ResyncExecuteRequest",
+              "ResyncResponse",
+              "ResyncValidateRequest",
+              "RetryAllRequest",
+              "SyncTipoUpsert",
+              "_ejecutar_backfill_detalle_iscam",
+              "_ejecutar_dry_run",
+              "_ejecutar_sync_real",
+              "_execute_edarsahub_query",
+              "_get_edarsahub_config",
+              "_get_netpay_report_types",
+              "_get_tipo_sync_config",
+              "_get_unidad_config",
+              "_is_netpay_sync",
+              "_parse_fecha",
+              "_registrar_en_bitacora",
+              "_registrar_resync_log",
+              "_run_netpay_resync_background",
+              "_validar_conectividad",
+              "_validar_dias_existentes",
+              "_validar_rango",
+              "_verificar_syncs_recientes",
+              "actualizar_tipo_sync",
+              "crear_tipo_sync",
+              "ejecutar_resync",
+              "listar_catalogo_sync",
+              "listar_resync_fallidos_pendientes",
+              "obtener_historial_resync",
+              "obtener_opciones_resync",
+              "reintentar_resync_fallido",
+              "reintentar_todos_resync_fallidos",
+              "resolver_dependencias_sync",
+              "toggle_tipo_sync",
+              "validar_resync"
+            ],
+            "tables_referenced": [
+              "Sistema_Sync_Catalogo",
+              "Sistema_Sync_ResyncLog"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "argparse",
+              "datetime",
+              "decimal",
+              "scripts.poblar_ventas_detalle_producto_canonico",
+              "sys",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "dias_bloqueados",
+              "ok_header_canonico"
+            ],
+            "path": "backend/scripts/backfill_detalle_producto_pendientes.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_detalle_concilia",
+              "_detalle_existente",
+              "ejecutar_backfill",
+              "main"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "argparse",
+              "collections",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "json",
+              "pymssql",
+              "sys",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "ok_header_canonico"
+            ],
+            "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_as_date",
+              "_cfg_values",
+              "_d",
+              "_daterange",
+              "_extract_mpro",
+              "_extract_soft",
+              "_first",
+              "_hash_row",
+              "_insert_rows",
+              "_int_eq",
+              "_load_runtime_rows",
+              "_materialize_rows",
+              "_money_eq",
+              "_mpro_operational_datetime_range",
+              "_mpro_row_es_kpi_valido",
+              "_object_columns",
+              "_parse_sql_server_host_port",
+              "_prorratear_mpro_por_ticket",
+              "_q4",
+              "_query_edarsahub_dicts",
+              "_row_unit_values",
+              "_runtime_for",
+              "_runtime_metrics",
+              "_s",
+              "_safe_print",
+              "_secret_value",
+              "_sistema",
+              "_soft_add_ticket_adjustments",
+              "_soft_operational_datetime_range",
+              "_table_has_col",
+              "_unidad_operativa_id_for_window",
+              "_validate",
+              "get_pos_config_for_unidad",
+              "get_pos_connection",
+              "get_unidades_negocio_pos",
+              "main",
+              "sync_detalle_producto_canonico_dia"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Servidores_Conexiones",
+              "Unidades_Negocio",
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 8,
+          "scanned_files": 8,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas_runtime",
+              "ventas_detalle",
+              "delta_ventas",
+              "tickets_runtime",
+              "tickets_detalle",
+              "delta_tickets",
+              "pax_runtime",
+              "pax_detalle",
+              "delta_pax"
+            ],
+            "name": "iscam_origen_agosto_runtime_vs_detalle_diario",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-08-27",
+                "86192.8800",
+                "0.0000",
+                "86192.8800",
+                "29",
+                0,
+                "29",
+                "71",
+                "0",
+                "71"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha_operacion",
+              "lineas",
+              "tickets_detalle",
+              "ventas_detalle",
+              "ajustes_iscam",
+              "tickets_con_ajuste"
+            ],
+            "name": "iscam_origen_agosto_detalle_ajustes_por_dia",
+            "row_count_returned": 30,
+            "rows": [
+              [
+                "2026-08-01",
+                380,
+                39,
+                "71628.6850",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-02",
+                215,
+                19,
+                "33904.4300",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-03",
+                146,
+                17,
+                "24941.5100",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-04",
+                310,
+                22,
+                "66329.4700",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-05",
+                331,
+                30,
+                "71810.5540",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-06",
+                207,
+                20,
+                "38595.9910",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-07",
+                318,
+                30,
+                "55420.4460",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-08",
+                294,
+                33,
+                "45294.2300",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-09",
+                154,
+                18,
+                "24963.0100",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-10",
+                238,
+                23,
+                "45060.0300",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-11",
+                267,
+                21,
+                "46856.6920",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-12",
+                185,
+                18,
+                "37087.0800",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-13",
+                366,
+                28,
+                "77190.5460",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-14",
+                465,
+                50,
+                "80979.2860",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-15",
+                423,
+                39,
+                "89385.7910",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-16",
+                231,
+                20,
+                "34429.5600",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-17",
+                130,
+                16,
+                "40658.7900",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-18",
+                360,
+                31,
+                "95460.9760",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-19",
+                347,
+                27,
+                "106657.4250",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-20",
+                154,
+                13,
+                "34191.9900",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-21",
+                507,
+                41,
+                "98229.9500",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-22",
+                561,
+                52,
+                "129597.8740",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-23",
+                341,
+                30,
+                "53059.7700",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-24",
+                273,
+                30,
+                "52445.7810",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-25",
+                219,
+                21,
+                "39699.1000",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-26",
+                316,
+                36,
+                "115906.4110",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-28",
+                588,
+                43,
+                "152948.7060",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-29",
+                435,
+                44,
+                "78374.1600",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-30",
+                282,
+                23,
+                "51827.4000",
+                "0.0000",
+                0
+              ],
+              [
+                "2026-08-31",
+                91,
+                5,
+                "22098.0200",
+                "0.0000",
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-21T21:41:42Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
