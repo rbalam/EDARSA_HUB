@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "a2bd1be64a1b9392921a23351ecc68549c6e278a",
-  "generated_at_utc": "2026-09-21T17:16:08Z",
+  "generated_at_utc": "2026-09-21T17:17:24Z",
   "history": {
     "done_total_local": 800,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 92,
+      "age_seconds": 168,
       "job_id": "EDARSAHUB-WORKER-GIT-LOCK-PICKUP-DIAG-READONLY-R1-20260921T165800Z",
       "reasons": [
         "INVALID_SCHEMA",
@@ -32,37 +32,37 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2213,
+      "age_seconds": 2290,
       "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25F-MUTATION-FUNCTIONAL-SURGICAL-R3-20260921T160100Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 762,
+      "age_seconds": 838,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE2-SHADOW-CERT-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2288,
+      "age_seconds": 2364,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE2-SHADOW-IMPLEMENTATION-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1403,
+      "age_seconds": 1479,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE2-SHADOW-IMPLEMENTATION-R2-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 978,
+      "age_seconds": 1054,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE2-SHADOW-IMPLEMENTATION-R3-20260921",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2280,
+      "age_seconds": 2357,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-MULTIPROJECT-GATE3-SCOPE-LOCK-PLAN-READONLY-R1-20260921",
       "reason": null,
       "state": "RESULT_READY"
@@ -82,8 +82,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-21T17:16:01Z",
-    "last_receive_utc": "2026-09-21T17:16:03Z",
+    "last_cycle_utc": "2026-09-21T17:17:20Z",
+    "last_receive_utc": "2026-09-21T17:17:23Z",
     "last_terminal_utc": "2026-09-21T17:03:26Z",
     "pid": "134548"
   },
