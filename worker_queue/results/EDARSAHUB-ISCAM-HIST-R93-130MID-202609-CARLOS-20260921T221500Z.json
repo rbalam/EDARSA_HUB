@@ -1,0 +1,22 @@
+{
+  "blockers": [
+    "dispatcher_exception:RuntimeError:GIT_FAILED:fetch origin Edarsahub_Desarrollo:From https://github.com/rbalam/EDARSA_HUB\n * branch                Edarsahub_Desarrollo -> FETCH_HEAD\nerror: cannot lock ref 'refs/remotes/origin/Edarsahub_Desarrollo': is at 91ba170d546889455451ce6a6b30e23266ae441b but expected 2aa891136bf55c65cc55805f896e870942cf29fa\n ! 2aa891136..91ba170d5  Edarsahub_Desarrollo -> origin/Edarsahub_Desarrollo  (unable to update local ref)\n"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-21T22:13:26Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-HIST-R93-130MID-202609-CARLOS-20260921T221500Z",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-21T22:15:04Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-21T22:13:26Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
