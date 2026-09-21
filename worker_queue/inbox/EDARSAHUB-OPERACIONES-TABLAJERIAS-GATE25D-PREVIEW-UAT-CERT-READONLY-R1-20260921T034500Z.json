@@ -1,0 +1,61 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-GATE25D-PREVIEW-UAT-CERT-READONLY-R1-20260921T034500Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "0d8a30b67edc0d45c7465e46270197acabfdbd0d",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "priority": "P1",
+  "objective": "Gate25D Preview/UAT READ_ONLY para Tablajerias. Validar por Worker, sin mutaciones, que la evidencia UAT/Preview del modulo Tablajerias y LotesProveedor sigue consistente despues de Gate25C Frontend Build certificado. No modificar codigo. No ejecutar SQL. No tocar Produccion.",
+  "actions": [],
+  "checks": [
+    {"type": "git_diff_check"},
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+        "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/tests/test_tablajeria_r24f_uat_preview_static.py",
+          "backend/tests/test_tablajeria_uat_scope_lonja_plantillas_static.py",
+          "frontend/src/pages/tablajeria/LotesProveedorPage.jsx",
+          "frontend/src/App.js",
+          "backend/modules/tablajeria/routes.py",
+          "docs/TABLAJERIA_UAT_SCOPE_FIX_LONJA_PLANTILLAS_IMPLEMENTATION_R1.md"
+        ],
+        "search_terms": [
+          "preview",
+          "uat",
+          "tablajeria",
+          "LotesProveedorPage",
+          "lotes proveedor",
+          "lonja",
+          "plantillas",
+          "api health",
+          "spa route"
+        ],
+        "include_patterns": [],
+        "exclude_patterns": [],
+        "max_results": 800
+      }
+    }
+  ],
+  "expected_outputs": {
+    "terminal_status": "READ_ONLY_COMPLETE",
+    "certification": "CERTIFIED_READ_ONLY",
+    "quality_gate": "PASS",
+    "tests": "PASS",
+    "percent_complete": 100,
+    "production_touched": false,
+    "files_changed": [],
+    "blockers": []
+  },
+  "created_at_utc": "2026-09-21T03:45:00Z"
+}
