@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-RECONCILER-HOTPATH-DIAG-READONLY-R2-20260921",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "95bbeaf17569fb8bb61ebc0c27806372b311ec2b",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Diagnosticar de forma estrictamente READ_ONLY el timeout persistente del worker_runtime_reconciler antes de Gate4B1. Determinar el hot path exacto, el parche minimo y deterministico, y confirmar si la causa es la evaluacion repetitiva de estados Agent Guard y worktrees, incluyendo guard_claims, branch_is_integrated, git fetch repetido, worktree_clean, process_references y reconcile_claims. No modificar archivos, lifecycle, claims, worktrees, SQL ni Produccion.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/worker_runtime_reconciler.py",
+          "tools/mirror_sync/universal_job_worker.sh",
+          "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py",
+          "backend/tests/test_worker_three_properties_contract.py",
+          "backend/tests/test_worker_control_plane_contract.py"
+        ],
+        "search_terms": [
+          "guard_claims",
+          "GUARD_STATE_WORKTREES",
+          "branch_is_integrated",
+          "git fetch",
+          "worktree_clean",
+          "process_references",
+          "safe_releasable",
+          "release_claim",
+          "reconcile_claims",
+          "recover_orphan_processing",
+          "CLAIM_STALE_SECONDS",
+          "ORPHAN_SECONDS",
+          "WORKER_RUNTIME_RECONCILER",
+          "UNIVERSAL_RECONCILE_TIMEOUT_SECONDS",
+          "production_touched"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must be empty",
+    "No repository changes",
+    "No lifecycle mutation",
+    "No claim release",
+    "No worktree removal",
+    "No git worktree prune",
+    "No branch deletion",
+    "No SQL",
+    "No Mongo",
+    "No Production",
+    "No supervisor restart",
+    "No parallel execution activation",
+    "No Gate4B1 mutation",
+    "Do not weaken Agent Guard",
+    "Do not weaken Git guards",
+    "No secrets",
+    "production_touched must remain false"
+  ]
+}
