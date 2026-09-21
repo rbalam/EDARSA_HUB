@@ -1,0 +1,64 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE16J-BLIND-AUDIT-MINIMAL-UI-FRONTEND-CERT-R1-20260920",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "8a491bcfbe87250d38459439005c91a06763d384",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar exclusivamente Gate16J ya integrado en SHA 8a491bcfbe87250d38459439005c91a06763d384. Verificar frontend_build PASS, ENTERPRISE_NAVIGATION_GUARDIAN=PASS, presencia y clasificación de /cava-socios/auditoria-ciega, flujo CAPTURE->IDENTIFY->RESULT, uso de CorporateFiltersProvider/useAccessContext/unidad_negocio_pk, ausencia de ajustes automáticos de inventario, y topology 0/0. No modificar archivos, no backend, no SQL, no Producción. Esta certificación debe cerrar 16J solo si retorna CERTIFIED_FRONTEND_BUILD + PASS + 100%.",
+  "mode": "FRONTEND_BUILD_CERTIFICATION",
+  "actions": [],
+  "checks": [
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/cava-socios/BlindAuditCava.jsx",
+          "frontend/src/pages/cava-socios/CavaNavHeader.jsx",
+          "frontend/src/pages/cava-socios/index.js",
+          "frontend/src/App.js",
+          "frontend/src/config/enterpriseNavigationRegistry.json",
+          "backend/modules/cava_socios/routes.py"
+        ],
+        "search_terms": [
+          "BlindAuditCava",
+          "/cava-socios/auditoria-ciega",
+          "auditorias-ciegas/reconciliar",
+          "CAPTURE",
+          "IDENTIFY",
+          "RESULT",
+          "CorporateFiltersProvider",
+          "useAccessContext",
+          "unidad_negocio_pk",
+          "cava.auditoria_ciega",
+          "aplicar_ajustes_inventario_fisico"
+        ],
+        "include_patterns": [
+          "*.jsx",
+          "*.js",
+          "*.json",
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No file changes",
+    "No backend changes",
+    "No SQL",
+    "No automatic inventory adjustments",
+    "Certification only",
+    "Gate16K remains blocked unless certification=100%"
+  ]
+}
