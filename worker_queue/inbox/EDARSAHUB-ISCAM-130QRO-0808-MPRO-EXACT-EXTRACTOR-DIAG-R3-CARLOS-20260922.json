@@ -1,0 +1,35 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-130QRO-0808-MPRO-EXACT-EXTRACTOR-DIAG-R3-CARLOS-20260922",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Replicar exactamente los CTE h/l/t de _extract_mpro para 130QRO sucursal 0021 en 08/08/2026 y localizar todo ticket KPI con bruto total <=0 que puede disparar MPRO_NO_DISTRIBUTABLE_DETAIL.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "130QRO"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "qro_0808_exact_extractor_zero_gross",
+          "sql": "WITH h AS (\n    SELECT\n        v.Vn_Folio,\n        v.Vn_Documento,\n        v.Vn_Fecha,\n        v.Sc_Cve_Sucursal,\n        ISNULL(v.Es_Cve_Estado, '') AS estado_origen,\n        ISNULL(c.Co_Personas, 0) AS pax_ticket,\n        CAST(ISNULL(v.Vn_Precio_Neto_Importe, 0) AS decimal(18,4)) AS importe_neto_ticket,\n        ISNULL(c.Co_Propina, 0) AS propina_ticket,\n        CAST(0 AS decimal(18,4)) AS descuento_comanda,\n        CAST(0 AS decimal(18,4)) AS descuento_ticket\n    FROM Venta_Encabezado v WITH (NOLOCK)\n    LEFT JOIN Comanda c WITH (NOLOCK)\n      ON c.Co_Folio = v.Vn_Documento\n     AND c.Sc_Cve_Sucursal = v.Sc_Cve_Sucursal\n    WHERE CONVERT(date, v.Vn_Fecha) >= CONVERT(date, '2026-08-08 00:00:00')\n      AND CONVERT(date, v.Vn_Fecha) < CONVERT(date, '2026-08-09 00:00:00')\n      AND v.Sc_Cve_Sucursal = '0021'\n      AND ISNULL(v.Vn_Tabla, '') = 'Comanda'\n      AND ISNULL(v.Es_Cve_Estado, '') IN ('AC', 'FA', 'CA')\n),\nl AS (\n    SELECT\n        h.Vn_Folio,\n        h.Vn_Documento,\n        h.Vn_Fecha,\n        h.estado_origen,\n        h.pax_ticket,\n        h.importe_neto_ticket,\n        CASE\n          WHEN MAX(d.Co_Folio) IS NULL THEN 'HEADER_SIN_DETALLE'\n          ELSE COALESCE(NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''), 'SIN_CODIGO')\n        END AS producto_codigo_fuente,\n        SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4))) AS cantidad,\n        CASE\n          WHEN SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4))) <> 0\n          THEN SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4)))\n               / SUM(CAST(ISNULL(d.Cd_Cantidad, 0) AS decimal(18,4)))\n          ELSE MAX(CAST(ISNULL(d.Cd_Precio, 0) AS decimal(18,4)))\n        END AS precio_unitario,\n        SUM(CAST(ISNULL(d.Cd_Importe, 0) AS decimal(18,4))) AS importe_bruto\n    FROM h\n    LEFT JOIN Comanda_Detalle d WITH (NOLOCK)\n      ON d.Co_Folio = h.Vn_Documento\n     AND ISNULL(d.Es_Cve_Estado, '') IN ('AC', 'FA')\n    GROUP BY\n        h.Vn_Folio,h.Vn_Documento,h.Vn_Fecha,h.estado_origen,\n        h.pax_ticket,h.importe_neto_ticket,\n        COALESCE(NULLIF(CONVERT(varchar(100), d.Pr_Cve_Producto), ''), 'SIN_CODIGO')\n),\nt AS (\n    SELECT Vn_Folio,\n           COUNT(*) AS lineas_l,\n           CAST(SUM(importe_bruto) AS decimal(18,4)) AS bruto_ticket,\n           MIN(importe_neto_ticket) AS neto_min,\n           MAX(importe_neto_ticket) AS neto_max\n    FROM l\n    WHERE estado_origen IN ('AC','FA')\n    GROUP BY Vn_Folio\n)\nSELECT TOP 100\n       t.Vn_Folio,t.lineas_l,t.bruto_ticket,t.neto_min,t.neto_max,\n       MIN(l.Vn_Documento) AS Vn_Documento,\n       MIN(l.estado_origen) AS estado_origen,\n       MIN(l.producto_codigo_fuente) AS producto_min,\n       MAX(l.producto_codigo_fuente) AS producto_max,\n       SUM(l.cantidad) AS cantidad_total,\n       MAX(l.precio_unitario) AS precio_max\nFROM t\nJOIN l ON l.Vn_Folio=t.Vn_Folio\nWHERE t.bruto_ticket <= 0\nGROUP BY t.Vn_Folio,t.lineas_l,t.bruto_ticket,t.neto_min,t.neto_max\nORDER BY t.Vn_Folio"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260922 Corregir Reportes de ISCAM"
+  }
+}
