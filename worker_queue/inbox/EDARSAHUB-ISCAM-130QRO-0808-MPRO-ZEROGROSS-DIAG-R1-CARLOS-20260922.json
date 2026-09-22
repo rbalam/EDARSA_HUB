@@ -1,0 +1,35 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-130QRO-0808-MPRO-ZEROGROSS-DIAG-R1-CARLOS-20260922",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Diagnosticar en solo lectura los tickets MPRO de 130QRO del 08/08/2026 cuyo encabezado tiene venta neta positiva pero el detalle monetario suma cero, causa de MPRO_NO_DISTRIBUTABLE_DETAIL.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "130QRO"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "qro_0808_zero_gross_candidates",
+          "sql": "WITH h AS (\n  SELECT v.Vn_Folio, v.Vn_Documento, v.Vn_Fecha, v.Sc_Cve_Sucursal,\n         ISNULL(v.Es_Cve_Estado,'') AS estado_origen,\n         CAST(ISNULL(v.Vn_Precio_Neto_Importe,0) AS decimal(19,4)) AS neto_header\n  FROM Venta_Encabezado v WITH (NOLOCK)\n  WHERE CONVERT(date,v.Vn_Fecha)='2026-08-08'\n    AND ISNULL(v.Vn_Tabla,'')='Comanda'\n    AND ISNULL(v.Es_Cve_Estado,'') IN ('AC','FA')\n),\nd AS (\n  SELECT h.Vn_Folio,h.Vn_Documento,h.Vn_Fecha,h.Sc_Cve_Sucursal,h.estado_origen,h.neto_header,\n         COUNT(d.Co_Folio) AS lineas_detalle,\n         SUM(CAST(ISNULL(d.Cd_Cantidad,0) AS decimal(19,4))) AS cantidad_total,\n         SUM(CAST(ISNULL(d.Cd_Importe,0) AS decimal(19,4))) AS bruto_detalle,\n         MAX(CAST(ISNULL(d.Cd_Precio,0) AS decimal(19,4))) AS precio_max,\n         MIN(CONVERT(varchar(100),d.Pr_Cve_Producto)) AS producto_min,\n         MAX(CONVERT(varchar(100),d.Pr_Cve_Producto)) AS producto_max\n  FROM h\n  LEFT JOIN Comanda_Detalle d WITH (NOLOCK)\n    ON d.Co_Folio=h.Vn_Documento\n   AND ISNULL(d.Es_Cve_Estado,'') IN ('AC','FA')\n  GROUP BY h.Vn_Folio,h.Vn_Documento,h.Vn_Fecha,h.Sc_Cve_Sucursal,h.estado_origen,h.neto_header\n)\nSELECT TOP 100 Vn_Folio,Vn_Documento,Vn_Fecha,Sc_Cve_Sucursal,estado_origen,neto_header,\n       lineas_detalle,cantidad_total,bruto_detalle,precio_max,producto_min,producto_max\nFROM d\nWHERE ISNULL(bruto_detalle,0)<=0 AND neto_header>0\nORDER BY Vn_Folio"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260922 Corregir Reportes de ISCAM"
+  }
+}
