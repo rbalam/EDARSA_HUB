@@ -15,6 +15,9 @@ import api, { getToken } from '../../lib/api';
 
 const API_URL = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const INTEL_SESSION_FLAG = 'edarsa_intel_session';
+// Contrato historico del Portal Inteligencia: consultas reales pueden tardar >15s en arranque frio.
+// El cliente central conserva refresh/retry, pero cada request del portal usa su propio margen.
+const INTEL_REQUEST_TIMEOUT_MS = 60000;
 
 export const ESTADO = {
   CARGANDO: 'CARGANDO',
@@ -27,7 +30,7 @@ export const ESTADO = {
 };
 
 // Instancia dedicada: envía cookie (externo) y Bearer si hay sesión interna.
-const intelApi = axios.create({ baseURL: API_URL, withCredentials: true, timeout: 35000 });
+const intelApi = axios.create({ baseURL: API_URL, withCredentials: true, timeout: INTEL_REQUEST_TIMEOUT_MS });
 intelApi.interceptors.request.use((config) => {
   const t = getToken();
   if (t) config.headers.Authorization = `Bearer ${t}`;
@@ -78,7 +81,7 @@ export async function apiGet(path, params) {
     // Sesion interna: reutilizar el cliente central para conservar refresh/retry coordinado.
     // Sesion externa: mantener el cliente dedicado con cookie httpOnly del portal.
     const client = getToken() ? api : intelApi;
-    const res = await client.get(path, { params });
+    const res = await client.get(path, { params, timeout: INTEL_REQUEST_TIMEOUT_MS });
     return { estado: ESTADO.OK, data: res.data, status: res.status };
   } catch (err) {
     const status = err?.response?.status;
@@ -95,7 +98,7 @@ export async function apiPost(path, payload, config = {}) {
     // Sesion interna: reutilizar el cliente central para conservar refresh/retry coordinado.
     // Sesion externa: mantener el cliente dedicado con cookie httpOnly del portal.
     const client = getToken() ? api : intelApi;
-    const res = await client.post(path, payload, config);
+    const res = await client.post(path, payload, { timeout: INTEL_REQUEST_TIMEOUT_MS, ...config });
     return { estado: ESTADO.OK, data: res.data, status: res.status };
   } catch (err) {
     const status = err?.response?.status;
