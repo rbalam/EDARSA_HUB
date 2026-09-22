@@ -41,6 +41,7 @@ WORKER_TREE_STATE = RUNTIME_DIR / "active_worker_code_tree_sha"
 WORKER_CODE_TREE_SPEC = "HEAD:tools/mirror_sync"
 GIT_GUARD_PATH = REPO_ROOT / "tools" / "mirror_sync" / "git_divergence_guard.py"
 WAKE_ROUTE_VERSION = "r34-startup-selfheal"
+# Runtime reload marker: ISCAM R18 recovery after public wake 502/404; no functional change.
 _SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 
 
