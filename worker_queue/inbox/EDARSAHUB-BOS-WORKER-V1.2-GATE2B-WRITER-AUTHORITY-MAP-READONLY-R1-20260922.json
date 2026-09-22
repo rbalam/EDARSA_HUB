@@ -1,0 +1,95 @@
+{
+  "actions": [],
+  "base_sha": "77c1a9420fc36fb0702f357a2f7472a787263652",
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py",
+          "*.sh"
+        ],
+        "max_results": 3000,
+        "paths": [
+          "tools/mirror_sync",
+          "tools/bootstrap",
+          "scripts"
+        ],
+        "search_terms": [
+          "refs/heads/worker/requests",
+          "refs/heads/worker/results",
+          "refs/heads/worker/health",
+          "worker_queue/inbox/",
+          "git push",
+          "authorized_push(",
+          "scoped_push_env(",
+          "write_text(",
+          "json.dump(",
+          "os.replace(",
+          "git commit",
+          "git(\"push\"",
+          "run([\"git\", \"push\"",
+          "gate_chain_publisher",
+          "universal_job_result_publisher",
+          "runtime_health_publisher",
+          "universal_job_bridge",
+          "publish_local_snapshot",
+          "finalize_local_snapshot",
+          "apply_remote_update"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "paths": [
+        "backend/tests/test_gate_chain_publisher.py",
+        "backend/tests/test_worker_health_branch_isolation_contract.py",
+        "backend/tests/test_worker_result_branch_isolation_contract.py",
+        "backend/tests/test_worker_save_github_safety_contract.py",
+        "backend/tests/test_worker_result_publisher_batch_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty",
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "No Scheduler",
+    "No NetPay",
+    "No business mutation",
+    "No repository mutation",
+    "No service restart",
+    "No worker wake",
+    "No Git mutation",
+    "Do not create workerctl.py",
+    "Do not create another control plane",
+    "Do not modify gate_chain_publisher.py",
+    "Do not modify universal_job_result_publisher.py",
+    "Do not modify runtime_health_publisher.py",
+    "Do not modify universal_job_bridge.py",
+    "Do not modify universal_job_dispatcher.py",
+    "Do not weaken Agent Guard",
+    "Do not weaken Repository Artifact Guard",
+    "Do not weaken GLOBAL_GIT_WRITER",
+    "Classify executable writers separately from references/tests/history",
+    "Define single canonical writer independently for requests/results/health",
+    "Prefer existing canonical helpers and components",
+    "production_touched must remain false"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE2B-WRITER-AUTHORITY-MAP-READONLY-R1-20260922",
+  "mode": "READ_ONLY",
+  "objective": "Construir mapa exacto READ_ONLY de autoridades escritoras del Universal Worker v1.2. Identificar exclusivamente codigo ejecutable que materializa, commitea o publica worker_queue/inbox, worker/requests, worker/results o worker/health. Separar referencias, tests y artefactos historicos de writers reales. Clasificar cada componente como ALIGNED_V1_2, COMPATIBLE, NEEDS_ADAPTER, NEEDS_REFACTOR, DEPRECATED o BLOCKED. Determinar single-writer canonico por canal sin crear infraestructura nueva.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
