@@ -1,0 +1,28 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-130QRO-0808-R13-PREFLIGHT-R1-CARLOS-20260922",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "PREFLIGHT READ_ONLY SQL de 130QRO 08/08/2026. Confirmar Runtime V2 autoritativo en 233021.00, 57 tickets y 159 PAX; fallar el check si no coincide.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "qro_0808_runtime_expected",
+          "sql": "WITH r AS (\n  SELECT CAST(SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS decimal(19,4)) AS ventas,\n         SUM(CAST(ISNULL(tickets_total,0) AS bigint)) AS tickets,\n         SUM(CAST(ISNULL(pax_total,0) AS bigint)) AS pax\n  FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\n  WHERE unidad_negocio_id='130QRO'\n    AND fecha_operacion>='2026-08-08' AND fecha_operacion<'2026-08-09'\n)\nSELECT CAST(ISNULL(ventas,0) AS decimal(19,4)) AS ventas_runtime,\n       ISNULL(tickets,0) AS tickets_runtime,\n       ISNULL(pax,0) AS pax_runtime,\n       1 / CASE WHEN ABS(ISNULL(ventas,0)-233021.00)<=0.05\n                  AND ISNULL(tickets,0)=57\n                  AND ISNULL(pax,0)=159\n                THEN 1 ELSE 0 END AS gate_pass\nFROM r"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260922 Corregir Reportes de ISCAM"
+  }
+}
