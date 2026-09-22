@@ -55,7 +55,23 @@ def test_mpro_header_without_product_detail_becomes_technical_adjustment():
     assert out[0]["importe_neto"] == Decimal("125.0000")
 
 
-def test_mpro_zero_gross_non_header_still_fails_closed():
+def test_mpro_zero_net_zero_gross_preserves_real_product_lines():
+    out = _prorratear_mpro_por_ticket([
+        _row("PRODUCTO_A", "0", "0", "0"),
+        _row("PRODUCTO_B", "0", "0", "0"),
+    ])
+    assert [x["producto_codigo_fuente"] for x in out] == [
+        "PRODUCTO_A",
+        "PRODUCTO_B",
+    ]
+    assert [x["importe_neto"] for x in out] == [
+        Decimal("0.0000"),
+        Decimal("0.0000"),
+    ]
+    assert sum(x["importe_neto"] for x in out) == Decimal("0.0000")
+
+
+def test_mpro_positive_net_zero_gross_non_header_still_fails_closed():
     import pytest
     with pytest.raises(RuntimeError, match="sin detalle monetario distribuible"):
         _prorratear_mpro_por_ticket([_row("PRODUCTO_REAL", "0", "125", "0")])

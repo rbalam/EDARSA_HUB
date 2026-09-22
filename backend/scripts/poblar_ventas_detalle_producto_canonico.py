@@ -1140,6 +1140,17 @@ def _prorratear_mpro_por_ticket(
 
         gross_total = _q4(sum(gross_values, Decimal("0")))
         if gross_total <= 0:
+            # Un ticket final de importe cero no requiere una base monetaria de
+            # prorrateo. Conservamos sus líneas reales con importe neto cero para
+            # mantener ticket/PAX y estructura de producto sin inventar venta.
+            # Para cualquier encabezado positivo sin base monetaria se conserva
+            # el bloqueo fail-closed de abajo.
+            if target_net == Decimal("0.0000"):
+                for _, row in items:
+                    row["importe_neto"] = Decimal("0.0000")
+                    row["descuento_prorrateado"] = Decimal("0.0000")
+                continue
+
             header_only = all(
                 _s(row.get("producto_codigo_fuente")).upper() == "HEADER_SIN_DETALLE"
                 for _, row in items
