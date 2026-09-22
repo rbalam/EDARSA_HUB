@@ -988,8 +988,8 @@ def _extract_mpro(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
             LEFT JOIN Comanda c WITH (NOLOCK)
                 ON c.Co_Folio = v.Vn_Documento
                AND c.Sc_Cve_Sucursal = v.Sc_Cve_Sucursal
-            WHERE v.Vn_Fecha >= %s
-              AND v.Vn_Fecha < %s
+            WHERE CONVERT(date, v.Vn_Fecha) >= CONVERT(date, %s)
+              AND CONVERT(date, v.Vn_Fecha) < CONVERT(date, %s)
               AND v.Sc_Cve_Sucursal = %s
               AND ISNULL(v.Vn_Tabla, '') = 'Comanda'
               AND ISNULL(v.Es_Cve_Estado, '') IN ('AC', 'FA', 'CA')
