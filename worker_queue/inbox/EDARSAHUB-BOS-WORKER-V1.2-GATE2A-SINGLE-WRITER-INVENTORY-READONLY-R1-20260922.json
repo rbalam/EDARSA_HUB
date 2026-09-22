@@ -1,0 +1,94 @@
+{
+  "actions": [],
+  "base_sha": "77c1a9420fc36fb0702f357a2f7472a787263652",
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.json",
+          "*.yml",
+          "*.yaml"
+        ],
+        "max_results": 5000,
+        "paths": [
+          "tools/mirror_sync",
+          "tools/bootstrap",
+          "scripts",
+          "backend",
+          "worker_queue"
+        ],
+        "search_terms": [
+          "worker/requests",
+          "worker_queue/inbox",
+          "refs/heads/worker/requests",
+          "git push",
+          "authorized_push",
+          "scoped_push_env",
+          "EDARSA_ALLOW_PUSH",
+          "queue-publisher",
+          "worktree-create",
+          "gate_chain_publisher",
+          "universal_job_result_publisher",
+          "runtime_health_publisher",
+          "publish_local_snapshot",
+          "apply_remote_update",
+          "finalize_local_snapshot"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "paths": [
+        "backend/tests/test_gate_chain_publisher.py",
+        "backend/tests/test_worker_save_github_safety_contract.py",
+        "backend/tests/test_worker_scope_concurrency_dispatcher_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty",
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "No Scheduler",
+    "No NetPay",
+    "No Cavas",
+    "No Tablajerias",
+    "No Parrilla functional changes",
+    "No repository mutation",
+    "No service restart",
+    "No worker wake",
+    "No Git mutation",
+    "Do not create workerctl.py",
+    "Do not create another control plane",
+    "Do not modify gate_chain_publisher.py",
+    "Do not modify universal_job_dispatcher.py",
+    "Do not modify universal_job_bridge.py",
+    "Do not modify git_divergence_guard.py",
+    "Do not weaken Agent Guard",
+    "Do not weaken Repository Artifact Guard",
+    "Do not weaken GLOBAL_GIT_WRITER",
+    "Identify every queue writer before selecting canonical ownership",
+    "Prefer existing helpers over new abstractions",
+    "production_touched must remain false"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE2A-SINGLE-WRITER-INVENTORY-READONLY-R1-20260922",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exhaustivamente todos los writers directos e indirectos de worker/requests y worker_queue/inbox para definir single-writer canónico Worker v1.2. Clasificar cada ruta como ALIGNED_V1_2, COMPATIBLE, NEEDS_ADAPTER, NEEDS_REFACTOR, DEPRECATED o BLOCKED. No modificar código, runtime, lifecycle ni Produccion.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
