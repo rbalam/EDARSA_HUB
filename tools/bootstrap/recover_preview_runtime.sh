@@ -66,9 +66,38 @@ fi
 test -x "$INSTALLER" || chmod 0755 "$INSTALLER"
 "$INSTALLER"
 
+RECOVERY_STARTED_EPOCH="$(date +%s)"
 supervisorctl restart "$BACKEND_SERVICE"
-sleep 6
-supervisorctl status "$BACKEND_SERVICE"
+
+BACKEND_READY=0
+BACKEND_HTTP_CODE=000
+for attempt in $(seq 1 18); do
+  STATUS_OUT="$(supervisorctl status "$BACKEND_SERVICE" 2>&1 || true)"
+  printf '%s\n' "$STATUS_OUT"
+  BACKEND_HTTP_CODE="$(curl --silent --show-error \
+    --connect-timeout 2 --max-time 5 \
+    --output /tmp/edarsahub-backend-ready.json --write-out '%{http_code}' \
+    "http://127.0.0.1:8001/api/health" || true)"
+  echo "BACKEND_READY_ATTEMPT=$attempt"
+  echo "BACKEND_READY_HTTP_CODE=$BACKEND_HTTP_CODE"
+
+  case "$BACKEND_HTTP_CODE" in
+    [1-5][0-9][0-9])
+      BACKEND_READY=1
+      break
+      ;;
+  esac
+  sleep 5
+done
+
+if [ "$BACKEND_READY" -ne 1 ]; then
+  echo "PREVIEW_RUNTIME_RECOVERY=BACKEND_NOT_READY"
+  echo "FINAL_BACKEND_HTTP_CODE=$BACKEND_HTTP_CODE"
+  echo "PRODUCTION_TOUCHED=NO"
+  exit 88
+fi
+
+echo "PREVIEW_BACKEND_READY=YES"
 supervisorctl restart "$WORKER_SERVICE" || supervisorctl start "$WORKER_SERVICE"
 sleep 4
 supervisorctl status "$WORKER_SERVICE"
@@ -110,11 +139,14 @@ case "$HTTP_CODE" in
     ;;
 esac
 
-for _ in $(seq 1 12); do
+for attempt in $(seq 1 12); do
   if [ -r "$APP/.git/universal-worker-queue/runtime/last_receive_utc" ]; then
     LAST_RECEIVE="$(cat "$APP/.git/universal-worker-queue/runtime/last_receive_utc" 2>/dev/null || true)"
-    if [ -n "$LAST_RECEIVE" ]; then
-      echo "WORKER_LAST_RECEIVE_UTC=$LAST_RECEIVE"
+    LAST_RECEIVE_EPOCH="$(date -d "$LAST_RECEIVE" +%s 2>/dev/null || echo 0)"
+    echo "WORKER_HEARTBEAT_ATTEMPT=$attempt"
+    echo "WORKER_LAST_RECEIVE_UTC=$LAST_RECEIVE"
+    if [ "$LAST_RECEIVE_EPOCH" -ge "$RECOVERY_STARTED_EPOCH" ]; then
+      echo "WORKER_HEARTBEAT_FRESH=YES"
       echo "PREVIEW_RUNTIME_RECOVERY=COMPLETE"
       echo "PRODUCTION_TOUCHED=NO"
       exit 0

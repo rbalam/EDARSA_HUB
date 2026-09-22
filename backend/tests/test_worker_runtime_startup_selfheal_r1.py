@@ -38,3 +38,20 @@ def test_preview_recovery_uses_local_wake_after_backend_restart():
     assert 'supervisorctl restart "$BACKEND_SERVICE"' in RECOVERY
     assert 'supervisorctl restart "$WORKER_SERVICE" || supervisorctl start "$WORKER_SERVICE"' in RECOVERY
     assert "http://127.0.0.1:8001/api/internal/worker/wake" in RECOVERY
+
+
+def test_preview_recovery_waits_for_backend_http_readiness_before_local_wake():
+    restart_pos = RECOVERY.index('supervisorctl restart "$BACKEND_SERVICE"')
+    ready_loop_pos = RECOVERY.index('for attempt in $(seq 1 18)')
+    wake_pos = RECOVERY.index('http://127.0.0.1:8001/api/internal/worker/wake')
+    assert restart_pos < ready_loop_pos < wake_pos
+    assert 'BACKEND_READY_HTTP_CODE=' in RECOVERY
+    assert 'PREVIEW_RUNTIME_RECOVERY=BACKEND_NOT_READY' in RECOVERY
+    assert 'PREVIEW_BACKEND_READY=YES' in RECOVERY
+
+
+def test_preview_recovery_requires_fresh_worker_heartbeat():
+    assert 'RECOVERY_STARTED_EPOCH="$(date +%s)"' in RECOVERY
+    assert 'LAST_RECEIVE_EPOCH="$(date -d "$LAST_RECEIVE" +%s 2>/dev/null || echo 0)"' in RECOVERY
+    assert 'WORKER_HEARTBEAT_FRESH=YES' in RECOVERY
+    assert '"$LAST_RECEIVE_EPOCH" -ge "$RECOVERY_STARTED_EPOCH"' in RECOVERY
