@@ -1,0 +1,116 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"Canonical maintenance-plane lifecycle for Universal Worker repair.\n\nThis module coordinates maintenance incidents only.\n\nIt does not:\n- consume normal EDARSAHUB development jobs,\n- touch Production,\n- execute arbitrary shell or SQL,\n- duplicate Universal Worker dispatching,\n- bypass Agent Guard or Git Divergence Guard.\n\nLifecycle:\nDECLARED -> REPAIR_REQUIRED -> REPAIRED_PENDING_AUDIT ->\nCERTIFIED | REJECTED\n\"\"\"\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom enum import Enum\nfrom typing import Any\n\nfrom tools.mirror_sync.worker_auditor import audit_repair_result\nfrom tools.mirror_sync.worker_repair import (\n    RepairPlan,\n    build_repair_plan,\n    repair_requires_independent_audit,\n)\n\n\nclass MaintenanceState(str, Enum):\n    DECLARED = \"DECLARED\"\n    REPAIR_REQUIRED = \"REPAIR_REQUIRED\"\n    REPAIRED_PENDING_AUDIT = \"REPAIRED_PENDING_AUDIT\"\n    CERTIFIED = \"CERTIFIED\"\n    REJECTED = \"REJECTED\"\n\n\n@dataclass(frozen=True)\nclass MaintenanceIncident:\n    incident_id: str\n    paths: tuple[str, ...]\n    state: MaintenanceState\n    production_allowed: bool = False\n\n\n@dataclass(frozen=True)\nclass MaintenanceDecision:\n    incident_id: str\n    state: MaintenanceState\n    reason: str\n    certified: bool = False\n    production_touched: bool = False\n\n\ndef declare_incident(\n    incident_id: str,\n    paths: list[str] | tuple[str, ...],\n) -> MaintenanceIncident:\n    plan = build_repair_plan(\n        incident_id,\n        paths,\n    )\n\n    return MaintenanceIncident(\n        incident_id=plan.incident_id,\n        paths=plan.paths,\n        state=MaintenanceState.REPAIR_REQUIRED,\n    )\n\n\ndef repair_plan_for(\n    incident: MaintenanceIncident,\n) -> RepairPlan:\n    if incident.state is not MaintenanceState.REPAIR_REQUIRED:\n        raise ValueError(\"MAINTENANCE_INCIDENT_NOT_REPAIRABLE\")\n\n    return build_repair_plan(\n        incident.incident_id,\n        incident.paths,\n    )\n\n\ndef repaired_pending_audit(\n    incident: MaintenanceIncident,\n    repair_result: dict[str, Any],\n) -> MaintenanceDecision:\n    if incident.state is not MaintenanceState.REPAIR_REQUIRED:\n        raise ValueError(\"MAINTENANCE_INCIDENT_INVALID_STATE\")\n\n    if not repair_requires_independent_audit(\n        repair_plan_for(incident)\n    ):\n        raise RuntimeError(\"INDEPENDENT_AUDIT_REQUIRED\")\n\n    if repair_result.get(\"production_touched\") is not False:\n        return MaintenanceDecision(\n            incident_id=incident.incident_id,\n            state=MaintenanceState.REJECTED,\n            reason=\"PRODUCTION_TOUCHED\",\n        )\n\n    if repair_result.get(\"git_sync_status\") != \"CERTIFIED_GIT_SYNC\":\n        return MaintenanceDecision(\n            incident_id=incident.incident_id,\n            state=MaintenanceState.REJECTED,\n            reason=\"REPAIR_NOT_GIT_CERTIFIED\",\n        )\n\n    return MaintenanceDecision(\n        incident_id=incident.incident_id,\n        state=MaintenanceState.REPAIRED_PENDING_AUDIT,\n        reason=\"REPAIR_EVIDENCE_READY\",\n    )\n\n\ndef audit_incident(\n    incident: MaintenanceIncident,\n    repair_result: dict[str, Any],\n) -> MaintenanceDecision:\n    audit = audit_repair_result(repair_result)\n\n    if not audit.certified:\n        return MaintenanceDecision(\n            incident_id=incident.incident_id,\n            state=MaintenanceState.REJECTED,\n            reason=audit.reason,\n            certified=False,\n        )\n\n    return MaintenanceDecision(\n        incident_id=incident.incident_id,\n        state=MaintenanceState.CERTIFIED,\n        reason=\"CERTIFIED_WORKER_REPAIR\",\n        certified=True,\n    )\n",
+      "path": "tools/mirror_sync/worker_maintenance_controller.py",
+      "type": "write_file"
+    },
+    {
+      "content": "import sys\nfrom pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\n\nif str(ROOT) not in sys.path:\n    sys.path.insert(0, str(ROOT))\n\nfrom tools.mirror_sync.worker_maintenance_controller import (\n    MaintenanceState,\n    audit_incident,\n    declare_incident,\n    repair_plan_for,\n    repaired_pending_audit,\n)\n\n\ndef valid_result():\n    return {\n        \"files_changed\": [\n            \"tools/mirror_sync/gate_chain_publisher.py\",\n        ],\n        \"production_touched\": False,\n        \"quality_gate\": \"PASS\",\n        \"tests\": \"PASS\",\n        \"blockers\": [],\n        \"git_sync_status\": \"CERTIFIED_GIT_SYNC\",\n    }\n\n\ndef test_incident_declares_worker_repair_only():\n    incident = declare_incident(\n        \"INCIDENT-1\",\n        [\"tools/mirror_sync/gate_chain_publisher.py\"],\n    )\n\n    assert incident.state is MaintenanceState.REPAIR_REQUIRED\n    assert incident.production_allowed is False\n\n\ndef test_application_scope_is_rejected():\n    try:\n        declare_incident(\n            \"INCIDENT-2\",\n            [\"frontend/src/App.jsx\"],\n        )\n    except ValueError as exc:\n        assert \"REPAIR_SCOPE_FORBIDDEN\" in str(exc)\n    else:\n        raise AssertionError(\"application scope must fail closed\")\n\n\ndef test_repair_plan_is_derived_from_incident():\n    incident = declare_incident(\n        \"INCIDENT-3\",\n        [\"tools/mirror_sync/worker_control_plane.py\"],\n    )\n\n    plan = repair_plan_for(incident)\n\n    assert plan.incident_id == \"INCIDENT-3\"\n    assert plan.production_allowed is False\n\n\ndef test_repair_never_self_certifies():\n    incident = declare_incident(\n        \"INCIDENT-4\",\n        [\"tools/mirror_sync/gate_chain_publisher.py\"],\n    )\n\n    decision = repaired_pending_audit(\n        incident,\n        valid_result(),\n    )\n\n    assert decision.state is MaintenanceState.REPAIRED_PENDING_AUDIT\n    assert decision.certified is False\n\n\ndef test_auditor_certifies_valid_repair():\n    incident = declare_incident(\n        \"INCIDENT-5\",\n        [\"tools/mirror_sync/gate_chain_publisher.py\"],\n    )\n\n    decision = audit_incident(\n        incident,\n        valid_result(),\n    )\n\n    assert decision.state is MaintenanceState.CERTIFIED\n    assert decision.certified is True\n    assert decision.reason == \"CERTIFIED_WORKER_REPAIR\"\n\n\ndef test_auditor_rejects_failed_tests():\n    incident = declare_incident(\n        \"INCIDENT-6\",\n        [\"tools/mirror_sync/gate_chain_publisher.py\"],\n    )\n\n    result = valid_result()\n    result[\"tests\"] = \"FAIL\"\n\n    decision = audit_incident(\n        incident,\n        result,\n    )\n\n    assert decision.state is MaintenanceState.REJECTED\n    assert decision.certified is False\n\n\ndef test_production_touch_is_terminal_rejection():\n    incident = declare_incident(\n        \"INCIDENT-7\",\n        [\"tools/mirror_sync/gate_chain_publisher.py\"],\n    )\n\n    result = valid_result()\n    result[\"production_touched\"] = True\n\n    decision = repaired_pending_audit(\n        incident,\n        result,\n    )\n\n    assert decision.state is MaintenanceState.REJECTED\n    assert decision.reason == \"PRODUCTION_TOUCHED\"\n\n\ndef test_missing_git_certification_is_rejected():\n    incident = declare_incident(\n        \"INCIDENT-8\",\n        [\"tools/mirror_sync/gate_chain_publisher.py\"],\n    )\n\n    result = valid_result()\n    result[\"git_sync_status\"] = None\n\n    decision = repaired_pending_audit(\n        incident,\n        result,\n    )\n\n    assert decision.state is MaintenanceState.REJECTED\n    assert decision.reason == \"REPAIR_NOT_GIT_CERTIFIED\"\n",
+      "path": "backend/tests/test_worker_maintenance_controller_contract.py",
+      "type": "write_file"
+    }
+  ],
+  "base_sha": "501ec37845d9a3817c4af41143299cb11df758af",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_maintenance_contract.py",
+        "tools/mirror_sync/worker_repair.py",
+        "tools/mirror_sync/worker_auditor.py",
+        "tools/mirror_sync/worker_maintenance_controller.py",
+        "backend/tests/test_worker_repair_auditor_foundation_contract.py",
+        "backend/tests/test_worker_maintenance_controller_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_repair_auditor_foundation_contract.py",
+        "backend/tests/test_worker_maintenance_controller_contract.py",
+        "backend/tests/test_gate_chain_publisher.py",
+        "backend/tests/test_worker_channel_single_writer_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py"
+        ],
+        "max_results": 1000,
+        "paths": [
+          "tools/mirror_sync/worker_maintenance_contract.py",
+          "tools/mirror_sync/worker_repair.py",
+          "tools/mirror_sync/worker_auditor.py",
+          "tools/mirror_sync/worker_maintenance_controller.py",
+          "tools/mirror_sync/git_divergence_guard.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/mirror_sync/gate_chain_publisher.py",
+          "backend/tests/test_worker_repair_auditor_foundation_contract.py",
+          "backend/tests/test_worker_maintenance_controller_contract.py"
+        ],
+        "search_terms": [
+          "WORKER_REPAIR",
+          "WORKER_AUDITOR",
+          "REPAIRED_PENDING_AUDIT",
+          "CERTIFIED_WORKER_REPAIR",
+          "production_allowed",
+          "CERTIFIED_GIT_SYNC",
+          "authorized_push",
+          "agent_guard",
+          "worker_control_plane"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "No Scheduler",
+    "No NetPay",
+    "Exactly two new declared files may change",
+    "Do not modify worker_maintenance_contract.py",
+    "Do not modify worker_repair.py",
+    "Do not modify worker_auditor.py",
+    "Do not modify universal_job_bridge.py",
+    "Do not modify universal_job_dispatcher.py",
+    "Do not modify universal_job_result_publisher.py",
+    "Do not modify runtime_health_publisher.py",
+    "Do not modify worker_control_plane.py",
+    "Do not modify worker_runtime_fingerprint.py",
+    "Do not modify gate_chain_publisher.py",
+    "Do not modify git_divergence_guard.py",
+    "Do not create another general-purpose control plane",
+    "Do not create another queue",
+    "Do not create another dispatcher",
+    "Do not duplicate Universal Worker",
+    "Worker Repair must never self-certify",
+    "Worker Auditor must remain READ_ONLY",
+    "Normal EDARSAHUB development jobs remain outside maintenance-plane",
+    "Application code remains outside Worker Repair authority",
+    "Every successful repair requires independent Auditor certification",
+    "No force push",
+    "No --no-verify",
+    "No hook bypass",
+    "production_touched must remain false"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5D-MAINTENANCE-PLANE-OPERATIONAL-WIRING-MUTATION-R1-20260922",
+  "mode": "MUTATION",
+  "objective": "Conectar Worker Repair y Worker Auditor mediante un lifecycle canonico de maintenance-plane sin duplicar Universal Worker. Crear un controlador de incidentes de mantenimiento que fuerce Repair -> pending audit -> Auditor -> certified/rejected. El controlador no ejecuta desarrollo normal, no toca Produccion y no implementa Git, locks, push, runtime supervision ni queues paralelas.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
