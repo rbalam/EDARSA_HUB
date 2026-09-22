@@ -1,0 +1,109 @@
+{
+  "actions": [],
+  "base_sha": "daa8cd034fb090170414b0165fdd74a3dba0dca8",
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [
+          "*.pyc"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.yml",
+          "*.yaml",
+          "*.json"
+        ],
+        "max_results": 1000,
+        "paths": [
+          "tools/mirror_sync",
+          "tools/bootstrap",
+          "scripts",
+          ".github/workflows",
+          "worker_queue/triggers/runtime-recovery",
+          "backend/tests"
+        ],
+        "search_terms": [
+          "worker/requests",
+          "refs/heads/worker/requests",
+          "worker/results",
+          "refs/heads/worker/results",
+          "worker/health",
+          "refs/heads/worker/health",
+          "authorized_push(",
+          "scoped_push_env(",
+          "git push",
+          "\"push\"",
+          "worktree-create",
+          "git worktree add",
+          "gate_chain_publisher",
+          "gate_chain_orchestrator",
+          "universal_job_bridge",
+          "universal_job_dispatcher",
+          "universal_job_result_publisher",
+          "runtime_health_publisher",
+          "worker_control_plane",
+          "recover_preview_runtime",
+          "runtime-recovery",
+          "wake",
+          "retry",
+          "requeue",
+          "stale",
+          "timeout",
+          "claim",
+          "release",
+          "heartbeat"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "paths": [
+        "backend/tests/test_gate_chain_publisher.py",
+        "backend/tests/test_worker_channel_single_writer_contract.py",
+        "backend/tests/test_worker_health_branch_isolation_contract.py",
+        "backend/tests/test_worker_result_branch_isolation_contract.py",
+        "backend/tests/test_worker_save_github_safety_contract.py",
+        "backend/tests/test_worker_scope_concurrency_dispatcher_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty",
+    "No Production",
+    "No repository mutation",
+    "No service restart",
+    "No wake execution",
+    "No cleanup",
+    "No deprecation yet",
+    "No workerctl.py",
+    "No new control plane",
+    "Do not classify writer authority from branch-string presence alone",
+    "Classify authority only from actual publication/write/commit/push behavior",
+    "Preserve internal valid runtime publishers",
+    "Preserve worker/results and worker/health isolation",
+    "Identify worker/requests authority explicitly",
+    "Identify break-glass and recovery-only paths explicitly",
+    "Identify historical trigger files separately from executable writers",
+    "Identify paths that must converge to gate_chain_publisher",
+    "Identify duplicate or conflicting writers",
+    "Identify retry/requeue/wake patterns that can create waits over 120 minutes",
+    "production_touched must remain false"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE4B-PUBLICATION-AUTHORITY-MATRIX-READONLY-R1-20260922",
+  "mode": "READ_ONLY",
+  "objective": "Construir una matriz de autoridad real de publicacion del Universal Worker. Clasificar componentes por comportamiento efectivo, no por presencia de strings. Determinar writers canonicos de worker/requests, worker/results y worker/health; identificar rutas internas validas, recovery-only, legacy compatibles, candidatas a deprecacion, bloqueables, referencias historicas y falsos positivos. Detectar riesgos de doble writer, bypass, retry/requeue descontrolado, wake directo, encolamiento y esperas superiores a 120 minutos. No modificar archivos.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
