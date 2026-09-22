@@ -1,0 +1,50 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-MPRO-DATE-CONVERSION-FIX-R13-CARLOS-20260922T2135Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c565e5fd178528d0d309264e5884fd191ccd5c63",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "priority": "P0",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V2",
+    "chat": "20260922-Reportes ISCAM"
+  },
+  "objective": "Corregir la extracción de detalle MPRO para que el filtro de Venta_Encabezado.Vn_Fecha compare por fecha explícitamente convertida, evitando la comparación directa que omite días como 2026-08-08. Mantener intactos sucursal, estados, Vn_Tabla, joins, autoridad de Vn_Precio_Neto_Importe, prorrateo y Production.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "            WHERE v.Vn_Fecha >= %s\n              AND v.Vn_Fecha < %s\n              AND v.Sc_Cve_Sucursal = %s",
+      "new": "            WHERE CONVERT(date, v.Vn_Fecha) >= CONVERT(date, %s)\n              AND CONVERT(date, v.Vn_Fecha) < CONVERT(date, %s)\n              AND v.Sc_Cve_Sucursal = %s",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_mpro_date_filter_conversion_r13.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nDETAIL = ROOT / \"backend/scripts/poblar_ventas_detalle_producto_canonico.py\"\n\n\ndef _extract_mpro_block() -> str:\n    text = DETAIL.read_text(encoding=\"utf-8\")\n    return text.split(\"def _extract_mpro(\", 1)[1].split(\"PRORRATEO_Q4\", 1)[0]\n\n\ndef test_mpro_detail_filters_vn_fecha_as_calendar_date():\n    block = _extract_mpro_block()\n    assert \"WHERE CONVERT(date, v.Vn_Fecha) >= CONVERT(date, %s)\" in block\n    assert \"AND CONVERT(date, v.Vn_Fecha) < CONVERT(date, %s)\" in block\n    assert \"WHERE v.Vn_Fecha >= %s\" not in block\n\n\ndef test_mpro_detail_keeps_branch_and_canonical_header_guards():\n    block = _extract_mpro_block()\n    assert \"AND v.Sc_Cve_Sucursal = %s\" in block\n    assert \"AND ISNULL(v.Vn_Tabla, '') = 'Comanda'\" in block\n    assert \"AND ISNULL(v.Es_Cve_Estado, '') IN ('AC', 'FA', 'CA')\" in block\n    assert \"ISNULL(v.Vn_Precio_Neto_Importe, 0) AS importe_neto_ticket\" in block\n\n\ndef test_mpro_date_filter_preserves_half_open_range():\n    block = _extract_mpro_block()\n    assert \">= CONVERT(date, %s)\" in block\n    assert \"< CONVERT(date, %s)\" in block\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_mpro_date_filter_conversion_r13.py",
+        "backend/tests/test_mpro_fecha_operacion_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "expected_output": {
+    "status": "INTEGRATED",
+    "quality_gate": "PASS",
+    "production_touched": false
+  },
+  "created_at_utc": "2026-09-22T21:35:00Z"
+}
