@@ -1,22 +1,22 @@
 {
   "ahead_count": 0,
-  "behind_count": 0,
+  "behind_count": 1,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "SYNC",
-  "development_sha": "c565e5fd178528d0d309264e5884fd191ccd5c63",
-  "generated_at_utc": "2026-09-22T22:02:30Z",
+  "convergence_status": "REMOTE_AHEAD_ONLY",
+  "development_sha": "daa8cd034fb090170414b0165fdd74a3dba0dca8",
+  "generated_at_utc": "2026-09-22T22:05:28Z",
   "history": {
-    "done_total_local": 845,
+    "done_total_local": 846,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 755,
-    "results_total_local": 1420
+    "results_total_local": 1421
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2822,
+      "age_seconds": 3001,
       "job_id": "EDARSAHUB-TABLAJERIA-GATE1-FUNCTIONAL-SCOPE-READONLY-R1",
       "reasons": [
         "CHECK_2_QUERIES_REQUIRED"
@@ -25,56 +25,56 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 3453,
-      "job_id": "EDARSAHUB-BOS-WORKER-V1.2-CONVERGENCE-GATE1-CANONICAL-CONTRACT-PREFLIGHT-READONLY-R1-20260922",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2264,
+      "age_seconds": 2442,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE-CHAIN-PUBLISHER-CANARY-READONLY-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2455,
+      "age_seconds": 2634,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE-CHAIN-PUBLISHER-CANONICALIZATION-MUTATION-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2025,
+      "age_seconds": 2204,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE2A-SINGLE-WRITER-INVENTORY-READONLY-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1862,
+      "age_seconds": 2040,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE2B-WRITER-AUTHORITY-MAP-READONLY-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1677,
+      "age_seconds": 1855,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE2C-SINGLE-WRITER-ENFORCEMENT-PREFLIGHT-READONLY-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1542,
+      "age_seconds": 1721,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE2D-SINGLE-WRITER-ENFORCEMENT-MUTATION-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1433,
+      "age_seconds": 1612,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE2D-SINGLE-WRITER-ENFORCEMENT-MUTATION-R2-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1328,
+      "age_seconds": 1506,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE3-FINAL-E2E-CERTIFICATION-READONLY-R1-20260922",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1,
+      "job_id": "EDARSAHUB-ISCAM-MPRO-DATE-CONVERSION-FIX-R13-CARLOS-20260922T2135Z",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -89,14 +89,14 @@
   "queue_rejected_recent": 1,
   "queue_result_ready_recent": 9,
   "queue_running": 0,
-  "remote_development_sha": "c565e5fd178528d0d309264e5884fd191ccd5c63",
+  "remote_development_sha": "daa8cd034fb090170414b0165fdd74a3dba0dca8",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-22T22:02:25Z",
-    "last_receive_utc": "2026-09-22T22:02:27Z",
-    "last_terminal_utc": "2026-09-22T21:40:21Z",
-    "pid": "188",
+    "last_cycle_utc": "2026-09-22T22:05:23Z",
+    "last_receive_utc": "2026-09-22T22:05:28Z",
+    "last_terminal_utc": "2026-09-22T22:05:27Z",
+    "pid": "185",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "2ddacccac046a860239d90c71cc754756614013f",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
