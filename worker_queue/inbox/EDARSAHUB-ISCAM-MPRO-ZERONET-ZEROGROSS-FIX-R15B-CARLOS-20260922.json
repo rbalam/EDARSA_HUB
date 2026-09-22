@@ -1,0 +1,61 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-MPRO-ZERONET-ZEROGROSS-FIX-R15B-CARLOS-20260922",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Corregir el caso MPRO confirmado por evidencia READ_ONLY en 130QRO 08/08/2026: ticket final neto 0 con lineas reales y bruto 0 no requiere prorrateo monetario. Conservar sus lineas con importe neto 0, manteniendo fail-closed para cualquier neto positivo sin base monetaria.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "        gross_total = _q4(sum(gross_values, Decimal(\"0\")))\n        if gross_total <= 0:\n            header_only = all(\n                _s(row.get(\"producto_codigo_fuente\")).upper() == \"HEADER_SIN_DETALLE\"\n                for _, row in items\n            )\n            if not header_only:\n                raise RuntimeError(\n                    f\"MPRO: ticket sin detalle monetario distribuible: {ticket_key}\"\n                )\n\n            # El encabezado final existe pero el POS no expone líneas de producto.\n            # No se inventa producto: se conserva el ticket como ajuste técnico,\n            # excluido de vistas de productos por el prefijo __ISCAM_AJUSTE_.\n            for index, (_, row) in enumerate(items):\n                line_net = target_net if index == 0 else Decimal(\"0\")\n                row[\"producto_codigo_fuente\"] = SOFT_AJUSTE_ENCABEZADO\n                row[\"producto_nombre\"] = \"AJUSTE MPRO: HEADER SIN DETALLE DE PRODUCTO\"\n                row[\"cantidad\"] = Decimal(\"0\")\n                row[\"precio_unitario\"] = Decimal(\"0\")\n                row[\"importe_bruto\"] = line_net\n                row[\"importe_neto\"] = line_net\n                row[\"descuento_prorrateado\"] = Decimal(\"0\")\n            continue\n",
+      "new": "        gross_total = _q4(sum(gross_values, Decimal(\"0\")))\n        if gross_total <= 0:\n            # Un ticket final de importe cero no requiere una base monetaria de\n            # prorrateo. Conservamos sus líneas reales con importe neto cero para\n            # mantener ticket/PAX y estructura de producto sin inventar venta.\n            # Para cualquier encabezado positivo sin base monetaria se conserva\n            # el bloqueo fail-closed de abajo.\n            if target_net == Decimal(\"0.0000\"):\n                for _, row in items:\n                    row[\"importe_neto\"] = Decimal(\"0.0000\")\n                    row[\"descuento_prorrateado\"] = Decimal(\"0.0000\")\n                continue\n\n            header_only = all(\n                _s(row.get(\"producto_codigo_fuente\")).upper() == \"HEADER_SIN_DETALLE\"\n                for _, row in items\n            )\n            if not header_only:\n                raise RuntimeError(\n                    f\"MPRO: ticket sin detalle monetario distribuible: {ticket_key}\"\n                )\n\n            # El encabezado final existe pero el POS no expone líneas de producto.\n            # No se inventa producto: se conserva el ticket como ajuste técnico,\n            # excluido de vistas de productos por el prefijo __ISCAM_AJUSTE_.\n            for index, (_, row) in enumerate(items):\n                line_net = target_net if index == 0 else Decimal(\"0\")\n                row[\"producto_codigo_fuente\"] = SOFT_AJUSTE_ENCABEZADO\n                row[\"producto_nombre\"] = \"AJUSTE MPRO: HEADER SIN DETALLE DE PRODUCTO\"\n                row[\"cantidad\"] = Decimal(\"0\")\n                row[\"precio_unitario\"] = Decimal(\"0\")\n                row[\"importe_bruto\"] = line_net\n                row[\"importe_neto\"] = line_net\n                row[\"descuento_prorrateado\"] = Decimal(\"0\")\n            continue\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_mpro_header_authority_r93.py",
+      "old": "def test_mpro_zero_gross_non_header_still_fails_closed():\n    import pytest\n    with pytest.raises(RuntimeError, match=\"sin detalle monetario distribuible\"):\n        _prorratear_mpro_por_ticket([_row(\"PRODUCTO_REAL\", \"0\", \"125\", \"0\")])\n\n\ndef test_mpro_branch_filter_uses_header_schema_not_detail_column():\n",
+      "new": "def test_mpro_zero_net_zero_gross_preserves_real_product_lines():\n    out = _prorratear_mpro_por_ticket([\n        _row(\"PRODUCTO_A\", \"0\", \"0\", \"0\"),\n        _row(\"PRODUCTO_B\", \"0\", \"0\", \"0\"),\n    ])\n    assert [x[\"producto_codigo_fuente\"] for x in out] == [\n        \"PRODUCTO_A\",\n        \"PRODUCTO_B\",\n    ]\n    assert [x[\"importe_neto\"] for x in out] == [\n        Decimal(\"0.0000\"),\n        Decimal(\"0.0000\"),\n    ]\n    assert sum(x[\"importe_neto\"] for x in out) == Decimal(\"0.0000\")\n\n\ndef test_mpro_positive_net_zero_gross_non_header_still_fails_closed():\n    import pytest\n    with pytest.raises(RuntimeError, match=\"sin detalle monetario distribuible\"):\n        _prorratear_mpro_por_ticket([_row(\"PRODUCTO_REAL\", \"0\", \"125\", \"0\")])\n\n\ndef test_mpro_branch_filter_uses_header_schema_not_detail_column():\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_mpro_header_authority_r93.py",
+        "backend/tests/test_iscam_mpro_date_filter_conversion_r13.py",
+        "backend/tests/test_mpro_fecha_operacion_contract.py",
+        "backend/tests/test_iscam_detail_parity_backfill_r33.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260922 Corregir Reportes de ISCAM"
+  },
+  "constraints": [
+    "Scope exacto dos archivos",
+    "No Production",
+    "No SQL DML en este job",
+    "Solo relajar caso target_net=0 y gross_total=0",
+    "Neto positivo sin base monetaria debe seguir fallando",
+    "No tocar Comandas/Cuentas frontend",
+    "production_allowed=false"
+  ]
+}
