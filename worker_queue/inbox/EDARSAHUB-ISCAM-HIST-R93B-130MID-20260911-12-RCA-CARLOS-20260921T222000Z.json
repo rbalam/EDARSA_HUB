@@ -1,0 +1,46 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"EDARSAHUB-ISCAM-HIST-R93B-130MID-20260911-12-RCA-CARLOS-20260921T222000Z",
+  "created_at_utc":"2026-09-21T22:20:00Z",
+  "requester":{"email":"carlosruz@edarsa.com.mx","source":"chatgpt","project":"V1","chat":"EDARSAHUB-CONCILIACIONES"},
+  "requested_by":"chatgpt",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"a16400b13a196c3393780fa2ed481ec46ead9887",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Aislar por solo lectura la causa exacta de NO_CUADRA_REVISAR para 130MID 2026-09-11 y 2026-09-12. Runtime, encabezados POS, detalle por folio y diferencias monetarias. No escribir ni tocar Produccion.",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "source":"EDARSAHUB",
+      "max_rows":200,
+      "queries":[
+        {
+          "name":"runtime_130mid_20260911_12",
+          "sql":"SELECT TOP (200) CAST(fecha_operacion AS date) AS fecha,ventas_total,tickets_total,pax_total,ventas_abiertas,es_venta_abierta,es_corte_cerrado,fuente_original FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='130MID' AND CAST(fecha_operacion AS date) IN ('2026-09-11','2026-09-12') ORDER BY fecha"
+        }
+      ]
+    },
+    {
+      "type":"sql_readonly_audit",
+      "source":"POS",
+      "units":["130MID"],
+      "system_types":["SOFTRESTAURANT"],
+      "max_rows":200,
+      "queries":[
+        {
+          "name":"ticket_header_vs_detail_130mid_20260911_12",
+          "sql":"WITH h AS (SELECT CAST(tr.apertura AS date) AS fecha,ch.folio,CAST(ISNULL(ch.total,0) AS decimal(19,4)) AS header_total,CAST(ISNULL(ch.nopersonas,0) AS bigint) AS pax,CAST(ISNULL(ch.totaldescuentoycortesia,0) AS decimal(19,4)) AS descuento_indicador FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE CAST(tr.apertura AS date) IN ('2026-09-11','2026-09-12') AND ISNULL(ch.cancelado,0)=0), d AS (SELECT dc.foliodet AS folio,SUM(CAST(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0) AS decimal(19,4))) AS detalle_total FROM cheqdet dc GROUP BY dc.foliodet) SELECT TOP (200) h.fecha,h.folio,h.header_total,ISNULL(d.detalle_total,0) AS detalle_total,CAST(h.header_total-ISNULL(d.detalle_total,0) AS decimal(19,4)) AS delta,h.descuento_indicador,h.pax FROM h LEFT JOIN d ON d.folio=h.folio WHERE ABS(h.header_total-ISNULL(d.detalle_total,0))>0.05 ORDER BY h.fecha,ABS(h.header_total-ISNULL(d.detalle_total,0)) DESC,h.folio"
+        },
+        {
+          "name":"daily_header_detail_totals_130mid_20260911_12",
+          "sql":"WITH h AS (SELECT CAST(tr.apertura AS date) AS fecha,ch.folio,CAST(ISNULL(ch.total,0) AS decimal(19,4)) AS header_total,CAST(ISNULL(ch.nopersonas,0) AS bigint) AS pax FROM cheques ch INNER JOIN turnos tr ON tr.idturno=ch.idturno WHERE CAST(tr.apertura AS date) IN ('2026-09-11','2026-09-12') AND ISNULL(ch.cancelado,0)=0), d AS (SELECT dc.foliodet AS folio,SUM(CAST(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0) AS decimal(19,4))) AS detalle_total FROM cheqdet dc GROUP BY dc.foliodet) SELECT TOP (200) h.fecha,SUM(h.header_total) AS header_total,SUM(ISNULL(d.detalle_total,0)) AS detalle_total,CAST(SUM(h.header_total)-SUM(ISNULL(d.detalle_total,0)) AS decimal(19,4)) AS delta,COUNT(*) AS tickets,SUM(h.pax) AS pax FROM h LEFT JOIN d ON d.folio=h.folio GROUP BY h.fecha ORDER BY h.fecha"
+        }
+      ]
+    }
+  ],
+  "human_summary_language":"es",
+  "human_summary_level":"13yo-non-programmer"
+}
