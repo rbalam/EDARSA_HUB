@@ -1,0 +1,23 @@
+{
+  "base_sha": "87a1c8970889d0892bd1f1d217fe7ec5187b1b8e",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:AGENT_GUARD_WORKTREE_CREATE_FAILED:.vscode/tasks.json:1:1: error: AGENT_GUARD: Tarea duplicada con queue-publisher-EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-GUARD-GATE2A-FINGERPRINT-HEALTH-FOUNDATION-MUTATION-R3-20260922: EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-GUARD-GATE2A-FINGERPRINT-HEALTH-FOUNDATION-MUTATION-R3-20260922\n"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-22T06:31:48Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-GUARD-GATE2A-FINGERPRINT-HEALTH-FOUNDATION-MUTATION-R3-20260922",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-22T06:31:53Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-22T06:31:47Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
