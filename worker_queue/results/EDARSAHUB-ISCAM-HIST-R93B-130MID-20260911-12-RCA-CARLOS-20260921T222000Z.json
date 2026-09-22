@@ -1,0 +1,153 @@
+{
+  "base_sha": "e9115e7715e248a0fbdfe99619872cc2b5a39e6f",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-22T15:24:59Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-HIST-R93B-130MID-20260911-12-RCA-CARLOS-20260921T222000Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-22T15:25:15Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "fecha",
+              "ventas_total",
+              "tickets_total",
+              "pax_total",
+              "ventas_abiertas",
+              "es_venta_abierta",
+              "es_corte_cerrado",
+              "fuente_original"
+            ],
+            "name": "runtime_130mid_20260911_12",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "2026-09-11",
+                "133674.00",
+                36,
+                85,
+                "0.00",
+                false,
+                true,
+                "API_LOCAL"
+              ],
+              [
+                "2026-09-12",
+                "147501.00",
+                34,
+                99,
+                "0.00",
+                false,
+                true,
+                "API_LOCAL"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "fecha",
+              "folio",
+              "header_total",
+              "detalle_total",
+              "delta",
+              "descuento_indicador",
+              "pax"
+            ],
+            "name": "ticket_header_vs_detail_130mid_20260911_12",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "2026-09-12",
+                "102654",
+                "0.0000",
+                "800.0000",
+                "-800.0000",
+                "689.6552",
+                "1"
+              ],
+              [
+                "2026-09-12",
+                "102653",
+                "0.0000",
+                "305.0000",
+                "-305.0000",
+                "262.9310",
+                "1"
+              ],
+              [
+                "2026-09-12",
+                "102674",
+                "10000.0000",
+                "10000.0530",
+                "-0.0530",
+                "0.0000",
+                "6"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha",
+              "header_total",
+              "detalle_total",
+              "delta",
+              "tickets",
+              "pax"
+            ],
+            "name": "daily_header_detail_totals_130mid_20260911_12",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "2026-09-11",
+                "133674.0000",
+                "133674.1975",
+                "-0.1975",
+                36,
+                "85"
+              ],
+              [
+                "2026-09-12",
+                "147501.0000",
+                "148606.2383",
+                "-1105.2383",
+                34,
+                "99"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-22T15:24:55Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
