@@ -1,0 +1,70 @@
+{
+  "base_sha": "01ce84eb20092cda86068b85c856511116e05d2b",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-22T22:47:53Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-130QRO-0808-MPRO-ZEROGROSS-ALL-DIAG-R2-CARLOS-20260922",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-22T22:47:54Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "Vn_Folio",
+              "Vn_Documento",
+              "Vn_Fecha",
+              "Sc_Cve_Sucursal",
+              "estado_origen",
+              "neto_header",
+              "lineas_detalle",
+              "cantidad_total",
+              "bruto_detalle",
+              "precio_max",
+              "producto_min",
+              "producto_max"
+            ],
+            "name": "qro_0808_zero_gross_all",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "21-0043964",
+                "21-0051900",
+                "2026-08-08T00:00:00",
+                "0021",
+                "FA",
+                "0.0000",
+                2,
+                "2.0000",
+                "0.0000",
+                "0.0000",
+                "0000001637",
+                "0000008573"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-22T22:47:52Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
