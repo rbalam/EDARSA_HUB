@@ -1,0 +1,92 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-GUARD-GATE2B-CONTROL-PLANE-PREFLIGHT-READONLY-R1-20260922",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e9115e7715e248a0fbdfe99619872cc2b5a39e6f",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar en modo estrictamente READ_ONLY como debe consumir worker_control_plane.py la autoridad canonica worker_runtime_fingerprint.py para implementar Runtime Convergence fail-closed sin duplicar logica, sin modificar recovery, wake, dispatcher, lifecycle ni runtime. Identificar duplicaciones actuales de branch, generation, heartbeat, code-tree y Git convergence; determinar el delta minimo para Gate2B Mutation y conservar Production fail-closed.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/worker_runtime_fingerprint.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "tools/mirror_sync/worker_runtime_reconciler.py",
+          "tools/bootstrap/recover_preview_runtime.sh",
+          "backend/tests/test_worker_runtime_fingerprint_contract.py",
+          "backend/tests/test_worker_control_plane_contract.py",
+          "backend/tests/test_worker_runtime_startup_selfheal_r1.py"
+        ],
+        "search_terms": [
+          "build_runtime_fingerprint",
+          "REQUIRED_CAPABILITIES",
+          "expected_generation",
+          "generation",
+          "last_receive_utc",
+          "HEARTBEAT_STALE",
+          "request_universal_restart",
+          "preserve_and_fast_forward",
+          "convergence",
+          "production_touched",
+          "worker_code_tree_aligned",
+          "generation_aligned"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh"
+        ],
+        "exclude_patterns": [],
+        "max_results": 2000
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_runtime_fingerprint_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_runtime_startup_selfheal_r1.py",
+        "backend/tests/test_worker_runtime_wake_convergence_r42.py",
+        "backend/tests/test_worker_three_properties_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty",
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "No Cavas",
+    "No Tablajerias",
+    "No NetPay",
+    "No service restart",
+    "No supervisorctl",
+    "No worker wake",
+    "No Git mutation",
+    "No migrations",
+    "No lifecycle mutation",
+    "Do not modify worker_control_plane.py",
+    "Do not modify worker_runtime_fingerprint.py",
+    "Do not modify recover_preview_runtime.sh",
+    "Do not modify worker_runtime_reconciler.py",
+    "Do not modify universal_job_worker.sh",
+    "Do not modify universal_job_dispatcher.py",
+    "Do not weaken Agent Guard",
+    "Do not weaken Repository Artifact Guard",
+    "Do not weaken GLOBAL_GIT_WRITER",
+    "Do not weaken Git Divergence Guard",
+    "Fingerprint authority remains worker_runtime_fingerprint.py",
+    "Control plane must consume authority, never duplicate it",
+    "production_touched must remain false"
+  ]
+}
