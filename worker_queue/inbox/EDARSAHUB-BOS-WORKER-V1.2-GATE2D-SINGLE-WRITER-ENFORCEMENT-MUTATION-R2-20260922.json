@@ -1,0 +1,92 @@
+{
+  "actions": [
+    {
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\n\nTOOLS = ROOT / \"tools\" / \"mirror_sync\"\n\nREQUEST_WRITER = TOOLS / \"gate_chain_publisher.py\"\nRESULT_WRITER = TOOLS / \"universal_job_result_publisher.py\"\nHEALTH_WRITER = TOOLS / \"runtime_health_publisher.py\"\n\nCANONICAL_WRITERS = {\n    \"worker/requests\": REQUEST_WRITER,\n    \"worker/results\": RESULT_WRITER,\n    \"worker/health\": HEALTH_WRITER,\n}\n\n\ndef source(path: Path) -> str:\n    return path.read_text(\n        encoding=\"utf-8\",\n        errors=\"replace\",\n    )\n\n\ndef test_request_writer_contract_is_canonical():\n    text = source(REQUEST_WRITER)\n\n    assert \"worker/requests\" in text\n    assert \"authorized_push(\" in text\n    assert \"worktree-create\" in text\n    assert \"worker_queue_publication\" in text\n\n    assert \"--no-verify\" not in text\n    assert \"--force\" not in text\n    assert \"force-with-lease\" not in text\n\n\ndef test_result_writer_contract_is_canonical():\n    text = source(RESULT_WRITER)\n\n    assert \"worker/results\" in text\n    assert \"publish_one\" in text\n\n    assert \"--no-verify\" not in text\n    assert \"--force\" not in text\n    assert \"force-with-lease\" not in text\n\n\ndef test_health_writer_contract_is_canonical():\n    text = source(HEALTH_WRITER)\n\n    assert \"worker/health\" in text\n    assert \"production_touched\" in text\n\n    assert \"--no-verify\" not in text\n    assert \"--force\" not in text\n    assert \"force-with-lease\" not in text\n\n\ndef test_request_publication_has_exact_scope_and_agent_guard():\n    text = source(REQUEST_WRITER)\n\n    assert 'f\"worker_queue/inbox/{job_id}.json\"' in text\n    assert \"validate_commit_scope(\" in text\n    assert '\"worktree-create\"' in text\n    assert '\"release\"' in text\n\n\ndef test_request_publication_has_optimistic_concurrency():\n    text = source(REQUEST_WRITER)\n\n    assert \"_queue_remote_head(\" in text\n    assert \"REMOTE_MOVED_RETRY_REQUIRED\" in text\n    assert \"QUEUE_PUBLISHER_LINEAGE_INVALID\" in text\n\n\ndef test_request_publisher_is_idempotent():\n    text = source(REQUEST_WRITER)\n\n    assert \"REMOTE_JOB=EXISTS\" in text\n    assert '\"cat-file\",' in text\n\n\ndef test_channel_roles_remain_distinct():\n    request = source(REQUEST_WRITER)\n    result = source(RESULT_WRITER)\n    health = source(HEALTH_WRITER)\n\n    # These assertions define ownership behavior,\n    # not mere knowledge of another branch.\n    assert \"worker_queue_publication\" in request\n    assert \"publish_one\" in result\n    assert \"production_touched\" in health\n\n    # Request publisher must not publish result/health payloads.\n    assert \"publish_one(\" not in request\n    assert \"runtime_summary(\" not in request\n\n\ndef test_no_parallel_workerctl_control_plane():\n    workerctl = TOOLS / \"workerctl.py\"\n\n    assert not workerctl.exists()\n\n\ndef test_existing_control_plane_remains_canonical():\n    control = TOOLS / \"worker_control_plane.py\"\n    text = source(control)\n\n    assert control.is_file()\n    assert \"production_touched\" in text\n",
+      "path": "backend/tests/test_worker_channel_single_writer_contract.py",
+      "type": "write_file"
+    }
+  ],
+  "base_sha": "77c1a9420fc36fb0702f357a2f7472a787263652",
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_worker_channel_single_writer_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_channel_single_writer_contract.py",
+        "backend/tests/test_gate_chain_publisher.py",
+        "backend/tests/test_worker_health_branch_isolation_contract.py",
+        "backend/tests/test_worker_result_branch_isolation_contract.py",
+        "backend/tests/test_worker_save_github_safety_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py"
+        ],
+        "max_results": 1000,
+        "paths": [
+          "backend/tests/test_worker_channel_single_writer_contract.py",
+          "tools/mirror_sync/gate_chain_publisher.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "tools/mirror_sync/worker_control_plane.py"
+        ],
+        "search_terms": [
+          "worker/requests",
+          "worker/results",
+          "worker/health",
+          "authorized_push",
+          "validate_commit_scope",
+          "worker_queue_publication",
+          "production_touched"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "No Scheduler",
+    "No NetPay",
+    "Exactly one declared file may change",
+    "Only backend/tests/test_worker_channel_single_writer_contract.py may be created",
+    "Do not modify any runtime file",
+    "Do not modify gate_chain_publisher.py",
+    "Do not modify universal_job_result_publisher.py",
+    "Do not modify runtime_health_publisher.py",
+    "Do not modify universal_job_bridge.py",
+    "Do not modify universal_job_dispatcher.py",
+    "Do not modify worker_control_plane.py",
+    "Do not create workerctl.py",
+    "Do not create another control plane",
+    "Do not infer writer authority from branch string presence alone",
+    "Do not weaken Agent Guard",
+    "Do not weaken Repository Artifact Guard",
+    "Do not weaken Git Divergence Guard",
+    "Do not bypass Git hooks",
+    "Do not force push",
+    "production_touched must remain false"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE2D-SINGLE-WRITER-ENFORCEMENT-MUTATION-R2-20260922",
+  "mode": "MUTATION",
+  "objective": "Corregir exclusivamente el contrato de test Gate2D para eliminar el falso positivo causado por confundir referencia a una rama con autoridad de escritura. Certificar las responsabilidades canónicas de requests/results/health sin modificar runtime ni publishers.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
