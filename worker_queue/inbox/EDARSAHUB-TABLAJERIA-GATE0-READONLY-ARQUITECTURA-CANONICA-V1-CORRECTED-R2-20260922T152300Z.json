@@ -1,0 +1,162 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TABLAJERIA-GATE0-READONLY-ARQUITECTURA-CANONICA-V1-CORRECTED-R2-20260922T152300Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e9115e7715e248a0fbdfe99619872cc2b5a39e6f",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "priority": "P0",
+  "objective": "R2 corrige Gate0 READ_ONLY de Tablajeria agregando queries explicitas al sql_readonly_audit. Auditar arquitectura tecnica canonica V1 contra repositorio real y metadata SQL disponible de solo lectura. No modificar archivos. Publicar reporte completo en worker/results.",
+  "context": {
+    "previous_job_id": "EDARSAHUB-TABLAJERIA-GATE0-READONLY-ARQUITECTURA-CANONICA-V1-CORRECTED-20260922T050100Z",
+    "previous_rejection_reason": "CHECK_2_QUERIES_REQUIRED",
+    "authorized_chat": "Tablajeria 3",
+    "official_sources": [
+      "Tablajeria en ERP: verdad operativa",
+      "Plan Arquitectonico Tablajeria: mapa funcional",
+      "Tablajerias Arquitectura: diseno tecnico canonico",
+      "Tablajeria 3: ejecucion real con Worker"
+    ],
+    "report_destination": "worker/results",
+    "do_not_create_report_file": "/app/docs/reports/TABLAJERIA_GATE0_READONLY_ARQUITECTURA_CANONICA_V1.md"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "frontend/src",
+          "docs",
+          "tools/mirror_sync"
+        ],
+        "search_terms": [
+          "Tablajeria",
+          "Tablaje",
+          "Operaciones_Tablaje",
+          "lotes-proveedor",
+          "plantillas",
+          "inventario",
+          "kardex",
+          "costos",
+          "contabilidad",
+          "compras",
+          "RBAC",
+          "FechaOperacion",
+          "timezone",
+          "Foto Finish",
+          "Parrilla",
+          "sql_readonly_audit"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.jsx",
+          "*.js",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "exclude_patterns": [
+          "**/__pycache__/**",
+          "**/node_modules/**",
+          "**/build/**",
+          "**/.venv/**"
+        ],
+        "max_results": 2000
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "schema_tablajeria_objects",
+          "sql": "SELECT TOP (300) SCHEMA_NAME(o.schema_id) AS schema_name, o.name AS object_name, o.type_desc, o.create_date, o.modify_date FROM sys.objects o WHERE LOWER(o.name) LIKE '%tablaj%' OR LOWER(o.name) LIKE '%tablaje%' OR LOWER(o.name) LIKE '%lote%' OR LOWER(o.name) LIKE '%plantilla%' OR LOWER(o.name) LIKE '%merma%' OR LOWER(o.name) LIKE '%rendimiento%' ORDER BY schema_name, object_name"
+        },
+        {
+          "name": "schema_canonical_domain_objects",
+          "sql": "SELECT TOP (500) SCHEMA_NAME(o.schema_id) AS schema_name, o.name AS object_name, o.type_desc FROM sys.objects o WHERE LOWER(o.name) LIKE '%empresa%' OR LOWER(o.name) LIKE '%unidad%' OR LOWER(o.name) LIKE '%sucursal%' OR LOWER(o.name) LIKE '%almacen%' OR LOWER(o.name) LIKE '%producto%' OR LOWER(o.name) LIKE '%insumo%' OR LOWER(o.name) LIKE '%inventario%' OR LOWER(o.name) LIKE '%movimiento%' OR LOWER(o.name) LIKE '%kardex%' OR LOWER(o.name) LIKE '%costo%' OR LOWER(o.name) LIKE '%compra%' OR LOWER(o.name) LIKE '%contab%' OR LOWER(o.name) LIKE '%usuario%' OR LOWER(o.name) LIKE '%rol%' OR LOWER(o.name) LIKE '%permiso%' OR LOWER(o.name) LIKE '%auditoria%' OR LOWER(o.name) LIKE '%workflow%' ORDER BY schema_name, object_name"
+        },
+        {
+          "name": "schema_relevant_columns",
+          "sql": "SELECT TOP (500) SCHEMA_NAME(o.schema_id) AS schema_name, o.name AS object_name, c.name AS column_name, t.name AS data_type, c.max_length, c.precision, c.scale, c.is_nullable FROM sys.columns c INNER JOIN sys.objects o ON c.object_id = o.object_id INNER JOIN sys.types t ON c.user_type_id = t.user_type_id WHERE LOWER(o.name) LIKE '%tablaj%' OR LOWER(o.name) LIKE '%inventario%' OR LOWER(o.name) LIKE '%producto%' OR LOWER(o.name) LIKE '%movimiento%' OR LOWER(o.name) LIKE '%costo%' OR LOWER(o.name) LIKE '%compra%' OR LOWER(o.name) LIKE '%usuario%' OR LOWER(c.name) LIKE '%empresa%' OR LOWER(c.name) LIKE '%unidad%' OR LOWER(c.name) LIKE '%sucursal%' OR LOWER(c.name) LIKE '%almacen%' OR LOWER(c.name) LIKE '%lote%' OR LOWER(c.name) LIKE '%fechaoperacion%' OR LOWER(c.name) LIKE '%cantidad%' OR LOWER(c.name) LIKE '%peso%' OR LOWER(c.name) LIKE '%costo%' OR LOWER(c.name) LIKE '%merma%' OR LOWER(c.name) LIKE '%rendimiento%' ORDER BY schema_name, object_name, c.column_id"
+        },
+        {
+          "name": "schema_tablajeria_foreign_keys",
+          "sql": "SELECT TOP (300) fk.name AS fk_name, SCHEMA_NAME(parent_o.schema_id) AS parent_schema, parent_o.name AS parent_object, SCHEMA_NAME(ref_o.schema_id) AS referenced_schema, ref_o.name AS referenced_object FROM sys.foreign_keys fk INNER JOIN sys.objects parent_o ON fk.parent_object_id = parent_o.object_id INNER JOIN sys.objects ref_o ON fk.referenced_object_id = ref_o.object_id WHERE LOWER(parent_o.name) LIKE '%tablaj%' OR LOWER(parent_o.name) LIKE '%lote%' OR LOWER(parent_o.name) LIKE '%plantilla%' OR LOWER(ref_o.name) LIKE '%tablaj%' OR LOWER(ref_o.name) LIKE '%producto%' OR LOWER(ref_o.name) LIKE '%inventario%' OR LOWER(ref_o.name) LIKE '%almacen%' OR LOWER(ref_o.name) LIKE '%usuario%' ORDER BY parent_schema, parent_object, fk_name"
+        },
+        {
+          "name": "schema_tablajeria_indexes",
+          "sql": "SELECT TOP (300) SCHEMA_NAME(o.schema_id) AS schema_name, o.name AS object_name, i.name AS index_name, i.type_desc, i.is_unique, i.is_primary_key FROM sys.indexes i INNER JOIN sys.objects o ON i.object_id = o.object_id WHERE i.name IS NOT NULL AND (LOWER(o.name) LIKE '%tablaj%' OR LOWER(o.name) LIKE '%lote%' OR LOWER(o.name) LIKE '%plantilla%' OR LOWER(o.name) LIKE '%inventario%' OR LOWER(o.name) LIKE '%movimiento%') ORDER BY schema_name, object_name, index_name"
+        },
+        {
+          "name": "schema_modules_references",
+          "sql": "SELECT TOP (300) SCHEMA_NAME(o.schema_id) AS schema_name, o.name AS object_name, o.type_desc FROM sys.objects o LEFT JOIN sys.sql_modules m ON o.object_id = m.object_id WHERE LOWER(o.name) LIKE '%tablaj%' OR LOWER(o.name) LIKE '%parrilla%' OR LOWER(o.name) LIKE '%foto%' OR LOWER(o.name) LIKE '%inventario%' OR LOWER(o.name) LIKE '%costo%' OR LOWER(o.name) LIKE '%contab%' OR LOWER(m.definition) LIKE '%tablaj%' OR LOWER(m.definition) LIKE '%operaciones_tablaje%' OR LOWER(m.definition) LIKE '%fechaoperacion%' ORDER BY schema_name, object_name"
+        },
+        {
+          "name": "schema_rbac_permissions",
+          "sql": "SELECT TOP (300) DB_NAME() AS database_name, dp.name AS principal_name, dp.type_desc AS principal_type, perm.class_desc, perm.permission_name, perm.state_desc, OBJECT_SCHEMA_NAME(perm.major_id) AS object_schema, OBJECT_NAME(perm.major_id) AS object_name FROM sys.database_permissions perm INNER JOIN sys.database_principals dp ON perm.grantee_principal_id = dp.principal_id WHERE LOWER(dp.name) LIKE '%tablaj%' OR LOWER(dp.name) LIKE '%hub%' OR LOWER(perm.permission_name) LIKE '%select%' OR LOWER(OBJECT_NAME(perm.major_id)) LIKE '%tablaj%' ORDER BY principal_name, permission_name, object_schema, object_name"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "required_output": [
+    "status",
+    "quality_gate",
+    "percent_complete",
+    "production_touched",
+    "mutations_executed",
+    "ddl_executed",
+    "dml_executed",
+    "backend_touched",
+    "frontend_touched",
+    "worker_mode",
+    "blockers",
+    "estado_general",
+    "archivos_inspeccionados",
+    "tablas_detectadas",
+    "endpoints_detectados",
+    "menus_tabs_detectados",
+    "permisos_detectados",
+    "helpers_canonicos_detectados",
+    "tablas_a_reutilizar",
+    "tablas_no_duplicar",
+    "brechas_tecnicas",
+    "riesgos_criticos",
+    "riesgos_altos",
+    "inconsistencias_v1",
+    "conforme",
+    "incompleto",
+    "contradictorio",
+    "duplicado",
+    "no_cubierto",
+    "confirmacion_no_modificaciones",
+    "recomendacion_gate1"
+  ],
+  "expected_terminal_success": {
+    "status": "CERTIFIED_READ_ONLY",
+    "quality_gate": "PASS",
+    "progress_percent": 100,
+    "production_touched": false,
+    "mutations_executed": false,
+    "ddl_executed": false,
+    "dml_executed": false,
+    "backend_touched": false,
+    "frontend_touched": false,
+    "worker_mode": "READ_ONLY",
+    "blockers": []
+  },
+  "expected_terminal_blocked": {
+    "status": "BLOCKED",
+    "quality_gate": "FAIL",
+    "production_touched": false,
+    "mutations_executed": false
+  },
+  "created_at_utc": "2026-09-22T15:23:00Z"
+}
