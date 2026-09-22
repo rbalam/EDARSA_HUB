@@ -1,0 +1,173 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RESULT-OBSERVABILITY-HARDENING-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e9115e7715e248a0fbdfe99619872cc2b5a39e6f",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "STRICT_READ_ONLY",
+  "priority": "P0",
+  "objective": "Auditar por que el resultado terminal de EDARSAHUB-TABLAJERIA-GATE0-READONLY-ARQUITECTURA-CANONICA-V1-CORRECTED-R2-20260922T152300Z aparecio como content=\"\" mediante una lectura, aunque el resultado real esta publicado y certificado como CERTIFIED_READ_ONLY / PASS. No modificar archivos. No publicar Gate1. Proponer hardening del contrato de observabilidad de resultados del Universal Worker.",
+  "context": {
+    "source_chat": "Tablajeria 3",
+    "reference_job_id": "EDARSAHUB-TABLAJERIA-GATE0-READONLY-ARQUITECTURA-CANONICA-V1-CORRECTED-R2-20260922T152300Z",
+    "reference_result_expected_status": "CERTIFIED_READ_ONLY",
+    "reference_result_expected_quality_gate": "PASS",
+    "report_destination": "worker/results",
+    "do_not_publish_gate1": true,
+    "do_not_retry_reference_job": true,
+    "do_not_duplicate_reference_job": true,
+    "do_not_create_implementation": true,
+    "do_not_change_tablajeria_logic": true,
+    "proposed_canonical_status_contract": "worker_queue/status/jobs/<job_id>.json"
+  },
+  "forbidden_actions": [
+    "publish_gate1",
+    "touch_production",
+    "ddl",
+    "dml",
+    "modify_backend",
+    "modify_frontend",
+    "change_chat_names",
+    "mutate_files",
+    "retry_reference_job",
+    "duplicate_reference_job",
+    "create_new_implementation"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/universal_result_publisher.py",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/worker_queue_status.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "worker_queue/results",
+          "worker_queue/status",
+          "worker_queue/inbox",
+          "worker_queue/published",
+          "worker_queue/rejected",
+          "worker_queue/rejected_history"
+        ],
+        "search_terms": [
+          "content=\"\"",
+          "content": "",
+          "latest.json",
+          "worker_queue/status",
+          "worker_queue/results",
+          "post-write",
+          "post_write",
+          "placeholder",
+          "size_bytes",
+          "terminal_result",
+          "CERTIFIED_READ_ONLY",
+          "PUBLISH_INTEGRITY_FAILED",
+          "edarsahub.worker-result.v2",
+          "edarsahub.worker-rejection.v2",
+          "GitHub Contents API",
+          "raw.githubusercontent.com",
+          "blob",
+          "fetch_file",
+          "result_sha",
+          "result_size_bytes"
+        ],
+        "include_globs": [
+          "*.py",
+          "*.json",
+          "*.md",
+          "*.yml",
+          "*.yaml"
+        ],
+        "exclude_globs": [
+          "**/__pycache__/**",
+          "**/node_modules/**",
+          "**/build/**",
+          "**/dist/**"
+        ],
+        "max_results": 2000
+      }
+    },
+    {
+      "type": "git_diff_check",
+      "request": {
+        "expected_clean": true,
+        "fail_if_mutations_detected": true
+      }
+    }
+  ],
+  "audit_scope": {
+    "inspect_local_paths": [
+      "/app/.git/universal-worker-queue/pending",
+      "/app/.git/universal-worker-queue/processing",
+      "/app/.git/universal-worker-queue/results",
+      "/app/.git/universal-worker-queue/done",
+      "/app/.git/universal-worker-queue/published",
+      "/app/.git/universal-worker-queue/rejected",
+      "/app/.git/universal-worker-queue/rejected_history",
+      "/app/.git/universal-worker-queue/runtime"
+    ],
+    "inspect_repository_files": [
+      "tools/mirror_sync/universal_result_publisher.py",
+      "tools/mirror_sync/universal_job_bridge.py",
+      "tools/mirror_sync/worker_queue_status.py",
+      "tools/mirror_sync/worker_control_plane.py",
+      "worker_queue/results/EDARSAHUB-TABLAJERIA-GATE0-READONLY-ARQUITECTURA-CANONICA-V1-CORRECTED-R2-20260922T152300Z.json",
+      "worker_queue/status/latest.json",
+      "worker_queue/inbox/EDARSAHUB-TABLAJERIA-GATE0-READONLY-ARQUITECTURA-CANONICA-V1-CORRECTED-R2-20260922T152300Z.json"
+    ],
+    "compare_read_modes": [
+      "fetch_file",
+      "GitHub Contents API",
+      "raw",
+      "blob"
+    ]
+  },
+  "verify": [
+    "si worker_queue/results permite placeholders vacios",
+    "si el publisher hace post-write verification",
+    "si existe indice por job",
+    "si latest.json puede quedar stale",
+    "si hay contrato canonico para consultar resultado por job_id",
+    "si dashboard ChatGPT operador pueden distinguir resultado ausente, resultado vacio, resultado terminal valido, resultado invalido y status stale",
+    "si el resultado terminal real del job R2 esta confirmado como CERTIFIED_READ_ONLY PASS"
+  ],
+  "required_output": [
+    "job_id",
+    "actual_terminal_result_confirmed",
+    "actual_status",
+    "actual_quality_gate",
+    "actual_certification",
+    "actual_percent_complete",
+    "content_empty_read_reproduced",
+    "likely_root_cause",
+    "universal_worker_change_required",
+    "recommended_files_to_change",
+    "recommended_change_scope",
+    "risk_level",
+    "production_touched",
+    "mutations_executed",
+    "gate1_allowed"
+  ],
+  "expected_terminal_success": {
+    "status": "CERTIFIED_READ_ONLY",
+    "quality_gate": "PASS",
+    "production_touched": false,
+    "mutations_executed": false,
+    "ddl_executed": false,
+    "dml_executed": false,
+    "backend_touched": false,
+    "frontend_touched": false,
+    "worker_mode": "STRICT_READ_ONLY"
+  },
+  "recommendation_expected": [
+    "proponer contrato canonico worker_queue/status/jobs/<job_id>.json",
+    "prohibir placeholders vacios en worker_queue/results",
+    "agregar post-write verification",
+    "marcar latest.json como stale si no esta fresco",
+    "no cambiar logica de Tablajeria"
+  ],
+  "created_at_utc": "2026-09-22T16:30:00Z"
+}
