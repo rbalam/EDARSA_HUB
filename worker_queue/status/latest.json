@@ -4,11 +4,11 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "e9115e7715e248a0fbdfe99619872cc2b5a39e6f",
-  "generated_at_utc": "2026-09-22T17:05:33Z",
+  "generated_at_utc": "2026-09-22T17:27:26Z",
   "history": {
     "done_total_local": 835,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 752,
     "results_total_local": 1408
   },
@@ -16,56 +16,36 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3125,
-      "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RESULT-OBSERVABILITY-HARDENING-READONLY-R1",
-      "reasons": [
-        "INVALID_JSON"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 3150,
-      "job_id": "EDARSAHUB-UNIVERSAL-WORKER-WORKERCTL-CANONICALIZATION-R1",
-      "reasons": [
-        "REQUESTER_EMAIL_INVALID",
-        "CHECK_1_INVALID_PATHS",
-        "CHECK_2_REQUEST_REQUIRED"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 3042,
-      "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE0-READONLY-R1",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1785,
+      "age_seconds": 3098,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-WORKERCTL-CANONICALIZATION-R2",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 13,
+      "job_id": "EDARSAHUB-ISCAM-PORTAL-TIMEOUT-REGRESSION-FIX-CARLOS-20260922T1705Z",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "local_development_sha": "e9115e7715e248a0fbdfe99619872cc2b5a39e6f",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 2,
-  "queue_result_ready_recent": 2,
-  "queue_running": 0,
+  "queue_rejected_recent": 0,
+  "queue_result_ready_recent": 1,
+  "queue_running": 1,
   "remote_development_sha": "e9115e7715e248a0fbdfe99619872cc2b5a39e6f",
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "EDARSAHUB-ISCAM-PORTAL-TIMEOUT-REGRESSION-FIX-CARLOS-20260922T1705Z",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-22T17:05:30Z",
-    "last_receive_utc": "2026-09-22T17:05:32Z",
+    "last_cycle_utc": "2026-09-22T17:27:26Z",
+    "last_receive_utc": "2026-09-22T17:27:21Z",
     "last_terminal_utc": "2026-09-22T16:35:48Z",
-    "pid": "189",
+    "pid": "206",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "2ddc69c7acb1a28e8eaf297b014ca004358b4ce4",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
