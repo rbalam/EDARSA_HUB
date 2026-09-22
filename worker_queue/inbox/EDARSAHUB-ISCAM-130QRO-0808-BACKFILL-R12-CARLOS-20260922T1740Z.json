@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-130QRO-0808-BACKFILL-R12-CARLOS-20260922T1740Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "393797e739bb9c041e6d98847b3197ca19e6fc49",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "priority": "P0",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V2",
+    "chat": "20260922-Reportes ISCAM"
+  },
+  "objective": "Reparar exclusivamente el detalle ISCAM faltante de 130QRO para la fecha operativa 2026-08-08, ya certificada como unica fecha faltante de agosto. Conciliar contra Runtime V2: ventas 233021.00, 57 tickets y 159 pax. No tocar otras fechas, otras unidades, Runtime V2, Sync_Sales legacy ni Produccion.",
+  "actions": [],
+  "units": [
+    "130QRO"
+  ],
+  "fecha_inicio": "2026-08-08",
+  "fecha_fin": "2026-08-09",
+  "dry_run": false,
+  "confirm_detail_backfill": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "qro_0808_runtime_vs_detail_final",
+          "sql": "WITH r AS (\n  SELECT CAST(SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS decimal(19,4)) ventas,\n         SUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets,\n         SUM(CAST(ISNULL(pax_total,0) AS bigint)) pax\n  FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\n  WHERE unidad_negocio_id='130QRO'\n    AND fecha_operacion>='2026-08-08' AND fecha_operacion<'2026-08-09'\n), d0 AS (\n  SELECT numero_ticket,\n         SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) venta,\n         MAX(CAST(ISNULL(pax,0) AS bigint)) pax\n  FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n  WHERE unidad_negocio_id='130QRO'\n    AND fecha_operacion>='2026-08-08' AND fecha_operacion<'2026-08-09'\n    AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n  GROUP BY numero_ticket\n), d AS (\n  SELECT CAST(ISNULL(SUM(venta),0) AS decimal(19,4)) ventas,\n         COUNT_BIG(*) tickets,\n         SUM(CAST(ISNULL(pax,0) AS bigint)) pax\n  FROM d0\n)\nSELECT CAST(ISNULL(r.ventas,0) AS decimal(19,4)) ventas_runtime,\n       CAST(ISNULL(d.ventas,0) AS decimal(19,4)) ventas_detalle,\n       CAST(ISNULL(r.ventas,0)-ISNULL(d.ventas,0) AS decimal(19,4)) delta_ventas,\n       ISNULL(r.tickets,0) tickets_runtime,\n       ISNULL(d.tickets,0) tickets_detalle,\n       ISNULL(r.tickets,0)-ISNULL(d.tickets,0) delta_tickets,\n       ISNULL(r.pax,0) pax_runtime,\n       ISNULL(d.pax,0) pax_detalle,\n       ISNULL(r.pax,0)-ISNULL(d.pax,0) delta_pax,\n       CASE WHEN ABS(ISNULL(r.ventas,0)-ISNULL(d.ventas,0))<=0.05\n              AND ISNULL(r.tickets,0)=ISNULL(d.tickets,0)\n              AND ISNULL(r.pax,0)=ISNULL(d.pax,0)\n              AND ABS(ISNULL(r.ventas,0)-233021.00)<=0.05\n              AND ISNULL(r.tickets,0)=57\n              AND ISNULL(r.pax,0)=159\n            THEN 'PASS' ELSE 'FAIL' END conciliacion_final\nFROM r CROSS JOIN d"
+        }
+      ]
+    }
+  ],
+  "expected_output": {
+    "status": "OPERATIONAL_COMPLETE",
+    "quality_gate": "PASS",
+    "certification": "CERTIFIED_OPERATIONAL",
+    "production_touched": false
+  },
+  "created_at_utc": "2026-09-22T17:40:00Z"
+}
