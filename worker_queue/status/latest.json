@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "e9115e7715e248a0fbdfe99619872cc2b5a39e6f",
-  "generated_at_utc": "2026-09-22T16:04:50Z",
+  "generated_at_utc": "2026-09-22T16:06:04Z",
   "history": {
     "done_total_local": 834,
     "pending_total_local": 0,
@@ -16,37 +16,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2400,
+      "age_seconds": 2475,
       "job_id": "EDARSAHUB-ISCAM-130QRO-0808-BACKFILL-R11-CARLOS-20260922T0016Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2397,
+      "age_seconds": 2471,
       "job_id": "EDARSAHUB-ISCAM-130QRO-COMANDAS-DIAG-CARLOS-20260922T1509Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2390,
+      "age_seconds": 2464,
       "job_id": "EDARSAHUB-ISCAM-HIST-R93B-130MID-20260911-12-RCA-CARLOS-20260921T222000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2298,
+      "age_seconds": 2372,
       "job_id": "EDARSAHUB-TABLAJERIA-GATE0-READONLY-ARQUITECTURA-CANONICA-V1-CORRECTED-R2-20260922T152300Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1458,
+      "age_seconds": 1532,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-GUARD-GATE2B-CONTROL-PLANE-CONSUMER-MUTATION-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1945,
+      "age_seconds": 2019,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-GUARD-GATE2B-CONTROL-PLANE-PREFLIGHT-READONLY-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
@@ -66,8 +66,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-22T16:04:48Z",
-    "last_receive_utc": "2026-09-22T16:04:49Z",
+    "last_cycle_utc": "2026-09-22T16:06:01Z",
+    "last_receive_utc": "2026-09-22T16:06:03Z",
     "last_terminal_utc": "2026-09-22T15:40:31Z",
     "pid": "183",
     "runtime_fingerprint": {
