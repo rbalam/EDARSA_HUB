@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "393797e739bb9c041e6d98847b3197ca19e6fc49",
-  "generated_at_utc": "2026-09-22T18:20:17Z",
+  "generated_at_utc": "2026-09-22T18:21:33Z",
   "history": {
     "done_total_local": 836,
     "pending_total_local": 0,
@@ -16,13 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2486,
+      "age_seconds": 2562,
       "job_id": "EDARSAHUB-ISCAM-130QRO-0808-BACKFILL-R12-CARLOS-20260922T1740Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3035,
+      "age_seconds": 3111,
       "job_id": "EDARSAHUB-ISCAM-PORTAL-TIMEOUT-REGRESSION-FIX-CARLOS-20260922T1705Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -42,8 +42,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-22T18:20:13Z",
-    "last_receive_utc": "2026-09-22T18:20:14Z",
+    "last_cycle_utc": "2026-09-22T18:21:31Z",
+    "last_receive_utc": "2026-09-22T18:21:32Z",
     "last_terminal_utc": "2026-09-22T17:38:50Z",
     "pid": "206",
     "runtime_fingerprint": {
