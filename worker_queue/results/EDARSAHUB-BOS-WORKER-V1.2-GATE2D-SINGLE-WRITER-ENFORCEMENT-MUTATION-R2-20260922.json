@@ -1,0 +1,276 @@
+{
+  "base_sha": "77c1a9420fc36fb0702f357a2f7472a787263652",
+  "blockers": [],
+  "candidate_sha": "c565e5fd178528d0d309264e5884fd191ccd5c63",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-22T21:38:36Z",
+  "development_sha": "c565e5fd178528d0d309264e5884fd191ccd5c63",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_worker_channel_single_writer_contract.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE2D-SINGLE-WRITER-ENFORCEMENT-MUTATION-R2-20260922",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-22T21:38:39Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "authorized_push",
+              "production_touched",
+              "validate_commit_scope",
+              "worker/health",
+              "worker/requests",
+              "worker/results",
+              "worker_queue_publication"
+            ],
+            "path": "backend/tests/test_worker_channel_single_writer_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "source",
+              "test_channel_roles_remain_distinct",
+              "test_existing_control_plane_remains_canonical",
+              "test_health_writer_contract_is_canonical",
+              "test_no_parallel_workerctl_control_plane",
+              "test_request_publication_has_exact_scope_and_agent_guard",
+              "test_request_publication_has_optimistic_concurrency",
+              "test_request_publisher_is_idempotent",
+              "test_request_writer_contract_is_canonical",
+              "test_result_writer_contract_is_canonical"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "argparse",
+              "json",
+              "pathlib",
+              "re",
+              "subprocess",
+              "sys",
+              "tools.mirror_sync.gate_chain_controller",
+              "tools.mirror_sync.git_divergence_guard",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "authorized_push",
+              "production_touched",
+              "validate_commit_scope",
+              "worker/requests",
+              "worker_queue_publication"
+            ],
+            "path": "tools/mirror_sync/gate_chain_publisher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_cleanup_queue_worktree",
+              "_prepare_queue_worktree",
+              "_queue_remote_head",
+              "_release_agent_guard",
+              "_safe_id",
+              "_walk",
+              "build_plan",
+              "gate_for",
+              "git",
+              "main",
+              "publish",
+              "run",
+              "validate_template"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "fcntl",
+              "json",
+              "os",
+              "pathlib",
+              "shutil",
+              "subprocess",
+              "tempfile",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "production_touched",
+              "worker/requests",
+              "worker/results"
+            ],
+            "path": "tools/mirror_sync/universal_job_result_publisher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_sensitive_column",
+              "atomic_json",
+              "certification_evidence",
+              "create_attestation",
+              "generic_readonly_evidence",
+              "git",
+              "load",
+              "main",
+              "marker_satisfied",
+              "now",
+              "prepare_queue_worktree",
+              "publish_one",
+              "publishable_paths",
+              "resolve_runtime_git_credential_helper",
+              "result_identity",
+              "run",
+              "runtime_git",
+              "runtime_git_command",
+              "runtime_git_env",
+              "sanitize",
+              "sanitize_frontend_build_evidence",
+              "sanitize_readonly_evidence",
+              "sanitize_repository_evidence",
+              "valid_sha"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "importlib.util",
+              "json",
+              "os",
+              "pathlib",
+              "shutil",
+              "subprocess",
+              "tempfile",
+              "time"
+            ],
+            "integrations": [
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "production_touched",
+              "worker/health"
+            ],
+            "path": "tools/mirror_sync/runtime_health_publisher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "age_seconds",
+              "directory_ids",
+              "git",
+              "history_summary",
+              "main",
+              "now",
+              "payload",
+              "processing_stale_seconds",
+              "public_rejection",
+              "queue_jobs",
+              "read_text",
+              "resolve_runtime_git_credential_helper",
+              "run",
+              "runtime_git_command",
+              "runtime_git_env",
+              "runtime_summary",
+              "terminal_visible"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "hashlib",
+              "json",
+              "os",
+              "pathlib",
+              "re",
+              "shutil",
+              "signal",
+              "subprocess",
+              "tempfile",
+              "time",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "production_touched"
+            ],
+            "path": "tools/mirror_sync/worker_control_plane.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "atomic_json",
+              "audit",
+              "claim_candidates",
+              "cycle",
+              "epoch",
+              "expected_generation",
+              "git_output",
+              "heal_runtime_generation_and_heartbeat",
+              "main",
+              "parse_iso_age",
+              "pid_alive",
+              "preserve_and_fast_forward",
+              "read_text",
+              "reconcile_agent_guard_orphans",
+              "request_universal_restart",
+              "requeue_stale_processing",
+              "run",
+              "utc_now"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 5,
+          "scanned_files": 5,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-22T21:38:31Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
