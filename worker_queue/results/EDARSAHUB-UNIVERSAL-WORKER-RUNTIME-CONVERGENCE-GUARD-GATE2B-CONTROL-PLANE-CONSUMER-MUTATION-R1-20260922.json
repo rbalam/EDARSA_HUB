@@ -1,0 +1,171 @@
+{
+  "base_sha": "e9115e7715e248a0fbdfe99619872cc2b5a39e6f",
+  "blockers": [
+    "check_failed:git_diff_check"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-22T15:40:31Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_worker_control_plane_contract.py",
+    "tools/mirror_sync/worker_control_plane.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-GUARD-GATE2B-CONTROL-PLANE-CONSUMER-MUTATION-R1-20260922",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-22T15:40:43Z",
+  "quality_gate": "FAIL",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "hashlib",
+              "importlib.util",
+              "json",
+              "os",
+              "pathlib",
+              "re",
+              "shutil",
+              "signal",
+              "subprocess",
+              "tempfile",
+              "time",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "build_runtime_fingerprint",
+              "canonical_runtime_fingerprint",
+              "convergence_blockers",
+              "gate_publication_allowed",
+              "generation_aligned",
+              "production_touched",
+              "required_capabilities",
+              "runtime_convergence",
+              "runtime_fingerprint_unavailable",
+              "worker_code_tree_aligned"
+            ],
+            "path": "tools/mirror_sync/worker_control_plane.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "atomic_json",
+              "audit",
+              "canonical_runtime_fingerprint",
+              "claim_candidates",
+              "cycle",
+              "epoch",
+              "git_output",
+              "heal_runtime_generation_and_heartbeat",
+              "load_runtime_fingerprint_module",
+              "main",
+              "parse_iso_age",
+              "pid_alive",
+              "preserve_and_fast_forward",
+              "read_text",
+              "reconcile_agent_guard_orphans",
+              "request_universal_restart",
+              "requeue_stale_processing",
+              "run",
+              "utc_now"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "build_runtime_fingerprint",
+              "canonical_runtime_fingerprint",
+              "gate_publication_allowed",
+              "production_touched",
+              "runtime_convergence",
+              "runtime_fingerprint_unavailable"
+            ],
+            "path": "backend/tests/test_worker_control_plane_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_control_plane_consumes_canonical_runtime_fingerprint_fail_closed",
+              "test_control_plane_is_independent_and_supervised",
+              "test_control_plane_no_longer_owns_generation_parsing",
+              "test_orphan_claims_are_quarantined_not_deleted",
+              "test_production_is_explicitly_out_of_scope",
+              "test_runtime_self_heal_detects_generation_heartbeat_and_pid",
+              "test_stale_processing_is_idempotently_requeued",
+              "test_worktree_recovery_is_preserving_and_fast_forward_only"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "os",
+              "pathlib",
+              "re",
+              "subprocess",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "build_runtime_fingerprint",
+              "generation_aligned",
+              "production_touched",
+              "required_capabilities",
+              "worker_code_tree_aligned"
+            ],
+            "path": "tools/mirror_sync/worker_runtime_fingerprint.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RuntimeFingerprintError",
+              "_git",
+              "_read",
+              "build_runtime_fingerprint",
+              "expected_generation"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 3,
+          "scanned_files": 3,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-22T15:40:28Z",
+  "status": "GIT_TESTS_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
