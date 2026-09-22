@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "e9115e7715e248a0fbdfe99619872cc2b5a39e6f",
-  "generated_at_utc": "2026-09-22T15:38:23Z",
+  "generated_at_utc": "2026-09-22T15:39:39Z",
   "history": {
     "done_total_local": 834,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 813,
+      "age_seconds": 890,
       "job_id": "EDARSAHUB-ISCAM-130QRO-0808-BACKFILL-R11-CARLOS-20260922T0016Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 810,
+      "age_seconds": 886,
       "job_id": "EDARSAHUB-ISCAM-130QRO-COMANDAS-DIAG-CARLOS-20260922T1509Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 803,
+      "age_seconds": 880,
       "job_id": "EDARSAHUB-ISCAM-HIST-R93B-130MID-20260911-12-RCA-CARLOS-20260921T222000Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 711,
+      "age_seconds": 788,
       "job_id": "EDARSAHUB-TABLAJERIA-GATE0-READONLY-ARQUITECTURA-CANONICA-V1-CORRECTED-R2-20260922T152300Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 358,
+      "age_seconds": 434,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-GUARD-GATE2B-CONTROL-PLANE-PREFLIGHT-READONLY-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-22T15:38:21Z",
-    "last_receive_utc": "2026-09-22T15:38:22Z",
+    "last_cycle_utc": "2026-09-22T15:39:36Z",
+    "last_receive_utc": "2026-09-22T15:39:37Z",
     "last_terminal_utc": "2026-09-22T15:32:24Z",
     "pid": "183",
     "runtime_fingerprint": {
