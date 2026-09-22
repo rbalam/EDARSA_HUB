@@ -1,0 +1,68 @@
+{
+  "base_sha": "773d346daabbcd562ca1cb3d2d63cae1a03f5462",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-22T22:55:23Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-130QRO-0808-MPRO-EXACT-EXTRACTOR-DIAG-R3-CARLOS-20260922",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-22T22:55:51Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "Vn_Folio",
+              "lineas_l",
+              "bruto_ticket",
+              "neto_min",
+              "neto_max",
+              "Vn_Documento",
+              "estado_origen",
+              "producto_min",
+              "producto_max",
+              "cantidad_total",
+              "precio_max"
+            ],
+            "name": "qro_0808_exact_extractor_zero_gross",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "21-0043964",
+                2,
+                "0.0000",
+                "0.0000",
+                "0.0000",
+                "21-0051900",
+                "FA",
+                "0000001637",
+                "0000008573",
+                "2.0000",
+                "0.000000"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-22T22:55:21Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
