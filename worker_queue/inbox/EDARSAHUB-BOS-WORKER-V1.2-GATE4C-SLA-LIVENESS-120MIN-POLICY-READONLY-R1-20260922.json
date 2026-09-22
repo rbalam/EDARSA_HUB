@@ -1,0 +1,108 @@
+{
+  "actions": [],
+  "base_sha": "daa8cd034fb090170414b0165fdd74a3dba0dca8",
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [
+          "*.pyc"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.yml",
+          "*.yaml",
+          "*.json"
+        ],
+        "max_results": 1000,
+        "paths": [
+          "tools/mirror_sync",
+          "tools/bootstrap",
+          "backend/tests",
+          ".github/workflows",
+          "worker_queue/triggers/runtime-recovery"
+        ],
+        "search_terms": [
+          "pending",
+          "processing",
+          "stale",
+          "retry",
+          "requeue",
+          "wake",
+          "timeout",
+          "heartbeat",
+          "last_receive_utc",
+          "last_terminal_utc",
+          "processing_stale_seconds",
+          "MAX_RETRIES",
+          "attempt",
+          "slot",
+          "parallel_execution_enabled",
+          "serial",
+          "preferred_job",
+          "claim_one",
+          "_select_pending_job",
+          "requeue_stale_processing",
+          "recover_orphan_processing",
+          "worker_slot_runtime",
+          "worker_scheduling",
+          "worker_control_plane",
+          "runtime_health_publisher",
+          "universal_job_dispatcher"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_worker_slot_runtime_contract.py",
+        "backend/tests/test_worker_scope_concurrency_dispatcher_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_runtime_startup_selfheal_r1.py",
+        "backend/tests/test_worker_runtime_wake_convergence_r42.py",
+        "backend/tests/test_worker_result_publisher_batch_contract.py",
+        "backend/tests/test_worker_result_publisher_git_timeout_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty",
+    "No Production",
+    "No repository mutation",
+    "No service restart",
+    "No wake execution",
+    "No requeue execution",
+    "No cleanup",
+    "No Scheduler changes",
+    "No NetPay changes",
+    "No business changes",
+    "No new control plane",
+    "No workerctl.py",
+    "No force push",
+    "No hook bypass",
+    "Normal jobs should have a bounded path to terminal state within 120 minutes",
+    "Long-running legitimate execution must be distinguished by active heartbeat/progress evidence",
+    "Do not kill healthy long-running jobs merely because wall-clock exceeds 120 minutes",
+    "Detect head-of-line blocking",
+    "Detect infinite retry/requeue/wake loops",
+    "Detect stale processing without live execution",
+    "Detect inconsistent timeout policies",
+    "Preserve channel single-writer contracts",
+    "production_touched must remain false"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE4C-SLA-LIVENESS-120MIN-POLICY-READONLY-R1-20260922",
+  "mode": "READ_ONLY",
+  "objective": "Auditar y definir la politica canonica de SLA, liveness, retry, requeue, wake, stale processing y bloqueo de cola del Universal Worker v1.2. Objetivo operativo: ningun job normal debe permanecer sin progreso terminal por mas de 120 minutos. Identificar excepciones legitimas para jobs de larga ejecucion, distinguir progreso real de runtime atorado, detectar head-of-line blocking, loops de retry/requeue/wake y timeouts incoherentes. No modificar archivos.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
