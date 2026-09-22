@@ -1,0 +1,255 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TABLAJERIA-GATE1-FUNCTIONAL-SCOPE-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "393797e739bb9c041e6d98847b3197ca19e6fc49",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "priority": "P0",
+  "objective": "Auditar y definir el alcance funcional exacto del modulo Tablajeria EDARSAHUB, tomando como base la arquitectura canonica Gate0 ya certificada y la verdad operativa del proceso de conversion de un insumo base a multiples derivados. Solo READ_ONLY. No publicar Gate2. No tocar Produccion. No modificar backend ni frontend.",
+  "context": {
+    "source_chat": "Tablajería 3",
+    "gate": "Gate1 funcional READ_ONLY",
+    "gate0_status": "Gate0 R2 certificado READ_ONLY / PASS por evidencia previa",
+    "functional_domain": "Tablajeria es el proceso operativo donde un insumo base comprado o existente en inventario, por ejemplo lonja, pieza primaria o canal, se transforma en multiples insumos derivados, por ejemplo cortes, subproductos, merma y desperdicio.",
+    "do_not_mix_worker_hardening": true,
+    "do_not_mix_crm": true,
+    "do_not_publish_gate2": true
+  },
+  "forbidden_actions": [
+    "touch_production",
+    "ddl",
+    "dml",
+    "create_definitive_sql",
+    "create_tables",
+    "duplicate_catalogs",
+    "modify_backend",
+    "modify_frontend",
+    "publish_gate2",
+    "mix_worker_hardening",
+    "mix_crm",
+    "assume_unaudited_data",
+    "break_inventarios_operaciones",
+    "break_costos",
+    "break_compras",
+    "break_contabilidad",
+    "break_scheduler",
+    "break_netpay"
+  ],
+  "actions": [],
+  "functional_scope_to_define": [
+    "menu actual de Operaciones",
+    "tabs V1",
+    "pantallas V1",
+    "flujo operativo",
+    "flujo de plantillas",
+    "flujo de ordenes",
+    "flujo de ejecucion",
+    "inventario base versus derivados",
+    "merma",
+    "subproductos",
+    "prorrateo de costos",
+    "trazabilidad por lote",
+    "auditoria",
+    "compras por explosion reversiva",
+    "costos y margenes",
+    "integracion contable futura",
+    "permisos RBAC"
+  ],
+  "questions_to_answer": [
+    "Donde debe vivir Tablajeria dentro del menu Operaciones",
+    "Que tabs debe tener el modulo",
+    "Que pantallas deben existir en V1",
+    "Que flujo funcional debe seguir el usuario",
+    "Que datos son obligatorios para crear una plantilla",
+    "Que datos son obligatorios para crear una orden",
+    "Que datos son obligatorios para ejecutar un tablaje",
+    "Como se calcula rendimiento esperado versus real",
+    "Como se registra merma",
+    "Como se registran subproductos",
+    "Como se debe afectar inventario",
+    "Como se debe prorratear el costo del insumo base",
+    "Que debe quedar en auditoria",
+    "Que permisos RBAC se requieren",
+    "Que entidades canonicas deben reutilizarse",
+    "Que tablas o catalogos no deben duplicarse",
+    "Que queda fuera de V1",
+    "Que riesgos hay antes de mutar",
+    "Que archivos serian candidatos a mutation quirurgica posterior",
+    "Gate2 puede avanzar o queda bloqueado"
+  ],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src",
+          "backend",
+          "sql",
+          "migrations",
+          "docs",
+          "worker_queue"
+        ],
+        "search_terms": [
+          "Tablajeria",
+          "Tablajería",
+          "tablajeria",
+          "tablaje",
+          "lotes proveedor",
+          "lotes-proveedor",
+          "Operaciones",
+          "Inventarios",
+          "inventario",
+          "Plantilla",
+          "plantilla",
+          "Orden",
+          "orden",
+          "merma",
+          "subproducto",
+          "rendimiento",
+          "prorrateo",
+          "costos",
+          "compras",
+          "explosion reversiva",
+          "explosión reversiva",
+          "RBAC",
+          "permiso",
+          "auditoria",
+          "trazabilidad"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.json",
+          "*.md",
+          "*.yml",
+          "*.yaml"
+        ],
+        "exclude_patterns": [
+          "**/__pycache__/**",
+          "**/node_modules/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/.venv/**",
+          "**/venv/**"
+        ],
+        "max_results": 3000
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "request": {
+        "mode": "READ_ONLY",
+        "connection_role": "HRLectura",
+        "queries": [
+          {
+            "name": "schema_tablajeria_objects",
+            "sql": "SELECT s.name AS schema_name, o.name AS object_name, o.type_desc FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id = o.schema_id WHERE o.name LIKE '%Tablaj%' OR o.name LIKE '%tablaj%' OR o.name LIKE '%Talla%' OR o.name LIKE '%talla%' ORDER BY s.name, o.name;"
+          },
+          {
+            "name": "schema_canonical_domain_objects",
+            "sql": "SELECT s.name AS schema_name, o.name AS object_name, o.type_desc FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id = o.schema_id WHERE o.name LIKE '%Producto%' OR o.name LIKE '%Invent%' OR o.name LIKE '%Operacion%' OR o.name LIKE '%Almacen%' OR o.name LIKE '%Lote%' OR o.name LIKE '%Costo%' OR o.name LIKE '%Compra%' OR o.name LIKE '%Proveedor%' OR o.name LIKE '%Movimiento%' OR o.name LIKE '%Receta%' ORDER BY s.name, o.name;"
+          },
+          {
+            "name": "schema_relevant_columns",
+            "sql": "SELECT c.TABLE_SCHEMA, c.TABLE_NAME, c.COLUMN_NAME, c.DATA_TYPE, c.IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS c WHERE c.TABLE_NAME LIKE '%Tablaj%' OR c.TABLE_NAME LIKE '%Producto%' OR c.TABLE_NAME LIKE '%Invent%' OR c.TABLE_NAME LIKE '%Operacion%' OR c.TABLE_NAME LIKE '%Almacen%' OR c.TABLE_NAME LIKE '%Lote%' OR c.TABLE_NAME LIKE '%Costo%' OR c.TABLE_NAME LIKE '%Compra%' OR c.COLUMN_NAME LIKE '%Tablaj%' OR c.COLUMN_NAME LIKE '%Rendimiento%' OR c.COLUMN_NAME LIKE '%Merma%' OR c.COLUMN_NAME LIKE '%Subproducto%' OR c.COLUMN_NAME LIKE '%Costo%' OR c.COLUMN_NAME LIKE '%Lote%' ORDER BY c.TABLE_SCHEMA, c.TABLE_NAME, c.ORDINAL_POSITION;"
+          },
+          {
+            "name": "schema_relevant_foreign_keys",
+            "sql": "SELECT fk.name AS foreign_key_name, OBJECT_SCHEMA_NAME(fk.parent_object_id) AS parent_schema, OBJECT_NAME(fk.parent_object_id) AS parent_table, OBJECT_SCHEMA_NAME(fk.referenced_object_id) AS referenced_schema, OBJECT_NAME(fk.referenced_object_id) AS referenced_table FROM sys.foreign_keys fk WHERE OBJECT_NAME(fk.parent_object_id) LIKE '%Tablaj%' OR OBJECT_NAME(fk.parent_object_id) LIKE '%Producto%' OR OBJECT_NAME(fk.parent_object_id) LIKE '%Invent%' OR OBJECT_NAME(fk.parent_object_id) LIKE '%Operacion%' OR OBJECT_NAME(fk.parent_object_id) LIKE '%Almacen%' OR OBJECT_NAME(fk.parent_object_id) LIKE '%Lote%' OR OBJECT_NAME(fk.parent_object_id) LIKE '%Costo%' OR OBJECT_NAME(fk.parent_object_id) LIKE '%Compra%' OR OBJECT_NAME(fk.referenced_object_id) LIKE '%Tablaj%' OR OBJECT_NAME(fk.referenced_object_id) LIKE '%Producto%' OR OBJECT_NAME(fk.referenced_object_id) LIKE '%Invent%' OR OBJECT_NAME(fk.referenced_object_id) LIKE '%Operacion%' OR OBJECT_NAME(fk.referenced_object_id) LIKE '%Almacen%' OR OBJECT_NAME(fk.referenced_object_id) LIKE '%Lote%' OR OBJECT_NAME(fk.referenced_object_id) LIKE '%Costo%' OR OBJECT_NAME(fk.referenced_object_id) LIKE '%Compra%' ORDER BY parent_schema, parent_table, foreign_key_name;"
+          },
+          {
+            "name": "schema_relevant_indexes",
+            "sql": "SELECT OBJECT_SCHEMA_NAME(i.object_id) AS schema_name, OBJECT_NAME(i.object_id) AS table_name, i.name AS index_name, i.type_desc, i.is_unique FROM sys.indexes i WHERE OBJECT_NAME(i.object_id) LIKE '%Tablaj%' OR OBJECT_NAME(i.object_id) LIKE '%Producto%' OR OBJECT_NAME(i.object_id) LIKE '%Invent%' OR OBJECT_NAME(i.object_id) LIKE '%Operacion%' OR OBJECT_NAME(i.object_id) LIKE '%Almacen%' OR OBJECT_NAME(i.object_id) LIKE '%Lote%' OR OBJECT_NAME(i.object_id) LIKE '%Costo%' OR OBJECT_NAME(i.object_id) LIKE '%Compra%' ORDER BY schema_name, table_name, index_name;"
+          },
+          {
+            "name": "schema_rbac_permissions_catalog",
+            "sql": "SELECT s.name AS schema_name, o.name AS object_name, o.type_desc FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id = o.schema_id WHERE o.name LIKE '%Permiso%' OR o.name LIKE '%Rol%' OR o.name LIKE '%RBAC%' OR o.name LIKE '%Modulo%' OR o.name LIKE '%Autoriz%' OR o.name LIKE '%Usuario%' ORDER BY s.name, o.name;"
+          },
+          {
+            "name": "schema_sql_modules_references",
+            "sql": "SELECT OBJECT_SCHEMA_NAME(m.object_id) AS schema_name, OBJECT_NAME(m.object_id) AS module_name, o.type_desc FROM sys.sql_modules m INNER JOIN sys.objects o ON o.object_id = m.object_id WHERE m.definition LIKE '%Tablaj%' OR m.definition LIKE '%Invent%' OR m.definition LIKE '%Producto%' OR m.definition LIKE '%Lote%' OR m.definition LIKE '%Costo%' OR m.definition LIKE '%Compra%' OR m.definition LIKE '%Rendimiento%' OR m.definition LIKE '%Merma%' ORDER BY schema_name, module_name;"
+          }
+        ]
+      }
+    },
+    {
+      "type": "git_diff_check",
+      "request": {
+        "expected_clean": true,
+        "fail_if_mutations_detected": true
+      }
+    }
+  ],
+  "required_output": [
+    "job_id",
+    "status",
+    "quality_gate",
+    "certification",
+    "percent_complete",
+    "production_touched",
+    "mutations_executed",
+    "ddl_executed",
+    "dml_executed",
+    "backend_touched",
+    "frontend_touched",
+    "gate2_allowed",
+    "blockers",
+    "functional_scope_v1",
+    "menu_location",
+    "tabs_v1",
+    "screens_v1",
+    "operational_flow_v1",
+    "template_flow_v1",
+    "order_flow_v1",
+    "execution_flow_v1",
+    "inventory_flow_v1",
+    "costing_flow_v1",
+    "purchasing_reverse_explosion_flow",
+    "audit_flow_v1",
+    "rbac_required",
+    "canonical_entities_to_reuse",
+    "forbidden_duplications",
+    "out_of_scope_v1",
+    "mutation_candidates_next_gate",
+    "risks_before_mutation"
+  ],
+  "success_criteria": [
+    "Alcance funcional V1 claro y auditable",
+    "Sin contradicciones con Gate0",
+    "Sin tocar Produccion",
+    "Sin proponer duplicacion de entidades canonicas",
+    "Gate2 permitido solo si no hay blockers"
+  ],
+  "blocking_criteria": [
+    "Contradicciones funcionales",
+    "Entidades duplicadas",
+    "Falta de evidencia",
+    "Dependencia de SQL no auditado",
+    "Riesgo de romper Operaciones o Inventarios",
+    "Riesgo de romper Costos",
+    "Riesgo de romper Compras",
+    "Riesgo de romper Contabilidad"
+  ],
+  "expected_terminal_success": {
+    "status": "CERTIFIED_READ_ONLY",
+    "quality_gate": "PASS",
+    "certification": "CERTIFIED_READ_ONLY",
+    "percent_complete": 100,
+    "production_touched": false,
+    "mutations_executed": false,
+    "ddl_executed": false,
+    "dml_executed": false,
+    "backend_touched": false,
+    "frontend_touched": false,
+    "gate2_allowed": true,
+    "blockers": []
+  },
+  "created_at_utc": "2026-09-22T20:58:00Z"
+}
