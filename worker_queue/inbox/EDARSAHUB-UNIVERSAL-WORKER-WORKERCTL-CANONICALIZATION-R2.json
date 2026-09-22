@@ -67,7 +67,7 @@
   "job_id": "EDARSAHUB-UNIVERSAL-WORKER-WORKERCTL-CANONICALIZATION-R2",
   "objective": "Canonizar workerctl y gate_chain_publisher del Universal Worker. El publisher debe usar Agent Guard worktree-create/release y autorizacion de push canónica; prohibidos worktrees no registrados, bypass de hooks o cambios fuera del control plane. Validar implementación, contratos y compilación. No tocar Produccion, SQL, Scheduler, NetPay, frontend ni negocio.",
   "production_allowed": false,
-  "requested_at_utc": "2026-09-22T16:35:36.519027+00:00",
+  "requested_at_utc": "2026-09-22T16:36:52.851707+00:00",
   "requester": {
     "chat": "Bitacoras de Parrilla",
     "email": "ricardo@edarsa.com.mx",
