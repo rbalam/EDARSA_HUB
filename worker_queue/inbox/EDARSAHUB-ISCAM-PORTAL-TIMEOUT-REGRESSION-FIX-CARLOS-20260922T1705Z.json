@@ -1,0 +1,75 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-PORTAL-TIMEOUT-REGRESSION-FIX-CARLOS-20260922T1705Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e9115e7715e248a0fbdfe99619872cc2b5a39e6f",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "priority": "P0",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V2",
+    "chat": "20260922-Reportes ISCAM"
+  },
+  "objective": "Corregir de forma definitiva la regresion de Reportes ISCAM causada al cambiar las sesiones internas del cliente dedicado de 35s al cliente central de 15s. Mantener el refresh/retry coordinado del cliente central, pero restaurar un timeout propio del Portal Inteligencia de 60s para GET/POST, conservando overrides mayores como 120s. No tocar funciones bloqueadas de Cuentas/Comandas, no cambiar consultas SQL, no Production.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/api/client.js",
+      "old": "const API_URL = `${process.env.REACT_APP_BACKEND_URL}/api`;\nconst INTEL_SESSION_FLAG = 'edarsa_intel_session';",
+      "new": "const API_URL = `${process.env.REACT_APP_BACKEND_URL}/api`;\nconst INTEL_SESSION_FLAG = 'edarsa_intel_session';\n// Contrato historico del Portal Inteligencia: consultas reales pueden tardar >15s en arranque frio.\n// El cliente central conserva refresh/retry, pero cada request del portal usa su propio margen.\nconst INTEL_REQUEST_TIMEOUT_MS = 60000;",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/api/client.js",
+      "old": "const intelApi = axios.create({ baseURL: API_URL, withCredentials: true, timeout: 35000 });",
+      "new": "const intelApi = axios.create({ baseURL: API_URL, withCredentials: true, timeout: INTEL_REQUEST_TIMEOUT_MS });",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/api/client.js",
+      "old": "    const client = getToken() ? api : intelApi;\n    const res = await client.get(path, { params });",
+      "new": "    const client = getToken() ? api : intelApi;\n    const res = await client.get(path, { params, timeout: INTEL_REQUEST_TIMEOUT_MS });",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/api/client.js",
+      "old": "    const client = getToken() ? api : intelApi;\n    const res = await client.post(path, payload, config);",
+      "new": "    const client = getToken() ? api : intelApi;\n    const res = await client.post(path, payload, { timeout: INTEL_REQUEST_TIMEOUT_MS, ...config });",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_portal_timeout_contract_r1.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nCLIENT = (ROOT / \"frontend/src/portal-inteligencia/api/client.js\").read_text(encoding=\"utf-8\")\nCENTRAL = (ROOT / \"frontend/src/lib/api.js\").read_text(encoding=\"utf-8\")\n\n\ndef test_portal_inteligencia_preserves_central_refresh_retry_for_internal_sessions():\n    assert \"import api, { getToken } from '../../lib/api';\" in CLIENT\n    assert \"const client = getToken() ? api : intelApi;\" in CLIENT\n    assert \"coordinatedRefresh\" in CENTRAL\n\n\ndef test_portal_requests_restore_timeout_above_central_15s_regression():\n    assert \"const INTEL_REQUEST_TIMEOUT_MS = 60000;\" in CLIENT\n    assert \"client.get(path, { params, timeout: INTEL_REQUEST_TIMEOUT_MS })\" in CLIENT\n    assert \"axios.create({ baseURL: API_URL, withCredentials: true, timeout: INTEL_REQUEST_TIMEOUT_MS })\" in CLIENT\n\n\ndef test_portal_post_default_timeout_allows_explicit_larger_override():\n    assert \"client.post(path, payload, { timeout: INTEL_REQUEST_TIMEOUT_MS, ...config })\" in CLIENT\n    assert \"{ timeout: 120000 }\" in (ROOT / \"frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx\").read_text(encoding=\"utf-8\")\n\n\ndef test_central_client_can_remain_15s_without_reintroducing_portal_timeout():\n    assert \"timeout: 15000\" in CENTRAL\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_portal_timeout_contract_r1.py",
+        "backend/tests/test_iscam_cuentas_comandas_locked_r50.py"
+      ]
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "expected_output": {
+    "status": "INTEGRATED",
+    "quality_gate": "PASS",
+    "production_touched": false
+  },
+  "created_at_utc": "2026-09-22T17:05:00Z"
+}
