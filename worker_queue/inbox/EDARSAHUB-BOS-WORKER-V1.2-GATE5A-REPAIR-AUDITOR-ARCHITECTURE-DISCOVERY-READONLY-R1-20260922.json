@@ -1,0 +1,106 @@
+{
+  "actions": [],
+  "base_sha": "3e46af2e98b5618badb7b22809a63dd36989d313",
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.yml",
+          "*.yaml"
+        ],
+        "max_results": 1000,
+        "paths": [
+          "tools/mirror_sync",
+          "tools/bootstrap",
+          "backend/modules/worker_runtime_wake",
+          "backend/tests",
+          ".github/workflows"
+        ],
+        "search_terms": [
+          "gate_chain_publisher",
+          "gate_chain_orchestrator",
+          "worker_control_plane",
+          "universal_job_worker",
+          "universal_job_bridge",
+          "universal_job_dispatcher",
+          "universal_job_result_publisher",
+          "runtime_health_publisher",
+          "worker_runtime_fingerprint",
+          "recover_preview_runtime",
+          "authorized_push",
+          "validate_commit_scope",
+          "acquire_writer_lock",
+          "release_writer_lock",
+          "compare_and_swap",
+          "Agent Guard",
+          "agent_guard",
+          "worker/requests",
+          "worker/results",
+          "worker/health",
+          "runtime-recovery",
+          "wake",
+          "production_touched"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "paths": [
+        "backend/tests/test_gate_chain_publisher.py",
+        "backend/tests/test_worker_channel_single_writer_contract.py",
+        "backend/tests/test_worker_scope_concurrency_dispatcher_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_runtime_fingerprint_contract.py",
+        "backend/tests/test_worker_health_branch_isolation_contract.py",
+        "backend/tests/test_worker_result_branch_isolation_contract.py",
+        "backend/tests/test_worker_save_github_safety_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty",
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "No Scheduler",
+    "No NetPay",
+    "No repository mutation",
+    "No runtime mutation",
+    "No service restart",
+    "No branch creation",
+    "No worktree creation",
+    "No force push",
+    "No hook bypass",
+    "Do not create Worker Repair yet",
+    "Do not create Worker Auditor yet",
+    "Do not create another publisher",
+    "Do not create another control plane",
+    "Do not create another Git writer lock",
+    "Do not create another Agent Guard",
+    "Do not create workerctl.py",
+    "Reuse canonical Worker infrastructure wherever possible",
+    "Separate normal business development from Worker self-repair",
+    "Worker Auditor must remain conceptually READ_ONLY",
+    "Worker Repair must not become an unrestricted shell executor",
+    "production_touched must remain false"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5A-REPAIR-AUDITOR-ARCHITECTURE-DISCOVERY-READONLY-R1-20260922",
+  "mode": "READ_ONLY",
+  "objective": "Auditar la arquitectura existente del Universal Worker y definir, sin modificar repositorio ni runtime, la frontera canonica para Worker Repair y Worker Auditor. Identificar componentes reutilizables, responsabilidades, ownership, locks, Agent Guard, Git Divergence Guard, publisher, control plane, recovery, runtime fingerprint, health, resultados y contratos existentes. Detectar duplicaciones o rutas paralelas que no deben crearse.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
