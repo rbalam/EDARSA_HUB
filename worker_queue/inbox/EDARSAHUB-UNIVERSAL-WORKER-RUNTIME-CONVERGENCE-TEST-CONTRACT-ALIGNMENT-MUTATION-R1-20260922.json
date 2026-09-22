@@ -1,0 +1,87 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-TEST-CONTRACT-ALIGNMENT-MUTATION-R1-20260922",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c45e7a92f84fdc31a684f3b067ece8013d5d4c50",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Alinear quirurgicamente el contrato de prueba de Runtime Wake Convergence con la implementacion canonica actual. El unico fallo demostrado en Gate0 READ_ONLY R1 es una asercion obsoleta que exige reset --hard. No modificar runtime ni arquitectura. Sustituir exclusivamente ese test para validar fetch, branch exacta, SHA local/remoto, ancestor guard, worktree limpio, Git Guard canonico refresh, verificacion HEAD==remote y ausencia de reset/merge/stash/force directos.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_runtime_wake_convergence_r42.py",
+      "old": "def test_wake_convergence_uses_safe_reset_after_ancestor_and_clean_checks():\n    text = ROUTE.read_text(encoding='utf-8')\n    fn = text.split('def _converge_development_if_safe()', 1)[1].split('def _current_worker_code_tree', 1)[0]\n    assert 'merge-base' in fn\n    assert '--is-ancestor' in fn\n    assert 'status' in fn and '--porcelain=v1' in fn\n    assert '_runtime_git(\"reset\", \"--hard\", f\"origin/{DEV_BRANCH}\"' in fn\n    assert '_runtime_git(\"merge\", \"--ff-only\"' not in fn\n",
+      "new": "def test_wake_convergence_uses_canonical_fast_forward_after_ancestor_and_clean_checks():\n    text = ROUTE.read_text(encoding='utf-8')\n    fn = text.split('def _converge_development_if_safe()', 1)[1].split('def _current_worker_code_tree', 1)[0]\n    assert '_runtime_git(\"fetch\", \"--quiet\", \"origin\", DEV_BRANCH' in fn\n    assert '_runtime_git(\"branch\", \"--show-current\")' in fn\n    assert '_runtime_git(\"rev-parse\", \"HEAD\")' in fn\n    assert '_runtime_git(\"rev-parse\", f\"origin/{DEV_BRANCH}\")' in fn\n    assert '_runtime_git(\"merge-base\", \"--is-ancestor\", local, remote)' in fn\n    assert '_runtime_git(\"status\", \"--porcelain=v1\", \"--untracked-files=all\")' in fn\n    assert 'GIT_GUARD_PATH.is_file()' in fn\n    assert '\"refresh\"' in fn\n    assert '\"--expected-remote\"' in fn\n    assert 'new_head = _runtime_git(\"rev-parse\", \"HEAD\")' in fn\n    assert 'if new_head != remote:' in fn\n    assert '_runtime_git(\"reset\"' not in fn\n    assert '_runtime_git(\"merge\"' not in fn\n    assert '_runtime_git(\"stash\"' not in fn\n    assert '\"--force\"' not in fn\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/tests/test_worker_runtime_wake_convergence_r42.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_runtime_startup_selfheal_r1.py",
+        "backend/tests/test_worker_runtime_wake_convergence_r42.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/worker_runtime_wake/routes.py",
+          "backend/tests/test_worker_runtime_wake_convergence_r42.py"
+        ],
+        "search_terms": [
+          "_converge_development_if_safe",
+          "merge-base",
+          "--is-ancestor",
+          "--porcelain=v1",
+          "GIT_GUARD_PATH",
+          "refresh",
+          "--expected-remote",
+          "reset",
+          "merge",
+          "stash",
+          "--force",
+          "production_touched"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "Do not modify backend/modules/worker_runtime_wake/routes.py",
+    "Do not modify tools/bootstrap/recover_preview_runtime.sh",
+    "Do not modify worker runtime implementation files",
+    "Do not modify Repository Artifact Guard",
+    "Do not weaken Agent Guard",
+    "Do not weaken GLOBAL_GIT_WRITER",
+    "Do not weaken Git divergence guards",
+    "Do not introduce reset --hard",
+    "Do not introduce direct merge --ff-only",
+    "Do not introduce stash",
+    "Do not introduce force",
+    "Only backend/tests/test_worker_runtime_wake_convergence_r42.py may change",
+    "production_touched must remain false"
+  ]
+}
