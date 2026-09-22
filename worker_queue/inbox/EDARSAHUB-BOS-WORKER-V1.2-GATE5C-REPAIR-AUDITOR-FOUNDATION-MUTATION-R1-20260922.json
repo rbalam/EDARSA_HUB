@@ -1,0 +1,118 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"Canonical authority contract for EDARSAHUB Worker maintenance roles.\n\nThis module contains policy only. It performs no Git, SQL, shell, network,\nservice, Production, or repository mutation.\n\nWorker Repair and Worker Auditor are maintenance-plane roles. They are not\nalternate application-development workers and must never consume normal\nEDARSAHUB development jobs.\n\"\"\"\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom pathlib import PurePosixPath\nfrom typing import Final\n\n\nWORKER_INFRASTRUCTURE_ROOTS: Final[tuple[str, ...]] = (\n    \"tools/mirror_sync/\",\n    \"backend/modules/worker_runtime_wake/\",\n    \"backend/tests/test_worker_\",\n    \"backend/tests/test_universal_worker_\",\n    \".github/workflows/universal-worker-\",\n    \".github/workflows/worker-\",\n)\n\nFORBIDDEN_APPLICATION_ROOTS: Final[tuple[str, ...]] = (\n    \"backend/modules/comercial/\",\n    \"backend/modules/finanzas/\",\n    \"backend/modules/inventarios/\",\n    \"backend/modules/operaciones/\",\n    \"backend/modules/crm/\",\n    \"frontend/\",\n)\n\nPROTECTED_UNIVERSAL_COMPONENTS: Final[frozenset[str]] = frozenset(\n    {\n        \"tools/mirror_sync/universal_job_bridge.py\",\n        \"tools/mirror_sync/universal_job_dispatcher.py\",\n        \"tools/mirror_sync/universal_job_result_publisher.py\",\n        \"tools/mirror_sync/runtime_health_publisher.py\",\n        \"tools/mirror_sync/worker_control_plane.py\",\n        \"tools/mirror_sync/worker_runtime_fingerprint.py\",\n        \"tools/mirror_sync/gate_chain_publisher.py\",\n        \"tools/mirror_sync/git_divergence_guard.py\",\n    }\n)\n\n\n@dataclass(frozen=True)\nclass MaintenanceAuthority:\n    role: str\n    mutation_allowed: bool\n    production_allowed: bool\n    normal_development_jobs_allowed: bool\n\n\nREPAIR_AUTHORITY: Final = MaintenanceAuthority(\n    role=\"WORKER_REPAIR\",\n    mutation_allowed=True,\n    production_allowed=False,\n    normal_development_jobs_allowed=False,\n)\n\nAUDITOR_AUTHORITY: Final = MaintenanceAuthority(\n    role=\"WORKER_AUDITOR\",\n    mutation_allowed=False,\n    production_allowed=False,\n    normal_development_jobs_allowed=False,\n)\n\n\ndef normalize_repo_path(path: str) -> str:\n    value = str(PurePosixPath(path.strip()))\n\n    if not value or value == \".\":\n        raise ValueError(\"MAINTENANCE_PATH_EMPTY\")\n\n    if value.startswith(\"../\") or value.startswith(\"/\"):\n        raise ValueError(\"MAINTENANCE_PATH_ESCAPE\")\n\n    return value\n\n\ndef is_worker_infrastructure_path(path: str) -> bool:\n    value = normalize_repo_path(path)\n\n    return any(\n        value.startswith(root)\n        for root in WORKER_INFRASTRUCTURE_ROOTS\n    )\n\n\ndef repair_scope_allowed(paths: list[str] | tuple[str, ...]) -> bool:\n    if not paths:\n        return False\n\n    normalized = [normalize_repo_path(path) for path in paths]\n\n    if any(\n        any(path.startswith(root) for root in FORBIDDEN_APPLICATION_ROOTS)\n        for path in normalized\n    ):\n        return False\n\n    return all(is_worker_infrastructure_path(path) for path in normalized)\n\n\ndef auditor_scope_allowed(paths: list[str] | tuple[str, ...]) -> bool:\n    return repair_scope_allowed(paths)\n",
+      "path": "tools/mirror_sync/worker_maintenance_contract.py",
+      "type": "write_file"
+    },
+    {
+      "content": "\"\"\"Worker Repair authority boundary.\n\nWorker Repair is a maintenance-plane component for repairing Universal Worker\ninfrastructure. It does not participate in normal EDARSAHUB code creation.\n\nThis foundation intentionally contains validation/planning only. Git mutation\nand runtime supervision are wired in later gates through existing canonical\nlower-level guards rather than duplicating Universal Worker.\n\"\"\"\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\n\nfrom tools.mirror_sync.worker_maintenance_contract import (\n    PROTECTED_UNIVERSAL_COMPONENTS,\n    REPAIR_AUTHORITY,\n    repair_scope_allowed,\n)\n\n\n@dataclass(frozen=True)\nclass RepairPlan:\n    incident_id: str\n    paths: tuple[str, ...]\n    authority: str = REPAIR_AUTHORITY.role\n    production_allowed: bool = False\n\n\ndef build_repair_plan(\n    incident_id: str,\n    paths: list[str] | tuple[str, ...],\n) -> RepairPlan:\n    incident = str(incident_id or \"\").strip()\n\n    if not incident:\n        raise ValueError(\"REPAIR_INCIDENT_ID_REQUIRED\")\n\n    clean_paths = tuple(str(path).strip() for path in paths)\n\n    if not repair_scope_allowed(clean_paths):\n        raise ValueError(\"REPAIR_SCOPE_FORBIDDEN\")\n\n    return RepairPlan(\n        incident_id=incident,\n        paths=clean_paths,\n    )\n\n\ndef touches_protected_universal_component(plan: RepairPlan) -> bool:\n    return bool(\n        set(plan.paths).intersection(PROTECTED_UNIVERSAL_COMPONENTS)\n    )\n\n\ndef repair_requires_independent_audit(plan: RepairPlan) -> bool:\n    # Every Worker Repair mutation requires Worker Auditor certification.\n    return True\n",
+      "path": "tools/mirror_sync/worker_repair.py",
+      "type": "write_file"
+    },
+    {
+      "content": "\"\"\"Independent READ_ONLY Worker Auditor authority boundary.\n\nWorker Auditor certifies Worker Repair evidence. It never mutates the\nrepository, Worker runtime, services, SQL, Production, or application code.\n\"\"\"\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom typing import Any\n\nfrom tools.mirror_sync.worker_maintenance_contract import (\n    AUDITOR_AUTHORITY,\n    auditor_scope_allowed,\n)\n\n\n@dataclass(frozen=True)\nclass AuditDecision:\n    certified: bool\n    reason: str\n    production_touched: bool = False\n    mutation_performed: bool = False\n\n\ndef audit_repair_result(result: dict[str, Any]) -> AuditDecision:\n    paths = tuple(result.get(\"files_changed\") or ())\n\n    if result.get(\"production_touched\") is not False:\n        return AuditDecision(\n            certified=False,\n            reason=\"PRODUCTION_TOUCHED\",\n        )\n\n    if not paths:\n        return AuditDecision(\n            certified=False,\n            reason=\"NO_REPAIR_MUTATION_EVIDENCE\",\n        )\n\n    if not auditor_scope_allowed(paths):\n        return AuditDecision(\n            certified=False,\n            reason=\"REPAIR_SCOPE_OUTSIDE_WORKER_INFRASTRUCTURE\",\n        )\n\n    if result.get(\"quality_gate\") != \"PASS\":\n        return AuditDecision(\n            certified=False,\n            reason=\"QUALITY_GATE_NOT_PASS\",\n        )\n\n    if result.get(\"tests\") != \"PASS\":\n        return AuditDecision(\n            certified=False,\n            reason=\"TESTS_NOT_PASS\",\n        )\n\n    if result.get(\"blockers\") not in ([], None):\n        return AuditDecision(\n            certified=False,\n            reason=\"BLOCKERS_PRESENT\",\n        )\n\n    if result.get(\"git_sync_status\") != \"CERTIFIED_GIT_SYNC\":\n        return AuditDecision(\n            certified=False,\n            reason=\"GIT_SYNC_NOT_CERTIFIED\",\n        )\n\n    return AuditDecision(\n        certified=True,\n        reason=\"CERTIFIED_WORKER_REPAIR\",\n    )\n\n\ndef auditor_can_mutate() -> bool:\n    return AUDITOR_AUTHORITY.mutation_allowed\n",
+      "path": "tools/mirror_sync/worker_auditor.py",
+      "type": "write_file"
+    },
+    {
+      "content": "from tools.mirror_sync.worker_auditor import (\n    audit_repair_result,\n    auditor_can_mutate,\n)\nfrom tools.mirror_sync.worker_maintenance_contract import (\n    AUDITOR_AUTHORITY,\n    REPAIR_AUTHORITY,\n    repair_scope_allowed,\n)\nfrom tools.mirror_sync.worker_repair import (\n    build_repair_plan,\n    repair_requires_independent_audit,\n)\n\n\ndef test_repair_and_auditor_are_distinct_authorities():\n    assert REPAIR_AUTHORITY.role == \"WORKER_REPAIR\"\n    assert REPAIR_AUTHORITY.mutation_allowed is True\n\n    assert AUDITOR_AUTHORITY.role == \"WORKER_AUDITOR\"\n    assert AUDITOR_AUTHORITY.mutation_allowed is False\n\n\ndef test_neither_role_can_touch_production():\n    assert REPAIR_AUTHORITY.production_allowed is False\n    assert AUDITOR_AUTHORITY.production_allowed is False\n\n\ndef test_neither_role_is_normal_development_worker():\n    assert REPAIR_AUTHORITY.normal_development_jobs_allowed is False\n    assert AUDITOR_AUTHORITY.normal_development_jobs_allowed is False\n\n\ndef test_repair_scope_is_worker_infrastructure_only():\n    assert repair_scope_allowed(\n        [\"tools/mirror_sync/gate_chain_publisher.py\"]\n    )\n\n    assert not repair_scope_allowed(\n        [\"frontend/src/App.jsx\"]\n    )\n\n    assert not repair_scope_allowed(\n        [\"backend/modules/comercial/routes.py\"]\n    )\n\n\ndef test_repair_plan_requires_independent_audit():\n    plan = build_repair_plan(\n        \"INCIDENT-1\",\n        [\"tools/mirror_sync/gate_chain_publisher.py\"],\n    )\n\n    assert repair_requires_independent_audit(plan) is True\n\n\ndef test_auditor_is_read_only():\n    assert auditor_can_mutate() is False\n\n\ndef test_auditor_certifies_only_valid_worker_repair():\n    decision = audit_repair_result(\n        {\n            \"files_changed\": [\n                \"tools/mirror_sync/gate_chain_publisher.py\",\n            ],\n            \"production_touched\": False,\n            \"quality_gate\": \"PASS\",\n            \"tests\": \"PASS\",\n            \"blockers\": [],\n            \"git_sync_status\": \"CERTIFIED_GIT_SYNC\",\n        }\n    )\n\n    assert decision.certified is True\n    assert decision.reason == \"CERTIFIED_WORKER_REPAIR\"\n    assert decision.mutation_performed is False\n    assert decision.production_touched is False\n\n\ndef test_auditor_rejects_application_code_mutation():\n    decision = audit_repair_result(\n        {\n            \"files_changed\": [\n                \"frontend/src/App.jsx\",\n            ],\n            \"production_touched\": False,\n            \"quality_gate\": \"PASS\",\n            \"tests\": \"PASS\",\n            \"blockers\": [],\n            \"git_sync_status\": \"CERTIFIED_GIT_SYNC\",\n        }\n    )\n\n    assert decision.certified is False\n\n\ndef test_auditor_rejects_production_touch():\n    decision = audit_repair_result(\n        {\n            \"files_changed\": [\n                \"tools/mirror_sync/gate_chain_publisher.py\",\n            ],\n            \"production_touched\": True,\n            \"quality_gate\": \"PASS\",\n            \"tests\": \"PASS\",\n            \"blockers\": [],\n            \"git_sync_status\": \"CERTIFIED_GIT_SYNC\",\n        }\n    )\n\n    assert decision.certified is False\n    assert decision.reason == \"PRODUCTION_TOUCHED\"\n",
+      "path": "backend/tests/test_worker_repair_auditor_foundation_contract.py",
+      "type": "write_file"
+    }
+  ],
+  "base_sha": "773d346daabbcd562ca1cb3d2d63cae1a03f5462",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_maintenance_contract.py",
+        "tools/mirror_sync/worker_repair.py",
+        "tools/mirror_sync/worker_auditor.py",
+        "backend/tests/test_worker_repair_auditor_foundation_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_repair_auditor_foundation_contract.py",
+        "backend/tests/test_gate_chain_publisher.py",
+        "backend/tests/test_worker_channel_single_writer_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py"
+        ],
+        "max_results": 1000,
+        "paths": [
+          "tools/mirror_sync/worker_maintenance_contract.py",
+          "tools/mirror_sync/worker_repair.py",
+          "tools/mirror_sync/worker_auditor.py",
+          "tools/mirror_sync/git_divergence_guard.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/mirror_sync/gate_chain_publisher.py",
+          "backend/tests/test_worker_repair_auditor_foundation_contract.py"
+        ],
+        "search_terms": [
+          "WORKER_REPAIR",
+          "WORKER_AUDITOR",
+          "production_allowed",
+          "mutation_allowed",
+          "CERTIFIED_GIT_SYNC",
+          "authorized_push",
+          "agent_guard",
+          "worker_control_plane"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "No Scheduler",
+    "No NetPay",
+    "Exactly four declared files may change",
+    "Do not modify universal_job_bridge.py",
+    "Do not modify universal_job_dispatcher.py",
+    "Do not modify universal_job_result_publisher.py",
+    "Do not modify runtime_health_publisher.py",
+    "Do not modify worker_control_plane.py",
+    "Do not modify worker_runtime_fingerprint.py",
+    "Do not modify gate_chain_publisher.py",
+    "Do not modify git_divergence_guard.py",
+    "Do not create workerctl.py",
+    "Do not create another general-purpose control plane",
+    "Do not duplicate Universal Worker",
+    "Worker Repair is maintenance-plane only",
+    "Worker Repair cannot execute normal application development jobs",
+    "Worker Auditor is READ_ONLY",
+    "Worker Auditor must never mutate repository or runtime",
+    "Every Worker Repair mutation requires independent Worker Auditor certification",
+    "Worker Repair scope must be fail-closed",
+    "Application code is outside Worker Repair authority",
+    "No force push",
+    "No --no-verify",
+    "No hook bypass",
+    "production_touched must remain false"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5C-REPAIR-AUDITOR-FOUNDATION-MUTATION-R1-20260922",
+  "mode": "MUTATION",
+  "objective": "Crear la fundacion canonica de Worker Repair y Worker Auditor como roles independientes del flujo normal de desarrollo. Reutilizar infraestructura y principios existentes sin duplicar Universal Worker. Worker Repair tendra autoridad de mutacion exclusivamente sobre infraestructura Worker autorizada; Worker Auditor sera estrictamente READ_ONLY y debera certificar toda reparacion. No crear servicios ni control planes paralelos en este gate.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
