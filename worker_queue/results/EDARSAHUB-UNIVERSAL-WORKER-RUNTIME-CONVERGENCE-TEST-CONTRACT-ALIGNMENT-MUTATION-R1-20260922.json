@@ -1,0 +1,130 @@
+{
+  "base_sha": "c45e7a92f84fdc31a684f3b067ece8013d5d4c50",
+  "blockers": [],
+  "candidate_sha": "87a1c8970889d0892bd1f1d217fe7ec5187b1b8e",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-22T05:46:22Z",
+  "development_sha": "87a1c8970889d0892bd1f1d217fe7ec5187b1b8e",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_worker_runtime_wake_convergence_r42.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-TEST-CONTRACT-ALIGNMENT-MUTATION-R1-20260922",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-22T05:46:41Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.worker_runtime_wake",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "fastapi",
+              "fastapi.responses",
+              "fcntl",
+              "json",
+              "os",
+              "pathlib",
+              "re",
+              "subprocess",
+              "sys",
+              "time"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "--expected-remote",
+              "--is-ancestor",
+              "--porcelain=v1",
+              "_converge_development_if_safe",
+              "git_guard_path",
+              "merge",
+              "merge-base",
+              "production_touched",
+              "refresh"
+            ],
+            "path": "backend/modules/worker_runtime_wake/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/internal/worker/wake"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_active_job_id",
+              "_active_worker_code_tree",
+              "_converge_development_if_safe",
+              "_current_worker_code_tree",
+              "_heartbeat_age_seconds",
+              "_is_production_environment",
+              "_register_preferred_job",
+              "_remote_queue_sha",
+              "_restart_worker",
+              "_run_supervisor_worker_action",
+              "_runtime_git",
+              "ensure_worker_runtime_on_preview_startup",
+              "wake_worker"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "--expected-remote",
+              "--force",
+              "--is-ancestor",
+              "--porcelain=v1",
+              "_converge_development_if_safe",
+              "git_guard_path",
+              "merge",
+              "merge-base",
+              "production_touched",
+              "refresh",
+              "reset",
+              "stash"
+            ],
+            "path": "backend/tests/test_worker_runtime_wake_convergence_r42.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_wake_contract_still_forbids_production_touch",
+              "test_wake_convergence_uses_canonical_fast_forward_after_ancestor_and_clean_checks",
+              "test_wake_git_calls_preserve_process_environment",
+              "test_wake_preserves_active_job_before_runtime_convergence"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 2,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-22T05:46:14Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
