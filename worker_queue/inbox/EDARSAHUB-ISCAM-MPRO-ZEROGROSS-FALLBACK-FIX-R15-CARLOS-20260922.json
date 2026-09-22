@@ -1,0 +1,67 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-MPRO-ZEROGROSS-FALLBACK-FIX-R15-CARLOS-20260922",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Corregir de forma minima el prorrateo MPRO para tickets cuyo Cd_Importe total es cero pero conservan cantidad y precio unitario. Usar cantidad*precio solo como fallback distribuible cuando el bruto original completo es cero; si tampoco existe base monetaria, conservar fail-closed.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "        gross_total = _q4(sum(gross_values, Decimal(\"0\")))\n        if gross_total <= 0:\n            header_only = all(\n                _s(row.get(\"producto_codigo_fuente\")).upper() == \"HEADER_SIN_DETALLE\"\n                for _, row in items\n            )\n            if not header_only:\n                raise RuntimeError(\n                    f\"MPRO: ticket sin detalle monetario distribuible: {ticket_key}\"\n                )\n\n            # El encabezado final existe pero el POS no expone líneas de producto.\n            # No se inventa producto: se conserva el ticket como ajuste técnico,\n            # excluido de vistas de productos por el prefijo __ISCAM_AJUSTE_.\n            for index, (_, row) in enumerate(items):\n                line_net = target_net if index == 0 else Decimal(\"0\")\n                row[\"producto_codigo_fuente\"] = SOFT_AJUSTE_ENCABEZADO\n                row[\"producto_nombre\"] = \"AJUSTE MPRO: HEADER SIN DETALLE DE PRODUCTO\"\n                row[\"cantidad\"] = Decimal(\"0\")\n                row[\"precio_unitario\"] = Decimal(\"0\")\n                row[\"importe_bruto\"] = line_net\n                row[\"importe_neto\"] = line_net\n                row[\"descuento_prorrateado\"] = Decimal(\"0\")\n            continue\n",
+      "new": "        gross_total = _q4(sum(gross_values, Decimal(\"0\")))\n        if gross_total <= 0:\n            # Algunos tickets MPRO conservan cantidad y precio unitario pero\n            # Cd_Importe llega en cero. En ese caso existe una base monetaria\n            # distribuible real: cantidad x precio. Solo se usa como fallback\n            # cuando el bruto original completo es cero; si tampoco existe esta\n            # base, el flujo sigue cerrando en fail-closed.\n            fallback_gross_values = [\n                _q4(\n                    _d(row.get(\"cantidad\"))\n                    * _d(row.get(\"precio_unitario\"))\n                )\n                for _, row in items\n            ]\n            fallback_gross_total = _q4(\n                sum(fallback_gross_values, Decimal(\"0\"))\n            )\n\n            if fallback_gross_total > 0:\n                gross_values = fallback_gross_values\n                gross_total = fallback_gross_total\n                for index, (_, row) in enumerate(items):\n                    row[\"importe_bruto\"] = gross_values[index]\n            else:\n                header_only = all(\n                    _s(row.get(\"producto_codigo_fuente\")).upper() == \"HEADER_SIN_DETALLE\"\n                    for _, row in items\n                )\n                if not header_only:\n                    raise RuntimeError(\n                        f\"MPRO: ticket sin detalle monetario distribuible: {ticket_key}\"\n                    )\n\n                # El encabezado final existe pero el POS no expone líneas de producto.\n                # No se inventa producto: se conserva el ticket como ajuste técnico,\n                # excluido de vistas de productos por el prefijo __ISCAM_AJUSTE_.\n                for index, (_, row) in enumerate(items):\n                    line_net = target_net if index == 0 else Decimal(\"0\")\n                    row[\"producto_codigo_fuente\"] = SOFT_AJUSTE_ENCABEZADO\n                    row[\"producto_nombre\"] = \"AJUSTE MPRO: HEADER SIN DETALLE DE PRODUCTO\"\n                    row[\"cantidad\"] = Decimal(\"0\")\n                    row[\"precio_unitario\"] = Decimal(\"0\")\n                    row[\"importe_bruto\"] = line_net\n                    row[\"importe_neto\"] = line_net\n                    row[\"descuento_prorrateado\"] = Decimal(\"0\")\n                continue\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_mpro_header_authority_r93.py",
+      "old": "def _row(product, gross, target, descuento=\"0\"):\n    return {\n        \"id_transaccion\": \"MPRO:ORIGEN:1\",\n        \"numero_ticket\": \"1\",\n        \"es_kpi_valido\": 1,\n        \"importe_neto_ticket\": Decimal(target),\n        \"descuento_comanda\": Decimal(descuento),\n        \"importe_bruto\": Decimal(gross),\n        \"producto_codigo_fuente\": product,\n        \"producto_nombre\": product,\n    }\n",
+      "new": "def _row(\n    product,\n    gross,\n    target,\n    descuento=\"0\",\n    cantidad=\"0\",\n    precio_unitario=\"0\",\n):\n    return {\n        \"id_transaccion\": \"MPRO:ORIGEN:1\",\n        \"numero_ticket\": \"1\",\n        \"es_kpi_valido\": 1,\n        \"importe_neto_ticket\": Decimal(target),\n        \"descuento_comanda\": Decimal(descuento),\n        \"importe_bruto\": Decimal(gross),\n        \"cantidad\": Decimal(cantidad),\n        \"precio_unitario\": Decimal(precio_unitario),\n        \"producto_codigo_fuente\": product,\n        \"producto_nombre\": product,\n    }\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_mpro_header_authority_r93.py",
+      "old": "def test_mpro_zero_gross_non_header_still_fails_closed():\n    import pytest\n    with pytest.raises(RuntimeError, match=\"sin detalle monetario distribuible\"):\n        _prorratear_mpro_por_ticket([_row(\"PRODUCTO_REAL\", \"0\", \"125\", \"0\")])\n\n\ndef test_mpro_branch_filter_uses_header_schema_not_detail_column():\n",
+      "new": "def test_mpro_zero_gross_uses_quantity_times_price_as_distribution_basis():\n    out = _prorratear_mpro_por_ticket([\n        _row(\"A\", \"0\", \"150\", \"0\", cantidad=\"2\", precio_unitario=\"50\"),\n        _row(\"B\", \"0\", \"150\", \"0\", cantidad=\"1\", precio_unitario=\"50\"),\n    ])\n    assert [x[\"importe_bruto\"] for x in out] == [\n        Decimal(\"100.0000\"),\n        Decimal(\"50.0000\"),\n    ]\n    assert [x[\"importe_neto\"] for x in out] == [\n        Decimal(\"100.0000\"),\n        Decimal(\"50.0000\"),\n    ]\n    assert sum(x[\"importe_neto\"] for x in out) == Decimal(\"150.0000\")\n\n\ndef test_mpro_zero_gross_non_header_still_fails_closed():\n    import pytest\n    with pytest.raises(RuntimeError, match=\"sin detalle monetario distribuible\"):\n        _prorratear_mpro_por_ticket([_row(\"PRODUCTO_REAL\", \"0\", \"125\", \"0\")])\n\n\ndef test_mpro_branch_filter_uses_header_schema_not_detail_column():\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_mpro_header_authority_r93.py",
+        "backend/tests/test_iscam_mpro_date_filter_conversion_r13.py",
+        "backend/tests/test_mpro_fecha_operacion_contract.py",
+        "backend/tests/test_iscam_detail_parity_backfill_r33.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260922 Corregir Reportes de ISCAM"
+  },
+  "constraints": [
+    "Scope exacto dos archivos",
+    "No Production",
+    "No SQL DML en este job",
+    "Mantener fail-closed si cantidad*precio tambien es cero",
+    "No tocar regiones protegidas de Comandas/Cuentas",
+    "production_allowed=false"
+  ]
+}
