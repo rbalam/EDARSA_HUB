@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-130QRO-COMANDAS-DIAG-CARLOS-20260922T1509Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e9115e7715e248a0fbdfe99619872cc2b5a39e6f",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "priority": "P0",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V2",
+    "chat": "20260921-Reportes ISCAM"
+  },
+  "objective": "Diagnosticar por qué Reportes ISCAM > Comandas de Venta de 130QRO en agosto 2026 devuelve ERROR tanto en Sin agrupar como al usar el agrupador. Ejecutar exactamente consultas equivalentes al endpoint actual sobre Comercial_Inteligencia_VentasDetalleProducto, sin modificar datos, código ni Producción.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "comandas_none_aug26",
+          "sql": "SELECT TOP (10) numero_ticket AS folio_cuenta, fecha_hora AS fecha, producto_codigo_fuente AS clave,\n producto_nombre AS descripcion, cantidad, precio_unitario AS precio, importe_neto AS importe\nFROM dbo.Comercial_Inteligencia_VentasDetalleProducto\nWHERE unidad_negocio_id='130QRO' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n AND fecha_operacion >= '2026-08-01' AND fecha_operacion < '2026-09-01'\nORDER BY fecha_operacion DESC, fecha_hora DESC, numero_ticket DESC"
+        },
+        {
+          "name": "comandas_mes_aug26",
+          "sql": "SELECT FORMAT(fecha_operacion,'yyyy-MM') AS periodo, COUNT(*) AS lineas,\n COUNT(DISTINCT id_transaccion) AS tickets, SUM(ISNULL(cantidad,0)) AS cantidad,\n SUM(ISNULL(importe_neto,0)) AS importe\nFROM dbo.Comercial_Inteligencia_VentasDetalleProducto\nWHERE unidad_negocio_id='130QRO' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n AND fecha_operacion >= '2026-08-01' AND fecha_operacion < '2026-09-01'\nGROUP BY FORMAT(fecha_operacion,'yyyy-MM') ORDER BY periodo DESC"
+        },
+        {
+          "name": "comandas_count_aug26",
+          "sql": "SELECT COUNT_BIG(*) AS lineas,\n COUNT(DISTINCT numero_ticket) AS tickets_por_folio,\n COUNT(DISTINCT id_transaccion) AS tickets_por_id,\n MIN(fecha_operacion) AS fecha_min, MAX(fecha_operacion) AS fecha_max\nFROM dbo.Comercial_Inteligencia_VentasDetalleProducto\nWHERE unidad_negocio_id='130QRO' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n AND fecha_operacion >= '2026-08-01' AND fecha_operacion < '2026-09-01'"
+        }
+      ]
+    }
+  ],
+  "expected_output": {
+    "status": "READ_ONLY_COMPLETE",
+    "production_touched": false
+  },
+  "created_at_utc": "2026-09-22T15:09:00Z"
+}
