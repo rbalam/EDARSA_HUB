@@ -10,8 +10,18 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 import tempfile
+import importlib.util
 
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
+_RUNTIME_FINGERPRINT_PATH = Path(__file__).resolve().with_name("worker_runtime_fingerprint.py")
+_RUNTIME_FINGERPRINT_SPEC = importlib.util.spec_from_file_location(
+    "edarsahub_worker_runtime_fingerprint",
+    _RUNTIME_FINGERPRINT_PATH,
+)
+if _RUNTIME_FINGERPRINT_SPEC is None or _RUNTIME_FINGERPRINT_SPEC.loader is None:
+    raise RuntimeError("RUNTIME_FINGERPRINT_SPEC_UNAVAILABLE")
+_runtime_fingerprint = importlib.util.module_from_spec(_RUNTIME_FINGERPRINT_SPEC)
+_RUNTIME_FINGERPRINT_SPEC.loader.exec_module(_runtime_fingerprint)
 STATE = ROOT / ".git" / "universal-worker-queue"
 REMOTE = os.environ.get("EDARSAHUB_QUEUE_REMOTE", "origin")
 HEALTH_BRANCH = os.environ.get(
@@ -204,7 +214,16 @@ def history_summary() -> dict[str, int]:
     }
 
 
-def runtime_summary() -> dict[str, str | None]:
+def runtime_summary() -> dict:
+    try:
+        fingerprint = _runtime_fingerprint.build_runtime_fingerprint()
+    except Exception as exc:
+        fingerprint = {
+            "schema": "edarsahub.worker-runtime-fingerprint.v1",
+            "status": "RUNTIME_FINGERPRINT_UNAVAILABLE",
+            "error_type": type(exc).__name__,
+            "production_touched": False,
+        }
     return {
         "pid": read_text(RUNTIME / "pid"),
         "generation": read_text(RUNTIME / "generation"),
@@ -212,6 +231,7 @@ def runtime_summary() -> dict[str, str | None]:
         "last_receive_utc": read_text(RUNTIME / "last_receive_utc"),
         "current_job_id": read_text(RUNTIME / "current_job_id"),
         "last_terminal_utc": read_text(RUNTIME / "last_terminal_utc"),
+        "runtime_fingerprint": fingerprint,
     }
 
 
