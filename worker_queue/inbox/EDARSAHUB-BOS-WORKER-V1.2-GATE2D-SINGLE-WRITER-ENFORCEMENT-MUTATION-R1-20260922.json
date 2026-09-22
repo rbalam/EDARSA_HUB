@@ -1,0 +1,93 @@
+{
+  "actions": [
+    {
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nTOOLS = ROOT / \"tools\" / \"mirror_sync\"\n\nREQUEST_WRITER = TOOLS / \"gate_chain_publisher.py\"\nRESULT_WRITER = TOOLS / \"universal_job_result_publisher.py\"\nHEALTH_WRITER = TOOLS / \"runtime_health_publisher.py\"\n\nCANONICAL_WRITERS = {\n    \"worker/requests\": REQUEST_WRITER,\n    \"worker/results\": RESULT_WRITER,\n    \"worker/health\": HEALTH_WRITER,\n}\n\nSCAN_SUFFIXES = {\".py\", \".sh\"}\n\n\ndef _source(path: Path) -> str:\n    return path.read_text(encoding=\"utf-8\", errors=\"replace\")\n\n\ndef _runtime_sources():\n    for path in TOOLS.rglob(\"*\"):\n        if not path.is_file():\n            continue\n        if path.suffix not in SCAN_SUFFIXES:\n            continue\n        yield path\n\n\ndef _looks_like_branch_writer(text: str, branch: str) -> bool:\n    markers = (\n        f\"refs/heads/{branch}\",\n        f'\"{branch}\"',\n        f\"'{branch}'\",\n    )\n\n    if not any(marker in text for marker in markers):\n        return False\n\n    write_markers = (\n        \"git push\",\n        '\"push\"',\n        \"'push'\",\n        \"authorized_push(\",\n        \"scoped_push_env(\",\n        \"runtime_git(\",\n        \"runtime_git_command(\",\n    )\n\n    return any(marker in text for marker in write_markers)\n\n\ndef test_worker_channels_have_one_canonical_writer_each():\n    offenders = {}\n\n    for branch, canonical in CANONICAL_WRITERS.items():\n        found = []\n\n        for path in _runtime_sources():\n            text = _source(path)\n\n            if _looks_like_branch_writer(text, branch):\n                found.append(path.resolve())\n\n        canonical_resolved = canonical.resolve()\n\n        unexpected = sorted(\n            str(path.relative_to(ROOT))\n            for path in found\n            if path != canonical_resolved\n        )\n\n        if unexpected:\n            offenders[branch] = unexpected\n\n    assert offenders == {}, (\n        \"Non-canonical Worker branch writers detected: \"\n        + repr(offenders)\n    )\n\n\ndef test_canonical_request_writer_is_gate_chain_publisher():\n    text = _source(REQUEST_WRITER)\n\n    assert \"worker/requests\" in text\n    assert \"authorized_push(\" in text\n    assert \"worktree-create\" in text\n    assert \"worker_queue_publication\" in text\n\n\ndef test_canonical_result_writer_is_result_publisher():\n    text = _source(RESULT_WRITER)\n\n    assert \"worker/results\" in text\n    assert \"publish_one\" in text\n\n\ndef test_canonical_health_writer_is_health_publisher():\n    text = _source(HEALTH_WRITER)\n\n    assert \"worker/health\" in text\n    assert \"production_touched\" in text\n\n\ndef test_request_result_health_channels_remain_separate():\n    request = _source(REQUEST_WRITER)\n    result = _source(RESULT_WRITER)\n    health = _source(HEALTH_WRITER)\n\n    assert \"worker/results\" not in request\n    assert \"worker/health\" not in request\n\n    assert \"worker/requests\" not in result\n    assert \"worker/health\" not in result\n\n    assert \"worker/requests\" not in health\n    assert \"worker/results\" not in health\n",
+      "path": "backend/tests/test_worker_channel_single_writer_contract.py",
+      "type": "write_file"
+    }
+  ],
+  "base_sha": "77c1a9420fc36fb0702f357a2f7472a787263652",
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_worker_channel_single_writer_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_channel_single_writer_contract.py",
+        "backend/tests/test_gate_chain_publisher.py",
+        "backend/tests/test_worker_health_branch_isolation_contract.py",
+        "backend/tests/test_worker_result_branch_isolation_contract.py",
+        "backend/tests/test_worker_save_github_safety_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py"
+        ],
+        "max_results": 1000,
+        "paths": [
+          "backend/tests/test_worker_channel_single_writer_contract.py",
+          "tools/mirror_sync/gate_chain_publisher.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "tools/mirror_sync/runtime_health_publisher.py"
+        ],
+        "search_terms": [
+          "worker/requests",
+          "worker/results",
+          "worker/health",
+          "CANONICAL_WRITERS",
+          "authorized_push",
+          "worktree-create",
+          "production_touched"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "No Scheduler",
+    "No NetPay",
+    "No business mutation",
+    "Exactly one declared file may change",
+    "Only backend/tests/test_worker_channel_single_writer_contract.py may be created",
+    "Do not modify gate_chain_publisher.py",
+    "Do not modify universal_job_result_publisher.py",
+    "Do not modify runtime_health_publisher.py",
+    "Do not modify universal_job_bridge.py",
+    "Do not modify universal_job_dispatcher.py",
+    "Do not modify worker_control_plane.py",
+    "Do not create workerctl.py",
+    "Do not create another control plane",
+    "Do not weaken Agent Guard",
+    "Do not weaken Repository Artifact Guard",
+    "Do not weaken Git Divergence Guard",
+    "Do not bypass Git hooks",
+    "Do not force push",
+    "Request writer authority remains gate_chain_publisher.py",
+    "Result writer authority remains universal_job_result_publisher.py",
+    "Health writer authority remains runtime_health_publisher.py",
+    "production_touched must remain false"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE2D-SINGLE-WRITER-ENFORCEMENT-MUTATION-R1-20260922",
+  "mode": "MUTATION",
+  "objective": "Agregar exclusivamente un test contractual repository-wide que imponga single-writer por canal del Universal Worker v1.2: gate_chain_publisher.py para worker/requests, universal_job_result_publisher.py para worker/results y runtime_health_publisher.py para worker/health. No modificar runtime ni publishers existentes.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
