@@ -1,0 +1,46 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-130QRO-0808-POS-ZEROGROSS-DIAG-R17-CARLOS-20260922",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "Diagnosticar en POS MPRO 130QRO el/los tickets del 08/08/2026 con venta neta positiva en Venta_Encabezado pero suma de detalle monetario no positiva, que siguen bloqueando el backfill post-R15B. Solo lectura.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "130QRO"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "qro_0808_positive_net_zero_gross",
+          "sql": "WITH h AS (\n  SELECT v.Vn_Folio, v.Vn_Documento, v.Vn_Fecha, v.Sc_Cve_Sucursal,\n         ISNULL(v.Es_Cve_Estado,'') AS estado_origen,\n         CAST(ISNULL(v.Vn_Precio_Neto_Importe,0) AS decimal(19,4)) AS neto_header\n  FROM Venta_Encabezado v WITH (NOLOCK)\n  WHERE CONVERT(date,v.Vn_Fecha)='2026-08-08'\n    AND ISNULL(v.Vn_Tabla,'')='Comanda'\n    AND ISNULL(v.Es_Cve_Estado,'') IN ('AC','FA','CA')\n), d AS (\n  SELECT h.Vn_Folio,h.Vn_Documento,h.Vn_Fecha,h.Sc_Cve_Sucursal,h.estado_origen,h.neto_header,\n         COUNT(d.Co_Folio) AS lineas_detalle,\n         CAST(ISNULL(SUM(CAST(ISNULL(d.Cd_Importe,0) AS decimal(19,4))),0) AS decimal(19,4)) AS bruto_detalle,\n         CAST(ISNULL(SUM(CAST(ISNULL(d.Cd_Cantidad,0) AS decimal(19,4))),0) AS decimal(19,4)) AS cantidad_detalle\n  FROM h\n  LEFT JOIN Comanda_Detalle d WITH (NOLOCK)\n    ON d.Co_Folio=h.Vn_Documento\n   AND ISNULL(d.Es_Cve_Estado,'') IN ('AC','FA')\n  GROUP BY h.Vn_Folio,h.Vn_Documento,h.Vn_Fecha,h.Sc_Cve_Sucursal,h.estado_origen,h.neto_header\n)\nSELECT Vn_Folio,Vn_Documento,Vn_Fecha,Sc_Cve_Sucursal,estado_origen,neto_header,lineas_detalle,bruto_detalle,cantidad_detalle\nFROM d\nWHERE estado_origen IN ('AC','FA')\n  AND neto_header>0\n  AND bruto_detalle<=0\nORDER BY neto_header DESC,Vn_Folio"
+        },
+        {
+          "name": "qro_0808_problem_detail_rows",
+          "sql": "WITH bad AS (\n  SELECT v.Vn_Documento\n  FROM Venta_Encabezado v WITH (NOLOCK)\n  LEFT JOIN Comanda_Detalle d WITH (NOLOCK)\n    ON d.Co_Folio=v.Vn_Documento\n   AND ISNULL(d.Es_Cve_Estado,'') IN ('AC','FA')\n  WHERE CONVERT(date,v.Vn_Fecha)='2026-08-08'\n    AND ISNULL(v.Vn_Tabla,'')='Comanda'\n    AND ISNULL(v.Es_Cve_Estado,'') IN ('AC','FA')\n    AND ISNULL(v.Vn_Precio_Neto_Importe,0)>0\n  GROUP BY v.Vn_Documento\n  HAVING ISNULL(SUM(CAST(ISNULL(d.Cd_Importe,0) AS decimal(19,4))),0)<=0\n)\nSELECT TOP 200 d.Co_Folio,d.Pr_Cve_Producto,d.Cd_Concepto,d.Cd_Cantidad,d.Cd_Precio,d.Cd_Importe,d.Es_Cve_Estado\nFROM Comanda_Detalle d WITH (NOLOCK)\nINNER JOIN bad b ON b.Vn_Documento=d.Co_Folio\nORDER BY d.Co_Folio,d.Pr_Cve_Producto"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260922 Corregir Reportes de ISCAM"
+  },
+  "constraints": [
+    "READ_ONLY only",
+    "No Production",
+    "No SQL mutation",
+    "No repository mutation",
+    "production_touched=false"
+  ]
+}
