@@ -1,0 +1,102 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-GUARD-GATE1-PREFLIGHT-READONLY-R1-20260922",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "87a1c8970889d0892bd1f1d217fe7ec5187b1b8e",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar en modo estrictamente READ_ONLY el delta minimo para implementar el Runtime Convergence Guard canonico despues de Gate0 certificado. Determinar exactamente donde incorporar runtime fingerprint, required capabilities, deployment/runtime marker, preflight fail-closed, self-heal local y post-deploy certification reutilizando helpers existentes. No modificar codigo. Identificar ownership canonico, archivos exactos, tests existentes y nuevos, y secuencia minima de Mutations sin duplicar logica ni debilitar guards.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/bootstrap/recover_preview_runtime.sh",
+          "backend/modules/worker_runtime_wake/routes.py",
+          "backend/server.py",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/mirror_sync/worker_runtime_reconciler.py",
+          "tools/mirror_sync/universal_job_worker.sh",
+          ".github/workflows/worker-wake-endpoint-bootstrap.yml",
+          "backend/tests/test_worker_runtime_startup_selfheal_r1.py",
+          "backend/tests/test_worker_runtime_wake_convergence_r42.py",
+          "backend/tests/test_worker_control_plane_contract.py",
+          "backend/tests/test_worker_three_properties_contract.py"
+        ],
+        "search_terms": [
+          "runtime",
+          "fingerprint",
+          "capabilities",
+          "required_capabilities",
+          "deployment",
+          "marker",
+          "git_sha",
+          "branch",
+          "health",
+          "readiness",
+          "startup",
+          "selfheal",
+          "recover_preview_runtime",
+          "worker/wake",
+          "current_job_id",
+          "last_reconcile_utc",
+          "production_touched",
+          "GIT_GUARD_PATH",
+          "refresh",
+          "supervisorctl"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.yml",
+          "*.yaml"
+        ],
+        "exclude_patterns": [],
+        "max_results": 2500
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_runtime_startup_selfheal_r1.py",
+        "backend/tests/test_worker_runtime_wake_convergence_r42.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty",
+    "No repository changes",
+    "No lifecycle mutation",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "No Production",
+    "No supervisor restart",
+    "No wake side effects",
+    "No branch updates",
+    "No claim release",
+    "No worktree removal",
+    "Do not weaken Repository Artifact Guard",
+    "Do not weaken Agent Guard",
+    "Do not weaken GLOBAL_GIT_WRITER",
+    "Do not weaken Git divergence guards",
+    "No duplicate runtime convergence authority",
+    "Reuse canonical helpers",
+    "Runtime drift must remain fail-closed",
+    "Recovery authority remains PREVIEW_LOCAL_SUPERVISOR",
+    "Do not propose reset --hard as canonical convergence",
+    "Do not use direct merge --ff-only",
+    "Do not use stash or force",
+    "production_touched must remain false"
+  ]
+}
