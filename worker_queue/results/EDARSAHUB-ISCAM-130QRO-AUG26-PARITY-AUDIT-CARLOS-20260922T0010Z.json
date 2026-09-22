@@ -1,0 +1,97 @@
+{
+  "base_sha": "c45e7a92f84fdc31a684f3b067ece8013d5d4c50",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-22T00:11:33Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-130QRO-AUG26-PARITY-AUDIT-CARLOS-20260922T0010Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-22T00:11:43Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas_runtime",
+              "ventas_detalle",
+              "delta_ventas",
+              "tickets_runtime",
+              "tickets_detalle",
+              "delta_tickets",
+              "pax_runtime",
+              "pax_detalle",
+              "delta_pax",
+              "estado"
+            ],
+            "name": "qro_aug26_problem_dates",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-08-08",
+                "233021.0000",
+                "0.0000",
+                "233021.0000",
+                "57",
+                "0",
+                "57",
+                "159",
+                "0",
+                "159",
+                "MISSING"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ventas_runtime",
+              "ventas_detalle",
+              "delta_ventas",
+              "tickets_runtime",
+              "tickets_detalle",
+              "delta_tickets",
+              "pax_runtime",
+              "pax_detalle",
+              "delta_pax"
+            ],
+            "name": "qro_aug26_month_totals",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "4267150.0000",
+                "4034129.0000",
+                "233021.0000",
+                "825",
+                "768",
+                "57",
+                "2344",
+                "2185",
+                "159"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-22T00:11:32Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
