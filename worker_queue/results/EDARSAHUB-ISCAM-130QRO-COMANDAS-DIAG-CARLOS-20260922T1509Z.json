@@ -1,0 +1,183 @@
+{
+  "base_sha": "e9115e7715e248a0fbdfe99619872cc2b5a39e6f",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-22T15:24:53Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-130QRO-COMANDAS-DIAG-CARLOS-20260922T1509Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-22T15:25:29Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "folio_cuenta",
+              "fecha",
+              "clave",
+              "descripcion",
+              "cantidad",
+              "precio",
+              "importe"
+            ],
+            "name": "comandas_none_aug26",
+            "row_count_returned": 10,
+            "rows": [
+              [
+                "21-0044578",
+                "2026-08-31 00:00:00.0000000",
+                "0000004419",
+                "NEW YORK OZ",
+                "38.0000",
+                "59.0000",
+                "2242.0000"
+              ],
+              [
+                "21-0044578",
+                "2026-08-31 00:00:00.0000000",
+                "0000004420",
+                "NEW YORK PZ",
+                "1.0000",
+                "0.0000",
+                "0.0000"
+              ],
+              [
+                "21-0044578",
+                "2026-08-31 00:00:00.0000000",
+                "0000004590",
+                "HEINEKEN",
+                "1.0000",
+                "80.0000",
+                "80.0000"
+              ],
+              [
+                "21-0044578",
+                "2026-08-31 00:00:00.0000000",
+                "0000004673",
+                "FARMER ROAST OZ",
+                "15.0000",
+                "124.0000",
+                "1860.0000"
+              ],
+              [
+                "21-0044578",
+                "2026-08-31 00:00:00.0000000",
+                "0000000444",
+                "COPA T 1800 BLANCO",
+                "1.0000",
+                "230.0000",
+                "230.0000"
+              ],
+              [
+                "21-0044578",
+                "2026-08-31 00:00:00.0000000",
+                "0000004690",
+                "LOMO DE RIB EYE OZ",
+                "24.0000",
+                "107.0000",
+                "2568.0000"
+              ],
+              [
+                "21-0044578",
+                "2026-08-31 00:00:00.0000000",
+                "0000004605",
+                "COPA SAMBUCA NEGRO",
+                "1.0000",
+                "130.0000",
+                "130.0000"
+              ],
+              [
+                "21-0044578",
+                "2026-08-31 00:00:00.0000000",
+                "0000000500",
+                "NARANJADA",
+                "1.0000",
+                "60.0000",
+                "60.0000"
+              ],
+              [
+                "21-0044578",
+                "2026-08-31 00:00:00.0000000",
+                "0000004081",
+                ">>NARANJADA NATURAL",
+                "1.0000",
+                "0.0000",
+                "0.0000"
+              ],
+              [
+                "21-0044578",
+                "2026-08-31 00:00:00.0000000",
+                "0000004717",
+                "PURE DE PAPA 130",
+                "2.0000",
+                "140.0000",
+                "280.0000"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "periodo",
+              "lineas",
+              "tickets",
+              "cantidad",
+              "importe"
+            ],
+            "name": "comandas_mes_aug26",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2026-08",
+                10759,
+                768,
+                "38073.8000",
+                "4034129.0000"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "lineas",
+              "tickets_por_folio",
+              "tickets_por_id",
+              "fecha_min",
+              "fecha_max"
+            ],
+            "name": "comandas_count_aug26",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "10759",
+                768,
+                768,
+                "2026-08-01",
+                "2026-08-31"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-22T15:24:51Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
