@@ -259,17 +259,83 @@ def _prepare_queue_worktree(
 
     branch_ref = f"refs/heads/{branch}"
 
-    if git(
+    branch_exists = git(
         "show-ref",
         "--verify",
         "--quiet",
         branch_ref,
         check=False,
-    ).returncode == 0:
-        raise RuntimeError("QUEUE_PUBLISHER_BRANCH_ALREADY_EXISTS")
+    ).returncode == 0
 
-    if worktree.exists():
-        raise RuntimeError("QUEUE_PUBLISHER_WORKTREE_ALREADY_EXISTS")
+    worktree_exists = worktree.exists()
+
+    if branch_exists or worktree_exists:
+        if not (branch_exists and worktree_exists):
+            raise RuntimeError(
+                "QUEUE_PUBLISHER_RESIDUAL_STATE_INCOMPLETE"
+            )
+
+        branch_sha = git(
+            "rev-parse",
+            branch,
+        ).stdout.strip()
+
+        worktree_sha = git(
+            "rev-parse",
+            "HEAD",
+            cwd=worktree,
+        ).stdout.strip()
+
+        if branch_sha != worktree_sha:
+            raise RuntimeError(
+                "QUEUE_PUBLISHER_RESIDUAL_HEAD_MISMATCH"
+            )
+
+        status = git(
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+            cwd=worktree,
+            check=False,
+        ).stdout.strip()
+
+        if status:
+            raise RuntimeError(
+                "QUEUE_PUBLISHER_RESIDUAL_WORKTREE_DIRTY"
+            )
+
+        parent = git(
+            "rev-parse",
+            f"{worktree_sha}^",
+            cwd=worktree,
+            check=False,
+        ).stdout.strip()
+
+        if parent != queue_base:
+            raise RuntimeError(
+                "QUEUE_PUBLISHER_RESIDUAL_LINEAGE_INVALID"
+            )
+
+        target = worktree / rel
+
+        if not target.is_file():
+            raise RuntimeError(
+                "QUEUE_PUBLISHER_RESIDUAL_REQUEST_MISSING"
+            )
+
+        validate_commit_scope(
+            worktree,
+            queue_base,
+            worktree_sha,
+            {rel},
+        )
+
+        return (
+            worktree,
+            branch,
+            agent_id,
+            task_id,
+        )
 
     git("branch", branch, queue_base)
 
@@ -432,42 +498,69 @@ def publish(
         rel=rel,
     )
 
+    current_head = git(
+        "rev-parse",
+        "HEAD",
+        cwd=worktree,
+    ).stdout.strip()
+
+    resumed_existing = current_head != queue_base
+
     success = False
     cleanup_errors: list[str] = []
 
     try:
         target = worktree / rel
 
-        if target.exists():
-            return {
-                "status": "EXISTS",
-                "job_id": job_id,
-                "publish": False,
-                "result": "REMOTE_JOB=EXISTS",
-            }
-
-        target.parent.mkdir(
-            parents=True,
-            exist_ok=True,
-        )
-
-        target.write_text(
+        expected_payload = (
             json.dumps(
                 template,
                 ensure_ascii=False,
                 indent=2,
                 sort_keys=True,
             )
-            + "\n",
-            encoding="utf-8",
+            + "\n"
         )
 
-        git(
-            "add",
-            "--",
-            rel,
-            cwd=worktree,
-        )
+        if resumed_existing:
+            if not target.is_file():
+                raise RuntimeError(
+                    "QUEUE_PUBLISHER_RESIDUAL_REQUEST_MISSING"
+                )
+
+            actual_payload = target.read_text(
+                encoding="utf-8",
+            )
+
+            if actual_payload != expected_payload:
+                raise RuntimeError(
+                    "QUEUE_PUBLISHER_RESIDUAL_REQUEST_MISMATCH"
+                )
+        else:
+            if target.exists():
+                return {
+                    "status": "EXISTS",
+                    "job_id": job_id,
+                    "publish": False,
+                    "result": "REMOTE_JOB=EXISTS",
+                }
+
+            target.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            target.write_text(
+                expected_payload,
+                encoding="utf-8",
+            )
+
+            git(
+                "add",
+                "--",
+                rel,
+                cwd=worktree,
+            )
 
         staged = [
             line.strip()
@@ -480,23 +573,31 @@ def publish(
             if line.strip()
         ]
 
-        if staged != [rel]:
-            raise RuntimeError(
-                f"STAGED_SCOPE_MISMATCH:{staged}"
+        if resumed_existing:
+            if staged:
+                raise RuntimeError(
+                    f"RESUME_STAGED_SCOPE_NOT_EMPTY:{staged}"
+                )
+
+            candidate = current_head
+        else:
+            if staged != [rel]:
+                raise RuntimeError(
+                    f"STAGED_SCOPE_MISMATCH:{staged}"
+                )
+
+            git(
+                "commit",
+                "-m",
+                f"orchestrator: enqueue {job_id}",
+                cwd=worktree,
             )
 
-        git(
-            "commit",
-            "-m",
-            f"orchestrator: enqueue {job_id}",
-            cwd=worktree,
-        )
-
-        candidate = git(
-            "rev-parse",
-            "HEAD",
-            cwd=worktree,
-        ).stdout.strip()
+            candidate = git(
+                "rev-parse",
+                "HEAD",
+                cwd=worktree,
+            ).stdout.strip()
 
         if not re.fullmatch(r"[0-9a-f]{40}", candidate):
             raise RuntimeError("INVALID_COMMIT_SHA")
@@ -583,8 +684,13 @@ def publish(
             "agent_guard_registered_worktree": True,
             "exact_scope": [rel],
             "authorized_push": True,
+            "resumed_existing_publication": resumed_existing,
             "production_touched": False,
-            "result": "GATE_ENQUEUED=PASS",
+            "result": (
+                "GATE_RESUMED_AND_ENQUEUED=PASS"
+                if resumed_existing
+                else "GATE_ENQUEUED=PASS"
+            ),
         }
 
     finally:

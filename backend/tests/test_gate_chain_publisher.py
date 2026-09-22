@@ -282,3 +282,53 @@ def test_publisher_explicitly_reports_production_untouched():
     text = source()
 
     assert '"production_touched": False' in text
+
+def test_publisher_can_resume_exact_interrupted_publication():
+    text = source()
+
+    assert "resumed_existing" in text
+    assert "GATE_RESUMED_AND_ENQUEUED=PASS" in text
+    assert "QUEUE_PUBLISHER_RESIDUAL_STATE_INCOMPLETE" in text
+    assert "QUEUE_PUBLISHER_RESIDUAL_HEAD_MISMATCH" in text
+    assert "QUEUE_PUBLISHER_RESIDUAL_WORKTREE_DIRTY" in text
+    assert "QUEUE_PUBLISHER_RESIDUAL_LINEAGE_INVALID" in text
+    assert "QUEUE_PUBLISHER_RESIDUAL_REQUEST_MISSING" in text
+    assert "QUEUE_PUBLISHER_RESIDUAL_REQUEST_MISMATCH" in text
+
+
+def test_publisher_resume_reuses_existing_commit():
+    text = source()
+
+    assert "candidate = current_head" in text
+    assert "RESUME_STAGED_SCOPE_NOT_EMPTY" in text
+    assert "resumed_existing_publication" in text
+
+
+def test_publisher_resume_keeps_exact_scope_validation():
+    text = source()
+
+    assert text.count("validate_commit_scope(") >= 2
+    assert "{rel}" in text
+
+
+def test_publisher_resume_keeps_optimistic_concurrency():
+    text = source()
+
+    assert "REMOTE_MOVED_RETRY_REQUIRED" in text
+    assert "_queue_remote_head(" in text
+
+
+def test_publisher_resume_keeps_canonical_authorized_push():
+    text = source()
+
+    assert "authorized_push(" in text
+    assert '"worktree-create"' in text
+    assert '"worker_queue_publication"' in text
+
+
+def test_publisher_resume_never_force_pushes_or_bypasses_hooks():
+    text = source().lower()
+
+    assert "--force" not in text
+    assert "--force-with-lease" not in text
+    assert "--no-verify" not in text
