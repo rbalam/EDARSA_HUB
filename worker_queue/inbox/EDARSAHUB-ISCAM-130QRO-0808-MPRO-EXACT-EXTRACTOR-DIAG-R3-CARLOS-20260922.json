@@ -31,5 +31,7 @@
     "source": "chat",
     "project": "EDARSAHUB-CONCILIACIONES",
     "chat": "20260922 Corregir Reportes de ISCAM"
-  }
+  },
+  "republish_after_preview_mirror_ff": true,
+  "republish_reason": "mirror/emergent-live fast-forwarded to current Edarsahub_Desarrollo after public wake endpoint failure"
 }
