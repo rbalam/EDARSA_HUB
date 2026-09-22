@@ -1,0 +1,156 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TABLAJERIA-GATE0-READONLY-ARQUITECTURA-CANONICA-V1-CORRECTED-20260922T050100Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c45e7a92f84fdc31a684f3b067ece8013d5d4c50",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "priority": "P0",
+  "objective": "Auditar en modo READ_ONLY la arquitectura tecnica canonica V1 de Tablajeria contra el repositorio real y metadata SQL disponible de solo lectura. No modificar archivos. Publicar reporte completo en worker/results.",
+  "context": {
+    "authorized_chat": "Tablajeria 3",
+    "official_sources": [
+      "Tablajeria en ERP: verdad operativa",
+      "Plan Arquitectonico Tablajeria: mapa funcional",
+      "Tablajerias Arquitectura: diseno tecnico canonico",
+      "Tablajeria 3: ejecucion real con Worker"
+    ],
+    "report_destination": "worker/results",
+    "do_not_create_report_file": "/app/docs/reports/TABLAJERIA_GATE0_READONLY_ARQUITECTURA_CANONICA_V1.md"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "frontend/src",
+          "docs",
+          "worker_queue/results",
+          "worker_queue/published",
+          "worker_queue/rejected",
+          "worker_queue/rejected_history"
+        ],
+        "search_terms": [
+          "Tablajeria",
+          "Tablaje",
+          "Operaciones_Tablaje",
+          "lotes-proveedor",
+          "plantillas",
+          "inventario",
+          "kardex",
+          "costos",
+          "contabilidad",
+          "compras",
+          "RBAC",
+          "FechaOperacion",
+          "timezone",
+          "Foto Finish",
+          "Parrilla"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.jsx",
+          "*.js",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "exclude_patterns": [
+          "**/__pycache__/**",
+          "**/node_modules/**",
+          "**/build/**"
+        ],
+        "max_results": 2000
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "request": {
+        "metadata_only": true,
+        "areas": [
+          "empresas",
+          "unidades_negocio",
+          "sucursales",
+          "almacenes",
+          "productos_insumos",
+          "unidades_medida",
+          "inventarios",
+          "movimientos_kardex",
+          "lotes",
+          "costos",
+          "compras",
+          "contabilidad_eventos",
+          "usuarios_roles_permisos",
+          "auditoria_workflow",
+          "source_systems_sync",
+          "recetas_platillos",
+          "parrilla",
+          "foto_finish",
+          "tablajeria"
+        ],
+        "deny_ddl": true,
+        "deny_dml": true
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "required_output": [
+    "status",
+    "quality_gate",
+    "progress_percent",
+    "production_touched",
+    "mutations_executed",
+    "ddl_executed",
+    "dml_executed",
+    "backend_touched",
+    "frontend_touched",
+    "worker_mode",
+    "blockers",
+    "estado_general",
+    "archivos_inspeccionados",
+    "tablas_detectadas",
+    "endpoints_detectados",
+    "menus_tabs_detectados",
+    "permisos_detectados",
+    "helpers_canonicos_detectados",
+    "tablas_a_reutilizar",
+    "tablas_no_duplicar",
+    "brechas_tecnicas",
+    "riesgos_criticos",
+    "riesgos_altos",
+    "inconsistencias_v1",
+    "conforme",
+    "incompleto",
+    "contradictorio",
+    "duplicado",
+    "no_cubierto",
+    "confirmacion_no_modificaciones",
+    "recomendacion_gate1"
+  ],
+  "expected_terminal_success": {
+    "status": "CERTIFIED_READ_ONLY",
+    "quality_gate": "PASS",
+    "progress_percent": 100,
+    "production_touched": false,
+    "mutations_executed": false,
+    "ddl_executed": false,
+    "dml_executed": false,
+    "backend_touched": false,
+    "frontend_touched": false,
+    "worker_mode": "READ_ONLY",
+    "blockers": []
+  },
+  "expected_terminal_blocked": {
+    "status": "BLOCKED",
+    "quality_gate": "FAIL",
+    "production_touched": false,
+    "mutations_executed": false
+  },
+  "created_at_utc": "2026-09-22T05:01:00Z"
+}
