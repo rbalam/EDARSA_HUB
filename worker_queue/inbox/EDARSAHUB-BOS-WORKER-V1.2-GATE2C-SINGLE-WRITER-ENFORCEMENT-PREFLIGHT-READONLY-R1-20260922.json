@@ -1,0 +1,99 @@
+{
+  "actions": [],
+  "base_sha": "77c1a9420fc36fb0702f357a2f7472a787263652",
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py",
+          "*.sh"
+        ],
+        "max_results": 2500,
+        "paths": [
+          "tools/mirror_sync/gate_chain_publisher.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/mirror_sync/git_divergence_guard.py",
+          "tools/mirror_sync",
+          "backend/tests"
+        ],
+        "search_terms": [
+          "refs/heads/worker/requests",
+          "refs/heads/worker/results",
+          "refs/heads/worker/health",
+          "worker/requests",
+          "worker/results",
+          "worker/health",
+          "authorized_push(",
+          "scoped_push_env(",
+          "git push",
+          "\"push\"",
+          "worker_queue/inbox/",
+          "prepare_queue_worktree",
+          "runtime_health_publisher",
+          "universal_job_result_publisher",
+          "gate_chain_publisher"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "paths": [
+        "backend/tests/test_gate_chain_publisher.py",
+        "backend/tests/test_worker_health_branch_isolation_contract.py",
+        "backend/tests/test_worker_result_branch_isolation_contract.py",
+        "backend/tests/test_worker_save_github_safety_contract.py",
+        "backend/tests/test_worker_result_publisher_batch_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty",
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "No Scheduler mutation",
+    "No NetPay",
+    "No business mutation",
+    "No repository mutation",
+    "No service restart",
+    "No worker wake",
+    "No Git mutation",
+    "Do not create workerctl.py",
+    "Do not create another control plane",
+    "Do not modify gate_chain_publisher.py",
+    "Do not modify universal_job_result_publisher.py",
+    "Do not modify runtime_health_publisher.py",
+    "Do not modify universal_job_bridge.py",
+    "Do not modify universal_job_dispatcher.py",
+    "Do not modify worker_control_plane.py",
+    "Do not weaken Agent Guard",
+    "Do not weaken Repository Artifact Guard",
+    "Do not weaken Git Divergence Guard",
+    "Classify actual writers separately from readers/references/history",
+    "Canonical request writer is gate_chain_publisher.py unless contrary evidence exists",
+    "Canonical result writer is universal_job_result_publisher.py unless contrary evidence exists",
+    "Canonical health writer is runtime_health_publisher.py unless contrary evidence exists",
+    "Prefer a repository contract test over new runtime infrastructure",
+    "production_touched must remain false"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE2C-SINGLE-WRITER-ENFORCEMENT-PREFLIGHT-READONLY-R1-20260922",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en modo estrictamente READ_ONLY el contrato exacto necesario para imponer single-writer por canal en Universal Worker v1.2. Confirmar que gate_chain_publisher.py es la autoridad canonica de worker/requests, universal_job_result_publisher.py de worker/results y runtime_health_publisher.py de worker/health; identificar expresiones reales de push/escritura que debe reconocer un test repository-wide sin falsos positivos sobre lectores, consumers, recovery, tests o referencias historicas. Definir el delta minimo de Gate2C Mutation.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
