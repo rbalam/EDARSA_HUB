@@ -1,0 +1,105 @@
+{
+  "actions": [],
+  "base_sha": "daa8cd034fb090170414b0165fdd74a3dba0dca8",
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [
+          "*.pyc"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.yml",
+          "*.yaml",
+          "*.json"
+        ],
+        "max_results": 1000,
+        "paths": [
+          "tools",
+          "backend",
+          "scripts",
+          "worker_queue",
+          ".github"
+        ],
+        "search_terms": [
+          "worker/requests",
+          "refs/heads/worker/requests",
+          "worker/results",
+          "worker/health",
+          "worker_queue/inbox",
+          "git push",
+          "authorized_push",
+          "scoped_push_env",
+          "git worktree add",
+          "worktree-create",
+          "gate_chain_publisher",
+          "gate_chain_orchestrator",
+          "universal_job_bridge",
+          "universal_job_dispatcher",
+          "universal_job_result_publisher",
+          "runtime_health_publisher",
+          "worker_control_plane",
+          "recover_preview_runtime",
+          "runtime-recovery",
+          "wake",
+          "heartbeat",
+          "claim",
+          "release",
+          "retry",
+          "requeue",
+          "stale",
+          "timeout"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "paths": [
+        "backend/tests/test_gate_chain_publisher.py",
+        "backend/tests/test_worker_channel_single_writer_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_runtime_fingerprint_contract.py",
+        "backend/tests/test_worker_health_branch_isolation_contract.py",
+        "backend/tests/test_worker_result_branch_isolation_contract.py",
+        "backend/tests/test_worker_save_github_safety_contract.py",
+        "backend/tests/test_worker_scope_concurrency_dispatcher_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "STRICT READ_ONLY",
+    "actions must remain empty",
+    "production_allowed must remain false",
+    "production_touched must remain false",
+    "Do not modify repository",
+    "Do not modify SQL",
+    "Do not modify Mongo",
+    "Do not modify frontend",
+    "Do not restart services",
+    "Do not execute wake",
+    "Do not create claims",
+    "Do not clear locks",
+    "Do not delete worktrees",
+    "Do not deprecate anything during discovery",
+    "Do not create another control plane",
+    "Do not create workerctl.py",
+    "Do not classify a file as writer merely because it mentions a worker branch",
+    "Writer classification must require actual write, commit, push, publication, or materialization behavior",
+    "Preserve valid separation of worker/requests, worker/results and worker/health"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE4A-PUBLICATION-PATHS-LEGACY-SCANNER-READONLY-R1-20260922",
+  "mode": "READ_ONLY",
+  "objective": "Auditar repository-wide todas las rutas reales relacionadas con publicacion, escritura, intake, wake, recovery, retry y lifecycle del Universal Worker. Determinar autoridad efectiva por comportamiento, no por mera presencia de strings. Identificar writers canonicos, componentes internos validos, rutas legacy, duplicaciones y candidatos a deprecacion. Evaluar riesgos de encolamiento, jobs huerfanos, bloqueos, runtime perdido y esperas excesivas. No modificar archivos.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
