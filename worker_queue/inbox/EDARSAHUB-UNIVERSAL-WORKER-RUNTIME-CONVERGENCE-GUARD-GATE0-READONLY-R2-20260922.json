@@ -1,0 +1,109 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-GUARD-GATE0-READONLY-R2-20260922",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "87a1c8970889d0892bd1f1d217fe7ec5187b1b8e",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Re-certificar en modo estrictamente READ_ONLY el Runtime Convergence Guard despues de integrar la alineacion quirurgica del contrato de prueba. Validar que la arquitectura actual conserva convergencia fail-closed mediante fetch, branch exacta, SHA local/remoto, ancestor guard, worktree limpio, Git Guard canonico refresh y verificacion HEAD==remote; confirmar ausencia de reset --hard, merge directo, stash y force; validar startup self-heal, wake convergence, control plane y three-properties sin modificar repositorio, lifecycle, SQL, Mongo ni Produccion.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/bootstrap/recover_preview_runtime.sh",
+          "backend/modules/worker_runtime_wake/routes.py",
+          "backend/server.py",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/mirror_sync/worker_runtime_reconciler.py",
+          "tools/mirror_sync/universal_job_worker.sh",
+          ".github/workflows/worker-wake-endpoint-bootstrap.yml",
+          "backend/tests/test_worker_runtime_startup_selfheal_r1.py",
+          "backend/tests/test_worker_runtime_wake_convergence_r42.py",
+          "backend/tests/test_worker_control_plane_contract.py",
+          "backend/tests/test_worker_three_properties_contract.py"
+        ],
+        "search_terms": [
+          "worker/wake",
+          "recover_preview_runtime",
+          "git_divergence_guard",
+          "fast-forward",
+          "ff-only",
+          "merge-base",
+          "--is-ancestor",
+          "--porcelain=v1",
+          "GIT_GUARD_PATH",
+          "refresh",
+          "--expected-remote",
+          "reset",
+          "stash",
+          "force",
+          "runtime",
+          "health",
+          "current_job_id",
+          "last_reconcile_utc",
+          "production_touched",
+          "supervisorctl",
+          "fingerprint",
+          "git_sha",
+          "branch",
+          "startup",
+          "selfheal",
+          "readiness"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.yml",
+          "*.yaml"
+        ],
+        "exclude_patterns": [],
+        "max_results": 2000
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_runtime_startup_selfheal_r1.py",
+        "backend/tests/test_worker_runtime_wake_convergence_r42.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty",
+    "No repository changes",
+    "No lifecycle mutation",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "No Production",
+    "No supervisor restart",
+    "No wake side effects",
+    "No branch updates",
+    "No claim release",
+    "No worktree removal",
+    "Do not weaken Repository Artifact Guard",
+    "Do not weaken Agent Guard",
+    "Do not weaken GLOBAL_GIT_WRITER",
+    "Do not weaken Git divergence guards",
+    "Reuse canonical helpers and bounded contexts",
+    "Runtime drift must be fail-closed",
+    "Recovery authority must remain PREVIEW_LOCAL_SUPERVISOR",
+    "Convergence must remain canonical Git Guard refresh",
+    "No reset --hard",
+    "No direct merge --ff-only",
+    "No stash",
+    "No force",
+    "production_touched must remain false"
+  ]
+}
