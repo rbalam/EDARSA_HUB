@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "208fdd7836ea779dcae51c3c73f564dccdf7a1fe",
-  "generated_at_utc": "2026-09-22T06:38:58Z",
+  "generated_at_utc": "2026-09-22T06:40:13Z",
   "history": {
     "done_total_local": 830,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1691,
+      "age_seconds": 1766,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-GUARD-GATE2A-FINGERPRINT-HEALTH-FOUNDATION-MUTATION-R1-20260922",
       "reasons": [
         "ACTION_2_INVALID_SHA256"
@@ -25,37 +25,37 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2419,
+      "age_seconds": 2494,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-GUARD-GATE0-READONLY-R2-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2103,
+      "age_seconds": 2178,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-GUARD-GATE1-PREFLIGHT-READONLY-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 589,
+      "age_seconds": 664,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-GUARD-GATE2A-FINGERPRINT-HEALTH-FOUNDATION-MUTATION-R2-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 430,
+      "age_seconds": 505,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-GUARD-GATE2A-FINGERPRINT-HEALTH-FOUNDATION-MUTATION-R3-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 270,
+      "age_seconds": 345,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-GUARD-GATE2A-FINGERPRINT-HEALTH-FOUNDATION-MUTATION-R4-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3156,
+      "age_seconds": 3231,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-TEST-CONTRACT-ALIGNMENT-MUTATION-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
@@ -75,8 +75,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-22T06:38:58Z",
-    "last_receive_utc": "2026-09-22T06:38:53Z",
+    "last_cycle_utc": "2026-09-22T06:40:06Z",
+    "last_receive_utc": "2026-09-22T06:40:10Z",
     "last_terminal_utc": "2026-09-22T06:34:27Z",
     "pid": "92700",
     "runtime_fingerprint": {
