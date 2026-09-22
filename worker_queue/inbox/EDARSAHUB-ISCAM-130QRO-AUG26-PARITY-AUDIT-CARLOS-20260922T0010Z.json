@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-130QRO-AUG26-PARITY-AUDIT-CARLOS-20260922T0010Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c45e7a92f84fdc31a684f3b067ece8013d5d4c50",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "priority": "P0",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V2",
+    "chat": "20260921-Reportes ISCAM"
+  },
+  "objective": "Auditar exclusivamente 130QRO del 2026-08-01 al 2026-09-01 para identificar la fecha exacta que mantiene detail_stale en Reportes ISCAM, mostrando por día Runtime V2 vs Comercial_Inteligencia_VentasDetalleProducto para ventas, tickets y pax. No modificar datos ni código. No Production.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "qro_aug26_problem_dates",
+          "sql": "WITH r AS (\n  SELECT CAST(fecha_operacion AS date) AS fecha_operacion,\n         CAST(SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS decimal(19,4)) AS ventas_runtime,\n         SUM(CAST(ISNULL(tickets_total,0) AS bigint)) AS tickets_runtime,\n         SUM(CAST(ISNULL(pax_total,0) AS bigint)) AS pax_runtime\n  FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\n  WHERE unidad_negocio_id='130QRO'\n    AND fecha_operacion>='2026-08-01' AND fecha_operacion<'2026-09-01'\n    AND (ISNULL(ventas_total,0)<>0 OR ISNULL(tickets_total,0)<>0 OR ISNULL(pax_total,0)<>0)\n  GROUP BY CAST(fecha_operacion AS date)\n),\nd0 AS (\n  SELECT CAST(fecha_operacion AS date) AS fecha_operacion,\n         numero_ticket,\n         CAST(SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) AS decimal(19,4)) AS venta,\n         MAX(CAST(ISNULL(pax,0) AS bigint)) AS pax\n  FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n  WHERE unidad_negocio_id='130QRO'\n    AND fecha_operacion>='2026-08-01' AND fecha_operacion<'2026-09-01'\n    AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n  GROUP BY CAST(fecha_operacion AS date), numero_ticket\n),\nd AS (\n  SELECT fecha_operacion,\n         CAST(SUM(venta) AS decimal(19,4)) AS ventas_detalle,\n         COUNT_BIG(*) AS tickets_detalle,\n         SUM(CAST(ISNULL(pax,0) AS bigint)) AS pax_detalle\n  FROM d0\n  GROUP BY fecha_operacion\n)\nSELECT r.fecha_operacion,\n       r.ventas_runtime,\n       CAST(ISNULL(d.ventas_detalle,0) AS decimal(19,4)) AS ventas_detalle,\n       CAST(r.ventas_runtime-ISNULL(d.ventas_detalle,0) AS decimal(19,4)) AS delta_ventas,\n       r.tickets_runtime,\n       ISNULL(d.tickets_detalle,0) AS tickets_detalle,\n       r.tickets_runtime-ISNULL(d.tickets_detalle,0) AS delta_tickets,\n       r.pax_runtime,\n       ISNULL(d.pax_detalle,0) AS pax_detalle,\n       r.pax_runtime-ISNULL(d.pax_detalle,0) AS delta_pax,\n       CASE WHEN d.fecha_operacion IS NULL THEN 'MISSING'\n            WHEN ABS(r.ventas_runtime-ISNULL(d.ventas_detalle,0))>0.05\n              OR r.tickets_runtime<>ISNULL(d.tickets_detalle,0)\n              OR r.pax_runtime<>ISNULL(d.pax_detalle,0)\n            THEN 'MISMATCH' ELSE 'OK' END AS estado\nFROM r\nLEFT JOIN d ON d.fecha_operacion=r.fecha_operacion\nWHERE d.fecha_operacion IS NULL\n   OR ABS(r.ventas_runtime-ISNULL(d.ventas_detalle,0))>0.05\n   OR r.tickets_runtime<>ISNULL(d.tickets_detalle,0)\n   OR r.pax_runtime<>ISNULL(d.pax_detalle,0)\nORDER BY r.fecha_operacion"
+        },
+        {
+          "name": "qro_aug26_month_totals",
+          "sql": "WITH r AS (\n  SELECT CAST(SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS decimal(19,4)) AS ventas,\n         SUM(CAST(ISNULL(tickets_total,0) AS bigint)) AS tickets,\n         SUM(CAST(ISNULL(pax_total,0) AS bigint)) AS pax\n  FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\n  WHERE unidad_negocio_id='130QRO'\n    AND fecha_operacion>='2026-08-01' AND fecha_operacion<'2026-09-01'\n),\nd0 AS (\n  SELECT numero_ticket,\n         CAST(fecha_operacion AS date) AS fecha_operacion,\n         SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) AS venta,\n         MAX(CAST(ISNULL(pax,0) AS bigint)) AS pax\n  FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n  WHERE unidad_negocio_id='130QRO'\n    AND fecha_operacion>='2026-08-01' AND fecha_operacion<'2026-09-01'\n    AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n  GROUP BY CAST(fecha_operacion AS date), numero_ticket\n),\nd AS (\n  SELECT CAST(ISNULL(SUM(venta),0) AS decimal(19,4)) AS ventas,\n         COUNT_BIG(*) AS tickets,\n         SUM(CAST(ISNULL(pax,0) AS bigint)) AS pax\n  FROM d0\n)\nSELECT r.ventas AS ventas_runtime, d.ventas AS ventas_detalle,\n       CAST(r.ventas-d.ventas AS decimal(19,4)) AS delta_ventas,\n       r.tickets AS tickets_runtime, d.tickets AS tickets_detalle,\n       r.tickets-d.tickets AS delta_tickets,\n       r.pax AS pax_runtime, d.pax AS pax_detalle,\n       r.pax-d.pax AS delta_pax\nFROM r CROSS JOIN d"
+        }
+      ]
+    }
+  ],
+  "expected_output": {
+    "status": "READ_ONLY_COMPLETE",
+    "production_touched": false
+  },
+  "created_at_utc": "2026-09-22T00:10:00Z"
+}
