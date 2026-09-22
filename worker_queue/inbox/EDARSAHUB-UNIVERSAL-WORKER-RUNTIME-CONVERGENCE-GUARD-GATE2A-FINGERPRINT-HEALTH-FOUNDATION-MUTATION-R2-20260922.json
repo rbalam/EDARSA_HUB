@@ -1,0 +1,116 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-RUNTIME-CONVERGENCE-GUARD-GATE2A-FINGERPRINT-HEALTH-FOUNDATION-MUTATION-R2-20260922",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "87a1c8970889d0892bd1f1d217fe7ec5187b1b8e",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Gate2A foundation quirurgica del Runtime Convergence Guard. Crear una unica autoridad canonica read-only de runtime fingerprint/capabilities y exponerla en runtime_health_publisher sin cambiar recovery, wake, control-plane, lifecycle ni activar mutaciones de runtime. El fingerprint debe ser fail-closed para branch/SHA/tree invalidos, usar HEAD:tools/mirror_sync y runtime markers existentes, no depender de SQL/Mongo, y mantener production_touched=false.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "tools/mirror_sync/worker_runtime_fingerprint.py",
+      "content": "\"\"\"Canonical runtime fingerprint for the EDARSAHUB Universal Worker.\n\nThis module is read-only. It computes identity and capability evidence from\nthe local Preview repository and runtime markers. It never mutates Git,\nrestarts services, touches databases, or touches Production.\n\"\"\"\nfrom __future__ import annotations\n\nimport os\nimport re\nimport subprocess\nfrom pathlib import Path\nfrom typing import Any\n\nROOT = Path(os.environ.get(\"EDARSAHUB_ROOT\", \"/app\"))\nRUNTIME = ROOT / \".git\" / \"universal-worker-queue\" / \"runtime\"\nDEV_BRANCH = \"Edarsahub_Desarrollo\"\nWORKER_TREE_SPEC = \"HEAD:tools/mirror_sync\"\nWORKER_SCRIPT = ROOT / \"tools\" / \"mirror_sync\" / \"universal_job_worker.sh\"\nACTIVE_WORKER_TREE = RUNTIME / \"active_worker_code_tree_sha\"\nGENERATION_FILE = RUNTIME / \"generation\"\n_SHA_RE = re.compile(r\"^[0-9a-f]{40}$\")\n_GENERATION_RE = re.compile(r'^RUNTIME_GENERATION=\"([^\"]+)\"', re.MULTILINE)\n\nREQUIRED_CAPABILITIES = (\n    \"canonical_git_guard_refresh\",\n    \"runtime_code_tree_identity\",\n    \"runtime_generation_identity\",\n    \"worker_heartbeat\",\n    \"startup_selfheal\",\n    \"wake_proof\",\n    \"production_fail_closed\",\n)\n\n\nclass RuntimeFingerprintError(RuntimeError):\n    pass\n\n\ndef _git(*args: str) -> str:\n    completed = subprocess.run(\n        [\"git\", *args],\n        cwd=str(ROOT),\n        check=False,\n        capture_output=True,\n        text=True,\n        timeout=30,\n        env={**os.environ, \"GIT_TERMINAL_PROMPT\": \"0\"},\n    )\n    if completed.returncode != 0:\n        raise RuntimeFingerprintError(\"RUNTIME_FINGERPRINT_GIT_FAILED\")\n    return completed.stdout.strip()\n\n\ndef _read(path: Path) -> str | None:\n    try:\n        value = path.read_text(encoding=\"utf-8\").strip()\n    except OSError:\n        return None\n    return value or None\n\n\ndef expected_generation() -> str | None:\n    source = _read(WORKER_SCRIPT)\n    if not source:\n        return None\n    match = _GENERATION_RE.search(source)\n    return match.group(1) if match else None\n\n\ndef build_runtime_fingerprint() -> dict[str, Any]:\n    branch = _git(\"branch\", \"--show-current\")\n    development_sha = _git(\"rev-parse\", \"HEAD\").lower()\n    worker_code_tree_sha = _git(\"rev-parse\", WORKER_TREE_SPEC).lower()\n\n    if branch != DEV_BRANCH:\n        raise RuntimeFingerprintError(\"RUNTIME_FINGERPRINT_WRONG_BRANCH\")\n    if not _SHA_RE.fullmatch(development_sha):\n        raise RuntimeFingerprintError(\"RUNTIME_FINGERPRINT_HEAD_INVALID\")\n    if not _SHA_RE.fullmatch(worker_code_tree_sha):\n        raise RuntimeFingerprintError(\"RUNTIME_FINGERPRINT_WORKER_TREE_INVALID\")\n\n    active_worker_code_tree_sha = (_read(ACTIVE_WORKER_TREE) or \"\").lower() or None\n    if active_worker_code_tree_sha and not _SHA_RE.fullmatch(active_worker_code_tree_sha):\n        raise RuntimeFingerprintError(\"RUNTIME_FINGERPRINT_ACTIVE_TREE_INVALID\")\n\n    expected = expected_generation()\n    actual = _read(GENERATION_FILE)\n\n    return {\n        \"schema\": \"edarsahub.worker-runtime-fingerprint.v1\",\n        \"branch\": branch,\n        \"development_sha\": development_sha,\n        \"worker_code_tree_sha\": worker_code_tree_sha,\n        \"active_worker_code_tree_sha\": active_worker_code_tree_sha,\n        \"worker_code_tree_aligned\": active_worker_code_tree_sha == worker_code_tree_sha,\n        \"expected_generation\": expected,\n        \"actual_generation\": actual,\n        \"generation_aligned\": bool(expected and actual == expected),\n        \"required_capabilities\": list(REQUIRED_CAPABILITIES),\n        \"production_touched\": False,\n    }\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/runtime_health_publisher.py",
+      "old": "from pathlib import Path\nimport tempfile\n\nROOT = Path(os.environ.get(\"EDARSAHUB_ROOT\", \"/app\"))\n",
+      "new": "from pathlib import Path\nimport tempfile\nimport importlib.util\n\nROOT = Path(os.environ.get(\"EDARSAHUB_ROOT\", \"/app\"))\n_RUNTIME_FINGERPRINT_PATH = Path(__file__).resolve().with_name(\"worker_runtime_fingerprint.py\")\n_RUNTIME_FINGERPRINT_SPEC = importlib.util.spec_from_file_location(\n    \"edarsahub_worker_runtime_fingerprint\",\n    _RUNTIME_FINGERPRINT_PATH,\n)\nif _RUNTIME_FINGERPRINT_SPEC is None or _RUNTIME_FINGERPRINT_SPEC.loader is None:\n    raise RuntimeError(\"RUNTIME_FINGERPRINT_SPEC_UNAVAILABLE\")\n_runtime_fingerprint = importlib.util.module_from_spec(_RUNTIME_FINGERPRINT_SPEC)\n_RUNTIME_FINGERPRINT_SPEC.loader.exec_module(_runtime_fingerprint)\n",
+      "expected_count": 1,
+      "expected_sha256": "53b9d9119f4fad4faf559c379a80ee84190a6124235ac1510bdb84519ae36619"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/runtime_health_publisher.py",
+      "old": "def runtime_summary() -> dict[str, str | None]:\n    return {\n        \"pid\": read_text(RUNTIME / \"pid\"),\n        \"generation\": read_text(RUNTIME / \"generation\"),\n        \"last_cycle_utc\": read_text(RUNTIME / \"last_cycle_utc\"),\n        \"last_receive_utc\": read_text(RUNTIME / \"last_receive_utc\"),\n        \"current_job_id\": read_text(RUNTIME / \"current_job_id\"),\n        \"last_terminal_utc\": read_text(RUNTIME / \"last_terminal_utc\"),\n    }\n",
+      "new": "def runtime_summary() -> dict:\n    try:\n        fingerprint = _runtime_fingerprint.build_runtime_fingerprint()\n    except Exception as exc:\n        fingerprint = {\n            \"schema\": \"edarsahub.worker-runtime-fingerprint.v1\",\n            \"status\": \"RUNTIME_FINGERPRINT_UNAVAILABLE\",\n            \"error_type\": type(exc).__name__,\n            \"production_touched\": False,\n        }\n    return {\n        \"pid\": read_text(RUNTIME / \"pid\"),\n        \"generation\": read_text(RUNTIME / \"generation\"),\n        \"last_cycle_utc\": read_text(RUNTIME / \"last_cycle_utc\"),\n        \"last_receive_utc\": read_text(RUNTIME / \"last_receive_utc\"),\n        \"current_job_id\": read_text(RUNTIME / \"current_job_id\"),\n        \"last_terminal_utc\": read_text(RUNTIME / \"last_terminal_utc\"),\n        \"runtime_fingerprint\": fingerprint,\n    }\n",
+      "expected_count": 1,
+      "expected_sha256": "5a1627ac1c1240fdea310a1d1ee8d6439c19f78cb461ed23e156db2e39b6f010"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_runtime_fingerprint_contract.py",
+      "content": "from importlib.util import module_from_spec, spec_from_file_location\nfrom pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nTARGET = ROOT / \"tools\" / \"mirror_sync\" / \"worker_runtime_fingerprint.py\"\nHEALTH = ROOT / \"tools\" / \"mirror_sync\" / \"runtime_health_publisher.py\"\n\n\ndef load_module():\n    spec = spec_from_file_location(\"worker_runtime_fingerprint\", TARGET)\n    assert spec and spec.loader\n    mod = module_from_spec(spec)\n    spec.loader.exec_module(mod)\n    return mod\n\n\ndef test_runtime_fingerprint_contract_is_read_only_and_fail_closed():\n    text = TARGET.read_text(encoding=\"utf-8\")\n    assert \"edarsahub.worker-runtime-fingerprint.v1\" in text\n    assert \"RuntimeFingerprintError\" in text\n    assert \"RUNTIME_FINGERPRINT_WRONG_BRANCH\" in text\n    assert \"RUNTIME_FINGERPRINT_HEAD_INVALID\" in text\n    assert \"RUNTIME_FINGERPRINT_WORKER_TREE_INVALID\" in text\n    assert '\"production_touched\": False' in text\n    assert \"supervisorctl\" not in text\n    assert \"pymssql\" not in text\n    assert \"sql\" not in text.lower()\n    assert \"mongo\" not in text.lower()\n\n\ndef test_required_capabilities_are_canonical_and_explicit():\n    mod = load_module()\n    assert mod.REQUIRED_CAPABILITIES == (\n        \"canonical_git_guard_refresh\",\n        \"runtime_code_tree_identity\",\n        \"runtime_generation_identity\",\n        \"worker_heartbeat\",\n        \"startup_selfheal\",\n        \"wake_proof\",\n        \"production_fail_closed\",\n    )\n\n\ndef test_health_publisher_surfaces_canonical_fingerprint():\n    text = HEALTH.read_text(encoding=\"utf-8\")\n    assert \"worker_runtime_fingerprint.py\" in text\n    assert '\"runtime_fingerprint\"' in text\n    assert \"RUNTIME_FINGERPRINT_UNAVAILABLE\" in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/worker_runtime_fingerprint.py",
+        "tools/mirror_sync/runtime_health_publisher.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_runtime_fingerprint_contract.py",
+        "backend/tests/test_worker_runtime_startup_selfheal_r1.py",
+        "backend/tests/test_worker_runtime_wake_convergence_r42.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/worker_runtime_fingerprint.py",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "backend/tests/test_worker_runtime_fingerprint_contract.py"
+        ],
+        "search_terms": [
+          "worker-runtime-fingerprint.v1",
+          "REQUIRED_CAPABILITIES",
+          "HEAD:tools/mirror_sync",
+          "active_worker_code_tree_sha",
+          "expected_generation",
+          "generation_aligned",
+          "runtime_fingerprint",
+          "RUNTIME_FINGERPRINT_UNAVAILABLE",
+          "production_touched"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 1000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "No Cavas functional changes",
+    "No Tablajerias functional changes",
+    "No NetPay changes",
+    "Do not modify universal_job_worker.sh",
+    "Do not modify universal_job_dispatcher.py",
+    "Do not modify worker_runtime_reconciler.py",
+    "Do not modify worker_control_plane.py in Gate2A",
+    "Do not modify backend/modules/worker_runtime_wake/routes.py in Gate2A",
+    "Do not modify recover_preview_runtime.sh in Gate2A",
+    "Do not restart supervisor",
+    "Do not wake worker from tests",
+    "No lifecycle semantics changes",
+    "Do not weaken Repository Artifact Guard",
+    "Do not weaken Agent Guard",
+    "Do not weaken GLOBAL_GIT_WRITER",
+    "Do not weaken Git divergence guards",
+    "Canonical fingerprint authority must be tools/mirror_sync/worker_runtime_fingerprint.py",
+    "runtime health may surface fingerprint but must not duplicate fingerprint logic",
+    "Fingerprint must be cwd-independent",
+    "Fingerprint must not mutate global sys.path",
+    "Fingerprint must be read-only",
+    "production_touched must remain false",
+    "Only declared files may change"
+  ]
+}
