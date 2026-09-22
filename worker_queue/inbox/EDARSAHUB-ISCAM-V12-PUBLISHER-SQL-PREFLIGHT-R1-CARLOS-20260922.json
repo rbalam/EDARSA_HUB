@@ -1,0 +1,62 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-V12-PUBLISHER-SQL-PREFLIGHT-R1-CARLOS-20260922",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "PREFLIGHT de solo lectura para confirmar el conflicto contractual de Universal Worker v1.2: gate_chain_publisher permite el tipo sql_readonly_audit pero su escaneo global FORBIDDEN_KEYS bloquea la clave sql que el propio bridge/dispatcher exige para certificar ISCAM_DETAIL_BACKFILL.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/gate_chain_publisher.py",
+          "tools/mirror_sync/sql_readonly_audit.py",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "backend/tests/test_gate_chain_publisher.py",
+          "backend/tests/test_worker_sql_readonly_audit.py"
+        ],
+        "search_terms": [
+          "FORBIDDEN_KEYS",
+          "sql_readonly_audit",
+          "validate_readonly_sql",
+          "ISCAM_DETAIL_BACKFILL_SQL_AUDIT_REQUIRED",
+          "FORBIDDEN_TEMPLATE_KEY"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 300
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_gate_chain_publisher.py",
+        "backend/tests/test_worker_sql_readonly_audit.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260922 Corregir Reportes de ISCAM"
+  },
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty",
+    "No Production",
+    "No SQL mutation",
+    "No repository mutation",
+    "production_touched must remain false"
+  ]
+}
