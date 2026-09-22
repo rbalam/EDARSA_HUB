@@ -1,0 +1,78 @@
+{
+  "actions": [],
+  "base_sha": "3e46af2e98b5618badb7b22809a63dd36989d313",
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py"
+        ],
+        "max_results": 1000,
+        "paths": [
+          "tools/mirror_sync/gate_chain_publisher.py",
+          "tools/mirror_sync/git_divergence_guard.py",
+          "backend/tests/test_gate_chain_publisher.py",
+          "backend/tests/test_worker_channel_single_writer_contract.py",
+          "backend/tests/test_worker_scope_concurrency_dispatcher_contract.py",
+          "backend/tests/test_worker_universal_queue_sla_contract.py"
+        ],
+        "search_terms": [
+          "resumed_existing",
+          "GATE_RESUMED_AND_ENQUEUED",
+          "QUEUE_PUBLISHER_RESIDUAL",
+          "authorized_push",
+          "validate_commit_scope",
+          "REMOTE_MOVED_RETRY_REQUIRED",
+          "worker_queue_publication",
+          "worktree-create",
+          "production_touched"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "paths": [
+        "backend/tests/test_gate_chain_publisher.py",
+        "backend/tests/test_worker_channel_single_writer_contract.py",
+        "backend/tests/test_worker_scope_concurrency_dispatcher_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_runtime_fingerprint_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty",
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No frontend",
+    "No Scheduler",
+    "No NetPay",
+    "No repository mutation",
+    "No service restart",
+    "No force push",
+    "No hook bypass",
+    "Do not modify gate_chain_publisher.py",
+    "Do not modify git_divergence_guard.py",
+    "Do not modify Worker runtime",
+    "Do not create another publisher",
+    "Do not create another control plane",
+    "production_touched must remain false"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE4E3-PUBLISHER-RECOVERY-IDEMPOTENCY-CERT-READONLY-R1-20260922",
+  "mode": "READ_ONLY",
+  "objective": "Certificar de forma independiente y estrictamente READ_ONLY la implementacion Gate4E2 de recovery-idempotency del publisher canonico. Validar que la mutacion integrada mantiene exact scope, Agent Guard, optimistic concurrency, authorized_push, fail-closed ante estado residual inconsistente, ausencia de force/no-verify, y todos los contratos Worker asociados.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
