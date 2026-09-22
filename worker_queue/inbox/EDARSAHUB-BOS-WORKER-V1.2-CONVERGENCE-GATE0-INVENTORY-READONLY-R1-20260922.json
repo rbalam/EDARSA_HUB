@@ -1,0 +1,103 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-CONVERGENCE-GATE0-INVENTORY-READONLY-R1-20260922",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "393797e739bb9c041e6d98847b3197ca19e6fc49",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar integralmente en READ_ONLY la infraestructura real del Universal Worker para definir EDARSAHUB BOS Worker v1.2. Clasificar publishers, contract validators, queue writers, bridge, scheduler, dispatcher, result publisher, control plane, runtime fingerprint, recovery, lifecycle readers, Agent Guard, Artifact Guard y writers legacy. Identificar autoridades existentes, duplicaciones, gaps y compatibilidad requerida. Determinar el diseño minimo para Canonical Job Contract, mandatory preflight, Canonical Queue Writer, single-writer, optimistic concurrency, workerctl submit/status/result, Compatibility Adapter, lifecycle normalizado y E2E certification. No modificar archivos ni runtime.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync",
+          "tools/bootstrap",
+          "backend/tests",
+          "scripts/agent_guardrails",
+          "worker_queue"
+        ],
+        "search_terms": [
+          "edarsahub.worker-job.v2",
+          "gate_chain_publisher",
+          "gate_chain_orchestrator",
+          "gate_chain_reconciler",
+          "worker_control_plane",
+          "worker_runtime_fingerprint",
+          "runtime_health_publisher",
+          "universal_job_bridge",
+          "universal_job_dispatcher",
+          "universal_job_result_publisher",
+          "worker_runtime_reconciler",
+          "worker_slot_runtime",
+          "worker_scheduling",
+          "git_divergence_guard",
+          "worker/requests",
+          "worktree-create",
+          "EDARSA_ALLOW_PUSH",
+          "GLOBAL_GIT_WRITER",
+          "SAFE_TO_PUBLISH",
+          "CONTRACT_PREFLIGHT",
+          "JSON_VALID",
+          "PENDING",
+          "PROCESSING",
+          "PUBLISHED",
+          "DONE",
+          "REJECTED",
+          "BLOCKED"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.yml",
+          "*.yaml",
+          "*.json"
+        ],
+        "exclude_patterns": [],
+        "max_results": 5000
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_runtime_fingerprint_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_runtime_startup_selfheal_r1.py",
+        "backend/tests/test_worker_runtime_wake_convergence_r42.py",
+        "backend/tests/test_worker_three_properties_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty",
+    "No Production",
+    "No SQL mutation",
+    "No Mongo",
+    "No frontend mutation",
+    "No Cavas mutation",
+    "No Tablajerias mutation",
+    "No Foto Finish mutation",
+    "No NetPay mutation",
+    "No service restart",
+    "No worker wake",
+    "No migrations",
+    "No Git mutation",
+    "No lifecycle mutation",
+    "Do not weaken Agent Guard",
+    "Do not weaken Repository Artifact Guard",
+    "Do not weaken GLOBAL_GIT_WRITER",
+    "Do not weaken Git Divergence Guard",
+    "Do not create project-specific publishers",
+    "Do not create duplicate authorities",
+    "Prefer existing canonical helpers and infrastructure",
+    "Backward compatibility is mandatory",
+    "production_touched must remain false"
+  ]
+}
