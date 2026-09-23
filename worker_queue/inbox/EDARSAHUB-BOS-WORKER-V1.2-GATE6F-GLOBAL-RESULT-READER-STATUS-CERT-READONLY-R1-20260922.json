@@ -1,0 +1,112 @@
+{
+  "actions": [],
+  "base_sha": "a173fd9dc81f815e7d6684f5982b8091bf055972",
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py"
+        ],
+        "max_results": 1000,
+        "paths": [
+          "tools/mirror_sync/worker_result_integrity.py",
+          "tools/mirror_sync/worker_result_reader.py",
+          "tools/mirror_sync/worker_result_status.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "backend/tests/test_worker_result_integrity_contract.py",
+          "backend/tests/test_worker_result_reader_status_contract.py",
+          "backend/tests/test_worker_readonly_result_publisher.py",
+          "backend/tests/test_worker_operational_result_publisher_certification.py",
+          "backend/tests/test_worker_result_remote_truth_identity_contract.py",
+          "backend/tests/test_worker_channel_single_writer_contract.py",
+          "backend/tests/test_worker_health_branch_isolation_contract.py",
+          "backend/tests/test_worker_result_branch_isolation_contract.py"
+        ],
+        "search_terms": [
+          "RESULT_ABSENT",
+          "RESULT_EMPTY",
+          "RESULT_INVALID_JSON",
+          "RESULT_SCHEMA_INVALID",
+          "RESULT_JOB_ID_MISMATCH",
+          "RESULT_NON_TERMINAL",
+          "RESULT_TERMINAL_VALID",
+          "RESULT_STATUS_MISMATCH",
+          "RESULT_SHA_MISMATCH",
+          "RESULT_SIZE_MISMATCH",
+          "READ_SOURCE_MISMATCH",
+          "inspect_result_file",
+          "validate_terminal_result_file",
+          "ResultState",
+          "result_sha",
+          "result_size_bytes",
+          "terminal_result_valid",
+          "read_contract_version",
+          "worker_queue/results"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_result_integrity_contract.py",
+        "backend/tests/test_worker_result_reader_status_contract.py",
+        "backend/tests/test_worker_readonly_result_publisher.py",
+        "backend/tests/test_worker_operational_result_publisher_certification.py",
+        "backend/tests/test_worker_result_remote_truth_identity_contract.py",
+        "backend/tests/test_worker_channel_single_writer_contract.py",
+        "backend/tests/test_worker_health_branch_isolation_contract.py",
+        "backend/tests/test_worker_result_branch_isolation_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty",
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No frontend functional changes",
+    "No backend business changes",
+    "No Scheduler",
+    "No NetPay",
+    "No application-domain changes",
+    "No repository mutation",
+    "No service restart",
+    "Do not modify worker_result_integrity.py",
+    "Do not modify worker_result_reader.py",
+    "Do not modify worker_result_status.py",
+    "Do not modify universal_job_result_publisher.py",
+    "Do not create another publisher",
+    "Do not create another reader authority",
+    "Do not create another queue",
+    "Do not create another dispatcher",
+    "Do not create another control plane",
+    "worker_queue/results remains the terminal source of truth",
+    "per-job status remains derived reference only",
+    "reader must reuse canonical integrity API",
+    "reader must fail closed",
+    "content empty alone must not override canonical identity checks",
+    "No job-specific exceptions",
+    "No chat-specific exceptions",
+    "No domain-specific exceptions",
+    "No force push",
+    "No --no-verify",
+    "No hook bypass",
+    "production_touched must remain false"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE6F-GLOBAL-RESULT-READER-STATUS-CERT-READONLY-R1-20260922",
+  "mode": "READ_ONLY",
+  "objective": "Certificar de forma independiente y global el contrato canonico de lectura de resultados y status derivado introducido en Gate6E R2. Validar que worker_queue/results/<job_id>.json permanece como unica verdad terminal; que worker_result_reader reutiliza worker_result_integrity; que distingue RESULT_ABSENT, RESULT_EMPTY, RESULT_INVALID_JSON, RESULT_JOB_ID_MISMATCH y RESULT_TERMINAL_VALID; que el status por job es una referencia derivada y no una segunda fuente terminal; que no existe logica especifica por Gate, chat o dominio; y que Produccion permanece fuera de alcance.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
