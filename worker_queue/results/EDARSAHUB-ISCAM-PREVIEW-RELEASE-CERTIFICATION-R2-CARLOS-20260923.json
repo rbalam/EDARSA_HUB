@@ -1,0 +1,642 @@
+{
+  "base_sha": "7979842d9f842ebecc33c6b9b9e3fd745b3a48de",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-23T17:07:45Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-PREVIEW-RELEASE-CERTIFICATION-R2-CARLOS-20260923",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-23T23:03:40Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "intel_request_timeout_ms",
+              "sesion_expirada"
+            ],
+            "path": "frontend/src/portal-inteligencia/api/client.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "coordinatedrefresh"
+            ],
+            "path": "frontend/src/lib/api.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "group_by",
+              "sin agrupar"
+            ],
+            "path": "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.inteligencia_comercial",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "calendar",
+              "core.kpis_canonicos",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "logging",
+              "typing",
+              "zoneinfo"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "comercial_inteligencia_ventasdetalleproducto",
+              "group_by",
+              "vw_comercial_kpis_diarios_v2_runtime"
+            ],
+            "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/comandas",
+              "/cuentas",
+              "/cuentas/detalle",
+              "/formas-pago",
+              "/formas-pago/por-ticket",
+              "/freshness",
+              "/ventas-periodos",
+              "/ventas-periodos/productos",
+              "/ventas-periodos/tickets",
+              "/ventas-periodos/tipos-servicio"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_detail_coverage",
+              "_f",
+              "_formas_pago_desde_detalle",
+              "_iso",
+              "_nombre_unidad",
+              "_period_floor",
+              "_period_label",
+              "_period_next",
+              "_period_sql",
+              "_period_windows",
+              "_q",
+              "_rango_fechas",
+              "_shift_months",
+              "comandas_venta",
+              "cuenta_detalle",
+              "formas_pago_por_ticket",
+              "iscam_freshness",
+              "resumen_cuentas",
+              "ventas_formas_pago",
+              "ventas_periodos",
+              "ventas_periodos_productos",
+              "ventas_periodos_tickets",
+              "ventas_periodos_tipos_servicio"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Finanzas_CortesCaja",
+              "Finanzas_CortesCaja_DetallePagos",
+              "Sync_Sales",
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.scheduler.locks",
+              "core.unidades_service",
+              "core.utils.operational_window",
+              "datetime",
+              "logging",
+              "modules.comercial_v2.schemas",
+              "modules.comercial_v2.sync_comercial_edarsahub",
+              "os",
+              "scripts.poblar_ventas_detalle_producto_canonico",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "mpro",
+              "softrestaurant",
+              "sync_comercial_v2"
+            ],
+            "path": "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_get_unidades_from_edarsahub",
+              "_resolve_estatus_general",
+              "_run_manual_locked",
+              "_sync_detalle_post_header",
+              "_unit_selected",
+              "execute_sync_comercial_v2",
+              "run_sync_comercial_v2_manual"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "core.empresa_resolver",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "core.utils.operational_window",
+              "datetime",
+              "decimal",
+              "logging",
+              "modules.comercial_v2.repository_comercial_edarsahub",
+              "modules.comercial_v2.schemas",
+              "modules.comercial_v2.sync_comercial_edarsahub",
+              "modules.integrations_runtime.sync_ledger",
+              "os",
+              "pytz",
+              "requests",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "path": "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_acquire_sync_lock_sync",
+              "_coerce_mx_datetime",
+              "_execute_query_via_api_local",
+              "_get_api_local_config",
+              "_get_existing_ventas_dia",
+              "_get_unidades_from_edarsahub",
+              "_release_sync_lock_sync",
+              "execute_sync_comercial_abiertas_v2",
+              "run_sync_comercial_abiertas_v2_manual",
+              "select_mpro_closed_sales"
+            ],
+            "tables_referenced": [
+              "Comercial_Ventas_Dia_Abiertas_v2",
+              "Servidores_Conexiones",
+              "Sync_Control_Ejecuciones",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "coordinatedrefresh",
+              "intel_request_timeout_ms"
+            ],
+            "path": "backend/tests/test_iscam_portal_timeout_contract_r1.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_central_client_can_remain_15s_without_reintroducing_portal_timeout",
+              "test_portal_inteligencia_preserves_central_refresh_retry_for_internal_sessions",
+              "test_portal_post_default_timeout_allows_explicit_larger_override",
+              "test_portal_requests_restore_timeout_above_central_15s_regression"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "path": "backend/tests/test_worker_comercial_range_resync_capability_r87.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "test_bridge_requires_closed_contract_and_confirmation",
+              "test_dispatcher_uses_fixed_script_and_not_job_shell",
+              "test_script_accepts_both_supported_pos_engines",
+              "test_script_reuses_official_scheduler_handlers"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 8,
+          "scanned_files": 8,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_codigo",
+              "system_type",
+              "run_id",
+              "run_type",
+              "fecha_inicio",
+              "fecha_fin",
+              "status",
+              "source_connection_status",
+              "records_processed",
+              "records_inserted",
+              "records_updated",
+              "records_skipped",
+              "records_errored",
+              "error_code",
+              "error_message",
+              "created_at",
+              "minutos_desde_ultima_ejecucion",
+              "ultima_fecha_runtime",
+              "ultima_fecha_detalle"
+            ],
+            "name": "preview_release_current_sync_matrix",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130QRO",
+                "MPRO",
+                "ABIERTA-20260923-170329-a0e9",
+                "VENTAS_DIA",
+                "2026-09-22",
+                "2026-09-22",
+                "SUCCESS",
+                "ONLINE",
+                1,
+                0,
+                1,
+                0,
+                0,
+                null,
+                null,
+                "2026-09-23 17:03:37.6063796",
+                4,
+                "2026-09-22",
+                "2026-09-21"
+              ],
+              [
+                "ORIGEN",
+                "MPRO",
+                "ABIERTA-20260923-170329-a0e9",
+                "VENTAS_DIA",
+                "2026-09-23",
+                "2026-09-23",
+                "SUCCESS",
+                "ONLINE",
+                1,
+                0,
+                1,
+                0,
+                0,
+                null,
+                null,
+                "2026-09-23 17:03:43.8550388",
+                4,
+                "2026-09-23",
+                "2026-09-21"
+              ],
+              [
+                "130MID",
+                "SOFTRESTAURANT",
+                "ABIERTA-20260923-170329-a0e9",
+                "VENTAS_DIA",
+                "2026-09-22",
+                "2026-09-22",
+                "SUCCESS",
+                "ONLINE",
+                1,
+                0,
+                1,
+                0,
+                0,
+                null,
+                null,
+                "2026-09-23 17:03:32.0970265",
+                4,
+                "2026-09-22",
+                "2026-09-10"
+              ],
+              [
+                "CIENFUEGOS",
+                "SOFTRESTAURANT",
+                "ABIERTA-20260923-170329-a0e9",
+                "VENTAS_DIA",
+                "2026-09-22",
+                "2026-09-22",
+                "SUCCESS",
+                "ONLINE",
+                1,
+                0,
+                1,
+                0,
+                0,
+                null,
+                null,
+                "2026-09-23 17:03:33.8483042",
+                4,
+                "2026-09-22",
+                "2026-09-21"
+              ],
+              [
+                "ESTELAR",
+                "SOFTRESTAURANT",
+                "INCR-20260923-170253-69df",
+                "INCREMENTAL",
+                "2026-09-19",
+                "2026-09-22",
+                "SUCCESS",
+                "ONLINE",
+                4,
+                0,
+                0,
+                4,
+                0,
+                null,
+                null,
+                "2026-09-23 17:03:37.1642027",
+                4,
+                "2026-09-22",
+                "2026-09-21"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "run_id",
+              "run_type",
+              "fecha_inicio",
+              "fecha_fin",
+              "status",
+              "source_connection_status",
+              "records_processed",
+              "records_inserted",
+              "records_updated",
+              "records_errored",
+              "error_code",
+              "error_message",
+              "created_at"
+            ],
+            "name": "preview_release_origen_recent_logs",
+            "row_count_returned": 10,
+            "rows": [
+              [
+                "ABIERTA-20260923-170329-a0e9",
+                "VENTAS_DIA",
+                "2026-09-23",
+                "2026-09-23",
+                "SUCCESS",
+                "ONLINE",
+                1,
+                0,
+                1,
+                0,
+                null,
+                null,
+                "2026-09-23 17:03:43.8550388"
+              ],
+              [
+                "ABIERTA-20260923-165829-8133",
+                "VENTAS_DIA",
+                "2026-09-23",
+                "2026-09-23",
+                "SUCCESS",
+                "ONLINE",
+                1,
+                0,
+                1,
+                0,
+                null,
+                null,
+                "2026-09-23 16:58:41.8320485"
+              ],
+              [
+                "ABIERTA-20260923-164844-7276",
+                "VENTAS_DIA",
+                "2026-09-23",
+                "2026-09-23",
+                "SUCCESS",
+                "ONLINE",
+                1,
+                0,
+                1,
+                0,
+                null,
+                null,
+                "2026-09-23 16:48:56.9986481"
+              ],
+              [
+                "ABIERTA-20260923-163548-1fb0",
+                "VENTAS_DIA",
+                "2026-09-23",
+                "2026-09-23",
+                "FAILED",
+                "OFFLINE",
+                0,
+                0,
+                0,
+                0,
+                null,
+                "API Local falló: API_LOCAL_ERROR",
+                "2026-09-23 16:36:12.2580833"
+              ],
+              [
+                "ABIERTA-20260923-163048-de33",
+                "VENTAS_DIA",
+                "2026-09-23",
+                "2026-09-23",
+                "FAILED",
+                "OFFLINE",
+                0,
+                0,
+                0,
+                0,
+                null,
+                "API Local falló: API_LOCAL_ERROR",
+                "2026-09-23 16:31:14.8213797"
+              ],
+              [
+                "ABIERTA-20260923-161958-72b7",
+                "VENTAS_DIA",
+                "2026-09-23",
+                "2026-09-23",
+                "FAILED",
+                "OFFLINE",
+                0,
+                0,
+                0,
+                0,
+                null,
+                "API Local falló: API_LOCAL_ERROR",
+                "2026-09-23 16:20:23.8744452"
+              ],
+              [
+                "ABIERTA-20260923-161217-bd41",
+                "VENTAS_DIA",
+                "2026-09-23",
+                "2026-09-23",
+                "FAILED",
+                "OFFLINE",
+                0,
+                0,
+                0,
+                0,
+                null,
+                "API Local falló: API_LOCAL_ERROR",
+                "2026-09-23 16:12:41.3348407"
+              ],
+              [
+                "ABIERTA-20260923-160717-6569",
+                "VENTAS_DIA",
+                "2026-09-23",
+                "2026-09-23",
+                "FAILED",
+                "OFFLINE",
+                0,
+                0,
+                0,
+                0,
+                null,
+                "API Local falló: API_LOCAL_ERROR",
+                "2026-09-23 16:07:41.2364026"
+              ],
+              [
+                "ABIERTA-20260923-160218-2761",
+                "VENTAS_DIA",
+                "2026-09-23",
+                "2026-09-23",
+                "FAILED",
+                "OFFLINE",
+                0,
+                0,
+                0,
+                0,
+                null,
+                "API Local falló: API_LOCAL_ERROR",
+                "2026-09-23 16:02:43.5358166"
+              ],
+              [
+                "ABIERTA-20260923-155717-3584",
+                "VENTAS_DIA",
+                "2026-09-23",
+                "2026-09-23",
+                "FAILED",
+                "OFFLINE",
+                0,
+                0,
+                0,
+                0,
+                null,
+                "API Local falló: API_LOCAL_ERROR",
+                "2026-09-23 15:57:41.1325445"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-23T17:07:42Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
