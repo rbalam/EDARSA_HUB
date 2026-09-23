@@ -1,4 +1,4 @@
-"""Canonical execution bridge for Worker Repair E2E canary.
+"""Canonical execution bridge for Worker Repair.
 
 This module connects an already-declared Worker maintenance incident to the
 existing Universal Worker publication and terminal-result infrastructure.
