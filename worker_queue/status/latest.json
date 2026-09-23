@@ -1,10 +1,10 @@
 {
   "ahead_count": 0,
-  "behind_count": 1,
+  "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "REMOTE_AHEAD_ONLY",
+  "convergence_status": "SYNC",
   "development_sha": "2307ed3e9f65edea77d2a2cb5f1152ad6c9df2db",
-  "generated_at_utc": "2026-09-23T12:50:53Z",
+  "generated_at_utc": "2026-09-23T12:52:13Z",
   "history": {
     "done_total_local": 905,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2117,
+      "age_seconds": 2198,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5O-AUTOMATIC-REPAIR-ORCHESTRATION-MUTATION-R1-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1742,
+      "age_seconds": 1822,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5P-AUTOMATIC-REPAIR-ORCHESTRATION-INDEPENDENT-AUDIT-READONLY-R1-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 263,
+      "age_seconds": 344,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5Q-R3-HISTORICAL-ELIGIBILITY-BOUNDARY-MUTATION-R1-20260923",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "15a5daaaffe979ca650c6efbd04d7ea594577b4b",
+  "local_development_sha": "2307ed3e9f65edea77d2a2cb5f1152ad6c9df2db",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -48,15 +48,15 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T12:50:45Z",
-    "last_receive_utc": "2026-09-23T12:50:49Z",
+    "last_cycle_utc": "2026-09-23T12:52:07Z",
+    "last_receive_utc": "2026-09-23T12:52:10Z",
     "last_terminal_utc": "2026-09-23T12:46:29Z",
     "pid": "354",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "002e6b328c328bf74a6f7a3f1aaaf039cb964325",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "15a5daaaffe979ca650c6efbd04d7ea594577b4b",
+      "development_sha": "2307ed3e9f65edea77d2a2cb5f1152ad6c9df2db",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
@@ -70,8 +70,8 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": true,
-      "worker_code_tree_sha": "002e6b328c328bf74a6f7a3f1aaaf039cb964325"
+      "worker_code_tree_aligned": false,
+      "worker_code_tree_sha": "0f2e41f2b2e540a9fd729cbee28fb4ce1b1c2251"
     }
   },
   "schema": "edarsahub.worker-health.v3",
