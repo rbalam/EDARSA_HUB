@@ -344,6 +344,138 @@ def requeue_stale_processing() -> int:
 
 
 
+
+AUTOMATION_STATE_SCHEMA = "edarsahub.worker-repair-automation-state.v1"
+
+
+def _parse_canonical_utc(value: Any) -> datetime | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+
+    try:
+        parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+    if parsed.tzinfo is None:
+        return None
+
+    return parsed.astimezone(timezone.utc)
+
+
+def repair_automation_state_path() -> Path:
+    return (
+        ROOT
+        / ".git"
+        / "universal-worker-queue"
+        / "maintenance"
+        / "automation_state.json"
+    )
+
+
+def load_repair_automation_state() -> dict[str, Any]:
+    path = repair_automation_state_path()
+
+    fail_closed = {
+        "schema": AUTOMATION_STATE_SCHEMA,
+        "enabled": False,
+        "enabled_at_utc": None,
+        "enabled_from_development_sha": None,
+        "adopted_job_ids": [],
+        "production_allowed": False,
+        "valid": False,
+    }
+
+    if not path.is_file():
+        return fail_closed
+
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return fail_closed
+
+    if not isinstance(payload, dict):
+        return fail_closed
+
+    enabled_at = _parse_canonical_utc(payload.get("enabled_at_utc"))
+    development_sha = str(
+        payload.get("enabled_from_development_sha") or ""
+    ).strip()
+
+    adopted = payload.get("adopted_job_ids")
+
+    valid = (
+        payload.get("schema") == AUTOMATION_STATE_SCHEMA
+        and payload.get("enabled") is True
+        and payload.get("production_allowed") is False
+        and enabled_at is not None
+        and bool(re.fullmatch(r"[0-9a-f]{40}", development_sha))
+        and isinstance(adopted, list)
+        and all(
+            isinstance(job_id, str) and job_id.strip()
+            for job_id in adopted
+        )
+    )
+
+    if not valid:
+        return fail_closed
+
+    return {
+        "schema": AUTOMATION_STATE_SCHEMA,
+        "enabled": True,
+        "enabled_at_utc": enabled_at.isoformat().replace("+00:00", "Z"),
+        "enabled_from_development_sha": development_sha,
+        "adopted_job_ids": sorted(set(adopted)),
+        "production_allowed": False,
+        "valid": True,
+    }
+
+
+def automatic_repair_result_is_eligible(
+    result: dict[str, Any],
+    automation_state: dict[str, Any],
+) -> tuple[bool, str]:
+    if not isinstance(result, dict):
+        return False, "RESULT_INVALID"
+
+    if automation_state.get("valid") is not True:
+        return False, "AUTOMATION_STATE_INVALID"
+
+    if automation_state.get("enabled") is not True:
+        return False, "AUTOMATION_DISABLED"
+
+    if automation_state.get("production_allowed") is not False:
+        return False, "AUTOMATION_PRODUCTION_POLICY_INVALID"
+
+    if result.get("production_touched") is not False:
+        return False, "PRODUCTION_TOUCHED"
+
+    job_id = str(result.get("job_id") or "").strip()
+
+    adopted = set(automation_state.get("adopted_job_ids") or [])
+
+    if job_id and job_id in adopted:
+        return True, "EXPLICITLY_ADOPTED"
+
+    completed_at = _parse_canonical_utc(result.get("completed_at_utc"))
+    enabled_at = _parse_canonical_utc(
+        automation_state.get("enabled_at_utc")
+    )
+
+    if completed_at is None:
+        return False, "RESULT_COMPLETED_AT_INVALID"
+
+    if enabled_at is None:
+        return False, "AUTOMATION_ENABLED_AT_INVALID"
+
+    if completed_at <= enabled_at:
+        return False, "HISTORICAL_RESULT"
+
+    return True, "POST_ACTIVATION_RESULT"
+
+
+
 def automatic_repair_orchestration() -> dict[str, Any]:
     """Detect bounded Worker-infrastructure repair incidents only.
 
@@ -352,6 +484,7 @@ def automatic_repair_orchestration() -> dict[str, Any]:
     Independent certification remains exclusively in Worker Auditor.
     """
     results_root = ROOT / ".git" / "universal-worker-queue" / "results"
+    automation_state = load_repair_automation_state()
 
     observed = 0
     eligible = 0
@@ -417,6 +550,13 @@ def automatic_repair_orchestration() -> dict[str, Any]:
         if result.get("production_touched") is not False:
             continue
 
+        boundary_allowed, boundary_reason = (
+            automatic_repair_result_is_eligible(
+                result,
+                automation_state,
+            )
+        )
+
         raw_paths = (
             result.get("files_changed")
             or result.get("expected_scope")
@@ -448,6 +588,25 @@ def automatic_repair_orchestration() -> dict[str, Any]:
 
         # Mixed Worker/application scope fails closed.
         if len(target_paths) != len(normalized):
+            continue
+
+        source_job_id = str(
+            result.get("job_id") or result_path.stem
+        ).strip()
+
+        if not boundary_allowed:
+            incidents.append(
+                {
+                    "incident_id": None,
+                    "source_job_id": source_job_id,
+                    "source_status": status,
+                    "state": "OBSERVED_NOT_ELIGIBLE",
+                    "target_paths": list(target_paths),
+                    "repair_allowed": False,
+                    "repair_reason": boundary_reason,
+                    "publication_required": False,
+                }
+            )
             continue
 
         eligible += 1
