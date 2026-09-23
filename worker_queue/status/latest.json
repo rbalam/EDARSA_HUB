@@ -4,10 +4,10 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "32d0860ef6c899d1c9a42a3e900c4e4ece9353af",
-  "generated_at_utc": "2026-09-23T23:36:12Z",
+  "generated_at_utc": "2026-09-23T23:37:24Z",
   "history": {
     "done_total_local": 921,
-    "pending_total_local": 3,
+    "pending_total_local": 4,
     "processing_total_local": 1,
     "rejected_total_local": 777,
     "results_total_local": 1517
@@ -16,85 +16,91 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 609,
+      "age_seconds": 681,
       "job_id": "EDARSAHUB-COMERCIAL-V2-JULIO-2026-ESTELAR-RESYNC-R1-CARLOS-20260923",
       "reason": "El worker no termino esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 622,
+      "age_seconds": 694,
       "job_id": "EDARSAHUB-COMERCIAL-V2-JULIO-2026-ORIGEN-RESYNC-R1-CARLOS-20260923",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 43,
+      "age_seconds": 115,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-130MID-DETAIL-BACKFILL-R1-CARLOS-20260923",
       "reason": null,
       "state": "PENDING"
     },
     {
-      "age_seconds": 67,
+      "age_seconds": 66,
+      "job_id": "EDARSAHUB-ISCAM-JULIO-2026-CIENFUEGOS-DETAIL-BACKFILL-R1-CARLOS-20260923",
+      "reason": null,
+      "state": "PENDING"
+    },
+    {
+      "age_seconds": 139,
       "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-DIAG-130QRO-R2-CARLOS-20260923",
       "reason": null,
       "state": "PENDING"
     },
     {
-      "age_seconds": 227,
+      "age_seconds": 299,
       "job_id": "EDARSAHUB-COMERCIAL-V2-JULIO-2026-130MID-RESYNC-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 275,
+      "age_seconds": 347,
       "job_id": "EDARSAHUB-COMERCIAL-V2-JULIO-2026-130QRO-RESYNC-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 110,
+      "age_seconds": 182,
       "job_id": "EDARSAHUB-COMERCIAL-V2-JULIO-2026-CIENFUEGOS-RESYNC-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 715,
+      "age_seconds": 787,
       "job_id": "EDARSAHUB-COMERCIAL-V2-JULIO-2026-PREFLIGHT-5UNIDADES-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 658,
+      "age_seconds": 730,
       "job_id": "EDARSAHUB-COMERCIAL-V2-JULIO-2026-PREFLIGHT-5UNIDADES-R2-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 271,
+      "age_seconds": 344,
       "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-BACKFILL-130QRO-202608-R1-CARLOS-20260923-DRY",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1446,
+      "age_seconds": 1518,
       "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-DAILY-RESYNC-R128-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2085,
+      "age_seconds": 2157,
       "job_id": "EDARSAHUB-WORKER-RESULT-PUBLISHER-DIRECT-IMPORT-FIX-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
   "local_development_sha": "32d0860ef6c899d1c9a42a3e900c4e4ece9353af",
-  "oldest_pending_age_seconds": 67,
+  "oldest_pending_age_seconds": 139,
   "production_touched": false,
   "queue_blocked": 2,
-  "queue_depth": 4,
+  "queue_depth": 5,
   "queue_done_local_recent": 0,
-  "queue_pending": 2,
+  "queue_pending": 3,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 8,
   "queue_running": 0,
@@ -102,8 +108,8 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-COMERCIAL-V2-JULIO-2026-ESTELAR-RESYNC-R1-CARLOS-20260923",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T23:36:10Z",
-    "last_receive_utc": "2026-09-23T23:36:11Z",
+    "last_cycle_utc": "2026-09-23T23:37:23Z",
+    "last_receive_utc": "2026-09-23T23:37:24Z",
     "last_terminal_utc": "2026-09-23T23:34:22Z",
     "pid": "35745",
     "runtime_fingerprint": {
