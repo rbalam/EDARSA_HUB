@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-V2-JULIO-2026-130MID-RESYNC-R1-CARLOS-20260923",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "32d0860ef6c899d1c9a42a3e900c4e4ece9353af",
+  "production_allowed": false,
+  "objective": "Resincronizar ventas cerradas de 130MID para todo julio 2026 usando el handler oficial SOFTRESTAURANT, actualizar encabezado Runtime V2 y detalle ISCAM, y certificar paridad diaria y mensual.",
+  "human_summary_language": "es",
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "actions": [],
+  "units": [
+    "130MID"
+  ],
+  "fecha_inicio": "2026-07-01",
+  "fecha_fin": "2026-07-31",
+  "dry_run": false,
+  "confirm_comercial_range_resync": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "julio_2026_130mid_post_resync_parity",
+          "sql": "\nWITH r AS (\n  SELECT CAST(fecha_operacion AS date) fecha,\n         CAST(SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS decimal(19,4)) ventas,\n         SUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets,\n         SUM(CAST(ISNULL(pax_total,0) AS bigint)) pax\n  FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\n  WHERE unidad_negocio_id='130MID'\n    AND fecha_operacion>='2026-07-01' AND fecha_operacion<'2026-08-01'\n  GROUP BY CAST(fecha_operacion AS date)\n),\ndt AS (\n  SELECT CAST(fecha_operacion AS date) fecha, numero_ticket,\n         SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) venta,\n         MAX(CAST(ISNULL(pax,0) AS bigint)) pax\n  FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n  WHERE unidad_negocio_id='130MID'\n    AND fecha_operacion>='2026-07-01' AND fecha_operacion<'2026-08-01'\n    AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n  GROUP BY CAST(fecha_operacion AS date),numero_ticket\n),\nd AS (\n  SELECT fecha,CAST(SUM(venta) AS decimal(19,4)) ventas,COUNT_BIG(*) tickets,SUM(pax) pax\n  FROM dt GROUP BY fecha\n),\nf AS (\n  SELECT COALESCE(r.fecha,d.fecha) fecha,\n         ISNULL(r.ventas,0) rv,ISNULL(d.ventas,0) dv,\n         ISNULL(r.tickets,0) rt,ISNULL(d.tickets,0) dt,\n         ISNULL(r.pax,0) rp,ISNULL(d.pax,0) dp\n  FROM r FULL OUTER JOIN d ON d.fecha=r.fecha\n),\nm AS (\n  SELECT COUNT(*) mismatches\n  FROM f\n  WHERE ABS(rv-dv)>0.05 OR rt<>dt OR rp<>dp\n)\nSELECT\n  '130MID' unidad,\n  CAST((SELECT ISNULL(SUM(rv),0) FROM f) AS decimal(19,4)) ventas_encabezado,\n  CAST((SELECT ISNULL(SUM(dv),0) FROM f) AS decimal(19,4)) ventas_detalle,\n  CAST((SELECT ISNULL(SUM(rv-dv),0) FROM f) AS decimal(19,4)) delta_ventas,\n  (SELECT ISNULL(SUM(rt),0) FROM f) tickets_encabezado,\n  (SELECT ISNULL(SUM(dt),0) FROM f) tickets_detalle,\n  (SELECT ISNULL(SUM(rt-dt),0) FROM f) delta_tickets,\n  (SELECT ISNULL(SUM(rp),0) FROM f) pax_encabezado,\n  (SELECT ISNULL(SUM(dp),0) FROM f) pax_detalle,\n  (SELECT ISNULL(SUM(rp-dp),0) FROM f) delta_pax,\n  mismatches dias_con_diferencia,\n  1 / CASE WHEN mismatches=0 THEN 1 ELSE 0 END AS parity_gate\nFROM m"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260923 Julio 2026 conciliacion ventas"
+  },
+  "constraints": [
+    "Motor esperado SOFTRESTAURANT",
+    "Julio 2026 completo",
+    "Actualizar encabezado y detalle canónicos",
+    "No Production",
+    "Paridad diaria ventas/tickets/PAX obligatoria"
+  ]
+}
