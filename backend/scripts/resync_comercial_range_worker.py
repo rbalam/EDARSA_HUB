@@ -56,8 +56,15 @@ def main() -> int:
     if not config:
         print(json.dumps({"event": "comercial_range_summary", "unidad": unit, "success": False, "error": "UNIT_NOT_FOUND"}))
         return 3
-    if str(config.get("sistema") or "").upper() != "SOFTRESTAURANT":
-        print(json.dumps({"event": "comercial_range_summary", "unidad": unit, "success": False, "error": "SYSTEM_NOT_SOFTRESTAURANT"}))
+    sistema = str(config.get("sistema") or "").strip().upper()
+    if sistema not in {"SOFTRESTAURANT", "MPRO"}:
+        print(json.dumps({
+            "event": "comercial_range_summary",
+            "unidad": unit,
+            "success": False,
+            "error": "SYSTEM_NOT_SUPPORTED",
+            "system_type": sistema or "UNKNOWN",
+        }))
         return 4
 
     if args.commit:

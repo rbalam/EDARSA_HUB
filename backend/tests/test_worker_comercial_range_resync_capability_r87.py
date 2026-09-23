@@ -31,3 +31,10 @@ def test_script_reuses_official_scheduler_handlers():
     assert '_ejecutar_dry_run' in text
     assert '_get_unidad_config' in text
     assert 'days > 31' in text
+
+
+def test_script_accepts_both_supported_pos_engines():
+    text = SCRIPT.read_text(encoding='utf-8')
+    assert '{"SOFTRESTAURANT", "MPRO"}' in text
+    assert 'SYSTEM_NOT_SUPPORTED' in text
+    assert 'SYSTEM_NOT_SOFTRESTAURANT' not in text
