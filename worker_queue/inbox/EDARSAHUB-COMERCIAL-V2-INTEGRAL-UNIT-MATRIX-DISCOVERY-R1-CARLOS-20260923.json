@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-UNIT-MATRIX-DISCOVERY-R1-CARLOS-20260923",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3caf19135a4d532f1283035ef5f552fa952ae128",
+  "production_allowed": false,
+  "objective": "Descubrir desde EDARSAHUB SQL todas las unidades activas de SoftRestaurant y ManagementPro que deben formar parte de la certificacion integral Comercial V2 / Runtime V2 / ISCAM / Tablero Ejecutivo.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "active_comercial_units_matrix",
+          "sql": "\nWITH runtime AS (\n    SELECT\n        unidad_negocio_id,\n        MAX(fecha_operacion) AS ultima_fecha_runtime,\n        COUNT_BIG(*) AS dias_runtime\n    FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\n    GROUP BY unidad_negocio_id\n),\ndetalle AS (\n    SELECT\n        unidad_negocio_id,\n        MAX(fecha_operacion) AS ultima_fecha_detalle,\n        COUNT_BIG(*) AS filas_detalle\n    FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n    WHERE ISNULL(activo,1)=1\n    GROUP BY unidad_negocio_id\n)\nSELECT\n    u.codigo AS unidad_negocio_id,\n    u.nombre AS unidad_nombre,\n    CONVERT(varchar(36), u.id) AS unidad_negocio_pk,\n    CONVERT(varchar(36), u.server_id) AS server_id,\n    u.sucursal_origen_id,\n    UPPER(COALESCE(NULLIF(u.system_type,''), NULLIF(s.system_type,''), 'UNKNOWN')) AS system_type,\n    ISNULL(u.activo,0) AS unidad_activa,\n    ISNULL(s.activo,0) AS servidor_activo,\n    r.ultima_fecha_runtime,\n    r.dias_runtime,\n    d.ultima_fecha_detalle,\n    d.filas_detalle\nFROM dbo.Unidades_Negocio u\nLEFT JOIN dbo.Sistema_VW_Servidores_Conexiones_Publico s\n    ON CONVERT(varchar(36), s.id)=CONVERT(varchar(36), u.server_id)\nLEFT JOIN runtime r\n    ON r.unidad_negocio_id=u.codigo\nLEFT JOIN detalle d\n    ON d.unidad_negocio_id=u.codigo\nWHERE ISNULL(u.activo,0)=1\n  AND ISNULL(s.activo,0)=1\n  AND (\n      UPPER(COALESCE(NULLIF(u.system_type,''), NULLIF(s.system_type,''), '')) LIKE '%SOFT%'\n      OR UPPER(COALESCE(NULLIF(u.system_type,''), NULLIF(s.system_type,''), '')) LIKE '%MPRO%'\n      OR UPPER(COALESCE(NULLIF(u.system_type,''), NULLIF(s.system_type,''), '')) LIKE '%MANAG%'\n  )\nORDER BY system_type, u.codigo"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260922 Corregir Reportes de ISCAM"
+  },
+  "constraints": [
+    "Solo lectura",
+    "Descubrir todas las unidades activas desde catalogo canonico EDARSAHUB",
+    "No hardcodear sucursales",
+    "No Production",
+    "No modificar datos"
+  ]
+}
