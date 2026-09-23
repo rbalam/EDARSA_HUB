@@ -32,6 +32,10 @@ QUEUE_REF = "refs/heads/worker/requests"
 CANONICAL_QUEUE_REMOTE = "https://github.com/rbalam/EDARSA_HUB.git"
 DEV_BRANCH = "Edarsahub_Desarrollo"
 WORKER_SERVICE = "edarsahub-universal-worker"
+WATCHDOG_SERVICE = "edarsahub-bootstrap-watchdog"
+SUPERVISOR_CONF_DIR = Path("/etc/supervisor/conf.d")
+WATCHDOG_CONF_SOURCE = REPO_ROOT / "tools" / "bootstrap" / "edarsahub-bootstrap-watchdog.conf"
+WORKER_CONF_SOURCE = REPO_ROOT / "tools" / "mirror_sync" / "edarsahub-universal-worker.conf"
 LOCK_PATH = Path("/tmp/edarsahub-universal-worker-wake.lock")
 COOLDOWN_PATH = Path("/tmp/edarsahub-universal-worker-wake.last")
 PREFERRED_JOB_PATH = RUNTIME_DIR / "preferred_job.json"
@@ -282,6 +286,111 @@ def _is_production_environment() -> bool:
     return "PROD" in env_name
 
 
+def _supervisor_status(service: str) -> str:
+    try:
+        completed = subprocess.run(
+            ["supervisorctl", "status", service],
+            cwd=str(REPO_ROOT),
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return (completed.stdout or "").strip()
+
+
+def _ensure_supervisor_definition(source: Path, destination: Path) -> bool:
+    if not source.is_file():
+        raise RuntimeError(f"missing supervisor definition: {source}")
+    expected = source.read_text(encoding="utf-8")
+    current = ""
+    try:
+        current = destination.read_text(encoding="utf-8")
+    except OSError:
+        pass
+    if current == expected:
+        return False
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary = destination.with_suffix(destination.suffix + ".tmp")
+    temporary.write_text(expected, encoding="utf-8")
+    os.chmod(temporary, 0o644)
+    os.replace(temporary, destination)
+    return True
+
+
+def _ensure_recovery_supervisor_services() -> dict[str, object]:
+    """Ensure Preview recovery services survive pod/backend restarts.
+
+    This is intentionally independent from mirror-sync. It installs only the
+    fixed watchdog and Universal Worker definitions, then starts those fixed
+    services if Supervisor reports them down or unknown.
+    """
+    if _is_production_environment():
+        return {
+            "state": "SKIPPED_PRODUCTION_ENV",
+            "production_touched": False,
+        }
+
+    changed = False
+    changed = _ensure_supervisor_definition(
+        WATCHDOG_CONF_SOURCE,
+        SUPERVISOR_CONF_DIR / "edarsahub-bootstrap-watchdog.conf",
+    ) or changed
+    changed = _ensure_supervisor_definition(
+        WORKER_CONF_SOURCE,
+        SUPERVISOR_CONF_DIR / "edarsahub-universal-worker.conf",
+    ) or changed
+
+    if changed:
+        for args in (["supervisorctl", "reread"], ["supervisorctl", "update"]):
+            completed = subprocess.run(
+                args,
+                cwd=str(REPO_ROOT),
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            if completed.returncode != 0:
+                raise RuntimeError(f"supervisor refresh failed: {' '.join(args)}")
+
+    states: dict[str, str] = {}
+    for service in (WATCHDOG_SERVICE, WORKER_SERVICE):
+        status_text = _supervisor_status(service)
+        if "RUNNING" not in status_text:
+            started = subprocess.run(
+                ["supervisorctl", "start", service],
+                cwd=str(REPO_ROOT),
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            status_text = _supervisor_status(service)
+            if started.returncode != 0 and "RUNNING" not in status_text:
+                restarted = subprocess.run(
+                    ["supervisorctl", "restart", service],
+                    cwd=str(REPO_ROOT),
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+                status_text = _supervisor_status(service)
+                if restarted.returncode != 0 and "RUNNING" not in status_text:
+                    raise RuntimeError(f"supervisor service unavailable: {service}")
+        states[service] = status_text
+
+    return {
+        "state": "RECOVERY_SERVICES_READY",
+        "definitions_refreshed": changed,
+        "services": states,
+        "production_touched": False,
+    }
+
+
 def ensure_worker_runtime_on_preview_startup() -> dict[str, object]:
     """Recover a stale Universal Worker whenever the Preview backend starts.
 
@@ -295,11 +404,13 @@ def ensure_worker_runtime_on_preview_startup() -> dict[str, object]:
             "production_touched": False,
         }
 
+    recovery_services = _ensure_recovery_supervisor_services()
     heartbeat_age = _heartbeat_age_seconds()
     if heartbeat_age is not None and heartbeat_age <= 90:
         return {
             "state": "ALREADY_HEALTHY",
             "heartbeat_age_seconds": round(heartbeat_age, 3),
+            "recovery_services": recovery_services,
             "production_touched": False,
         }
 
@@ -308,6 +419,7 @@ def ensure_worker_runtime_on_preview_startup() -> dict[str, object]:
         "state": "WORKER_RESTART_REQUESTED",
         "heartbeat_age_seconds": round(heartbeat_age, 3) if heartbeat_age is not None else None,
         "service": WORKER_SERVICE,
+        "recovery_services": recovery_services,
         "production_touched": False,
     }
 
