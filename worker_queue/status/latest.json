@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "de3ca01b35ad59a69ba76414e485120c99c3f163",
-  "generated_at_utc": "2026-09-23T23:10:07Z",
+  "generated_at_utc": "2026-09-23T23:11:28Z",
   "history": {
     "done_total_local": 917,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3186,
+      "age_seconds": 3267,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5S-R2-CONTROL-PLANE-SUPERVISOR-OWNERSHIP-MUTATION-R1-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3133,
+      "age_seconds": 3215,
       "job_id": "EDARSAHUB-TABLAJERIA-GATE2-TECHNICAL-MAPPING-STRUCTURED-READONLY-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 520,
+      "age_seconds": 601,
       "job_id": "EDARSAHUB-WORKER-RESULT-PUBLISHER-DIRECT-IMPORT-FIX-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 8,
+      "age_seconds": 89,
       "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-DAILY-RESYNC-R128-CARLOS-20260923",
       "reason": null,
       "state": "RUNNING"
@@ -54,8 +54,8 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-DAILY-RESYNC-R128-CARLOS-20260923",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T23:10:04Z",
-    "last_receive_utc": "2026-09-23T23:09:59Z",
+    "last_cycle_utc": "2026-09-23T23:11:25Z",
+    "last_receive_utc": "2026-09-23T23:11:27Z",
     "last_terminal_utc": "2026-09-23T23:01:26Z",
     "pid": "35745",
     "runtime_fingerprint": {
