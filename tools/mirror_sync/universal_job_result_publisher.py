@@ -25,11 +25,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from tools.mirror_sync.worker_result_integrity import (
-    is_terminal_result_path,
-    validate_terminal_result_file,
-    validate_terminal_result_payload,
-)
+# WORKER_RESULT_INTEGRITY_IMPORT_COMPAT_V1
+try:
+    from tools.mirror_sync.worker_result_integrity import (
+        is_terminal_result_path,
+        validate_terminal_result_file,
+        validate_terminal_result_payload,
+    )
+except ModuleNotFoundError:
+    from worker_result_integrity import (
+        is_terminal_result_path,
+        validate_terminal_result_file,
+        validate_terminal_result_payload,
+    )
 
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
 STATE = ROOT / ".git" / "universal-worker-queue"
