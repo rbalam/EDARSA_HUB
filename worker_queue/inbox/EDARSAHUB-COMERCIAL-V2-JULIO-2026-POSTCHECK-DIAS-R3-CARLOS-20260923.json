@@ -1,0 +1,35 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-V2-JULIO-2026-POSTCHECK-DIAS-R3-CARLOS-20260923",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "32d0860ef6c899d1c9a42a3e900c4e4ece9353af",
+  "production_allowed": false,
+  "objective": "Postcheck diario de julio 2026. Identificar exclusivamente las fechas que siguen con diferencia entre encabezado Runtime V2 y detalle ISCAM despues de los intentos por rango.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "julio_2026_dias_restantes_con_diferencia",
+          "sql": "\nWITH fechas AS (\n    SELECT CAST('2026-07-01' AS date) fecha\n    UNION ALL SELECT DATEADD(day,1,fecha) FROM fechas WHERE fecha < '2026-07-31'\n),\nunidades AS (\n    SELECT v.unidad FROM (VALUES ('130QRO'),('ORIGEN'),('130MID'),('CIENFUEGOS'),('ESTELAR')) v(unidad)\n),\nbase AS (SELECT u.unidad,f.fecha FROM unidades u CROSS JOIN fechas f),\nr AS (\n    SELECT unidad_negocio_id unidad, CAST(fecha_operacion AS date) fecha,\n           CAST(SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS decimal(19,4)) ventas,\n           SUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets,\n           SUM(CAST(ISNULL(pax_total,0) AS bigint)) pax\n    FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\n    WHERE fecha_operacion >= '2026-07-01' AND fecha_operacion < '2026-08-01'\n      AND unidad_negocio_id IN ('130QRO','ORIGEN','130MID','CIENFUEGOS','ESTELAR')\n    GROUP BY unidad_negocio_id, CAST(fecha_operacion AS date)\n),\ndt AS (\n    SELECT unidad_negocio_id unidad, CAST(fecha_operacion AS date) fecha, numero_ticket,\n           SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) venta,\n           MAX(CAST(ISNULL(pax,0) AS bigint)) pax\n    FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n    WHERE fecha_operacion >= '2026-07-01' AND fecha_operacion < '2026-08-01'\n      AND unidad_negocio_id IN ('130QRO','ORIGEN','130MID','CIENFUEGOS','ESTELAR')\n      AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n    GROUP BY unidad_negocio_id, CAST(fecha_operacion AS date), numero_ticket\n),\nd AS (\n    SELECT unidad,fecha,CAST(SUM(venta) AS decimal(19,4)) ventas,COUNT_BIG(*) tickets,SUM(pax) pax\n    FROM dt GROUP BY unidad,fecha\n)\nSELECT b.unidad,b.fecha,\n       CAST(ISNULL(r.ventas,0) AS decimal(19,4)) ventas_encabezado,\n       CAST(ISNULL(d.ventas,0) AS decimal(19,4)) ventas_detalle,\n       CAST(ISNULL(r.ventas,0)-ISNULL(d.ventas,0) AS decimal(19,4)) delta_ventas,\n       ISNULL(r.tickets,0) tickets_encabezado,\n       ISNULL(d.tickets,0) tickets_detalle,\n       ISNULL(r.tickets,0)-ISNULL(d.tickets,0) delta_tickets,\n       ISNULL(r.pax,0) pax_encabezado,\n       ISNULL(d.pax,0) pax_detalle,\n       ISNULL(r.pax,0)-ISNULL(d.pax,0) delta_pax\nFROM base b\nLEFT JOIN r ON r.unidad=b.unidad AND r.fecha=b.fecha\nLEFT JOIN d ON d.unidad=b.unidad AND d.fecha=b.fecha\nWHERE ABS(ISNULL(r.ventas,0)-ISNULL(d.ventas,0)) > 0.05\n   OR ISNULL(r.tickets,0)<>ISNULL(d.tickets,0)\n   OR ISNULL(r.pax,0)<>ISNULL(d.pax,0)\nORDER BY b.unidad,b.fecha\nOPTION (MAXRECURSION 100)"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260923 Julio 2026 conciliacion ventas"
+  },
+  "constraints": [
+    "Solo lectura",
+    "No resincronizar rangos",
+    "Solo identificar dias con diferencia",
+    "No Production"
+  ]
+}
