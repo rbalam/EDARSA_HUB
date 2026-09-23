@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "REMOTE_AHEAD_ONLY",
   "development_sha": "32d0860ef6c899d1c9a42a3e900c4e4ece9353af",
-  "generated_at_utc": "2026-09-23T23:16:41Z",
+  "generated_at_utc": "2026-09-23T23:17:53Z",
   "history": {
     "done_total_local": 918,
     "pending_total_local": 0,
@@ -16,25 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3580,
-      "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5S-R2-CONTROL-PLANE-SUPERVISOR-OWNERSHIP-MUTATION-R1-20260923",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 275,
+      "age_seconds": 348,
       "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-DAILY-RESYNC-R128-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3528,
+      "age_seconds": 3600,
       "job_id": "EDARSAHUB-TABLAJERIA-GATE2-TECHNICAL-MAPPING-STRUCTURED-READONLY-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 914,
+      "age_seconds": 987,
       "job_id": "EDARSAHUB-WORKER-RESULT-PUBLISHER-DIRECT-IMPORT-FIX-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,14 +42,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 3,
   "queue_running": 0,
   "remote_development_sha": "32d0860ef6c899d1c9a42a3e900c4e4ece9353af",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T23:16:41Z",
-    "last_receive_utc": "2026-09-23T23:16:36Z",
+    "last_cycle_utc": "2026-09-23T23:17:53Z",
+    "last_receive_utc": "2026-09-23T23:17:48Z",
     "last_terminal_utc": "2026-09-23T23:12:05Z",
     "pid": "35745",
     "runtime_fingerprint": {
