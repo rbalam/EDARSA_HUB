@@ -1,0 +1,83 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5A-R2-TARGETED-PHYSICAL-ANTI-DUPLICATION-READONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "scheduling": {
+    "project_id": "EDARSAHUB-PRODUCTION-QUALITY",
+    "bounded_context": "PRODUCTION_QUALITY",
+    "resource_claims": [
+      "EDARSAHUB_SQL_METADATA_READ"
+    ],
+    "conflict_domains": [],
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1
+  },
+  "objective": "Completar la auditoria fisica anti-duplicacion de Production Quality / Foto Finish mediante consultas SQL Server estrictamente READ_ONLY y focalizadas. Inspeccionar candidatos exactos y semanticos para ProductionItem, ProductionStation, QualityStandard/Version, Measurement, ProductionEvidence, QualityDecision, Rework, QualityOverride, Device y DeviceCalibration. Auditar las estructuras adicionales de Tablajeria descubiertas en Gate5A-R1 y determinar el bounded context de Sync_Control_Evidencias y otras capacidades potencialmente colisionantes. No crear, alterar ni eliminar objetos. No auto-advance a Gate5B.",
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "pq_exact_object_candidates",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    o.type_desc\nFROM sys.objects o\nWHERE LOWER(REPLACE(REPLACE(o.name, '_', ''), '-', '')) IN (\n    'productionitem',\n    'productionstation',\n    'qualitystandard',\n    'qualitystandardversion',\n    'measurement',\n    'measurements',\n    'productionevidence',\n    'qualitydecision',\n    'rework',\n    'qualityoverride',\n    'device',\n    'devices',\n    'devicecalibration'\n)\nORDER BY schema_name, object_name"
+        },
+        {
+          "name": "pq_semantic_object_candidates",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    o.type_desc\nFROM sys.objects o\nWHERE\n       LOWER(o.name) LIKE '%quality%'\n    OR LOWER(o.name) LIKE '%calidad%'\n    OR LOWER(o.name) LIKE '%evidenc%'\n    OR LOWER(o.name) LIKE '%medicion%'\n    OR LOWER(o.name) LIKE '%measurement%'\n    OR LOWER(o.name) LIKE '%station%'\n    OR LOWER(o.name) LIKE '%estacion%'\n    OR LOWER(o.name) LIKE '%device%'\n    OR LOWER(o.name) LIKE '%dispositivo%'\n    OR LOWER(o.name) LIKE '%rework%'\n    OR LOWER(o.name) LIKE '%retrabajo%'\n    OR LOWER(o.name) LIKE '%override%'\n    OR LOWER(o.name) LIKE '%parrilla%'\n    OR LOWER(o.name) LIKE '%grill%'\n    OR LOWER(o.name) LIKE '%foto%'\n    OR LOWER(o.name) LIKE '%finish%'\nORDER BY o.type_desc, schema_name, object_name"
+        },
+        {
+          "name": "pq_semantic_column_candidates",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    c.column_id,\n    c.name AS column_name,\n    t.name AS data_type,\n    c.max_length,\n    c.precision,\n    c.scale,\n    c.is_nullable,\n    c.is_identity\nFROM sys.objects o\nJOIN sys.columns c\n  ON c.object_id = o.object_id\nJOIN sys.types t\n  ON t.user_type_id = c.user_type_id\nWHERE\n       LOWER(c.name) LIKE '%quality%'\n    OR LOWER(c.name) LIKE '%calidad%'\n    OR LOWER(c.name) LIKE '%evidenc%'\n    OR LOWER(c.name) LIKE '%medicion%'\n    OR LOWER(c.name) LIKE '%measurement%'\n    OR LOWER(c.name) LIKE '%station%'\n    OR LOWER(c.name) LIKE '%estacion%'\n    OR LOWER(c.name) LIKE '%device%'\n    OR LOWER(c.name) LIKE '%dispositivo%'\n    OR LOWER(c.name) LIKE '%rework%'\n    OR LOWER(c.name) LIKE '%retrabajo%'\n    OR LOWER(c.name) LIKE '%override%'\n    OR LOWER(c.name) LIKE '%temperatura%'\n    OR LOWER(c.name) LIKE '%temperature%'\n    OR LOWER(c.name) LIKE '%peso%'\n    OR LOWER(c.name) LIKE '%weight%'\n    OR LOWER(c.name) LIKE '%foto%'\n    OR LOWER(c.name) LIKE '%camera%'\n    OR LOWER(c.name) LIKE '%camara%'\nORDER BY schema_name, object_name, c.column_id"
+        },
+        {
+          "name": "tablajeria_extended_objects",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    o.type_desc\nFROM sys.objects o\nWHERE LOWER(o.name) IN (\n    'operaciones_tablaje_auditoria',\n    'operaciones_tablaje_autorizaciones',\n    'operaciones_tablaje_costos',\n    'operaciones_tablaje_documentos',\n    'operaciones_tablaje_eventoscontables',\n    'operaciones_tablaje_mermas',\n    'operaciones_tablaje_plantillasversiones',\n    'operaciones_tablaje_rendimientos',\n    'operaciones_tablaje_syncerrores',\n    'operaciones_tablaje_synclog',\n    'tablajeria_costeodetalle'\n)\nORDER BY schema_name, object_name"
+        },
+        {
+          "name": "tablajeria_extended_columns",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    c.column_id,\n    c.name AS column_name,\n    t.name AS data_type,\n    c.max_length,\n    c.precision,\n    c.scale,\n    c.is_nullable,\n    c.is_identity\nFROM sys.objects o\nJOIN sys.columns c\n  ON c.object_id = o.object_id\nJOIN sys.types t\n  ON t.user_type_id = c.user_type_id\nWHERE LOWER(o.name) IN (\n    'operaciones_tablaje_auditoria',\n    'operaciones_tablaje_autorizaciones',\n    'operaciones_tablaje_costos',\n    'operaciones_tablaje_documentos',\n    'operaciones_tablaje_eventoscontables',\n    'operaciones_tablaje_mermas',\n    'operaciones_tablaje_plantillasversiones',\n    'operaciones_tablaje_rendimientos',\n    'operaciones_tablaje_syncerrores',\n    'operaciones_tablaje_synclog',\n    'tablajeria_costeodetalle'\n)\nORDER BY schema_name, object_name, c.column_id"
+        },
+        {
+          "name": "existing_evidence_objects",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    o.type_desc\nFROM sys.objects o\nWHERE\n       LOWER(o.name) LIKE '%evidenc%'\n    OR LOWER(o.name) LIKE '%document%'\n    OR LOWER(o.name) LIKE '%foto%'\nORDER BY schema_name, object_name"
+        },
+        {
+          "name": "sync_control_evidencias_columns",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    c.column_id,\n    c.name AS column_name,\n    t.name AS data_type,\n    c.max_length,\n    c.precision,\n    c.scale,\n    c.is_nullable,\n    c.is_identity\nFROM sys.objects o\nJOIN sys.columns c\n  ON c.object_id = o.object_id\nJOIN sys.types t\n  ON t.user_type_id = c.user_type_id\nWHERE LOWER(o.name) = 'sync_control_evidencias'\nORDER BY c.column_id"
+        },
+        {
+          "name": "workflow_justificaciones_columns",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    c.column_id,\n    c.name AS column_name,\n    t.name AS data_type,\n    c.max_length,\n    c.precision,\n    c.scale,\n    c.is_nullable\nFROM sys.objects o\nJOIN sys.columns c\n  ON c.object_id = o.object_id\nJOIN sys.types t\n  ON t.user_type_id = c.user_type_id\nWHERE LOWER(o.name) = 'workflow_justificaciones'\nORDER BY c.column_id"
+        },
+        {
+          "name": "device_related_objects",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    o.type_desc\nFROM sys.objects o\nWHERE\n       LOWER(o.name) LIKE '%device%'\n    OR LOWER(o.name) LIKE '%dispositivo%'\n    OR LOWER(o.name) LIKE '%camera%'\n    OR LOWER(o.name) LIKE '%camara%'\n    OR LOWER(o.name) LIKE '%bascula%'\n    OR LOWER(o.name) LIKE '%scale%'\n    OR LOWER(o.name) LIKE '%termomet%'\n    OR LOWER(o.name) LIKE '%sensor%'\n    OR LOWER(o.name) LIKE '%calibr%'\nORDER BY schema_name, object_name"
+        },
+        {
+          "name": "usuario_sesiones_device_context",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    c.column_id,\n    c.name AS column_name,\n    t.name AS data_type,\n    c.max_length,\n    c.is_nullable\nFROM sys.objects o\nJOIN sys.columns c\n  ON c.object_id = o.object_id\nJOIN sys.types t\n  ON t.user_type_id = c.user_type_id\nWHERE LOWER(o.name) = 'usuario_sesiones'\nORDER BY c.column_id"
+        },
+        {
+          "name": "targeted_foreign_keys",
+          "sql": "SELECT\n    SCHEMA_NAME(po.schema_id) AS parent_schema,\n    po.name AS parent_object,\n    fk.name AS foreign_key_name,\n    COL_NAME(fkc.parent_object_id, fkc.parent_column_id) AS parent_column,\n    SCHEMA_NAME(ro.schema_id) AS referenced_schema,\n    ro.name AS referenced_object,\n    COL_NAME(fkc.referenced_object_id, fkc.referenced_column_id) AS referenced_column\nFROM sys.foreign_keys fk\nJOIN sys.foreign_key_columns fkc\n  ON fkc.constraint_object_id = fk.object_id\nJOIN sys.objects po\n  ON po.object_id = fk.parent_object_id\nJOIN sys.objects ro\n  ON ro.object_id = fk.referenced_object_id\nWHERE\n       LOWER(po.name) LIKE '%tablaje%'\n    OR LOWER(ro.name) LIKE '%tablaje%'\n    OR LOWER(po.name) LIKE '%evidenc%'\n    OR LOWER(ro.name) LIKE '%evidenc%'\n    OR LOWER(po.name) LIKE '%quality%'\n    OR LOWER(ro.name) LIKE '%quality%'\n    OR LOWER(po.name) LIKE '%device%'\n    OR LOWER(ro.name) LIKE '%device%'\n    OR LOWER(po.name) LIKE '%medicion%'\n    OR LOWER(ro.name) LIKE '%medicion%'\nORDER BY parent_schema, parent_object, foreign_key_name"
+        },
+        {
+          "name": "targeted_indexes",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    i.name AS index_name,\n    i.is_unique,\n    i.is_primary_key,\n    i.type_desc\nFROM sys.objects o\nJOIN sys.indexes i\n  ON i.object_id = o.object_id\nWHERE i.name IS NOT NULL\n  AND (\n       LOWER(o.name) LIKE '%tablaje%'\n    OR LOWER(o.name) LIKE '%evidenc%'\n    OR LOWER(o.name) LIKE '%quality%'\n    OR LOWER(o.name) LIKE '%device%'\n    OR LOWER(o.name) LIKE '%medicion%'\n    OR LOWER(o.name) LIKE '%measurement%'\n  )\nORDER BY schema_name, object_name, index_name"
+        },
+        {
+          "name": "targeted_check_constraints",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    cc.name AS constraint_name,\n    cc.definition\nFROM sys.check_constraints cc\nJOIN sys.objects o\n  ON o.object_id = cc.parent_object_id\nWHERE\n       LOWER(o.name) LIKE '%tablaje%'\n    OR LOWER(o.name) LIKE '%quality%'\n    OR LOWER(o.name) LIKE '%evidenc%'\n    OR LOWER(o.name) LIKE '%device%'\n    OR LOWER(o.name) LIKE '%medicion%'\nORDER BY schema_name, object_name, constraint_name"
+        }
+      ]
+    }
+  ]
+}
