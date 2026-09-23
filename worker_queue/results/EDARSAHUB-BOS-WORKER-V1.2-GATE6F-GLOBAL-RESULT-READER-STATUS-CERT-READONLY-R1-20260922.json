@@ -1,0 +1,295 @@
+{
+  "base_sha": "a173fd9dc81f815e7d6684f5982b8091bf055972",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-23T04:19:12Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE6F-GLOBAL-RESULT-READER-STATUS-CERT-READONLY-R1-20260922",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-23T23:11:06Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "enum",
+              "hashlib",
+              "json",
+              "pathlib",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "inspect_result_file",
+              "read_source_mismatch",
+              "result_absent",
+              "result_empty",
+              "result_invalid_json",
+              "result_job_id_mismatch",
+              "result_non_terminal",
+              "result_schema_invalid",
+              "result_sha",
+              "result_sha_mismatch",
+              "result_size_mismatch",
+              "result_status_mismatch",
+              "result_terminal_valid",
+              "resultstate",
+              "validate_terminal_result_file"
+            ],
+            "path": "tools/mirror_sync/worker_result_integrity.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ResultIdentity",
+              "ResultInspection",
+              "ResultState",
+              "_require_field",
+              "classify_source_consistency",
+              "compare_result_identity",
+              "inspect_result_file",
+              "is_terminal_result_path",
+              "is_terminal_status",
+              "result_identity_from_bytes",
+              "validate_terminal_result_file",
+              "validate_terminal_result_payload"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "json",
+              "pathlib",
+              "tools.mirror_sync.worker_result_integrity",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "inspect_result_file",
+              "result_sha",
+              "result_size_bytes",
+              "result_terminal_valid",
+              "resultstate",
+              "terminal_result_valid",
+              "validate_terminal_result_file",
+              "worker_queue/results"
+            ],
+            "path": "tools/mirror_sync/worker_result_reader.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CanonicalResultRead",
+              "read_canonical_result"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "read_contract_version",
+              "result_sha",
+              "result_size_bytes",
+              "terminal_result_valid"
+            ],
+            "path": "tools/mirror_sync/worker_result_status.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "build_job_status",
+              "utc_now"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "fcntl",
+              "json",
+              "os",
+              "pathlib",
+              "shutil",
+              "subprocess",
+              "tempfile",
+              "tools.mirror_sync.worker_result_integrity",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "validate_terminal_result_file"
+            ],
+            "path": "tools/mirror_sync/universal_job_result_publisher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_sensitive_column",
+              "atomic_json",
+              "certification_evidence",
+              "create_attestation",
+              "generic_readonly_evidence",
+              "git",
+              "load",
+              "main",
+              "marker_satisfied",
+              "now",
+              "prepare_queue_worktree",
+              "publish_one",
+              "publishable_paths",
+              "resolve_runtime_git_credential_helper",
+              "result_identity",
+              "run",
+              "runtime_git",
+              "runtime_git_command",
+              "runtime_git_env",
+              "sanitize",
+              "sanitize_frontend_build_evidence",
+              "sanitize_readonly_evidence",
+              "sanitize_repository_evidence",
+              "valid_sha"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "json",
+              "pathlib",
+              "pytest",
+              "sys",
+              "tools.mirror_sync.worker_result_integrity"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "inspect_result_file",
+              "read_source_mismatch",
+              "result_absent",
+              "result_empty",
+              "result_invalid_json",
+              "result_job_id_mismatch",
+              "result_non_terminal",
+              "result_sha",
+              "result_sha_mismatch",
+              "result_size_mismatch",
+              "result_status_mismatch",
+              "resultstate",
+              "worker_queue/results"
+            ],
+            "path": "backend/tests/test_worker_result_integrity_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "mutation_result",
+              "readonly_result",
+              "test_absent_file_has_explicit_state",
+              "test_empty_file_has_explicit_state",
+              "test_identity_detects_sha_mismatch",
+              "test_identity_detects_size_mismatch",
+              "test_identity_detects_status_mismatch",
+              "test_invalid_json_has_explicit_state",
+              "test_job_id_mismatch_is_rejected",
+              "test_multi_source_mismatch_is_not_reported_as_empty",
+              "test_mutation_terminal_contract_remains_supported",
+              "test_nonterminal_file_never_looks_empty",
+              "test_nonterminal_status_is_rejected",
+              "test_readonly_cannot_report_changed_files",
+              "test_readonly_cannot_report_production_touch",
+              "test_readonly_mutation_flags_cannot_be_true",
+              "test_required_terminal_fields",
+              "test_valid_readonly_terminal_contract",
+              "test_valid_terminal_result_has_identity"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "json",
+              "pathlib",
+              "sys",
+              "tools.mirror_sync.worker_result_reader",
+              "tools.mirror_sync.worker_result_status"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "read_contract_version",
+              "result_absent",
+              "result_empty",
+              "result_job_id_mismatch",
+              "result_sha",
+              "result_size_bytes",
+              "result_terminal_valid",
+              "terminal_result_valid"
+            ],
+            "path": "backend/tests/test_worker_result_reader_status_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_absent_result_is_explicit",
+              "test_empty_result_is_explicit",
+              "test_job_id_mismatch_fails_closed",
+              "test_status_is_derived_reference_not_terminal_copy",
+              "test_valid_terminal_result_is_canonical",
+              "valid_payload"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 6,
+          "scanned_files": 14,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-23T04:19:12Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
