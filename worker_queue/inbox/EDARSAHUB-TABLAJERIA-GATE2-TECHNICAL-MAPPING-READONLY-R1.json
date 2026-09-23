@@ -1,0 +1,281 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TABLAJERIA-GATE2-TECHNICAL-MAPPING-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2307ed3e9f65edea77d2a2cb5f1152ad6c9df2db",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "priority": "P0",
+  "objective": "Gate2 tecnico READ_ONLY de Tablajeria. Mapear arquitectura tecnica exacta antes de cualquier mutation: archivos, rutas, endpoints, servicios, entidades SQL canonicas, contratos de datos, riesgos, pruebas y plan quirurgico posterior. No construir. No publicar mutation. No tocar Produccion. No modificar backend ni frontend.",
+  "context": {
+    "source_chat": "Tablajería 3",
+    "gate": "Gate2 technical mapping READ_ONLY",
+    "previous_gate0_job_id": "EDARSAHUB-TABLAJERIA-GATE0-READONLY-ARQUITECTURA-CANONICA-V1-CORRECTED-R2-20260922T152300Z",
+    "previous_gate0_status": "CERTIFIED_READ_ONLY_PASS_100",
+    "previous_gate1_job_id": "EDARSAHUB-TABLAJERIA-GATE1-FUNCTIONAL-SCOPE-READONLY-R2",
+    "previous_gate1_status": "CERTIFIED_READ_ONLY_PASS_100",
+    "functional_domain": "Tablajeria convierte un insumo base comprado o existente en inventario en multiples derivados, cortes, subproductos, merma y desperdicio, con trazabilidad, afectacion de inventario y prorrateo de costos.",
+    "do_not_mix_worker_hardening": true,
+    "do_not_mix_crm": true,
+    "do_not_publish_mutation": true,
+    "do_not_touch_production": true
+  },
+  "forbidden_actions": [
+    "touch_production",
+    "ddl",
+    "dml",
+    "create_definitive_sql",
+    "create_tables",
+    "duplicate_catalogs",
+    "duplicate_product_catalog",
+    "duplicate_inventory_tables",
+    "duplicate_costing_tables",
+    "duplicate_rbac_tables",
+    "modify_backend",
+    "modify_frontend",
+    "publish_mutation",
+    "publish_gate3",
+    "mix_worker_hardening",
+    "mix_crm",
+    "assume_unaudited_data",
+    "break_inventarios_operaciones",
+    "break_costos",
+    "break_compras",
+    "break_contabilidad",
+    "break_scheduler",
+    "break_netpay",
+    "use_mongo_as_source_cache_fallback_or_lock",
+    "use_live_user_endpoints"
+  ],
+  "actions": [],
+  "technical_scope_to_map": [
+    "frontend pages and routes for Operaciones and Tablajeria",
+    "backend routers and endpoints related to Operaciones, Inventarios, Productos, Costos, Compras and RBAC",
+    "services and repositories that can be reused without duplication",
+    "SQL Server canonical entities for products, inventory, movements, costs, purchases, suppliers, companies, business units, warehouses, users, roles and audit",
+    "identity contract EmpresaID, UnidadNegocioID, ServerID",
+    "data contract for plantilla, orden, ejecucion, insumo base, derivados, merma, subproductos and prorrateo",
+    "mutation candidates for a later surgical gate",
+    "test plan for backend, frontend, SQL read-only safety and regression",
+    "risk matrix before any write"
+  ],
+  "questions_to_answer": [
+    "What exact frontend files currently implement or reference Tablajeria",
+    "What exact frontend files currently implement Operaciones menu integration",
+    "What exact backend routers or services are candidates to reuse",
+    "What exact SQL canonical entities must be reused",
+    "What missing data contract prevents mutation",
+    "What files are candidates for surgical mutation in a later gate",
+    "What files must not be touched",
+    "What endpoints must be created or reused later",
+    "What tests are required before any mutation",
+    "What risks block Gate3 if any",
+    "Whether Gate3 mutation can be authorized after this mapping"
+  ],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "frontend/src",
+          "docs",
+          "tools/mirror_sync"
+        ],
+        "search_terms": [
+          "Tablajeria",
+          "Tablajería",
+          "tablajeria",
+          "tablaje",
+          "lotes-proveedor",
+          "LotesProveedor",
+          "Operaciones",
+          "Inventarios",
+          "inventarios",
+          "inventario",
+          "Movimiento",
+          "movimiento",
+          "Kardex",
+          "Almacen",
+          "Almacén",
+          "Producto",
+          "Insumo",
+          "plantilla",
+          "Plantilla",
+          "orden",
+          "Orden",
+          "ejecucion",
+          "ejecución",
+          "merma",
+          "subproducto",
+          "rendimiento",
+          "prorrateo",
+          "costos",
+          "margenes",
+          "márgenes",
+          "compras",
+          "proveedor",
+          "explosion reversiva",
+          "explosión reversiva",
+          "RBAC",
+          "permiso",
+          "auditoria",
+          "auditoría",
+          "trazabilidad",
+          "EmpresaID",
+          "UnidadNegocioID",
+          "ServerID",
+          "fechaOperacion",
+          "FechaOperacion"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.json",
+          "*.md",
+          "*.yml",
+          "*.yaml"
+        ],
+        "exclude_patterns": [
+          "**/__pycache__/**",
+          "**/node_modules/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/.venv/**",
+          "**/venv/**"
+        ],
+        "max_results": 3500
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "gate2_tablajeria_objects",
+          "sql": "SELECT TOP (500) SCHEMA_NAME(o.schema_id) AS schema_name, o.name AS object_name, o.type_desc, o.create_date, o.modify_date FROM sys.objects o WHERE LOWER(o.name) LIKE '%tablaj%' OR LOWER(o.name) LIKE '%tablaje%' OR LOWER(o.name) LIKE '%lote%' OR LOWER(o.name) LIKE '%plantilla%' OR LOWER(o.name) LIKE '%rendimiento%' OR LOWER(o.name) LIKE '%merma%' OR LOWER(o.name) LIKE '%subproducto%' ORDER BY schema_name, object_name"
+        },
+        {
+          "name": "gate2_canonical_inventory_product_cost_purchase_objects",
+          "sql": "SELECT TOP (800) SCHEMA_NAME(o.schema_id) AS schema_name, o.name AS object_name, o.type_desc FROM sys.objects o WHERE LOWER(o.name) LIKE '%empresa%' OR LOWER(o.name) LIKE '%unidad%' OR LOWER(o.name) LIKE '%sucursal%' OR LOWER(o.name) LIKE '%almacen%' OR LOWER(o.name) LIKE '%almacén%' OR LOWER(o.name) LIKE '%producto%' OR LOWER(o.name) LIKE '%insumo%' OR LOWER(o.name) LIKE '%inventario%' OR LOWER(o.name) LIKE '%movimiento%' OR LOWER(o.name) LIKE '%kardex%' OR LOWER(o.name) LIKE '%costo%' OR LOWER(o.name) LIKE '%margen%' OR LOWER(o.name) LIKE '%compra%' OR LOWER(o.name) LIKE '%proveedor%' OR LOWER(o.name) LIKE '%receta%' OR LOWER(o.name) LIKE '%contab%' OR LOWER(o.name) LIKE '%auditoria%' OR LOWER(o.name) LIKE '%workflow%' ORDER BY schema_name, object_name"
+        },
+        {
+          "name": "gate2_canonical_identity_columns",
+          "sql": "SELECT TOP (800) SCHEMA_NAME(o.schema_id) AS schema_name, o.name AS object_name, c.name AS column_name, t.name AS data_type, c.max_length, c.precision, c.scale, c.is_nullable FROM sys.columns c INNER JOIN sys.objects o ON c.object_id = o.object_id INNER JOIN sys.types t ON c.user_type_id = t.user_type_id WHERE LOWER(c.name) IN ('empresaid','unidadnegocioid','serverid','sucursalid','almacenid','productoid','insumoid','proveedorid','usuarioid') OR LOWER(c.name) LIKE '%fechaoperacion%' OR LOWER(c.name) LIKE '%lote%' OR LOWER(c.name) LIKE '%cantidad%' OR LOWER(c.name) LIKE '%peso%' OR LOWER(c.name) LIKE '%costo%' OR LOWER(c.name) LIKE '%merma%' OR LOWER(c.name) LIKE '%rendimiento%' ORDER BY schema_name, object_name, c.column_id"
+        },
+        {
+          "name": "gate2_foreign_keys_for_reuse",
+          "sql": "SELECT TOP (500) fk.name AS fk_name, SCHEMA_NAME(parent_o.schema_id) AS parent_schema, parent_o.name AS parent_object, SCHEMA_NAME(ref_o.schema_id) AS referenced_schema, ref_o.name AS referenced_object FROM sys.foreign_keys fk INNER JOIN sys.objects parent_o ON fk.parent_object_id = parent_o.object_id INNER JOIN sys.objects ref_o ON fk.referenced_object_id = ref_o.object_id WHERE LOWER(parent_o.name) LIKE '%tablaj%' OR LOWER(parent_o.name) LIKE '%inventario%' OR LOWER(parent_o.name) LIKE '%movimiento%' OR LOWER(parent_o.name) LIKE '%producto%' OR LOWER(parent_o.name) LIKE '%costo%' OR LOWER(parent_o.name) LIKE '%compra%' OR LOWER(ref_o.name) LIKE '%producto%' OR LOWER(ref_o.name) LIKE '%inventario%' OR LOWER(ref_o.name) LIKE '%almacen%' OR LOWER(ref_o.name) LIKE '%empresa%' OR LOWER(ref_o.name) LIKE '%unidad%' OR LOWER(ref_o.name) LIKE '%usuario%' ORDER BY parent_schema, parent_object, fk_name"
+        },
+        {
+          "name": "gate2_indexes_for_reuse_and_traceability",
+          "sql": "SELECT TOP (500) SCHEMA_NAME(o.schema_id) AS schema_name, o.name AS object_name, i.name AS index_name, i.type_desc, i.is_unique, i.is_primary_key FROM sys.indexes i INNER JOIN sys.objects o ON i.object_id = o.object_id WHERE i.name IS NOT NULL AND (LOWER(o.name) LIKE '%tablaj%' OR LOWER(o.name) LIKE '%inventario%' OR LOWER(o.name) LIKE '%movimiento%' OR LOWER(o.name) LIKE '%producto%' OR LOWER(o.name) LIKE '%costo%' OR LOWER(o.name) LIKE '%compra%' OR LOWER(o.name) LIKE '%lote%') ORDER BY schema_name, object_name, index_name"
+        },
+        {
+          "name": "gate2_sql_modules_references",
+          "sql": "SELECT TOP (500) SCHEMA_NAME(o.schema_id) AS schema_name, o.name AS object_name, o.type_desc FROM sys.objects o LEFT JOIN sys.sql_modules m ON o.object_id = m.object_id WHERE LOWER(o.name) LIKE '%tablaj%' OR LOWER(o.name) LIKE '%operacion%' OR LOWER(o.name) LIKE '%inventario%' OR LOWER(o.name) LIKE '%producto%' OR LOWER(o.name) LIKE '%costo%' OR LOWER(o.name) LIKE '%compra%' OR LOWER(m.definition) LIKE '%tablaj%' OR LOWER(m.definition) LIKE '%operaciones%' OR LOWER(m.definition) LIKE '%inventario%' OR LOWER(m.definition) LIKE '%fechaoperacion%' OR LOWER(m.definition) LIKE '%empresaid%' OR LOWER(m.definition) LIKE '%unidadnegocioid%' ORDER BY schema_name, object_name"
+        },
+        {
+          "name": "gate2_rbac_permissions_and_menu",
+          "sql": "SELECT TOP (500) SCHEMA_NAME(o.schema_id) AS schema_name, o.name AS object_name, o.type_desc FROM sys.objects o WHERE LOWER(o.name) LIKE '%permiso%' OR LOWER(o.name) LIKE '%rol%' OR LOWER(o.name) LIKE '%rbac%' OR LOWER(o.name) LIKE '%modulo%' OR LOWER(o.name) LIKE '%menu%' OR LOWER(o.name) LIKE '%usuario%' OR LOWER(o.name) LIKE '%autoriz%' ORDER BY schema_name, object_name"
+        },
+        {
+          "name": "gate2_table_row_estimates",
+          "sql": "SELECT TOP (500) SCHEMA_NAME(o.schema_id) AS schema_name, o.name AS table_name, SUM(p.rows) AS estimated_rows FROM sys.objects o INNER JOIN sys.partitions p ON o.object_id = p.object_id WHERE o.type = 'U' AND p.index_id IN (0,1) AND (LOWER(o.name) LIKE '%tablaj%' OR LOWER(o.name) LIKE '%producto%' OR LOWER(o.name) LIKE '%inventario%' OR LOWER(o.name) LIKE '%movimiento%' OR LOWER(o.name) LIKE '%costo%' OR LOWER(o.name) LIKE '%compra%' OR LOWER(o.name) LIKE '%proveedor%' OR LOWER(o.name) LIKE '%usuario%' OR LOWER(o.name) LIKE '%modulo%' OR LOWER(o.name) LIKE '%permiso%') GROUP BY SCHEMA_NAME(o.schema_id), o.name ORDER BY schema_name, table_name"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "required_output": [
+    "job_id",
+    "status",
+    "quality_gate",
+    "certification",
+    "percent_complete",
+    "production_touched",
+    "mutations_executed",
+    "ddl_executed",
+    "dml_executed",
+    "backend_touched",
+    "frontend_touched",
+    "files_changed",
+    "gate3_allowed",
+    "blockers",
+    "technical_map_v1",
+    "frontend_pages_existing",
+    "frontend_routes_existing",
+    "frontend_menu_integration",
+    "backend_routes_existing",
+    "backend_services_existing",
+    "backend_repositories_existing",
+    "sql_canonical_entities_to_reuse",
+    "sql_entities_missing_or_unclear",
+    "identity_contract",
+    "data_contract_v1",
+    "api_contract_candidates",
+    "inventory_contract",
+    "costing_contract",
+    "purchasing_reverse_explosion_contract",
+    "audit_contract",
+    "rbac_contract",
+    "forbidden_duplications",
+    "files_to_touch_next_gate",
+    "files_not_to_touch",
+    "tests_required",
+    "risk_matrix_before_mutation",
+    "mutation_plan_next_gate"
+  ],
+  "success_criteria": [
+    "Mapa tecnico V1 claro y auditable",
+    "Archivos candidatos exactos identificados",
+    "Entidades canonicas SQL identificadas para reutilizacion",
+    "Sin duplicacion de catalogos o tablas",
+    "Sin tocar Produccion",
+    "Sin cambios tracked",
+    "Gate3 permitido solo si no hay blockers"
+  ],
+  "blocking_criteria": [
+    "Falta de evidencia tecnica suficiente",
+    "Contradiccion con Gate0 o Gate1",
+    "Necesidad de SQL no auditado",
+    "Riesgo de duplicar catalogos o tablas canonicas",
+    "Riesgo de romper Operaciones o Inventarios",
+    "Riesgo de romper Costos",
+    "Riesgo de romper Compras",
+    "Riesgo de romper Contabilidad",
+    "Riesgo de romper Scheduler",
+    "Riesgo de romper NetPay"
+  ],
+  "expected_terminal_success": {
+    "status": "CERTIFIED_READ_ONLY",
+    "quality_gate": "PASS",
+    "certification": "CERTIFIED_READ_ONLY",
+    "percent_complete": 100,
+    "production_touched": false,
+    "mutations_executed": false,
+    "ddl_executed": false,
+    "dml_executed": false,
+    "backend_touched": false,
+    "frontend_touched": false,
+    "files_changed": [],
+    "gate3_allowed": true,
+    "blockers": []
+  },
+  "expected_terminal_blocked": {
+    "status": "BLOCKED",
+    "quality_gate": "FAIL",
+    "production_touched": false,
+    "mutations_executed": false,
+    "gate3_allowed": false
+  },
+  "created_at_utc": "2026-09-23T12:57:00Z"
+}
