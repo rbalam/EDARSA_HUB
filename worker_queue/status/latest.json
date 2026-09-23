@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "REMOTE_AHEAD_ONLY",
   "development_sha": "f583bd095bfd0925b7aebb062b90b8b036ed0c78",
-  "generated_at_utc": "2026-09-23T19:33:40Z",
+  "generated_at_utc": "2026-09-23T19:34:56Z",
   "history": {
     "done_total_local": 912,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 182,
+      "age_seconds": 258,
       "job_id": "000-EDARSAHUB-SERVIDORES-LISTADO-DIAG-R13A-20260923",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,8 +36,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T19:33:35Z",
-    "last_receive_utc": "2026-09-23T19:33:39Z",
+    "last_cycle_utc": "2026-09-23T19:34:49Z",
+    "last_receive_utc": "2026-09-23T19:34:51Z",
     "last_terminal_utc": "2026-09-23T19:30:38Z",
     "pid": "280791",
     "runtime_fingerprint": {
