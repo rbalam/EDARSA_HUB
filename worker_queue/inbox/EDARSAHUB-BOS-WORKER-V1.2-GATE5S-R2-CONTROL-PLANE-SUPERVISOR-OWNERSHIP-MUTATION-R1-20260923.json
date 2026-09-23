@@ -1,0 +1,155 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "expected_sha256": "2a5a936e0476b23a375b57ec2a4132524f7db3add63b5bd995d3e6b4ed73ff6b",
+      "new": "UNIVERSAL_WORKER=\"$DIR/universal_job_worker.sh\"\n",
+      "old": "UNIVERSAL_WORKER=\"$DIR/universal_job_worker.sh\"\nCONTROL_PLANE=\"$DIR/worker_control_plane.py\"\n",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "",
+      "old": "CONTROL_PID=\"\"\n",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "",
+      "old": "start_control_plane(){\n    [ -r \"$CONTROL_PLANE\" ] || { log \"CONTROL_PLANE_AVAILABLE=NO\"; return 1; }\n    \"$PYTHON_BIN\" \"$CONTROL_PLANE\" & CONTROL_PID=$!\n    mkdir -p \"$UNIVERSAL_STATE\"; printf '%s\\n' \"$CONTROL_PID\" > \"$UNIVERSAL_STATE/control_plane_pid\"\n    log \"CONTROL_PLANE_STARTED=YES\"; log \"CONTROL_PLANE_PID=$CONTROL_PID\"\n}\n\n",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "",
+      "old": "stop_control_plane(){ stop_child \"$CONTROL_PID\"; CONTROL_PID=\"\"; }\n",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "",
+      "old": "ensure_control_plane(){ if [ -z \"${CONTROL_PID:-}\" ] || ! kill -0 \"$CONTROL_PID\" 2>/dev/null; then [ -z \"${CONTROL_PID:-}\" ] || wait \"$CONTROL_PID\" 2>/dev/null || true; log \"CONTROL_PLANE_NOT_RUNNING=YES\"; start_control_plane || true; fi; }\n",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "start_universal_worker || true\nwhile [ \"$RUNNING\" -eq 1 ]; do ensure_universal_worker; run_cycle; maybe_reload_preview_backend; ensure_universal_worker; run_reporting_pipeline; [ \"$RUNNING\" -ne 0 ] || break; sleep \"$LOOP_SECONDS\" & wait $! || true; done\nstop_universal_worker; log \"MIRROR_WORKER_STOPPED=YES\"; exit 0\n",
+      "old": "start_control_plane || true\nstart_universal_worker || true\nwhile [ \"$RUNNING\" -eq 1 ]; do ensure_control_plane; ensure_universal_worker; run_cycle; maybe_reload_preview_backend; ensure_control_plane; ensure_universal_worker; run_reporting_pipeline; [ \"$RUNNING\" -ne 0 ] || break; sleep \"$LOOP_SECONDS\" & wait $! || true; done\nstop_universal_worker; stop_control_plane; log \"MIRROR_WORKER_STOPPED=YES\"; exit 0\n",
+      "path": "tools/mirror_sync/mirror_sync_worker.sh",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "expected_sha256": "df1b885e9a0ce27f29f1f44ee48f4713fb37d14d6eba6a5fcd4c4eae7ceb8e0d",
+      "new": "SERVICE=\"edarsahub-bootstrap-watchdog\"\nMIRROR_SERVICE=\"edarsahub-mirror-sync\"\nWORKER_SERVICE=\"edarsahub-universal-worker\"\nCONTROL_PLANE_SERVICE=\"edarsahub-worker-control-plane\"\n",
+      "old": "SERVICE=\"edarsahub-bootstrap-watchdog\"\nMIRROR_SERVICE=\"edarsahub-mirror-sync\"\nWORKER_SERVICE=\"edarsahub-universal-worker\"\n",
+      "path": "tools/bootstrap/install_bootstrap_watchdog.sh",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "install -m 0644 \"$APP/tools/bootstrap/edarsahub-bootstrap-watchdog.conf\" \"$SUPERVISOR_DIR/edarsahub-bootstrap-watchdog.conf\"\ninstall -m 0644 \"$APP/tools/mirror_sync/supervisor/edarsahub-mirror-sync.conf\" \"$SUPERVISOR_DIR/edarsahub-mirror-sync.conf\"\ninstall -m 0644 \"$APP/tools/mirror_sync/edarsahub-universal-worker.conf\" \"$SUPERVISOR_DIR/edarsahub-universal-worker.conf\"\ninstall -m 0644 \"$APP/tools/mirror_sync/edarsahub-worker-control-plane.conf\" \"$SUPERVISOR_DIR/edarsahub-worker-control-plane.conf\"\n",
+      "old": "install -m 0644 \"$APP/tools/bootstrap/edarsahub-bootstrap-watchdog.conf\" \"$SUPERVISOR_DIR/edarsahub-bootstrap-watchdog.conf\"\ninstall -m 0644 \"$APP/tools/mirror_sync/supervisor/edarsahub-mirror-sync.conf\" \"$SUPERVISOR_DIR/edarsahub-mirror-sync.conf\"\ninstall -m 0644 \"$APP/tools/mirror_sync/edarsahub-universal-worker.conf\" \"$SUPERVISOR_DIR/edarsahub-universal-worker.conf\"\n",
+      "path": "tools/bootstrap/install_bootstrap_watchdog.sh",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "supervisorctl stop \"$MIRROR_SERVICE\" >/dev/null 2>&1 || true\nsupervisorctl restart \"$SERVICE\" || supervisorctl start \"$SERVICE\"\nsupervisorctl restart \"$WORKER_SERVICE\" || supervisorctl start \"$WORKER_SERVICE\"\nsupervisorctl restart \"$CONTROL_PLANE_SERVICE\" || supervisorctl start \"$CONTROL_PLANE_SERVICE\"\nsleep 3\nsupervisorctl status \"$SERVICE\"\nsupervisorctl status \"$WORKER_SERVICE\"\nsupervisorctl status \"$CONTROL_PLANE_SERVICE\"\nsupervisorctl status \"$MIRROR_SERVICE\" || true\n",
+      "old": "supervisorctl stop \"$MIRROR_SERVICE\" >/dev/null 2>&1 || true\nsupervisorctl restart \"$SERVICE\" || supervisorctl start \"$SERVICE\"\nsupervisorctl restart \"$WORKER_SERVICE\" || supervisorctl start \"$WORKER_SERVICE\"\nsleep 3\nsupervisorctl status \"$SERVICE\"\nsupervisorctl status \"$WORKER_SERVICE\"\nsupervisorctl status \"$MIRROR_SERVICE\" || true\n",
+      "path": "tools/bootstrap/install_bootstrap_watchdog.sh",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "expected_sha256": "350b8a7cc21977edccdf3d9ea5229fff43f04f3ffdc0499ac6a30930d660e59a",
+      "new": "def test_control_plane_is_independent_and_supervised():\n    control = CONTROL.read_text(encoding=\"utf-8\")\n    mirror = MIRROR.read_text(encoding=\"utf-8\")\n\n    assert \"edarsahub.worker-control-plane.v1\" in control\n\n    # Supervisor owns the control-plane lifecycle independently.\n    assert \"start_control_plane\" not in mirror\n    assert \"ensure_control_plane\" not in mirror\n    assert \"stop_control_plane\" not in mirror\n    assert \"CONTROL_PLANE_STARTED=YES\" not in mirror\n",
+      "old": "def test_control_plane_is_independent_and_supervised():\n    control = CONTROL.read_text(encoding=\"utf-8\")\n    mirror = MIRROR.read_text(encoding=\"utf-8\")\n    assert \"worker_control_plane.py\" in mirror\n    assert \"start_control_plane\" in mirror\n    assert \"ensure_control_plane\" in mirror\n    assert \"CONTROL_PLANE_STARTED=YES\" in mirror\n    assert \"edarsahub.worker-control-plane.v1\" in control\n",
+      "path": "backend/tests/test_worker_control_plane_contract.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "expected_sha256": "595b093b44a6c8ee7301ca9c6e641564331159f55ebe5f2a3c470d910e2487ce",
+      "new": "    # Universal Worker is externally owned by Supervisor.\n    assert 'UNIVERSAL_WORKER=\"$DIR/universal_job_worker.sh\"' in mirror_text\n    assert \"UNIVERSAL_JOB_WORKER_OWNERSHIP=EXTERNAL\" in mirror_text\n    assert \"UNIVERSAL_JOB_WORKER_START_BY_MIRROR=FORBIDDEN\" in mirror_text\n",
+      "old": "    # Mirror worker delegates the universal queue to the dedicated child.\n    assert 'UNIVERSAL_WORKER=\"$DIR/universal_job_worker.sh\"' in mirror_text\n    assert '/bin/bash \"$UNIVERSAL_WORKER\"' in mirror_text\n",
+      "path": "backend/tests/test_worker_canonical_python_runtime_contract.py",
+      "type": "replace_text"
+    },
+    {
+      "content": "[program:edarsahub-worker-control-plane]\ncommand=/root/.venv/bin/python /app/tools/mirror_sync/worker_control_plane.py\ndirectory=/app\nautostart=true\nautorestart=true\nstartsecs=3\nstartretries=20\nstopsignal=TERM\nstopwaitsecs=20\nredirect_stderr=true\nstdout_logfile=/var/log/supervisor/edarsahub-worker-control-plane.out.log\nstdout_logfile_maxbytes=20MB\nstdout_logfile_backups=3\nenvironment=EDARSAHUB_CONTROL_PLANE_INTERVAL=\"15\"\n",
+      "path": "tools/mirror_sync/edarsahub-worker-control-plane.conf",
+      "type": "write_file"
+    },
+    {
+      "content": "from pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[2]\n\nCONTROL = ROOT / \"tools/mirror_sync/worker_control_plane.py\"\nCONTROL_CONF = ROOT / \"tools/mirror_sync/edarsahub-worker-control-plane.conf\"\nMIRROR = ROOT / \"tools/mirror_sync/mirror_sync_worker.sh\"\nINSTALLER = ROOT / \"tools/bootstrap/install_bootstrap_watchdog.sh\"\n\n\ndef test_control_plane_has_dedicated_supervisor_owner():\n    conf = CONTROL_CONF.read_text(encoding=\"utf-8\")\n\n    assert \"[program:edarsahub-worker-control-plane]\" in conf\n    assert (\n        \"command=/root/.venv/bin/python \"\n        \"/app/tools/mirror_sync/worker_control_plane.py\"\n    ) in conf\n    assert \"autostart=true\" in conf\n    assert \"autorestart=true\" in conf\n    assert 'EDARSAHUB_CONTROL_PLANE_INTERVAL=\"15\"' in conf\n\n\ndef test_mirror_no_longer_owns_control_plane_lifecycle():\n    mirror = MIRROR.read_text(encoding=\"utf-8\")\n\n    forbidden = (\n        'CONTROL_PLANE=\"$DIR/worker_control_plane.py\"',\n        'CONTROL_PID=\"\"',\n        \"start_control_plane(){\",\n        \"ensure_control_plane(){\",\n        \"stop_control_plane(){\",\n        \"CONTROL_PLANE_STARTED=YES\",\n    )\n\n    for token in forbidden:\n        assert token not in mirror\n\n\ndef test_bootstrap_installs_and_owns_control_plane_service():\n    installer = INSTALLER.read_text(encoding=\"utf-8\")\n\n    assert (\n        'CONTROL_PLANE_SERVICE=\"edarsahub-worker-control-plane\"'\n        in installer\n    )\n    assert (\n        'edarsahub-worker-control-plane.conf'\n        in installer\n    )\n    assert (\n        'supervisorctl restart \"$CONTROL_PLANE_SERVICE\" '\n        '|| supervisorctl start \"$CONTROL_PLANE_SERVICE\"'\n        in installer\n    )\n    assert 'supervisorctl status \"$CONTROL_PLANE_SERVICE\"' in installer\n\n\ndef test_mirror_fail_closed_contract_is_preserved():\n    mirror = MIRROR.read_text(encoding=\"utf-8\")\n\n    assert 'PERSISTENT_STOP=\"$STATE_DIR/STOP\"' in mirror\n    assert 'ENABLE_FLAG=\"$STATE_DIR/ENABLED\"' in mirror\n    assert \"is_authorized()\" in mirror\n\n    # Mirror may observe Universal Worker ownership but never start it.\n    assert \"UNIVERSAL_JOB_WORKER_OWNERSHIP=EXTERNAL\" in mirror\n    assert \"UNIVERSAL_JOB_WORKER_START_BY_MIRROR=FORBIDDEN\" in mirror\n\n\ndef test_control_plane_remains_production_fail_closed():\n    control = CONTROL.read_text(encoding=\"utf-8\")\n\n    assert '\"production_touched\": False' in control\n    assert \"Edarsahub_Produccion\" not in control\n",
+      "path": "backend/tests/test_worker_control_plane_supervisor_ownership_contract.py",
+      "type": "write_file"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_control_plane.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_canonical_python_runtime_contract.py",
+        "backend/tests/test_worker_control_plane_supervisor_ownership_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_canonical_python_runtime_contract.py",
+        "backend/tests/test_universal_worker_external_owner_contract.py",
+        "backend/tests/test_shared_app_sync_safety_contract.py",
+        "backend/tests/test_bootstrap_watchdog_safety_contract.py",
+        "backend/tests/test_worker_control_plane_supervisor_ownership_contract.py",
+        "backend/tests/test_worker_control_plane_maintenance_integration_contract.py",
+        "backend/tests/test_worker_automatic_repair_orchestration_contract.py",
+        "backend/tests/test_worker_automatic_repair_activation_boundary_contract.py",
+        "backend/tests/test_worker_repair_execution_bridge_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "request": {
+        "max_results": 500,
+        "paths": [
+          "tools/mirror_sync/mirror_sync_worker.sh",
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/mirror_sync/edarsahub-worker-control-plane.conf",
+          "tools/bootstrap/install_bootstrap_watchdog.sh",
+          "backend/tests"
+        ],
+        "search_terms": [
+          "start_control_plane",
+          "ensure_control_plane",
+          "stop_control_plane",
+          "CONTROL_PLANE_STARTED",
+          "edarsahub-worker-control-plane",
+          "worker_control_plane.py",
+          "UNIVERSAL_JOB_WORKER_START_BY_MIRROR=FORBIDDEN",
+          "Edarsahub_Produccion"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5S-R2-CONTROL-PLANE-SUPERVISOR-OWNERSHIP-MUTATION-R1-20260923",
+  "mode": "MUTATION",
+  "objective": "Separar el lifecycle de worker_control_plane.py de mirror_sync_worker.sh y convertir Supervisor en su unico propietario operativo, preservando Universal Worker externo, mirror fail-closed, NO Production, sin segunda cola, dispatcher, scheduler ni control plane.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
