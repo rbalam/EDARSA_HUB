@@ -4,11 +4,11 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "2307ed3e9f65edea77d2a2cb5f1152ad6c9df2db",
-  "generated_at_utc": "2026-09-23T16:44:10Z",
+  "generated_at_utc": "2026-09-23T16:45:31Z",
   "history": {
     "done_total_local": 907,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 770,
     "results_total_local": 1497
   },
@@ -16,34 +16,40 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3180,
+      "age_seconds": 3260,
       "job_id": "EDARSAHUB-COMERCIAL-V2-AUTO-SYNC-CURRENT-STATUS-R2-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2215,
+      "age_seconds": 2296,
       "job_id": "EDARSAHUB-ORIGEN-API-LOCAL-AUTO-SYNC-DIAG-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1,
+      "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5R-R2-MAINTENANCE-EXECUTION-BRIDGE-MUTATION-R1-20260923",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "local_development_sha": "2307ed3e9f65edea77d2a2cb5f1152ad6c9df2db",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 2,
-  "queue_running": 0,
+  "queue_running": 1,
   "remote_development_sha": "2307ed3e9f65edea77d2a2cb5f1152ad6c9df2db",
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5R-R2-MAINTENANCE-EXECUTION-BRIDGE-MUTATION-R1-20260923",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T16:44:06Z",
-    "last_receive_utc": "2026-09-23T16:44:09Z",
+    "last_cycle_utc": "2026-09-23T16:45:28Z",
+    "last_receive_utc": "2026-09-23T16:45:30Z",
     "last_terminal_utc": "2026-09-23T16:07:14Z",
     "pid": "443",
     "runtime_fingerprint": {
