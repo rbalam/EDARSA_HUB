@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ORIGEN-API-LOCAL-RECOVERY-CHECK-R2-CARLOS-20260923",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2307ed3e9f65edea77d2a2cb5f1152ad6c9df2db",
+  "production_allowed": false,
+  "objective": "Verificar si la API_LOCAL de ORIGEN ya se recupero y si el auto-sync de ventas del dia vuelve a registrar SUCCESS/ONLINE. Solo lectura; no modificar nada.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "origen_recent_comercial_sync_logs",
+          "sql": "\nSELECT TOP 20\n  l.run_id,\n  l.run_type,\n  u.codigo AS unidad_codigo,\n  l.fecha_inicio,\n  l.fecha_fin,\n  l.status,\n  l.source_connection_status,\n  l.records_processed,\n  l.records_inserted,\n  l.records_updated,\n  l.records_skipped,\n  l.records_errored,\n  l.error_code,\n  l.error_message,\n  l.created_at\nFROM dbo.Comercial_SyncLog_v2 l\nJOIN dbo.Unidades_Negocio u\n  ON CONVERT(varchar(36),u.id)=CONVERT(varchar(36),l.unidad_negocio_id)\nWHERE u.codigo='ORIGEN'\nORDER BY l.created_at DESC"
+        },
+        {
+          "name": "origen_api_local_registry_status",
+          "sql": "\nSELECT TOP 1\n  u.codigo,\n  u.nombre,\n  UPPER(COALESCE(NULLIF(u.system_type,''),NULLIF(s.system_type,''),'UNKNOWN')) AS system_type,\n  s.nombre AS servidor_nombre,\n  s.tipo_conexion,\n  s.api_url,\n  s.activo,\n  s.source_status,\n  s.ultimo_error_sync,\n  s.fecha_ultima_sincronizacion\nFROM dbo.Unidades_Negocio u\nLEFT JOIN dbo.Sistema_VW_Servidores_Conexiones_Publico s\n  ON CONVERT(varchar(36),s.id)=CONVERT(varchar(36),u.server_id)\nWHERE u.codigo='ORIGEN'"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260922 Corregir Reportes de ISCAM"
+  },
+  "constraints": [
+    "Solo lectura",
+    "No modificar API_LOCAL",
+    "No modificar EDARSAHUB",
+    "No Production"
+  ]
+}
