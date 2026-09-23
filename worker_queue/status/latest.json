@@ -1,10 +1,10 @@
 {
   "ahead_count": 0,
-  "behind_count": 1,
+  "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "REMOTE_AHEAD_ONLY",
+  "convergence_status": "SYNC",
   "development_sha": "b2a567353f16d02f1ba33afa67e0c31e249d6921",
-  "generated_at_utc": "2026-09-23T21:41:17Z",
+  "generated_at_utc": "2026-09-23T21:42:36Z",
   "history": {
     "done_total_local": 913,
     "pending_total_local": 0,
@@ -16,13 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 53,
+      "age_seconds": 131,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5R-R5-RESTORE-SYNTHETIC-CANARY-MUTATION-R1-20260923",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "f583bd095bfd0925b7aebb062b90b8b036ed0c78",
+  "local_development_sha": "b2a567353f16d02f1ba33afa67e0c31e249d6921",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -36,15 +36,15 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T21:41:16Z",
-    "last_receive_utc": "2026-09-23T21:41:11Z",
+    "last_cycle_utc": "2026-09-23T21:42:30Z",
+    "last_receive_utc": "2026-09-23T21:42:34Z",
     "last_terminal_utc": "2026-09-23T21:40:24Z",
     "pid": "402",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "d2a61a9bfa0e6f80196d2944a6a830599c5293f8",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "f583bd095bfd0925b7aebb062b90b8b036ed0c78",
+      "development_sha": "b2a567353f16d02f1ba33afa67e0c31e249d6921",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
@@ -58,8 +58,8 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": true,
-      "worker_code_tree_sha": "d2a61a9bfa0e6f80196d2944a6a830599c5293f8"
+      "worker_code_tree_aligned": false,
+      "worker_code_tree_sha": "f08304883585370a4b7a8b6e814f9fb7da7cfbb3"
     }
   },
   "schema": "edarsahub.worker-health.v3",
