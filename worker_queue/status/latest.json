@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "3caf19135a4d532f1283035ef5f552fa952ae128",
-  "generated_at_utc": "2026-09-23T01:06:03Z",
+  "generated_at_utc": "2026-09-23T01:07:14Z",
   "history": {
     "done_total_local": 869,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1209,
+      "age_seconds": 1281,
       "job_id": "EDARSAHUB-ISCAM-130QRO-0808-POST-CONVERGENCE-BACKFILL-R18-CARLOS-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 701,
+      "age_seconds": 773,
       "job_id": "EDARSAHUB-ISCAM-130QRO-0808-POST-CONVERGENCE-BACKFILL-R18-RETRY1-CARLOS-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 456,
+      "age_seconds": 528,
       "job_id": "EDARSAHUB-WORKER-V12-STALE-SLOT-AUTO-RECOVERY-FIX-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T01:06:00Z",
-    "last_receive_utc": "2026-09-23T01:06:02Z",
+    "last_cycle_utc": "2026-09-23T01:07:14Z",
+    "last_receive_utc": "2026-09-23T01:07:09Z",
     "last_terminal_utc": "2026-09-23T00:58:26Z",
     "pid": "51558",
     "runtime_fingerprint": {
