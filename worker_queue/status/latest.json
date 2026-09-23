@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "de3ca01b35ad59a69ba76414e485120c99c3f163",
-  "generated_at_utc": "2026-09-23T23:06:26Z",
+  "generated_at_utc": "2026-09-23T23:07:39Z",
   "history": {
     "done_total_local": 917,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2965,
+      "age_seconds": 3038,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5S-R2-CONTROL-PLANE-SUPERVISOR-OWNERSHIP-MUTATION-R1-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2913,
+      "age_seconds": 2986,
       "job_id": "EDARSAHUB-TABLAJERIA-GATE2-TECHNICAL-MAPPING-STRUCTURED-READONLY-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 299,
+      "age_seconds": 372,
       "job_id": "EDARSAHUB-WORKER-RESULT-PUBLISHER-DIRECT-IMPORT-FIX-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T23:06:20Z",
-    "last_receive_utc": "2026-09-23T23:06:21Z",
+    "last_cycle_utc": "2026-09-23T23:07:34Z",
+    "last_receive_utc": "2026-09-23T23:07:37Z",
     "last_terminal_utc": "2026-09-23T23:01:26Z",
     "pid": "35745",
     "runtime_fingerprint": {
