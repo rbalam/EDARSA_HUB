@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "cc2fb037710d1713c79baaf0eb0bcba3cd67a0cf",
-  "generated_at_utc": "2026-09-23T02:11:05Z",
+  "generated_at_utc": "2026-09-23T03:06:50Z",
   "history": {
     "done_total_local": 877,
     "pending_total_local": 0,
@@ -14,68 +14,7 @@
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [
-    {
-      "age_seconds": 2661,
-      "job_id": "EDARSAHUB-COMERCIAL-RANGE-RESYNC-DUAL-ENGINE-FIX-R1-CARLOS-20260923",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2032,
-      "job_id": "EDARSAHUB-COMERCIAL-V2-AUTO-SYNC-FRESHNESS-GATE-R1-CARLOS-20260923",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2891,
-      "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-130MID-20260910-DRYRUN-R1-CARLOS-20260923",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2884,
-      "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-130QRO-20260921-DRYRUN-R1-CARLOS-20260923",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2364,
-      "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-130QRO-20260921-DRYRUN-R2-CARLOS-20260923",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2871,
-      "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-CIENFUEGOS-20260921-DRYRUN-R1-CARLOS-20260923",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2864,
-      "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-ESTELAR-20260921-DRYRUN-R1-CARLOS-20260923",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2861,
-      "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-ORIGEN-20260921-DRYRUN-R1-CARLOS-20260923",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2359,
-      "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-ORIGEN-20260921-DRYRUN-R2-CARLOS-20260923",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3305,
-      "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-UNIT-MATRIX-DISCOVERY-R1-CARLOS-20260923",
-      "reason": null,
-      "state": "RESULT_READY"
-    }
-  ],
+  "jobs": [],
   "local_development_sha": "cc2fb037710d1713c79baaf0eb0bcba3cd67a0cf",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
@@ -84,16 +23,16 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 10,
+  "queue_result_ready_recent": 0,
   "queue_running": 0,
   "remote_development_sha": "cc2fb037710d1713c79baaf0eb0bcba3cd67a0cf",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T02:11:03Z",
-    "last_receive_utc": "2026-09-23T02:11:04Z",
+    "last_cycle_utc": "2026-09-23T03:06:44Z",
+    "last_receive_utc": "2026-09-23T03:06:49Z",
     "last_terminal_utc": "2026-09-23T01:37:12Z",
-    "pid": "9837",
+    "pid": "344",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "fe128c5ce8552cf67546b8a71e37e79af988fdae",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
