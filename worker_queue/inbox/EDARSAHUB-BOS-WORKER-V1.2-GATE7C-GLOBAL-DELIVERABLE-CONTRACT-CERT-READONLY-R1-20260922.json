@@ -1,0 +1,103 @@
+{
+  "actions": [],
+  "base_sha": "dbdf2e8be49d867f9afd08d0db019b7e7dc4cf55",
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py"
+        ],
+        "max_results": 1000,
+        "paths": [
+          "tools/mirror_sync/worker_deliverable_contract.py",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "backend/tests/test_worker_deliverable_contract.py",
+          "backend/tests/test_worker_readonly_result_publisher.py",
+          "backend/tests/test_worker_generic_readonly.py",
+          "backend/tests/test_worker_repository_contract_audit.py",
+          "backend/tests/test_universal_job_result_lineage_certification.py"
+        ],
+        "search_terms": [
+          "required_deliverables",
+          "deliverables",
+          "completed_deliverables",
+          "missing_deliverables",
+          "PENDING_DELIVERABLES",
+          "evaluate_deliverables",
+          "CERTIFIED_READ_ONLY",
+          "work_completion",
+          "percent_complete",
+          "objective",
+          "READ_ONLY_COMPLETE",
+          "NON_MUTATING_CHECKS_ONLY"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_deliverable_contract.py",
+        "backend/tests/test_worker_readonly_result_publisher.py",
+        "backend/tests/test_worker_generic_readonly.py",
+        "backend/tests/test_worker_repository_contract_audit.py",
+        "backend/tests/test_universal_job_result_lineage_certification.py",
+        "backend/tests/test_worker_channel_single_writer_contract.py",
+        "backend/tests/test_worker_result_integrity_contract.py",
+        "backend/tests/test_worker_result_reader_status_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty",
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No frontend functional changes",
+    "No backend business changes",
+    "No Scheduler",
+    "No NetPay",
+    "No Tablajeria changes",
+    "No application-domain changes",
+    "No DDL",
+    "No DML",
+    "No repository mutation",
+    "No service restart",
+    "Do not modify worker_deliverable_contract.py",
+    "Do not modify universal_job_bridge.py",
+    "Do not modify universal_job_dispatcher.py",
+    "Do not modify universal_job_result_publisher.py",
+    "Do not create dossier builder in this Gate",
+    "Do not create objective interpreter",
+    "Do not create another queue",
+    "Do not create another dispatcher",
+    "Do not create another control plane",
+    "Do not create another publisher",
+    "Legacy jobs without required_deliverables must remain compatible",
+    "Jobs with required_deliverables must fail closed on missing deliverables",
+    "Check execution certification must not imply functional completion",
+    "Objective remains descriptive",
+    "No job-specific exceptions",
+    "No chat-specific exceptions",
+    "No domain-specific exceptions",
+    "No force push",
+    "No --no-verify",
+    "No hook bypass",
+    "production_touched must remain false"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE7C-GLOBAL-DELIVERABLE-CONTRACT-CERT-READONLY-R1-20260922",
+  "mode": "READ_ONLY",
+  "objective": "Certificar de forma independiente la fundacion global de required_deliverables integrada en Gate7B R3. Validar que objective continua siendo descriptivo, required_deliverables es un contrato opcional y global, los jobs legacy sin required_deliverables conservan compatibilidad, y los jobs que si declaran entregables no pueden ser certificados como COMPLETE/100% mientras existan missing_deliverables. Validar separacion entre check execution y job completion, sin generar dossiers, sin reinterpretar texto libre y sin tocar Produccion.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
