@@ -1,0 +1,71 @@
+{
+  "actions": [],
+  "base_sha": "1e6e2a5b67a2cdea774f0c22cad64af3799bc0f5",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_maintenance_contract.py",
+        "tools/mirror_sync/worker_repair.py",
+        "tools/mirror_sync/worker_auditor.py",
+        "tools/mirror_sync/worker_maintenance_controller.py",
+        "tools/mirror_sync/worker_maintenance_runtime.py",
+        "tools/mirror_sync/worker_control_plane.py",
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/universal_job_result_publisher.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_repair_auditor_foundation_contract.py",
+        "backend/tests/test_worker_maintenance_controller_contract.py",
+        "backend/tests/test_worker_repair_auditor_operational_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_control_plane_maintenance_integration_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py",
+          "*.sh"
+        ],
+        "max_results": 1500,
+        "paths": [
+          "tools/mirror_sync",
+          "backend/tests"
+        ],
+        "search_terms": [
+          "declare_runtime_incident",
+          "repair_attempt_allowed",
+          "register_repair_attempt",
+          "register_repair_result",
+          "audit_runtime_incident",
+          "worker_control_plane",
+          "universal_job_dispatcher",
+          "universal_job_result_publisher",
+          "gate_chain_publisher",
+          "BLOCKED",
+          "FAILED",
+          "NOT_CERTIFIED",
+          "runtime_repair_needed"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5N-AUTOMATIC-REPAIR-ORCHESTRATION-DISCOVERY-READONLY-R1-20260923",
+  "mode": "READ_ONLY",
+  "objective": "Descubrir exclusivamente el punto canonico donde integrar la orquestacion automatica Worker Repair -> Universal Worker -> Worker Auditor, reutilizando control plane, cola, dispatcher, Git guards y runtime existentes, sin crear segundos componentes.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
