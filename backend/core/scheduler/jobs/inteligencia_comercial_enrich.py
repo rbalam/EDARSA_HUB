@@ -141,7 +141,7 @@ def _extract_mpro(cfg, fi, ff):
                 FROM Venta_Encabezado v WITH (NOLOCK)
                 INNER JOIN Comanda c WITH (NOLOCK)
                     ON c.Co_Folio = v.Vn_Folio AND c.Sc_Cve_Sucursal = v.Sc_Cve_Sucursal
-                WHERE v.Vn_Fecha >= '{fi}' AND v.Vn_Fecha < '{ff}'
+                WHERE CONVERT(date, v.Vn_Fecha) >= CONVERT(date, '{fi}') AND CONVERT(date, v.Vn_Fecha) < CONVERT(date, '{ff}')
                   AND v.Sc_Cve_Sucursal = '{suc}'
                   AND ISNULL(v.Es_Cve_Estado, '') <> 'CA'
                   AND v.Vn_Precio_Neto_Importe > 0
@@ -156,7 +156,7 @@ def _extract_mpro(cfg, fi, ff):
                 FROM Venta_Encabezado v WITH (NOLOCK)
                 INNER JOIN Comanda_Pago cp WITH (NOLOCK) ON cp.Co_Folio = v.Vn_Folio
                 LEFT JOIN Forma_Pago fp WITH (NOLOCK) ON fp.Fp_Cve_Forma_Pago = cp.Fp_Cve_Forma_Pago
-                WHERE v.Vn_Fecha >= '{fi}' AND v.Vn_Fecha < '{ff}'
+                WHERE CONVERT(date, v.Vn_Fecha) >= CONVERT(date, '{fi}') AND CONVERT(date, v.Vn_Fecha) < CONVERT(date, '{ff}')
                   AND v.Sc_Cve_Sucursal = '{suc}'
                   AND ISNULL(v.Es_Cve_Estado, '') <> 'CA'
                   AND cp.Cp_Importe > 0
@@ -349,7 +349,7 @@ def _write_payments_only(unidad_codigo, sistema, pagos, fi, ff):
 
 
 def resync_pagos_unidad(unidad_codigo, fecha_inicio, fecha_fin, dry_run=False):
-    """Resincroniza SOLO pagos por ticket para SoftRestaurant en [fi, ff)."""
+    """Resincroniza SOLO pagos por ticket para SoftRestaurant o ManagementPro en [fi, ff)."""
     unidades = get_unidades_negocio_pos([unidad_codigo])
     if not unidades:
         return {"unidad": unidad_codigo, "error": "unidad no encontrada en canonico"}
@@ -357,17 +357,27 @@ def resync_pagos_unidad(unidad_codigo, fecha_inicio, fecha_fin, dry_run=False):
     cfg = get_pos_config_for_unidad(unidad_row)
     if not cfg or not cfg.get("host"):
         return {"unidad": unidad_codigo, "error": "config POS no resuelta"}
+
     system = (cfg.get("system_type") or "").upper()
-    if "MPRO" in system:
-        return {"unidad": unidad_codigo, "error": "payments-only R56 autorizado solo para SoftRestaurant"}
+    is_mpro = "MPRO" in system or "MANAG" in system
+    sistema_origen = "MPRO" if is_mpro else "SoftRestaurant"
     codigo = unidad_row.get("unidad_codigo")
+
     try:
-        _tipos, pagos = _extract_softrestaurant(cfg, fecha_inicio, fecha_fin)
+        if is_mpro:
+            _tipos, pagos = _extract_mpro(cfg, fecha_inicio, fecha_fin)
+        else:
+            _tipos, pagos = _extract_softrestaurant(cfg, fecha_inicio, fecha_fin)
     except Exception as e:
-        return {"unidad": codigo, "sistema": "SoftRestaurant", "error": f"extraccion: {type(e).__name__}: {e}"}
+        return {
+            "unidad": codigo,
+            "sistema": sistema_origen,
+            "error": f"extraccion: {type(e).__name__}: {e}",
+        }
+
     result = {
         "unidad": codigo,
-        "sistema": "SoftRestaurant",
+        "sistema": sistema_origen,
         "periodo": f"{fecha_inicio}..{fecha_fin}",
         "pagos_extraidos": len(pagos),
         "dry_run": dry_run,
@@ -375,5 +385,14 @@ def resync_pagos_unidad(unidad_codigo, fecha_inicio, fecha_fin, dry_run=False):
     if dry_run:
         result["mensaje"] = "DRY RUN: pagos extraidos; no se escribio en EDARSAHUB."
         return result
-    result.update(_write_payments_only(codigo, "SoftRestaurant", pagos, fecha_inicio, fecha_fin))
+
+    result.update(
+        _write_payments_only(
+            codigo,
+            sistema_origen,
+            pagos,
+            fecha_inicio,
+            fecha_fin,
+        )
+    )
     return result

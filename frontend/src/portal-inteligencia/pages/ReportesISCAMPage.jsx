@@ -311,7 +311,7 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
     setSyncing(true);
     setSyncMessage(null);
     try {
-      const chunks = splitDateChunks(syncFrom, syncTo, detailOnly ? 1 : 30);
+      const chunks = splitDateChunks(syncFrom, syncTo, 1);
       for (const [fechaInicio, fechaFin] of chunks) {
         const basePayload = {
           tipo_sync: 'comercial_ventas_cerradas',

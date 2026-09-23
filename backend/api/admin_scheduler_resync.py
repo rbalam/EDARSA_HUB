@@ -1674,27 +1674,56 @@ async def _ejecutar_sync_real(
                     'modo': 'REAL',
                     'error_message': f'HEADER_KPI sincronizado; fallo auxiliar DETALLE_ISCAM: {detalle_exc}',
                 }
+
+            try:
+                from core.scheduler.jobs.inteligencia_comercial_enrich import (
+                    resync_pagos_unidad,
+                )
+                pagos_ticket = resync_pagos_unidad(
+                    unidad_negocio_id,
+                    fecha_inicio,
+                    fecha_fin + timedelta(days=1),
+                    dry_run=False,
+                )
+            except Exception as pagos_exc:
+                pagos_ticket = {
+                    'unidad': unidad_negocio_id,
+                    'error': f'HEADER_KPI sincronizado; fallo PAGOS_TICKET: {pagos_exc}',
+                }
         else:
             detalle_producto = {
                 'success': False,
                 'modo': 'NO_EJECUTADO',
                 'error_message': 'DETALLE_ISCAM no ejecutado porque HEADER_KPI no fue exitoso',
             }
+            pagos_ticket = {
+                'unidad': unidad_negocio_id,
+                'error': 'PAGOS_TICKET no ejecutado porque HEADER_KPI no fue exitoso',
+            }
 
         detalle_success = bool(detalle_producto.get('success'))
-        detalle_warning = (
-            None
-            if not resultado.success or detalle_success
-            else detalle_producto.get('error_message')
-            or 'HEADER_KPI sincronizado; DETALLE_ISCAM requiere revision.'
-        )
+        pagos_success = not bool(pagos_ticket.get('error'))
+        warnings = []
+        if resultado.success and not detalle_success:
+            warnings.append(
+                detalle_producto.get('error_message')
+                or 'HEADER_KPI sincronizado; DETALLE_ISCAM requiere revision.'
+            )
+        if resultado.success and not pagos_success:
+            warnings.append(
+                pagos_ticket.get('error')
+                or 'HEADER_KPI sincronizado; PAGOS_TICKET requiere revision.'
+            )
+        detalle_warning = ' | '.join(warnings) or None
 
         return {
             'success': bool(resultado.success),
             'stage': 'HEADER_KPI' if resultado.success else 'HEADER_KPI_FAILED',
             'header_success': bool(resultado.success),
             'detail_success': detalle_success,
+            'payments_success': pagos_success,
             'warning_message': detalle_warning,
+            'pagos_ticket': pagos_ticket,
             'records_processed': resultado.records_processed,
             'records_inserted': resultado.records_inserted,
             'records_updated': resultado.records_updated,
