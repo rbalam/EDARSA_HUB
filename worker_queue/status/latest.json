@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "2307ed3e9f65edea77d2a2cb5f1152ad6c9df2db",
-  "generated_at_utc": "2026-09-23T13:21:52Z",
+  "generated_at_utc": "2026-09-23T13:23:05Z",
   "history": {
     "done_total_local": 906,
     "pending_total_local": 0,
@@ -16,13 +16,13 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2122,
+      "age_seconds": 2195,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5Q-R3-HISTORICAL-ELIGIBILITY-BOUNDARY-MUTATION-R1-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1027,
+      "age_seconds": 1099,
       "job_id": "EDARSAHUB-TABLAJERIA-GATE2-TECHNICAL-MAPPING-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
@@ -42,8 +42,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T13:21:46Z",
-    "last_receive_utc": "2026-09-23T13:21:48Z",
+    "last_cycle_utc": "2026-09-23T13:23:00Z",
+    "last_receive_utc": "2026-09-23T13:23:03Z",
     "last_terminal_utc": "2026-09-23T13:04:45Z",
     "pid": "49622",
     "runtime_fingerprint": {
