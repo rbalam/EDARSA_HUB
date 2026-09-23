@@ -3,50 +3,62 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "cc2fb037710d1713c79baaf0eb0bcba3cd67a0cf",
-  "generated_at_utc": "2026-09-23T03:34:15Z",
+  "development_sha": "d62f028202fee88f68bcd449f336a30de6462553",
+  "generated_at_utc": "2026-09-23T03:35:30Z",
   "history": {
-    "done_total_local": 881,
+    "done_total_local": 883,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 764,
-    "results_total_local": 1465
+    "results_total_local": 1467
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1242,
+      "age_seconds": 1318,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5G-MAINTENANCE-AUTONOMOUS-TRIGGER-INTEGRATION-DISCOVERY-READONLY-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1559,
+      "age_seconds": 13,
+      "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE6A-GLOBAL-RESULT-INTEGRITY-OBSERVABILITY-DISCOVERY-READONLY-R1-20260922",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1634,
       "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE2-CANONICAL-CONTRACTS-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 727,
+      "age_seconds": 803,
       "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE3-FOUNDATION-SCOPE-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 537,
+      "age_seconds": 613,
       "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE4-FOUNDATION-MUTATION-PLAN-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 170,
+      "age_seconds": 246,
       "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE4-R2-DOSSIER-MATERIALIZATION",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 52,
+      "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE4-R3-DOSSIER-MATERIALIZATION",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "cc2fb037710d1713c79baaf0eb0bcba3cd67a0cf",
+  "local_development_sha": "d62f028202fee88f68bcd449f336a30de6462553",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -54,21 +66,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 5,
+  "queue_result_ready_recent": 7,
   "queue_running": 0,
-  "remote_development_sha": "cc2fb037710d1713c79baaf0eb0bcba3cd67a0cf",
+  "remote_development_sha": "d62f028202fee88f68bcd449f336a30de6462553",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T03:33:40Z",
-    "last_receive_utc": "2026-09-23T03:33:35Z",
-    "last_terminal_utc": "2026-09-23T03:31:24Z",
+    "last_cycle_utc": "2026-09-23T03:35:27Z",
+    "last_receive_utc": "2026-09-23T03:35:29Z",
+    "last_terminal_utc": "2026-09-23T03:35:17Z",
     "pid": "344",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "fe128c5ce8552cf67546b8a71e37e79af988fdae",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "cc2fb037710d1713c79baaf0eb0bcba3cd67a0cf",
+      "development_sha": "d62f028202fee88f68bcd449f336a30de6462553",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
