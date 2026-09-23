@@ -4,33 +4,40 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "1e6e2a5b67a2cdea774f0c22cad64af3799bc0f5",
-  "generated_at_utc": "2026-09-23T12:14:04Z",
+  "generated_at_utc": "2026-09-23T12:15:27Z",
   "history": {
     "done_total_local": 902,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 769,
     "results_total_local": 1491
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
-  "jobs": [],
+  "jobs": [
+    {
+      "age_seconds": 4,
+      "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5O-AUTOMATIC-REPAIR-ORCHESTRATION-MUTATION-R1-20260923",
+      "reason": null,
+      "state": "RUNNING"
+    }
+  ],
   "local_development_sha": "1e6e2a5b67a2cdea774f0c22cad64af3799bc0f5",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 0,
-  "queue_running": 0,
+  "queue_running": 1,
   "remote_development_sha": "1e6e2a5b67a2cdea774f0c22cad64af3799bc0f5",
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5O-AUTOMATIC-REPAIR-ORCHESTRATION-MUTATION-R1-20260923",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T12:13:57Z",
-    "last_receive_utc": "2026-09-23T12:14:01Z",
+    "last_cycle_utc": "2026-09-23T12:15:20Z",
+    "last_receive_utc": "2026-09-23T12:15:25Z",
     "last_terminal_utc": "2026-09-23T06:04:46Z",
     "pid": "334",
     "runtime_fingerprint": {
