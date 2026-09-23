@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ORIGEN-API-LOCAL-AUTO-SYNC-DIAG-R1-CARLOS-20260923",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2307ed3e9f65edea77d2a2cb5f1152ad6c9df2db",
+  "production_allowed": false,
+  "objective": "Diagnosticar por que el auto-sync de ventas del dia de ORIGEN falla con API_LOCAL_ERROR mientras 130QRO funciona. Comparar configuracion canonica y logs recientes sin modificar datos.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "mpro_local_api_config_compare",
+          "sql": "\nSELECT\n  u.codigo,\n  u.nombre,\n  CONVERT(varchar(36),u.id) unidad_pk,\n  CONVERT(varchar(36),u.server_id) server_id,\n  u.sucursal_origen_id,\n  u.system_type,\n  s.nombre servidor_nombre,\n  s.tipo_conexion,\n  s.api_url,\n  s.activo,\n  s.source_status,\n  s.ultimo_error_sync,\n  s.fecha_ultima_sincronizacion\nFROM dbo.Unidades_Negocio u\nLEFT JOIN dbo.Sistema_VW_Servidores_Conexiones_Publico s\n  ON CONVERT(varchar(36),s.id)=CONVERT(varchar(36),u.server_id)\nWHERE u.codigo IN ('ORIGEN','130QRO')\nORDER BY u.codigo"
+        },
+        {
+          "name": "mpro_open_sales_recent_logs",
+          "sql": "\nSELECT TOP 20\n  run_id,\n  run_type,\n  unidad_negocio_id,\n  server_id,\n  sucursal_id,\n  fecha_inicio,\n  fecha_fin,\n  status,\n  source_connection_status,\n  records_processed,\n  records_inserted,\n  records_updated,\n  records_errored,\n  error_code,\n  error_message,\n  created_at\nFROM dbo.Comercial_SyncLog_v2\nWHERE unidad_negocio_id IN (\n  SELECT id FROM dbo.Unidades_Negocio WHERE codigo IN ('ORIGEN','130QRO')\n)\nORDER BY created_at DESC"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260922 Corregir Reportes de ISCAM"
+  },
+  "constraints": [
+    "Solo lectura",
+    "Comparar ORIGEN vs 130QRO",
+    "No Production",
+    "No modificar datos"
+  ]
+}
