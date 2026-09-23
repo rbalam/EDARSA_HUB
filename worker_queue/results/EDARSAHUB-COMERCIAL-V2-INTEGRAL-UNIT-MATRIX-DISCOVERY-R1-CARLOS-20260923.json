@@ -1,0 +1,126 @@
+{
+  "base_sha": "3caf19135a4d532f1283035ef5f552fa952ae128",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-23T01:15:59Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-UNIT-MATRIX-DISCOVERY-R1-CARLOS-20260923",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-23T01:16:03Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "unidad_nombre",
+              "unidad_negocio_pk",
+              "server_id",
+              "sucursal_origen_id",
+              "system_type",
+              "unidad_activa",
+              "servidor_activo",
+              "ultima_fecha_runtime",
+              "dias_runtime",
+              "ultima_fecha_detalle",
+              "filas_detalle"
+            ],
+            "name": "active_comercial_units_matrix",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130QRO",
+                "130° QUERETARO",
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0021",
+                "MPRO",
+                true,
+                true,
+                "2026-09-22",
+                "1818",
+                "2026-09-21",
+                "285088"
+              ],
+              [
+                "ORIGEN",
+                "ORIGEN",
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0023",
+                "MPRO",
+                true,
+                true,
+                "2026-09-21",
+                "1552",
+                "2026-09-21",
+                "233313"
+              ],
+              [
+                "130MID",
+                "130° MERIDA",
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                null,
+                "SOFTRESTAURANT",
+                true,
+                true,
+                "2026-09-22",
+                "3708",
+                "2026-09-10",
+                "337125"
+              ],
+              [
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                null,
+                "SOFTRESTAURANT",
+                true,
+                true,
+                "2026-09-22",
+                "2328",
+                "2026-09-21",
+                "393124"
+              ],
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "DFB86008-1B81-472A-9E50-8A0821DEC4B2",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                null,
+                "SOFTRESTAURANT",
+                true,
+                true,
+                "2026-09-22",
+                "459",
+                "2026-09-21",
+                "167869"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-23T01:15:55Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
