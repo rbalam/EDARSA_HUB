@@ -4,20 +4,26 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "15a5daaaffe979ca650c6efbd04d7ea594577b4b",
-  "generated_at_utc": "2026-09-23T12:21:42Z",
+  "generated_at_utc": "2026-09-23T12:23:06Z",
   "history": {
-    "done_total_local": 903,
+    "done_total_local": 904,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 769,
-    "results_total_local": 1492
+    "results_total_local": 1493
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 367,
+      "age_seconds": 451,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5O-AUTOMATIC-REPAIR-ORCHESTRATION-MUTATION-R1-20260923",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 76,
+      "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5P-AUTOMATIC-REPAIR-ORCHESTRATION-INDEPENDENT-AUDIT-READONLY-R1-20260923",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -30,18 +36,18 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 1,
+  "queue_result_ready_recent": 2,
   "queue_running": 0,
   "remote_development_sha": "15a5daaaffe979ca650c6efbd04d7ea594577b4b",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T12:21:38Z",
-    "last_receive_utc": "2026-09-23T12:21:41Z",
-    "last_terminal_utc": "2026-09-23T12:15:35Z",
-    "pid": "334",
+    "last_cycle_utc": "2026-09-23T12:23:04Z",
+    "last_receive_utc": "2026-09-23T12:23:05Z",
+    "last_terminal_utc": "2026-09-23T12:21:50Z",
+    "pid": "36736",
     "runtime_fingerprint": {
-      "active_worker_code_tree_sha": "d026de991a69f6d87878de4e16f0036ebaedfe14",
+      "active_worker_code_tree_sha": "002e6b328c328bf74a6f7a3f1aaaf039cb964325",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
       "development_sha": "15a5daaaffe979ca650c6efbd04d7ea594577b4b",
@@ -58,7 +64,7 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": false,
+      "worker_code_tree_aligned": true,
       "worker_code_tree_sha": "002e6b328c328bf74a6f7a3f1aaaf039cb964325"
     }
   },
