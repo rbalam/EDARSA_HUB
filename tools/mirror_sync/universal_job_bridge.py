@@ -9,6 +9,8 @@ and it never executes shell text supplied by a request.
 
 from __future__ import annotations
 
+from tools.mirror_sync.worker_deliverable_contract import normalize_required_deliverables
+
 import json
 import os
 import re
@@ -213,6 +215,14 @@ def validate(job: Any) -> list[str]:
         errors.append("OBJECTIVE_REQUIRED")
     if job.get("human_summary_language") != "es":
         errors.append("SUMMARY_LANGUAGE_MUST_BE_ES")
+
+    if "required_deliverables" in job:
+        try:
+            normalize_required_deliverables(
+                job.get("required_deliverables")
+            )
+        except ValueError as exc:
+            errors.append(str(exc))
     requester = job.get("requester")
     if requester is None:
         if REQUIRE_REQUESTER:

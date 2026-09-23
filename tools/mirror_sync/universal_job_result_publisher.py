@@ -9,6 +9,8 @@ queue results branch as NOT_CERTIFIED/BLOCKED evidence.
 
 from __future__ import annotations
 
+from tools.mirror_sync.worker_deliverable_contract import evaluate_deliverables
+
 import fcntl
 import json
 import os
@@ -280,6 +282,46 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
             and result.get("production_touched") is False
             and not (result.get("blockers") or [])
         )
+
+        required_deliverables = result.get(
+            "required_deliverables"
+        )
+
+        if required_deliverables is not None:
+            deliverable_evaluation = evaluate_deliverables(
+                required_deliverables,
+                result.get("deliverables"),
+            )
+
+            if (
+                base_pass
+                and not deliverable_evaluation.complete
+            ):
+                return {
+                    "certified": False,
+                    "certification": "PENDING_DELIVERABLES",
+                    "work_completion": "PENDING_DELIVERABLES",
+                    "percent_complete": min(
+                        int(
+                            result.get(
+                                "percent_complete"
+                            )
+                            or 0
+                        ),
+                        95,
+                    ),
+                    "required_deliverables": list(
+                        deliverable_evaluation.required
+                    ),
+                    "completed_deliverables": list(
+                        deliverable_evaluation.completed
+                    ),
+                    "missing_deliverables": list(
+                        deliverable_evaluation.missing
+                    ),
+                    "certification_basis":
+                        "CHECKS_PASS_BUT_REQUIRED_DELIVERABLES_MISSING",
+                }
         if base_pass and (readonly_evidence is not None or repository_evidence is not None):
             return {
                 "certified": True,
@@ -468,6 +510,7 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
         "percent_complete", "certification", "production_touched",
         "operation", "dry_run", "units", "canonical_sql_mutation",
         "operation_summary", "reasons", "received_at_utc", "source",
+        "required_deliverables", "deliverables", "missing_deliverables",
     )
     public = {key: result.get(key) for key in allowed if key in result}
     public["published_at_utc"] = now()
@@ -495,6 +538,9 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
         "certified_source_sha",
         "converged_head",
         "certification_basis",
+        "required_deliverables",
+        "completed_deliverables",
+        "missing_deliverables",
     ):
         if key in evidence:
             public[key] = evidence[key]

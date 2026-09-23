@@ -12,6 +12,8 @@ executed.
 
 from __future__ import annotations
 
+from tools.mirror_sync.worker_deliverable_contract import evaluate_deliverables, normalize_required_deliverables
+
 import fcntl
 import hashlib
 import json
@@ -533,6 +535,17 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
     RUNTIME.mkdir(parents=True, exist_ok=True)
     (RUNTIME / "current_job_id").write_text(job_id + "\n", encoding="utf-8")
     result: dict[str, Any] = {"schema": "edarsahub.worker-result.v2", "job_id": job_id, "started_at_utc": now(), "status": "BLOCKED", "executor": "chatgpt-deterministic", "production_touched": False, "blockers": [], "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial."}
+
+    if "required_deliverables" in job:
+        result["required_deliverables"] = list(
+            normalize_required_deliverables(
+                job.get("required_deliverables")
+            )
+        )
+        result["deliverables"] = {}
+        result["missing_deliverables"] = list(
+            result["required_deliverables"]
+        )
     worktree: Path | None = None
     branch = ""
     agent_guard_claim_created = False
@@ -652,6 +665,16 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
             result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
             result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
             result["work_completion"] = "COMPLETE" if not result["blockers"] else "INCOMPLETE"
+            if result.get("required_deliverables"):
+                deliverable_evaluation = evaluate_deliverables(
+                    result.get("required_deliverables"),
+                    result.get("deliverables"),
+                )
+                result["missing_deliverables"] = list(
+                    deliverable_evaluation.missing
+                )
+                if not deliverable_evaluation.complete:
+                    result["work_completion"] = "PENDING_DELIVERABLES"
             if not result["blockers"]:
                 result["status"] = "READ_ONLY_COMPLETE"
                 result["percent_complete"] = 100
