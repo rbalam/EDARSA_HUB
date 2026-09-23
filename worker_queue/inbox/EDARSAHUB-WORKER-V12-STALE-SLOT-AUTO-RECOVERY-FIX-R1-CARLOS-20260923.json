@@ -1,0 +1,82 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-V12-STALE-SLOT-AUTO-RECOVERY-FIX-R1-CARLOS-20260923",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4419c35cf39083e485773a41a8addb2c3920819c",
+  "production_allowed": false,
+  "objective": "Corregir permanentemente el Universal Worker v1.2 para recuperar automaticamente slots runtime stale despues de reinicios, evitando SLOT_ALREADY_CLAIMED por mutation-1/readonly-1 huerfanos. Mantener bloqueo fail-closed si el slot sigue vivo.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/worker_slot_runtime.py",
+      "old": "def create_slot(\n    *,\n    slot_id: str,\n    slot_class: str,\n    job_id: str,\n    mode: str,\n    project_id: str,\n    bounded_context: str,\n    resource_claims: list[str],\n    conflict_domains: list[str],\n    worker_pid: int,\n    execution_pid: int = 0,\n    legacy_defaults: bool,\n) -> dict[str, Any]:\n",
+      "new": "def reclaim_stale_slot(\n    slot_id: str,\n    *,\n    heartbeat_stale_seconds: int,\n) -> dict[str, Any]:\n    existing = load_slot(slot_id)\n    if existing is None:\n        return {\n            \"reclaimed\": False,\n            \"reason\": \"EMPTY\",\n            \"slot_id\": slot_id,\n        }\n\n    if slot_is_live(\n        existing,\n        heartbeat_stale_seconds=heartbeat_stale_seconds,\n    ):\n        return {\n            \"reclaimed\": False,\n            \"reason\": \"LIVE\",\n            \"slot_id\": slot_id,\n            \"job_id\": existing[\"job_id\"],\n            \"state\": existing[\"state\"],\n        }\n\n    stale_job_id = existing[\"job_id\"]\n    stale_state = existing[\"state\"]\n    release_slot(slot_id)\n    return {\n        \"reclaimed\": True,\n        \"reason\": \"STALE\",\n        \"slot_id\": slot_id,\n        \"job_id\": stale_job_id,\n        \"state\": stale_state,\n    }\n\n\ndef create_slot(\n    *,\n    slot_id: str,\n    slot_class: str,\n    job_id: str,\n    mode: str,\n    project_id: str,\n    bounded_context: str,\n    resource_claims: list[str],\n    conflict_domains: list[str],\n    worker_pid: int,\n    execution_pid: int = 0,\n    legacy_defaults: bool,\n) -> dict[str, Any]:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "from worker_slot_runtime import create_slot, release_slot, update_slot_state",
+      "new": "from worker_slot_runtime import create_slot, reclaim_stale_slot, release_slot, update_slot_state",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        slot_id = \"readonly-1\" if slot_class == \"READ_ONLY\" else \"mutation-1\"\n        create_slot(\n",
+      "new": "        slot_id = \"readonly-1\" if slot_class == \"READ_ONLY\" else \"mutation-1\"\n        result[\"slot_recovery\"] = reclaim_stale_slot(\n            slot_id,\n            heartbeat_stale_seconds=90,\n        )\n        create_slot(\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_slot_runtime_contract.py",
+      "old": "def test_slot_runtime_has_no_git_sql_or_shell():\n    value = text()\n    assert \"subprocess\" not in value\n    assert \"git(\" not in value\n    assert \"sql\" not in value.lower()\n    assert \"shell=True\" not in value\n",
+      "new": "def test_slot_runtime_reclaims_only_stale_slots():\n    value = text()\n    assert \"def reclaim_stale_slot(\" in value\n    assert \"slot_is_live(\" in value\n    assert '\"reason\": \"LIVE\"' in value\n    assert '\"reason\": \"STALE\"' in value\n    reclaim_block = value.split(\"def reclaim_stale_slot(\", 1)[1].split(\"def create_slot(\", 1)[0]\n    assert \"release_slot(slot_id)\" in reclaim_block\n\n\ndef test_slot_runtime_has_no_git_sql_or_shell():\n    value = text()\n    assert \"subprocess\" not in value\n    assert \"git(\" not in value\n    assert \"sql\" not in value.lower()\n    assert \"shell=True\" not in value\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_universal_queue_sla_contract.py",
+      "old": "def test_dispatcher_uses_serial_slot_runtime_without_parallel_execution():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'from worker_slot_runtime import create_slot, release_slot, update_slot_state' in text\n    assert 'slot_id = \"readonly-1\" if slot_class == \"READ_ONLY\" else \"mutation-1\"' in text\n    assert 'create_slot(' in text\n",
+      "new": "def test_dispatcher_uses_serial_slot_runtime_without_parallel_execution():\n    text = DISPATCHER.read_text(encoding='utf-8')\n    assert 'from worker_slot_runtime import create_slot, reclaim_stale_slot, release_slot, update_slot_state' in text\n    assert 'slot_id = \"readonly-1\" if slot_class == \"READ_ONLY\" else \"mutation-1\"' in text\n    assert 'result[\"slot_recovery\"] = reclaim_stale_slot(' in text\n    assert 'heartbeat_stale_seconds=90' in text\n    assert text.index('reclaim_stale_slot(') < text.index('create_slot(')\n    assert 'create_slot(' in text\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/worker_slot_runtime.py",
+        "tools/mirror_sync/universal_job_dispatcher.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_slot_runtime_contract.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260922 Corregir Reportes de ISCAM"
+  },
+  "constraints": [
+    "Scope exacto: slot runtime, dispatcher y dos pruebas contractuales",
+    "No Production",
+    "No SQL",
+    "No shell arbitrario",
+    "Slots vivos deben seguir bloqueando nuevos claims",
+    "Solo slots stale pueden liberarse automaticamente",
+    "production_allowed=false"
+  ]
+}
