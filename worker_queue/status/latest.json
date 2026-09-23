@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "3caf19135a4d532f1283035ef5f552fa952ae128",
-  "generated_at_utc": "2026-09-23T01:24:48Z",
+  "generated_at_utc": "2026-09-23T01:26:04Z",
   "history": {
     "done_total_local": 873,
     "pending_total_local": 0,
@@ -16,55 +16,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 114,
+      "age_seconds": 189,
       "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-130MID-20260910-DRYRUN-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 107,
+      "age_seconds": 182,
       "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-130QRO-20260921-DRYRUN-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 95,
+      "age_seconds": 170,
       "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-CIENFUEGOS-20260921-DRYRUN-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 88,
+      "age_seconds": 163,
       "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-ESTELAR-20260921-DRYRUN-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 84,
+      "age_seconds": 159,
       "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-ORIGEN-20260921-DRYRUN-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 528,
+      "age_seconds": 604,
       "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-UNIT-MATRIX-DISCOVERY-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2335,
+      "age_seconds": 2410,
       "job_id": "EDARSAHUB-ISCAM-130QRO-0808-POST-CONVERGENCE-BACKFILL-R18-CARLOS-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1827,
+      "age_seconds": 1902,
       "job_id": "EDARSAHUB-ISCAM-130QRO-0808-POST-CONVERGENCE-BACKFILL-R18-RETRY1-CARLOS-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1582,
+      "age_seconds": 1657,
       "job_id": "EDARSAHUB-WORKER-V12-STALE-SLOT-AUTO-RECOVERY-FIX-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
@@ -84,8 +84,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T01:24:44Z",
-    "last_receive_utc": "2026-09-23T01:24:47Z",
+    "last_cycle_utc": "2026-09-23T01:25:59Z",
+    "last_receive_utc": "2026-09-23T01:26:00Z",
     "last_terminal_utc": "2026-09-23T01:23:24Z",
     "pid": "9837",
     "runtime_fingerprint": {
