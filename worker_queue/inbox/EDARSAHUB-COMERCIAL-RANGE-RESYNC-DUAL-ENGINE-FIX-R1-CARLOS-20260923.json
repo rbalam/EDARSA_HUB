@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-RANGE-RESYNC-DUAL-ENGINE-FIX-R1-CARLOS-20260923",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "3caf19135a4d532f1283035ef5f552fa952ae128",
+  "production_allowed": false,
+  "objective": "Corregir de forma transversal COMERCIAL_RANGE_RESYNC para aceptar ambos motores soportados por EDARSAHUB: SOFTRESTAURANT y MPRO. El entrypoint cerrado debe delegar en _ejecutar_dry_run/_ejecutar_sync_real, que ya seleccionan el handler oficial por motor. Mantener fail-closed para sistemas no soportados.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/resync_comercial_range_worker.py",
+      "old": "    if str(config.get(\"sistema\") or \"\").upper() != \"SOFTRESTAURANT\":\n        print(json.dumps({\"event\": \"comercial_range_summary\", \"unidad\": unit, \"success\": False, \"error\": \"SYSTEM_NOT_SOFTRESTAURANT\"}))\n        return 4\n",
+      "new": "    sistema = str(config.get(\"sistema\") or \"\").strip().upper()\n    if sistema not in {\"SOFTRESTAURANT\", \"MPRO\"}:\n        print(json.dumps({\n            \"event\": \"comercial_range_summary\",\n            \"unidad\": unit,\n            \"success\": False,\n            \"error\": \"SYSTEM_NOT_SUPPORTED\",\n            \"system_type\": sistema or \"UNKNOWN\",\n        }))\n        return 4\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_comercial_range_resync_capability_r87.py",
+      "old": "def test_script_reuses_official_scheduler_handlers():\n    text = SCRIPT.read_text(encoding='utf-8')\n    assert '_ejecutar_sync_real' in text\n    assert '_ejecutar_dry_run' in text\n    assert '_get_unidad_config' in text\n    assert 'days > 31' in text\n",
+      "new": "def test_script_reuses_official_scheduler_handlers():\n    text = SCRIPT.read_text(encoding='utf-8')\n    assert '_ejecutar_sync_real' in text\n    assert '_ejecutar_dry_run' in text\n    assert '_get_unidad_config' in text\n    assert 'days > 31' in text\n\n\ndef test_script_accepts_both_supported_pos_engines():\n    text = SCRIPT.read_text(encoding='utf-8')\n    assert '{\"SOFTRESTAURANT\", \"MPRO\"}' in text\n    assert 'SYSTEM_NOT_SUPPORTED' in text\n    assert 'SYSTEM_NOT_SOFTRESTAURANT' not in text\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/resync_comercial_range_worker.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_comercial_range_resync_capability_r87.py",
+        "backend/tests/test_iscam_detail_parity_backfill_r33.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260922 Corregir Reportes de ISCAM"
+  },
+  "constraints": [
+    "Correccion transversal por motor, no por sucursal",
+    "Aceptar SOFTRESTAURANT y MPRO",
+    "Sistemas desconocidos deben fallar cerrado",
+    "No SQL DML",
+    "No Production",
+    "No cambiar contratos de consulta dentro de los handlers oficiales",
+    "production_allowed=false"
+  ]
+}
