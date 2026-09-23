@@ -1,0 +1,82 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE4-FOUNDATION-MUTATION-PLAN-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "human_summary_language": "es",
+  "objective": "Construir el plan de mutacion minimo, exacto, reversible y anti-duplicacion para Production Quality / Foto Finish / Bitacora de Parrilla, tomando como prerequisitos Gate0, Gate2 y Gate3 certificados. Para cada capacidad clasificar REUSE, EXTEND, CREATE, DO_NOT_CREATE, COLLISION o BLOCKER y aportar evidencia real de repositorio. Antes de cualquier CREATE demostrar que no existe una capacidad equivalente reusable o extensible. Definir entidades, tablas/columnas potenciales, contratos backend, endpoints futuros, RBAC, eventos, mediciones, evidencias, Quality Gate, rework, override, devices, KDS, Tablajeria, inventario/costos, frontend, pruebas, orden de migracion y rollback. No ejecutar DDL, DML, migrations ni modificar archivos.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core",
+          "backend/modules",
+          "backend/api",
+          "backend/routes",
+          "backend/tests",
+          "backend/migrations",
+          "frontend/src",
+          "docs/modules",
+          "docs/architecture"
+        ],
+        "search_terms": [
+          "ProductionItem",
+          "production_item",
+          "id_ticket_linea",
+          "id_transaccion_global",
+          "production station",
+          "ProductionStation",
+          "quality standard",
+          "QualityStandard",
+          "measurement",
+          "Measurement",
+          "evidence",
+          "ProductionEvidence",
+          "quality decision",
+          "QualityDecision",
+          "rework",
+          "override",
+          "device",
+          "camera",
+          "scale",
+          "thermometer",
+          "kds",
+          "COCINA_PARRILLA",
+          "tablajeria",
+          "Operaciones_Tablaje",
+          "object_storage",
+          "put_object",
+          "get_object",
+          "rbac",
+          "permiso",
+          "FechaOperacion",
+          "operational_window",
+          "EmpresaID",
+          "UnidadNegocioID",
+          "inventario",
+          "costeo",
+          "movimiento",
+          "workflow",
+          "evento",
+          "idempotencia",
+          "migration",
+          "rollback"
+        ],
+        "include_patterns": [],
+        "exclude_patterns": [
+          ".ruff_cache",
+          "__pycache__",
+          ".coverage",
+          "node_modules",
+          "worker_queue",
+          "backup"
+        ],
+        "max_results": 3000
+      }
+    }
+  ]
+}
