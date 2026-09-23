@@ -14,8 +14,11 @@ REMOTE = os.environ.get("EDARSAHUB_REMOTE", "origin")
 DEV = os.environ.get("EDARSAHUB_DEV_BRANCH", "Edarsahub_Desarrollo")
 SERVICE = os.environ.get("EDARSAHUB_SUPERVISOR_SERVICE", "edarsahub-mirror-sync")
 WORKER_SERVICE = os.environ.get("EDARSAHUB_UNIVERSAL_WORKER_SERVICE", "edarsahub-universal-worker")
+BACKEND_SERVICE = os.environ.get("EDARSAHUB_BACKEND_SERVICE", "backend")
+BACKEND_WAKE_URL = os.environ.get("EDARSAHUB_BACKEND_WAKE_URL", "http://127.0.0.1:8001/api/internal/worker/wake")
 INTERVAL = int(os.environ.get("EDARSAHUB_BOOTSTRAP_INTERVAL", "20"))
 MAX_STALE = int(os.environ.get("EDARSAHUB_BOOTSTRAP_MAX_STALE", "60"))
+BACKEND_RECOVERY_COOLDOWN = int(os.environ.get("EDARSAHUB_BACKEND_RECOVERY_COOLDOWN", "120"))
 RUNTIME = APP / ".git" / "universal-worker-queue" / "runtime"
 MIRROR_STATE = APP / ".git" / "mirror-sync"
 MIRROR_ENABLE = MIRROR_STATE / "ENABLED"
@@ -23,6 +26,7 @@ MIRROR_STOP = MIRROR_STATE / "STOP"
 SYNC_PAUSE = APP / ".git" / "EDARSAHUB_SYNC_PAUSED"
 STATUS = STATE / "status.json"
 AUDIT = STATE / "audit.jsonl"
+BACKEND_RECOVERY_STAMP = STATE / "backend_recovery_epoch"
 
 
 def now() -> str:
@@ -64,6 +68,88 @@ def age_seconds(path: Path) -> float | None:
         return None
 
 
+def is_production_environment() -> bool:
+    env_name = (
+        os.environ.get("EDARSA_ENV")
+        or os.environ.get("APP_ENV")
+        or os.environ.get("ENVIRONMENT")
+        or "PREVIEW"
+    ).upper()
+    return "PROD" in env_name
+
+
+def backend_wake_route_health() -> dict:
+    """Probe the local route without a queue proof.
+
+    A healthy mounted route must reject the request with 401. 404 means the
+    running backend is stale and does not have the router mounted.
+    """
+    try:
+        result = run(
+            [
+                "curl",
+                "--silent",
+                "--show-error",
+                "--connect-timeout",
+                "2",
+                "--max-time",
+                "5",
+                "--output",
+                "/tmp/edarsahub-bootstrap-wake-probe.json",
+                "--write-out",
+                "%{http_code}",
+                "--request",
+                "POST",
+                BACKEND_WAKE_URL,
+                "--header",
+                "Content-Type: application/json",
+                "--data",
+                "{}",
+            ],
+            timeout=8,
+        )
+        code = (result.stdout or "").strip()[-3:]
+        healthy = result.returncode == 0 and code == "401"
+        return {"healthy": healthy, "http_code": code or "000", "returncode": result.returncode}
+    except Exception as exc:
+        return {"healthy": False, "http_code": "000", "error": str(exc)}
+
+
+def maybe_recover_backend() -> dict:
+    if is_production_environment():
+        audit("BACKEND_RECOVERY_BLOCKED_PRODUCTION_ENV", service=BACKEND_SERVICE)
+        return {"state": "BLOCKED_PRODUCTION_ENV", "restarted": False}
+
+    probe = backend_wake_route_health()
+    if probe.get("healthy"):
+        return {"state": "HEALTHY", "probe": probe, "restarted": False}
+
+    now_epoch = int(time.time())
+    try:
+        last_epoch = int(BACKEND_RECOVERY_STAMP.read_text(encoding="utf-8").strip())
+    except Exception:
+        last_epoch = 0
+    if now_epoch - last_epoch < BACKEND_RECOVERY_COOLDOWN:
+        audit("BACKEND_RECOVERY_COOLDOWN", probe=probe, service=BACKEND_SERVICE)
+        return {"state": "COOLDOWN", "probe": probe, "restarted": False}
+
+    STATE.mkdir(parents=True, exist_ok=True)
+    BACKEND_RECOVERY_STAMP.write_text(str(now_epoch) + "\n", encoding="utf-8")
+    restarted = supervisor_restart("WAKE_ROUTE_UNHEALTHY", BACKEND_SERVICE)
+    audit(
+        "PREVIEW_BACKEND_STALE_RECOVERY",
+        probe=probe,
+        action="SUPERVISOR_RESTART",
+        service=BACKEND_SERVICE,
+        restarted=restarted,
+    )
+    return {
+        "state": "RESTART_REQUESTED" if restarted else "RESTART_FAILED",
+        "probe": probe,
+        "restarted": restarted,
+    }
+
+
 def mirror_authorization() -> dict:
     """Fail closed: sync needs explicit ENABLED and no persistent pause/stop."""
     branch = run(["git", "branch", "--show-current"], timeout=20).stdout.strip()
@@ -90,6 +176,9 @@ def mirror_authorization() -> dict:
 
 
 def supervisor_restart(reason: str, service: str = SERVICE) -> bool:
+    if is_production_environment():
+        audit("SUPERVISOR_RESTART_BLOCKED_PRODUCTION_ENV", reason=reason, service=service)
+        return False
     result = run(["supervisorctl", "restart", service], cwd=APP, timeout=30)
     ok = result.returncode == 0
     audit("SUPERVISOR_RESTART", reason=reason, service=service, ok=ok, output=result.stdout[-1000:])
@@ -137,6 +226,7 @@ def cycle() -> dict:
     STATE.mkdir(parents=True, exist_ok=True)
     auth = mirror_authorization()
     ff = safe_fast_forward()
+    backend = maybe_recover_backend()
     age = age_seconds(RUNTIME / "last_receive_utc")
     stale = age is None or age > MAX_STALE
     restarted = False
@@ -160,6 +250,7 @@ def cycle() -> dict:
         "at_utc": now(),
         "mirror_authorization": auth,
         "ff": ff,
+        "backend_recovery": backend,
         "worker_receive_age_seconds": age,
         "worker_stale": stale,
         "restart_requested": restarted,
