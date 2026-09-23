@@ -1,0 +1,40 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-V2-JULIO-2026-PREFLIGHT-5UNIDADES-R1-CARLOS-20260923",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b2a567353f16d02f1ba33afa67e0c31e249d6921",
+  "production_allowed": false,
+  "objective": "Preflight integral de julio 2026 para las cinco unidades activas. Detectar diferencias diarias y mensuales entre ventas encabezado Runtime V2 y detalle ISCAM antes de ejecutar la resincronizacion real.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "julio_2026_resumen_encabezado_vs_detalle",
+          "sql": "\nWITH unidades AS (\n    SELECT v.unidad\n    FROM (VALUES ('130QRO'),('ORIGEN'),('130MID'),('CIENFUEGOS'),('ESTELAR')) v(unidad)\n),\nr AS (\n    SELECT\n        unidad_negocio_id AS unidad,\n        CAST(SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS decimal(19,4)) ventas_encabezado,\n        SUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets_encabezado,\n        SUM(CAST(ISNULL(pax_total,0) AS bigint)) pax_encabezado,\n        COUNT(DISTINCT CAST(fecha_operacion AS date)) dias_encabezado\n    FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\n    WHERE fecha_operacion >= '2026-07-01'\n      AND fecha_operacion < '2026-08-01'\n      AND unidad_negocio_id IN ('130QRO','ORIGEN','130MID','CIENFUEGOS','ESTELAR')\n    GROUP BY unidad_negocio_id\n),\nd_ticket AS (\n    SELECT\n        unidad_negocio_id AS unidad,\n        CAST(fecha_operacion AS date) fecha,\n        numero_ticket,\n        SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) venta_ticket,\n        MAX(CAST(ISNULL(pax,0) AS bigint)) pax_ticket\n    FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n    WHERE fecha_operacion >= '2026-07-01'\n      AND fecha_operacion < '2026-08-01'\n      AND unidad_negocio_id IN ('130QRO','ORIGEN','130MID','CIENFUEGOS','ESTELAR')\n      AND ISNULL(activo,1)=1\n      AND ISNULL(es_kpi_valido,1)=1\n    GROUP BY unidad_negocio_id, CAST(fecha_operacion AS date), numero_ticket\n),\nd AS (\n    SELECT\n        unidad,\n        CAST(SUM(venta_ticket) AS decimal(19,4)) ventas_detalle,\n        COUNT_BIG(*) tickets_detalle,\n        SUM(pax_ticket) pax_detalle,\n        COUNT(DISTINCT fecha) dias_detalle\n    FROM d_ticket\n    GROUP BY unidad\n)\nSELECT\n    u.unidad,\n    CAST(ISNULL(r.ventas_encabezado,0) AS decimal(19,4)) ventas_encabezado,\n    CAST(ISNULL(d.ventas_detalle,0) AS decimal(19,4)) ventas_detalle,\n    CAST(ISNULL(r.ventas_encabezado,0)-ISNULL(d.ventas_detalle,0) AS decimal(19,4)) delta_ventas,\n    ISNULL(r.tickets_encabezado,0) tickets_encabezado,\n    ISNULL(d.tickets_detalle,0) tickets_detalle,\n    ISNULL(r.tickets_encabezado,0)-ISNULL(d.tickets_detalle,0) delta_tickets,\n    ISNULL(r.pax_encabezado,0) pax_encabezado,\n    ISNULL(d.pax_detalle,0) pax_detalle,\n    ISNULL(r.pax_encabezado,0)-ISNULL(d.pax_detalle,0) delta_pax,\n    ISNULL(r.dias_encabezado,0) dias_encabezado,\n    ISNULL(d.dias_detalle,0) dias_detalle,\n    CASE\n      WHEN ABS(ISNULL(r.ventas_encabezado,0)-ISNULL(d.ventas_detalle,0)) <= 0.05\n       AND ISNULL(r.tickets_encabezado,0)=ISNULL(d.tickets_detalle,0)\n       AND ISNULL(r.pax_encabezado,0)=ISNULL(d.pax_detalle,0)\n      THEN 'OK' ELSE 'DIFERENCIA'\n    END AS estado\nFROM unidades u\nLEFT JOIN r ON r.unidad=u.unidad\nLEFT JOIN d ON d.unidad=u.unidad\nORDER BY u.unidad"
+        },
+        {
+          "name": "julio_2026_dias_con_diferencias",
+          "sql": "\nWITH fechas AS (\n    SELECT CAST('2026-07-01' AS date) fecha\n    UNION ALL\n    SELECT DATEADD(day,1,fecha) FROM fechas WHERE fecha < '2026-07-31'\n),\nunidades AS (\n    SELECT v.unidad\n    FROM (VALUES ('130QRO'),('ORIGEN'),('130MID'),('CIENFUEGOS'),('ESTELAR')) v(unidad)\n),\nbase AS (\n    SELECT u.unidad,f.fecha FROM unidades u CROSS JOIN fechas f\n),\nr AS (\n    SELECT\n        unidad_negocio_id AS unidad,\n        CAST(fecha_operacion AS date) fecha,\n        CAST(SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS decimal(19,4)) ventas,\n        SUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets,\n        SUM(CAST(ISNULL(pax_total,0) AS bigint)) pax\n    FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\n    WHERE fecha_operacion >= '2026-07-01'\n      AND fecha_operacion < '2026-08-01'\n      AND unidad_negocio_id IN ('130QRO','ORIGEN','130MID','CIENFUEGOS','ESTELAR')\n    GROUP BY unidad_negocio_id, CAST(fecha_operacion AS date)\n),\nd_ticket AS (\n    SELECT\n        unidad_negocio_id AS unidad,\n        CAST(fecha_operacion AS date) fecha,\n        numero_ticket,\n        SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) venta_ticket,\n        MAX(CAST(ISNULL(pax,0) AS bigint)) pax_ticket\n    FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n    WHERE fecha_operacion >= '2026-07-01'\n      AND fecha_operacion < '2026-08-01'\n      AND unidad_negocio_id IN ('130QRO','ORIGEN','130MID','CIENFUEGOS','ESTELAR')\n      AND ISNULL(activo,1)=1\n      AND ISNULL(es_kpi_valido,1)=1\n    GROUP BY unidad_negocio_id, CAST(fecha_operacion AS date), numero_ticket\n),\nd AS (\n    SELECT unidad,fecha,\n           CAST(SUM(venta_ticket) AS decimal(19,4)) ventas,\n           COUNT_BIG(*) tickets,\n           SUM(pax_ticket) pax\n    FROM d_ticket\n    GROUP BY unidad,fecha\n)\nSELECT\n    b.unidad,b.fecha,\n    CAST(ISNULL(r.ventas,0) AS decimal(19,4)) ventas_encabezado,\n    CAST(ISNULL(d.ventas,0) AS decimal(19,4)) ventas_detalle,\n    CAST(ISNULL(r.ventas,0)-ISNULL(d.ventas,0) AS decimal(19,4)) delta_ventas,\n    ISNULL(r.tickets,0) tickets_encabezado,\n    ISNULL(d.tickets,0) tickets_detalle,\n    ISNULL(r.tickets,0)-ISNULL(d.tickets,0) delta_tickets,\n    ISNULL(r.pax,0) pax_encabezado,\n    ISNULL(d.pax,0) pax_detalle,\n    ISNULL(r.pax,0)-ISNULL(d.pax,0) delta_pax\nFROM base b\nLEFT JOIN r ON r.unidad=b.unidad AND r.fecha=b.fecha\nLEFT JOIN d ON d.unidad=b.unidad AND d.fecha=b.fecha\nWHERE ABS(ISNULL(r.ventas,0)-ISNULL(d.ventas,0)) > 0.05\n   OR ISNULL(r.tickets,0) <> ISNULL(d.tickets,0)\n   OR ISNULL(r.pax,0) <> ISNULL(d.pax,0)\nORDER BY b.unidad,b.fecha\nOPTION (MAXRECURSION 100)"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260923 Julio 2026 conciliacion ventas"
+  },
+  "constraints": [
+    "Solo lectura",
+    "Julio 2026 completo",
+    "Cinco unidades activas",
+    "No Production",
+    "No modificar datos"
+  ]
+}
