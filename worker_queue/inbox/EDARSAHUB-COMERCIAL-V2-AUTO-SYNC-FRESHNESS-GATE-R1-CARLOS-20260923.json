@@ -1,0 +1,35 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-V2-AUTO-SYNC-FRESHNESS-GATE-R1-CARLOS-20260923",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "cc2fb037710d1713c79baaf0eb0bcba3cd67a0cf",
+  "production_allowed": false,
+  "objective": "Certificar la frescura y ejecucion automatica del sync Comercial V2 para las cinco unidades activas. Solo lectura sobre EDARSAHUB SQL.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "latest_comercial_v2_sync_by_unit",
+          "sql": "\nWITH ranked AS (\n  SELECT\n    u.codigo AS unidad_codigo,\n    UPPER(COALESCE(NULLIF(u.system_type,''), NULLIF(s.system_type,''), 'UNKNOWN')) AS system_type,\n    l.run_id,\n    l.run_type,\n    l.fecha_inicio,\n    l.fecha_fin,\n    l.status,\n    l.records_processed,\n    l.records_inserted,\n    l.records_updated,\n    l.records_skipped,\n    l.records_errored,\n    l.source_connection_status,\n    l.error_message,\n    l.created_at,\n    ROW_NUMBER() OVER (\n      PARTITION BY u.codigo\n      ORDER BY l.created_at DESC\n    ) AS rn\n  FROM dbo.Unidades_Negocio u\n  LEFT JOIN dbo.Sistema_VW_Servidores_Conexiones_Publico s\n    ON CONVERT(varchar(36),s.id)=CONVERT(varchar(36),u.server_id)\n  LEFT JOIN dbo.Comercial_SyncLog_v2 l\n    ON CONVERT(varchar(36),l.unidad_negocio_id)=CONVERT(varchar(36),u.id)\n  WHERE ISNULL(u.activo,0)=1\n    AND u.codigo IN ('130QRO','ORIGEN','130MID','CIENFUEGOS','ESTELAR')\n)\nSELECT\n  unidad_codigo,\n  system_type,\n  run_id,\n  run_type,\n  fecha_inicio,\n  fecha_fin,\n  status,\n  source_connection_status,\n  records_processed,\n  records_inserted,\n  records_updated,\n  records_skipped,\n  records_errored,\n  error_message,\n  created_at,\n  DATEDIFF(MINUTE, created_at, SYSUTCDATETIME()) AS minutos_desde_ultima_ejecucion\nFROM ranked\nWHERE rn=1\nORDER BY system_type, unidad_codigo"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260922 Corregir Reportes de ISCAM"
+  },
+  "constraints": [
+    "Solo lectura",
+    "No Production",
+    "No modificar datos",
+    "Validar las cinco unidades activas"
+  ]
+}
