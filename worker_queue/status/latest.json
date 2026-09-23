@@ -3,74 +3,80 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "3caf19135a4d532f1283035ef5f552fa952ae128",
-  "generated_at_utc": "2026-09-23T01:26:04Z",
+  "development_sha": "cc2fb037710d1713c79baaf0eb0bcba3cd67a0cf",
+  "generated_at_utc": "2026-09-23T01:27:16Z",
   "history": {
-    "done_total_local": 873,
+    "done_total_local": 874,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 763,
-    "results_total_local": 1456
+    "results_total_local": 1457
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 189,
+      "age_seconds": 33,
+      "job_id": "EDARSAHUB-COMERCIAL-RANGE-RESYNC-DUAL-ENGINE-FIX-R1-CARLOS-20260923",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 262,
       "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-130MID-20260910-DRYRUN-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 182,
+      "age_seconds": 255,
       "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-130QRO-20260921-DRYRUN-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 170,
+      "age_seconds": 243,
       "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-CIENFUEGOS-20260921-DRYRUN-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 163,
+      "age_seconds": 236,
       "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-ESTELAR-20260921-DRYRUN-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 159,
+      "age_seconds": 232,
       "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-ORIGEN-20260921-DRYRUN-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 604,
+      "age_seconds": 677,
       "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-UNIT-MATRIX-DISCOVERY-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2410,
+      "age_seconds": 2483,
       "job_id": "EDARSAHUB-ISCAM-130QRO-0808-POST-CONVERGENCE-BACKFILL-R18-CARLOS-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1902,
+      "age_seconds": 1975,
       "job_id": "EDARSAHUB-ISCAM-130QRO-0808-POST-CONVERGENCE-BACKFILL-R18-RETRY1-CARLOS-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1657,
+      "age_seconds": 1730,
       "job_id": "EDARSAHUB-WORKER-V12-STALE-SLOT-AUTO-RECOVERY-FIX-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "3caf19135a4d532f1283035ef5f552fa952ae128",
+  "local_development_sha": "cc2fb037710d1713c79baaf0eb0bcba3cd67a0cf",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -78,21 +84,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 9,
+  "queue_result_ready_recent": 10,
   "queue_running": 0,
-  "remote_development_sha": "3caf19135a4d532f1283035ef5f552fa952ae128",
+  "remote_development_sha": "cc2fb037710d1713c79baaf0eb0bcba3cd67a0cf",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T01:25:59Z",
-    "last_receive_utc": "2026-09-23T01:26:00Z",
-    "last_terminal_utc": "2026-09-23T01:23:24Z",
+    "last_cycle_utc": "2026-09-23T01:27:13Z",
+    "last_receive_utc": "2026-09-23T01:27:15Z",
+    "last_terminal_utc": "2026-09-23T01:26:43Z",
     "pid": "9837",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "fe128c5ce8552cf67546b8a71e37e79af988fdae",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "3caf19135a4d532f1283035ef5f552fa952ae128",
+      "development_sha": "cc2fb037710d1713c79baaf0eb0bcba3cd67a0cf",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
