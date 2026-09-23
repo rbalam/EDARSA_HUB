@@ -1,0 +1,48 @@
+{
+  "base_sha": "32d0860ef6c899d1c9a42a3e900c4e4ece9353af",
+  "blockers": [
+    "comercial_range_resync_execution_failed"
+  ],
+  "canonical_sql_mutation": true,
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-23T23:32:24Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-V2-JULIO-2026-130MID-RESYNC-R1-CARLOS-20260923",
+  "operation": "COMERCIAL_RANGE_RESYNC",
+  "operation_summary": {
+    "committed": true,
+    "detail_success": false,
+    "event": "comercial_range_summary",
+    "fecha_fin": "2026-07-31",
+    "fecha_inicio": "2026-07-01",
+    "header_success": true,
+    "records_errored": 0,
+    "records_inserted": 0,
+    "records_processed": 31,
+    "records_skipped": 9,
+    "records_updated": 22,
+    "stage": "HEADER_KPI",
+    "success": true,
+    "unidad": "130MID",
+    "warning": "El detalle ISCAM tiene días bloqueados que no conciliaron contra Runtime V2."
+  },
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-23T23:32:42Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-23T23:31:42Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "units": [
+    "130MID"
+  ],
+  "work_completion": "NOT_CERTIFIED"
+}
