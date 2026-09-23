@@ -1,0 +1,129 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"Canonical Universal Worker result reader.\n\nOne terminal truth:\nworker_queue/results/<job_id>.json\n\nThis helper classifies result state through the canonical integrity layer.\nIt never treats content=\"\" by itself as proof that the canonical terminal\nblob is empty.\n\"\"\"\nfrom __future__ import annotations\n\nimport json\nfrom dataclasses import dataclass\nfrom pathlib import Path\nfrom typing import Any\n\nfrom tools.mirror_sync.worker_result_integrity import (\n    ResultState,\n    inspect_result_file,\n    validate_terminal_result_file,\n)\n\n\n@dataclass(frozen=True)\nclass CanonicalResultRead:\n    job_id: str\n    state: str\n    result_path: str\n    result_size_bytes: int\n    result_sha256: str | None\n    terminal_result_valid: bool\n    payload: dict[str, Any] | None\n    source: str = \"worker_queue/results\"\n\n\ndef read_canonical_result(\n    result_path: str | Path,\n    *,\n    expected_job_id: str,\n) -> CanonicalResultRead:\n    path = Path(result_path)\n\n    inspection = inspect_result_file(\n        path,\n        expected_job_id=expected_job_id,\n    )\n\n    if inspection.state is not ResultState.RESULT_TERMINAL_VALID:\n        return CanonicalResultRead(\n            job_id=expected_job_id,\n            state=inspection.state.value,\n            result_path=str(path),\n            result_size_bytes=inspection.size_bytes,\n            result_sha256=inspection.sha256 or None,\n            terminal_result_valid=False,\n            payload=None,\n        )\n\n    identity = validate_terminal_result_file(\n        path,\n        expected_job_id=expected_job_id,\n    )\n\n    payload = json.loads(\n        path.read_text(\n            encoding=\"utf-8\",\n        )\n    )\n\n    return CanonicalResultRead(\n        job_id=expected_job_id,\n        state=ResultState.RESULT_TERMINAL_VALID.value,\n        result_path=str(path),\n        result_size_bytes=identity.size_bytes,\n        result_sha256=identity.sha256,\n        terminal_result_valid=True,\n        payload=payload,\n    )\n",
+      "path": "tools/mirror_sync/worker_result_reader.py",
+      "type": "write_file"
+    },
+    {
+      "content": "\"\"\"Derived per-job result status.\n\nThis is an index/reference layer, never a second terminal source of truth.\n\"\"\"\nfrom __future__ import annotations\n\nfrom datetime import datetime, timezone\nfrom typing import Any\n\n\nREAD_CONTRACT_VERSION = \"v1\"\n\n\ndef utc_now() -> str:\n    return datetime.now(timezone.utc).strftime(\"%Y-%m-%dT%H:%M:%SZ\")\n\n\ndef build_job_status(\n    *,\n    result_read: Any,\n) -> dict[str, Any]:\n    payload = result_read.payload or {}\n\n    return {\n        \"job_id\": result_read.job_id,\n        \"status\": payload.get(\"status\"),\n        \"quality_gate\": payload.get(\"quality_gate\"),\n        \"certification\": payload.get(\"certification\"),\n        \"percent_complete\": payload.get(\"percent_complete\"),\n        \"blockers\": payload.get(\"blockers\"),\n        \"production_touched\": payload.get(\"production_touched\"),\n        \"worker_mode\": payload.get(\"slot_class\") or payload.get(\"mode\"),\n        \"result_path\": result_read.result_path,\n        \"result_sha\": result_read.result_sha256,\n        \"result_size_bytes\": result_read.result_size_bytes,\n        \"terminal_result_valid\": result_read.terminal_result_valid,\n        \"result_state\": result_read.state,\n        \"completed_at_utc\": payload.get(\"completed_at_utc\"),\n        \"generated_at_utc\": utc_now(),\n        \"read_contract_version\": READ_CONTRACT_VERSION,\n    }\n",
+      "path": "tools/mirror_sync/worker_result_status.py",
+      "type": "write_file"
+    },
+    {
+      "content": "import json\nimport sys\nfrom pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\n\nif str(ROOT) not in sys.path:\n    sys.path.insert(0, str(ROOT))\n\nfrom tools.mirror_sync.worker_result_reader import read_canonical_result\nfrom tools.mirror_sync.worker_result_status import build_job_status\n\n\ndef valid_payload(job_id: str) -> dict:\n    return {\n        \"schema\": \"edarsahub.worker-result.v2\",\n        \"job_id\": job_id,\n        \"status\": \"READ_ONLY_COMPLETE\",\n        \"quality_gate\": \"PASS\",\n        \"certification\": \"CERTIFIED_READ_ONLY\",\n        \"percent_complete\": 100,\n        \"blockers\": [],\n        \"production_touched\": False,\n        \"files_changed\": [],\n        \"tests\": \"PASS\",\n        \"work_completion\": \"COMPLETE\",\n        \"completed_at_utc\": \"2026-09-23T00:00:00Z\",\n    }\n\n\ndef test_absent_result_is_explicit(tmp_path):\n    job = \"JOB-ABSENT\"\n    read = read_canonical_result(\n        tmp_path / f\"{job}.json\",\n        expected_job_id=job,\n    )\n    assert read.state == \"RESULT_ABSENT\"\n    assert read.terminal_result_valid is False\n\n\ndef test_empty_result_is_explicit(tmp_path):\n    job = \"JOB-EMPTY\"\n    path = tmp_path / f\"{job}.json\"\n    path.write_bytes(b\"\")\n\n    read = read_canonical_result(\n        path,\n        expected_job_id=job,\n    )\n\n    assert read.state == \"RESULT_EMPTY\"\n    assert read.terminal_result_valid is False\n\n\ndef test_valid_terminal_result_is_canonical(tmp_path):\n    job = \"JOB-VALID\"\n    path = tmp_path / f\"{job}.json\"\n    path.write_text(\n        json.dumps(valid_payload(job)),\n        encoding=\"utf-8\",\n    )\n\n    read = read_canonical_result(\n        path,\n        expected_job_id=job,\n    )\n\n    assert read.state == \"RESULT_TERMINAL_VALID\"\n    assert read.terminal_result_valid is True\n    assert read.result_size_bytes > 0\n    assert read.result_sha256\n\n\ndef test_job_id_mismatch_fails_closed(tmp_path):\n    path = tmp_path / \"JOB-A.json\"\n    path.write_text(\n        json.dumps(valid_payload(\"JOB-B\")),\n        encoding=\"utf-8\",\n    )\n\n    read = read_canonical_result(\n        path,\n        expected_job_id=\"JOB-A\",\n    )\n\n    assert read.state == \"RESULT_JOB_ID_MISMATCH\"\n    assert read.terminal_result_valid is False\n\n\ndef test_status_is_derived_reference_not_terminal_copy(tmp_path):\n    job = \"JOB-STATUS\"\n    path = tmp_path / f\"{job}.json\"\n    path.write_text(\n        json.dumps(valid_payload(job)),\n        encoding=\"utf-8\",\n    )\n\n    read = read_canonical_result(\n        path,\n        expected_job_id=job,\n    )\n    status = build_job_status(result_read=read)\n\n    assert status[\"job_id\"] == job\n    assert status[\"result_path\"] == str(path)\n    assert status[\"result_sha\"] == read.result_sha256\n    assert status[\"result_size_bytes\"] == read.result_size_bytes\n    assert status[\"terminal_result_valid\"] is True\n    assert status[\"read_contract_version\"] == \"v1\"\n    assert \"checks\" not in status\n",
+      "path": "backend/tests/test_worker_result_reader_status_contract.py",
+      "type": "write_file"
+    }
+  ],
+  "base_sha": "41fabc12b1dcd906b24eea802d7bd88508c093b6",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_result_integrity.py",
+        "tools/mirror_sync/worker_result_reader.py",
+        "tools/mirror_sync/worker_result_status.py",
+        "backend/tests/test_worker_result_integrity_contract.py",
+        "backend/tests/test_worker_result_reader_status_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_result_integrity_contract.py",
+        "backend/tests/test_worker_result_reader_status_contract.py",
+        "backend/tests/test_worker_readonly_result_publisher.py",
+        "backend/tests/test_worker_operational_result_publisher_certification.py",
+        "backend/tests/test_worker_result_remote_truth_identity_contract.py",
+        "backend/tests/test_worker_channel_single_writer_contract.py",
+        "backend/tests/test_worker_health_branch_isolation_contract.py",
+        "backend/tests/test_worker_result_branch_isolation_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py"
+        ],
+        "max_results": 1000,
+        "paths": [
+          "tools/mirror_sync/worker_result_integrity.py",
+          "tools/mirror_sync/worker_result_reader.py",
+          "tools/mirror_sync/worker_result_status.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "tools/mirror_sync/runtime_health_publisher.py",
+          "backend/tests/test_worker_result_integrity_contract.py",
+          "backend/tests/test_worker_result_reader_status_contract.py"
+        ],
+        "search_terms": [
+          "RESULT_ABSENT",
+          "RESULT_EMPTY",
+          "RESULT_INVALID_JSON",
+          "RESULT_SCHEMA_INVALID",
+          "RESULT_JOB_ID_MISMATCH",
+          "RESULT_NON_TERMINAL",
+          "RESULT_TERMINAL_VALID",
+          "result_sha",
+          "result_size_bytes",
+          "terminal_result_valid",
+          "read_contract_version",
+          "worker_queue/results"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No frontend functional changes",
+    "No backend business changes",
+    "No Scheduler",
+    "No NetPay",
+    "No application-domain changes",
+    "Exactly three declared files may change",
+    "Do not modify worker_result_integrity.py",
+    "Do not modify universal_job_result_publisher.py",
+    "Do not modify Universal Worker dispatcher",
+    "Do not modify Universal Worker bridge",
+    "Do not create another result publisher",
+    "Do not create another queue",
+    "Do not create another dispatcher",
+    "Do not create another control plane",
+    "worker_queue/results remains terminal source of truth",
+    "Per-job status is derived index/reference only",
+    "No full result duplication in per-job status",
+    "Canonical reader must reuse worker_result_integrity.py",
+    "content empty alone must never imply canonical remote result empty",
+    "No job-specific exceptions",
+    "No chat-specific exceptions",
+    "No domain-specific exceptions",
+    "No arbitrary shell",
+    "No force push",
+    "No --no-verify",
+    "No hook bypass",
+    "production_touched must remain false",
+    "Preserve Gate6E R1 architecture",
+    "Preserve worker_result_status.py from R1",
+    "Preserve Gate6E R1 tests",
+    "Fix only the incorrect worker_result_integrity API consumption",
+    "Reuse inspect_result_file",
+    "Reuse validate_terminal_result_file",
+    "Do not create another integrity validator",
+    "Do not duplicate terminal result parsing authority"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE6E-GLOBAL-RESULT-READER-STATUS-HEALTH-MUTATION-R2-20260922",
+  "mode": "MUTATION",
+  "objective": "Reintentar Gate6E preservando exactamente el diseño global del reader canonico, status derivado por job y contrato de observabilidad de R1. Corregir exclusivamente worker_result_reader.py para reutilizar la API real y canonica ya existente en worker_result_integrity.py. No modificar worker_result_integrity.py, no duplicar validadores y no redisenar Gate6E.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
