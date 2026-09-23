@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-130QRO-20260921-DRYRUN-R2-CARLOS-20260923",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "cc2fb037710d1713c79baaf0eb0bcba3cd67a0cf",
+  "production_allowed": false,
+  "objective": "Revalidar 130QRO ManagementPro despues del fix dual-engine. Ejecutar COMERCIAL_RANGE_RESYNC DRY RUN contra la BD real y certificar Runtime V2 = detalle ISCAM.",
+  "human_summary_language": "es",
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "actions": [],
+  "units": [
+    "130QRO"
+  ],
+  "fecha_inicio": "2026-09-21",
+  "fecha_fin": "2026-09-21",
+  "dry_run": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "130qro_20260921_runtime_detail_parity_r2",
+          "sql": "WITH r AS (\n    SELECT\n      CAST(SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS decimal(19,4)) ventas,\n      SUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets,\n      SUM(CAST(ISNULL(pax_total,0) AS bigint)) pax\n    FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\n    WHERE unidad_negocio_id='130QRO'\n      AND fecha_operacion>='2026-09-21'\n      AND fecha_operacion<DATEADD(DAY,1,CAST('2026-09-21' AS date))\n  ), d0 AS (\n    SELECT numero_ticket,\n           SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) venta,\n           MAX(CAST(ISNULL(pax,0) AS bigint)) pax\n    FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n    WHERE unidad_negocio_id='130QRO'\n      AND fecha_operacion>='2026-09-21'\n      AND fecha_operacion<DATEADD(DAY,1,CAST('2026-09-21' AS date))\n      AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n    GROUP BY numero_ticket\n  ), d AS (\n    SELECT CAST(ISNULL(SUM(venta),0) AS decimal(19,4)) ventas,\n           COUNT_BIG(*) tickets,\n           SUM(CAST(ISNULL(pax,0) AS bigint)) pax\n    FROM d0\n  )\n  SELECT\n    CAST(ISNULL(r.ventas,0) AS decimal(19,4)) ventas_runtime,\n    CAST(ISNULL(d.ventas,0) AS decimal(19,4)) ventas_detalle,\n    CAST(ISNULL(r.ventas,0)-ISNULL(d.ventas,0) AS decimal(19,4)) delta_ventas,\n    ISNULL(r.tickets,0) tickets_runtime,\n    ISNULL(d.tickets,0) tickets_detalle,\n    ISNULL(r.tickets,0)-ISNULL(d.tickets,0) delta_tickets,\n    ISNULL(r.pax,0) pax_runtime,\n    ISNULL(d.pax,0) pax_detalle,\n    ISNULL(r.pax,0)-ISNULL(d.pax,0) delta_pax,\n    1 / CASE WHEN ABS(ISNULL(r.ventas,0)-ISNULL(d.ventas,0))<=0.05\n                  AND ISNULL(r.tickets,0)=ISNULL(d.tickets,0)\n                  AND ISNULL(r.pax,0)=ISNULL(d.pax,0)\n             THEN 1 ELSE 0 END AS parity_gate\n  FROM r CROSS JOIN d"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260922 Corregir Reportes de ISCAM"
+  },
+  "constraints": [
+    "Motor esperado MPRO",
+    "Consulta POS real mediante handler oficial MPRO",
+    "DRY RUN obligatorio",
+    "No modificar EDARSAHUB",
+    "No Production",
+    "Runtime V2 y detalle ISCAM deben conciliar"
+  ]
+}
