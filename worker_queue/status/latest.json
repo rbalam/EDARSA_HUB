@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "9b024fc43d9a7d213d3cd732ca5847630d45f7b2",
-  "generated_at_utc": "2026-09-23T05:47:43Z",
+  "generated_at_utc": "2026-09-23T05:48:57Z",
   "history": {
     "done_total_local": 899,
     "pending_total_local": 0,
@@ -16,61 +16,49 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3588,
-      "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5H2-REPAIR-AUDITOR-OPERATIONAL-GAP-DISCOVERY-READONLY-R1-20260922",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3146,
+      "age_seconds": 3220,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5I-REPAIR-AUDITOR-OPERATIONAL-COMPLETION-MUTATION-R2-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2851,
+      "age_seconds": 2925,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5I-REPAIR-AUDITOR-OPERATIONAL-COMPLETION-MUTATION-R3-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2647,
+      "age_seconds": 2721,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5I-REPAIR-AUDITOR-OPERATIONAL-COMPLETION-MUTATION-R4-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1993,
+      "age_seconds": 2067,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5I-REPAIR-AUDITOR-OPERATIONAL-COMPLETION-MUTATION-R5-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1393,
+      "age_seconds": 1467,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5I-REPAIR-AUDITOR-OPERATIONAL-COMPLETION-MUTATION-R6-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 981,
+      "age_seconds": 1055,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5J-REPAIR-AUDITOR-INDEPENDENT-CERT-READONLY-R1-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 14,
+      "age_seconds": 88,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5K-MAINTENANCE-CONTROL-PLANE-INTEGRATION-DISCOVERY-READONLY-R1-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3585,
-      "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE7C-GLOBAL-DELIVERABLE-CONTRACT-CERT-READONLY-R1-20260922",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 770,
+      "age_seconds": 845,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-REPAIR-R1-UNIVERSAL-WORKER-LIVE-DEFECT-DISCOVERY-READONLY-20260923",
       "reason": null,
       "state": "RESULT_READY"
@@ -84,14 +72,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 10,
+  "queue_result_ready_recent": 8,
   "queue_running": 0,
   "remote_development_sha": "9b024fc43d9a7d213d3cd732ca5847630d45f7b2",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T05:47:38Z",
-    "last_receive_utc": "2026-09-23T05:47:41Z",
+    "last_cycle_utc": "2026-09-23T05:48:53Z",
+    "last_receive_utc": "2026-09-23T05:48:55Z",
     "last_terminal_utc": "2026-09-23T05:47:28Z",
     "pid": "446",
     "runtime_fingerprint": {
