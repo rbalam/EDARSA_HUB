@@ -55,3 +55,22 @@ def test_preview_recovery_requires_fresh_worker_heartbeat():
     assert 'LAST_RECEIVE_EPOCH="$(date -d "$LAST_RECEIVE" +%s 2>/dev/null || echo 0)"' in RECOVERY
     assert 'WORKER_HEARTBEAT_FRESH=YES' in RECOVERY
     assert '"$LAST_RECEIVE_EPOCH" -ge "$RECOVERY_STARTED_EPOCH"' in RECOVERY
+
+
+def test_preview_startup_ensures_recovery_supervisor_services():
+    assert 'WATCHDOG_SERVICE = "edarsahub-bootstrap-watchdog"' in ROUTE
+    assert 'SUPERVISOR_CONF_DIR = Path("/etc/supervisor/conf.d")' in ROUTE
+    assert "def _ensure_recovery_supervisor_services()" in ROUTE
+    assert 'SUPERVISOR_CONF_DIR / "edarsahub-bootstrap-watchdog.conf"' in ROUTE
+    assert 'SUPERVISOR_CONF_DIR / "edarsahub-universal-worker.conf"' in ROUTE
+    assert '["supervisorctl", "reread"]' in ROUTE
+    assert '["supervisorctl", "update"]' in ROUTE
+    assert '["supervisorctl", "start", service]' in ROUTE
+    assert "RECOVERY_SERVICES_READY" in ROUTE
+
+
+def test_preview_startup_recovery_services_are_production_blocked():
+    assert '_is_production_environment()' in ROUTE
+    block = ROUTE.split("def _ensure_recovery_supervisor_services()", 1)[1].split("def ensure_worker_runtime_on_preview_startup()", 1)[0]
+    assert "SKIPPED_PRODUCTION_ENV" in block
+    assert '"production_touched": False' in block
