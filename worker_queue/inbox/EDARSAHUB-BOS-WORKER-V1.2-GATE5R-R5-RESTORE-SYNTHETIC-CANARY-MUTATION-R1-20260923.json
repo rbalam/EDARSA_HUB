@@ -1,0 +1,37 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "expected_sha256": "87f7de46f0aede8ad0eabe555150ee65a29402d72845ebe3e3de1233db9b8208",
+      "new": "\"\"\"Canonical execution bridge for Worker Repair.",
+      "old": "\"\"\"Canonical execution bridge for Worker Repair E2E canary.",
+      "path": "tools/mirror_sync/worker_repair_execution.py",
+      "type": "replace_text"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_repair_execution.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_repair_execution_bridge_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5R-R5-RESTORE-SYNTHETIC-CANARY-MUTATION-R1-20260923",
+  "mode": "MUTATION",
+  "objective": "Restaurar exclusivamente el docstring sintético usado por Gate5R R4 E2E. No modificar lógica funcional, aplicación, SQL, Producción, dispatcher, receiver, scheduler ni control plane.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
