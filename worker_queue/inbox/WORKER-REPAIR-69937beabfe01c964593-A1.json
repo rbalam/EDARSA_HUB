@@ -1,0 +1,37 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "expected_sha256": "169e0b18523ead0d9f11b32bb14719a30778b3d7878f109fac6172f95d334297",
+      "new": "\"\"\"Canonical execution bridge for Worker Repair E2E canary.",
+      "old": "\"\"\"Canonical execution bridge for Worker Repair.",
+      "path": "tools/mirror_sync/worker_repair_execution.py",
+      "type": "replace_text"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_repair_execution.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_repair_execution_bridge_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "WORKER-REPAIR-69937beabfe01c964593-A1",
+  "mode": "MUTATION",
+  "objective": "Canary E2E controlado de Worker Repair. Modificar exclusivamente el docstring de tools/mirror_sync/worker_repair_execution.py para demostrar publicacion y ejecucion por Universal Worker. No modificar logica funcional, aplicacion, SQL ni Produccion.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
