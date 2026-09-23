@@ -4,55 +4,61 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "d62f028202fee88f68bcd449f336a30de6462553",
-  "generated_at_utc": "2026-09-23T03:39:16Z",
+  "generated_at_utc": "2026-09-23T03:40:32Z",
   "history": {
-    "done_total_local": 883,
+    "done_total_local": 884,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 764,
-    "results_total_local": 1467
+    "results_total_local": 1468
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1544,
+      "age_seconds": 1619,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5G-MAINTENANCE-AUTONOMOUS-TRIGGER-INTEGRATION-DISCOVERY-READONLY-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 238,
+      "age_seconds": 314,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE6A-GLOBAL-RESULT-INTEGRITY-OBSERVABILITY-DISCOVERY-READONLY-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1860,
+      "age_seconds": 33,
+      "job_id": "EDARSAHUB-PARRILLA-PHOTO-FINISH-GATE0-ASIS-DISCOVERY-R1",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1936,
       "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE2-CANONICAL-CONTRACTS-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1028,
+      "age_seconds": 1104,
       "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE3-FOUNDATION-SCOPE-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 839,
+      "age_seconds": 914,
       "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE4-FOUNDATION-MUTATION-PLAN-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 472,
+      "age_seconds": 547,
       "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE4-R2-DOSSIER-MATERIALIZATION",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 278,
+      "age_seconds": 353,
       "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE4-R3-DOSSIER-MATERIALIZATION",
       "reason": null,
       "state": "RESULT_READY"
@@ -66,15 +72,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 7,
+  "queue_result_ready_recent": 8,
   "queue_running": 0,
   "remote_development_sha": "d62f028202fee88f68bcd449f336a30de6462553",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T03:39:15Z",
-    "last_receive_utc": "2026-09-23T03:39:10Z",
-    "last_terminal_utc": "2026-09-23T03:35:17Z",
+    "last_cycle_utc": "2026-09-23T03:40:27Z",
+    "last_receive_utc": "2026-09-23T03:40:30Z",
+    "last_terminal_utc": "2026-09-23T03:39:58Z",
     "pid": "344",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "fe128c5ce8552cf67546b8a71e37e79af988fdae",
