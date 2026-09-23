@@ -106,6 +106,27 @@ def repaired_pending_audit(
             reason="REPAIR_NOT_GIT_CERTIFIED",
         )
 
+    if repair_result.get("quality_gate") != "PASS":
+        return MaintenanceDecision(
+            incident_id=incident.incident_id,
+            state=MaintenanceState.REJECTED,
+            reason="QUALITY_GATE_NOT_PASS",
+        )
+
+    if repair_result.get("tests") != "PASS":
+        return MaintenanceDecision(
+            incident_id=incident.incident_id,
+            state=MaintenanceState.REJECTED,
+            reason="TESTS_NOT_PASS",
+        )
+
+    if repair_result.get("blockers") not in ([], None):
+        return MaintenanceDecision(
+            incident_id=incident.incident_id,
+            state=MaintenanceState.REJECTED,
+            reason="BLOCKERS_PRESENT",
+        )
+
     return MaintenanceDecision(
         incident_id=incident.incident_id,
         state=MaintenanceState.REPAIRED_PENDING_AUDIT,
