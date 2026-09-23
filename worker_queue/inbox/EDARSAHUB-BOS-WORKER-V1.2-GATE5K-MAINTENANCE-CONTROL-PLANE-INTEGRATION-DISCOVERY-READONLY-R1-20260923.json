@@ -1,0 +1,68 @@
+{
+  "actions": [],
+  "base_sha": "9b024fc43d9a7d213d3cd732ca5847630d45f7b2",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_maintenance_contract.py",
+        "tools/mirror_sync/worker_repair.py",
+        "tools/mirror_sync/worker_auditor.py",
+        "tools/mirror_sync/worker_maintenance_controller.py",
+        "tools/mirror_sync/worker_maintenance_runtime.py",
+        "tools/mirror_sync/worker_control_plane.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_repair_auditor_foundation_contract.py",
+        "backend/tests/test_worker_maintenance_controller_contract.py",
+        "backend/tests/test_worker_repair_auditor_operational_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py",
+          "*.sh"
+        ],
+        "max_results": 1000,
+        "paths": [
+          "tools/mirror_sync",
+          "backend/tests"
+        ],
+        "search_terms": [
+          "worker_control_plane",
+          "worker_maintenance_runtime",
+          "declare_runtime_incident",
+          "repair_attempt_allowed",
+          "register_repair_attempt",
+          "register_repair_result",
+          "audit_runtime_incident",
+          "request_universal_restart",
+          "heal_runtime_generation_and_heartbeat",
+          "requeue_stale_processing",
+          "CERTIFIED_WORKER_REPAIR",
+          "REPAIRED_PENDING_AUDIT",
+          "production_touched"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5K-MAINTENANCE-CONTROL-PLANE-INTEGRATION-DISCOVERY-READONLY-R1-20260923",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exclusivamente la integración pendiente entre el control plane canónico del Universal Worker y el runtime certificado de Worker Repair / Worker Auditor. Determinar el delta mínimo necesario para que incidentes de infraestructura del worker puedan declararse, limitar intentos, entrar en cooldown, registrar evidencia de reparación y pasar a auditoría independiente, sin crear segundo control plane, segunda cola, segundo dispatcher, shell arbitrario, mutación de dominios de aplicación o acceso a Producción.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "summary_language": "es",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
