@@ -105,3 +105,22 @@ def test_bootstrap_installs_and_starts_universal_worker_independently():
     assert 'WORKER_SERVICE="edarsahub-universal-worker"' in text
     assert 'edarsahub-universal-worker.conf' in text
     assert 'supervisorctl restart "$WORKER_SERVICE" || supervisorctl start "$WORKER_SERVICE"' in text
+
+
+def test_bootstrap_recovers_stale_preview_backend_out_of_band():
+    text = body()
+    assert 'BACKEND_SERVICE = os.environ.get("EDARSAHUB_BACKEND_SERVICE", "backend")' in text
+    assert 'BACKEND_WAKE_URL = os.environ.get("EDARSAHUB_BACKEND_WAKE_URL", "http://127.0.0.1:8001/api/internal/worker/wake")' in text
+    assert "def backend_wake_route_health()" in text
+    assert 'code == "401"' in text
+    assert 'supervisor_restart("WAKE_ROUTE_UNHEALTHY", BACKEND_SERVICE)' in text
+    assert "PREVIEW_BACKEND_STALE_RECOVERY" in text
+    assert "BACKEND_RECOVERY_COOLDOWN" in text
+
+
+def test_all_watchdog_supervisor_restarts_are_production_guarded():
+    text = body()
+    assert "def is_production_environment()" in text
+    assert "SUPERVISOR_RESTART_BLOCKED_PRODUCTION_ENV" in text
+    fn = text.split("def supervisor_restart", 1)[1].split("def safe_fast_forward", 1)[0]
+    assert "if is_production_environment():" in fn
