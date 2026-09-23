@@ -1,0 +1,67 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5A-SQL-PHYSICAL-ANTI-DUPLICATION-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "scheduling": {
+    "project_id": "EDARSAHUB-PRODUCTION-QUALITY",
+    "bounded_context": "PRODUCTION_QUALITY",
+    "resource_claims": [
+      "EDARSAHUB_SQL_METADATA_READ"
+    ],
+    "conflict_domains": [],
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1
+  },
+  "objective": "Auditar fisicamente SQL Server EDARSAHUB en modo estrictamente READ_ONLY para determinar si ya existen capacidades equivalentes a ProductionItem, ProductionStation, QualityStandard, QualityStandardVersion, Measurement, ProductionEvidence, QualityDecision, Rework, QualityOverride, Device y DeviceCalibration. Verificar tambien estructuras canonicas de Tablajeria y FechaOperacion. Clasificar posteriormente REUSE, EXTEND, CREATE, COLLISION o BLOCKER. Ningun CREATE queda autorizado por este job. No auto-advance a Gate5B.",
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "candidate_exact_objects",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    o.type_desc\nFROM sys.objects o\nWHERE LOWER(o.name) IN (\n    'productionitem',\n    'production_item',\n    'productionstation',\n    'production_station',\n    'qualitystandard',\n    'quality_standard',\n    'qualitystandardversion',\n    'quality_standard_version',\n    'measurement',\n    'measurements',\n    'productionevidence',\n    'production_evidence',\n    'qualitydecision',\n    'quality_decision',\n    'rework',\n    'qualityoverride',\n    'quality_override',\n    'device',\n    'devices',\n    'devicecalibration',\n    'device_calibration'\n)\nORDER BY o.type_desc, schema_name, object_name"
+        },
+        {
+          "name": "semantic_objects",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    o.type_desc\nFROM sys.objects o\nWHERE\n       LOWER(o.name) LIKE '%produccion%'\n    OR LOWER(o.name) LIKE '%production%'\n    OR LOWER(o.name) LIKE '%calidad%'\n    OR LOWER(o.name) LIKE '%quality%'\n    OR LOWER(o.name) LIKE '%evidencia%'\n    OR LOWER(o.name) LIKE '%evidence%'\n    OR LOWER(o.name) LIKE '%medicion%'\n    OR LOWER(o.name) LIKE '%measurement%'\n    OR LOWER(o.name) LIKE '%estacion%'\n    OR LOWER(o.name) LIKE '%station%'\n    OR LOWER(o.name) LIKE '%dispositivo%'\n    OR LOWER(o.name) LIKE '%device%'\n    OR LOWER(o.name) LIKE '%retrabajo%'\n    OR LOWER(o.name) LIKE '%rework%'\n    OR LOWER(o.name) LIKE '%override%'\n    OR LOWER(o.name) LIKE '%foto%'\n    OR LOWER(o.name) LIKE '%finish%'\n    OR LOWER(o.name) LIKE '%parrilla%'\n    OR LOWER(o.name) LIKE '%grill%'\nORDER BY o.type_desc, schema_name, object_name"
+        },
+        {
+          "name": "semantic_columns",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    o.type_desc,\n    c.column_id,\n    c.name AS column_name,\n    t.name AS data_type,\n    c.max_length,\n    c.precision,\n    c.scale,\n    c.is_nullable,\n    c.is_identity\nFROM sys.objects o\nJOIN sys.columns c\n  ON c.object_id = o.object_id\nJOIN sys.types t\n  ON t.user_type_id = c.user_type_id\nWHERE\n       LOWER(o.name) LIKE '%produccion%'\n    OR LOWER(o.name) LIKE '%production%'\n    OR LOWER(o.name) LIKE '%calidad%'\n    OR LOWER(o.name) LIKE '%quality%'\n    OR LOWER(o.name) LIKE '%evidencia%'\n    OR LOWER(o.name) LIKE '%evidence%'\n    OR LOWER(o.name) LIKE '%medicion%'\n    OR LOWER(o.name) LIKE '%measurement%'\n    OR LOWER(o.name) LIKE '%estacion%'\n    OR LOWER(o.name) LIKE '%station%'\n    OR LOWER(o.name) LIKE '%dispositivo%'\n    OR LOWER(o.name) LIKE '%device%'\n    OR LOWER(o.name) LIKE '%retrabajo%'\n    OR LOWER(o.name) LIKE '%rework%'\n    OR LOWER(o.name) LIKE '%override%'\n    OR LOWER(o.name) LIKE '%foto%'\n    OR LOWER(o.name) LIKE '%finish%'\n    OR LOWER(o.name) LIKE '%parrilla%'\n    OR LOWER(o.name) LIKE '%grill%'\n    OR LOWER(c.name) LIKE '%production%'\n    OR LOWER(c.name) LIKE '%produccion%'\n    OR LOWER(c.name) LIKE '%quality%'\n    OR LOWER(c.name) LIKE '%calidad%'\n    OR LOWER(c.name) LIKE '%evidence%'\n    OR LOWER(c.name) LIKE '%evidencia%'\n    OR LOWER(c.name) LIKE '%measurement%'\n    OR LOWER(c.name) LIKE '%medicion%'\n    OR LOWER(c.name) LIKE '%station%'\n    OR LOWER(c.name) LIKE '%estacion%'\n    OR LOWER(c.name) LIKE '%device%'\n    OR LOWER(c.name) LIKE '%dispositivo%'\n    OR LOWER(c.name) LIKE '%rework%'\n    OR LOWER(c.name) LIKE '%override%'\n    OR LOWER(c.name) LIKE '%peso%'\n    OR LOWER(c.name) LIKE '%temperatura%'\nORDER BY schema_name, object_name, c.column_id"
+        },
+        {
+          "name": "tablajeria_and_operational_objects",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    o.type_desc\nFROM sys.objects o\nWHERE LOWER(o.name) IN (\n    'operaciones_tablaje_plantillas',\n    'operaciones_tablaje_plantillasdetalle',\n    'operaciones_tablaje_ordenes',\n    'operaciones_tablaje_ordenesdetalle',\n    'tablajeria_movimientosinventario',\n    'tablajeria_costeoproduccion',\n    'tablajeria_polizascontables',\n    'tablajeria_polizasdetalle',\n    'tablajeria_configcontable',\n    'sistema_turnosoperativosunidad'\n)\nORDER BY schema_name, object_name"
+        },
+        {
+          "name": "tablajeria_and_operational_columns",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    c.column_id,\n    c.name AS column_name,\n    t.name AS data_type,\n    c.max_length,\n    c.precision,\n    c.scale,\n    c.is_nullable\nFROM sys.objects o\nJOIN sys.columns c\n  ON c.object_id = o.object_id\nJOIN sys.types t\n  ON t.user_type_id = c.user_type_id\nWHERE LOWER(o.name) IN (\n    'operaciones_tablaje_plantillas',\n    'operaciones_tablaje_plantillasdetalle',\n    'operaciones_tablaje_ordenes',\n    'operaciones_tablaje_ordenesdetalle',\n    'tablajeria_movimientosinventario',\n    'tablajeria_costeoproduccion',\n    'tablajeria_polizascontables',\n    'tablajeria_polizasdetalle',\n    'tablajeria_configcontable',\n    'sistema_turnosoperativosunidad'\n)\nORDER BY schema_name, object_name, c.column_id"
+        },
+        {
+          "name": "semantic_foreign_keys",
+          "sql": "SELECT\n    SCHEMA_NAME(parent_obj.schema_id) AS parent_schema,\n    parent_obj.name AS parent_object,\n    fk.name AS foreign_key_name,\n    COL_NAME(fkc.parent_object_id, fkc.parent_column_id) AS parent_column,\n    SCHEMA_NAME(ref_obj.schema_id) AS referenced_schema,\n    ref_obj.name AS referenced_object,\n    COL_NAME(fkc.referenced_object_id, fkc.referenced_column_id) AS referenced_column\nFROM sys.foreign_keys fk\nJOIN sys.foreign_key_columns fkc\n  ON fkc.constraint_object_id = fk.object_id\nJOIN sys.objects parent_obj\n  ON parent_obj.object_id = fk.parent_object_id\nJOIN sys.objects ref_obj\n  ON ref_obj.object_id = fk.referenced_object_id\nWHERE\n       LOWER(parent_obj.name) LIKE '%produccion%'\n    OR LOWER(parent_obj.name) LIKE '%production%'\n    OR LOWER(parent_obj.name) LIKE '%calidad%'\n    OR LOWER(parent_obj.name) LIKE '%quality%'\n    OR LOWER(parent_obj.name) LIKE '%tablaj%'\n    OR LOWER(parent_obj.name) LIKE '%evidencia%'\n    OR LOWER(parent_obj.name) LIKE '%evidence%'\n    OR LOWER(parent_obj.name) LIKE '%medicion%'\n    OR LOWER(parent_obj.name) LIKE '%measurement%'\n    OR LOWER(ref_obj.name) LIKE '%produccion%'\n    OR LOWER(ref_obj.name) LIKE '%production%'\n    OR LOWER(ref_obj.name) LIKE '%calidad%'\n    OR LOWER(ref_obj.name) LIKE '%quality%'\n    OR LOWER(ref_obj.name) LIKE '%tablaj%'\nORDER BY parent_schema, parent_object, foreign_key_name"
+        },
+        {
+          "name": "semantic_indexes",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    i.name AS index_name,\n    i.is_unique,\n    i.is_primary_key,\n    i.type_desc\nFROM sys.objects o\nJOIN sys.indexes i\n  ON i.object_id = o.object_id\nWHERE i.name IS NOT NULL\n  AND (\n       LOWER(o.name) LIKE '%produccion%'\n    OR LOWER(o.name) LIKE '%production%'\n    OR LOWER(o.name) LIKE '%calidad%'\n    OR LOWER(o.name) LIKE '%quality%'\n    OR LOWER(o.name) LIKE '%tablaj%'\n    OR LOWER(o.name) LIKE '%evidencia%'\n    OR LOWER(o.name) LIKE '%evidence%'\n    OR LOWER(o.name) LIKE '%medicion%'\n    OR LOWER(o.name) LIKE '%measurement%'\n    OR LOWER(o.name) LIKE '%device%'\n  )\nORDER BY schema_name, object_name, index_name"
+        },
+        {
+          "name": "semantic_module_definitions",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    o.type_desc\nFROM sys.objects o\nJOIN sys.sql_modules m\n  ON m.object_id = o.object_id\nWHERE\n       LOWER(m.definition) LIKE '%productionitem%'\n    OR LOWER(m.definition) LIKE '%production_item%'\n    OR LOWER(m.definition) LIKE '%qualitystandard%'\n    OR LOWER(m.definition) LIKE '%quality_standard%'\n    OR LOWER(m.definition) LIKE '%productionevidence%'\n    OR LOWER(m.definition) LIKE '%production_evidence%'\n    OR LOWER(m.definition) LIKE '%qualitydecision%'\n    OR LOWER(m.definition) LIKE '%quality_decision%'\n    OR LOWER(m.definition) LIKE '%measurement%'\n    OR LOWER(m.definition) LIKE '%rework%'\n    OR LOWER(m.definition) LIKE '%override%'\n    OR LOWER(m.definition) LIKE '%foto finish%'\n    OR LOWER(m.definition) LIKE '%parrilla%'\nORDER BY o.type_desc, schema_name, object_name"
+        },
+        {
+          "name": "synonyms_semantic",
+          "sql": "SELECT\n    SCHEMA_NAME(s.schema_id) AS schema_name,\n    s.name AS synonym_name,\n    s.base_object_name\nFROM sys.synonyms s\nWHERE\n       LOWER(s.name) LIKE '%production%'\n    OR LOWER(s.name) LIKE '%produccion%'\n    OR LOWER(s.name) LIKE '%quality%'\n    OR LOWER(s.name) LIKE '%calidad%'\n    OR LOWER(s.name) LIKE '%evidence%'\n    OR LOWER(s.name) LIKE '%evidencia%'\n    OR LOWER(s.name) LIKE '%measurement%'\n    OR LOWER(s.name) LIKE '%medicion%'\n    OR LOWER(s.name) LIKE '%station%'\n    OR LOWER(s.name) LIKE '%estacion%'\n    OR LOWER(s.name) LIKE '%device%'\n    OR LOWER(s.name) LIKE '%rework%'\n    OR LOWER(s.name) LIKE '%override%'\n    OR LOWER(s.name) LIKE '%tablaj%'\nORDER BY schema_name, synonym_name"
+        }
+      ]
+    }
+  ]
+}
