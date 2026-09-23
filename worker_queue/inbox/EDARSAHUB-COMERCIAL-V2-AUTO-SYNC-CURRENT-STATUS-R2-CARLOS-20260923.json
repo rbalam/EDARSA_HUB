@@ -1,0 +1,35 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-V2-AUTO-SYNC-CURRENT-STATUS-R2-CARLOS-20260923",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2307ed3e9f65edea77d2a2cb5f1152ad6c9df2db",
+  "production_allowed": false,
+  "objective": "Estado actual de sincronizacion automatica Comercial V2 por las cinco unidades activas, incluyendo frescura Runtime V2 y detalle ISCAM. Solo lectura.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "current_comercial_v2_status",
+          "sql": "\nWITH latest_log AS (\n  SELECT\n    u.codigo AS unidad_codigo,\n    UPPER(COALESCE(NULLIF(u.system_type,''), NULLIF(s.system_type,''), 'UNKNOWN')) AS system_type,\n    l.run_id,\n    l.run_type,\n    l.fecha_inicio,\n    l.fecha_fin,\n    l.status,\n    l.source_connection_status,\n    l.records_processed,\n    l.records_inserted,\n    l.records_updated,\n    l.records_skipped,\n    l.records_errored,\n    l.error_message,\n    l.created_at,\n    ROW_NUMBER() OVER (PARTITION BY u.codigo ORDER BY l.created_at DESC) AS rn\n  FROM dbo.Unidades_Negocio u\n  LEFT JOIN dbo.Sistema_VW_Servidores_Conexiones_Publico s\n    ON CONVERT(varchar(36),s.id)=CONVERT(varchar(36),u.server_id)\n  LEFT JOIN dbo.Comercial_SyncLog_v2 l\n    ON CONVERT(varchar(36),l.unidad_negocio_id)=CONVERT(varchar(36),u.id)\n  WHERE ISNULL(u.activo,0)=1\n    AND u.codigo IN ('130QRO','ORIGEN','130MID','CIENFUEGOS','ESTELAR')\n),\nruntime AS (\n  SELECT unidad_negocio_id, MAX(fecha_operacion) ultima_fecha_runtime\n  FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\n  WHERE unidad_negocio_id IN ('130QRO','ORIGEN','130MID','CIENFUEGOS','ESTELAR')\n  GROUP BY unidad_negocio_id\n),\ndetalle AS (\n  SELECT unidad_negocio_id, MAX(fecha_operacion) ultima_fecha_detalle\n  FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n  WHERE unidad_negocio_id IN ('130QRO','ORIGEN','130MID','CIENFUEGOS','ESTELAR')\n    AND ISNULL(activo,1)=1\n  GROUP BY unidad_negocio_id\n)\nSELECT\n  l.unidad_codigo,\n  l.system_type,\n  l.run_id,\n  l.run_type,\n  l.fecha_inicio,\n  l.fecha_fin,\n  l.status,\n  l.source_connection_status,\n  l.records_processed,\n  l.records_inserted,\n  l.records_updated,\n  l.records_skipped,\n  l.records_errored,\n  l.error_message,\n  l.created_at,\n  DATEDIFF(MINUTE,l.created_at,SYSUTCDATETIME()) minutos_desde_ultima_ejecucion,\n  r.ultima_fecha_runtime,\n  d.ultima_fecha_detalle\nFROM latest_log l\nLEFT JOIN runtime r ON r.unidad_negocio_id=l.unidad_codigo\nLEFT JOIN detalle d ON d.unidad_negocio_id=l.unidad_codigo\nWHERE l.rn=1\nORDER BY l.system_type,l.unidad_codigo"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260922 Corregir Reportes de ISCAM"
+  },
+  "constraints": [
+    "Solo lectura",
+    "No Production",
+    "No modificar datos",
+    "Cinco unidades activas"
+  ]
+}
