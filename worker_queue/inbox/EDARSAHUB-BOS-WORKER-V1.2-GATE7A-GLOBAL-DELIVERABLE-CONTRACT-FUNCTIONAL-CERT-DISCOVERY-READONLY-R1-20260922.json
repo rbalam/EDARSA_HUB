@@ -1,0 +1,117 @@
+{
+  "actions": [],
+  "base_sha": "41fabc12b1dcd906b24eea802d7bd88508c093b6",
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py"
+        ],
+        "max_results": 1500,
+        "paths": [
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "tools/mirror_sync/repository_contract_audit.py",
+          "tools/mirror_sync/worker_result_integrity.py",
+          "tools/mirror_sync/gate_chain_publisher.py",
+          "tools/mirror_sync/gate_chain_controller.py",
+          "tools/mirror_sync/gate_chain_orchestrator.py",
+          "tools/mirror_sync/gate_chain_reconciler.py",
+          "backend/tests/test_worker_readonly_result_publisher.py",
+          "backend/tests/test_worker_operational_result_publisher_certification.py",
+          "backend/tests/test_universal_job_result_lineage_certification.py",
+          "backend/tests/test_worker_repository_contract_audit.py",
+          "backend/tests/test_worker_generic_readonly.py",
+          "backend/tests/test_gate_chain_publisher.py",
+          "backend/tests/test_worker_result_integrity_contract.py"
+        ],
+        "search_terms": [
+          "ALLOWED_CHECKS",
+          "READ_ONLY_CHECKS",
+          "repository_contract_audit",
+          "repository_evidence",
+          "objective",
+          "certification_evidence",
+          "CERTIFIED_READ_ONLY",
+          "READ_ONLY_COMPLETE",
+          "work_completion",
+          "percent_complete",
+          "quality_gate",
+          "blockers",
+          "required_deliverables",
+          "deliverables",
+          "missing_deliverables",
+          "publish_one",
+          "sanitize_repository_evidence",
+          "validate_check",
+          "validate",
+          "run_check"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_readonly_result_publisher.py",
+        "backend/tests/test_worker_operational_result_publisher_certification.py",
+        "backend/tests/test_universal_job_result_lineage_certification.py",
+        "backend/tests/test_worker_repository_contract_audit.py",
+        "backend/tests/test_worker_generic_readonly.py",
+        "backend/tests/test_gate_chain_publisher.py",
+        "backend/tests/test_worker_result_integrity_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "actions must remain empty",
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No frontend functional changes",
+    "No backend business changes",
+    "No Scheduler",
+    "No NetPay",
+    "No application-domain changes",
+    "No DDL",
+    "No DML",
+    "No repository mutation",
+    "No service restart",
+    "Do not modify repository_contract_audit.py",
+    "Do not replace repository_contract_audit.py",
+    "Do not create another scanner",
+    "Do not create another Universal Worker",
+    "Do not create another queue",
+    "Do not create another dispatcher",
+    "Do not create another control plane",
+    "Do not interpret objective as executable free-form shell or code",
+    "required_deliverables must remain optional for backward compatibility",
+    "Legacy jobs without required_deliverables must remain valid",
+    "Jobs with required_deliverables must not certify COMPLETE while deliverables are missing",
+    "Separate check execution certification from deliverable completion",
+    "Dossier builder must consume structured evidence instead of rescanning repository",
+    "Do not fabricate architectural conclusions from keyword matches",
+    "Prefer deterministic classification and evidence references",
+    "No job-specific exceptions",
+    "No chat-specific exceptions",
+    "No domain-specific exceptions",
+    "No force push",
+    "No --no-verify",
+    "No hook bypass",
+    "production_touched must remain false"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE7A-GLOBAL-DELIVERABLE-CONTRACT-FUNCTIONAL-CERT-DISCOVERY-READONLY-R1-20260922",
+  "mode": "READ_ONLY",
+  "objective": "Auditar globalmente el contrato de entregables funcionales y la certificacion de completion de todos los jobs READ_ONLY del Universal Worker. Confirmar como separar check execution certification de job deliverable completion; determinar el contrato backward-compatible para required_deliverables; identificar el punto canonico para materializar dossiers desde repository_evidence sin volver a escanear el repositorio; y definir el delta minimo en bridge, dispatcher, result publisher y helpers compartidos. La solucion debe ser global para cualquier Gate, chat, dominio y modulo presente o futuro.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
