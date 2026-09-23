@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-DIAG-130QRO-R2-CARLOS-20260923",
+  "mode": "READ_ONLY",
+  "objective": "Diagnosticar en solo lectura el esquema real ManagementPro de 130QRO para corregir la extraccion de pagos ISCAM que fallo con rc=2. No modificar datos ni Produccion.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Formas de pagos ISCAM"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "130QRO"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "mpro_payment_schema",
+          "sql": "SELECT t.name AS tabla, c.column_id, c.name AS columna, ty.name AS tipo, c.max_length FROM sys.tables t INNER JOIN sys.columns c ON c.object_id=t.object_id INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name IN ('Venta_Encabezado','Comanda_Pago','Forma_Pago','Comanda') ORDER BY t.name,c.column_id"
+        },
+        {
+          "name": "mpro_sales_august_by_branch",
+          "sql": "SELECT TOP (20) CONVERT(varchar(40),Sc_Cve_Sucursal) AS sucursal, COUNT(*) AS ventas, MIN(CONVERT(date,Vn_Fecha)) AS fecha_min, MAX(CONVERT(date,Vn_Fecha)) AS fecha_max FROM Venta_Encabezado WITH (NOLOCK) WHERE CONVERT(date,Vn_Fecha) >= CONVERT(date,'2026-08-01') AND CONVERT(date,Vn_Fecha) < CONVERT(date,'2026-09-01') GROUP BY Sc_Cve_Sucursal ORDER BY ventas DESC"
+        }
+      ]
+    }
+  ]
+}
