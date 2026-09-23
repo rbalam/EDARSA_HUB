@@ -343,6 +343,183 @@ def requeue_stale_processing() -> int:
     return requeued
 
 
+
+def automatic_repair_orchestration() -> dict[str, Any]:
+    """Detect bounded Worker-infrastructure repair incidents only.
+
+    Detection and incident declaration occur here.
+    Mutation execution remains exclusively in Universal Worker.
+    Independent certification remains exclusively in Worker Auditor.
+    """
+    results_root = ROOT / ".git" / "universal-worker-queue" / "results"
+
+    observed = 0
+    eligible = 0
+    declared = 0
+    blocked = 0
+    incidents: list[dict[str, Any]] = []
+
+    repairable_statuses = {
+        "GIT_TESTS_FAILED",
+        "GIT_SCOPE_VIOLATION",
+        "GIT_DIVERGENCE_BLOCKED",
+        "GIT_PUSH_FAILED",
+        "BLOCKED",
+    }
+
+    worker_roots = (
+        "tools/mirror_sync/",
+        "backend/modules/worker_runtime_wake/",
+        "backend/tests/test_worker_",
+        ".github/workflows/universal-worker-",
+        ".github/workflows/worker-",
+    )
+
+    if not results_root.is_dir():
+        return {
+            "schema": "edarsahub.worker-automatic-repair.v1",
+            "observed_terminal_results": 0,
+            "eligible_incidents": 0,
+            "declared_incidents": 0,
+            "blocked_incidents": 0,
+            "incidents": [],
+            "production_touched": False,
+        }
+
+    for result_path in sorted(results_root.glob("*.json")):
+        try:
+            result = json.loads(
+                result_path.read_text(encoding="utf-8")
+            )
+        except Exception:
+            continue
+
+        if not isinstance(result, dict):
+            continue
+
+        observed += 1
+
+        status = str(result.get("status") or "").strip()
+        certification = str(
+            result.get("certification") or ""
+        ).strip()
+
+        if status not in repairable_statuses:
+            continue
+
+        if certification not in {
+            "",
+            "NOT_CERTIFIED",
+            "PENDING_AUDIT_EVIDENCE",
+        }:
+            continue
+
+        if result.get("production_touched") is not False:
+            continue
+
+        raw_paths = (
+            result.get("files_changed")
+            or result.get("expected_scope")
+            or []
+        )
+
+        if not isinstance(raw_paths, list):
+            continue
+
+        normalized = {
+            str(path).strip()
+            for path in raw_paths
+            if isinstance(path, str) and str(path).strip()
+        }
+
+        target_paths = tuple(
+            sorted(
+                path
+                for path in normalized
+                if any(
+                    path.startswith(root)
+                    for root in worker_roots
+                )
+            )
+        )
+
+        if not target_paths:
+            continue
+
+        # Mixed Worker/application scope fails closed.
+        if len(target_paths) != len(normalized):
+            continue
+
+        eligible += 1
+
+        source_job_id = str(
+            result.get("job_id") or result_path.stem
+        ).strip()
+
+        digest = hashlib.sha256(
+            (
+                source_job_id
+                + "\n"
+                + status
+                + "\n"
+                + "\n".join(target_paths)
+            ).encode("utf-8")
+        ).hexdigest()[:20]
+
+        incident_id = f"WORKER-{digest}"
+
+        try:
+            incident = declare_runtime_incident(
+                incident_id,
+                list(target_paths),
+            )
+        except ValueError as exc:
+            blocked += 1
+
+            incidents.append(
+                {
+                    "incident_id": incident_id,
+                    "source_job_id": source_job_id,
+                    "state": "BLOCKED",
+                    "reason": str(exc),
+                    "target_paths": list(target_paths),
+                }
+            )
+            continue
+
+        allowed, reason = repair_attempt_allowed(
+            incident_id
+        )
+
+        incidents.append(
+            {
+                "incident_id": incident.incident_id,
+                "source_job_id": source_job_id,
+                "source_status": status,
+                "state": incident.state,
+                "target_paths": list(target_paths),
+                "repair_allowed": allowed,
+                "repair_reason": reason,
+                "publication_required": allowed,
+            }
+        )
+
+        if allowed:
+            declared += 1
+        else:
+            blocked += 1
+
+    return {
+        "schema": "edarsahub.worker-automatic-repair.v1",
+        "observed_terminal_results": observed,
+        "eligible_incidents": eligible,
+        "declared_incidents": declared,
+        "blocked_incidents": blocked,
+        "incidents": incidents,
+        "production_touched": False,
+    }
+
+
 def maintenance_runtime_summary() -> dict[str, Any]:
     """Read-only maintenance-plane visibility for the canonical control plane."""
     maintenance_root = ROOT / ".git" / "universal-worker-queue" / "maintenance" / "incidents"
@@ -389,6 +566,7 @@ def cycle() -> dict[str, Any]:
     runtime = heal_runtime_generation_and_heartbeat()
     claims = reconcile_agent_guard_orphans()
     requeued = requeue_stale_processing()
+    automatic_repair = automatic_repair_orchestration()
     payload = {
         "schema": "edarsahub.worker-control-plane.v1",
         "at_utc": utc_now(),
@@ -397,6 +575,7 @@ def cycle() -> dict[str, Any]:
         "agent_guard": claims,
         "stale_processing_requeued": requeued,
         "maintenance": maintenance_runtime_summary(),
+        "automatic_repair": automatic_repair,
         "production_touched": False,
     }
     atomic_json(STATUS, payload)
