@@ -1,0 +1,90 @@
+{
+  "actions": [],
+  "base_sha": "9b024fc43d9a7d213d3cd732ca5847630d45f7b2",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "tools/mirror_sync/worker_control_plane.py",
+        "tools/mirror_sync/worker_runtime_reconciler.py",
+        "tools/mirror_sync/worker_runtime_fingerprint.py",
+        "tools/mirror_sync/runtime_health_publisher.py",
+        "tools/mirror_sync/worker_slot_runtime.py",
+        "tools/mirror_sync/git_divergence_guard.py",
+        "tools/mirror_sync/gate_chain_controller.py",
+        "tools/mirror_sync/gate_chain_publisher.py",
+        "tools/mirror_sync/worker_repair.py",
+        "tools/mirror_sync/worker_auditor.py",
+        "tools/mirror_sync/worker_maintenance_controller.py",
+        "tools/mirror_sync/worker_maintenance_runtime.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_repair_auditor_foundation_contract.py",
+        "backend/tests/test_worker_maintenance_controller_contract.py",
+        "backend/tests/test_worker_repair_auditor_operational_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_runtime_fingerprint_contract.py",
+        "backend/tests/test_worker_universal_queue_sla_contract.py",
+        "backend/tests/test_worker_three_properties_contract.py",
+        "backend/tests/test_worker_channel_single_writer_contract.py",
+        "backend/tests/test_worker_generic_readonly.py",
+        "backend/tests/test_worker_readonly_result_publisher.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py",
+          "*.sh"
+        ],
+        "max_results": 2000,
+        "paths": [
+          "tools/mirror_sync",
+          "backend/tests"
+        ],
+        "search_terms": [
+          "universal_job_worker",
+          "universal_job_bridge",
+          "universal_job_dispatcher",
+          "universal_job_result_publisher",
+          "worker_control_plane",
+          "worker_runtime_reconciler",
+          "worker_runtime_fingerprint",
+          "worker_slot_runtime",
+          "git_writer",
+          "preferred_job",
+          "last_receive_utc",
+          "last_terminal_utc",
+          "processing",
+          "pending",
+          "CERTIFIED_GIT_SYNC",
+          "HEARTBEAT_STALE",
+          "GENERATION_STALE",
+          "PID_DEAD",
+          "STALE_PROCESSING_REQUEUED",
+          "FAST_FORWARD",
+          "production_touched"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-REPAIR-R1-UNIVERSAL-WORKER-LIVE-DEFECT-DISCOVERY-READONLY-20260923",
+  "mode": "READ_ONLY",
+  "objective": "Diagnosticar exclusivamente el estado vivo del Universal Worker y determinar el defecto operativo actual que impide una operación determinista y estable. No reparar, no reiniciar servicios, no tocar Produccion, no modificar repositorio, no crear segundo dispatcher, segunda cola ni segundo control plane. Identificar únicamente evidencia del intake, bridge, dispatcher, lifecycle, result publisher, runtime reconciler, control plane, locks, slots, Git convergence y contratos de ejecución necesarios para que Worker Repair pueda derivar después un scope quirúrgico de reparación.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
