@@ -4,79 +4,85 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "871cc04a2e78fed0949024b3aaa4fe678f02dd5b",
-  "generated_at_utc": "2026-09-23T05:02:55Z",
+  "generated_at_utc": "2026-09-23T05:04:08Z",
   "history": {
     "done_total_local": 895,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 767,
-    "results_total_local": 1482
+    "rejected_total_local": 768,
+    "results_total_local": 1483
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 901,
+      "age_seconds": 974,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5H2-REPAIR-AUDITOR-OPERATIONAL-GAP-DISCOVERY-READONLY-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 459,
+      "age_seconds": 532,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5I-REPAIR-AUDITOR-OPERATIONAL-COMPLETION-MUTATION-R2-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 164,
+      "age_seconds": 236,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5I-REPAIR-AUDITOR-OPERATIONAL-COMPLETION-MUTATION-R3-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3436,
+      "age_seconds": 32,
+      "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5I-REPAIR-AUDITOR-OPERATIONAL-COMPLETION-MUTATION-R4-20260923",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 3509,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE6C-GLOBAL-RESULT-INTEGRITY-CERT-READONLY-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3297,
+      "age_seconds": 3370,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE6D-GLOBAL-RESULT-READER-STATUS-HEALTH-DISCOVERY-READONLY-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3109,
+      "age_seconds": 3181,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE6E-GLOBAL-RESULT-READER-STATUS-HEALTH-MUTATION-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2847,
+      "age_seconds": 2920,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE6E-GLOBAL-RESULT-READER-STATUS-HEALTH-MUTATION-R2-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2622,
+      "age_seconds": 2695,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE6F-GLOBAL-RESULT-READER-STATUS-CERT-READONLY-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3232,
+      "age_seconds": 3305,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE7A-GLOBAL-DELIVERABLE-CONTRACT-FUNCTIONAL-CERT-DISCOVERY-READONLY-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1962,
+      "age_seconds": 2035,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE7B-GLOBAL-DELIVERABLE-CONTRACT-FOUNDATION-MUTATION-R3-20260922",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 898,
+      "age_seconds": 971,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE7C-GLOBAL-DELIVERABLE-CONTRACT-CERT-READONLY-R1-20260922",
       "reason": null,
       "state": "RESULT_READY"
@@ -90,15 +96,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 11,
+  "queue_result_ready_recent": 12,
   "queue_running": 0,
   "remote_development_sha": "871cc04a2e78fed0949024b3aaa4fe678f02dd5b",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T05:02:54Z",
-    "last_receive_utc": "2026-09-23T05:02:55Z",
-    "last_terminal_utc": "2026-09-23T05:00:11Z",
+    "last_cycle_utc": "2026-09-23T05:04:08Z",
+    "last_receive_utc": "2026-09-23T05:04:03Z",
+    "last_terminal_utc": "2026-09-23T05:03:35Z",
     "pid": "14137",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "817df62ad32bb484b999f3dafda41d719edc8629",
