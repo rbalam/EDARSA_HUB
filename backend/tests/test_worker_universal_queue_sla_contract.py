@@ -26,8 +26,11 @@ def test_dispatcher_tracks_runtime_and_only_releases_created_claims():
 
 def test_dispatcher_uses_serial_slot_runtime_without_parallel_execution():
     text = DISPATCHER.read_text(encoding='utf-8')
-    assert 'from worker_slot_runtime import create_slot, release_slot, update_slot_state' in text
+    assert 'from worker_slot_runtime import create_slot, reclaim_stale_slot, release_slot, update_slot_state' in text
     assert 'slot_id = "readonly-1" if slot_class == "READ_ONLY" else "mutation-1"' in text
+    assert 'result["slot_recovery"] = reclaim_stale_slot(' in text
+    assert 'heartbeat_stale_seconds=90' in text
+    assert text.index('reclaim_stale_slot(') < text.index('create_slot(')
     assert 'create_slot(' in text
     assert 'update_slot_state(slot_id, "RUNNING"' in text
     assert 'update_slot_state(slot_id, "TERMINALIZING"' in text

@@ -237,6 +237,43 @@ def load_active_slots() -> list[dict[str, Any]]:
     return rows
 
 
+def reclaim_stale_slot(
+    slot_id: str,
+    *,
+    heartbeat_stale_seconds: int,
+) -> dict[str, Any]:
+    existing = load_slot(slot_id)
+    if existing is None:
+        return {
+            "reclaimed": False,
+            "reason": "EMPTY",
+            "slot_id": slot_id,
+        }
+
+    if slot_is_live(
+        existing,
+        heartbeat_stale_seconds=heartbeat_stale_seconds,
+    ):
+        return {
+            "reclaimed": False,
+            "reason": "LIVE",
+            "slot_id": slot_id,
+            "job_id": existing["job_id"],
+            "state": existing["state"],
+        }
+
+    stale_job_id = existing["job_id"]
+    stale_state = existing["state"]
+    release_slot(slot_id)
+    return {
+        "reclaimed": True,
+        "reason": "STALE",
+        "slot_id": slot_id,
+        "job_id": stale_job_id,
+        "state": stale_state,
+    }
+
+
 def create_slot(
     *,
     slot_id: str,

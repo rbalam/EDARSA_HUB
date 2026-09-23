@@ -40,6 +40,16 @@ def test_slot_runtime_is_fail_closed_and_atomic():
     assert "os.replace" in value
 
 
+def test_slot_runtime_reclaims_only_stale_slots():
+    value = text()
+    assert "def reclaim_stale_slot(" in value
+    assert "slot_is_live(" in value
+    assert '"reason": "LIVE"' in value
+    assert '"reason": "STALE"' in value
+    reclaim_block = value.split("def reclaim_stale_slot(", 1)[1].split("def create_slot(", 1)[0]
+    assert "release_slot(slot_id)" in reclaim_block
+
+
 def test_slot_runtime_has_no_git_sql_or_shell():
     value = text()
     assert "subprocess" not in value

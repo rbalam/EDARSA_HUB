@@ -27,7 +27,7 @@ from typing import Any
 
 from worker_concurrency import evaluate_scope_advance
 from worker_scheduling import normalize_metadata
-from worker_slot_runtime import create_slot, release_slot, update_slot_state
+from worker_slot_runtime import create_slot, reclaim_stale_slot, release_slot, update_slot_state
 from git_divergence_guard import (GitGuardError, acquire_writer_lock, compare_and_swap, inspect_repository, mutation_policy, post_push_verify, recover_authorized_local_ahead, release_writer_lock, requires_writer_lock, scoped_push_env, validate_commit_scope)
 
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
@@ -547,6 +547,10 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
         scheduling = normalize_metadata(job)
         slot_class = "READ_ONLY" if mode in {READ_ONLY_MODE, "READ_ONLY_SQL", FRONTEND_BUILD_CERTIFICATION_MODE} else "MUTATION"
         slot_id = "readonly-1" if slot_class == "READ_ONLY" else "mutation-1"
+        result["slot_recovery"] = reclaim_stale_slot(
+            slot_id,
+            heartbeat_stale_seconds=90,
+        )
         create_slot(
             slot_id=slot_id,
             slot_class=slot_class,
