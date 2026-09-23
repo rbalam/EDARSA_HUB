@@ -28,6 +28,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from tools.mirror_sync.worker_maintenance_runtime import (
+    audit_runtime_incident,
+    declare_runtime_incident,
+    read_runtime_incident,
+    register_repair_attempt,
+    register_repair_result,
+    repair_attempt_allowed,
+)
+
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
 GIT = ROOT / ".git"
 STATE = GIT / "universal-worker-queue"
@@ -334,6 +343,47 @@ def requeue_stale_processing() -> int:
     return requeued
 
 
+def maintenance_runtime_summary() -> dict[str, Any]:
+    """Read-only maintenance-plane visibility for the canonical control plane."""
+    maintenance_root = ROOT / ".git" / "universal-worker-queue" / "maintenance" / "incidents"
+
+    incidents: list[dict[str, Any]] = []
+
+    if maintenance_root.is_dir():
+        for path in sorted(maintenance_root.glob("*.json")):
+            try:
+                incident = read_runtime_incident(path.stem)
+            except Exception as exc:
+                incidents.append(
+                    {
+                        "incident_id": path.stem,
+                        "state": "INVALID",
+                        "error": type(exc).__name__,
+                    }
+                )
+                continue
+
+            if incident is None:
+                continue
+
+            incidents.append(
+                {
+                    "incident_id": incident.incident_id,
+                    "state": incident.state,
+                    "attempts": incident.attempts,
+                    "cooldown_until_epoch": incident.cooldown_until_epoch,
+                    "target_paths": list(incident.target_paths),
+                    "production_touched": incident.production_touched,
+                }
+            )
+
+    return {
+        "schema": "edarsahub.worker-maintenance-summary.v1",
+        "incident_count": len(incidents),
+        "incidents": incidents,
+        "production_touched": False,
+    }
+
 def cycle() -> dict[str, Any]:
     ff = preserve_and_fast_forward()
     runtime = heal_runtime_generation_and_heartbeat()
@@ -346,6 +396,7 @@ def cycle() -> dict[str, Any]:
         "runtime": runtime,
         "agent_guard": claims,
         "stale_processing_requeued": requeued,
+        "maintenance": maintenance_runtime_summary(),
         "production_touched": False,
     }
     atomic_json(STATUS, payload)
