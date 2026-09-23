@@ -1,0 +1,37 @@
+{
+  "base_sha": "3caf19135a4d532f1283035ef5f552fa952ae128",
+  "blockers": [
+    "comercial_range_resync_execution_failed"
+  ],
+  "canonical_sql_mutation": false,
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-23T01:23:24Z",
+  "dry_run": true,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-V2-INTEGRAL-ORIGEN-20260921-DRYRUN-R1-CARLOS-20260923",
+  "operation": "COMERCIAL_RANGE_RESYNC",
+  "operation_summary": {
+    "error": "SYSTEM_NOT_SOFTRESTAURANT",
+    "event": "comercial_range_summary",
+    "success": false,
+    "unidad": "ORIGEN"
+  },
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-23T01:23:29Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-23T01:23:22Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "units": [
+    "ORIGEN"
+  ],
+  "work_completion": "NOT_CERTIFIED"
+}
