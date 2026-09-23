@@ -3,38 +3,44 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "b2a567353f16d02f1ba33afa67e0c31e249d6921",
-  "generated_at_utc": "2026-09-23T23:01:13Z",
+  "development_sha": "de3ca01b35ad59a69ba76414e485120c99c3f163",
+  "generated_at_utc": "2026-09-23T23:02:42Z",
   "history": {
-    "done_total_local": 916,
+    "done_total_local": 917,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 774,
-    "results_total_local": 1509
+    "results_total_local": 1510
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2652,
+      "age_seconds": 2741,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5S-R2-CONTROL-PLANE-SUPERVISOR-OWNERSHIP-MUTATION-R1-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3405,
+      "age_seconds": 3494,
       "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5A-R2-TARGETED-PHYSICAL-ANTI-DUPLICATION-READONLY",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2600,
+      "age_seconds": 2689,
       "job_id": "EDARSAHUB-TABLAJERIA-GATE2-TECHNICAL-MAPPING-STRUCTURED-READONLY-R2",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 75,
+      "job_id": "EDARSAHUB-WORKER-RESULT-PUBLISHER-DIRECT-IMPORT-FIX-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "b2a567353f16d02f1ba33afa67e0c31e249d6921",
+  "local_development_sha": "de3ca01b35ad59a69ba76414e485120c99c3f163",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
@@ -42,21 +48,21 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 3,
+  "queue_result_ready_recent": 4,
   "queue_running": 0,
-  "remote_development_sha": "b2a567353f16d02f1ba33afa67e0c31e249d6921",
+  "remote_development_sha": "de3ca01b35ad59a69ba76414e485120c99c3f163",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T23:01:07Z",
-    "last_receive_utc": "2026-09-23T23:01:08Z",
-    "last_terminal_utc": "2026-09-23T22:17:01Z",
-    "pid": "10166",
+    "last_cycle_utc": "2026-09-23T23:02:41Z",
+    "last_receive_utc": "2026-09-23T23:02:36Z",
+    "last_terminal_utc": "2026-09-23T23:01:26Z",
+    "pid": "35745",
     "runtime_fingerprint": {
-      "active_worker_code_tree_sha": "f08304883585370a4b7a8b6e814f9fb7da7cfbb3",
+      "active_worker_code_tree_sha": "26bcd53b6a83e86923bdc739a2f5fc840ae9f9a1",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "b2a567353f16d02f1ba33afa67e0c31e249d6921",
+      "development_sha": "de3ca01b35ad59a69ba76414e485120c99c3f163",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
@@ -71,7 +77,7 @@
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
       "worker_code_tree_aligned": true,
-      "worker_code_tree_sha": "f08304883585370a4b7a8b6e814f9fb7da7cfbb3"
+      "worker_code_tree_sha": "26bcd53b6a83e86923bdc739a2f5fc840ae9f9a1"
     }
   },
   "schema": "edarsahub.worker-health.v3",
