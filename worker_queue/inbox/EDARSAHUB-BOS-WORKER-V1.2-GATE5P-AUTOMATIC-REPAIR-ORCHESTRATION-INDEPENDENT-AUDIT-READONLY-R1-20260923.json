@@ -1,0 +1,85 @@
+{
+  "actions": [],
+  "base_sha": "15a5daaaffe979ca650c6efbd04d7ea594577b4b",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_maintenance_contract.py",
+        "tools/mirror_sync/worker_repair.py",
+        "tools/mirror_sync/worker_auditor.py",
+        "tools/mirror_sync/worker_maintenance_controller.py",
+        "tools/mirror_sync/worker_maintenance_runtime.py",
+        "tools/mirror_sync/worker_control_plane.py",
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "tools/mirror_sync/gate_chain_publisher.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_repair_auditor_foundation_contract.py",
+        "backend/tests/test_worker_maintenance_controller_contract.py",
+        "backend/tests/test_worker_repair_auditor_operational_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_control_plane_maintenance_integration_contract.py",
+        "backend/tests/test_worker_automatic_repair_orchestration_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py"
+        ],
+        "max_results": 1000,
+        "paths": [
+          "tools/mirror_sync/worker_maintenance_contract.py",
+          "tools/mirror_sync/worker_repair.py",
+          "tools/mirror_sync/worker_auditor.py",
+          "tools/mirror_sync/worker_maintenance_controller.py",
+          "tools/mirror_sync/worker_maintenance_runtime.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "tools/mirror_sync/gate_chain_publisher.py",
+          "backend/tests/test_worker_repair_auditor_foundation_contract.py",
+          "backend/tests/test_worker_maintenance_controller_contract.py",
+          "backend/tests/test_worker_repair_auditor_operational_contract.py",
+          "backend/tests/test_worker_control_plane_contract.py",
+          "backend/tests/test_worker_control_plane_maintenance_integration_contract.py",
+          "backend/tests/test_worker_automatic_repair_orchestration_contract.py"
+        ],
+        "search_terms": [
+          "declare_runtime_incident",
+          "repair_attempt_allowed",
+          "register_repair_attempt",
+          "register_repair_result",
+          "audit_runtime_incident",
+          "MAX_REPAIR_ATTEMPTS",
+          "REPAIR_COOLDOWN_SECONDS",
+          "CERTIFIED_WORKER_REPAIR",
+          "REPAIRED_PENDING_AUDIT",
+          "production_touched",
+          "universal_job_dispatcher",
+          "gate_chain_publisher"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5P-AUTOMATIC-REPAIR-ORCHESTRATION-INDEPENDENT-AUDIT-READONLY-R1-20260923",
+  "mode": "READ_ONLY",
+  "objective": "Certificar independientemente la orquestacion automatica de Worker Repair, verificando que solo atiende infraestructura del Universal Worker, respeta intentos y cooldown, reutiliza la cola y dispatcher canonicos, no ejecuta mutaciones directamente, no se autocertifica y nunca toca Produccion.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
