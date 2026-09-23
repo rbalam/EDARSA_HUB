@@ -19,6 +19,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from tools.mirror_sync.worker_result_integrity import (
+    is_terminal_result_path,
+    validate_terminal_result_file,
+    validate_terminal_result_payload,
+)
+
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
 STATE = ROOT / ".git" / "universal-worker-queue"
 RESULTS = STATE / "results"
@@ -97,12 +103,17 @@ def load(path: Path) -> dict[str, Any]:
 
 
 def atomic_json(path: Path, payload: dict[str, Any]) -> None:
+    if is_terminal_result_path(path):
+        validate_terminal_result_payload(payload)
+
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
         json.dump(payload, handle, ensure_ascii=False, indent=2, sort_keys=True)
         handle.write("\n")
         temp = handle.name
     os.replace(temp, path)
+    if is_terminal_result_path(path):
+        validate_terminal_result_file(path)
 
 
 def valid_sha(value: Any) -> bool:
