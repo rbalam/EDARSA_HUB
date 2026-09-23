@@ -46,6 +46,9 @@ class RuntimeIncidentState:
     cooldown_until_epoch: float | None
     target_paths: tuple[str, ...]
     production_touched: bool = False
+    repair_job_id: str | None = None
+    repair_publication_state: str | None = None
+    repair_publication_commit: str | None = None
 
 
 def _incident_path(incident_id: str) -> Path:
@@ -101,6 +104,13 @@ def declare_runtime_incident(
             cooldown_until_epoch=existing.get("cooldown_until_epoch"),
             target_paths=existing_paths,
             production_touched=bool(existing.get("production_touched")),
+            repair_job_id=existing.get("repair_job_id"),
+            repair_publication_state=existing.get(
+                "repair_publication_state"
+            ),
+            repair_publication_commit=existing.get(
+                "repair_publication_commit"
+            ),
         )
 
     incident = declare_incident(incident_id, target_paths)
@@ -122,6 +132,9 @@ def declare_runtime_incident(
         cooldown_until_epoch=None,
         target_paths=tuple(incident.paths),
         production_touched=False,
+        repair_job_id=None,
+        repair_publication_state=None,
+        repair_publication_commit=None,
     )
 
 
@@ -181,6 +194,113 @@ def register_repair_attempt(
         cooldown_until_epoch=state.get("cooldown_until_epoch"),
         target_paths=tuple(state.get("target_paths") or []),
         production_touched=False,
+        repair_job_id=state.get("repair_job_id"),
+        repair_publication_state=state.get(
+            "repair_publication_state"
+        ),
+        repair_publication_commit=state.get(
+            "repair_publication_commit"
+        ),
+    )
+
+
+def register_published_repair_attempt(
+    incident_id: str,
+    repair_job_id: str,
+    publication_evidence: dict[str, Any],
+    *,
+    now_epoch: float | None = None,
+) -> RuntimeIncidentState:
+    state = _load_state(incident_id)
+    if state is None:
+        raise ValueError("INCIDENT_NOT_DECLARED")
+
+    job_id = str(repair_job_id or "").strip()
+    if not job_id:
+        raise ValueError("REPAIR_JOB_ID_REQUIRED")
+
+    publication_status = str(
+        publication_evidence.get("status") or ""
+    ).strip()
+
+    if publication_status not in {"PUBLISHED", "EXISTS"}:
+        raise ValueError("REPAIR_PUBLICATION_NOT_COMMITTED")
+
+    existing_job_id = str(
+        state.get("repair_job_id") or ""
+    ).strip()
+
+    if existing_job_id:
+        if existing_job_id != job_id:
+            raise ValueError("REPAIR_JOB_BINDING_MISMATCH")
+
+        return RuntimeIncidentState(
+            incident_id=incident_id,
+            state=str(state.get("state")),
+            attempts=int(state.get("attempts") or 0),
+            cooldown_until_epoch=state.get(
+                "cooldown_until_epoch"
+            ),
+            target_paths=tuple(
+                state.get("target_paths") or []
+            ),
+            production_touched=bool(
+                state.get("production_touched")
+            ),
+            repair_job_id=existing_job_id,
+            repair_publication_state=state.get(
+                "repair_publication_state"
+            ),
+            repair_publication_commit=state.get(
+                "repair_publication_commit"
+            ),
+        )
+
+    allowed, reason = repair_attempt_allowed(
+        incident_id,
+        now_epoch=now_epoch,
+    )
+
+    if not allowed:
+        raise ValueError(reason)
+
+    attempts = int(state.get("attempts") or 0) + 1
+
+    state["attempts"] = attempts
+    state["state"] = MaintenanceState.REPAIR_REQUIRED.value
+    state["repair_job_id"] = job_id
+    state["repair_publication_state"] = publication_status
+
+    commit_sha = publication_evidence.get("commit_sha")
+    state["repair_publication_commit"] = (
+        str(commit_sha).strip()
+        if commit_sha
+        else None
+    )
+
+    _atomic_json(
+        _incident_path(incident_id),
+        state,
+    )
+
+    return RuntimeIncidentState(
+        incident_id=incident_id,
+        state=str(state["state"]),
+        attempts=attempts,
+        cooldown_until_epoch=state.get(
+            "cooldown_until_epoch"
+        ),
+        target_paths=tuple(
+            state.get("target_paths") or []
+        ),
+        production_touched=bool(
+            state.get("production_touched")
+        ),
+        repair_job_id=job_id,
+        repair_publication_state=publication_status,
+        repair_publication_commit=state.get(
+            "repair_publication_commit"
+        ),
     )
 
 
@@ -266,4 +386,11 @@ def read_runtime_incident(
         cooldown_until_epoch=state.get("cooldown_until_epoch"),
         target_paths=tuple(state.get("target_paths") or []),
         production_touched=bool(state.get("production_touched")),
+        repair_job_id=state.get("repair_job_id"),
+        repair_publication_state=state.get(
+            "repair_publication_state"
+        ),
+        repair_publication_commit=state.get(
+            "repair_publication_commit"
+        ),
     )
