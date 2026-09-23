@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PARRILLA-PHOTO-FINISH-GATE0-R2-DOSSIER-CONSOLIDATION",
+  "mode": "READ_ONLY",
+  "objective": "Consolidar el dossier AS-IS de Bitacoras de Parrilla + Foto Finish usando la evidencia ya descubierta por R1. No repetir discovery indiscriminado. Analizar los contratos reales encontrados y producir un dossier arquitectonico con evidencia exacta de archivos, simbolos, endpoints, migrations, helpers y objetos existentes. Clasificar cada capacidad como IMPLEMENTED, PARTIAL, DOCUMENTED_ONLY, LEGACY, DEPRECATED, NOT_FOUND o UNKNOWN. Entregar obligatoriamente: 1 EXECUTIVE_FINDING; 2 COMMAND_CONTRACT; 3 PRODUCT_CONTRACT; 4 RECIPE_TECHNICAL_SHEET_CONTRACT; 5 PRODUCTION_UNIT_FINDING; 6 KDS_OPERATION_FINDING; 7 PHOTO_FINISH_ASIS; 8 MEDIA_EVIDENCE_CONTRACT; 9 VISUAL_STANDARD_CONTRACT; 10 EQUIPMENT_STATION_CONTRACT; 11 CAMERA_SCALE_IOT_FINDING; 12 RBAC_CONTRACT; 13 EVENT_AUDIT_CONTRACT; 14 DATE_TIME_CONTRACT; 15 FRONTEND_OPERATIONAL_CONTRACT; 16 COMMUNICATIONS_CONTRACT; 17 INVENTORY_COST_INTEGRATION_FINDING; 18 ARCHITECTURAL_CONSTRAINTS; 19 DOCUMENTED_FAILURES_APPLICABLE; 20 REUSE_MATRIX; 21 DUPLICATION_RISKS; 22 CORE_GROWTH_RISKS; 23 PROPOSED_BOUNDED_CONTEXTS; 24 MINIMUM_CHANGE_SURFACE; 25 DO_NOT_TOUCH; 26 BLOCKERS; 27 OPEN_GAPS; 28 GATE1_INPUT. No implementar. No crear tablas. No crear endpoints. No modificar backend/frontend. No DDL/DML. No tocar Produccion. No publicar Gate1.",
+  "production_allowed": false,
+  "requested_at_utc": "2026-09-23T03:57:21.343287+00:00",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "13. Produccion",
+    "chat": "Bitacoras de Parrilla"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "41fabc12b1dcd906b24eea802d7bd88508c093b6",
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "frontend",
+          "tools",
+          "docs"
+        ],
+        "search_terms": [
+          "comanda",
+          "pedido",
+          "producto",
+          "receta",
+          "ficha tecnica",
+          "produccion",
+          "kds",
+          "parrilla",
+          "foto finish",
+          "photo finish",
+          "evidence",
+          "media",
+          "estandar visual",
+          "equipo",
+          "station",
+          "evento",
+          "audit",
+          "rbac",
+          "FechaOperacion",
+          "timezone",
+          "communications",
+          "twilio",
+          "whatsapp",
+          "inventario",
+          "costo",
+          "tablajeria"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*"
+        ],
+        "max_results": 5000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
