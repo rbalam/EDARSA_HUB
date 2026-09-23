@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-RESULT-PUBLISHER-DIRECT-IMPORT-FIX-R1-CARLOS-20260923",
+  "mode": "MUTATION",
+  "objective": "Corregir el fallo runtime del Universal Worker V1.2 en universal_job_result_publisher.py cuando se ejecuta directamente desde tools/mirror_sync y no existe /app en sys.path. Agregar fallback de import para worker_result_integrity y una regresion que reproduzca la ejecucion directa. No tocar SQL, aplicacion funcional ni Produccion.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_result_publisher.py",
+      "expected_count": 1,
+      "old": "from tools.mirror_sync.worker_result_integrity import (\n    is_terminal_result_path,\n    validate_terminal_result_file,\n    validate_terminal_result_payload,\n)\n",
+      "new": "# WORKER_RESULT_INTEGRITY_IMPORT_COMPAT_V1\ntry:\n    from tools.mirror_sync.worker_result_integrity import (\n        is_terminal_result_path,\n        validate_terminal_result_file,\n        validate_terminal_result_payload,\n    )\nexcept ModuleNotFoundError:\n    from worker_result_integrity import (\n        is_terminal_result_path,\n        validate_terminal_result_file,\n        validate_terminal_result_payload,\n    )\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_universal_job_result_publisher_direct_import_contract.py",
+      "content": "import os\nimport subprocess\nimport sys\nfrom pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[2]\nPUBLISHER_DIR = ROOT / \"tools\" / \"mirror_sync\"\n\n\ndef test_result_publisher_imports_when_executed_directly_from_its_directory():\n    env = dict(os.environ)\n    env.pop(\"PYTHONPATH\", None)\n\n    proc = subprocess.run(\n        [\n            sys.executable,\n            \"-c\",\n            (\n                \"import runpy; \"\n                \"runpy.run_path(\"\n                \"'universal_job_result_publisher.py', \"\n                \"run_name='publisher_import_contract'\"\n                \")\"\n            ),\n        ],\n        cwd=PUBLISHER_DIR,\n        env=env,\n        capture_output=True,\n        text=True,\n        check=False,\n    )\n\n    assert proc.returncode == 0, proc.stdout + proc.stderr\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "backend/tests/test_universal_job_result_publisher_direct_import_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_universal_job_result_publisher_direct_import_contract.py",
+        "backend/tests/test_worker_result_integrity_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
