@@ -9,7 +9,11 @@ queue results branch as NOT_CERTIFIED/BLOCKED evidence.
 
 from __future__ import annotations
 
-from tools.mirror_sync.worker_deliverable_contract import evaluate_deliverables
+# WORKER_DELIVERABLE_IMPORT_COMPAT_V1
+try:
+    from tools.mirror_sync.worker_deliverable_contract import evaluate_deliverables
+except ModuleNotFoundError:
+    from worker_deliverable_contract import evaluate_deliverables
 
 import fcntl
 import json

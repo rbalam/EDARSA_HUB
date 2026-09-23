@@ -9,7 +9,11 @@ and it never executes shell text supplied by a request.
 
 from __future__ import annotations
 
-from tools.mirror_sync.worker_deliverable_contract import normalize_required_deliverables
+# WORKER_DELIVERABLE_IMPORT_COMPAT_V1
+try:
+    from tools.mirror_sync.worker_deliverable_contract import normalize_required_deliverables
+except ModuleNotFoundError:
+    from worker_deliverable_contract import normalize_required_deliverables
 
 import json
 import os
