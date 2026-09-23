@@ -1,0 +1,79 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-PREVIEW-RELEASE-CERTIFICATION-R1-CARLOS-20260923",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "7979842d9f842ebecc33c6b9b9e3fd745b3a48de",
+  "production_allowed": false,
+  "objective": "Gate final de salida a Preview para Reportes ISCAM: certificar auto-sync de las cinco unidades, recuperación de ORIGEN API local mediante logs recientes, y contratos de frontend/backend para sesión estable, timeout y agrupaciones Sin agrupar/Día/Mes/Año. Solo lectura y validaciones de repositorio.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "preview_release_current_sync_matrix",
+          "sql": "\nWITH latest_log AS (\n  SELECT\n    u.codigo AS unidad_codigo,\n    UPPER(COALESCE(NULLIF(u.system_type,''), NULLIF(s.system_type,''), 'UNKNOWN')) AS system_type,\n    l.run_id,\n    l.run_type,\n    l.fecha_inicio,\n    l.fecha_fin,\n    l.status,\n    l.source_connection_status,\n    l.records_processed,\n    l.records_inserted,\n    l.records_updated,\n    l.records_skipped,\n    l.records_errored,\n    l.error_code,\n    l.error_message,\n    l.created_at,\n    ROW_NUMBER() OVER (PARTITION BY u.codigo ORDER BY l.created_at DESC) AS rn\n  FROM dbo.Unidades_Negocio u\n  LEFT JOIN dbo.Sistema_VW_Servidores_Conexiones_Publico s\n    ON CONVERT(varchar(36),s.id)=CONVERT(varchar(36),u.server_id)\n  LEFT JOIN dbo.Comercial_SyncLog_v2 l\n    ON CONVERT(varchar(36),l.unidad_negocio_id)=CONVERT(varchar(36),u.id)\n  WHERE ISNULL(u.activo,0)=1\n    AND u.codigo IN ('130QRO','ORIGEN','130MID','CIENFUEGOS','ESTELAR')\n),\nruntime AS (\n  SELECT unidad_negocio_id, MAX(fecha_operacion) ultima_fecha_runtime\n  FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\n  WHERE unidad_negocio_id IN ('130QRO','ORIGEN','130MID','CIENFUEGOS','ESTELAR')\n  GROUP BY unidad_negocio_id\n),\ndetalle AS (\n  SELECT unidad_negocio_id, MAX(fecha_operacion) ultima_fecha_detalle\n  FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n  WHERE unidad_negocio_id IN ('130QRO','ORIGEN','130MID','CIENFUEGOS','ESTELAR')\n    AND ISNULL(activo,1)=1\n  GROUP BY unidad_negocio_id\n)\nSELECT\n  l.unidad_codigo,\n  l.system_type,\n  l.run_id,\n  l.run_type,\n  l.fecha_inicio,\n  l.fecha_fin,\n  l.status,\n  l.source_connection_status,\n  l.records_processed,\n  l.records_inserted,\n  l.records_updated,\n  l.records_skipped,\n  l.records_errored,\n  l.error_code,\n  l.error_message,\n  l.created_at,\n  DATEDIFF(MINUTE,l.created_at,SYSUTCDATETIME()) minutos_desde_ultima_ejecucion,\n  r.ultima_fecha_runtime,\n  d.ultima_fecha_detalle\nFROM latest_log l\nLEFT JOIN runtime r ON r.unidad_negocio_id=l.unidad_codigo\nLEFT JOIN detalle d ON d.unidad_negocio_id=l.unidad_codigo\nWHERE l.rn=1\nORDER BY l.system_type,l.unidad_codigo"
+        },
+        {
+          "name": "preview_release_origen_recent_logs",
+          "sql": "\nSELECT TOP 10\n  l.run_id,\n  l.run_type,\n  l.fecha_inicio,\n  l.fecha_fin,\n  l.status,\n  l.source_connection_status,\n  l.records_processed,\n  l.records_inserted,\n  l.records_updated,\n  l.records_errored,\n  l.error_code,\n  l.error_message,\n  l.created_at\nFROM dbo.Comercial_SyncLog_v2 l\nJOIN dbo.Unidades_Negocio u\n  ON CONVERT(varchar(36),u.id)=CONVERT(varchar(36),l.unidad_negocio_id)\nWHERE u.codigo='ORIGEN'\nORDER BY l.created_at DESC"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "paths": [
+        "frontend/src/portal-inteligencia/api/client.js",
+        "frontend/src/lib/api.js",
+        "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+        "backend/modules/inteligencia_comercial/iscam_routes.py",
+        "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+        "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+        "backend/tests/test_iscam_portal_timeout_contract_r1.py",
+        "backend/tests/test_worker_comercial_range_resync_capability_r87.py"
+      ],
+      "terms": [
+        "INTEL_REQUEST_TIMEOUT_MS",
+        "coordinatedRefresh",
+        "SESSION_EXPIRADA",
+        "Sin agrupar",
+        "Día",
+        "Mes",
+        "Año",
+        "group_by",
+        "Comercial_Inteligencia_VentasDetalleProducto",
+        "vw_Comercial_KPIs_Diarios_v2_Runtime",
+        "sync_comercial_v2",
+        "MPRO",
+        "SOFTRESTAURANT"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_portal_timeout_contract_r1.py",
+        "backend/tests/test_worker_comercial_range_resync_capability_r87.py",
+        "backend/tests/test_iscam_detail_parity_backfill_r33.py",
+        "backend/tests/test_worker_slot_runtime_contract.py"
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260922 Corregir Reportes de ISCAM"
+  },
+  "constraints": [
+    "Solo lectura",
+    "No modificar ORIGEN",
+    "No modificar SQL",
+    "No Production",
+    "Certificar las cinco unidades activas",
+    "ORIGEN debe mostrar recuperación o quedar explícitamente bloqueado",
+    "ISCAM debe conservar sesión estable y agrupaciones"
+  ]
+}
