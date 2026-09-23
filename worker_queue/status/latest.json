@@ -4,41 +4,41 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "cc2fb037710d1713c79baaf0eb0bcba3cd67a0cf",
-  "generated_at_utc": "2026-09-23T03:08:09Z",
+  "generated_at_utc": "2026-09-23T03:09:25Z",
   "history": {
-    "done_total_local": 877,
+    "done_total_local": 878,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 763,
-    "results_total_local": 1460
+    "results_total_local": 1461
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2,
+      "age_seconds": 69,
       "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE2-CANONICAL-CONTRACTS-READONLY-R1",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
     }
   ],
   "local_development_sha": "cc2fb037710d1713c79baaf0eb0bcba3cd67a0cf",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 0,
-  "queue_running": 1,
+  "queue_result_ready_recent": 1,
+  "queue_running": 0,
   "remote_development_sha": "cc2fb037710d1713c79baaf0eb0bcba3cd67a0cf",
   "runtime": {
-    "current_job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE2-CANONICAL-CONTRACTS-READONLY-R1",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T03:08:05Z",
-    "last_receive_utc": "2026-09-23T03:08:08Z",
-    "last_terminal_utc": "2026-09-23T01:37:12Z",
+    "last_cycle_utc": "2026-09-23T03:09:23Z",
+    "last_receive_utc": "2026-09-23T03:09:25Z",
+    "last_terminal_utc": "2026-09-23T03:08:15Z",
     "pid": "344",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "fe128c5ce8552cf67546b8a71e37e79af988fdae",
