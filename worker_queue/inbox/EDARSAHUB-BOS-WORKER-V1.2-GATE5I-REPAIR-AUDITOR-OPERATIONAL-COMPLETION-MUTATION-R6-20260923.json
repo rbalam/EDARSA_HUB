@@ -1,0 +1,118 @@
+{
+  "actions": [
+    {
+      "content": "\"\"\"Operational runtime for Worker Repair / Worker Auditor.\n\nThis module is intentionally narrow:\n- worker infrastructure incidents only\n- no application-domain mutation\n- no Production\n- bounded attempts\n- cooldown after terminal failure\n- atomic local maintenance state\n- repair never self-certifies\n- auditor never mutates\n\"\"\"\nfrom __future__ import annotations\n\nimport json\nimport os\nimport tempfile\nimport time\nfrom dataclasses import asdict, dataclass\nfrom pathlib import Path\nfrom typing import Any\n\nfrom tools.mirror_sync.worker_maintenance_controller import (\n    MaintenanceDecision,\n    MaintenanceIncident,\n    MaintenanceState,\n    audit_incident,\n    declare_incident,\n    repaired_pending_audit,\n    repair_plan_for,\n)\n\nROOT = Path(__file__).resolve().parents[2]\nSTATE_DIR = ROOT / \".git\" / \"universal-worker-queue\" / \"maintenance\"\nINCIDENT_DIR = STATE_DIR / \"incidents\"\n\nMAX_REPAIR_ATTEMPTS = 2\nREPAIR_COOLDOWN_SECONDS = 300\n\n\n@dataclass(frozen=True)\nclass RuntimeIncidentState:\n    incident_id: str\n    state: str\n    attempts: int\n    cooldown_until_epoch: float | None\n    target_paths: tuple[str, ...]\n    production_touched: bool = False\n\n\ndef _incident_path(incident_id: str) -> Path:\n    safe = str(incident_id or \"\").strip()\n    if not safe:\n        raise ValueError(\"MAINTENANCE_INCIDENT_ID_REQUIRED\")\n    return INCIDENT_DIR / f\"{safe}.json\"\n\n\ndef _atomic_json(path: Path, payload: dict[str, Any]) -> None:\n    path.parent.mkdir(parents=True, exist_ok=True)\n    with tempfile.NamedTemporaryFile(\n        \"w\",\n        encoding=\"utf-8\",\n        dir=path.parent,\n        delete=False,\n    ) as handle:\n        json.dump(payload, handle, ensure_ascii=False, indent=2, sort_keys=True)\n        handle.write(\"\\n\")\n        handle.flush()\n        os.fsync(handle.fileno())\n        temp_name = handle.name\n    os.replace(temp_name, path)\n\n\ndef _load_state(incident_id: str) -> dict[str, Any] | None:\n    path = _incident_path(incident_id)\n    if not path.is_file():\n        return None\n    data = json.loads(path.read_text(encoding=\"utf-8\"))\n    if not isinstance(data, dict):\n        raise ValueError(\"MAINTENANCE_STATE_INVALID\")\n    return data\n\n\ndef declare_runtime_incident(\n    incident_id: str,\n    target_paths: list[str],\n) -> RuntimeIncidentState:\n    existing = _load_state(incident_id)\n\n    if existing is not None:\n        existing_paths = tuple(existing.get(\"target_paths\") or [])\n        requested_paths = tuple(sorted(set(target_paths)))\n\n        if existing_paths != requested_paths:\n            raise ValueError(\"MAINTENANCE_INCIDENT_SCOPE_MISMATCH\")\n\n        return RuntimeIncidentState(\n            incident_id=incident_id,\n            state=str(existing.get(\"state\")),\n            attempts=int(existing.get(\"attempts\") or 0),\n            cooldown_until_epoch=existing.get(\"cooldown_until_epoch\"),\n            target_paths=existing_paths,\n            production_touched=bool(existing.get(\"production_touched\")),\n        )\n\n    incident = declare_incident(incident_id, target_paths)\n\n    payload = {\n        \"incident_id\": incident.incident_id,\n        \"state\": incident.state.value,\n        \"attempts\": 0,\n        \"cooldown_until_epoch\": None,\n        \"target_paths\": list(incident.paths),\n        \"production_touched\": False,\n    }\n    _atomic_json(_incident_path(incident_id), payload)\n\n    return RuntimeIncidentState(\n        incident_id=incident.incident_id,\n        state=incident.state.value,\n        attempts=0,\n        cooldown_until_epoch=None,\n        target_paths=tuple(incident.paths),\n        production_touched=False,\n    )\n\n\ndef repair_attempt_allowed(\n    incident_id: str,\n    *,\n    now_epoch: float | None = None,\n) -> tuple[bool, str]:\n    state = _load_state(incident_id)\n    if state is None:\n        return False, \"INCIDENT_NOT_DECLARED\"\n\n    now_value = time.time() if now_epoch is None else float(now_epoch)\n\n    cooldown_until = state.get(\"cooldown_until_epoch\")\n    if cooldown_until is not None and now_value < float(cooldown_until):\n        return False, \"REPAIR_COOLDOWN_ACTIVE\"\n\n    attempts = int(state.get(\"attempts\") or 0)\n    if attempts >= MAX_REPAIR_ATTEMPTS:\n        return False, \"REPAIR_ATTEMPTS_EXHAUSTED\"\n\n    if state.get(\"state\") not in {\n        MaintenanceState.REPAIR_REQUIRED.value,\n        MaintenanceState.REJECTED.value,\n    }:\n        return False, \"INCIDENT_NOT_REPAIRABLE\"\n\n    return True, \"REPAIR_ALLOWED\"\n\n\ndef register_repair_attempt(\n    incident_id: str,\n    *,\n    now_epoch: float | None = None,\n) -> RuntimeIncidentState:\n    allowed, reason = repair_attempt_allowed(\n        incident_id,\n        now_epoch=now_epoch,\n    )\n    if not allowed:\n        raise ValueError(reason)\n\n    state = _load_state(incident_id)\n    assert state is not None\n\n    attempts = int(state.get(\"attempts\") or 0) + 1\n    state[\"attempts\"] = attempts\n    state[\"state\"] = MaintenanceState.REPAIR_REQUIRED.value\n\n    _atomic_json(_incident_path(incident_id), state)\n\n    return RuntimeIncidentState(\n        incident_id=incident_id,\n        state=str(state[\"state\"]),\n        attempts=attempts,\n        cooldown_until_epoch=state.get(\"cooldown_until_epoch\"),\n        target_paths=tuple(state.get(\"target_paths\") or []),\n        production_touched=False,\n    )\n\n\ndef register_repair_result(\n    incident_id: str,\n    repair_result: dict[str, Any],\n    *,\n    now_epoch: float | None = None,\n) -> MaintenanceDecision:\n    state = _load_state(incident_id)\n    if state is None:\n        raise ValueError(\"INCIDENT_NOT_DECLARED\")\n\n    incident = MaintenanceIncident(\n        incident_id=incident_id,\n        paths=tuple(state.get(\"target_paths\") or []),\n        state=MaintenanceState.REPAIR_REQUIRED,\n        production_allowed=False,\n    )\n\n    decision = repaired_pending_audit(\n        incident,\n        repair_result,\n    )\n\n    state[\"state\"] = decision.state.value\n    state[\"production_touched\"] = bool(\n        repair_result.get(\"production_touched\")\n    )\n\n    if decision.state is MaintenanceState.REJECTED:\n        now_value = time.time() if now_epoch is None else float(now_epoch)\n        state[\"cooldown_until_epoch\"] = (\n            now_value + REPAIR_COOLDOWN_SECONDS\n        )\n    else:\n        state[\"cooldown_until_epoch\"] = None\n\n    _atomic_json(_incident_path(incident_id), state)\n    return decision\n\n\ndef audit_runtime_incident(\n    incident_id: str,\n    repair_result: dict[str, Any],\n) -> MaintenanceDecision:\n    state = _load_state(incident_id)\n    if state is None:\n        raise ValueError(\"INCIDENT_NOT_DECLARED\")\n\n    incident = MaintenanceIncident(\n        incident_id=incident_id,\n        paths=tuple(state.get(\"target_paths\") or []),\n        state=MaintenanceState.REPAIRED_PENDING_AUDIT,\n        production_allowed=False,\n    )\n\n    decision = audit_incident(\n        incident,\n        repair_result,\n    )\n\n    state[\"state\"] = decision.state.value\n    state[\"production_touched\"] = bool(\n        repair_result.get(\"production_touched\")\n    )\n\n    _atomic_json(_incident_path(incident_id), state)\n    return decision\n\n\ndef read_runtime_incident(\n    incident_id: str,\n) -> RuntimeIncidentState | None:\n    state = _load_state(incident_id)\n    if state is None:\n        return None\n\n    return RuntimeIncidentState(\n        incident_id=incident_id,\n        state=str(state.get(\"state\")),\n        attempts=int(state.get(\"attempts\") or 0),\n        cooldown_until_epoch=state.get(\"cooldown_until_epoch\"),\n        target_paths=tuple(state.get(\"target_paths\") or []),\n        production_touched=bool(state.get(\"production_touched\")),\n    )\n",
+      "path": "tools/mirror_sync/worker_maintenance_runtime.py",
+      "type": "write_file"
+    },
+    {
+      "content": "\"\"\"Canonical maintenance-plane lifecycle for Universal Worker repair.\n\nThis module coordinates maintenance incidents only.\n\nIt does not:\n- consume normal EDARSAHUB development jobs,\n- touch Production,\n- execute arbitrary shell or SQL,\n- duplicate Universal Worker dispatching,\n- bypass Agent Guard or Git Divergence Guard.\n\nLifecycle:\nDECLARED -> REPAIR_REQUIRED -> REPAIRED_PENDING_AUDIT ->\nCERTIFIED | REJECTED\n\"\"\"\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom enum import Enum\nfrom typing import Any\n\nfrom tools.mirror_sync.worker_auditor import audit_repair_result\nfrom tools.mirror_sync.worker_repair import (\n    RepairPlan,\n    build_repair_plan,\n    repair_requires_independent_audit,\n)\n\n\nclass MaintenanceState(str, Enum):\n    DECLARED = \"DECLARED\"\n    REPAIR_REQUIRED = \"REPAIR_REQUIRED\"\n    REPAIRED_PENDING_AUDIT = \"REPAIRED_PENDING_AUDIT\"\n    CERTIFIED = \"CERTIFIED\"\n    REJECTED = \"REJECTED\"\n\n\n@dataclass(frozen=True)\nclass MaintenanceIncident:\n    incident_id: str\n    paths: tuple[str, ...]\n    state: MaintenanceState\n    production_allowed: bool = False\n\n\n@dataclass(frozen=True)\nclass MaintenanceDecision:\n    incident_id: str\n    state: MaintenanceState\n    reason: str\n    certified: bool = False\n    production_touched: bool = False\n\n\ndef declare_incident(\n    incident_id: str,\n    paths: list[str] | tuple[str, ...],\n) -> MaintenanceIncident:\n    plan = build_repair_plan(\n        incident_id,\n        paths,\n    )\n\n    return MaintenanceIncident(\n        incident_id=plan.incident_id,\n        paths=plan.paths,\n        state=MaintenanceState.REPAIR_REQUIRED,\n    )\n\n\ndef repair_plan_for(\n    incident: MaintenanceIncident,\n) -> RepairPlan:\n    if incident.state is not MaintenanceState.REPAIR_REQUIRED:\n        raise ValueError(\"MAINTENANCE_INCIDENT_NOT_REPAIRABLE\")\n\n    return build_repair_plan(\n        incident.incident_id,\n        incident.paths,\n    )\n\n\ndef repaired_pending_audit(\n    incident: MaintenanceIncident,\n    repair_result: dict[str, Any],\n) -> MaintenanceDecision:\n    if incident.state is not MaintenanceState.REPAIR_REQUIRED:\n        raise ValueError(\"MAINTENANCE_INCIDENT_INVALID_STATE\")\n\n    if not repair_requires_independent_audit(\n        repair_plan_for(incident)\n    ):\n        raise RuntimeError(\"INDEPENDENT_AUDIT_REQUIRED\")\n\n    if repair_result.get(\"production_touched\") is not False:\n        return MaintenanceDecision(\n            incident_id=incident.incident_id,\n            state=MaintenanceState.REJECTED,\n            reason=\"PRODUCTION_TOUCHED\",\n        )\n\n    if repair_result.get(\"git_sync_status\") != \"CERTIFIED_GIT_SYNC\":\n        return MaintenanceDecision(\n            incident_id=incident.incident_id,\n            state=MaintenanceState.REJECTED,\n            reason=\"REPAIR_NOT_GIT_CERTIFIED\",\n        )\n\n    if repair_result.get(\"quality_gate\") != \"PASS\":\n        return MaintenanceDecision(\n            incident_id=incident.incident_id,\n            state=MaintenanceState.REJECTED,\n            reason=\"QUALITY_GATE_NOT_PASS\",\n        )\n\n    if repair_result.get(\"tests\") != \"PASS\":\n        return MaintenanceDecision(\n            incident_id=incident.incident_id,\n            state=MaintenanceState.REJECTED,\n            reason=\"TESTS_NOT_PASS\",\n        )\n\n    if repair_result.get(\"blockers\") not in ([], None):\n        return MaintenanceDecision(\n            incident_id=incident.incident_id,\n            state=MaintenanceState.REJECTED,\n            reason=\"BLOCKERS_PRESENT\",\n        )\n\n    return MaintenanceDecision(\n        incident_id=incident.incident_id,\n        state=MaintenanceState.REPAIRED_PENDING_AUDIT,\n        reason=\"REPAIR_EVIDENCE_READY\",\n    )\n\n\ndef audit_incident(\n    incident: MaintenanceIncident,\n    repair_result: dict[str, Any],\n) -> MaintenanceDecision:\n    audit = audit_repair_result(repair_result)\n\n    if not audit.certified:\n        return MaintenanceDecision(\n            incident_id=incident.incident_id,\n            state=MaintenanceState.REJECTED,\n            reason=audit.reason,\n            certified=False,\n        )\n\n    return MaintenanceDecision(\n        incident_id=incident.incident_id,\n        state=MaintenanceState.CERTIFIED,\n        reason=\"CERTIFIED_WORKER_REPAIR\",\n        certified=True,\n    )\n",
+      "expected_sha256": "911c6da2febb9e5fb1bcfd163d14a7a73886cabbc39f5cad8577885969415bb4",
+      "path": "tools/mirror_sync/worker_maintenance_controller.py",
+      "type": "write_file"
+    },
+    {
+      "content": "import sys\nfrom pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\n\nif str(ROOT) not in sys.path:\n    sys.path.insert(0, str(ROOT))\n\nfrom tools.mirror_sync import worker_maintenance_runtime as runtime\nfrom tools.mirror_sync.worker_maintenance_controller import (\n    MaintenanceState,\n)\n\n\ndef valid_result():\n    return {\n        \"files_changed\": [\n            \"tools/mirror_sync/gate_chain_publisher.py\",\n        ],\n        \"production_touched\": False,\n        \"quality_gate\": \"PASS\",\n        \"tests\": \"PASS\",\n        \"blockers\": [],\n        \"git_sync_status\": \"CERTIFIED_GIT_SYNC\",\n    }\n\n\ndef _redirect_state(tmp_path, monkeypatch):\n    monkeypatch.setattr(runtime, \"STATE_DIR\", tmp_path)\n    monkeypatch.setattr(runtime, \"INCIDENT_DIR\", tmp_path / \"incidents\")\n\n\ndef test_runtime_incident_declaration_is_idempotent(tmp_path, monkeypatch):\n    _redirect_state(tmp_path, monkeypatch)\n\n    first = runtime.declare_runtime_incident(\n        \"INCIDENT-IDEMPOTENT\",\n        [\"tools/mirror_sync/gate_chain_publisher.py\"],\n    )\n    second = runtime.declare_runtime_incident(\n        \"INCIDENT-IDEMPOTENT\",\n        [\"tools/mirror_sync/gate_chain_publisher.py\"],\n    )\n\n    assert first.incident_id == second.incident_id\n    assert first.target_paths == second.target_paths\n    assert second.state == MaintenanceState.REPAIR_REQUIRED.value\n\n\ndef test_same_incident_cannot_change_scope(tmp_path, monkeypatch):\n    _redirect_state(tmp_path, monkeypatch)\n\n    runtime.declare_runtime_incident(\n        \"INCIDENT-SCOPE\",\n        [\"tools/mirror_sync/gate_chain_publisher.py\"],\n    )\n\n    try:\n        runtime.declare_runtime_incident(\n            \"INCIDENT-SCOPE\",\n            [\"tools/mirror_sync/worker_control_plane.py\"],\n        )\n    except ValueError as exc:\n        assert \"MAINTENANCE_INCIDENT_SCOPE_MISMATCH\" in str(exc)\n    else:\n        raise AssertionError(\"incident scope mutation must fail closed\")\n\n\ndef test_repair_attempts_are_bounded(tmp_path, monkeypatch):\n    _redirect_state(tmp_path, monkeypatch)\n\n    runtime.declare_runtime_incident(\n        \"INCIDENT-ATTEMPTS\",\n        [\"tools/mirror_sync/gate_chain_publisher.py\"],\n    )\n\n    runtime.register_repair_attempt(\n        \"INCIDENT-ATTEMPTS\",\n        now_epoch=1000,\n    )\n    runtime.register_repair_attempt(\n        \"INCIDENT-ATTEMPTS\",\n        now_epoch=1001,\n    )\n\n    allowed, reason = runtime.repair_attempt_allowed(\n        \"INCIDENT-ATTEMPTS\",\n        now_epoch=1002,\n    )\n\n    assert allowed is False\n    assert reason == \"REPAIR_ATTEMPTS_EXHAUSTED\"\n\n\ndef test_failed_repair_enters_cooldown(tmp_path, monkeypatch):\n    _redirect_state(tmp_path, monkeypatch)\n\n    runtime.declare_runtime_incident(\n        \"INCIDENT-COOLDOWN\",\n        [\"tools/mirror_sync/gate_chain_publisher.py\"],\n    )\n    runtime.register_repair_attempt(\n        \"INCIDENT-COOLDOWN\",\n        now_epoch=1000,\n    )\n\n    result = valid_result()\n    result[\"tests\"] = \"FAIL\"\n\n    decision = runtime.register_repair_result(\n        \"INCIDENT-COOLDOWN\",\n        result,\n        now_epoch=1000,\n    )\n\n    assert decision.state is MaintenanceState.REJECTED\n\n    allowed, reason = runtime.repair_attempt_allowed(\n        \"INCIDENT-COOLDOWN\",\n        now_epoch=1001,\n    )\n\n    assert allowed is False\n    assert reason == \"REPAIR_COOLDOWN_ACTIVE\"\n\n\ndef test_repair_never_self_certifies(tmp_path, monkeypatch):\n    _redirect_state(tmp_path, monkeypatch)\n\n    runtime.declare_runtime_incident(\n        \"INCIDENT-NO-SELF-CERT\",\n        [\"tools/mirror_sync/gate_chain_publisher.py\"],\n    )\n    runtime.register_repair_attempt(\n        \"INCIDENT-NO-SELF-CERT\",\n    )\n\n    decision = runtime.register_repair_result(\n        \"INCIDENT-NO-SELF-CERT\",\n        valid_result(),\n    )\n\n    assert decision.state is MaintenanceState.REPAIRED_PENDING_AUDIT\n    assert decision.certified is False\n\n\ndef test_independent_auditor_certifies_valid_repair(tmp_path, monkeypatch):\n    _redirect_state(tmp_path, monkeypatch)\n\n    runtime.declare_runtime_incident(\n        \"INCIDENT-AUDIT\",\n        [\"tools/mirror_sync/gate_chain_publisher.py\"],\n    )\n    runtime.register_repair_attempt(\n        \"INCIDENT-AUDIT\",\n    )\n\n    repair_result = valid_result()\n\n    pending = runtime.register_repair_result(\n        \"INCIDENT-AUDIT\",\n        repair_result,\n    )\n    assert pending.state is MaintenanceState.REPAIRED_PENDING_AUDIT\n\n    certified = runtime.audit_runtime_incident(\n        \"INCIDENT-AUDIT\",\n        repair_result,\n    )\n\n    assert certified.state is MaintenanceState.CERTIFIED\n    assert certified.certified is True\n    assert certified.reason == \"CERTIFIED_WORKER_REPAIR\"\n\n\ndef test_auditor_rejects_production_touch(tmp_path, monkeypatch):\n    _redirect_state(tmp_path, monkeypatch)\n\n    runtime.declare_runtime_incident(\n        \"INCIDENT-PRODUCTION\",\n        [\"tools/mirror_sync/gate_chain_publisher.py\"],\n    )\n\n    result = valid_result()\n    result[\"production_touched\"] = True\n\n    decision = runtime.audit_runtime_incident(\n        \"INCIDENT-PRODUCTION\",\n        result,\n    )\n\n    assert decision.state is MaintenanceState.REJECTED\n    assert decision.certified is False\n\n\ndef test_application_scope_remains_forbidden(tmp_path, monkeypatch):\n    _redirect_state(tmp_path, monkeypatch)\n\n    try:\n        runtime.declare_runtime_incident(\n            \"INCIDENT-APP\",\n            [\"frontend/src/App.jsx\"],\n        )\n    except ValueError as exc:\n        assert \"REPAIR_SCOPE_FORBIDDEN\" in str(exc)\n    else:\n        raise AssertionError(\"application mutation must remain forbidden\")\n\n\ndef test_runtime_has_no_production_capability():\n    assert runtime.MAX_REPAIR_ATTEMPTS > 0\n    assert runtime.REPAIR_COOLDOWN_SECONDS > 0\n    assert \"Edarsahub_Produccion\" not in Path(runtime.__file__).read_text(\n        encoding=\"utf-8\"\n    )\n",
+      "path": "backend/tests/test_worker_repair_auditor_operational_contract.py",
+      "type": "write_file"
+    }
+  ],
+  "base_sha": "871cc04a2e78fed0949024b3aaa4fe678f02dd5b",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_maintenance_contract.py",
+        "tools/mirror_sync/worker_repair.py",
+        "tools/mirror_sync/worker_auditor.py",
+        "tools/mirror_sync/worker_maintenance_controller.py",
+        "tools/mirror_sync/worker_maintenance_runtime.py",
+        "backend/tests/test_worker_repair_auditor_operational_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_repair_auditor_foundation_contract.py",
+        "backend/tests/test_worker_maintenance_controller_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_repair_auditor_operational_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py"
+        ],
+        "max_results": 1000,
+        "paths": [
+          "tools/mirror_sync/worker_maintenance_contract.py",
+          "tools/mirror_sync/worker_repair.py",
+          "tools/mirror_sync/worker_auditor.py",
+          "tools/mirror_sync/worker_maintenance_controller.py",
+          "tools/mirror_sync/worker_maintenance_runtime.py",
+          "tools/mirror_sync/worker_control_plane.py",
+          "backend/tests/test_worker_repair_auditor_foundation_contract.py",
+          "backend/tests/test_worker_maintenance_controller_contract.py",
+          "backend/tests/test_worker_repair_auditor_operational_contract.py"
+        ],
+        "search_terms": [
+          "WORKER_REPAIR",
+          "WORKER_AUDITOR",
+          "CERTIFIED_WORKER_REPAIR",
+          "REPAIRED_PENDING_AUDIT",
+          "MAX_REPAIR_ATTEMPTS",
+          "REPAIR_COOLDOWN_SECONDS",
+          "incident_id",
+          "production_touched",
+          "atomic",
+          "os.replace"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No SQL",
+    "No Mongo",
+    "No application-domain mutation",
+    "Worker Repair scope limited to worker infrastructure",
+    "Worker Auditor must remain non-mutating",
+    "Worker Repair must never self-certify",
+    "Independent audit required",
+    "Incident identity must be idempotent",
+    "Incident scope must be immutable",
+    "Repair attempts must be bounded",
+    "Failed repairs must enter cooldown",
+    "No second queue",
+    "No second dispatcher",
+    "No second control plane",
+    "No arbitrary shell",
+    "No service restart",
+    "No force push",
+    "No rebase",
+    "No stash",
+    "Exact mutation scope is only worker_maintenance_runtime.py and its test",
+    "Reuse worker_repair.py without modifying it",
+    "Reuse worker_auditor.py without modifying it",
+    "Reuse worker_maintenance_controller.py without modifying it",
+    "No artificial changes to satisfy Git scope",
+    "Worker Repair cannot self-certify",
+    "Worker Auditor cannot mutate",
+    "Application domain mutation forbidden",
+    "Production forbidden"
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5I-REPAIR-AUDITOR-OPERATIONAL-COMPLETION-MUTATION-R6-20260923",
+  "mode": "MUTATION",
+  "objective": "Completar operacionalmente Worker Repair y Worker Auditor reutilizando la foundation canónica existente. Corregir exclusivamente el runtime candidato para consumir MaintenanceIncident.paths, que es el contrato canónico vigente. Mantener idempotencia de incidentes, scope inmutable, reintentos acotados, cooldown, persistencia atómica, prohibición de autocertificación de Worker Repair, Worker Auditor estrictamente READ_ONLY, cero Producción, cero dominios de aplicación y sin crear segundo control plane, queue o dispatcher.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
