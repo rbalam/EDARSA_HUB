@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "2307ed3e9f65edea77d2a2cb5f1152ad6c9df2db",
-  "generated_at_utc": "2026-09-23T16:46:47Z",
+  "generated_at_utc": "2026-09-23T16:48:03Z",
   "history": {
     "done_total_local": 907,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 72,
+      "age_seconds": 148,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5R-R2-MAINTENANCE-EXECUTION-BRIDGE-MUTATION-R1-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3337,
+      "age_seconds": 3412,
       "job_id": "EDARSAHUB-COMERCIAL-V2-AUTO-SYNC-CURRENT-STATUS-R2-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2372,
+      "age_seconds": 2448,
       "job_id": "EDARSAHUB-ORIGEN-API-LOCAL-AUTO-SYNC-DIAG-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T16:46:45Z",
-    "last_receive_utc": "2026-09-23T16:46:47Z",
+    "last_cycle_utc": "2026-09-23T16:48:02Z",
+    "last_receive_utc": "2026-09-23T16:48:03Z",
     "last_terminal_utc": "2026-09-23T16:45:35Z",
     "pid": "443",
     "runtime_fingerprint": {
