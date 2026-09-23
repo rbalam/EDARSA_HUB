@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "REMOTE_AHEAD_ONLY",
   "development_sha": "1e6e2a5b67a2cdea774f0c22cad64af3799bc0f5",
-  "generated_at_utc": "2026-09-23T05:53:51Z",
+  "generated_at_utc": "2026-09-23T05:55:05Z",
   "history": {
     "done_total_local": 900,
     "pending_total_local": 0,
@@ -16,55 +16,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3515,
+      "age_seconds": 3588,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5I-REPAIR-AUDITOR-OPERATIONAL-COMPLETION-MUTATION-R2-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3220,
+      "age_seconds": 3293,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5I-REPAIR-AUDITOR-OPERATIONAL-COMPLETION-MUTATION-R3-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3015,
+      "age_seconds": 3089,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5I-REPAIR-AUDITOR-OPERATIONAL-COMPLETION-MUTATION-R4-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2361,
+      "age_seconds": 2435,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5I-REPAIR-AUDITOR-OPERATIONAL-COMPLETION-MUTATION-R5-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1761,
+      "age_seconds": 1835,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5I-REPAIR-AUDITOR-OPERATIONAL-COMPLETION-MUTATION-R6-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1349,
+      "age_seconds": 1423,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5J-REPAIR-AUDITOR-INDEPENDENT-CERT-READONLY-R1-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 383,
+      "age_seconds": 456,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5K-MAINTENANCE-CONTROL-PLANE-INTEGRATION-DISCOVERY-READONLY-R1-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 23,
+      "age_seconds": 96,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5L-MAINTENANCE-CONTROL-PLANE-INTEGRATION-MUTATION-R1-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1139,
+      "age_seconds": 1213,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-REPAIR-R1-UNIVERSAL-WORKER-LIVE-DEFECT-DISCOVERY-READONLY-20260923",
       "reason": null,
       "state": "RESULT_READY"
@@ -84,8 +84,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-23T05:53:45Z",
-    "last_receive_utc": "2026-09-23T05:53:47Z",
+    "last_cycle_utc": "2026-09-23T05:54:59Z",
+    "last_receive_utc": "2026-09-23T05:55:01Z",
     "last_terminal_utc": "2026-09-23T05:53:28Z",
     "pid": "446",
     "runtime_fingerprint": {
