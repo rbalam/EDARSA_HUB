@@ -1,0 +1,457 @@
+{
+  "base_sha": "53823108d3237bbddfcbded9e61520df2927bf96",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-24T19:54:07Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-ORIGEN-R14-FAILDATE-R17-CARLOS-20260924",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-24T19:54:44Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "folio",
+              "documento",
+              "codigo",
+              "forma",
+              "Cp_Importe",
+              "Cp_Propina",
+              "Cp_Referencia",
+              "referencia_tipo",
+              "Vn_Fecha"
+            ],
+            "name": "origen_2022_07_23_payment_sample",
+            "row_count_returned": 35,
+            "rows": [
+              [
+                "SB-0000864",
+                "SB-0001331",
+                "0004",
+                "T DE CREDITO",
+                "2268.600000000",
+                "300.000000000",
+                "cred",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000865",
+                "SB-0001334",
+                "0004",
+                "T DE CREDITO",
+                "1164.000000000",
+                "154.000000000",
+                "876705",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000866",
+                "SB-0001336",
+                "0001",
+                "EFECTIVO",
+                "250.000000000",
+                "0E-9",
+                "efe",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000867",
+                "SB-0001339",
+                "0001",
+                "EFECTIVO",
+                "1500.000000000",
+                "0E-9",
+                "EFE",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000868",
+                "SB-0001329",
+                "0004",
+                "T DE CREDITO",
+                "2289.000000000",
+                "210.000000000",
+                "CRED",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000868",
+                "SB-0001329",
+                "0005",
+                "T DE DEBITO",
+                "2290.000000000",
+                "210.000000000",
+                "DEB",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000869",
+                "SB-0001332",
+                "0004",
+                "T DE CREDITO",
+                "2685.020000000",
+                "355.000000000",
+                "CRED",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000870",
+                "SB-0001340",
+                "0004",
+                "T DE CREDITO",
+                "770.000000000",
+                "70.000000000",
+                "CRED",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000871",
+                "SB-0001338",
+                "0004",
+                "T DE CREDITO",
+                "1370.000000000",
+                "0E-9",
+                "CRED",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000873",
+                "SB-0001344",
+                "0005",
+                "T DE DEBITO",
+                "490.000000000",
+                "70.000000000",
+                "DEB",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000874",
+                "SB-0001337",
+                "0004",
+                "T DE CREDITO",
+                "2843.970000000",
+                "350.000000000",
+                "CRED",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000875",
+                "SB-0001333",
+                "0006",
+                "T AMEX",
+                "5589.000000000",
+                "729.000000000",
+                "CRED",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000876",
+                "SB-0001346",
+                "0001",
+                "EFECTIVO",
+                "1000.000000000",
+                "0E-9",
+                "EFE",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000877",
+                "SB-0001343",
+                "0001",
+                "EFECTIVO",
+                "3000.000000000",
+                "0E-9",
+                "efe",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000878",
+                "SB-0001357",
+                "0005",
+                "T DE DEBITO",
+                "836.000000000",
+                "76.000000000",
+                "DEB",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000879",
+                "SB-0001353",
+                "0001",
+                "EFECTIVO",
+                "1200.000000000",
+                "0E-9",
+                "EFE",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000880",
+                "SB-0001358",
+                "0001",
+                "EFECTIVO",
+                "1500.000000000",
+                "0E-9",
+                "EFE",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000881",
+                "SB-0001352",
+                "0001",
+                "EFECTIVO",
+                "1400.000000000",
+                "0E-9",
+                "EFE",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000882",
+                "SB-0001359",
+                "0004",
+                "T DE CREDITO",
+                "1149.400000000",
+                "150.000000000",
+                "CRED",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000882",
+                "SB-0001359",
+                "0005",
+                "T DE DEBITO",
+                "160.000000000",
+                "25.000000000",
+                "DEB",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000883",
+                "SB-0001355",
+                "0001",
+                "EFECTIVO",
+                "1000.000000000",
+                "0E-9",
+                "EFE",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000884",
+                "SB-0001350",
+                "0001",
+                "EFECTIVO",
+                "1797.400000000",
+                "0E-9",
+                "EFE",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000885",
+                "SB-0001364",
+                "0001",
+                "EFECTIVO",
+                "1250.000000000",
+                "0E-9",
+                "EFE",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000886",
+                "SB-0001349",
+                "0004",
+                "T DE CREDITO",
+                "2630.000000000",
+                "350.000000000",
+                "CRED",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000887",
+                "SB-0001348",
+                "0004",
+                "T DE CREDITO",
+                "1622.300000000",
+                "215.000000000",
+                "CRED",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000888",
+                "SB-0001351",
+                "0004",
+                "T DE CREDITO",
+                "1430.000000000",
+                "175.000000000",
+                "CRED",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000888",
+                "SB-0001351",
+                "0005",
+                "T DE DEBITO",
+                "905.000000000",
+                "0E-9",
+                "DEB",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000889",
+                "SB-0001356",
+                "0005",
+                "T DE DEBITO",
+                "834.000000000",
+                "109.000000000",
+                "DEB",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000890",
+                "SB-0001347",
+                "0018",
+                "MONEDERO ELECTRONICO",
+                "135.000000000",
+                "0E-9",
+                "MONEDERO",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000891",
+                "SB-0001363",
+                "0005",
+                "T DE DEBITO",
+                "310.000000000",
+                "0E-9",
+                "DEB",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000892",
+                "SB-0001360",
+                "0001",
+                "EFECTIVO",
+                "635.000000000",
+                "0E-9",
+                "EFE",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000892",
+                "SB-0001360",
+                "0005",
+                "T DE DEBITO",
+                "1000.000000000",
+                "0E-9",
+                "DEB",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000893",
+                "SB-0001365",
+                "0005",
+                "T DE DEBITO",
+                "110.000000000",
+                "0E-9",
+                "EFE",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000894",
+                "SB-0001354",
+                "0001",
+                "EFECTIVO",
+                "1000.000000000",
+                "0E-9",
+                "EFE",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ],
+              [
+                "SB-0000894",
+                "SB-0001354",
+                "0004",
+                "T DE CREDITO",
+                "666.000000000",
+                "111.000000000",
+                "CRED",
+                "nvarchar",
+                "2022-07-23T00:00:00"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "pagos",
+              "tickets",
+              "importe",
+              "propina"
+            ],
+            "name": "origen_2022_07_23_counts",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                35,
+                30,
+                "49079.69",
+                "3659.00"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-24T19:54:06Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
