@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "2e32d53a4b3ea5c3e0f13cc8cd17e72b43d1c94e",
-  "generated_at_utc": "2026-09-24T04:26:42Z",
+  "generated_at_utc": "2026-09-24T04:27:56Z",
   "history": {
     "done_total_local": 957,
     "pending_total_local": 0,
@@ -16,61 +16,61 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 792,
+      "age_seconds": 866,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5T-R11-CERTIFIED-SUCCESSOR-FALLBACK-MUTATION-R2-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 654,
+      "age_seconds": 728,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5T-R11-CERTIFIED-SUCCESSOR-FALLBACK-MUTATION-R3-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 552,
+      "age_seconds": 625,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5T-R11-CERTIFIED-SUCCESSOR-FALLBACK-MUTATION-R4-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 77,
+      "age_seconds": 151,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5T-R16-CONTROL-PLANE-RUNTIME-CONVERGENCE-MUTATION-R1-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3137,
+      "age_seconds": 3210,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5T-R5-STALE-REPAIR-INCIDENT-SUPERSESSION-MUTATION-R1-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2786,
+      "age_seconds": 2860,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5T-R5-STALE-REPAIR-INCIDENT-SUPERSESSION-MUTATION-R2-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2601,
+      "age_seconds": 2675,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5T-R5-STALE-REPAIR-INCIDENT-SUPERSESSION-MUTATION-R3-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2153,
+      "age_seconds": 2226,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5T-R5-STALE-REPAIR-INCIDENT-SUPERSESSION-MUTATION-R4-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1733,
+      "age_seconds": 1807,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5T-R5-STALE-REPAIR-INCIDENT-SUPERSESSION-MUTATION-R5-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1573,
+      "age_seconds": 1646,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5T-R5-STALE-REPAIR-INCIDENT-SUPERSESSION-MUTATION-R6-20260924",
       "reason": null,
       "state": "RESULT_READY"
@@ -90,8 +90,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-24T04:26:38Z",
-    "last_receive_utc": "2026-09-24T04:26:41Z",
+    "last_cycle_utc": "2026-09-24T04:27:53Z",
+    "last_receive_utc": "2026-09-24T04:27:55Z",
     "last_terminal_utc": "2026-09-24T04:25:24Z",
     "pid": "122022",
     "runtime_fingerprint": {
