@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "4eb29655f2e70ddc37a28e41193e2badd16d128a",
-  "generated_at_utc": "2026-09-24T19:55:40Z",
+  "generated_at_utc": "2026-09-24T19:56:57Z",
   "history": {
     "done_total_local": 968,
     "pending_total_local": 0,
@@ -16,43 +16,43 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2303,
+      "age_seconds": 2381,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-REPAIR-DELIVERABLES-GATE4B2-GENERIC-PRODUCER-FOUNDATION-MUTATION-R2-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3099,
+      "age_seconds": 3176,
       "job_id": "EDARSAHUB-INVENTARIOS-CATALOGO-IMPL-R3-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 21,
+      "age_seconds": 98,
       "job_id": "EDARSAHUB-INVENTARIOS-CATALOGO-RUNTIME-R4-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 12,
+      "age_seconds": 90,
       "job_id": "EDARSAHUB-INVENTARIOS-RESYNC-BACKEND-R5-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 10,
+      "age_seconds": 87,
       "job_id": "EDARSAHUB-INVENTARIOS-UI-WARNING-R6-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 92,
+      "age_seconds": 169,
       "job_id": "EDARSAHUB-ISCAM-ORIGEN-R14-FAILDATE-R17-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1532,
+      "age_seconds": 1609,
       "job_id": "EDARSAHUB-ISCAM-ORIGEN-SOURCE-MONTHS-R16-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
@@ -72,8 +72,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-24T19:55:33Z",
-    "last_receive_utc": "2026-09-24T19:55:35Z",
+    "last_cycle_utc": "2026-09-24T19:56:52Z",
+    "last_receive_utc": "2026-09-24T19:56:55Z",
     "last_terminal_utc": "2026-09-24T19:55:29Z",
     "pid": "452375",
     "runtime_fingerprint": {
