@@ -1,0 +1,164 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-BOS-WORKER-DELIVERABLE-MATERIALIZER-GATE0-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "ebdcc1d4ca06b853c0c18123d974a1b9335b167d",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "priority": "P0",
+  "objective": "Auditar exclusivamente el flujo de entregables del Universal Worker: required_deliverables, deliverables, completed_deliverables, missing_deliverables, work_completion y certificacion del publisher. No modificar codigo. No tocar Produccion. No tocar Tablajeria. No ejecutar mutation.",
+  "context": {
+    "source_chat": "Tablajería 3",
+    "control_domain": "BOS Universal Worker",
+    "gate": "Worker deliverable materializer Gate0 READ_ONLY",
+    "reason": "Gate2 R2 de Tablajeria quedo con checks PASS pero certification=PENDING_DELIVERABLES, completed_deliverables=[], missing_deliverables=24/24 y gate3_allowed=None.",
+    "blocked_tablajeria_job_id": "EDARSAHUB-TABLAJERIA-GATE2-TECHNICAL-MAPPING-STRUCTURED-READONLY-R2",
+    "blocked_tablajeria_result_commit": "3abd58f55137bc6475717b110c3be03e8d5452a7",
+    "do_not_touch_tablajeria_module": true,
+    "do_not_touch_production": true,
+    "do_not_publish_gate3": true,
+    "do_not_mutate_domain_code": true,
+    "desired_future_capability": "READ_ONLY_DELIVERABLE_MATERIALIZER that converts deterministic repository/sql evidence into a deliverables object and closes completed_deliverables/missing_deliverables without AI side effects."
+  },
+  "forbidden_actions": [
+    "touch_production",
+    "ddl",
+    "dml",
+    "create_tables",
+    "modify_backend_business_logic",
+    "modify_frontend",
+    "modify_tablajeria",
+    "publish_tablajeria_gate3",
+    "publish_mutation",
+    "run_live_user_endpoints",
+    "use_mongo_as_source_cache_fallback_or_lock",
+    "read_or_print_secrets",
+    "break_scheduler",
+    "break_netpay",
+    "mix_crm",
+    "assume_deliverables_without_evidence"
+  ],
+  "actions": [],
+  "technical_scope_to_map": [
+    "tools/mirror_sync/worker_deliverable_contract.py normalization and evaluation behavior",
+    "tools/mirror_sync/universal_job_dispatcher.py result construction and deliverable evaluation behavior",
+    "tools/mirror_sync/universal_job_result_publisher.py sanitization, certification and publication behavior",
+    "backend/tests/test_worker_deliverable_contract.py coverage for deliverable contract",
+    "any tests that assert completed_deliverables, missing_deliverables or PENDING_DELIVERABLES behavior"
+  ],
+  "questions_to_answer": [
+    "Where does the dispatcher copy required_deliverables from job to result",
+    "Where does the dispatcher expect result.deliverables to be created",
+    "Whether any component currently materializes result.deliverables from repository_evidence or sql_evidence",
+    "Why completed_deliverables can be empty even when checks PASS",
+    "Why work_completion becomes PENDING_DELIVERABLES",
+    "Whether the publisher preserves deliverables, completed_deliverables, missing_deliverables and certification_basis",
+    "What exact code files require a later surgical mutation to add READ_ONLY_DELIVERABLE_MATERIALIZER",
+    "What tests must be added before mutation",
+    "What behavior must remain unchanged for normal mutation jobs and regular READ_ONLY jobs",
+    "Whether this issue blocks Tablajeria Gate3"
+  ],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync",
+          "backend/tests"
+        ],
+        "search_terms": [
+          "required_deliverables",
+          "deliverables",
+          "completed_deliverables",
+          "missing_deliverables",
+          "evaluate_deliverables",
+          "normalize_required_deliverables",
+          "PENDING_DELIVERABLES",
+          "work_completion",
+          "certification_basis",
+          "READ_ONLY_COMPLETE",
+          "CERTIFIED_READ_ONLY",
+          "CHECKS_PASS_BUT_REQUIRED_DELIVERABLES_MISSING",
+          "sanitize",
+          "allowed_fields",
+          "result.get(\"deliverables\")",
+          "result[\"deliverables\"]",
+          "repository_evidence",
+          "sql_evidence"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.json",
+          "*.md",
+          "*.yml",
+          "*.yaml"
+        ],
+        "exclude_patterns": [
+          "**/__pycache__/**",
+          "**/.venv/**",
+          "**/venv/**",
+          "**/node_modules/**",
+          "**/build/**",
+          "**/dist/**"
+        ],
+        "max_results": 800
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "required_output": [
+    "job_id",
+    "status",
+    "quality_gate",
+    "certification",
+    "percent_complete",
+    "production_touched",
+    "files_changed",
+    "blockers",
+    "tests",
+    "work_completion",
+    "repository_evidence",
+    "deliverable_flow_map",
+    "root_cause_hypothesis",
+    "files_to_touch_later",
+    "tests_to_add_later",
+    "tablatejeria_gate3_block_status"
+  ],
+  "success_criteria": [
+    "Auditoria READ_ONLY publicada con evidencia de los archivos del Worker relacionados con entregables",
+    "Sin cambios tracked",
+    "Sin tocar Produccion",
+    "Sin tocar modulo Tablajeria",
+    "Sin DDL ni DML",
+    "Base tecnica suficiente para preparar un Gate1 mutation del Worker si aplica"
+  ],
+  "blocking_criteria": [
+    "No se puede leer tools/mirror_sync",
+    "No se puede evaluar evidencia de repository_contract_audit",
+    "Hay riesgo de tocar Tablajeria o Produccion",
+    "El resultado no permite distinguir dispatcher vs publisher vs contract"
+  ],
+  "expected_terminal_success": {
+    "status": "READ_ONLY_COMPLETE",
+    "quality_gate": "PASS",
+    "certification": "CERTIFIED_READ_ONLY",
+    "percent_complete": 100,
+    "production_touched": false,
+    "files_changed": [],
+    "blockers": []
+  },
+  "expected_terminal_blocked": {
+    "status": "BLOCKED",
+    "quality_gate": "FAIL",
+    "certification": "NOT_CERTIFIED",
+    "production_touched": false,
+    "files_changed": [],
+    "blockers": [
+      "evidence_required"
+    ]
+  }
+}
