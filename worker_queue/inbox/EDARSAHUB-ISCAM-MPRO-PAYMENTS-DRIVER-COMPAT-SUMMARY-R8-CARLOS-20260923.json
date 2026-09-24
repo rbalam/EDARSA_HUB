@@ -1,0 +1,88 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-DRIVER-COMPAT-SUMMARY-R8-CARLOS-20260923",
+  "mode": "MUTATION",
+  "objective": "Eliminar el rc=2 restante del resync de pagos ISCAM haciendo la extracción compatible con pymssql/pyodbc y publicar un resumen sanitizado de la operación para diagnóstico terminal. Mantener JOIN MPRO por Vn_Documento. No tocar Producción.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6a43a1eb253ae4dda2732dd1a61c5cd0db511af5",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Formas de pagos ISCAM"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+      "expected_count": 1,
+      "old": "    return get_external_sql_connection(\n        connection_config\n    )\n\n\ndef _hash_pago",
+      "new": "    return get_external_sql_connection(\n        connection_config\n    )\n\n\ndef _cursor_as_dict(conn):\n    \"\"\"Abre cursor compatible con pymssql y fallback pyodbc.\"\"\"\n    try:\n        return conn.cursor(as_dict=True)\n    except TypeError:\n        return conn.cursor()\n\n\ndef _fetchall_dicts(cur):\n    \"\"\"Normaliza filas dict/tupla a dict sin depender del driver SQL.\"\"\"\n    rows = cur.fetchall() or []\n    if not rows:\n        return []\n    if isinstance(rows[0], dict):\n        return rows\n    columns = [item[0] for item in (cur.description or [])]\n    return [\n        {columns[index]: row[index] for index in range(len(columns))}\n        for row in rows\n    ]\n\n\ndef _hash_pago"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+      "expected_count": 2,
+      "old": "        cur = conn.cursor(as_dict=True)\n",
+      "new": "        cur = _cursor_as_dict(conn)\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+      "expected_count": 2,
+      "old": "        tipos = cur.fetchall() or []\n",
+      "new": "        tipos = _fetchall_dicts(cur)\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+      "expected_count": 2,
+      "old": "        pagos = cur.fetchall() or []\n",
+      "new": "        pagos = _fetchall_dicts(cur)\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "def summarize_iscam_detail_backfill_output(output: str) -> dict[str, Any]:\n",
+      "new": "def summarize_iscam_payments_output(output: str) -> dict[str, Any]:\n    \"\"\"Extrae evidencia segura del script de pagos sin publicar stdout crudo.\"\"\"\n    summary: dict[str, Any] = {}\n    for raw_line in reversed((output or \"\").splitlines()):\n        try:\n            payload = json.loads(raw_line)\n        except Exception:\n            continue\n        if not isinstance(payload, dict) or payload.get(\"event\") != \"resync\":\n            continue\n        result = payload.get(\"result\")\n        if not isinstance(result, dict):\n            return summary\n        error = str(result.get(\"error\") or \"\").strip()\n        safe_error = \"\"\n        error_type = \"\"\n        if error:\n            if error.lower() == \"config pos no resuelta\":\n                safe_error = \"config_pos_no_resuelta\"\n            elif error.lower() == \"unidad no encontrada en canonico\":\n                safe_error = \"unidad_no_encontrada\"\n            elif error.lower().startswith(\"extraccion:\"):\n                safe_error = \"extraccion\"\n                parts = error.split(\":\", 2)\n                if len(parts) >= 2:\n                    error_type = parts[1].strip()[:80]\n            else:\n                safe_error = \"resync_error\"\n                error_type = error.split(\":\", 1)[0][:80]\n        return {\n            key: result.get(key)\n            for key in (\n                \"unidad\", \"sistema\", \"periodo\", \"pagos_extraidos\",\n                \"pagos_insertados\", \"pagos_eliminados\", \"dry_run\",\n            )\n            if key in result\n        } | {\n            key: value\n            for key, value in (\n                (\"error_stage\", safe_error),\n                (\"error_type\", error_type),\n            )\n            if value\n        }\n    return summary\n\n\ndef summarize_iscam_detail_backfill_output(output: str) -> dict[str, Any]:\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "expected_count": 1,
+      "old": "            result[\"operation_output\"] = execution.stdout[-20000:]\n            result[\"files_changed\"] = []\n            if execution.returncode != 0:\n",
+      "new": "            result[\"operation_output\"] = execution.stdout[-20000:]\n            result[\"operation_summary\"] = summarize_iscam_payments_output(execution.stdout or \"\")\n            result[\"files_changed\"] = []\n            if execution.returncode != 0:\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_payments_driver_compat_r8.py",
+      "content": "from pathlib import Path\n\nfrom core.scheduler.jobs.inteligencia_comercial_enrich import (\n    _cursor_as_dict,\n    _fetchall_dicts,\n)\n\nROOT = Path(__file__).resolve().parents[2]\nDISPATCHER = ROOT / \"tools/mirror_sync/universal_job_dispatcher.py\"\nENRICH = ROOT / \"backend/core/scheduler/jobs/inteligencia_comercial_enrich.py\"\n\n\nclass _TupleCursor:\n    description = [(\"folio\",), (\"importe\",)]\n\n    def fetchall(self):\n        return [(\"T-1\", 123.45)]\n\n\nclass _FallbackConnection:\n    def __init__(self):\n        self.calls = []\n\n    def cursor(self, *args, **kwargs):\n        self.calls.append((args, kwargs))\n        if kwargs:\n            raise TypeError(\"pyodbc cursor() does not accept as_dict\")\n        return _TupleCursor()\n\n\ndef test_cursor_falls_back_for_pyodbc_and_rows_are_dicts():\n    conn = _FallbackConnection()\n    cur = _cursor_as_dict(conn)\n    rows = _fetchall_dicts(cur)\n    assert rows == [{\"folio\": \"T-1\", \"importe\": 123.45}]\n    assert len(conn.calls) == 2\n\n\ndef test_mpro_payment_extract_keeps_document_join_and_driver_normalization():\n    text = ENRICH.read_text(encoding=\"utf-8\")\n    block = text.split(\"def _extract_mpro\", 1)[1].split(\n        \"# ============================================================================\\n# ESCRITURA EN EDARSAHUB\", 1\n    )[0]\n    assert \"cp.Co_Folio = v.Vn_Documento\" in block\n    assert \"cur = _cursor_as_dict(conn)\" in block\n    assert \"pagos = _fetchall_dicts(cur)\" in block\n\n\ndef test_worker_publishes_sanitized_payments_summary():\n    text = DISPATCHER.read_text(encoding=\"utf-8\")\n    assert \"def summarize_iscam_payments_output\" in text\n    block = text.split(\"if mode == ISCAM_PAYMENTS_ONLY_RESYNC_MODE:\", 1)[1].split(\n        \"if mode == SQL_MIGRATION_DEVELOPMENT_MODE:\", 1\n    )[0]\n    assert 'result[\"operation_summary\"] = summarize_iscam_payments_output' in block\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "backend/tests/test_iscam_payments_driver_compat_r8.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_payments_driver_compat_r8.py",
+        "backend/tests/test_iscam_mpro_payments_shared_server_join_r5.py",
+        "backend/tests/test_iscam_mpro_payments_daily_resync_r128.py",
+        "backend/tests/test_iscam_payments_only_resync_r56.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
