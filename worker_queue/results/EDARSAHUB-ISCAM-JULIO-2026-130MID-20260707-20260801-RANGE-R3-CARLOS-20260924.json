@@ -1,0 +1,520 @@
+{
+  "base_sha": "4a41ab78ea87e7a36041f28558004156560d26c7",
+  "blockers": [],
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-09-24T23:22:16Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-JULIO-2026-130MID-20260707-20260801-RANGE-R3-CARLOS-20260924",
+  "operation": "ISCAM_DETAIL_BACKFILL",
+  "operation_summary": {
+    "dias_bloqueados": 0,
+    "dias_candidatos": 1,
+    "dias_evaluados": 25,
+    "dias_reparables": 1,
+    "dias_sin_runtime": 0,
+    "dias_ya_ok": 24,
+    "fecha_fin_exclusivo": "2026-08-01",
+    "fecha_inicio": "2026-07-07",
+    "filas_insertadas": 525,
+    "modo": "COMMIT",
+    "unidades": [
+      {
+        "bloqueados": 0,
+        "candidatos": 1,
+        "dias": [
+          {
+            "fecha_operacion": "2026-07-07",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-08",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-09",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-10",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-11",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-12",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-13",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-14",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-15",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "delta_pax": 0,
+            "delta_tickets": 0,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-07-16",
+            "filas_insertadas": 525,
+            "pax_pos": 84,
+            "pax_runtime": 84,
+            "status": "OK_HEADER_CANONICO",
+            "tickets_pos": 33,
+            "tickets_runtime": 33,
+            "ventas_pos": "146225.0000",
+            "ventas_runtime": "146225.00"
+          },
+          {
+            "fecha_operacion": "2026-07-17",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-18",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-19",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-20",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-21",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-22",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-23",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-24",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-25",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-26",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-27",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-28",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-29",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-30",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-07-31",
+            "status": "YA_CONCILIADO"
+          }
+        ],
+        "filas_insertadas": 525,
+        "reparables": 1,
+        "sin_runtime": 0,
+        "unidad": "130MID",
+        "ya_ok": 24
+      }
+    ]
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-24T23:22:25Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "fecha",
+              "ventas_encabezado",
+              "ventas_detalle",
+              "delta_ventas",
+              "tickets_encabezado",
+              "tickets_detalle",
+              "delta_tickets",
+              "pax_encabezado",
+              "pax_detalle",
+              "delta_pax",
+              "parity_gate"
+            ],
+            "name": "130mid_julio_range_parity",
+            "row_count_returned": 25,
+            "rows": [
+              [
+                "2026-07-07",
+                "120695.0000",
+                "120695.0000",
+                "0.0000",
+                "24",
+                "24",
+                "0",
+                "73",
+                "73",
+                "0",
+                1
+              ],
+              [
+                "2026-07-08",
+                "97013.0000",
+                "97013.0000",
+                "0.0000",
+                "22",
+                "22",
+                "0",
+                "65",
+                "65",
+                "0",
+                1
+              ],
+              [
+                "2026-07-09",
+                "136695.0000",
+                "136695.0000",
+                "0.0000",
+                "32",
+                "32",
+                "0",
+                "85",
+                "85",
+                "0",
+                1
+              ],
+              [
+                "2026-07-10",
+                "172089.0000",
+                "172089.0000",
+                "0.0000",
+                "41",
+                "41",
+                "0",
+                "112",
+                "112",
+                "0",
+                1
+              ],
+              [
+                "2026-07-11",
+                "94780.0000",
+                "94780.0000",
+                "0.0000",
+                "28",
+                "28",
+                "0",
+                "66",
+                "66",
+                "0",
+                1
+              ],
+              [
+                "2026-07-12",
+                "75056.0000",
+                "75056.0000",
+                "0.0000",
+                "19",
+                "19",
+                "0",
+                "44",
+                "44",
+                "0",
+                1
+              ],
+              [
+                "2026-07-13",
+                "114939.0000",
+                "114939.0000",
+                "0.0000",
+                "25",
+                "25",
+                "0",
+                "81",
+                "81",
+                "0",
+                1
+              ],
+              [
+                "2026-07-14",
+                "88723.0000",
+                "88723.0000",
+                "0.0000",
+                "23",
+                "23",
+                "0",
+                "58",
+                "58",
+                "0",
+                1
+              ],
+              [
+                "2026-07-15",
+                "89072.0000",
+                "89072.0000",
+                "0.0000",
+                "24",
+                "24",
+                "0",
+                "62",
+                "62",
+                "0",
+                1
+              ],
+              [
+                "2026-07-16",
+                "146225.0000",
+                "146225.0000",
+                "0.0000",
+                "33",
+                "33",
+                "0",
+                "84",
+                "84",
+                "0",
+                1
+              ],
+              [
+                "2026-07-17",
+                "168508.0000",
+                "168508.0000",
+                "0.0000",
+                "38",
+                "38",
+                "0",
+                "106",
+                "106",
+                "0",
+                1
+              ],
+              [
+                "2026-07-18",
+                "119715.0000",
+                "119715.0000",
+                "0.0000",
+                "28",
+                "28",
+                "0",
+                "77",
+                "77",
+                "0",
+                1
+              ],
+              [
+                "2026-07-19",
+                "59995.0000",
+                "59995.0000",
+                "0.0000",
+                "15",
+                "15",
+                "0",
+                "52",
+                "52",
+                "0",
+                1
+              ],
+              [
+                "2026-07-20",
+                "101294.0000",
+                "101294.0000",
+                "0.0000",
+                "24",
+                "24",
+                "0",
+                "66",
+                "66",
+                "0",
+                1
+              ],
+              [
+                "2026-07-21",
+                "151219.0000",
+                "151219.0000",
+                "0.0000",
+                "31",
+                "31",
+                "0",
+                "84",
+                "84",
+                "0",
+                1
+              ],
+              [
+                "2026-07-22",
+                "123199.0000",
+                "123199.0000",
+                "0.0000",
+                "25",
+                "25",
+                "0",
+                "80",
+                "80",
+                "0",
+                1
+              ],
+              [
+                "2026-07-23",
+                "160833.0000",
+                "160833.0000",
+                "0.0000",
+                "36",
+                "36",
+                "0",
+                "104",
+                "104",
+                "0",
+                1
+              ],
+              [
+                "2026-07-24",
+                "164233.0000",
+                "164233.0000",
+                "0.0000",
+                "32",
+                "32",
+                "0",
+                "93",
+                "93",
+                "0",
+                1
+              ],
+              [
+                "2026-07-25",
+                "202089.0000",
+                "202089.0000",
+                "0.0000",
+                "35",
+                "35",
+                "0",
+                "119",
+                "119",
+                "0",
+                1
+              ],
+              [
+                "2026-07-26",
+                "139680.0000",
+                "139680.0000",
+                "0.0000",
+                "27",
+                "27",
+                "0",
+                "78",
+                "78",
+                "0",
+                1
+              ],
+              [
+                "2026-07-27",
+                "96885.0000",
+                "96885.0000",
+                "0.0000",
+                "22",
+                "22",
+                "0",
+                "64",
+                "64",
+                "0",
+                1
+              ],
+              [
+                "2026-07-28",
+                "94483.0000",
+                "94483.0000",
+                "0.0000",
+                "22",
+                "22",
+                "0",
+                "57",
+                "57",
+                "0",
+                1
+              ],
+              [
+                "2026-07-29",
+                "121433.0000",
+                "121433.0000",
+                "0.0000",
+                "25",
+                "25",
+                "0",
+                "78",
+                "78",
+                "0",
+                1
+              ],
+              [
+                "2026-07-30",
+                "188513.0000",
+                "188513.0000",
+                "0.0000",
+                "40",
+                "40",
+                "0",
+                "116",
+                "116",
+                "0",
+                1
+              ],
+              [
+                "2026-07-31",
+                "188465.0000",
+                "188465.0000",
+                "0.0000",
+                "44",
+                "44",
+                "0",
+                "116",
+                "116",
+                "0",
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-24T23:21:55Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto el backfill cerrado de detalle ISCAM para las unidades y fechas autorizadas y certifico el resultado con SQL de solo lectura. No acepto shell, rutas ni comandos externos y no toco Produccion.",
+  "tests": "PASS",
+  "units": [
+    "130MID"
+  ],
+  "work_completion": "COMPLETE"
+}
