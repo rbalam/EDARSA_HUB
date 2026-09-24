@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-INVENTARIOS-AUDIT-HUB-5UNITS-R7-CARLOS-20260924",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar en EDARSAHUB los inventarios fisicos mas recientes y ultimo log de sync para ORIGEN, 130QRO, ESTELAR, CIENFUEGOS y 130MID. Solo lectura.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4eb29655f2e70ddc37a28e41193e2badd16d128a",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Analisis de Inventarios"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "ultimos_inventarios_5_unidades",
+          "sql": "WITH ranked AS (SELECT unidad_negocio_codigo, server_id, sucursal_id, almacen_id, almacen, folio, fecha, sync_timestamp, sync_status, ROW_NUMBER() OVER (PARTITION BY unidad_negocio_codigo ORDER BY fecha DESC, sync_timestamp DESC, folio DESC) AS rn FROM dbo.Compras_Inventarios_Fisicos_Sync WHERE unidad_negocio_codigo IN ('ORIGEN','130QRO','ESTELAR','CIENFUEGOS','130MID') AND sync_status IN ('ACTIVE','REPLACED')) SELECT unidad_negocio_codigo, server_id, sucursal_id, almacen_id, almacen, folio, fecha, sync_timestamp, sync_status FROM ranked WHERE rn=1 ORDER BY unidad_negocio_codigo"
+        },
+        {
+          "name": "resumen_inventarios_5_unidades",
+          "sql": "SELECT unidad_negocio_codigo, COUNT(*) AS filas_sync, COUNT(DISTINCT folio) AS folios_distintos, COUNT(DISTINCT almacen_id) AS almacenes_distintos, MAX(fecha) AS fecha_inventario_max, MAX(sync_timestamp) AS sync_timestamp_max FROM dbo.Compras_Inventarios_Fisicos_Sync WHERE unidad_negocio_codigo IN ('ORIGEN','130QRO','ESTELAR','CIENFUEGOS','130MID') AND sync_status IN ('ACTIVE','REPLACED') GROUP BY unidad_negocio_codigo ORDER BY unidad_negocio_codigo"
+        },
+        {
+          "name": "ultimo_log_sync_5_unidades",
+          "sql": "WITH logs AS (SELECT u.codigo AS unidad_codigo, l.server_id, l.sync_start, l.sync_end, l.records_synced, l.status, LEFT(CONVERT(NVARCHAR(MAX),l.error_message),300) AS error_message, l.created_at, ROW_NUMBER() OVER (PARTITION BY u.codigo ORDER BY l.created_at DESC, l.id DESC) AS rn FROM dbo.Compras_Sync_Log l LEFT JOIN dbo.Unidades_Negocio u ON CONVERT(NVARCHAR(36),u.id)=CONVERT(NVARCHAR(36),l.unidad_negocio_id) WHERE l.sync_type='INVENTARIOS' AND u.codigo IN ('ORIGEN','130QRO','ESTELAR','CIENFUEGOS','130MID')) SELECT unidad_codigo, server_id, sync_start, sync_end, records_synced, status, error_message, created_at FROM logs WHERE rn=1 ORDER BY unidad_codigo"
+        }
+      ]
+    }
+  ]
+}
