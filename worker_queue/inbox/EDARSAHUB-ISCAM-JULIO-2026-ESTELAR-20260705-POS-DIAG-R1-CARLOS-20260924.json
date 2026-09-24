@@ -1,0 +1,46 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-JULIO-2026-ESTELAR-20260705-POS-DIAG-R1-CARLOS-20260924",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6a43a1eb253ae4dda2732dd1a61c5cd0db511af5",
+  "production_allowed": false,
+  "objective": "Diagnosticar en solo lectura el bloqueo RuntimeError del detail backfill ISCAM de ESTELAR 05/07/2026. Identificar tickets con encabezado cero y detalle no cero, deltas relevantes encabezado vs lineas, lineas negativas y variantes FRANQICIA/FRANQUICIA antes de cualquier reintento.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ESTELAR"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "queries": [
+        {
+          "name": "estelar_ticket_anomalies_20260705",
+          "sql": "WITH h AS (\n  SELECT ch.folio, ch.fecha,\n         CAST(ISNULL(ch.total,0) AS decimal(19,4)) AS encabezado\n  FROM cheques ch WITH (NOLOCK)\n  INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno\n  WHERE tr.apertura >= '2026-07-05 09:00:00'\n    AND tr.apertura <  '2026-07-06 09:00:00'\n    AND ISNULL(ch.cancelado,0)=0\n),\nd AS (\n  SELECT h.folio,\n         MAX(h.fecha) AS fecha,\n         MAX(h.encabezado) AS encabezado,\n         CAST(SUM(CAST(ISNULL(cd.cantidad,0)*ISNULL(cd.precio,0) AS decimal(19,4))) AS decimal(19,4)) AS productos,\n         SUM(CASE WHEN ISNULL(cd.cantidad,0)*ISNULL(cd.precio,0) < 0 THEN 1 ELSE 0 END) AS lineas_negativas,\n         SUM(CASE WHEN UPPER(ISNULL(p.descripcion,'')) LIKE '%FRANQ%' THEN 1 ELSE 0 END) AS lineas_franq\n  FROM h\n  LEFT JOIN cheqdet cd WITH (NOLOCK) ON cd.foliodet=h.folio\n  LEFT JOIN productos p WITH (NOLOCK) ON p.idproducto=cd.idproducto\n  GROUP BY h.folio\n)\nSELECT folio, fecha, encabezado, productos,\n       CAST(encabezado-productos AS decimal(19,4)) AS delta,\n       lineas_negativas, lineas_franq\nFROM d\nWHERE (encabezado=0 AND ABS(productos)>0.05)\n   OR ABS(encabezado-productos)>0.05\n   OR lineas_negativas>0\n   OR lineas_franq>0\nORDER BY ABS(encabezado-productos) DESC, folio"
+        },
+        {
+          "name": "estelar_suspicious_ticket_lines_20260705",
+          "sql": "WITH h AS (\n  SELECT ch.folio, ch.fecha,\n         CAST(ISNULL(ch.total,0) AS decimal(19,4)) AS encabezado\n  FROM cheques ch WITH (NOLOCK)\n  INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno\n  WHERE tr.apertura >= '2026-07-05 09:00:00'\n    AND tr.apertura <  '2026-07-06 09:00:00'\n    AND ISNULL(ch.cancelado,0)=0\n),\nd AS (\n  SELECT h.folio,\n         MAX(h.fecha) AS fecha,\n         MAX(h.encabezado) AS encabezado,\n         CAST(SUM(CAST(ISNULL(cd.cantidad,0)*ISNULL(cd.precio,0) AS decimal(19,4))) AS decimal(19,4)) AS productos\n  FROM h\n  LEFT JOIN cheqdet cd WITH (NOLOCK) ON cd.foliodet=h.folio\n  GROUP BY h.folio\n),\ns AS (\n  SELECT folio FROM d\n  WHERE (encabezado=0 AND ABS(productos)>0.05)\n     OR ABS(encabezado-productos)>0.05\n)\nSELECT d.folio, d.fecha, d.encabezado, d.productos,\n       CAST(d.encabezado-d.productos AS decimal(19,4)) AS delta,\n       cd.idproducto, p.descripcion,\n       CAST(ISNULL(cd.cantidad,0) AS decimal(19,4)) AS cantidad,\n       CAST(ISNULL(cd.precio,0) AS decimal(19,4)) AS precio,\n       CAST(ISNULL(cd.cantidad,0)*ISNULL(cd.precio,0) AS decimal(19,4)) AS importe_linea\nFROM d\nINNER JOIN s ON s.folio=d.folio\nLEFT JOIN cheqdet cd WITH (NOLOCK) ON cd.foliodet=d.folio\nLEFT JOIN productos p WITH (NOLOCK) ON p.idproducto=cd.idproducto\nORDER BY d.folio, cd.idproducto"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Continuidad EDARSAHUB Julio 2026 Worker Universal V1.2"
+  },
+  "constraints": [
+    "Solo lectura POS",
+    "No modificar datos",
+    "No Production",
+    "No reintentar detail backfill hasta clasificar el fallo del 05/07"
+  ]
+}
