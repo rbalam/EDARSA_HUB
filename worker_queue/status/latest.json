@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "6a43a1eb253ae4dda2732dd1a61c5cd0db511af5",
-  "generated_at_utc": "2026-09-24T01:08:49Z",
+  "generated_at_utc": "2026-09-24T01:13:36Z",
   "history": {
     "done_total_local": 945,
     "pending_total_local": 0,
@@ -16,151 +16,139 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2786,
+      "age_seconds": 3073,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-130MID-20260701-DETAIL-ONLY-R2-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1221,
+      "age_seconds": 1508,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-130MID-20260702-DETAIL-R3-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1205,
+      "age_seconds": 1492,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-130MID-20260703-DETAIL-R3-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1167,
+      "age_seconds": 1454,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-130MID-20260704-DETAIL-R3-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1149,
+      "age_seconds": 1436,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-130MID-20260705-DETAIL-R3-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1136,
+      "age_seconds": 1423,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-130MID-20260706-DETAIL-R3-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2770,
+      "age_seconds": 3057,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-CIENFUEGOS-20260701-DETAIL-ONLY-R2-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1116,
+      "age_seconds": 1403,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-CIENFUEGOS-20260702-DETAIL-R3-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1096,
+      "age_seconds": 1383,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-CIENFUEGOS-20260704-DETAIL-R3-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1186,
+      "age_seconds": 1473,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-CIENFUEGOS-20260705-DETAIL-R3-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1081,
+      "age_seconds": 1368,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-CIENFUEGOS-20260708-DETAIL-R3-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1061,
+      "age_seconds": 1348,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-CIENFUEGOS-20260709-DETAIL-R3-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2766,
+      "age_seconds": 3053,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-ESTELAR-20260701-DETAIL-ONLY-R2-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1542,
+      "age_seconds": 1829,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-ESTELAR-20260701-DETAIL-ONLY-R3-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3045,
+      "age_seconds": 3332,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-ESTELAR-20260701-ZERO-HEADER-TICKET-DIAG-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1056,
+      "age_seconds": 1343,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-ESTELAR-20260705-DETAIL-R3-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1044,
+      "age_seconds": 1331,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-ESTELAR-20260706-DETAIL-R3-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3412,
-      "job_id": "EDARSAHUB-ISCAM-JULIO-2026-SOFT-DETAIL-ROUNDING-DIAG-R1-CARLOS-20260923",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3360,
-      "job_id": "EDARSAHUB-ISCAM-JULIO-2026-SOFT-DETAIL-ROUNDING-DIAG-R2-CARLOS-20260923",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 755,
+      "age_seconds": 1042,
       "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-BACKFILL-130QRO-202608-R6-CARLOS-20260923-DRY",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 230,
+      "age_seconds": 517,
       "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-RC2-DIAG-130QRO-R7-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1036,
+      "age_seconds": 1323,
       "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-SHARED-SERVER-JOIN-FIX-R5-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2877,
+      "age_seconds": 3164,
       "job_id": "EDARSAHUB-ISCAM-SOFT-FRANQICIA-ZERO-HEADER-FIX-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3119,
+      "age_seconds": 3406,
       "job_id": "EDARSAHUB-ISCAM-SOFT-ROUNDING-RESIDUAL-EXACT-ADJUST-FIX-R1-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2971,
+      "age_seconds": 3258,
       "job_id": "EDARSAHUB-ISCAM-SOFT-ROUNDING-RESIDUAL-EXACT-ADJUST-FIX-R2-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
@@ -174,16 +162,16 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 25,
+  "queue_result_ready_recent": 23,
   "queue_running": 0,
   "remote_development_sha": "6a43a1eb253ae4dda2732dd1a61c5cd0db511af5",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-24T01:08:49Z",
-    "last_receive_utc": "2026-09-24T01:08:44Z",
+    "last_cycle_utc": "2026-09-24T01:13:34Z",
+    "last_receive_utc": "2026-09-24T01:13:29Z",
     "last_terminal_utc": "2026-09-24T01:04:58Z",
-    "pid": "8014",
+    "pid": "361",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "26bcd53b6a83e86923bdc739a2f5fc840ae9f9a1",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
