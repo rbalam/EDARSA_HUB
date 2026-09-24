@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-JULIO-2026-CIENFUEGOS-20260705-DETAIL-R3-CARLOS-20260924",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "14c742adb910afce882d5a02e06094aaf06b8456",
+  "production_allowed": false,
+  "objective": "Reparar exclusivamente el detalle ISCAM de CIENFUEGOS para 2026-07-05, sin regrabar encabezado.",
+  "human_summary_language": "es",
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "actions": [],
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "fecha_inicio": "2026-07-05",
+  "fecha_fin": "2026-07-06",
+  "dry_run": false,
+  "confirm_detail_backfill": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "cienfuegos_20260705_detail_parity_r3",
+          "sql": "WITH r AS (\nSELECT CAST(SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS decimal(19,4)) ventas,\nSUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets,\nSUM(CAST(ISNULL(pax_total,0) AS bigint)) pax\nFROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\nWHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion>='2026-07-05' AND fecha_operacion<'2026-07-06'\n),dt AS (\nSELECT numero_ticket,SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) venta,\nMAX(CAST(ISNULL(pax,0) AS bigint)) pax\nFROM dbo.Comercial_Inteligencia_VentasDetalleProducto\nWHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion>='2026-07-05' AND fecha_operacion<'2026-07-06'\nAND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\nGROUP BY numero_ticket\n),d AS (\nSELECT CAST(ISNULL(SUM(venta),0) AS decimal(19,4)) ventas,COUNT_BIG(*) tickets,\nSUM(CAST(ISNULL(pax,0) AS bigint)) pax FROM dt\n)\nSELECT 'CIENFUEGOS' unidad,'2026-07-05' fecha,\nCAST(ISNULL(r.ventas,0) AS decimal(19,4)) ventas_encabezado,\nCAST(ISNULL(d.ventas,0) AS decimal(19,4)) ventas_detalle,\nCAST(ISNULL(r.ventas,0)-ISNULL(d.ventas,0) AS decimal(19,4)) delta_ventas,\nISNULL(r.tickets,0) tickets_encabezado,ISNULL(d.tickets,0) tickets_detalle,\nISNULL(r.tickets,0)-ISNULL(d.tickets,0) delta_tickets,\nISNULL(r.pax,0) pax_encabezado,ISNULL(d.pax,0) pax_detalle,\nISNULL(r.pax,0)-ISNULL(d.pax,0) delta_pax,\n1 / CASE WHEN ABS(ISNULL(r.ventas,0)-ISNULL(d.ventas,0))<=0.05\nAND ISNULL(r.tickets,0)=ISNULL(d.tickets,0)\nAND ISNULL(r.pax,0)=ISNULL(d.pax,0) THEN 1 ELSE 0 END parity_gate\nFROM r CROSS JOIN d"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260923 Julio 2026 conciliacion ventas"
+  },
+  "constraints": [
+    "Detalle-only",
+    "Un solo dia",
+    "No regrabar header",
+    "No Production",
+    "Paridad ventas/tickets/PAX obligatoria"
+  ]
+}
