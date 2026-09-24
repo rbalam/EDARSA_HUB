@@ -1,0 +1,1425 @@
+{
+  "actions": [],
+  "base_sha": "4a41ab78ea87e7a36041f28558004156560d26c7",
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "tools",
+          "docs"
+        ],
+        "search_terms": [
+          "parrilla",
+          "foto finish",
+          "photo finish",
+          "produccion",
+          "production"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "docs"
+        ],
+        "search_terms": [
+          "comanda",
+          "comandas",
+          "pedido",
+          "ticket",
+          "detalle comanda"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "docs"
+        ],
+        "search_terms": [
+          "producto",
+          "product",
+          "ProductoID",
+          "Producto_ID"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "docs"
+        ],
+        "search_terms": [
+          "receta",
+          "recipe",
+          "ficha tecnica",
+          "technical sheet",
+          "version",
+          "vigencia"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "docs"
+        ],
+        "search_terms": [
+          "pieza",
+          "production unit",
+          "unidad fisica",
+          "unidad producida",
+          "work item",
+          "produccion"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "docs"
+        ],
+        "search_terms": [
+          "kds",
+          "cocina",
+          "kitchen",
+          "estacion",
+          "station",
+          "produccion"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "docs"
+        ],
+        "search_terms": [
+          "foto finish",
+          "photo finish",
+          "emplatado",
+          "liberacion",
+          "chef"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "docs"
+        ],
+        "search_terms": [
+          "evidence",
+          "evidencia",
+          "media",
+          "attachment",
+          "fotografia",
+          "photo",
+          "audio"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "docs"
+        ],
+        "search_terms": [
+          "visual standard",
+          "estandar visual",
+          "reference image",
+          "imagen estandar",
+          "score"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "docs"
+        ],
+        "search_terms": [
+          "equipo",
+          "equipment",
+          "station",
+          "estacion",
+          "activo",
+          "asset"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "docs"
+        ],
+        "search_terms": [
+          "camera",
+          "camara",
+          "scale",
+          "bascula",
+          "peso",
+          "iot",
+          "sensor"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "docs"
+        ],
+        "search_terms": [
+          "rbac",
+          "permiso",
+          "permission",
+          "role",
+          "Usuario_Roles",
+          "get_current_user"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "docs"
+        ],
+        "search_terms": [
+          "event",
+          "evento",
+          "audit",
+          "auditoria",
+          "timeline",
+          "bitacora",
+          "incidencia"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "docs"
+        ],
+        "search_terms": [
+          "FechaOperacion",
+          "operational date",
+          "timezone",
+          "UTC",
+          "America/Mexico_City"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "frontend",
+          "docs"
+        ],
+        "search_terms": [
+          "pwa",
+          "mobile",
+          "movil",
+          "timer",
+          "camera",
+          "offline",
+          "reconnect",
+          "kds"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "docs"
+        ],
+        "search_terms": [
+          "communications",
+          "twilio",
+          "whatsapp",
+          "notification",
+          "audio",
+          "transcription"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "docs"
+        ],
+        "search_terms": [
+          "inventario",
+          "inventory",
+          "costo",
+          "cost",
+          "merma",
+          "rehecho",
+          "devolucion"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "docs",
+          "backend",
+          "tools"
+        ],
+        "search_terms": [
+          "canonical",
+          "bounded context",
+          "no mongo",
+          "hardcode",
+          "source of truth",
+          "arquitectura"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "docs"
+        ],
+        "search_terms": [
+          "ARCHITECTURAL_FAILURES",
+          "failure",
+          "lessons",
+          "error arquitectonico",
+          "duplicacion"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "tools",
+          "docs"
+        ],
+        "search_terms": [
+          "canonical",
+          "reuse",
+          "reutilizar",
+          "existing",
+          "repository",
+          "service",
+          "helper"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "docs"
+        ],
+        "search_terms": [
+          "duplicate",
+          "duplicado",
+          "duplicacion",
+          "parallel",
+          "legacy",
+          "deprecated"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "docs"
+        ],
+        "search_terms": [
+          "backend/core",
+          "core growth",
+          "core",
+          "bounded context",
+          "domain-first"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "docs"
+        ],
+        "search_terms": [
+          "backend/modules",
+          "bounded context",
+          "production quality",
+          "operaciones",
+          "production"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "docs"
+        ],
+        "search_terms": [
+          "minimum change",
+          "surface",
+          "reuse",
+          "extend",
+          "canonical",
+          "do not touch"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "docs",
+          "backend",
+          "tools"
+        ],
+        "search_terms": [
+          "do not touch",
+          "no tocar",
+          "production",
+          "scheduler",
+          "netpay",
+          "mongo"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "tools",
+          "docs"
+        ],
+        "search_terms": [
+          "blocker",
+          "blocked",
+          "bloqueo",
+          "pending",
+          "required",
+          "missing"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "tools",
+          "docs"
+        ],
+        "search_terms": [
+          "gap",
+          "missing",
+          "not found",
+          "unknown",
+          "pending",
+          "todo"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          "coverage/*",
+          "*.min.js"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend",
+          "frontend",
+          "tools",
+          "docs"
+        ],
+        "search_terms": [
+          "gate1",
+          "architecture",
+          "arquitectura",
+          "canonical",
+          "bounded context",
+          "next gate"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "deliverable_specs": {
+    "ARCHITECTURAL_CONSTRAINTS": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 18
+      }
+    },
+    "BLOCKERS": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 26
+      }
+    },
+    "CAMERA_SCALE_IOT_FINDING": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 11
+      }
+    },
+    "COMMAND_CONTRACT": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 2
+      }
+    },
+    "COMMUNICATIONS_CONTRACT": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 16
+      }
+    },
+    "CORE_GROWTH_RISKS": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 22
+      }
+    },
+    "DATE_TIME_CONTRACT": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 14
+      }
+    },
+    "DOCUMENTED_FAILURES_APPLICABLE": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 19
+      }
+    },
+    "DO_NOT_TOUCH": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 25
+      }
+    },
+    "DUPLICATION_RISKS": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 21
+      }
+    },
+    "EQUIPMENT_STATION_CONTRACT": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 10
+      }
+    },
+    "EVENT_AUDIT_CONTRACT": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 13
+      }
+    },
+    "EXECUTIVE_FINDING": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 1
+      }
+    },
+    "FRONTEND_OPERATIONAL_CONTRACT": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 15
+      }
+    },
+    "GATE1_INPUT": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 28
+      }
+    },
+    "INVENTORY_COST_INTEGRATION_FINDING": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 17
+      }
+    },
+    "KDS_OPERATION_FINDING": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 6
+      }
+    },
+    "MEDIA_EVIDENCE_CONTRACT": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 8
+      }
+    },
+    "MINIMUM_CHANGE_SURFACE": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 24
+      }
+    },
+    "OPEN_GAPS": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 27
+      }
+    },
+    "PHOTO_FINISH_ASIS": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 7
+      }
+    },
+    "PRODUCTION_UNIT_FINDING": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 5
+      }
+    },
+    "PRODUCT_CONTRACT": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 3
+      }
+    },
+    "PROPOSED_BOUNDED_CONTEXTS": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 23
+      }
+    },
+    "RBAC_CONTRACT": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 12
+      }
+    },
+    "RECIPE_TECHNICAL_SHEET_CONTRACT": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 4
+      }
+    },
+    "REUSE_MATRIX": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 20
+      }
+    },
+    "VISUAL_STANDARD_CONTRACT": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "evidence"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 9
+      }
+    }
+  },
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-PARRILLA-PHOTO-FINISH-GATE0-R3-DOSSIER-MATERIALIZATION",
+  "mode": "READ_ONLY",
+  "objective": "Materializar Gate0 R3 de Bitacoras de Parrilla + Foto Finish mediante 28 auditorias focalizadas y 28 deliverables reales. Reutilizar contratos canonicos existentes. No implementar. No DDL/DML. No tocar Produccion. No publicar Gate1. No inventar evidencia.",
+  "production_allowed": false,
+  "requested_at_utc": "2026-09-24T23:52:48.654997+00:00",
+  "requester": {
+    "chat": "Bitacoras de Parrilla",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "13. Produccion",
+    "source": "chatgpt-classic"
+  },
+  "required_deliverables": [
+    "EXECUTIVE_FINDING",
+    "COMMAND_CONTRACT",
+    "PRODUCT_CONTRACT",
+    "RECIPE_TECHNICAL_SHEET_CONTRACT",
+    "PRODUCTION_UNIT_FINDING",
+    "KDS_OPERATION_FINDING",
+    "PHOTO_FINISH_ASIS",
+    "MEDIA_EVIDENCE_CONTRACT",
+    "VISUAL_STANDARD_CONTRACT",
+    "EQUIPMENT_STATION_CONTRACT",
+    "CAMERA_SCALE_IOT_FINDING",
+    "RBAC_CONTRACT",
+    "EVENT_AUDIT_CONTRACT",
+    "DATE_TIME_CONTRACT",
+    "FRONTEND_OPERATIONAL_CONTRACT",
+    "COMMUNICATIONS_CONTRACT",
+    "INVENTORY_COST_INTEGRATION_FINDING",
+    "ARCHITECTURAL_CONSTRAINTS",
+    "DOCUMENTED_FAILURES_APPLICABLE",
+    "REUSE_MATRIX",
+    "DUPLICATION_RISKS",
+    "CORE_GROWTH_RISKS",
+    "PROPOSED_BOUNDED_CONTEXTS",
+    "MINIMUM_CHANGE_SURFACE",
+    "DO_NOT_TOUCH",
+    "BLOCKERS",
+    "OPEN_GAPS",
+    "GATE1_INPUT"
+  ],
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
