@@ -1,0 +1,121 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "000-EDARSAHUB-SERVIDORES-DEFINITIVO-R14-CARLOS-20260924",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Servidores"
+  },
+  "supersedes": [
+    "000-EDARSAHUB-SERVIDORES-LISTADO-DIAG-R13A-20260923",
+    "000-EDARSAHUB-SERVIDORES-CIERRE-INTEGRAL-R12-20260918"
+  ],
+  "objective": "CORRECCION DEFINITIVA del modulo Servidores/Conexiones API en Preview. Eliminar tres causas de regresion observables: (1) el cliente Axios convierte errores HTTP 500/502 en respuestas exitosas con data=[] y provoca falsos '0 servidores/0 APIs'; (2) el repositorio de API Connections usa variables EDARSAHUB_SQL_* capturadas con os.getenv al importar, mientras el registry de servidores ya usa el config canonico; un runtime recuperado con entorno parcial deja el repositorio API con credenciales None; (3) Servidores.js borra apiConnections ante cualquier error y presenta lista vacia como si fuera dato valido. Aplicar cambios genericos, sin hardcodes de servidores/APIs, mantener SQL-first y no tocar Produccion. El resultado correcto debe ser: si backend responde 200, mostrar los registros de dbo.Servidores_Conexiones; si backend falla, mostrar error real y conservar datos previos, nunca mostrar 0 como falso exito.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/lib/api.js",
+      "old": "    // Parche de estabilidad: Evitar cierre de sesión por errores 500/502.\n    // No debe convertir reportes en arreglos vacíos: eso oculta fallas reales\n    // como \"Reporte generado: 0 registros\" cuando el backend devolvió error.\n    if (status === 500 || status === 502) {\n      console.warn(\"[API] Fallo de red detectado (500/502), manteniendo sesión...\");\n      if (url.includes('/reports/')) {\n        return Promise.reject(error);\n      }\n      return Promise.resolve({ data: [] });\n    }",
+      "new": "    // Mantener la sesión ante errores 500/502, pero NUNCA convertirlos\n    // en una respuesta exitosa vacía. Hacerlo oculta fallas reales y provoca\n    // falsos \"0 registros\" en módulos como Servidores y Conexiones API.\n    if (status === 500 || status === 502) {\n      console.warn(\"[API] Fallo de backend/red (500/502), manteniendo sesión y propagando el error...\");\n      return Promise.reject(error);\n    }"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/api_connections/repository.py",
+      "old": "from core.db import execute_sql_query\n\n# Configuración de EDARSAHUB SQL - FUENTE PRIMARIA\nEDARSAHUB_CONFIG = {\n    'host': os.getenv('EDARSAHUB_SQL_HOST'),\n    'port': 1433,\n    'database': 'EDARSAHUB',\n    'username': os.getenv('EDARSAHUB_SQL_USER'),\n    'password': os.getenv('EDARSAHUB_SQL_PASSWORD')\n}",
+      "new": "from core.db import execute_sql_query\nfrom core.config.edarsahub_config import get_edarsahub_sql_config\n\n# Configuración EDARSAHUB SQL - fuente primaria canónica.\n# Debe resolverse por el mismo contrato central usado por server_registry\n# para evitar que un runtime recuperado arranque este módulo con valores None.\n_cfg = get_edarsahub_sql_config()\nEDARSAHUB_CONFIG = {\n    'host': _cfg.host,\n    'port': _cfg.port,\n    'database': _cfg.database,\n    'username': _cfg.user,\n    'password': _cfg.password\n}"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "  // Estado para Conexiones API\n  const [apiConnections, setApiConnections] = useState([]);\n  const [loadingApis, setLoadingApis] = useState(false);",
+      "new": "  // Estado para Conexiones API\n  const [apiConnections, setApiConnections] = useState([]);\n  const [loadingApis, setLoadingApis] = useState(false);\n  const [apiLoadError, setApiLoadError] = useState(null);\n  const [serverLoadError, setServerLoadError] = useState(null);"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "  const loadApiConnections = async () => {\n    setLoadingApis(true);\n    try {\n      const response = await api.get('/api-connections');\n      if (response.data.success) {\n        // Formatear hora_replica a string \"HH:00\"\n        const formatted = response.data.data.map(conn => ({\n          ...conn,\n          hora_replica: typeof conn.hora_replica === 'number' \n            ? `${String(conn.hora_replica).padStart(2, '0')}:00`\n            : conn.hora_replica\n        }));\n        setApiConnections(formatted);\n      }\n    } catch (error) {\n      console.error('Error cargando conexiones API:', error);\n      // SECURITY P0: sin fallback hardcodeado. No inventar conexiones ni exponer IPs reales.\n      setApiConnections([]);\n      toast.error('No se pudieron cargar las conexiones API locales.');\n    } finally {\n      setLoadingApis(false);\n    }\n  };",
+      "new": "  const loadApiConnections = async () => {\n    setLoadingApis(true);\n    setApiLoadError(null);\n    try {\n      const response = await api.get('/api-connections');\n      if (!response.data?.success || !Array.isArray(response.data?.data)) {\n        throw new Error('Respuesta inválida del endpoint de conexiones API');\n      }\n      // Formatear hora_replica a string \"HH:00\"\n      const formatted = response.data.data.map(conn => ({\n        ...conn,\n        hora_replica: typeof conn.hora_replica === 'number'\n          ? `${String(conn.hora_replica).padStart(2, '0')}:00`\n          : conn.hora_replica\n      }));\n      setApiConnections(formatted);\n    } catch (error) {\n      console.error('Error cargando conexiones API:', error);\n      const detail = error.response?.data?.detail || error.message || 'Error al cargar conexiones API';\n      // No borrar datos previos ni convertir un error en \"0 conexiones\".\n      setApiLoadError(detail);\n      toast.error('No se pudieron cargar las conexiones API locales.');\n    } finally {\n      setLoadingApis(false);\n    }\n  };"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Servidores.js",
+      "old": "  const loadServers = async () => {\n    try {\n      const response = await api.get('/servers');\n      setServers(response.data);\n    } catch (error) {\n      toast.error('Error al cargar servidores');\n    } finally {\n      setLoading(false);\n    }\n  };",
+      "new": "  const loadServers = async () => {\n    setLoading(true);\n    setServerLoadError(null);\n    try {\n      const response = await api.get('/servers');\n      if (!Array.isArray(response.data)) {\n        throw new Error('Respuesta inválida del endpoint de servidores');\n      }\n      setServers(response.data);\n    } catch (error) {\n      const detail = error.response?.data?.detail || error.message || 'Error al cargar servidores';\n      setServerLoadError(typeof detail === 'string' ? detail : 'Error al cargar servidores');\n      toast.error('Error al cargar servidores');\n    } finally {\n      setLoading(false);\n    }\n  };"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/api_connections/repository.py",
+        "backend/modules/api_connections/routes.py",
+        "backend/core/server_registry.py",
+        "backend/server.py"
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "servidores_activos_visibles",
+          "sql": "SELECT id, nombre, system_type, tipo_conexion, activo, visible_en_listado, visible_en_operaciones FROM dbo.Servidores_Conexiones WHERE activo=1 ORDER BY tipo_conexion,nombre"
+        },
+        {
+          "name": "api_local_activas",
+          "sql": "SELECT id, nombre, system_type, tipo_conexion, activo, visible_en_listado, visible_en_operaciones FROM dbo.Servidores_Conexiones WHERE tipo_conexion='API_LOCAL' AND activo=1 ORDER BY nombre"
+        },
+        {
+          "name": "rbac_carlos_servidores_ver",
+          "sql": "SELECT u.Email,r.CodigoRol,m.CodigoModulo,a.CodigoAccion,prm.Permitido,prm.Activo FROM dbo.Usuario_Catalogo u JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID=u.UsuarioID AND ura.Activo=1 JOIN dbo.Usuario_Roles r ON r.RolID=ura.RolID AND r.Activo=1 JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID=r.RolID AND prm.Activo=1 JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID AND m.Activo=1 JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID AND a.Activo=1 WHERE LOWER(u.Email)=LOWER('carlosruz@edarsa.com.mx') AND UPPER(m.CodigoModulo)='SERVIDORES' AND UPPER(a.CodigoAccion) IN ('VER','CREAR','EDITAR','ELIMINAR') ORDER BY a.CodigoAccion"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/lib/api.js",
+          "frontend/src/pages/Servidores.js",
+          "backend/modules/api_connections/repository.py",
+          "backend/core/server_registry.py",
+          "backend/server.py"
+        ],
+        "search_terms": [
+          "return Promise.resolve({ data: [] })",
+          "setApiConnections([])",
+          "get_edarsahub_sql_config",
+          "apiLoadError",
+          "serverLoadError",
+          "SERVIDORES_VER",
+          "tipo_conexion = 'API_LOCAL'"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx"
+        ],
+        "exclude_patterns": [
+          ".git/**",
+          "node_modules/**",
+          "__pycache__/**",
+          "dist/**",
+          "build/**"
+        ],
+        "max_results": 300
+      }
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
