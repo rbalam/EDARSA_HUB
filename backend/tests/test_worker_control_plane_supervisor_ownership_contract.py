@@ -15,7 +15,7 @@ def test_control_plane_has_dedicated_supervisor_owner():
     assert "[program:edarsahub-worker-control-plane]" in conf
     assert (
         "command=/root/.venv/bin/python "
-        "/app/tools/mirror_sync/worker_control_plane.py"
+        "-m tools.mirror_sync.worker_control_plane"
     ) in conf
     assert "autostart=true" in conf
     assert "autorestart=true" in conf
