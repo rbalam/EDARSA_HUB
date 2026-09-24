@@ -1,0 +1,114 @@
+{
+  "base_sha": "14c742adb910afce882d5a02e06094aaf06b8456",
+  "blockers": [],
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-09-24T00:51:25Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-JULIO-2026-ESTELAR-20260706-DETAIL-R3-CARLOS-20260924",
+  "operation": "ISCAM_DETAIL_BACKFILL",
+  "operation_summary": {
+    "dias_bloqueados": 0,
+    "dias_candidatos": 1,
+    "dias_evaluados": 1,
+    "dias_reparables": 1,
+    "dias_sin_runtime": 0,
+    "dias_ya_ok": 0,
+    "fecha_fin_exclusivo": "2026-07-07",
+    "fecha_inicio": "2026-07-06",
+    "filas_insertadas": 223,
+    "modo": "COMMIT",
+    "unidades": [
+      {
+        "bloqueados": 0,
+        "candidatos": 1,
+        "dias": [
+          {
+            "delta_pax": 0,
+            "delta_tickets": 0,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-07-06",
+            "filas_insertadas": 223,
+            "pax_pos": 70,
+            "pax_runtime": 70,
+            "status": "OK_HEADER_CANONICO",
+            "tickets_pos": 29,
+            "tickets_runtime": 29,
+            "ventas_pos": "30950.0000",
+            "ventas_runtime": "30950.00"
+          }
+        ],
+        "filas_insertadas": 223,
+        "reparables": 1,
+        "sin_runtime": 0,
+        "unidad": "ESTELAR",
+        "ya_ok": 0
+      }
+    ]
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-24T00:52:03Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad",
+              "fecha",
+              "ventas_encabezado",
+              "ventas_detalle",
+              "delta_ventas",
+              "tickets_encabezado",
+              "tickets_detalle",
+              "delta_tickets",
+              "pax_encabezado",
+              "pax_detalle",
+              "delta_pax",
+              "parity_gate"
+            ],
+            "name": "estelar_20260706_detail_parity_r3",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "ESTELAR",
+                "2026-07-06",
+                "30950.0000",
+                "30950.0000",
+                "0.0000",
+                "29",
+                "29",
+                "0",
+                "70",
+                "70",
+                "0",
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-24T00:51:15Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto el backfill cerrado de detalle ISCAM para las unidades y fechas autorizadas y certifico el resultado con SQL de solo lectura. No acepto shell, rutas ni comandos externos y no toco Produccion.",
+  "tests": "PASS",
+  "units": [
+    "ESTELAR"
+  ],
+  "work_completion": "COMPLETE"
+}
