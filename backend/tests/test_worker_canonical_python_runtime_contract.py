@@ -31,9 +31,10 @@ def test_universal_worker_tools_use_canonical_python():
     mirror_text = read(WORKER)
     universal_text = read(UNIVERSAL_WORKER)
 
-    # Mirror worker delegates the universal queue to the dedicated child.
+    # Universal Worker is externally owned by Supervisor.
     assert 'UNIVERSAL_WORKER="$DIR/universal_job_worker.sh"' in mirror_text
-    assert '/bin/bash "$UNIVERSAL_WORKER"' in mirror_text
+    assert "UNIVERSAL_JOB_WORKER_OWNERSHIP=EXTERNAL" in mirror_text
+    assert "UNIVERSAL_JOB_WORKER_START_BY_MIRROR=FORBIDDEN" in mirror_text
 
     expected = (
         'run_tool "UNIVERSAL_JOB_BRIDGE" 45 '
