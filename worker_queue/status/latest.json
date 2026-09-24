@@ -4,49 +4,55 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "2a82c407b1ab4befe90e968482cb8bf5ae606417",
-  "generated_at_utc": "2026-09-24T17:26:32Z",
+  "generated_at_utc": "2026-09-24T17:27:44Z",
   "history": {
     "done_total_local": 960,
-    "pending_total_local": 0,
+    "pending_total_local": 1,
     "processing_total_local": 1,
     "rejected_total_local": 804,
     "results_total_local": 1582
   },
-  "intake_sla_breached": false,
+  "intake_sla_breached": true,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2158,
+      "age_seconds": 70,
+      "job_id": "EDARSAHUB-ISCAM-MPRO-FULLHISTORY-130QRO-R12-REAL-CARLOS-20260924",
+      "reason": null,
+      "state": "PENDING"
+    },
+    {
+      "age_seconds": 2231,
       "job_id": "EDARSAHUB-INVENTARIOS-RESYNC-FIX-V1-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2341,
+      "age_seconds": 2414,
       "job_id": "EDARSAHUB-ISCAM-PAYMENTS-INTEGRAL-AUTO-FULLHISTORY-R11B-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1543,
+      "age_seconds": 1616,
       "job_id": "EDARSAHUB-ISCAM-PAYMENTS-INTEGRAL-AUTO-FULLHISTORY-R11C-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 5,
+      "age_seconds": 78,
       "job_id": "EDARSAHUB-ISCAM-MPRO-FULLHISTORY-ORIGEN-R12-REAL-CARLOS-20260924",
       "reason": null,
       "state": "RUNNING"
     }
   ],
   "local_development_sha": "2a82c407b1ab4befe90e968482cb8bf5ae606417",
-  "oldest_pending_age_seconds": 0,
+  "oldest_pending_age_seconds": 70,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 2,
   "queue_done_local_recent": 0,
-  "queue_pending": 0,
+  "queue_pending": 1,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 3,
   "queue_running": 1,
@@ -54,8 +60,8 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-ISCAM-MPRO-FULLHISTORY-ORIGEN-R12-REAL-CARLOS-20260924",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-24T17:26:24Z",
-    "last_receive_utc": "2026-09-24T17:26:28Z",
+    "last_cycle_utc": "2026-09-24T17:27:40Z",
+    "last_receive_utc": "2026-09-24T17:27:43Z",
     "last_terminal_utc": "2026-09-24T17:00:48Z",
     "pid": "361",
     "runtime_fingerprint": {
