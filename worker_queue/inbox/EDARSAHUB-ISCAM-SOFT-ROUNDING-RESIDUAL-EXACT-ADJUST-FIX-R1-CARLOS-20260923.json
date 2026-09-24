@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-SOFT-ROUNDING-RESIDUAL-EXACT-ADJUST-FIX-R1-CARLOS-20260923",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "32d0860ef6c899d1c9a42a3e900c4e4ece9353af",
+  "production_allowed": false,
+  "objective": "Corregir transversalmente el detalle SoftRestaurant para que residuos monetarios pequeños por ticket (abs(delta)<=TOLERANCIA_VENTAS) no se descarten cuando son distintos de cero. Debe conservarse la linea real y agregarse una linea tecnica __ISCAM_AJUSTE_ENCABEZADO__ por el delta exacto, evitando que centavos acumulados provoquen NO_CUADRA_REVISAR a nivel dia. No relajar guardas de tickets con encabezado cero ni excepciones de franquicia.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "        out.extend(items)\n        if abs(delta) <= TOLERANCIA_VENTAS:\n            continue\n\n        if delta < 0 and discount_indicator > 0:\n",
+      "new": "        out.extend(items)\n        if abs(delta) <= TOLERANCIA_VENTAS:\n            if delta == Decimal(\"0\"):\n                continue\n            adjustment = dict(items[0])\n            adjustment[\"producto_codigo_fuente\"] = SOFT_AJUSTE_ENCABEZADO\n            adjustment[\"producto_nombre\"] = (\n                \"AJUSTE DE CONCILIACION CONTRA ENCABEZADO DEL TICKET\"\n            )\n            adjustment[\"cantidad\"] = Decimal(\"0\")\n            adjustment[\"precio_unitario\"] = Decimal(\"0\")\n            adjustment[\"importe_bruto\"] = Decimal(\"0\")\n            adjustment[\"importe_neto\"] = delta\n            out.append(adjustment)\n            continue\n\n        if delta < 0 and discount_indicator > 0:\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_detail_parity_backfill_r33.py",
+        "backend/tests/test_iscam_soft_adjustment_header_contract_r80c.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260923 Julio 2026 conciliacion ventas"
+  },
+  "constraints": [
+    "Correccion transversal SoftRestaurant, no por sucursal",
+    "No relajar ticket encabezado cero",
+    "No modificar logica MPRO",
+    "No Production",
+    "Mantener fail-closed para casos anómalos reales"
+  ]
+}
