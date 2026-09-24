@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "c421eeba737ae6e8f86df20fff677e140ab1cad7",
-  "generated_at_utc": "2026-09-24T03:07:55Z",
+  "generated_at_utc": "2026-09-24T03:09:11Z",
   "history": {
     "done_total_local": 952,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 860,
+      "age_seconds": 937,
       "job_id": "EDARSAHUB-BOS-WORKER-DELIVERABLE-MATERIALIZER-GATE0-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 468,
+      "age_seconds": 544,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5S-R2D3-PYTEST-WORKTREE-PYTHONPATH-SURGICAL-MUTATION-R2-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 338,
+      "age_seconds": 415,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5S-R2D4-PYTEST-WORKTREE-PYTHONPATH-BOOTSTRAP-MUTATION-R1-20260923",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-24T03:07:52Z",
-    "last_receive_utc": "2026-09-24T03:07:54Z",
+    "last_cycle_utc": "2026-09-24T03:09:06Z",
+    "last_receive_utc": "2026-09-24T03:09:01Z",
     "last_terminal_utc": "2026-09-24T03:02:16Z",
     "pid": "436",
     "runtime_fingerprint": {
