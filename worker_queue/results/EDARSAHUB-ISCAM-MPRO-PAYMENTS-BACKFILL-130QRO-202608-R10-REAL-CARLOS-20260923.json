@@ -1,0 +1,113 @@
+{
+  "base_sha": "ebdcc1d4ca06b853c0c18123d974a1b9335b167d",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-09-24T01:35:29Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-BACKFILL-130QRO-202608-R10-REAL-CARLOS-20260923",
+  "operation": "ISCAM_PAYMENTS_ONLY_RESYNC",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-24T01:35:31Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "filas",
+              "tickets",
+              "importe",
+              "propina",
+              "fecha_min",
+              "fecha_max"
+            ],
+            "name": "130qro_pagos_agosto_post_backfill",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                879,
+                792,
+                "4715964.00",
+                "428957.00",
+                "2026-08-01T00:00:00",
+                "2026-08-31T00:00:00"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "forma_pago",
+              "codigo",
+              "filas",
+              "importe",
+              "propina"
+            ],
+            "name": "130qro_pagos_por_forma_agosto",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "T DE CREDITO",
+                "0004",
+                373,
+                "2200380.00",
+                "235395.00"
+              ],
+              [
+                "T DE DEBITO",
+                "0005",
+                222,
+                "1119632.00",
+                "109742.00"
+              ],
+              [
+                "T AMEX",
+                "0006",
+                120,
+                "762690.00",
+                "83140.00"
+              ],
+              [
+                "EFECTIVO",
+                "0001",
+                161,
+                "606987.00",
+                "0.00"
+              ],
+              [
+                "TRANSFERENCIA ELECTRONICA",
+                "0003",
+                3,
+                "26275.00",
+                "680.00"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-24T01:35:26Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker resincronizo exclusivamente Pagos por Ticket para una unidad y rango autorizados y certifico el resultado con SQL de solo lectura. No modifico Sync_Sales, Cuentas, Comandas, Cortes ni Produccion.",
+  "tests": "PASS",
+  "units": [
+    "130QRO"
+  ],
+  "work_completion": "COMPLETE"
+}
