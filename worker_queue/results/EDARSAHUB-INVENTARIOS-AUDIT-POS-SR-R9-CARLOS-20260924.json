@@ -1,0 +1,92 @@
+{
+  "base_sha": "4eb29655f2e70ddc37a28e41193e2badd16d128a",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-24T22:33:02Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-INVENTARIOS-AUDIT-POS-SR-R9-CARLOS-20260924",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-24T22:33:19Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "folio",
+              "fecha",
+              "almacen_id",
+              "almacen"
+            ],
+            "name": "ultimo_inventario_softrestaurant",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "304",
+                "2026-09-21T16:06:53",
+                "100",
+                "100 PRODUCCION"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "folio",
+              "fecha",
+              "almacen_id",
+              "almacen"
+            ],
+            "name": "ultimo_inventario_softrestaurant",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2570",
+                "2026-09-21T12:00:03",
+                "002",
+                "002  CONGELADOR"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "folio",
+              "fecha",
+              "almacen_id",
+              "almacen"
+            ],
+            "name": "ultimo_inventario_softrestaurant",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "3923",
+                "2026-09-22T12:32:52",
+                "3",
+                "PRODUCCION"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-24T22:33:00Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
