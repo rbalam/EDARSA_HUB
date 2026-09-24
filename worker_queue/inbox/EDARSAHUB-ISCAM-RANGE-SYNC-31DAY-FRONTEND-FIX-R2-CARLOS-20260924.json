@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-RANGE-SYNC-31DAY-FRONTEND-FIX-R2-CARLOS-20260924",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "546aa75cbb7aeda689fd49748a85242266386a14",
+  "production_allowed": false,
+  "objective": "Sincronizador | Portal ISCAM | Acelerar sincronizacion manual cambiando el chunk de 1 dia a 31 dias por request sobre el SHA actual. No modificar consultas ni logica canonica.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+      "old": "      const chunks = splitDateChunks(syncFrom, syncTo, 1);\n",
+      "new": "      const chunks = splitDateChunks(syncFrom, syncTo, 31);\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "frontend_build"
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Continuidad EDARSAHUB Julio 2026 Worker Universal V1.2"
+  },
+  "constraints": [
+    "No cambiar consultas de ventas",
+    "No cambiar logica del backfill canonico",
+    "No modificar MPRO",
+    "No Production",
+    "Mantener dry-run y ejecucion real existentes",
+    "Rango maximo 31 dias"
+  ],
+  "description": "Sincronizador | Portal ISCAM | Fix permanente 31 dias por llamada | R2 por cambio de SHA."
+}
