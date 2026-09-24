@@ -1,0 +1,74 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-SOFT-ANTICIPO-ZERO-HEADER-FIX-R1-CARLOS-20260924",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6a43a1eb253ae4dda2732dd1a61c5cd0db511af5",
+  "production_allowed": false,
+  "objective": "Corregir transversalmente SoftRestaurant para conciliar de forma segura tickets con encabezado cero cuando exista una aplicacion negativa explicita de anticipo sobre ventas, evidencia real ESTELAR 05/07/2026 folio 21167: productos positivos 1985.00, ANTICIPO S/VENTAS APLICACION -2000.00, neto -15.00, encabezado 0.00. Mantener fail-closed para otros conceptos.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "SOFT_AJUSTE_CHEQUE = \"__ISCAM_AJUSTE_CHEQUE__\"\nSOFT_AJUSTE_FRANQUICIA_CERO = \"__ISCAM_AJUSTE_FRANQUICIA_CERO__\"\nSOFT_AJUSTE_ENCABEZADO = \"__ISCAM_AJUSTE_ENCABEZADO__\"\n",
+      "new": "SOFT_AJUSTE_CHEQUE = \"__ISCAM_AJUSTE_CHEQUE__\"\nSOFT_AJUSTE_FRANQUICIA_CERO = \"__ISCAM_AJUSTE_FRANQUICIA_CERO__\"\nSOFT_AJUSTE_ANTICIPO_CERO = \"__ISCAM_AJUSTE_ANTICIPO_CERO__\"\nSOFT_AJUSTE_ENCABEZADO = \"__ISCAM_AJUSTE_ENCABEZADO__\"\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "        negative_franchise = any(\n            _d(row.get(\"importe_neto\")) < 0\n            and (\n                \"FRANQUICIA\" in _s(row.get(\"producto_nombre\")).upper()\n                or \"FRANQICIA\" in _s(row.get(\"producto_nombre\")).upper()\n            )\n            for row in items\n        )\n        if (\n            header_total == Decimal(\"0\")\n            and product_total < Decimal(\"0\")\n            and delta > Decimal(\"0\")\n            and negative_franchise\n        ):\n            adjustment = dict(items[0])\n            adjustment[\"producto_codigo_fuente\"] = SOFT_AJUSTE_FRANQUICIA_CERO\n            adjustment[\"producto_nombre\"] = \"AJUSTE DE CIERRE A CERO (FRANQUICIA)\"\n            adjustment[\"cantidad\"] = Decimal(\"0\")\n            adjustment[\"precio_unitario\"] = Decimal(\"0\")\n            adjustment[\"importe_bruto\"] = Decimal(\"0\")\n            adjustment[\"importe_neto\"] = delta\n            out.append(adjustment)\n            continue\n\n        # Un encabezado en cero con detalle monetario no explicado sigue siendo\n        # un caso anomalo y se bloquea. La unica excepcion es la franquicia\n        # negativa ya resuelta arriba. Esto conserva el guard historico R80C.\n",
+      "new": "        negative_franchise = any(\n            _d(row.get(\"importe_neto\")) < 0\n            and (\n                \"FRANQUICIA\" in _s(row.get(\"producto_nombre\")).upper()\n                or \"FRANQICIA\" in _s(row.get(\"producto_nombre\")).upper()\n            )\n            for row in items\n        )\n        if (\n            header_total == Decimal(\"0\")\n            and product_total < Decimal(\"0\")\n            and delta > Decimal(\"0\")\n            and negative_franchise\n        ):\n            adjustment = dict(items[0])\n            adjustment[\"producto_codigo_fuente\"] = SOFT_AJUSTE_FRANQUICIA_CERO\n            adjustment[\"producto_nombre\"] = \"AJUSTE DE CIERRE A CERO (FRANQUICIA)\"\n            adjustment[\"cantidad\"] = Decimal(\"0\")\n            adjustment[\"precio_unitario\"] = Decimal(\"0\")\n            adjustment[\"importe_bruto\"] = Decimal(\"0\")\n            adjustment[\"importe_neto\"] = delta\n            out.append(adjustment)\n            continue\n\n        negative_advance_application = any(\n            _d(row.get(\"importe_neto\")) < 0\n            and \"ANTICIPO\" in _s(row.get(\"producto_nombre\")).upper()\n            and \"VENTAS\" in _s(row.get(\"producto_nombre\")).upper()\n            and \"APLICACION\" in _s(row.get(\"producto_nombre\")).upper()\n            for row in items\n        )\n        if (\n            header_total == Decimal(\"0\")\n            and product_total < Decimal(\"0\")\n            and delta > Decimal(\"0\")\n            and negative_advance_application\n        ):\n            adjustment = dict(items[0])\n            adjustment[\"producto_codigo_fuente\"] = SOFT_AJUSTE_ANTICIPO_CERO\n            adjustment[\"producto_nombre\"] = \"AJUSTE DE CIERRE A CERO (ANTICIPO S/VENTAS APLICACION)\"\n            adjustment[\"cantidad\"] = Decimal(\"0\")\n            adjustment[\"precio_unitario\"] = Decimal(\"0\")\n            adjustment[\"importe_bruto\"] = Decimal(\"0\")\n            adjustment[\"importe_neto\"] = delta\n            out.append(adjustment)\n            continue\n\n        # Un encabezado en cero con detalle monetario no explicado sigue siendo\n        # un caso anomalo y se bloquea. Las unicas excepciones son conceptos\n        # negativos explicitos de franquicia o aplicacion de anticipo ya resueltos\n        # arriba. Esto conserva el guard historico R80C.\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_header_folio_parent_r92.py",
+      "old": "from scripts.poblar_ventas_detalle_producto_canonico import (\n    SOFT_AJUSTE_ENCABEZADO,\n    _soft_add_ticket_adjustments,\n    _validate,\n)\n",
+      "new": "from scripts.poblar_ventas_detalle_producto_canonico import (\n    SOFT_AJUSTE_ANTICIPO_CERO,\n    SOFT_AJUSTE_ENCABEZADO,\n    _soft_add_ticket_adjustments,\n    _validate,\n)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_header_folio_parent_r92.py",
+      "old": "    assert result['ok'] is True\n    assert result['ventas_detalle'] == Decimal('0.00')\n    assert result['tickets_no_conciliados'] == []\n",
+      "new": "    assert result['ok'] is True\n    assert result['ventas_detalle'] == Decimal('0.00')\n    assert result['tickets_no_conciliados'] == []\n\n\ndef test_zero_header_accepts_negative_advance_application():\n    rows = [\n        _row('21167', '0.00', '1985.00', pax=1, product='CONSUMO POSITIVO'),\n        _row('21167', '0.00', '-2000.00', pax=1, product='ANTICIPO S/VENTAS APLICACION'),\n    ]\n    out = _soft_add_ticket_adjustments(rows)\n    assert out[-1]['producto_codigo_fuente'] == SOFT_AJUSTE_ANTICIPO_CERO\n    assert out[-1]['importe_neto'] == Decimal('15.00')\n    assert sum(x['importe_neto'] for x in out) == Decimal('0.00')\n\n    result = _validate(out, {'ventas': Decimal('0.00'), 'tickets': 1, 'pax': 1})\n    assert result['ok'] is True\n    assert result['ventas_detalle'] == Decimal('0.00')\n    assert result['tickets_no_conciliados'] == []\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_header_folio_parent_r92.py",
+        "backend/tests/test_iscam_scheduler_definitive_fix_r80c.py",
+        "backend/tests/test_iscam_no_prorate_adjustments_r49.py",
+        "backend/tests/test_iscam_detail_parity_backfill_r33.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Continuidad EDARSAHUB Julio 2026 Worker Universal V1.2"
+  },
+  "constraints": [
+    "Correccion transversal solo SoftRestaurant",
+    "Aplicar excepcion solo con concepto negativo que contenga ANTICIPO, VENTAS y APLICACION",
+    "Mantener fail-closed para otros encabezados cero",
+    "No modificar MPRO",
+    "No Production"
+  ]
+}
