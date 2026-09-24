@@ -1,0 +1,58 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-SOFT-ROUNDING-RESIDUAL-EXACT-ADJUST-FIX-R2-CARLOS-20260923",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "32d0860ef6c899d1c9a42a3e900c4e4ece9353af",
+  "production_allowed": false,
+  "objective": "Corregir transversalmente SoftRestaurant para que cualquier residuo monetario no cero por ticket, aun si abs(delta)<=TOLERANCIA_VENTAS, se materialice como ajuste técnico __ISCAM_AJUSTE_ENCABEZADO__ del mismo folio. Mantener intactas las guardas de encabezado cero y MPRO. Agregar prueba de regresión explícita para residuo pequeño.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "        out.extend(items)\n        if abs(delta) <= TOLERANCIA_VENTAS:\n            continue\n\n        if delta < 0 and discount_indicator > 0:\n",
+      "new": "        out.extend(items)\n        if abs(delta) <= TOLERANCIA_VENTAS:\n            if delta == Decimal(\"0\"):\n                continue\n            adjustment = dict(items[0])\n            adjustment[\"producto_codigo_fuente\"] = SOFT_AJUSTE_ENCABEZADO\n            adjustment[\"producto_nombre\"] = (\n                \"AJUSTE DE CONCILIACION CONTRA ENCABEZADO DEL TICKET\"\n            )\n            adjustment[\"cantidad\"] = Decimal(\"0\")\n            adjustment[\"precio_unitario\"] = Decimal(\"0\")\n            adjustment[\"importe_bruto\"] = Decimal(\"0\")\n            adjustment[\"importe_neto\"] = delta\n            out.append(adjustment)\n            continue\n\n        if delta < 0 and discount_indicator > 0:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_header_folio_parent_r92.py",
+      "old": "def test_validation_uses_exact_header_ticket_population_after_adjustment():\n    src = []\n    src.extend(_soft_add_ticket_adjustments([_row('10', '90', '100', pax=2)]))\n    src.extend(_soft_add_ticket_adjustments([_row('11', '50', '40', pax=1)]))\n    result = _validate(src, {'ventas': Decimal('140'), 'tickets': 2, 'pax': 3})\n    assert result['ok'] is True\n    assert result['ventas_por_ticket'] == Decimal('140')\n    assert result['ventas_detalle'] == Decimal('140')\n    assert result['tickets_por_ticket'] == 2\n    assert result['pax_por_ticket'] == 3\n    assert result['tickets_no_conciliados'] == []\n",
+      "new": "def test_validation_uses_exact_header_ticket_population_after_adjustment():\n    src = []\n    src.extend(_soft_add_ticket_adjustments([_row('10', '90', '100', pax=2)]))\n    src.extend(_soft_add_ticket_adjustments([_row('11', '50', '40', pax=1)]))\n    result = _validate(src, {'ventas': Decimal('140'), 'tickets': 2, 'pax': 3})\n    assert result['ok'] is True\n    assert result['ventas_por_ticket'] == Decimal('140')\n    assert result['ventas_detalle'] == Decimal('140')\n    assert result['tickets_por_ticket'] == 2\n    assert result['pax_por_ticket'] == 3\n    assert result['tickets_no_conciliados'] == []\n\n\ndef test_small_residual_is_adjusted_exactly_to_header():\n    src = _soft_add_ticket_adjustments([\n        _row('12', '100.00', '100.01', pax=1),\n    ])\n    assert src[-1]['producto_codigo_fuente'] == SOFT_AJUSTE_ENCABEZADO\n    assert src[-1]['importe_neto'] == Decimal('-0.01')\n    assert sum(x['importe_neto'] for x in src) == Decimal('100.00')\n\n    result = _validate(src, {'ventas': Decimal('100.00'), 'tickets': 1, 'pax': 1})\n    assert result['ok'] is True\n    assert result['ventas_detalle'] == Decimal('100.00')\n    assert result['tickets_no_conciliados'] == []\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_header_folio_parent_r92.py",
+        "backend/tests/test_iscam_no_prorate_adjustments_r49.py",
+        "backend/tests/test_iscam_detail_parity_backfill_r33.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260923 Julio 2026 conciliacion ventas"
+  },
+  "constraints": [
+    "Correccion transversal SoftRestaurant",
+    "No relajar ticket encabezado cero",
+    "No modificar MPRO",
+    "No Production"
+  ]
+}
