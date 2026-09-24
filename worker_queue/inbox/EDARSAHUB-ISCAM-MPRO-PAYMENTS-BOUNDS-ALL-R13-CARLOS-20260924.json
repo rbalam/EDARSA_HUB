@@ -1,0 +1,50 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-BOUNDS-ALL-R13-CARLOS-20260924",
+  "mode": "READ_ONLY",
+  "objective": "Obtener cobertura canónica actual y límites históricos reales de pagos para todas las unidades ManagementPro, para ejecutar backfill integral de Finanzas_CortesCaja_DetallePagos sin depender del full-history de cortes. Solo lectura.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Formas de pagos ISCAM"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "unidades_mpro_activas",
+          "sql": "SELECT codigo,nombre,system_type,server_id,sucursal_origen_id,activo FROM dbo.Unidades_Negocio WHERE UPPER(ISNULL(system_type,'')) LIKE '%MPRO%' OR UPPER(ISNULL(system_type,'')) LIKE '%MANAGEMENT%' ORDER BY codigo"
+        },
+        {
+          "name": "cobertura_pagos_canonica",
+          "sql": "SELECT UnidadNegocio,COUNT(*) AS filas,COUNT(DISTINCT NumeroTicket) AS tickets,MIN(FechaHora) AS fecha_min,MAX(FechaHora) AS fecha_max,COUNT(DISTINCT CONVERT(char(7),FechaHora,120)) AS meses,CAST(SUM(ISNULL(Importe,0)) AS decimal(18,2)) AS importe FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE ISNULL(Activo,1)=1 GROUP BY UnidadNegocio ORDER BY UnidadNegocio"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN",
+        "130QRO"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "payment_source_bounds",
+          "sql": "SELECT Sc_Cve_Sucursal,MIN(CONVERT(date,Vn_Fecha)) AS fecha_min,MAX(CONVERT(date,Vn_Fecha)) AS fecha_max,COUNT_BIG(*) AS ventas_fuente FROM Venta_Encabezado WITH (NOLOCK) WHERE ISNULL(Es_Cve_Estado,'')<>'CA' AND Vn_Precio_Neto_Importe>0 GROUP BY Sc_Cve_Sucursal ORDER BY Sc_Cve_Sucursal"
+        }
+      ]
+    }
+  ]
+}
