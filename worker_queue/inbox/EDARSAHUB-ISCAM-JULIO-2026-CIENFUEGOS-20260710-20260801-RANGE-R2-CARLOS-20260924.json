@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-JULIO-2026-CIENFUEGOS-20260710-20260801-RANGE-R2-CARLOS-20260924",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "546aa75cbb7aeda689fd49748a85242266386a14",
+  "production_allowed": false,
+  "objective": "Sincronizador | CIENFUEGOS | Julio 2026 | Reintento sobre SHA actual 546aa75c... del rango completo 10/07/2026 al 31/07/2026. Procesar en una sola ejecucion, omitir dias ya conciliados, insertar solo dias OK_HEADER_CANONICO y certificar paridad diaria.",
+  "description": "Sincronizador | CIENFUEGOS | Julio 2026 | Rango 10/07/2026 al 31/07/2026 | R2 por cambio de SHA; backfill directo de detalle ISCAM.",
+  "human_summary_language": "es",
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "actions": [],
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "fecha_inicio": "2026-07-10",
+  "fecha_fin": "2026-08-01",
+  "dry_run": false,
+  "confirm_detail_backfill": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "cienfuegos_julio_range_parity",
+          "sql": "WITH dias AS (\n  SELECT CAST('2026-07-10' AS date) d\n  UNION ALL SELECT DATEADD(day,1,d) FROM dias WHERE d<'2026-07-31'\n), r AS (\n  SELECT fecha_operacion,\n         CAST(SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS decimal(19,4)) ventas,\n         SUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets,\n         SUM(CAST(ISNULL(pax_total,0) AS bigint)) pax\n  FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\n  WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion>='2026-07-10' AND fecha_operacion<'2026-08-01'\n  GROUP BY fecha_operacion\n), dt AS (\n  SELECT fecha_operacion,numero_ticket,SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) venta,\n         MAX(CAST(ISNULL(pax,0) AS bigint)) pax\n  FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n  WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion>='2026-07-10' AND fecha_operacion<'2026-08-01'\n    AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n  GROUP BY fecha_operacion,numero_ticket\n), d AS (\n  SELECT fecha_operacion,CAST(ISNULL(SUM(venta),0) AS decimal(19,4)) ventas,COUNT_BIG(*) tickets,\n         SUM(CAST(ISNULL(pax,0) AS bigint)) pax\n  FROM dt GROUP BY fecha_operacion\n)\nSELECT dias.d fecha,\n       CAST(ISNULL(r.ventas,0) AS decimal(19,4)) ventas_encabezado,\n       CAST(ISNULL(d.ventas,0) AS decimal(19,4)) ventas_detalle,\n       CAST(ISNULL(r.ventas,0)-ISNULL(d.ventas,0) AS decimal(19,4)) delta_ventas,\n       ISNULL(r.tickets,0) tickets_encabezado,ISNULL(d.tickets,0) tickets_detalle,\n       ISNULL(r.tickets,0)-ISNULL(d.tickets,0) delta_tickets,\n       ISNULL(r.pax,0) pax_encabezado,ISNULL(d.pax,0) pax_detalle,\n       ISNULL(r.pax,0)-ISNULL(d.pax,0) delta_pax,\n       CASE WHEN ABS(ISNULL(r.ventas,0)-ISNULL(d.ventas,0))<=0.05\n         AND ISNULL(r.tickets,0)=ISNULL(d.tickets,0)\n         AND ISNULL(r.pax,0)=ISNULL(d.pax,0) THEN 1 ELSE 0 END parity_gate\nFROM dias\nLEFT JOIN r ON r.fecha_operacion=dias.d\nLEFT JOIN d ON d.fecha_operacion=dias.d\nORDER BY dias.d\nOPTION (MAXRECURSION 100)"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Continuidad EDARSAHUB Julio 2026 Worker Universal V1.2"
+  },
+  "constraints": [
+    "Rango completo en una sola ejecucion",
+    "Detalle-only",
+    "No regrabar header",
+    "No Production",
+    "No repetir dias ya conciliados",
+    "Paridad diaria ventas/tickets/PAX obligatoria"
+  ]
+}
