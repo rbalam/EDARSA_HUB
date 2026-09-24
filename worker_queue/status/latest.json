@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "e78537768ba5fccd261a06f5b21a505c4d44ba99",
-  "generated_at_utc": "2026-09-24T03:12:18Z",
+  "generated_at_utc": "2026-09-24T03:13:32Z",
   "history": {
     "done_total_local": 953,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1123,
+      "age_seconds": 1198,
       "job_id": "EDARSAHUB-BOS-WORKER-DELIVERABLE-MATERIALIZER-GATE0-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 47,
+      "age_seconds": 121,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5S-R2-CONTROL-PLANE-SUPERVISOR-OWNERSHIP-MUTATION-R2B-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 730,
+      "age_seconds": 805,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5S-R2D3-PYTEST-WORKTREE-PYTHONPATH-SURGICAL-MUTATION-R2-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 601,
+      "age_seconds": 676,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5S-R2D4-PYTEST-WORKTREE-PYTHONPATH-BOOTSTRAP-MUTATION-R1-20260923",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,8 +54,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-24T03:12:13Z",
-    "last_receive_utc": "2026-09-24T03:12:16Z",
+    "last_cycle_utc": "2026-09-24T03:13:30Z",
+    "last_receive_utc": "2026-09-24T03:13:32Z",
     "last_terminal_utc": "2026-09-24T03:11:31Z",
     "pid": "109112",
     "runtime_fingerprint": {
