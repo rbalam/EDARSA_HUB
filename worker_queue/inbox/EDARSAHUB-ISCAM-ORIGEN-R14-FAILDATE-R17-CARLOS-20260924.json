@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-ORIGEN-R14-FAILDATE-R17-CARLOS-20260924",
+  "mode": "READ_ONLY",
+  "objective": "Aislar el primer día que bloqueó el backfill ORIGEN después del 22/07/2022 e identificar valores/tipos problemáticos de Comanda_Pago sin modificar datos.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Formas de pagos ISCAM"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "origen_2022_07_23_payment_sample",
+          "sql": "SELECT TOP (100) CONVERT(varchar(64),v.Vn_Folio) AS folio,CONVERT(varchar(64),v.Vn_Documento) AS documento,CONVERT(varchar(40),cp.Fp_Cve_Forma_Pago) AS codigo,fp.Fp_Descripcion AS forma,cp.Cp_Importe,cp.Cp_Propina,cp.Cp_Referencia,SQL_VARIANT_PROPERTY(CAST(cp.Cp_Referencia AS sql_variant),'BaseType') AS referencia_tipo,v.Vn_Fecha FROM Venta_Encabezado v WITH (NOLOCK) INNER JOIN Comanda_Pago cp WITH (NOLOCK) ON cp.Co_Folio=v.Vn_Documento LEFT JOIN Forma_Pago fp WITH (NOLOCK) ON fp.Fp_Cve_Forma_Pago=cp.Fp_Cve_Forma_Pago WHERE v.Sc_Cve_Sucursal='0023' AND CONVERT(date,v.Vn_Fecha)='2022-07-23' AND ISNULL(v.Es_Cve_Estado,'')<>'CA' AND cp.Cp_Importe>0 ORDER BY v.Vn_Folio"
+        },
+        {
+          "name": "origen_2022_07_23_counts",
+          "sql": "SELECT COUNT(*) AS pagos,COUNT(DISTINCT v.Vn_Folio) AS tickets,CAST(SUM(cp.Cp_Importe) AS decimal(18,2)) AS importe,CAST(SUM(ISNULL(cp.Cp_Propina,0)) AS decimal(18,2)) AS propina FROM Venta_Encabezado v WITH (NOLOCK) INNER JOIN Comanda_Pago cp WITH (NOLOCK) ON cp.Co_Folio=v.Vn_Documento WHERE v.Sc_Cve_Sucursal='0023' AND CONVERT(date,v.Vn_Fecha)='2022-07-23' AND ISNULL(v.Es_Cve_Estado,'')<>'CA' AND cp.Cp_Importe>0"
+        }
+      ]
+    }
+  ]
+}
