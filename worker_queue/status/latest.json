@@ -4,44 +4,50 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "858fc38d2b99a6267f2e53b8ca3884aadd6f80ae",
-  "generated_at_utc": "2026-09-24T03:33:58Z",
+  "generated_at_utc": "2026-09-24T03:35:15Z",
   "history": {
     "done_total_local": 954,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 793,
-    "results_total_local": 1565
+    "rejected_total_local": 794,
+    "results_total_local": 1566
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2424,
+      "age_seconds": 2500,
       "job_id": "EDARSAHUB-BOS-WORKER-DELIVERABLE-MATERIALIZER-GATE0-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1347,
+      "age_seconds": 1423,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5S-R2-CONTROL-PLANE-SUPERVISOR-OWNERSHIP-MUTATION-R2B-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2031,
+      "age_seconds": 2107,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5S-R2D3-PYTEST-WORKTREE-PYTHONPATH-SURGICAL-MUTATION-R2-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1902,
+      "age_seconds": 1978,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5S-R2D4-PYTEST-WORKTREE-PYTHONPATH-BOOTSTRAP-MUTATION-R1-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 624,
+      "age_seconds": 700,
       "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5S-R3D-CONTROL-PLANE-MODULE-EXECUTION-SURGICAL-MUTATION-R1-20260924",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 49,
+      "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5T-R5-STALE-REPAIR-INCIDENT-SUPERSESSION-MUTATION-R1-20260924",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -54,15 +60,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 5,
+  "queue_result_ready_recent": 6,
   "queue_running": 0,
   "remote_development_sha": "858fc38d2b99a6267f2e53b8ca3884aadd6f80ae",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-24T03:33:56Z",
-    "last_receive_utc": "2026-09-24T03:33:58Z",
-    "last_terminal_utc": "2026-09-24T03:23:34Z",
+    "last_cycle_utc": "2026-09-24T03:35:12Z",
+    "last_receive_utc": "2026-09-24T03:35:14Z",
+    "last_terminal_utc": "2026-09-24T03:34:25Z",
     "pid": "23923",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "65a7e17ef97f80cd64d5917e6d347cfe91dd2eea",
