@@ -1,0 +1,59 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-SHARED-SERVER-JOIN-FIX-R5-CARLOS-20260923",
+  "mode": "MUTATION",
+  "objective": "Corregir la extracción de pagos ISCAM para ManagementPro en servidores compartidos: resolver la conexión POS con unidad_negocio_pk para evitar ambigüedad en 130QRO y unir Comanda_Pago mediante Venta_Encabezado.Vn_Documento, relación validada en R4. No tocar Producción.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "14c742adb910afce882d5a02e06094aaf06b8456",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Formas de pagos ISCAM"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py",
+      "expected_count": 1,
+      "old": "    cfg = get_server_connection_config(server_id)\n",
+      "new": "    cfg = get_server_connection_config(\n        server_id,\n        unidad_negocio_pk=unidad_row.get(\"unidad_pk\"),\n    )\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+      "expected_count": 1,
+      "old": "                INNER JOIN Comanda_Pago cp WITH (NOLOCK) ON cp.Co_Folio = v.Vn_Folio\n",
+      "new": "                INNER JOIN Comanda_Pago cp WITH (NOLOCK) ON cp.Co_Folio = v.Vn_Documento\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_mpro_payments_shared_server_join_r5.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nSYNC_JOB = ROOT / \"backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py\"\nENRICH = ROOT / \"backend/core/scheduler/jobs/inteligencia_comercial_enrich.py\"\n\n\ndef test_pos_config_resolution_disambiguates_shared_server_with_unit_pk():\n    text = SYNC_JOB.read_text(encoding=\"utf-8\")\n    block = text.split(\"def get_pos_config_for_unidad\", 1)[1].split(\n        \"def audit_syncpos_canonical_configs\", 1\n    )[0]\n    assert \"get_server_connection_config(\" in block\n    assert \"unidad_negocio_pk=unidad_row.get(\\\"unidad_pk\\\")\" in block\n\n\ndef test_mpro_payments_join_uses_document_reference_not_sales_folio():\n    text = ENRICH.read_text(encoding=\"utf-8\")\n    block = text.split(\"def _extract_mpro\", 1)[1].split(\n        \"# ============================================================================\\n# ESCRITURA EN EDARSAHUB\", 1\n    )[0]\n    assert \"INNER JOIN Comanda_Pago cp WITH (NOLOCK) ON cp.Co_Folio = v.Vn_Documento\" in block\n    assert \"INNER JOIN Comanda_Pago cp WITH (NOLOCK) ON cp.Co_Folio = v.Vn_Folio\" not in block\n    assert \"AND v.Sc_Cve_Sucursal = '{suc}'\" in block\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py",
+        "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+        "backend/tests/test_iscam_mpro_payments_shared_server_join_r5.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_mpro_payments_shared_server_join_r5.py",
+        "backend/tests/test_iscam_mpro_payments_daily_resync_r128.py",
+        "backend/tests/test_iscam_payments_only_resync_r56.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
