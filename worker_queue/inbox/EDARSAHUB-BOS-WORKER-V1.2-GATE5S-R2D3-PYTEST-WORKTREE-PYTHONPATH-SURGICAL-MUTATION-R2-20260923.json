@@ -1,0 +1,76 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "expected_sha256": "033cc2a83e2eac282d1e0727b9c5a6e3d97157e17c3ca4eca2b6ecfede71c622",
+      "new": "        python_path = os.pathsep.join(\n            (\n                str(backend),\n                str(worktree),\n            )\n        )\n        env_extra = {\n            **load_backend_runtime_env(),\n            \"PYTHONPATH\": python_path,\n        }\n        if readonly:\n            env_extra[\"PYTHONDONTWRITEBYTECODE\"] = \"1\"\n",
+      "old": "        env_extra = {**load_backend_runtime_env(), \"PYTHONPATH\": str(backend)}\n        if readonly:\n            env_extra[\"PYTHONDONTWRITEBYTECODE\"] = \"1\"\n",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "expected_sha256": "71ff84586fb07206851e25cffbad020af8255d34c0fd293148c9cbc9ac86bb86",
+      "new": "    assert env_extra[\"PYTHONPATH\"] == os.pathsep.join(\n        (\n            str(backend),\n            str(tmp_path),\n        )\n    )\n",
+      "old": "    assert env_extra[\"PYTHONPATH\"] == str(backend)\n",
+      "path": "backend/tests/test_universal_job_dispatcher_python_runtime.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "import os\nfrom pathlib import Path\n",
+      "old": "from pathlib import Path\n",
+      "path": "backend/tests/test_universal_job_dispatcher_python_runtime.py",
+      "type": "replace_text"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "backend/tests/test_universal_job_dispatcher_python_runtime.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_universal_job_dispatcher_python_runtime.py",
+        "backend/tests/test_worker_control_plane_maintenance_integration_contract.py",
+        "backend/tests/test_worker_generic_readonly.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py"
+        ],
+        "max_results": 500,
+        "paths": [
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "backend/tests/test_universal_job_dispatcher_python_runtime.py"
+        ],
+        "search_terms": [
+          "PYTHONPATH",
+          "os.pathsep",
+          "worktree",
+          "backend",
+          "pytest"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5S-R2D3-PYTEST-WORKTREE-PYTHONPATH-SURGICAL-MUTATION-R2-20260923",
+  "mode": "MUTATION",
+  "objective": "Corregir de forma quirurgica el contrato PYTHONPATH del check pytest del Universal Worker para que los tests ejecutados dentro del worktree aislado puedan importar simultaneamente modulos backend y paquetes repository-level como tools.mirror_sync, sin usar /app como fallback y sin alterar SQL, Produccion ni otros tipos de check.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
