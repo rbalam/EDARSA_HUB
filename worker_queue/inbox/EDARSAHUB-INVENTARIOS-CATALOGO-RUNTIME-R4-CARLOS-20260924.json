@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-INVENTARIOS-CATALOGO-RUNTIME-R4-CARLOS-20260924",
+  "mode": "MUTATION",
+  "objective": "Marcar en runtime que inventarios_fisicos ya tiene handler implementado. Sin Produccion.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "53823108d3237bbddfcbded9e61520df2927bf96",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Analisis de Inventarios"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sistema/sync_catalogo_service.py",
+      "expected_count": 1,
+      "old": "logger = logging.getLogger(__name__)\n\n_CAMPOS = (",
+      "new": "logger = logging.getLogger(__name__)\n\n_RUNTIME_IMPLEMENTED_HANDLERS = {'inventarios_fisicos': 'sync_inventarios_fisicos'}\n\n_CAMPOS = ("
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sistema/sync_catalogo_service.py",
+      "expected_count": 1,
+      "old": "        'handler_implementado': bool(r.get('HandlerImplementado')),",
+      "new": "        'handler_implementado': bool(r.get('HandlerImplementado')) or _RUNTIME_IMPLEMENTED_HANDLERS.get(r['Codigo']) == r.get('Handler'),"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/sistema/sync_catalogo_service.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
