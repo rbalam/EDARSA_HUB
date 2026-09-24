@@ -213,3 +213,37 @@ def test_runtime_has_no_production_capability():
     assert "Edarsahub_Produccion" not in Path(runtime.__file__).read_text(
         encoding="utf-8"
     )
+
+def test_runtime_supersession_is_atomic_and_non_actionable(
+    tmp_path,
+    monkeypatch,
+):
+    _redirect_state(tmp_path, monkeypatch)
+
+    incident_id = "INCIDENT-SUPERSEDED"
+
+    runtime.declare_runtime_incident(
+        incident_id,
+        ["tools/mirror_sync/gate_chain_publisher.py"],
+    )
+
+    before = runtime.read_runtime_incident(incident_id)
+    assert before is not None
+    assert before.attempts == 0
+
+    after = runtime.supersede_runtime_incident(
+        incident_id,
+        reason="SUPERSEDED_BY_CURRENT_HEAD",
+    )
+
+    assert after.state == MaintenanceState.SUPERSEDED.value
+    assert after.attempts == 0
+    assert after.cooldown_until_epoch is None
+    assert after.production_touched is False
+
+    allowed, reason = runtime.repair_attempt_allowed(
+        incident_id
+    )
+
+    assert allowed is False
+    assert reason == "INCIDENT_NOT_REPAIRABLE"

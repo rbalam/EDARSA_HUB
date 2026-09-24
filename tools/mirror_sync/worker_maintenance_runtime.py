@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import tempfile
 import time
 from dataclasses import asdict, dataclass
@@ -31,7 +32,43 @@ from tools.mirror_sync.worker_maintenance_controller import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-STATE_DIR = ROOT / ".git" / "universal-worker-queue" / "maintenance"
+
+
+def _canonical_git_common_dir(root: Path) -> Path:
+    """Resolve the shared Git common dir for checkout or linked worktree."""
+    proc = subprocess.run(
+        [
+            "git",
+            "rev-parse",
+            "--path-format=absolute",
+            "--git-common-dir",
+        ],
+        cwd=str(root),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        check=False,
+    )
+
+    value = proc.stdout.strip()
+
+    if proc.returncode != 0 or not value:
+        raise RuntimeError("MAINTENANCE_GIT_COMMON_DIR_UNAVAILABLE")
+
+    path = Path(value)
+
+    if not path.is_absolute():
+        path = (root / path).resolve()
+
+    return path
+
+
+GIT_COMMON_DIR = _canonical_git_common_dir(ROOT)
+STATE_DIR = (
+    GIT_COMMON_DIR
+    / "universal-worker-queue"
+    / "maintenance"
+)
 INCIDENT_DIR = STATE_DIR / "incidents"
 
 MAX_REPAIR_ATTEMPTS = 2
@@ -135,6 +172,47 @@ def declare_runtime_incident(
         repair_job_id=None,
         repair_publication_state=None,
         repair_publication_commit=None,
+    )
+
+
+def supersede_runtime_incident(
+    incident_id: str,
+    *,
+    reason: str = "SUPERSEDED_BY_CURRENT_HEAD",
+) -> RuntimeIncidentState:
+    state = _load_state(incident_id)
+
+    if state is None:
+        raise ValueError("MAINTENANCE_INCIDENT_NOT_FOUND")
+
+    if state.get("state") != MaintenanceState.REPAIR_REQUIRED.value:
+        raise ValueError("MAINTENANCE_SUPERSESSION_INVALID_STATE")
+
+    state["state"] = MaintenanceState.SUPERSEDED.value
+    state["cooldown_until_epoch"] = None
+    state["superseded_reason"] = str(reason or "").strip()
+
+    _atomic_json(
+        _incident_path(incident_id),
+        state,
+    )
+
+    return RuntimeIncidentState(
+        incident_id=incident_id,
+        state=MaintenanceState.SUPERSEDED.value,
+        attempts=int(state.get("attempts") or 0),
+        cooldown_until_epoch=None,
+        target_paths=tuple(state.get("target_paths") or []),
+        production_touched=bool(
+            state.get("production_touched")
+        ),
+        repair_job_id=state.get("repair_job_id"),
+        repair_publication_state=state.get(
+            "repair_publication_state"
+        ),
+        repair_publication_commit=state.get(
+            "repair_publication_commit"
+        ),
     )
 
 

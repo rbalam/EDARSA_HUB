@@ -35,6 +35,7 @@ from tools.mirror_sync.worker_maintenance_runtime import (
     register_repair_attempt,
     register_repair_result,
     repair_attempt_allowed,
+    supersede_runtime_incident,
 )
 
 ROOT = Path(os.environ.get("EDARSAHUB_ROOT", "/app"))
@@ -476,6 +477,74 @@ def automatic_repair_result_is_eligible(
 
 
 
+def repair_incident_is_superseded(
+    source_result: dict[str, Any],
+    target_paths: tuple[str, ...],
+) -> tuple[bool, str]:
+    development_sha = str(
+        source_result.get("development_sha") or ""
+    ).strip()
+
+    if not re.fullmatch(r"[0-9a-f]{40}", development_sha):
+        return False, "SOURCE_DEVELOPMENT_SHA_UNAVAILABLE"
+
+    try:
+        current_head = git_output("rev-parse", "HEAD").strip()
+    except Exception:
+        return False, "CURRENT_HEAD_UNAVAILABLE"
+
+    if not re.fullmatch(r"[0-9a-f]{40}", current_head):
+        return False, "CURRENT_HEAD_INVALID"
+
+    if development_sha == current_head:
+        return False, "SOURCE_IS_CURRENT_HEAD"
+
+    try:
+        ancestor = subprocess.run(
+            [
+                "git",
+                "merge-base",
+                "--is-ancestor",
+                development_sha,
+                current_head,
+            ],
+            cwd=str(ROOT),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            check=False,
+        )
+    except Exception:
+        return False, "ANCESTRY_CHECK_FAILED"
+
+    if ancestor.returncode != 0:
+        return False, "SOURCE_NOT_ANCESTOR"
+
+    try:
+        changed_after = {
+            line.strip()
+            for line in git_output(
+                "diff",
+                "--name-only",
+                development_sha,
+                current_head,
+                "--",
+                *target_paths,
+            ).splitlines()
+            if line.strip()
+        }
+    except Exception:
+        return False, "TARGET_DIFF_UNAVAILABLE"
+
+    if not changed_after:
+        return False, "TARGETS_UNCHANGED"
+
+    if not set(target_paths).issubset(changed_after):
+        return False, "NOT_ALL_TARGETS_SUPERSEDED"
+
+    return True, "SUPERSEDED_BY_CURRENT_HEAD"
+
+
 def automatic_repair_orchestration() -> dict[str, Any]:
     """Detect bounded Worker-infrastructure repair incidents only.
 
@@ -642,6 +711,33 @@ def automatic_repair_orchestration() -> dict[str, Any]:
                     "state": "BLOCKED",
                     "reason": str(exc),
                     "target_paths": list(target_paths),
+                }
+            )
+            continue
+
+        superseded, superseded_reason = (
+            repair_incident_is_superseded(
+                result,
+                target_paths,
+            )
+        )
+
+        if superseded:
+            incident = supersede_runtime_incident(
+                incident_id,
+                reason=superseded_reason,
+            )
+
+            incidents.append(
+                {
+                    "incident_id": incident.incident_id,
+                    "source_job_id": source_job_id,
+                    "source_status": status,
+                    "state": incident.state,
+                    "target_paths": list(target_paths),
+                    "repair_allowed": False,
+                    "repair_reason": superseded_reason,
+                    "publication_required": False,
                 }
             )
             continue

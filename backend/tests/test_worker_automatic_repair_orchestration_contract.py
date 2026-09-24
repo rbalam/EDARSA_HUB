@@ -96,3 +96,15 @@ def test_detection_cycle_does_not_execute_or_certify_repair():
     assert '"publication_required": allowed' in helper
     assert "CERTIFIED_WORKER_REPAIR" not in helper
     assert "REPAIRED_PENDING_AUDIT" not in helper
+
+def test_automatic_repair_supports_supersession_before_publication():
+    text = source()
+
+    assert "def repair_incident_is_superseded(" in text
+
+    helper = function_source("automatic_repair_orchestration")
+
+    assert "repair_incident_is_superseded(" in helper
+    assert "supersede_runtime_incident(" in helper
+    assert '"publication_required": False' in helper
+    assert '"repair_allowed": False' in helper

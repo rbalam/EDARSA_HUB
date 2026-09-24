@@ -145,3 +145,6 @@ def test_missing_git_certification_is_rejected():
 
     assert decision.state is MaintenanceState.REJECTED
     assert decision.reason == "REPAIR_NOT_GIT_CERTIFIED"
+
+def test_superseded_is_terminal_noncertified_state():
+    assert MaintenanceState.SUPERSEDED.value == "SUPERSEDED"

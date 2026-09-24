@@ -33,6 +33,7 @@ class MaintenanceState(str, Enum):
     REPAIRED_PENDING_AUDIT = "REPAIRED_PENDING_AUDIT"
     CERTIFIED = "CERTIFIED"
     REJECTED = "REJECTED"
+    SUPERSEDED = "SUPERSEDED"
 
 
 @dataclass(frozen=True)
