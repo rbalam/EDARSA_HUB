@@ -557,6 +557,29 @@ def _registrar_resync_log(request, current_user, estado: str, mensaje: str, unid
         logger.warning(f"[RESYNC-LOG] No se pudo registrar: {_e}")
 
 
+async def _ejecutar_resync_inventarios_fisicos(unidad_negocio_id: str, dry_run: bool) -> Dict[str, Any]:
+    from core.scheduler.jobs.sync_compras_job import _execute_sql_with_timeout, _get_servers_to_sync
+    from modules.compras.sync_service import sync_inventarios_fisicos_from_server
+    codigo = str(unidad_negocio_id or '').strip().upper()
+    servers = [s for s in _get_servers_to_sync() if str(s.get('unidad_codigo') or '').strip().upper() == codigo]
+    if not servers:
+        return {'success': False, 'records_processed': 0, 'error_message': f'Unidad {codigo} sin servidor canonico activo'}
+    if dry_run:
+        return {'success': True, 'records_processed': 0, 'modo': 'DRY_RUN', 'targets': [{'server_id': s.get('id'), 'unidad': s.get('unidad_codigo'), 'sucursal_origen_id': s.get('sucursal_origen_id')} for s in servers]}
+    total = 0
+    results = []
+    errors = []
+    for s in servers:
+        server_info = {'id': s['id'], 'host': s['host'], 'port': s['port'], 'database': s['database'], 'username': s['username'], 'password': s['password'], 'system_type': s['system_type']}
+        unidad_info = {'id': s['unidad_id'], 'codigo': s['unidad_codigo'], 'nombre': s['unidad_nombre'], 'sucursal_origen_id': s.get('sucursal_origen_id')}
+        row = sync_inventarios_fisicos_from_server(server_info, unidad_info, _execute_sql_with_timeout)
+        total += int(row.get('records_synced') or 0)
+        results.append({'server_id': s['id'], 'unidad': s['unidad_codigo'], 'sucursal_origen_id': s.get('sucursal_origen_id'), **row})
+        if row.get('status') != 'OK':
+            errors.append(row.get('error') or f"{s['unidad_codigo']}: {row.get('status')}")
+    return {'success': not errors, 'records_processed': total, 'results': results, 'error_message': ' | '.join(errors) if errors else None}
+
+
 @router.post("/resync/execute", response_model=ResyncResponse)
 async def ejecutar_resync(
     request: ResyncExecuteRequest,
@@ -738,6 +761,22 @@ async def ejecutar_resync(
                 'nota': 'NetPay no usa conectividad POS/SoftRestaurant/MPRO; usa portal NetPay y persistencia SQL canónica.',
             },
             resultado=resultado,
+        )
+
+    if request.tipo_sync == 'inventarios_fisicos':
+        resultado = await _ejecutar_resync_inventarios_fisicos(request.unidad_negocio_id, request.dry_run)
+        return ResyncResponse(
+            success=bool(resultado.get('success')),
+            ejecucion_id=ejecucion_id,
+            sync_run_id=sync_run_id,
+            modo='DRY_RUN' if request.dry_run else 'REAL',
+            tipo_sync=request.tipo_sync,
+            unidad_negocio_id=request.unidad_negocio_id,
+            fecha_inicio=request.fecha_inicio.isoformat(),
+            fecha_fin=request.fecha_fin.isoformat(),
+            validacion_previa={'rango': validacion_rango, 'handler': 'sync_inventarios_fisicos'},
+            resultado=resultado,
+            error_message=resultado.get('error_message'),
         )
 
     # GUARD HONESTO: tipo registrado en el catálogo canónico pero sin handler real
