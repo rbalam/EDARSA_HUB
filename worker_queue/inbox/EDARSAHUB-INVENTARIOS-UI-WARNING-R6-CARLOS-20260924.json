@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-INVENTARIOS-UI-WARNING-R6-CARLOS-20260924",
+  "mode": "MUTATION",
+  "objective": "Mostrar advertencia visible si falla la actualizacion de la lista de inventarios y se conserva cache. Sin Produccion.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "53823108d3237bbddfcbded9e61520df2927bf96",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Analisis de Inventarios"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "      logger.error('Error al cargar inventarios:', error);\n      // Mantener la última lista válida ante un fallo transitorio.",
+      "new": "      logger.error('Error al cargar inventarios:', error);\n      toast.error('No se pudieron actualizar los inventarios. Se conserva la ultima lista cargada; puede estar desactualizada.');\n      // Mantener la última lista válida ante un fallo transitorio."
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "        logger.error('Error cargando inventarios:', error);\n        // Mantener la última lista válida ante un fallo transitorio.",
+      "new": "        logger.error('Error cargando inventarios:', error);\n        toast.error('No se pudieron actualizar los inventarios. Se conserva la ultima lista cargada; puede estar desactualizada.');\n        // Mantener la última lista válida ante un fallo transitorio."
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
