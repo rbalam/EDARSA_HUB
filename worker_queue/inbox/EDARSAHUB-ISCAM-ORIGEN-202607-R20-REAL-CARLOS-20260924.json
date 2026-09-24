@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-ORIGEN-202607-R20-REAL-CARLOS-20260924",
+  "mode": "ISCAM_PAYMENTS_ONLY_RESYNC",
+  "objective": "Prioridad reciente a histórica para ORIGEN: resincronizar 2026-07-01..2026-08-01 desde ManagementPro hacia Finanzas_CortesCaja_DetallePagos. Procesamiento diario interno, idempotente y certificado.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Formas de pagos ISCAM"
+  },
+  "units": [
+    "ORIGEN"
+  ],
+  "fecha_inicio": "2026-07-01",
+  "fecha_fin": "2026-08-01",
+  "dry_run": false,
+  "confirm_payments_only_resync": true,
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "origen_202607_post",
+          "sql": "SELECT COUNT(*) AS filas,COUNT(DISTINCT NumeroTicket) AS tickets,MIN(CONVERT(date,FechaHora)) AS fecha_min,MAX(CONVERT(date,FechaHora)) AS fecha_max,CAST(ISNULL(SUM(Importe),0) AS decimal(18,2)) AS importe,CAST(ISNULL(SUM(Propina),0) AS decimal(18,2)) AS propina FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE UnidadNegocio='ORIGEN' AND FechaHora>='2026-07-01' AND FechaHora<'2026-08-01' AND ISNULL(Activo,1)=1"
+        }
+      ]
+    }
+  ]
+}
