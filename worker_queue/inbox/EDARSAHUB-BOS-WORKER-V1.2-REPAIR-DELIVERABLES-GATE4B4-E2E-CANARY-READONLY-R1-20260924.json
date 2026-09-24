@@ -1,0 +1,46 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "max_results": 20,
+        "paths": [
+          "tools/mirror_sync/worker_deliverable_contract.py"
+        ],
+        "search_terms": [
+          "materialize_deliverables"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "deliverable_specs": {
+    "CANARY_REPOSITORY_SUMMARY": {
+      "selector": {
+        "path": [
+          "repository_evidence",
+          "summary"
+        ],
+        "type": "json_path"
+      },
+      "source": {
+        "check_type": "repository_contract_audit",
+        "occurrence": 1
+      }
+    }
+  },
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-REPAIR-DELIVERABLES-GATE4B4-E2E-CANARY-READONLY-R1-20260924",
+  "mode": "READ_ONLY",
+  "objective": "Certificar end-to-end que Universal Worker materializa deliverables deterministas desde evidencia estructurada producida por checks READ_ONLY.",
+  "production_allowed": false,
+  "required_deliverables": [
+    "CANARY_REPOSITORY_SUMMARY"
+  ],
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
