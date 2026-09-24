@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-INVENTARIOS-AUDIT-POS-SR-R9-CARLOS-20260924",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar en POS SoftRestaurant el inventario fisico mas reciente para ESTELAR, CIENFUEGOS y 130MID. Solo lectura.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4eb29655f2e70ddc37a28e41193e2badd16d128a",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Analisis de Inventarios"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ESTELAR",
+        "CIENFUEGOS",
+        "130MID"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "queries": [
+        {
+          "name": "ultimo_inventario_softrestaurant",
+          "sql": "SELECT TOP 1 CAST(INV.folio AS VARCHAR(50)) AS folio, INV.fecha AS fecha, CAST(INV.idalmacen1 AS VARCHAR(50)) AS almacen_id, COALESCE(A.nombre,CAST(INV.idalmacen1 AS VARCHAR(50))) AS almacen FROM invfisico INV LEFT JOIN almacen A ON A.idalmacen=INV.idalmacen1 WHERE ISNULL(INV.cancelado,0)=0 ORDER BY INV.fecha DESC,INV.folio DESC"
+        }
+      ]
+    }
+  ]
+}
