@@ -1,0 +1,230 @@
+{
+  "base_sha": "4eb29655f2e70ddc37a28e41193e2badd16d128a",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-24T22:32:58Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-INVENTARIOS-AUDIT-HUB-5UNITS-R7-CARLOS-20260924",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-24T22:33:32Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_codigo",
+              "server_id",
+              "sucursal_id",
+              "almacen_id",
+              "almacen",
+              "folio",
+              "fecha",
+              "sync_timestamp",
+              "sync_status"
+            ],
+            "name": "ultimos_inventarios_5_unidades",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "",
+                "01",
+                "ALMACEN GENERAL",
+                "3917",
+                "2026-09-14T12:47:33",
+                "2026-09-14T13:29:28.200000",
+                "ACTIVE"
+              ],
+              [
+                "130QRO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0021",
+                "0001",
+                "ALMACEN GENERAL",
+                "QR-0001046",
+                "2026-09-13T00:00:00",
+                "2026-09-14T13:35:18.973000",
+                "REPLACED"
+              ],
+              [
+                "CIENFUEGOS",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "",
+                "003",
+                "003 CONSIGNA",
+                "2563",
+                "2026-09-14T12:16:09",
+                "2026-09-14T13:32:55.970000",
+                "ACTIVE"
+              ],
+              [
+                "ESTELAR",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "",
+                "100",
+                "100 PRODUCCION",
+                "296",
+                "2026-09-14T11:54:30",
+                "2026-09-14T13:00:59.980000",
+                "ACTIVE"
+              ],
+              [
+                "ORIGEN",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0023",
+                "0004",
+                "BODEGA",
+                "SB-0001135",
+                "2026-09-13T00:00:00",
+                "2026-09-14T12:49:36.850000",
+                "REPLACED"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_codigo",
+              "filas_sync",
+              "folios_distintos",
+              "almacenes_distintos",
+              "fecha_inventario_max",
+              "sync_timestamp_max"
+            ],
+            "name": "resumen_inventarios_5_unidades",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                3837,
+                3837,
+                39,
+                "2026-09-14T12:47:33",
+                "2026-09-14T13:29:28.230000"
+              ],
+              [
+                "130QRO",
+                315,
+                315,
+                3,
+                "2026-09-13T00:00:00",
+                "2026-09-14T13:35:18.973000"
+              ],
+              [
+                "CIENFUEGOS",
+                293,
+                293,
+                10,
+                "2026-09-14T12:16:09",
+                "2026-09-14T13:32:56.003000"
+              ],
+              [
+                "ESTELAR",
+                290,
+                290,
+                6,
+                "2026-09-14T11:54:30",
+                "2026-09-14T13:00:59.980000"
+              ],
+              [
+                "ORIGEN",
+                369,
+                369,
+                3,
+                "2026-09-13T00:00:00",
+                "2026-09-14T12:49:36.850000"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_codigo",
+              "server_id",
+              "sync_start",
+              "sync_end",
+              "records_synced",
+              "status",
+              "error_message",
+              "created_at"
+            ],
+            "name": "ultimo_log_sync_5_unidades",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "2026-09-14T13:29:27.847000",
+                "2026-09-14T13:29:33.743000",
+                2,
+                "OK",
+                null,
+                "2026-09-14T13:29:33.963000"
+              ],
+              [
+                "130QRO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "2026-09-14T13:35:06.050000",
+                "2026-09-14T13:35:27.297000",
+                1,
+                "OK",
+                null,
+                "2026-09-14T13:35:27.523000"
+              ],
+              [
+                "CIENFUEGOS",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "2026-09-14T13:32:55.600000",
+                "2026-09-14T13:33:02.303000",
+                2,
+                "OK",
+                null,
+                "2026-09-14T13:33:02.513000"
+              ],
+              [
+                "ESTELAR",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                "2026-09-14T13:00:59.630000",
+                "2026-09-14T13:01:04.830000",
+                1,
+                "OK",
+                null,
+                "2026-09-14T13:01:05.050000"
+              ],
+              [
+                "ORIGEN",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "2026-09-14T13:48:03.213000",
+                "2026-09-14T13:48:23.847000",
+                0,
+                "OK",
+                null,
+                "2026-09-14T13:48:24.063000"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-24T22:32:54Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
