@@ -1,0 +1,670 @@
+{
+  "base_sha": "c421eeba737ae6e8f86df20fff677e140ab1cad7",
+  "blockers": [],
+  "candidate_sha": "e78537768ba5fccd261a06f5b21a505c4d44ba99",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-24T03:11:31Z",
+  "development_sha": "e78537768ba5fccd261a06f5b21a505c4d44ba99",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_worker_canonical_python_runtime_contract.py",
+    "backend/tests/test_worker_control_plane_contract.py",
+    "backend/tests/test_worker_control_plane_supervisor_ownership_contract.py",
+    "tools/bootstrap/install_bootstrap_watchdog.sh",
+    "tools/mirror_sync/edarsahub-worker-control-plane.conf",
+    "tools/mirror_sync/mirror_sync_worker.sh"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5S-R2-CONTROL-PLANE-SUPERVISOR-OWNERSHIP-MUTATION-R2B-20260923",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-24T03:11:45Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "universal_job_worker_start_by_mirror=forbidden"
+            ],
+            "path": "tools/mirror_sync/mirror_sync_worker.sh",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "hashlib",
+              "json",
+              "os",
+              "pathlib",
+              "re",
+              "shutil",
+              "signal",
+              "subprocess",
+              "tempfile",
+              "time",
+              "tools.mirror_sync.worker_maintenance_runtime",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "worker_control_plane.py"
+            ],
+            "path": "tools/mirror_sync/worker_control_plane.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_parse_canonical_utc",
+              "atomic_json",
+              "audit",
+              "automatic_repair_orchestration",
+              "automatic_repair_result_is_eligible",
+              "claim_candidates",
+              "cycle",
+              "epoch",
+              "expected_generation",
+              "git_output",
+              "heal_runtime_generation_and_heartbeat",
+              "load_repair_automation_state",
+              "main",
+              "maintenance_runtime_summary",
+              "parse_iso_age",
+              "pid_alive",
+              "preserve_and_fast_forward",
+              "read_text",
+              "reconcile_agent_guard_orphans",
+              "repair_automation_state_path",
+              "request_universal_restart",
+              "requeue_stale_processing",
+              "run",
+              "utc_now"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub-worker-control-plane",
+              "worker_control_plane.py"
+            ],
+            "path": "tools/mirror_sync/edarsahub-worker-control-plane.conf",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub-worker-control-plane"
+            ],
+            "path": "tools/bootstrap/install_bootstrap_watchdog.sh",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_produccion"
+            ],
+            "path": "backend/tests/test_bootstrap_watchdog_safety_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "body",
+              "test_all_watchdog_supervisor_restarts_are_production_guarded",
+              "test_bootstrap_can_recover_stale_universal_worker_without_mirror_dependency",
+              "test_bootstrap_dirty_shared_app_defers",
+              "test_bootstrap_explicitly_excludes_production",
+              "test_bootstrap_installs_and_starts_universal_worker_independently",
+              "test_bootstrap_may_restart_mirror_only_after_ff",
+              "test_bootstrap_never_stashes_or_uses_destructive_git",
+              "test_bootstrap_only_allows_strict_fast_forward",
+              "test_bootstrap_recovers_stale_preview_backend_out_of_band",
+              "test_bootstrap_requires_explicit_persistent_authorization",
+              "test_bootstrap_state_writes_are_outside_shared_worktree",
+              "test_mirror_enable_requires_health_gate_before_clearing_kill_switch",
+              "test_mirror_supervisor_does_not_autostart",
+              "test_pod_bootstrap_forces_fail_closed_state"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_produccion"
+            ],
+            "path": "backend/tests/test_catalogo_ampliado_backend_gate4.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_document_versions_are_append_only_and_kardexed",
+              "test_no_worker_or_production_contract_leak",
+              "test_repository_is_sql_first_and_typed_links",
+              "test_router_registered_under_api",
+              "test_routes_fail_closed_rbac_and_activation",
+              "text"
+            ],
+            "tables_referenced": [
+              "Gobierno_DocumentoVersion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_produccion"
+            ],
+            "path": "backend/tests/test_catalogo_ampliado_gate6_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "read",
+              "test_gate6_contract"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "worker_control_plane.py"
+            ],
+            "path": "backend/tests/test_shared_app_sync_safety_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_apply_owns_collision_decision",
+              "test_dirty_app_is_hard_blocked_without_discarding_local_work",
+              "test_pause_file_contract_exists",
+              "test_sync_scripts_have_no_destructive_shared_app_git",
+              "test_sync_scripts_use_shared_safety_guard",
+              "test_worker_control_plane_has_no_stash_or_reset"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "universal_job_worker_start_by_mirror=forbidden"
+            ],
+            "path": "backend/tests/test_universal_worker_external_owner_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_bootstrap_is_independent_stale_worker_recovery_fallback",
+              "test_external_owner_has_canonical_runtime_intervals",
+              "test_external_owner_is_supervisor_managed",
+              "test_mirror_does_not_spawn_universal_worker",
+              "text"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "datetime",
+              "json",
+              "pathlib",
+              "sys",
+              "tools.mirror_sync"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "worker_control_plane.py"
+            ],
+            "path": "backend/tests/test_worker_automatic_repair_activation_boundary_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_activation_does_not_create_repair_incident",
+              "test_automatic_orchestration_observes_but_does_not_declare_historical",
+              "test_historical_result_is_not_automatically_eligible",
+              "test_historical_result_requires_explicit_adoption",
+              "test_invalid_timestamp_fails_closed",
+              "test_missing_automation_state_fails_closed",
+              "test_post_activation_result_is_eligible",
+              "test_production_touch_is_never_eligible"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "ast",
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_produccion",
+              "worker_control_plane.py"
+            ],
+            "path": "backend/tests/test_worker_automatic_repair_orchestration_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "function_source",
+              "source",
+              "test_automatic_repair_does_not_create_second_dispatcher_or_queue",
+              "test_automatic_repair_is_fail_closed_for_production",
+              "test_automatic_repair_is_part_of_existing_control_plane",
+              "test_automatic_repair_is_worker_infrastructure_only",
+              "test_automatic_repair_uses_existing_maintenance_runtime",
+              "test_detection_cycle_does_not_execute_or_certify_repair",
+              "test_gate5l_readonly_summary_boundary_remains_intact",
+              "test_incident_identity_is_deterministic_and_scope_bound"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "universal_job_worker_start_by_mirror=forbidden"
+            ],
+            "path": "backend/tests/test_worker_canonical_python_runtime_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "read",
+              "test_launcher_uses_same_runtime_python_contract",
+              "test_runtime_scripts_do_not_hardcode_system_python",
+              "test_universal_worker_tools_use_canonical_python",
+              "test_worker_prefers_runtime_virtualenv"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "worker_control_plane.py"
+            ],
+            "path": "backend/tests/test_worker_channel_single_writer_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "source",
+              "test_channel_roles_remain_distinct",
+              "test_existing_control_plane_remains_canonical",
+              "test_health_writer_contract_is_canonical",
+              "test_no_parallel_workerctl_control_plane",
+              "test_request_publication_has_exact_scope_and_agent_guard",
+              "test_request_publication_has_optimistic_concurrency",
+              "test_request_publisher_is_idempotent",
+              "test_request_writer_contract_is_canonical",
+              "test_result_writer_contract_is_canonical"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "control_plane_started",
+              "edarsahub_produccion",
+              "ensure_control_plane",
+              "start_control_plane",
+              "stop_control_plane",
+              "worker_control_plane.py"
+            ],
+            "path": "backend/tests/test_worker_control_plane_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_control_plane_is_independent_and_supervised",
+              "test_orphan_claims_are_quarantined_not_deleted",
+              "test_production_is_explicitly_out_of_scope",
+              "test_runtime_self_heal_detects_generation_heartbeat_and_pid",
+              "test_stale_processing_is_idempotently_requeued",
+              "test_worktree_recovery_is_preserving_and_fast_forward_only"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib",
+              "tools.mirror_sync"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_produccion"
+            ],
+            "path": "backend/tests/test_worker_control_plane_maintenance_integration_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_control_plane_exposes_maintenance_summary",
+              "test_control_plane_maintenance_integration_is_read_only",
+              "test_cycle_surfaces_maintenance_without_second_control_plane",
+              "test_production_remains_fail_closed"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "control_plane_started",
+              "edarsahub-worker-control-plane",
+              "edarsahub_produccion",
+              "ensure_control_plane",
+              "start_control_plane",
+              "stop_control_plane",
+              "universal_job_worker_start_by_mirror=forbidden",
+              "worker_control_plane.py"
+            ],
+            "path": "backend/tests/test_worker_control_plane_supervisor_ownership_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_bootstrap_installs_and_owns_control_plane_service",
+              "test_control_plane_has_dedicated_supervisor_owner",
+              "test_control_plane_remains_production_fail_closed",
+              "test_mirror_fail_closed_contract_is_preserved",
+              "test_mirror_no_longer_owns_control_plane_lifecycle"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib",
+              "sys",
+              "tools.mirror_sync.worker_maintenance_controller"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "worker_control_plane.py"
+            ],
+            "path": "backend/tests/test_worker_maintenance_controller_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_application_scope_is_rejected",
+              "test_auditor_certifies_valid_repair",
+              "test_auditor_rejects_failed_tests",
+              "test_incident_declares_worker_repair_only",
+              "test_missing_git_certification_is_rejected",
+              "test_production_touch_is_terminal_rejection",
+              "test_repair_never_self_certifies",
+              "test_repair_plan_is_derived_from_incident",
+              "valid_result"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "universal_job_worker_start_by_mirror=forbidden",
+              "worker_control_plane.py"
+            ],
+            "path": "backend/tests/test_worker_mirror_single_owner_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_control_plane_dirty_app_defers",
+              "test_control_plane_never_stashes_shared_app",
+              "test_mirror_adopts_runtime_pid",
+              "test_mirror_does_not_spawn_universal_worker"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib",
+              "sys",
+              "tools.mirror_sync",
+              "tools.mirror_sync.worker_maintenance_controller"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "edarsahub_produccion",
+              "worker_control_plane.py"
+            ],
+            "path": "backend/tests/test_worker_repair_auditor_operational_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_redirect_state",
+              "test_application_scope_remains_forbidden",
+              "test_auditor_rejects_production_touch",
+              "test_failed_repair_enters_cooldown",
+              "test_independent_auditor_certifies_valid_repair",
+              "test_repair_attempts_are_bounded",
+              "test_repair_never_self_certifies",
+              "test_runtime_has_no_production_capability",
+              "test_runtime_incident_declaration_is_idempotent",
+              "test_same_incident_cannot_change_scope",
+              "valid_result"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "inspect",
+              "pathlib",
+              "pytest",
+              "sys",
+              "tools.mirror_sync",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "worker_control_plane.py"
+            ],
+            "path": "backend/tests/test_worker_repair_execution_bridge_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_job",
+              "_redirect_state",
+              "fake_publish",
+              "test_bridge_does_not_self_certify",
+              "test_different_job_cannot_rebind_attempt",
+              "test_execution_bridge_has_no_direct_executor",
+              "test_invalid_terminal_result_does_not_transition",
+              "test_publication_registers_exactly_one_attempt",
+              "test_repair_job_identity_is_deterministic",
+              "test_valid_terminal_result_becomes_pending_audit",
+              "test_validate_repair_job_is_scope_bound"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "importlib.util",
+              "pathlib"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "edarsahub_produccion"
+            ],
+            "path": "backend/tests/test_worker_sql_migration_integration_gate6.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "load_bridge",
+              "test_bridge_accepts_closed_migration_contract",
+              "test_bridge_rejects_inline_sql_and_command",
+              "test_bridge_rejects_noncanonical_path_and_bad_hash",
+              "test_bridge_requires_pre_and_post_readonly_audits",
+              "test_dispatcher_contract_is_closed_and_ordered",
+              "test_dispatcher_does_not_touch_production_contract",
+              "valid_job"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "worker_control_plane.py"
+            ],
+            "path": "backend/tests/test_worker_universal_queue_sla_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_dispatcher_claim_is_atomic_and_execution_is_outside_lock",
+              "test_dispatcher_tracks_runtime_and_only_releases_created_claims",
+              "test_dispatcher_uses_serial_slot_runtime_without_parallel_execution",
+              "test_health_exposes_sla_metrics",
+              "test_inbox_is_history_and_results_deduplicate_jobs",
+              "test_preferred_job_is_boost_not_global_freeze",
+              "test_stale_processing_is_requeued_once_then_terminal"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 22,
+          "scanned_files": 471,
+          "skipped_sensitive": 16
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-24T03:11:25Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
