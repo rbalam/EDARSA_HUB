@@ -72,3 +72,18 @@ def test_small_residual_is_adjusted_exactly_to_header():
     assert result['ok'] is True
     assert result['ventas_detalle'] == Decimal('100.00')
     assert result['tickets_no_conciliados'] == []
+
+
+def test_zero_header_accepts_real_franqicia_spelling():
+    rows = [
+        _row('20833', '0.00', '195.00', pax=1, product='A ENSALADA CESAR'),
+        _row('20833', '0.00', '-200.00', pax=1, product='FRANQICIA DJ'),
+    ]
+    out = _soft_add_ticket_adjustments(rows)
+    assert out[-1]['importe_neto'] == Decimal('5.00')
+    assert sum(x['importe_neto'] for x in out) == Decimal('0.00')
+
+    result = _validate(out, {'ventas': Decimal('0.00'), 'tickets': 1, 'pax': 1})
+    assert result['ok'] is True
+    assert result['ventas_detalle'] == Decimal('0.00')
+    assert result['tickets_no_conciliados'] == []

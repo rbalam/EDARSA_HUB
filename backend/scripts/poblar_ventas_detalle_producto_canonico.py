@@ -897,7 +897,10 @@ def _soft_add_ticket_adjustments(src_rows: List[Dict[str, Any]]) -> List[Dict[st
 
         negative_franchise = any(
             _d(row.get("importe_neto")) < 0
-            and "FRANQUICIA" in _s(row.get("producto_nombre")).upper()
+            and (
+                "FRANQUICIA" in _s(row.get("producto_nombre")).upper()
+                or "FRANQICIA" in _s(row.get("producto_nombre")).upper()
+            )
             for row in items
         )
         if (
