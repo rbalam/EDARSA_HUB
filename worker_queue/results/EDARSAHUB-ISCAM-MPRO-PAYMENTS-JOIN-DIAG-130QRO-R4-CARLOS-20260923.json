@@ -1,0 +1,317 @@
+{
+  "base_sha": "32d0860ef6c899d1c9a42a3e900c4e4ece9353af",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-24T00:02:57Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-JOIN-DIAG-130QRO-R4-CARLOS-20260923",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-24T00:03:00Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "codigo",
+              "nombre",
+              "server_id",
+              "sucursal_origen_id",
+              "activo"
+            ],
+            "name": "canonical_130qro_mapping",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "130QRO",
+                "130° QUERETARO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0021",
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "join_vnfolio",
+              "join_vndocumento"
+            ],
+            "name": "join_vnfolio_vs_vndocumento",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1927,
+                2225
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "sucursal",
+              "pagos",
+              "importe"
+            ],
+            "name": "payments_by_branch_vndocumento",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "0023",
+                963,
+                "2233270.93"
+              ],
+              [
+                "0021",
+                890,
+                "4755452.00"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "Sc_Cve_Sucursal",
+              "Vn_Folio",
+              "Vn_Documento",
+              "Cp_Co_Folio",
+              "forma",
+              "Cp_Importe",
+              "Cp_Propina",
+              "Cp_Comision"
+            ],
+            "name": "sample_payment_relation",
+            "row_count_returned": 20,
+            "rows": [
+              [
+                "0021",
+                "21-0043748",
+                "21-0051689",
+                "21-0051689",
+                "0006",
+                "3652.000000000",
+                "476.000000000",
+                "0E-9"
+              ],
+              [
+                "0021",
+                "21-0043749",
+                "21-0051695",
+                "21-0051695",
+                "0004",
+                "6756.000000000",
+                "881.000000000",
+                "0E-9"
+              ],
+              [
+                "0021",
+                "21-0043750",
+                "21-0051697",
+                "21-0051697",
+                "0001",
+                "5500.000000000",
+                "0E-9",
+                "0E-9"
+              ],
+              [
+                "0021",
+                "21-0043751",
+                "21-0051692",
+                "21-0051692",
+                "0004",
+                "6754.000000000",
+                "890.000000000",
+                "0E-9"
+              ],
+              [
+                "0021",
+                "21-0043752",
+                "21-0051693",
+                "21-0051693",
+                "0005",
+                "7687.000000000",
+                "1003.000000000",
+                "0E-9"
+              ],
+              [
+                "0021",
+                "21-0043753",
+                "21-0051694",
+                "21-0051694",
+                "0005",
+                "5677.000000000",
+                "0E-9",
+                "0E-9"
+              ],
+              [
+                "0021",
+                "21-0043754",
+                "21-0051696",
+                "21-0051696",
+                "0001",
+                "3188.000000000",
+                "0E-9",
+                "0E-9"
+              ],
+              [
+                "0021",
+                "21-0043755",
+                "21-0051701",
+                "21-0051701",
+                "0006",
+                "9646.000000000",
+                "1258.000000000",
+                "0E-9"
+              ],
+              [
+                "0021",
+                "21-0043756",
+                "21-0051690",
+                "21-0051690",
+                "0005",
+                "13610.000000000",
+                "1775.000000000",
+                "0E-9"
+              ],
+              [
+                "0021",
+                "21-0043757",
+                "21-0051698",
+                "21-0051698",
+                "0004",
+                "8640.000000000",
+                "1127.000000000",
+                "0E-9"
+              ],
+              [
+                "0021",
+                "21-0043758",
+                "21-0051702",
+                "21-0051702",
+                "0004",
+                "7400.000000000",
+                "965.000000000",
+                "0E-9"
+              ],
+              [
+                "0021",
+                "21-0043759",
+                "21-0051704",
+                "21-0051704",
+                "0001",
+                "5500.000000000",
+                "0E-9",
+                "0E-9"
+              ],
+              [
+                "0021",
+                "21-0043760",
+                "21-0051706",
+                "21-0051706",
+                "0006",
+                "3970.000000000",
+                "518.000000000",
+                "0E-9"
+              ],
+              [
+                "0021",
+                "21-0043761",
+                "21-0051708",
+                "21-0051708",
+                "0004",
+                "4843.000000000",
+                "0E-9",
+                "0E-9"
+              ],
+              [
+                "0021",
+                "21-0043762",
+                "21-0051703",
+                "21-0051703",
+                "0005",
+                "5980.000000000",
+                "780.000000000",
+                "0E-9"
+              ],
+              [
+                "0021",
+                "21-0043763",
+                "21-0051699",
+                "21-0051699",
+                "0004",
+                "5248.000000000",
+                "685.000000000",
+                "0E-9"
+              ],
+              [
+                "0021",
+                "21-0043763",
+                "21-0051699",
+                "21-0051699",
+                "0006",
+                "5249.000000000",
+                "685.000000000",
+                "0E-9"
+              ],
+              [
+                "0021",
+                "21-0043764",
+                "21-0051707",
+                "21-0051707",
+                "0004",
+                "8794.000000000",
+                "1147.000000000",
+                "0E-9"
+              ],
+              [
+                "0021",
+                "21-0043766",
+                "21-0051705",
+                "21-0051705",
+                "0004",
+                "7771.000000000",
+                "1295.000000000",
+                "0E-9"
+              ],
+              [
+                "0021",
+                "21-0043767",
+                "21-0051711",
+                "21-0051711",
+                "0001",
+                "6500.000000000",
+                "0E-9",
+                "0E-9"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-24T00:02:55Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
