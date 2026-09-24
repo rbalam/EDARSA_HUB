@@ -244,3 +244,383 @@ def test_publisher_certifies_when_required_deliverables_complete():
     assert evidence["certification"] == "CERTIFIED_READ_ONLY"
     assert evidence["work_completion"] == "COMPLETE"
     assert evidence["percent_complete"] == 100
+
+
+def test_deliverable_specs_valid_generic_contract():
+    from tools.mirror_sync.worker_deliverable_contract import (
+        normalize_deliverable_specs,
+    )
+
+    value = normalize_deliverable_specs(
+        {
+            "EXAMPLE_OUTPUT": {
+                "source": {
+                    "check_type":
+                        "repository_contract_audit",
+                    "occurrence": 1,
+                },
+                "selector": {
+                    "type": "json_path",
+                    "path": [
+                        "repository_evidence",
+                    ],
+                },
+            }
+        },
+        ["EXAMPLE_OUTPUT"],
+    )
+
+    assert value["EXAMPLE_OUTPUT"]["source"][
+        "occurrence"
+    ] == 1
+
+
+def test_deliverable_specs_must_reference_required_name():
+    from tools.mirror_sync.worker_deliverable_contract import (
+        normalize_deliverable_specs,
+    )
+
+    try:
+        normalize_deliverable_specs(
+            {
+                "OTHER_OUTPUT": {
+                    "source": {
+                        "check_type":
+                            "repository_contract_audit",
+                        "occurrence": 1,
+                    },
+                    "selector": {
+                        "type": "json_path",
+                        "path": ["output"],
+                    },
+                }
+            },
+            ["EXAMPLE_OUTPUT"],
+        )
+    except ValueError as exc:
+        assert (
+            str(exc)
+            == "DELIVERABLE_SPEC_NOT_REQUIRED"
+        )
+    else:
+        raise AssertionError(
+            "spec outside required deliverables must fail"
+        )
+
+
+def test_deliverable_source_requires_explicit_occurrence():
+    from tools.mirror_sync.worker_deliverable_contract import (
+        normalize_deliverable_specs,
+    )
+
+    try:
+        normalize_deliverable_specs(
+            {
+                "EXAMPLE_OUTPUT": {
+                    "source": {
+                        "check_type":
+                            "repository_contract_audit",
+                    },
+                    "selector": {
+                        "type": "json_path",
+                        "path": ["output"],
+                    },
+                }
+            },
+            ["EXAMPLE_OUTPUT"],
+        )
+    except ValueError as exc:
+        assert (
+            str(exc)
+            == "DELIVERABLE_SOURCE_OCCURRENCE_INVALID"
+        )
+    else:
+        raise AssertionError(
+            "occurrence must be explicit"
+        )
+
+
+def test_generic_materializer_selects_nested_json():
+    from tools.mirror_sync.worker_deliverable_contract import (
+        materialize_deliverables,
+    )
+
+    checks = [
+        {
+            "type": "repository_contract_audit",
+            "status": "PASS",
+            "repository_evidence": {
+                "summary": {
+                    "matched_files": 12,
+                }
+            },
+        }
+    ]
+
+    value = materialize_deliverables(
+        ["EXAMPLE_OUTPUT"],
+        {
+            "EXAMPLE_OUTPUT": {
+                "source": {
+                    "check_type":
+                        "repository_contract_audit",
+                    "occurrence": 1,
+                },
+                "selector": {
+                    "type": "json_path",
+                    "path": [
+                        "repository_evidence",
+                        "summary",
+                    ],
+                },
+            }
+        },
+        checks,
+    )
+
+    assert value == {
+        "EXAMPLE_OUTPUT": {
+            "matched_files": 12,
+        }
+    }
+
+
+def test_generic_materializer_occurrence_is_deterministic():
+    from tools.mirror_sync.worker_deliverable_contract import (
+        materialize_deliverables,
+    )
+
+    checks = [
+        {
+            "type": "repository_contract_audit",
+            "output": {"value": "first"},
+        },
+        {
+            "type": "repository_contract_audit",
+            "output": {"value": "second"},
+        },
+    ]
+
+    value = materialize_deliverables(
+        ["EXAMPLE_OUTPUT"],
+        {
+            "EXAMPLE_OUTPUT": {
+                "source": {
+                    "check_type":
+                        "repository_contract_audit",
+                    "occurrence": 2,
+                },
+                "selector": {
+                    "type": "json_path",
+                    "path": ["output"],
+                },
+            }
+        },
+        checks,
+    )
+
+    assert value == {
+        "EXAMPLE_OUTPUT": {
+            "value": "second",
+        }
+    }
+
+
+def test_generic_materializer_unknown_source_fails_closed():
+    from tools.mirror_sync.worker_deliverable_contract import (
+        materialize_deliverables,
+    )
+
+    try:
+        materialize_deliverables(
+            ["EXAMPLE_OUTPUT"],
+            {
+                "EXAMPLE_OUTPUT": {
+                    "source": {
+                        "check_type":
+                            "repository_contract_audit",
+                        "occurrence": 1,
+                    },
+                    "selector": {
+                        "type": "json_path",
+                        "path": ["output"],
+                    },
+                }
+            },
+            [],
+        )
+    except ValueError as exc:
+        assert (
+            str(exc)
+            == "DELIVERABLE_SOURCE_CHECK_NOT_FOUND"
+        )
+    else:
+        raise AssertionError(
+            "missing source must fail closed"
+        )
+
+
+def test_generic_materializer_invalid_path_fails_closed():
+    from tools.mirror_sync.worker_deliverable_contract import (
+        materialize_deliverables,
+    )
+
+    try:
+        materialize_deliverables(
+            ["EXAMPLE_OUTPUT"],
+            {
+                "EXAMPLE_OUTPUT": {
+                    "source": {
+                        "check_type": "git_diff_check",
+                        "occurrence": 1,
+                    },
+                    "selector": {
+                        "type": "json_path",
+                        "path": ["does_not_exist"],
+                    },
+                }
+            },
+            [
+                {
+                    "type": "git_diff_check",
+                    "status": "PASS",
+                }
+            ],
+        )
+    except ValueError as exc:
+        assert (
+            str(exc)
+            == "DELIVERABLE_SELECTOR_PATH_NOT_FOUND"
+        )
+    else:
+        raise AssertionError(
+            "missing path must fail closed"
+        )
+
+
+def test_generic_materializer_empty_payload_remains_missing():
+    from tools.mirror_sync.worker_deliverable_contract import (
+        evaluate_deliverables,
+        materialize_deliverables,
+    )
+
+    checks = [
+        {
+            "type": "repository_contract_audit",
+            "payload": {},
+        }
+    ]
+
+    materialized = materialize_deliverables(
+        ["EXAMPLE_OUTPUT"],
+        {
+            "EXAMPLE_OUTPUT": {
+                "source": {
+                    "check_type":
+                        "repository_contract_audit",
+                    "occurrence": 1,
+                },
+                "selector": {
+                    "type": "json_path",
+                    "path": ["payload"],
+                },
+            }
+        },
+        checks,
+    )
+
+    assert materialized == {}
+
+    evaluation = evaluate_deliverables(
+        ["EXAMPLE_OUTPUT"],
+        materialized,
+    )
+
+    assert evaluation.complete is False
+    assert evaluation.missing == (
+        "EXAMPLE_OUTPUT",
+    )
+
+
+def test_generic_materializer_has_no_domain_hardcode():
+    source = (
+        ROOT
+        / "tools/mirror_sync/"
+        "worker_deliverable_contract.py"
+    ).read_text(encoding="utf-8")
+
+    for token in (
+        "TECHNICAL_MAP_V1",
+        "COSTING_CONTRACT",
+        "PURCHASING_REVERSE_EXPLOSION_CONTRACT",
+        "GATE3_ALLOWED_DECISION",
+    ):
+        assert token not in source
+
+
+def test_bridge_accepts_generic_deliverable_specs():
+    bridge = load_module(
+        "deliverable_bridge_specs",
+        "tools/mirror_sync/universal_job_bridge.py",
+    )
+
+    job = base_readonly_job()
+
+    job["required_deliverables"] = [
+        "EXAMPLE_OUTPUT",
+    ]
+
+    job["deliverable_specs"] = {
+        "EXAMPLE_OUTPUT": {
+            "source": {
+                "check_type":
+                    "repository_contract_audit",
+                "occurrence": 1,
+            },
+            "selector": {
+                "type": "json_path",
+                "path": ["output"],
+            },
+        }
+    }
+
+    errors = bridge.validate(job)
+
+    assert not [
+        value
+        for value in errors
+        if value.startswith("DELIVERABLE_")
+    ]
+
+
+def test_bridge_rejects_invalid_deliverable_specs():
+    bridge = load_module(
+        "deliverable_bridge_specs_invalid",
+        "tools/mirror_sync/universal_job_bridge.py",
+    )
+
+    job = base_readonly_job()
+
+    job["required_deliverables"] = [
+        "EXAMPLE_OUTPUT",
+    ]
+
+    job["deliverable_specs"] = {
+        "EXAMPLE_OUTPUT": {
+            "source": {
+                "check_type":
+                    "repository_contract_audit",
+            },
+            "selector": {
+                "type": "json_path",
+                "path": ["output"],
+            },
+        }
+    }
+
+    errors = bridge.validate(job)
+
+    assert (
+        "DELIVERABLE_SOURCE_OCCURRENCE_INVALID"
+        in errors
+    )

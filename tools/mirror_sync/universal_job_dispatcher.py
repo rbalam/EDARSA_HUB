@@ -14,9 +14,9 @@ from __future__ import annotations
 
 # WORKER_DELIVERABLE_IMPORT_COMPAT_V1
 try:
-    from tools.mirror_sync.worker_deliverable_contract import evaluate_deliverables, normalize_required_deliverables
+    from tools.mirror_sync.worker_deliverable_contract import evaluate_deliverables, materialize_deliverables, normalize_deliverable_specs, normalize_required_deliverables
 except ModuleNotFoundError:
-    from worker_deliverable_contract import evaluate_deliverables, normalize_required_deliverables
+    from worker_deliverable_contract import evaluate_deliverables, materialize_deliverables, normalize_deliverable_specs, normalize_required_deliverables
 
 import fcntl
 import hashlib
@@ -559,6 +559,14 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
         result["missing_deliverables"] = list(
             result["required_deliverables"]
         )
+
+        if "deliverable_specs" in job:
+            result["deliverable_specs"] = (
+                normalize_deliverable_specs(
+                    job.get("deliverable_specs"),
+                    job.get("required_deliverables"),
+                )
+            )
     worktree: Path | None = None
     branch = ""
     agent_guard_claim_created = False
@@ -674,6 +682,27 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                 }
                 result["blockers"].append("readonly_tracked_repo_mutation_detected")
             result["checks"] = check_results
+            if (
+                result.get("required_deliverables")
+                and result.get("deliverable_specs")
+            ):
+                try:
+                    result["deliverables"] = (
+                        materialize_deliverables(
+                            result.get(
+                                "required_deliverables"
+                            ),
+                            result.get(
+                                "deliverable_specs"
+                            ),
+                            check_results,
+                        )
+                    )
+                except ValueError as exc:
+                    result["blockers"].append(
+                        "deliverable_materialization_failed:"
+                        + str(exc)
+                    )
             result["files_changed"] = []
             result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
             result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
@@ -713,6 +742,27 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                     result["blockers"].append("check_failed:sql_readonly_audit")
                     break
             result["checks"] = check_results
+            if (
+                result.get("required_deliverables")
+                and result.get("deliverable_specs")
+            ):
+                try:
+                    result["deliverables"] = (
+                        materialize_deliverables(
+                            result.get(
+                                "required_deliverables"
+                            ),
+                            result.get(
+                                "deliverable_specs"
+                            ),
+                            check_results,
+                        )
+                    )
+                except ValueError as exc:
+                    result["blockers"].append(
+                        "deliverable_materialization_failed:"
+                        + str(exc)
+                    )
             result["files_changed"] = []
             result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
             result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
@@ -749,6 +799,27 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
             if status_after != status_before:
                 result["blockers"].append("frontend_build_certification_repo_mutation_detected")
             result["checks"] = check_results
+            if (
+                result.get("required_deliverables")
+                and result.get("deliverable_specs")
+            ):
+                try:
+                    result["deliverables"] = (
+                        materialize_deliverables(
+                            result.get(
+                                "required_deliverables"
+                            ),
+                            result.get(
+                                "deliverable_specs"
+                            ),
+                            check_results,
+                        )
+                    )
+                except ValueError as exc:
+                    result["blockers"].append(
+                        "deliverable_materialization_failed:"
+                        + str(exc)
+                    )
             result["files_changed"] = []
             result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
             result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
@@ -1232,6 +1303,23 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                     result["blockers"].append(f"check_failed:{check_result['type']}")
                     break
             result["checks"] = check_results
+            if (
+                result.get("required_deliverables")
+                and result.get("deliverable_specs")
+            ):
+                try:
+                    result["deliverables"] = (
+                        materialize_deliverables(
+                            result.get("required_deliverables"),
+                            result.get("deliverable_specs"),
+                            check_results,
+                        )
+                    )
+                except ValueError as exc:
+                    result["blockers"].append(
+                        "deliverable_materialization_failed:"
+                        + str(exc)
+                    )
             result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else ("PASS" if not check_results and not result["blockers"] else "FAIL")
             result["build"] = next((x["status"] for x in check_results if x.get("type") == "frontend_build"), "NOT_REQUESTED")
             result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"

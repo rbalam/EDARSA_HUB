@@ -11,9 +11,9 @@ from __future__ import annotations
 
 # WORKER_DELIVERABLE_IMPORT_COMPAT_V1
 try:
-    from tools.mirror_sync.worker_deliverable_contract import normalize_required_deliverables
+    from tools.mirror_sync.worker_deliverable_contract import normalize_deliverable_specs, normalize_required_deliverables
 except ModuleNotFoundError:
-    from worker_deliverable_contract import normalize_required_deliverables
+    from worker_deliverable_contract import normalize_deliverable_specs, normalize_required_deliverables
 
 import json
 import os
@@ -224,6 +224,15 @@ def validate(job: Any) -> list[str]:
         try:
             normalize_required_deliverables(
                 job.get("required_deliverables")
+            )
+        except ValueError as exc:
+            errors.append(str(exc))
+
+    if "deliverable_specs" in job:
+        try:
+            normalize_deliverable_specs(
+                job.get("deliverable_specs"),
+                job.get("required_deliverables"),
             )
         except ValueError as exc:
             errors.append(str(exc))
