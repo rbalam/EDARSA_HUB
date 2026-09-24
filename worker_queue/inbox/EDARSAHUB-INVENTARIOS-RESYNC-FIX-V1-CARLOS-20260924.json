@@ -1,0 +1,94 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-INVENTARIOS-RESYNC-FIX-V1-CARLOS-20260924",
+  "mode": "MUTATION",
+  "objective": "Corregir integralmente Analisis de Inventarios: cablear Re-SYNC de inventarios fisicos al handler canonico existente, declarar la capacidad runtime implementada, advertir cuando la lista visual conservada pueda estar desactualizada y certificar el contrato para ORIGEN, 130QRO, ESTELAR, CIENFUEGOS y 130MID. No tocar Produccion.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4187a2544975f6c10b6f8f5d45089eff74492800",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Analisis de Inventarios"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "@router.post(\"/resync/execute\", response_model=ResyncResponse)\nasync def ejecutar_resync(\n",
+      "new": "async def _ejecutar_resync_inventarios_fisicos(\n    unidad_negocio_id: str,\n    dry_run: bool,\n) -> Dict[str, Any]:\n    \"\"\"Ejecuta el handler oficial de inventarios fisicos para una unidad canonica.\"\"\"\n    from core.scheduler.jobs.sync_compras_job import (\n        _execute_sql_with_timeout,\n        _get_servers_to_sync,\n    )\n    from modules.compras.sync_service import (\n        INVENTORY_SYNC_MODE_FULL,\n        log_sync_operation,\n        sync_inventarios_fisicos_from_server,\n    )\n\n    unidad_codigo = str(unidad_negocio_id or \"\").strip().upper()\n    servers = _get_servers_to_sync()\n    selected = [\n        server for server in servers\n        if str(server.get(\"unidad_codigo\") or \"\").strip().upper() == unidad_codigo\n    ]\n    if not selected:\n        return {\n            \"success\": False,\n            \"error_message\": f\"Unidad {unidad_codigo} no encontrada entre los servidores canonicos activos\",\n            \"records_processed\": 0,\n        }\n\n    if dry_run:\n        return {\n            \"success\": True,\n            \"modo\": \"DRY_RUN\",\n            \"records_processed\": 0,\n            \"targets\": [\n                {\n                    \"unidad\": server.get(\"unidad_codigo\"),\n                    \"server_id\": server.get(\"id\"),\n                    \"system_type\": server.get(\"system_type\"),\n                    \"sucursal_origen_id\": server.get(\"sucursal_origen_id\"),\n                }\n                for server in selected\n            ],\n            \"message\": \"DRY RUN validado; no se modificaron inventarios fisicos.\",\n        }\n\n    results = []\n    total_records = 0\n    total_details = 0\n    errors = []\n    for server in selected:\n        sync_start = datetime.now(timezone.utc)\n        server_info = {\n            \"id\": server[\"id\"],\n            \"host\": server[\"host\"],\n            \"port\": server[\"port\"],\n            \"database\": server[\"database\"],\n            \"username\": server[\"username\"],\n            \"password\": server[\"password\"],\n            \"system_type\": server[\"system_type\"],\n        }\n        unidad_info = {\n            \"id\": server[\"unidad_id\"],\n            \"codigo\": server[\"unidad_codigo\"],\n            \"nombre\": server[\"unidad_nombre\"],\n            \"sucursal_origen_id\": server.get(\"sucursal_origen_id\"),\n        }\n        result = sync_inventarios_fisicos_from_server(\n            server_info,\n            unidad_info,\n            _execute_sql_with_timeout,\n            sync_mode=INVENTORY_SYNC_MODE_FULL,\n        )\n        sync_end = datetime.now(timezone.utc)\n        log_sync_operation(\n            unidad_negocio_id=unidad_info[\"id\"],\n            server_id=server_info[\"id\"],\n            sync_type=\"INVENTARIOS\",\n            sync_start=sync_start,\n            sync_end=sync_end,\n            records_synced=int(result.get(\"records_synced\") or 0),\n            status=result.get(\"status\", \"ERROR\"),\n            error_message=result.get(\"error\"),\n        )\n        row = {\n            \"unidad\": unidad_info[\"codigo\"],\n            \"server_id\": server_info[\"id\"],\n            \"system_type\": server_info[\"system_type\"],\n            \"sucursal_origen_id\": unidad_info.get(\"sucursal_origen_id\"),\n            \"status\": result.get(\"status\"),\n            \"records_synced\": int(result.get(\"records_synced\") or 0),\n            \"details_synced\": int(result.get(\"details_synced\") or 0),\n            \"details_updated\": int(result.get(\"details_updated\") or 0),\n            \"detail_errors\": int(result.get(\"detail_errors\") or 0),\n            \"error\": result.get(\"error\"),\n        }\n        results.append(row)\n        total_records += row[\"records_synced\"]\n        total_details += row[\"details_synced\"] + row[\"details_updated\"]\n        if row[\"status\"] != \"OK\":\n            errors.append(row[\"error\"] or f\"Inventarios {unidad_info['codigo']}: estado {row['status']}\")\n\n    return {\n        \"success\": not errors,\n        \"records_processed\": total_records,\n        \"details_processed\": total_details,\n        \"results\": results,\n        \"error_message\": \" | \".join(errors) if errors else None,\n    }\n\n\n@router.post(\"/resync/execute\", response_model=ResyncResponse)\nasync def ejecutar_resync(\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "    # GUARD HONESTO: tipo registrado en el catálogo canónico pero sin handler real\n",
+      "new": "    if request.tipo_sync == 'inventarios_fisicos':\n        resultado = await _ejecutar_resync_inventarios_fisicos(\n            request.unidad_negocio_id,\n            request.dry_run,\n        )\n        modo = 'DRY_RUN' if request.dry_run else 'REAL'\n        accion = (\n            'DRY_RUN_SUCCESS' if request.dry_run and resultado.get('success')\n            else 'DRY_RUN_FAILED' if request.dry_run\n            else 'RESYNC_REAL_SUCCESS' if resultado.get('success')\n            else 'RESYNC_REAL_FAILED'\n        )\n        _registrar_en_bitacora(\n            job_name='RESYNC_inventarios_fisicos',\n            run_id=sync_run_id,\n            accion=accion,\n            server_id=unidad.get('server_id', ''),\n            detalles={\n                'unidad': request.unidad_negocio_id,\n                'fecha_inicio': str(request.fecha_inicio),\n                'fecha_fin': str(request.fecha_fin),\n                'motivo': request.motivo,\n                'dry_run': request.dry_run,\n                'usuario': user_email,\n                'resultado': resultado,\n            },\n            exito=bool(resultado.get('success')),\n            error_mensaje=resultado.get('error_message'),\n        )\n        _registrar_resync_log(\n            request,\n            current_user,\n            'SUCCESS' if resultado.get('success') else 'FAILED',\n            resultado.get('error_message')\n            or ('Inventarios fisicos validados en DRY RUN' if request.dry_run else 'Inventarios fisicos sincronizados'),\n            unidad,\n            resultado.get('records_processed', 0),\n        )\n        return ResyncResponse(\n            success=bool(resultado.get('success')),\n            ejecucion_id=ejecucion_id,\n            sync_run_id=sync_run_id,\n            modo=modo,\n            tipo_sync=request.tipo_sync,\n            unidad_negocio_id=request.unidad_negocio_id,\n            fecha_inicio=request.fecha_inicio.isoformat(),\n            fecha_fin=request.fecha_fin.isoformat(),\n            validacion_previa={\n                'rango': validacion_rango,\n                'handler': 'sync_inventarios_fisicos',\n                'source': 'EDARSAHUB_SYNC',\n            },\n            resultado=resultado,\n            error_message=resultado.get('error_message'),\n        )\n\n    # GUARD HONESTO: tipo registrado en el catálogo canónico pero sin handler real\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/sistema/sync_catalogo_service.py",
+      "expected_count": 1,
+      "old": "def _row_to_dict(r: Dict[str, Any]) -> Dict[str, Any]:\n    deps_raw = r.get('Dependencias')\n    try:\n        deps = json.loads(deps_raw) if deps_raw else []\n    except Exception:\n        deps = []\n    return {\n        'codigo': r['Codigo'],\n        'nombre': r['Nombre'],\n        'grupo': r['Grupo'],\n        'descripcion': r.get('Descripcion') or '',\n        'orden': int(r.get('Orden') or 100),\n        'nivel_riesgo': r.get('NivelRiesgo') or 'MEDIO',\n        'permite_resync': bool(r.get('PermiteResync')),\n        'permite_dry_run': bool(r.get('PermiteDryRun')),\n        'requiere_unidad': bool(r.get('RequiereUnidad')),\n        'requiere_rango_fechas': bool(r.get('RequiereRangoFechas')),\n        'rango_max_dias': int(r.get('RangoMaxDias') or 30),\n        'handler': r.get('Handler'),\n        'handler_implementado': bool(r.get('HandlerImplementado')),\n        'tabla_destino': r.get('TablaDestino'),\n        'dependencias': deps,\n        'activo': bool(r.get('Activo')),\n    }\n\n\n",
+      "new": "_RUNTIME_IMPLEMENTED_HANDLERS = {\n    'inventarios_fisicos': 'sync_inventarios_fisicos',\n}\n\n\ndef _row_to_dict(r: Dict[str, Any]) -> Dict[str, Any]:\n    deps_raw = r.get('Dependencias')\n    try:\n        deps = json.loads(deps_raw) if deps_raw else []\n    except Exception:\n        deps = []\n    codigo = r['Codigo']\n    handler = r.get('Handler')\n    handler_implementado = bool(r.get('HandlerImplementado'))\n    if _RUNTIME_IMPLEMENTED_HANDLERS.get(codigo) == handler:\n        handler_implementado = True\n    return {\n        'codigo': codigo,\n        'nombre': r['Nombre'],\n        'grupo': r['Grupo'],\n        'descripcion': r.get('Descripcion') or '',\n        'orden': int(r.get('Orden') or 100),\n        'nivel_riesgo': r.get('NivelRiesgo') or 'MEDIO',\n        'permite_resync': bool(r.get('PermiteResync')),\n        'permite_dry_run': bool(r.get('PermiteDryRun')),\n        'requiere_unidad': bool(r.get('RequiereUnidad')),\n        'requiere_rango_fechas': bool(r.get('RequiereRangoFechas')),\n        'rango_max_dias': int(r.get('RangoMaxDias') or 30),\n        'handler': handler,\n        'handler_implementado': handler_implementado,\n        'tabla_destino': r.get('TablaDestino'),\n        'dependencias': deps,\n        'activo': bool(r.get('Activo')),\n    }\n\n\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/migrations/sync_catalogo_canonico_20260612.py",
+      "expected_count": 1,
+      "old": "rmax=60, handler='sync_inventarios_fisicos', impl=0,",
+      "new": "rmax=60, handler='sync_inventarios_fisicos', impl=1,"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "      logger.error('Error al cargar inventarios:', error);\n      // Mantener la última lista válida ante un fallo transitorio.",
+      "new": "      logger.error('Error al cargar inventarios:', error);\n      toast.error('No se pudieron actualizar los inventarios. Se conserva la ultima lista cargada; puede estar desactualizada.');\n      // Mantener la última lista válida ante un fallo transitorio."
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Reportes.js",
+      "expected_count": 1,
+      "old": "        logger.error('Error cargando inventarios:', error);\n        // Mantener la última lista válida ante un fallo transitorio.",
+      "new": "        logger.error('Error cargando inventarios:', error);\n        toast.error('No se pudieron actualizar los inventarios. Se conserva la ultima lista cargada; puede estar desactualizada.');\n        // Mantener la última lista válida ante un fallo transitorio."
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_inventory_resync_wiring_20260924.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nAPI = ROOT / \"backend/api/admin_scheduler_resync.py\"\nCATALOG = ROOT / \"backend/modules/sistema/sync_catalogo_service.py\"\nMIGRATION = ROOT / \"backend/migrations/sync_catalogo_canonico_20260612.py\"\nFRONTEND = ROOT / \"frontend/src/pages/Reportes.js\"\n\n\ndef test_inventory_resync_is_dispatched_before_unimplemented_guard():\n    text = API.read_text(encoding=\"utf-8\")\n    branch = text.index(\"if request.tipo_sync == 'inventarios_fisicos':\")\n    guard = text.index(\"# GUARD HONESTO: tipo registrado\")\n    assert branch < guard\n    assert \"sync_inventarios_fisicos_from_server\" in text\n    assert \"INVENTORY_SYNC_MODE_FULL\" in text\n    assert \"sucursal_origen_id\" in text\n\n\ndef test_inventory_catalog_reports_runtime_handler_as_implemented():\n    text = CATALOG.read_text(encoding=\"utf-8\")\n    assert \"'inventarios_fisicos': 'sync_inventarios_fisicos'\" in text\n    assert \"handler_implementado = True\" in text\n\n\ndef test_inventory_seed_marks_handler_implemented_for_new_environments():\n    text = MIGRATION.read_text(encoding=\"utf-8\")\n    block = text.split(\"dict(codigo='inventarios_fisicos'\", 1)[1].split(\"),\", 1)[0]\n    assert \"handler='sync_inventarios_fisicos'\" in block\n    assert \"impl=1\" in block\n\n\ndef test_inventory_frontend_warns_when_cached_list_may_be_stale():\n    text = FRONTEND.read_text(encoding=\"utf-8\")\n    warning = \"Se conserva la ultima lista cargada; puede estar desactualizada.\"\n    assert text.count(warning) >= 2\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/api/admin_scheduler_resync.py",
+        "backend/modules/sistema/sync_catalogo_service.py",
+        "backend/tests/test_inventory_resync_wiring_20260924.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_inventory_resync_wiring_20260924.py",
+        "backend/tests/test_sync_inventarios_fisicos.py",
+        "backend/tests/test_inventarios_fisicos_sync_window_contract.py",
+        "backend/tests/test_inventarios_fisicos_resumable_staging_contract.py",
+        "backend/tests/test_inventarios_fisicos_scope_canonico.py",
+        "backend/tests/test_inventory_analysis_warehouse_canonical_contract.py"
+      ]
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
