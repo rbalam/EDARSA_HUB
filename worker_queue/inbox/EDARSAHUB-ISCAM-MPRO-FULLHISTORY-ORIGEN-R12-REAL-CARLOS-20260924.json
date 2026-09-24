@@ -1,0 +1,39 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-MPRO-FULLHISTORY-ORIGEN-R12-REAL-CARLOS-20260924",
+  "mode": "MPRO_FULL_HISTORY_RESYNC",
+  "objective": "Ejecutar carga histórica completa y definitiva de cortes y pagos ISCAM para ORIGEN, descubriendo automáticamente MIN/MAX en ManagementPro, procesando pagos por día y certificando la cobertura canónica en EDARSAHUB. Carga inicial única; después el Scheduler incremental mantiene lo nuevo.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "2a82c407b1ab4befe90e968482cb8bf5ae606417",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Formas de pagos ISCAM"
+  },
+  "units": [
+    "ORIGEN"
+  ],
+  "dry_run": false,
+  "confirm_full_history_resync": true,
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "origen_pagos_fullhistory_resumen",
+          "sql": "SELECT COUNT(*) AS filas, COUNT(DISTINCT NumeroTicket) AS tickets, CAST(ISNULL(SUM(Importe),0) AS decimal(18,2)) AS importe, CAST(ISNULL(SUM(Propina),0) AS decimal(18,2)) AS propina, MIN(FechaHora) AS fecha_min, MAX(FechaHora) AS fecha_max, COUNT(DISTINCT CONVERT(char(7),FechaHora,120)) AS meses FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE UnidadNegocio='ORIGEN' AND ISNULL(Activo,1)=1"
+        },
+        {
+          "name": "origen_pagos_por_mes",
+          "sql": "SELECT CONVERT(char(7),FechaHora,120) AS periodo, COUNT(*) AS filas, COUNT(DISTINCT NumeroTicket) AS tickets, CAST(SUM(Importe) AS decimal(18,2)) AS importe, CAST(SUM(ISNULL(Propina,0)) AS decimal(18,2)) AS propina FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE UnidadNegocio='ORIGEN' AND ISNULL(Activo,1)=1 GROUP BY CONVERT(char(7),FechaHora,120) ORDER BY periodo"
+        }
+      ]
+    }
+  ]
+}
