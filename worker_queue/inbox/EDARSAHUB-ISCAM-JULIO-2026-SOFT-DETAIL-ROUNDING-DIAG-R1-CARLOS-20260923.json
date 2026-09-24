@@ -1,0 +1,74 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-JULIO-2026-SOFT-DETAIL-ROUNDING-DIAG-R1-CARLOS-20260923",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "32d0860ef6c899d1c9a42a3e900c4e4ece9353af",
+  "production_allowed": false,
+  "objective": "Diagnosticar en solo lectura por que el detalle SoftRestaurant del 01/07/2026 queda NO_CUADRA_REVISAR aun cuando encabezado, tickets y PAX coinciden. Medir residuos monetarios por ticket y su acumulado diario en 130MID, CIENFUEGOS y ESTELAR.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "130MID"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "queries": [
+        {
+          "name": "130mid_20260701_rounding_detail_diag",
+          "sql": "\nWITH h AS (\n  SELECT\n    ch.folio,\n    CAST(ISNULL(ch.total,0) AS decimal(19,4)) AS encabezado,\n    CAST(ISNULL(ch.totaldescuentoycortesia,0) AS decimal(19,4)) AS descuento\n  FROM cheques ch WITH (NOLOCK)\n  INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno\n  WHERE tr.apertura >= '2026-07-01 00:00:00'\n    AND tr.apertura < '2026-07-02 00:00:00'\n    AND ISNULL(ch.cancelado,0)=0\n),\nl AS (\n  SELECT\n    h.folio,\n    MAX(h.encabezado) AS encabezado,\n    MAX(h.descuento) AS descuento,\n    CAST(SUM(CAST(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0) AS decimal(19,4))) AS decimal(19,4)) AS productos\n  FROM h\n  LEFT JOIN cheqdet dc WITH (NOLOCK) ON dc.foliodet=h.folio\n  GROUP BY h.folio\n),\ncalc AS (\n  SELECT\n    folio, encabezado, productos,\n    CAST(encabezado-productos AS decimal(19,4)) AS delta_ticket,\n    CASE\n      WHEN ABS(encabezado-productos) <= 0.05 THEN productos\n      ELSE encabezado\n    END AS detalle_estimado_post_ajuste\n  FROM l\n)\nSELECT\n  COUNT(*) AS tickets,\n  CAST(SUM(encabezado) AS decimal(19,4)) AS encabezado_total,\n  CAST(SUM(productos) AS decimal(19,4)) AS productos_total,\n  CAST(SUM(detalle_estimado_post_ajuste) AS decimal(19,4)) AS detalle_estimado_post_ajuste,\n  CAST(SUM(encabezado)-SUM(detalle_estimado_post_ajuste) AS decimal(19,4)) AS delta_agregado_estimado,\n  SUM(CASE WHEN ABS(delta_ticket) <= 0.05 AND ABS(delta_ticket) > 0 THEN 1 ELSE 0 END) AS tickets_residuo_tolerado,\n  CAST(SUM(CASE WHEN ABS(delta_ticket) <= 0.05 THEN delta_ticket ELSE 0 END) AS decimal(19,4)) AS suma_residuos_tolerados,\n  SUM(CASE WHEN encabezado=0 AND ABS(productos)>0.05 THEN 1 ELSE 0 END) AS tickets_cero_con_detalle\nFROM calc;\n\nWITH h AS (\n  SELECT\n    ch.folio,\n    CAST(ISNULL(ch.total,0) AS decimal(19,4)) AS encabezado\n  FROM cheques ch WITH (NOLOCK)\n  INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno\n  WHERE tr.apertura >= '2026-07-01 00:00:00'\n    AND tr.apertura < '2026-07-02 00:00:00'\n    AND ISNULL(ch.cancelado,0)=0\n),\nl AS (\n  SELECT\n    h.folio,\n    MAX(h.encabezado) AS encabezado,\n    CAST(SUM(CAST(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0) AS decimal(19,4))) AS decimal(19,4)) AS productos\n  FROM h\n  LEFT JOIN cheqdet dc WITH (NOLOCK) ON dc.foliodet=h.folio\n  GROUP BY h.folio\n)\nSELECT TOP 50\n  folio, encabezado, productos,\n  CAST(encabezado-productos AS decimal(19,4)) AS delta_ticket\nFROM l\nWHERE ABS(encabezado-productos) <= 0.05\n  AND ABS(encabezado-productos) > 0\nORDER BY ABS(encabezado-productos) DESC, folio"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "CIENFUEGOS"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "queries": [
+        {
+          "name": "cienfuegos_20260701_rounding_detail_diag",
+          "sql": "\nWITH h AS (\n  SELECT\n    ch.folio,\n    CAST(ISNULL(ch.total,0) AS decimal(19,4)) AS encabezado,\n    CAST(ISNULL(ch.totaldescuentoycortesia,0) AS decimal(19,4)) AS descuento\n  FROM cheques ch WITH (NOLOCK)\n  INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno\n  WHERE tr.apertura >= '2026-07-01 00:00:00'\n    AND tr.apertura < '2026-07-02 00:00:00'\n    AND ISNULL(ch.cancelado,0)=0\n),\nl AS (\n  SELECT\n    h.folio,\n    MAX(h.encabezado) AS encabezado,\n    MAX(h.descuento) AS descuento,\n    CAST(SUM(CAST(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0) AS decimal(19,4))) AS decimal(19,4)) AS productos\n  FROM h\n  LEFT JOIN cheqdet dc WITH (NOLOCK) ON dc.foliodet=h.folio\n  GROUP BY h.folio\n),\ncalc AS (\n  SELECT\n    folio, encabezado, productos,\n    CAST(encabezado-productos AS decimal(19,4)) AS delta_ticket,\n    CASE\n      WHEN ABS(encabezado-productos) <= 0.05 THEN productos\n      ELSE encabezado\n    END AS detalle_estimado_post_ajuste\n  FROM l\n)\nSELECT\n  COUNT(*) AS tickets,\n  CAST(SUM(encabezado) AS decimal(19,4)) AS encabezado_total,\n  CAST(SUM(productos) AS decimal(19,4)) AS productos_total,\n  CAST(SUM(detalle_estimado_post_ajuste) AS decimal(19,4)) AS detalle_estimado_post_ajuste,\n  CAST(SUM(encabezado)-SUM(detalle_estimado_post_ajuste) AS decimal(19,4)) AS delta_agregado_estimado,\n  SUM(CASE WHEN ABS(delta_ticket) <= 0.05 AND ABS(delta_ticket) > 0 THEN 1 ELSE 0 END) AS tickets_residuo_tolerado,\n  CAST(SUM(CASE WHEN ABS(delta_ticket) <= 0.05 THEN delta_ticket ELSE 0 END) AS decimal(19,4)) AS suma_residuos_tolerados,\n  SUM(CASE WHEN encabezado=0 AND ABS(productos)>0.05 THEN 1 ELSE 0 END) AS tickets_cero_con_detalle\nFROM calc;\n\nWITH h AS (\n  SELECT\n    ch.folio,\n    CAST(ISNULL(ch.total,0) AS decimal(19,4)) AS encabezado\n  FROM cheques ch WITH (NOLOCK)\n  INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno\n  WHERE tr.apertura >= '2026-07-01 00:00:00'\n    AND tr.apertura < '2026-07-02 00:00:00'\n    AND ISNULL(ch.cancelado,0)=0\n),\nl AS (\n  SELECT\n    h.folio,\n    MAX(h.encabezado) AS encabezado,\n    CAST(SUM(CAST(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0) AS decimal(19,4))) AS decimal(19,4)) AS productos\n  FROM h\n  LEFT JOIN cheqdet dc WITH (NOLOCK) ON dc.foliodet=h.folio\n  GROUP BY h.folio\n)\nSELECT TOP 50\n  folio, encabezado, productos,\n  CAST(encabezado-productos AS decimal(19,4)) AS delta_ticket\nFROM l\nWHERE ABS(encabezado-productos) <= 0.05\n  AND ABS(encabezado-productos) > 0\nORDER BY ABS(encabezado-productos) DESC, folio"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ESTELAR"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "queries": [
+        {
+          "name": "estelar_20260701_rounding_detail_diag",
+          "sql": "\nWITH h AS (\n  SELECT\n    ch.folio,\n    CAST(ISNULL(ch.total,0) AS decimal(19,4)) AS encabezado,\n    CAST(ISNULL(ch.totaldescuentoycortesia,0) AS decimal(19,4)) AS descuento\n  FROM cheques ch WITH (NOLOCK)\n  INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno\n  WHERE tr.apertura >= '2026-07-01 09:00:00'\n    AND tr.apertura < '2026-07-02 09:00:00'\n    AND ISNULL(ch.cancelado,0)=0\n),\nl AS (\n  SELECT\n    h.folio,\n    MAX(h.encabezado) AS encabezado,\n    MAX(h.descuento) AS descuento,\n    CAST(SUM(CAST(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0) AS decimal(19,4))) AS decimal(19,4)) AS productos\n  FROM h\n  LEFT JOIN cheqdet dc WITH (NOLOCK) ON dc.foliodet=h.folio\n  GROUP BY h.folio\n),\ncalc AS (\n  SELECT\n    folio, encabezado, productos,\n    CAST(encabezado-productos AS decimal(19,4)) AS delta_ticket,\n    CASE\n      WHEN ABS(encabezado-productos) <= 0.05 THEN productos\n      ELSE encabezado\n    END AS detalle_estimado_post_ajuste\n  FROM l\n)\nSELECT\n  COUNT(*) AS tickets,\n  CAST(SUM(encabezado) AS decimal(19,4)) AS encabezado_total,\n  CAST(SUM(productos) AS decimal(19,4)) AS productos_total,\n  CAST(SUM(detalle_estimado_post_ajuste) AS decimal(19,4)) AS detalle_estimado_post_ajuste,\n  CAST(SUM(encabezado)-SUM(detalle_estimado_post_ajuste) AS decimal(19,4)) AS delta_agregado_estimado,\n  SUM(CASE WHEN ABS(delta_ticket) <= 0.05 AND ABS(delta_ticket) > 0 THEN 1 ELSE 0 END) AS tickets_residuo_tolerado,\n  CAST(SUM(CASE WHEN ABS(delta_ticket) <= 0.05 THEN delta_ticket ELSE 0 END) AS decimal(19,4)) AS suma_residuos_tolerados,\n  SUM(CASE WHEN encabezado=0 AND ABS(productos)>0.05 THEN 1 ELSE 0 END) AS tickets_cero_con_detalle\nFROM calc;\n\nWITH h AS (\n  SELECT\n    ch.folio,\n    CAST(ISNULL(ch.total,0) AS decimal(19,4)) AS encabezado\n  FROM cheques ch WITH (NOLOCK)\n  INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno\n  WHERE tr.apertura >= '2026-07-01 09:00:00'\n    AND tr.apertura < '2026-07-02 09:00:00'\n    AND ISNULL(ch.cancelado,0)=0\n),\nl AS (\n  SELECT\n    h.folio,\n    MAX(h.encabezado) AS encabezado,\n    CAST(SUM(CAST(ISNULL(dc.cantidad,0)*ISNULL(dc.precio,0) AS decimal(19,4))) AS decimal(19,4)) AS productos\n  FROM h\n  LEFT JOIN cheqdet dc WITH (NOLOCK) ON dc.foliodet=h.folio\n  GROUP BY h.folio\n)\nSELECT TOP 50\n  folio, encabezado, productos,\n  CAST(encabezado-productos AS decimal(19,4)) AS delta_ticket\nFROM l\nWHERE ABS(encabezado-productos) <= 0.05\n  AND ABS(encabezado-productos) > 0\nORDER BY ABS(encabezado-productos) DESC, folio"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260923 Julio 2026 conciliacion ventas"
+  },
+  "constraints": [
+    "Solo lectura POS",
+    "No modificar datos",
+    "No Production",
+    "Diagnostico del 01/07/2026"
+  ]
+}
