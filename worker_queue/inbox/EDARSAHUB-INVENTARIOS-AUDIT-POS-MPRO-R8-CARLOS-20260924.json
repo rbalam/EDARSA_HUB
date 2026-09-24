@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-INVENTARIOS-AUDIT-POS-MPRO-R8-CARLOS-20260924",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar en POS MPRO el inventario fisico mas reciente para ORIGEN y 130QRO. Solo lectura.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4eb29655f2e70ddc37a28e41193e2badd16d128a",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Analisis de Inventarios"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN",
+        "130QRO"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "ultimo_inventario_mpro",
+          "sql": "SELECT TOP 1 F.Sc_Cve_Sucursal AS sucursal_id, F.Fi_Folio AS folio, F.Fi_Fecha AS fecha, F.Al_Cve_Almacen AS almacen_id, A.Al_Descripcion AS almacen, COUNT(F.Pr_Cve_Producto) AS total_productos FROM Fisico F INNER JOIN Almacen A ON A.Al_Cve_Almacen=F.Al_Cve_Almacen AND A.Sc_Cve_Sucursal=F.Sc_Cve_Sucursal WHERE ISNULL(F.Es_Cve_Estado,'') <> 'CA' GROUP BY F.Sc_Cve_Sucursal,F.Fi_Folio,F.Fi_Fecha,F.Al_Cve_Almacen,A.Al_Descripcion ORDER BY F.Fi_Fecha DESC,F.Fi_Folio DESC"
+        }
+      ]
+    }
+  ]
+}
