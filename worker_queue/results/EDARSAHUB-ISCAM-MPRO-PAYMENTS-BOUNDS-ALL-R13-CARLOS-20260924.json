@@ -1,0 +1,220 @@
+{
+  "base_sha": "2a82c407b1ab4befe90e968482cb8bf5ae606417",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-24T17:43:01Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-BOUNDS-ALL-R13-CARLOS-20260924",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-24T17:43:25Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "codigo",
+              "nombre",
+              "system_type",
+              "server_id",
+              "sucursal_origen_id",
+              "activo"
+            ],
+            "name": "unidades_mpro_activas",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "130QRO",
+                "130° QUERETARO",
+                "MPRO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0021",
+                true
+              ],
+              [
+                "ORIGEN",
+                "ORIGEN",
+                "MPRO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0023",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocio",
+              "filas",
+              "tickets",
+              "fecha_min",
+              "fecha_max",
+              "meses",
+              "importe"
+            ],
+            "name": "cobertura_pagos_canonica",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                101844,
+                91743,
+                "2016-06-14T20:01:37",
+                "2026-09-07T16:25:12",
+                124,
+                "333053859.36"
+              ],
+              [
+                "130QRO",
+                18537,
+                16548,
+                "2021-09-20T00:00:00",
+                "2026-08-31T00:00:00",
+                28,
+                "84998872.00"
+              ],
+              [
+                "CIENFUEGOS",
+                115650,
+                96691,
+                "2019-12-31T16:27:41",
+                "2026-09-07T16:41:50",
+                81,
+                "356962382.52"
+              ],
+              [
+                "ESTELAR",
+                29541,
+                23051,
+                "2025-06-27T11:44:07",
+                "2026-09-07T11:29:15",
+                16,
+                "36954408.47"
+              ],
+              [
+                "ORIGEN",
+                23420,
+                19577,
+                "2024-06-01T00:00:00",
+                "2026-06-09T00:00:00",
+                25,
+                "47451956.65"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "Sc_Cve_Sucursal",
+              "fecha_min",
+              "fecha_max",
+              "ventas_fuente"
+            ],
+            "name": "payment_source_bounds",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "0001",
+                "2023-02-01",
+                "2023-02-01",
+                "1"
+              ],
+              [
+                "0012",
+                "2020-12-16",
+                "2023-02-03",
+                "6822"
+              ],
+              [
+                "0021",
+                "2021-09-18",
+                "2026-09-23",
+                "43741"
+              ],
+              [
+                "0023",
+                "2022-05-20",
+                "2026-09-23",
+                "47606"
+              ],
+              [
+                "0024",
+                "2022-09-12",
+                "2026-09-09",
+                "707"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "Sc_Cve_Sucursal",
+              "fecha_min",
+              "fecha_max",
+              "ventas_fuente"
+            ],
+            "name": "payment_source_bounds",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "0001",
+                "2023-02-01",
+                "2023-02-01",
+                "1"
+              ],
+              [
+                "0012",
+                "2020-12-16",
+                "2023-02-03",
+                "6822"
+              ],
+              [
+                "0021",
+                "2021-09-18",
+                "2026-09-23",
+                "43741"
+              ],
+              [
+                "0023",
+                "2022-05-20",
+                "2026-09-23",
+                "47606"
+              ],
+              [
+                "0024",
+                "2022-09-12",
+                "2026-09-09",
+                "707"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-24T17:42:54Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
