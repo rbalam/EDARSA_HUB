@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "2a82c407b1ab4befe90e968482cb8bf5ae606417",
-  "generated_at_utc": "2026-09-24T18:21:33Z",
+  "generated_at_utc": "2026-09-24T18:22:46Z",
   "history": {
     "done_total_local": 961,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2929,
+      "age_seconds": 3002,
       "job_id": "EDARSAHUB-ISCAM-MPRO-FULLHISTORY-130QRO-R12-REAL-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3180,
+      "age_seconds": 3253,
       "job_id": "EDARSAHUB-ISCAM-MPRO-FULLHISTORY-ORIGEN-R12-REAL-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2311,
+      "age_seconds": 2384,
       "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-BOUNDS-ALL-R13-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1013,
+      "age_seconds": 1086,
       "job_id": "EDARSAHUB-ISCAM-PAYMENTS-FULLHISTORY-130QRO-R14-REAL-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1210,
+      "age_seconds": 1283,
       "job_id": "EDARSAHUB-ISCAM-PAYMENTS-FULLHISTORY-ORIGEN-R14-REAL-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-ISCAM-PAYMENTS-FULLHISTORY-130QRO-R14-REAL-CARLOS-20260924",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-24T18:21:28Z",
-    "last_receive_utc": "2026-09-24T18:21:31Z",
+    "last_cycle_utc": "2026-09-24T18:22:42Z",
+    "last_receive_utc": "2026-09-24T18:22:45Z",
     "last_terminal_utc": "2026-09-24T18:04:39Z",
     "pid": "361",
     "runtime_fingerprint": {
