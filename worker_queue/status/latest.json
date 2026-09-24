@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "4b0cd89e129a22cd507342502e93cb5655f0c21e",
-  "generated_at_utc": "2026-09-24T19:07:46Z",
+  "generated_at_utc": "2026-09-24T19:09:09Z",
   "history": {
     "done_total_local": 963,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 225,
+      "age_seconds": 308,
       "job_id": "EDARSAHUB-INVENTARIOS-CATALOGO-IMPL-R3-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2009,
+      "age_seconds": 2093,
       "job_id": "EDARSAHUB-ISCAM-PAYMENTS-FULLHISTORY-130QRO-R14-REAL-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2006,
+      "age_seconds": 2090,
       "job_id": "EDARSAHUB-ISCAM-PAYMENTS-R14-PROGRESS-AUDIT-R15-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-24T19:07:44Z",
-    "last_receive_utc": "2026-09-24T19:07:45Z",
+    "last_cycle_utc": "2026-09-24T19:09:06Z",
+    "last_receive_utc": "2026-09-24T19:09:08Z",
     "last_terminal_utc": "2026-09-24T19:04:00Z",
     "pid": "361",
     "runtime_fingerprint": {
