@@ -47,10 +47,11 @@ SYNC_INCREMENTAL_DAYS = int(os.environ.get("SYNC_COMERCIAL_V2_DAYS", "3"))
 
 
 def _resolve_estatus_general(results: Dict[str, Any]) -> str:
-    """No declara COMPLETADO si el detalle ISCAM tiene fallos."""
+    """No declara COMPLETADO si detalle o pagos ISCAM tienen fallos."""
     header_failures = int(results.get("unidades_fallidas") or 0)
     detail_failures = int(results.get("detalle_producto_fallidos") or 0)
-    if header_failures == 0 and detail_failures == 0:
+    payment_failures = int(results.get("pagos_iscam_fallidos") or 0)
+    if header_failures == 0 and detail_failures == 0 and payment_failures == 0:
         return "COMPLETADO"
     if int(results.get("unidades_exitosas") or 0) > 0:
         return "PARCIAL"
@@ -167,6 +168,10 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
         "detalle_producto_fallidos": 0,
         "detalle_producto_omitidos": 0,
         "detalle_producto_filas_insertadas": 0,
+        "pagos_iscam_exitosos": 0,
+        "pagos_iscam_fallidos": 0,
+        "pagos_iscam_extraidos": 0,
+        "pagos_iscam_insertados": 0,
     }
     
     def _sync_detalle_post_header(
@@ -321,6 +326,66 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
                 dia,
             )
 
+    def _sync_pagos_post_header(
+        unidad_codigo,
+        fecha_inicio_unidad,
+        fecha_fin_unidad,
+        detalle_unidad,
+    ):
+        """Sincroniza pagos ISCAM por día para cualquier POS tras un header válido."""
+        from core.scheduler.jobs.inteligencia_comercial_enrich import (
+            resync_pagos_unidad,
+        )
+
+        traces = []
+        total_days = (fecha_fin_unidad - fecha_inicio_unidad).days + 1
+
+        for offset in range(total_days):
+            dia = fecha_inicio_unidad + timedelta(days=offset)
+            ff = dia + timedelta(days=1)
+            try:
+                payment_result = resync_pagos_unidad(
+                    unidad_codigo,
+                    dia.isoformat(),
+                    ff.isoformat(),
+                    dry_run=not detail_commit,
+                )
+            except Exception as exc:
+                payment_result = {
+                    "unidad": unidad_codigo,
+                    "error": f"{type(exc).__name__}: {exc}",
+                    "pagos_extraidos": 0,
+                    "pagos_insertados": 0,
+                }
+
+            trace = {
+                "fecha_operacion": dia.isoformat(),
+                "status": "ERROR" if payment_result.get("error") else "OK",
+                "pagos_extraidos": int(payment_result.get("pagos_extraidos") or 0),
+                "pagos_insertados": int(payment_result.get("pagos_insertados") or 0),
+            }
+
+            if payment_result.get("error"):
+                trace["error"] = str(payment_result.get("error"))
+                results["pagos_iscam_fallidos"] += 1
+            else:
+                results["pagos_iscam_exitosos"] += 1
+                results["pagos_iscam_extraidos"] += trace["pagos_extraidos"]
+                results["pagos_iscam_insertados"] += trace["pagos_insertados"]
+
+            traces.append(trace)
+
+        detalle_unidad["pagos_iscam_dias"] = traces
+        detalle_unidad["pagos_iscam_status"] = (
+            "ERROR" if any(item["status"] == "ERROR" for item in traces) else "OK"
+        )
+        detalle_unidad["pagos_iscam_extraidos"] = sum(
+            item["pagos_extraidos"] for item in traces
+        )
+        detalle_unidad["pagos_iscam_insertados"] = sum(
+            item["pagos_insertados"] for item in traces
+        )
+
     # =========================================================================
     # FASE P0: CARGAR UNIDADES DESDE EDARSAHUB (códigos canónicos)
     # =========================================================================
@@ -446,6 +511,13 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
             results["detalles_unidades"].append(detalle)
             
             if resultado.success:
+                _sync_pagos_post_header(
+                    unidad_id,
+                    fecha_inicio,
+                    fecha_fin,
+                    detalle,
+                )
+
                 for detail_day_offset in range(
                     (fecha_fin - fecha_inicio).days + 1
                 ):
@@ -551,6 +623,13 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
             results["detalles_unidades"].append(detalle)
             
             if resultado.success:
+                _sync_pagos_post_header(
+                    unidad_id,
+                    fecha_inicio,
+                    fecha_fin,
+                    detalle,
+                )
+
                 for detail_day_offset in range(
                     (fecha_fin - fecha_inicio).days + 1
                 ):
