@@ -1,0 +1,31 @@
+{
+  "base_sha": "2a82c407b1ab4befe90e968482cb8bf5ae606417",
+  "blockers": [
+    "mpro_resync_failed:rc=2"
+  ],
+  "canonical_sql_mutation": true,
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-24T17:28:54Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-MPRO-FULLHISTORY-130QRO-R12-REAL-CARLOS-20260924",
+  "operation": "MPRO_FULL_HISTORY_RESYNC",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-24T17:29:11Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-24T17:28:34Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "units": [
+    "130QRO"
+  ],
+  "work_completion": "NOT_CERTIFIED"
+}
