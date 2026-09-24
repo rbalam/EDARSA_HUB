@@ -835,6 +835,7 @@ def _extract_soft(cfg: Dict[str, Any], dia: date) -> List[Dict[str, Any]]:
 
 SOFT_AJUSTE_CHEQUE = "__ISCAM_AJUSTE_CHEQUE__"
 SOFT_AJUSTE_FRANQUICIA_CERO = "__ISCAM_AJUSTE_FRANQUICIA_CERO__"
+SOFT_AJUSTE_ANTICIPO_CERO = "__ISCAM_AJUSTE_ANTICIPO_CERO__"
 SOFT_AJUSTE_ENCABEZADO = "__ISCAM_AJUSTE_ENCABEZADO__"
 
 
@@ -919,9 +920,33 @@ def _soft_add_ticket_adjustments(src_rows: List[Dict[str, Any]]) -> List[Dict[st
             out.append(adjustment)
             continue
 
+        negative_advance_application = any(
+            _d(row.get("importe_neto")) < 0
+            and "ANTICIPO" in _s(row.get("producto_nombre")).upper()
+            and "VENTAS" in _s(row.get("producto_nombre")).upper()
+            and "APLICACION" in _s(row.get("producto_nombre")).upper()
+            for row in items
+        )
+        if (
+            header_total == Decimal("0")
+            and product_total < Decimal("0")
+            and delta > Decimal("0")
+            and negative_advance_application
+        ):
+            adjustment = dict(items[0])
+            adjustment["producto_codigo_fuente"] = SOFT_AJUSTE_ANTICIPO_CERO
+            adjustment["producto_nombre"] = "AJUSTE DE CIERRE A CERO (ANTICIPO S/VENTAS APLICACION)"
+            adjustment["cantidad"] = Decimal("0")
+            adjustment["precio_unitario"] = Decimal("0")
+            adjustment["importe_bruto"] = Decimal("0")
+            adjustment["importe_neto"] = delta
+            out.append(adjustment)
+            continue
+
         # Un encabezado en cero con detalle monetario no explicado sigue siendo
-        # un caso anomalo y se bloquea. La unica excepcion es la franquicia
-        # negativa ya resuelta arriba. Esto conserva el guard historico R80C.
+        # un caso anomalo y se bloquea. Las unicas excepciones son conceptos
+        # negativos explicitos de franquicia o aplicacion de anticipo ya resueltos
+        # arriba. Esto conserva el guard historico R80C.
         if header_total == Decimal("0"):
             raise RuntimeError(
                 f"SoftRestaurant: diferencia no explicada en ticket {ticket_key}; "

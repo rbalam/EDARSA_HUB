@@ -2,6 +2,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from scripts.poblar_ventas_detalle_producto_canonico import (
+    SOFT_AJUSTE_ANTICIPO_CERO,
     SOFT_AJUSTE_ENCABEZADO,
     _soft_add_ticket_adjustments,
     _validate,
@@ -81,6 +82,22 @@ def test_zero_header_accepts_real_franqicia_spelling():
     ]
     out = _soft_add_ticket_adjustments(rows)
     assert out[-1]['importe_neto'] == Decimal('5.00')
+    assert sum(x['importe_neto'] for x in out) == Decimal('0.00')
+
+    result = _validate(out, {'ventas': Decimal('0.00'), 'tickets': 1, 'pax': 1})
+    assert result['ok'] is True
+    assert result['ventas_detalle'] == Decimal('0.00')
+    assert result['tickets_no_conciliados'] == []
+
+
+def test_zero_header_accepts_negative_advance_application():
+    rows = [
+        _row('21167', '0.00', '1985.00', pax=1, product='CONSUMO POSITIVO'),
+        _row('21167', '0.00', '-2000.00', pax=1, product='ANTICIPO S/VENTAS APLICACION'),
+    ]
+    out = _soft_add_ticket_adjustments(rows)
+    assert out[-1]['producto_codigo_fuente'] == SOFT_AJUSTE_ANTICIPO_CERO
+    assert out[-1]['importe_neto'] == Decimal('15.00')
     assert sum(x['importe_neto'] for x in out) == Decimal('0.00')
 
     result = _validate(out, {'ventas': Decimal('0.00'), 'tickets': 1, 'pax': 1})
