@@ -1,0 +1,27 @@
+{
+  "base_sha": "53823108d3237bbddfcbded9e61520df2927bf96",
+  "blockers": [],
+  "candidate_sha": "03b5bc3cc9ef5ac755fd5fcd69e673ceaaa14104",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-24T19:55:18Z",
+  "development_sha": "03b5bc3cc9ef5ac755fd5fcd69e673ceaaa14104",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/sistema/sync_catalogo_service.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-INVENTARIOS-CATALOGO-RUNTIME-R4-CARLOS-20260924",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-24T19:56:10Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-24T19:55:13Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
