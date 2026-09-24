@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-ORIGEN-SOURCE-MONTHS-R16-CARLOS-20260924",
+  "mode": "READ_ONLY",
+  "objective": "Comparar la cobertura mensual real de pagos de ORIGEN (sucursal MPRO 0023) contra la tabla canónica EDARSAHUB para distinguir meses sin operación de meses faltantes y reanudar únicamente los huecos reales. Solo lectura.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Formas de pagos ISCAM"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "origen_source_months",
+          "sql": "SELECT CONVERT(char(7),v.Vn_Fecha,120) AS periodo,COUNT(*) AS pagos,COUNT(DISTINCT v.Vn_Folio) AS tickets,MIN(CONVERT(date,v.Vn_Fecha)) AS fecha_min,MAX(CONVERT(date,v.Vn_Fecha)) AS fecha_max,CAST(SUM(cp.Cp_Importe) AS decimal(18,2)) AS importe FROM Venta_Encabezado v WITH (NOLOCK) INNER JOIN Comanda_Pago cp WITH (NOLOCK) ON cp.Co_Folio=v.Vn_Documento WHERE v.Sc_Cve_Sucursal='0023' AND ISNULL(v.Es_Cve_Estado,'')<>'CA' AND cp.Cp_Importe>0 GROUP BY CONVERT(char(7),v.Vn_Fecha,120) ORDER BY periodo"
+        },
+        {
+          "name": "origen_source_days_2026_jun_sep",
+          "sql": "SELECT CONVERT(char(10),v.Vn_Fecha,120) AS dia,COUNT(*) AS pagos,COUNT(DISTINCT v.Vn_Folio) AS tickets,CAST(SUM(cp.Cp_Importe) AS decimal(18,2)) AS importe FROM Venta_Encabezado v WITH (NOLOCK) INNER JOIN Comanda_Pago cp WITH (NOLOCK) ON cp.Co_Folio=v.Vn_Documento WHERE v.Sc_Cve_Sucursal='0023' AND ISNULL(v.Es_Cve_Estado,'')<>'CA' AND cp.Cp_Importe>0 AND CONVERT(date,v.Vn_Fecha)>='2026-06-01' AND CONVERT(date,v.Vn_Fecha)<'2026-09-24' GROUP BY CONVERT(char(10),v.Vn_Fecha,120) ORDER BY dia"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "origen_canonical_months",
+          "sql": "SELECT CONVERT(char(7),FechaHora,120) AS periodo,COUNT(*) AS filas,COUNT(DISTINCT NumeroTicket) AS tickets,MIN(CONVERT(date,FechaHora)) AS fecha_min,MAX(CONVERT(date,FechaHora)) AS fecha_max,CAST(SUM(Importe) AS decimal(18,2)) AS importe FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE UnidadNegocio='ORIGEN' AND ISNULL(Activo,1)=1 GROUP BY CONVERT(char(7),FechaHora,120) ORDER BY periodo"
+        }
+      ]
+    }
+  ]
+}
