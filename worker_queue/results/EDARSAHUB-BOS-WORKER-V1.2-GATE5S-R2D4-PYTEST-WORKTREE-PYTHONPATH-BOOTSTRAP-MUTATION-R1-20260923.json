@@ -1,0 +1,156 @@
+{
+  "base_sha": "ebdcc1d4ca06b853c0c18123d974a1b9335b167d",
+  "blockers": [],
+  "candidate_sha": "c421eeba737ae6e8f86df20fff677e140ab1cad7",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-24T03:02:16Z",
+  "development_sha": "c421eeba737ae6e8f86df20fff677e140ab1cad7",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_universal_job_dispatcher_python_runtime.py",
+    "tools/mirror_sync/universal_job_dispatcher.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5S-R2D4-PYTEST-WORKTREE-PYTHONPATH-BOOTSTRAP-MUTATION-R1-20260923",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-24T03:02:19Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "fcntl",
+              "git_divergence_guard",
+              "hashlib",
+              "json",
+              "os",
+              "pathlib",
+              "re",
+              "shutil",
+              "subprocess",
+              "sys",
+              "tempfile",
+              "tools.mirror_sync.worker_deliverable_contract",
+              "typing",
+              "worker_concurrency",
+              "worker_deliverable_contract",
+              "worker_scheduling",
+              "worker_slot_runtime"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "backend",
+              "os.pathsep",
+              "pythonpath",
+              "run_check",
+              "worktree"
+            ],
+            "path": "tools/mirror_sync/universal_job_dispatcher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_load_preferred_job",
+              "_select_pending_job",
+              "apply_action",
+              "changed_files",
+              "claim_one",
+              "create_commit",
+              "dispatch",
+              "ensure_dirs",
+              "git",
+              "git_changed_paths",
+              "git_is_ancestor",
+              "integrate",
+              "load_backend_runtime_env",
+              "load_envelope",
+              "main",
+              "now",
+              "prepare_worktree",
+              "process_one",
+              "release_agent_guard_claim",
+              "resolve_canonical_python",
+              "resolve_repository_credential_helper",
+              "run",
+              "run_check",
+              "safe_path",
+              "sha256_file",
+              "summarize_iscam_detail_backfill_output",
+              "summarize_softrestaurant_output",
+              "validate_scope",
+              "verify_expected_hash",
+              "write_json"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "importlib.util",
+              "os",
+              "pathlib",
+              "sys",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "backend",
+              "os.pathsep",
+              "pythonpath",
+              "run_check"
+            ],
+            "path": "backend/tests/test_universal_job_dispatcher_python_runtime.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "fake_run",
+              "load_dispatcher",
+              "test_all_internal_python_subprocesses_are_canonical",
+              "test_backend_runtime_env_does_not_override_process_env",
+              "test_dispatcher_falls_back_to_sys_executable",
+              "test_dispatcher_prefers_executable_repo_python",
+              "test_dispatcher_prefers_runtime_virtualenv",
+              "test_frontend_build_reuses_canonical_frontend_toolchain",
+              "test_integrate_push_uses_only_repository_local_credential_helper",
+              "test_py_compile_uses_canonical_python",
+              "test_pytest_loads_missing_backend_runtime_env",
+              "test_pytest_uses_canonical_python"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 2,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-24T03:02:11Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
