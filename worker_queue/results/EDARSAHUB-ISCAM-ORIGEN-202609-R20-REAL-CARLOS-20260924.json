@@ -1,0 +1,64 @@
+{
+  "base_sha": "4eb29655f2e70ddc37a28e41193e2badd16d128a",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-09-24T22:29:01Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-ORIGEN-202609-R20-REAL-CARLOS-20260924",
+  "operation": "ISCAM_PAYMENTS_ONLY_RESYNC",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-24T22:29:32Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "filas",
+              "tickets",
+              "fecha_min",
+              "fecha_max",
+              "importe",
+              "propina"
+            ],
+            "name": "origen_202609_post",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                778,
+                641,
+                "2026-09-01",
+                "2026-09-23",
+                "1645843.97",
+                "128765.82"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-24T22:28:34Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker resincronizo exclusivamente Pagos por Ticket para una unidad y rango autorizados y certifico el resultado con SQL de solo lectura. No modifico Sync_Sales, Cuentas, Comandas, Cortes ni Produccion.",
+  "tests": "PASS",
+  "units": [
+    "ORIGEN"
+  ],
+  "work_completion": "COMPLETE"
+}
