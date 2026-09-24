@@ -4,43 +4,43 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "2a82c407b1ab4befe90e968482cb8bf5ae606417",
-  "generated_at_utc": "2026-09-24T18:04:29Z",
+  "generated_at_utc": "2026-09-24T18:05:41Z",
   "history": {
     "done_total_local": 961,
     "pending_total_local": 0,
-    "processing_total_local": 1,
-    "rejected_total_local": 807,
+    "processing_total_local": 0,
+    "rejected_total_local": 808,
     "results_total_local": 1587
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1905,
+      "age_seconds": 1977,
       "job_id": "EDARSAHUB-ISCAM-MPRO-FULLHISTORY-130QRO-R12-REAL-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2156,
+      "age_seconds": 2228,
       "job_id": "EDARSAHUB-ISCAM-MPRO-FULLHISTORY-ORIGEN-R12-REAL-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1287,
+      "age_seconds": 1359,
       "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-BOUNDS-ALL-R13-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 59,
+      "age_seconds": 61,
       "job_id": "EDARSAHUB-ISCAM-PAYMENTS-FULLHISTORY-130QRO-R14-REAL-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 186,
+      "age_seconds": 258,
       "job_id": "EDARSAHUB-ISCAM-PAYMENTS-FULLHISTORY-ORIGEN-R14-REAL-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,9 +60,9 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-ISCAM-PAYMENTS-FULLHISTORY-130QRO-R14-REAL-CARLOS-20260924",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-24T18:04:27Z",
-    "last_receive_utc": "2026-09-24T18:04:28Z",
-    "last_terminal_utc": "2026-09-24T18:01:22Z",
+    "last_cycle_utc": "2026-09-24T18:05:40Z",
+    "last_receive_utc": "2026-09-24T18:05:35Z",
+    "last_terminal_utc": "2026-09-24T18:04:39Z",
     "pid": "361",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "5f579a2b63ec077a36ffff94dbd32e07b5d37ad1",
