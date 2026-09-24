@@ -1,0 +1,41 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-JULIO-2026-ESTELAR-20260701-ZERO-HEADER-TICKET-DIAG-R1-CARLOS-20260923",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "32d0860ef6c899d1c9a42a3e900c4e4ece9353af",
+  "production_allowed": false,
+  "objective": "Identificar el ticket exacto de ESTELAR 01/07/2026 con encabezado cero y detalle monetario no cero que bloquea el backfill ISCAM. Solo lectura POS.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ESTELAR"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "queries": [
+        {
+          "name": "estelar_zero_header_ticket_20260701",
+          "sql": "\nWITH h AS (\n  SELECT\n    ch.folio,\n    ch.fecha,\n    CAST(ISNULL(ch.total,0) AS decimal(19,4)) AS encabezado,\n    ISNULL(ch.cancelado,0) AS cancelado\n  FROM cheques ch WITH (NOLOCK)\n  INNER JOIN turnos tr WITH (NOLOCK) ON tr.idturno=ch.idturno\n  WHERE tr.apertura >= '2026-07-01 09:00:00'\n    AND tr.apertura < '2026-07-02 09:00:00'\n    AND ISNULL(ch.cancelado,0)=0\n),\nd AS (\n  SELECT\n    h.folio,\n    MAX(h.fecha) fecha,\n    MAX(h.encabezado) encabezado,\n    CAST(SUM(CAST(ISNULL(cd.cantidad,0)*ISNULL(cd.precio,0) AS decimal(19,4))) AS decimal(19,4)) productos\n  FROM h\n  LEFT JOIN cheqdet cd WITH (NOLOCK) ON cd.foliodet=h.folio\n  GROUP BY h.folio\n)\nSELECT\n  d.folio,\n  d.fecha,\n  d.encabezado,\n  d.productos,\n  CAST(d.encabezado-d.productos AS decimal(19,4)) delta,\n  cd.idproducto,\n  p.descripcion,\n  CAST(ISNULL(cd.cantidad,0) AS decimal(19,4)) cantidad,\n  CAST(ISNULL(cd.precio,0) AS decimal(19,4)) precio,\n  CAST(ISNULL(cd.cantidad,0)*ISNULL(cd.precio,0) AS decimal(19,4)) importe_linea\nFROM d\nLEFT JOIN cheqdet cd WITH (NOLOCK) ON cd.foliodet=d.folio\nLEFT JOIN productos p WITH (NOLOCK) ON p.idproducto=cd.idproducto\nWHERE d.encabezado=0\n  AND ABS(d.productos)>0.05\nORDER BY d.folio, cd.idproducto"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260923 Julio 2026 conciliacion ventas"
+  },
+  "constraints": [
+    "Solo lectura POS",
+    "No modificar datos",
+    "No Production"
+  ]
+}
