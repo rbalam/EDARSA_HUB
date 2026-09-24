@@ -1,0 +1,30 @@
+{
+  "base_sha": "4187a2544975f6c10b6f8f5d45089eff74492800",
+  "blockers": [],
+  "candidate_sha": "2a82c407b1ab4befe90e968482cb8bf5ae606417",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-24T17:00:48Z",
+  "development_sha": "2a82c407b1ab4befe90e968482cb8bf5ae606417",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+    "backend/scripts/resync_iscam_pagos_unidad.py",
+    "backend/scripts/resync_mpro_full_history.py",
+    "backend/tests/test_iscam_payments_integral_auto_fullhistory_r11b.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-PAYMENTS-INTEGRAL-AUTO-FULLHISTORY-R11C-CARLOS-20260924",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-24T17:00:49Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-24T17:00:42Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
