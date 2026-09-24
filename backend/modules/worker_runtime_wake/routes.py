@@ -38,6 +38,19 @@ WATCHDOG_CONF_SOURCE = REPO_ROOT / "tools" / "bootstrap" / "edarsahub-bootstrap-
 WORKER_CONF_SOURCE = REPO_ROOT / "tools" / "mirror_sync" / "edarsahub-universal-worker.conf"
 LOCK_PATH = Path("/tmp/edarsahub-universal-worker-wake.lock")
 COOLDOWN_PATH = Path("/tmp/edarsahub-universal-worker-wake.last")
+WATCHDOG_RUNTIME_LOCK_PATH = Path(
+    "/tmp/edarsahub-bootstrap-watchdog-runtime.lock"
+)
+WATCHDOG_RUNTIME_COOLDOWN_PATH = Path(
+    "/tmp/edarsahub-bootstrap-watchdog-runtime.last"
+)
+WATCHDOG_RUNTIME_COOLDOWN_SECONDS = 30
+WATCHDOG_SOURCE = (
+    REPO_ROOT
+    / "tools"
+    / "bootstrap"
+    / "edarsahub_bootstrap_watchdog.py"
+)
 PREFERRED_JOB_PATH = RUNTIME_DIR / "preferred_job.json"
 PREFERRED_JOB_TTL_SECONDS = 300
 _JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
@@ -320,6 +333,300 @@ def _ensure_supervisor_definition(source: Path, destination: Path) -> bool:
     return True
 
 
+def _watchdog_process_start_epoch(
+    pid: int,
+) -> float | None:
+    if pid <= 1:
+        return None
+
+    try:
+        stat_fields = (
+            Path(f"/proc/{pid}/stat")
+            .read_text(encoding="utf-8")
+            .split()
+        )
+        start_ticks = int(stat_fields[21])
+        clock_ticks = os.sysconf(
+            os.sysconf_names["SC_CLK_TCK"]
+        )
+
+        boot_epoch = None
+
+        for line in Path("/proc/stat").read_text(
+            encoding="utf-8"
+        ).splitlines():
+            if line.startswith("btime "):
+                boot_epoch = int(line.split()[1])
+                break
+
+        if boot_epoch is None:
+            return None
+
+        return (
+            float(boot_epoch)
+            + float(start_ticks) / float(clock_ticks)
+        )
+    except (
+        OSError,
+        ValueError,
+        IndexError,
+        KeyError,
+    ):
+        return None
+
+
+def _supervisor_running_pid(
+    service: str,
+) -> int | None:
+    status_text = _supervisor_status(service)
+
+    if "RUNNING" not in status_text:
+        return None
+
+    match = re.search(
+        r"\bpid\s+(\d+)\b",
+        status_text,
+    )
+
+    if match is None:
+        return None
+
+    pid = int(match.group(1))
+
+    return pid if pid > 1 else None
+
+
+def _watchdog_repo_is_canonical() -> tuple[bool, str]:
+    if _is_production_environment():
+        return False, "PRODUCTION_ENV"
+
+    branch = _runtime_git(
+        "branch",
+        "--show-current",
+    ).stdout.strip()
+
+    if branch != DEV_BRANCH:
+        return False, "WRONG_BRANCH"
+
+    dirty = _runtime_git(
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+    )
+
+    if dirty.returncode != 0:
+        return False, "WORKTREE_STATUS_FAILED"
+
+    if dirty.stdout.strip():
+        return False, "WORKTREE_DIRTY"
+
+    local = _runtime_git(
+        "rev-parse",
+        "HEAD",
+    ).stdout.strip().lower()
+
+    remote = _runtime_git(
+        "rev-parse",
+        f"origin/{DEV_BRANCH}",
+    ).stdout.strip().lower()
+
+    if (
+        not _SHA_RE.fullmatch(local)
+        or not _SHA_RE.fullmatch(remote)
+    ):
+        return False, "DEVELOPMENT_SHA_INVALID"
+
+    if local != remote:
+        return False, "DEVELOPMENT_NOT_CONVERGED"
+
+    return True, "CANONICAL"
+
+
+def _converge_running_watchdog_if_stale() -> dict[str, object]:
+    if _is_production_environment():
+        return {
+            "state": "SKIPPED_PRODUCTION_ENV",
+            "production_touched": False,
+        }
+
+    canonical, canonical_reason = (
+        _watchdog_repo_is_canonical()
+    )
+
+    if not canonical:
+        return {
+            "state": "WATCHDOG_CONVERGENCE_DEFERRED",
+            "reason": canonical_reason,
+            "production_touched": False,
+        }
+
+    if not WATCHDOG_SOURCE.is_file():
+        return {
+            "state": "WATCHDOG_SOURCE_MISSING",
+            "production_touched": False,
+        }
+
+    pid_before = _supervisor_running_pid(
+        WATCHDOG_SERVICE
+    )
+
+    if pid_before is None:
+        return {
+            "state": "WATCHDOG_NOT_RUNNING",
+            "production_touched": False,
+        }
+
+    process_start = _watchdog_process_start_epoch(
+        pid_before
+    )
+
+    if process_start is None:
+        return {
+            "state": "WATCHDOG_PROCESS_IDENTITY_UNAVAILABLE",
+            "pid": pid_before,
+            "production_touched": False,
+        }
+
+    source_mtime = WATCHDOG_SOURCE.stat().st_mtime
+
+    if source_mtime <= process_start:
+        return {
+            "state": "WATCHDOG_RUNTIME_CURRENT",
+            "pid": pid_before,
+            "production_touched": False,
+        }
+
+    WATCHDOG_RUNTIME_LOCK_PATH.touch(
+        exist_ok=True
+    )
+
+    with WATCHDOG_RUNTIME_LOCK_PATH.open(
+        "r+",
+        encoding="utf-8",
+    ) as lock_handle:
+        try:
+            fcntl.flock(
+                lock_handle.fileno(),
+                fcntl.LOCK_EX | fcntl.LOCK_NB,
+            )
+        except BlockingIOError:
+            return {
+                "state": "WATCHDOG_CONVERGENCE_BUSY",
+                "pid": pid_before,
+                "production_touched": False,
+            }
+
+        now_epoch = time.time()
+
+        try:
+            last_epoch = float(
+                WATCHDOG_RUNTIME_COOLDOWN_PATH
+                .read_text(encoding="utf-8")
+                .strip()
+            )
+        except (OSError, ValueError):
+            last_epoch = 0.0
+
+        if (
+            now_epoch - last_epoch
+            < WATCHDOG_RUNTIME_COOLDOWN_SECONDS
+        ):
+            return {
+                "state": "WATCHDOG_CONVERGENCE_COOLDOWN",
+                "pid": pid_before,
+                "production_touched": False,
+            }
+
+        # Re-evaluate immediately before the Supervisor
+        # mutation. Never use restart as Git convergence.
+        canonical, canonical_reason = (
+            _watchdog_repo_is_canonical()
+        )
+
+        if not canonical:
+            return {
+                "state": "WATCHDOG_CONVERGENCE_DEFERRED",
+                "reason": canonical_reason,
+                "pid": pid_before,
+                "production_touched": False,
+            }
+
+        current_pid = _supervisor_running_pid(
+            WATCHDOG_SERVICE
+        )
+
+        if current_pid != pid_before:
+            return {
+                "state": "WATCHDOG_ALREADY_REPLACED",
+                "pid_before": pid_before,
+                "pid_after": current_pid,
+                "production_touched": False,
+            }
+
+        restarted = subprocess.run(
+            [
+                "supervisorctl",
+                "restart",
+                WATCHDOG_SERVICE,
+            ],
+            cwd=str(REPO_ROOT),
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+        WATCHDOG_RUNTIME_COOLDOWN_PATH.write_text(
+            str(now_epoch),
+            encoding="utf-8",
+        )
+
+        if restarted.returncode != 0:
+            return {
+                "state": "WATCHDOG_RESTART_FAILED",
+                "pid_before": pid_before,
+                "output": (
+                    restarted.stdout or ""
+                )[-1000:],
+                "production_touched": False,
+            }
+
+        deadline = time.time() + 15.0
+        pid_after = None
+
+        while time.time() < deadline:
+            pid_after = _supervisor_running_pid(
+                WATCHDOG_SERVICE
+            )
+
+            if (
+                pid_after is not None
+                and pid_after != pid_before
+            ):
+                break
+
+            time.sleep(0.25)
+
+        if (
+            pid_after is None
+            or pid_after == pid_before
+        ):
+            return {
+                "state": "WATCHDOG_RESTART_NOT_PROVEN",
+                "pid_before": pid_before,
+                "pid_after": pid_after,
+                "production_touched": False,
+            }
+
+        return {
+            "state": "WATCHDOG_RUNTIME_RESTARTED",
+            "reason": "WATCHDOG_CODE_STALE",
+            "pid_before": pid_before,
+            "pid_after": pid_after,
+            "production_touched": False,
+        }
+
+
 def _ensure_recovery_supervisor_services() -> dict[str, object]:
     """Ensure Preview recovery services survive pod/backend restarts.
 
@@ -383,10 +690,15 @@ def _ensure_recovery_supervisor_services() -> dict[str, object]:
                     raise RuntimeError(f"supervisor service unavailable: {service}")
         states[service] = status_text
 
+    watchdog_runtime = (
+        _converge_running_watchdog_if_stale()
+    )
+
     return {
         "state": "RECOVERY_SERVICES_READY",
         "definitions_refreshed": changed,
         "services": states,
+        "watchdog_runtime": watchdog_runtime,
         "production_touched": False,
     }
 

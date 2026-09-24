@@ -74,3 +74,108 @@ def test_preview_startup_recovery_services_are_production_blocked():
     block = ROUTE.split("def _ensure_recovery_supervisor_services()", 1)[1].split("def ensure_worker_runtime_on_preview_startup()", 1)[0]
     assert "SKIPPED_PRODUCTION_ENV" in block
     assert '"production_touched": False' in block
+def test_preview_startup_detects_running_but_stale_watchdog():
+    assert "def _converge_running_watchdog_if_stale()" in ROUTE
+    assert "WATCHDOG_SOURCE" in ROUTE
+    assert "WATCHDOG_RUNTIME_CURRENT" in ROUTE
+    assert "WATCHDOG_RUNTIME_RESTARTED" in ROUTE
+    assert "WATCHDOG_CODE_STALE" in ROUTE
+    assert "_watchdog_process_start_epoch(" in ROUTE
+    assert "_supervisor_running_pid(" in ROUTE
+
+
+def test_watchdog_convergence_requires_canonical_development():
+    block = ROUTE.split(
+        "def _watchdog_repo_is_canonical()",
+        1,
+    )[1].split(
+        "def _converge_running_watchdog_if_stale()",
+        1,
+    )[0]
+
+    assert '"branch",' in block
+    assert '"--show-current",' in block
+    assert '"status",' in block
+    assert '"--porcelain=v1"' in block
+    assert '"rev-parse",' in block
+    assert 'f"origin/{DEV_BRANCH}"' in block
+    assert "DEVELOPMENT_NOT_CONVERGED" in block
+    assert "WORKTREE_DIRTY" in block
+
+
+def test_running_current_watchdog_is_noop():
+    block = ROUTE.split(
+        "def _converge_running_watchdog_if_stale()",
+        1,
+    )[1].split(
+        "def _ensure_recovery_supervisor_services()",
+        1,
+    )[0]
+
+    assert "source_mtime <= process_start" in block
+    assert '"state": "WATCHDOG_RUNTIME_CURRENT"' in block
+
+
+def test_watchdog_stale_restart_is_bounded_and_locked():
+    block = ROUTE.split(
+        "def _converge_running_watchdog_if_stale()",
+        1,
+    )[1].split(
+        "def _ensure_recovery_supervisor_services()",
+        1,
+    )[0]
+
+    assert "WATCHDOG_RUNTIME_LOCK_PATH" in block
+    assert "fcntl.LOCK_EX | fcntl.LOCK_NB" in block
+    assert "WATCHDOG_RUNTIME_COOLDOWN_SECONDS" in block
+    assert "WATCHDOG_CONVERGENCE_COOLDOWN" in block
+    assert (
+        '"supervisorctl",\n'
+        '                "restart",\n'
+        "                WATCHDOG_SERVICE,"
+        in block
+    )
+
+
+def test_watchdog_restart_requires_new_running_pid():
+    block = ROUTE.split(
+        "def _converge_running_watchdog_if_stale()",
+        1,
+    )[1].split(
+        "def _ensure_recovery_supervisor_services()",
+        1,
+    )[0]
+
+    assert "pid_after != pid_before" in block
+    assert "WATCHDOG_RESTART_NOT_PROVEN" in block
+    assert "WATCHDOG_RUNTIME_RESTARTED" in block
+
+
+def test_watchdog_runtime_convergence_is_production_fail_closed():
+    block = ROUTE.split(
+        "def _converge_running_watchdog_if_stale()",
+        1,
+    )[1].split(
+        "def _ensure_recovery_supervisor_services()",
+        1,
+    )[0]
+
+    assert "_is_production_environment()" in block
+    assert "SKIPPED_PRODUCTION_ENV" in block
+    assert '"production_touched": False' in block
+
+
+def test_watchdog_convergence_does_not_touch_incidents_or_mirror():
+    block = ROUTE.split(
+        "def _converge_running_watchdog_if_stale()",
+        1,
+    )[1].split(
+        "def _ensure_recovery_supervisor_services()",
+        1,
+    )[0]
+
+    assert "maintenance/incidents" not in block
+    assert "mirror-sync" not in block
+    assert "MIRROR" not in block
+    assert "ENABLED" not in block
+    assert "STOP" not in block
