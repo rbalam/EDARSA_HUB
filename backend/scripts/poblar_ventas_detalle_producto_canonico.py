@@ -870,6 +870,18 @@ def _soft_add_ticket_adjustments(src_rows: List[Dict[str, Any]]) -> List[Dict[st
 
         out.extend(items)
         if abs(delta) <= TOLERANCIA_VENTAS:
+            if delta == Decimal("0"):
+                continue
+            adjustment = dict(items[0])
+            adjustment["producto_codigo_fuente"] = SOFT_AJUSTE_ENCABEZADO
+            adjustment["producto_nombre"] = (
+                "AJUSTE DE CONCILIACION CONTRA ENCABEZADO DEL TICKET"
+            )
+            adjustment["cantidad"] = Decimal("0")
+            adjustment["precio_unitario"] = Decimal("0")
+            adjustment["importe_bruto"] = Decimal("0")
+            adjustment["importe_neto"] = delta
+            out.append(adjustment)
             continue
 
         if delta < 0 and discount_indicator > 0:

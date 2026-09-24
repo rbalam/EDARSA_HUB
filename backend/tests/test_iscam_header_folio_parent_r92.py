@@ -58,3 +58,17 @@ def test_validation_uses_exact_header_ticket_population_after_adjustment():
     assert result['tickets_por_ticket'] == 2
     assert result['pax_por_ticket'] == 3
     assert result['tickets_no_conciliados'] == []
+
+
+def test_small_residual_is_adjusted_exactly_to_header():
+    src = _soft_add_ticket_adjustments([
+        _row('12', '100.00', '100.01', pax=1),
+    ])
+    assert src[-1]['producto_codigo_fuente'] == SOFT_AJUSTE_ENCABEZADO
+    assert src[-1]['importe_neto'] == Decimal('-0.01')
+    assert sum(x['importe_neto'] for x in src) == Decimal('100.00')
+
+    result = _validate(src, {'ventas': Decimal('100.00'), 'tickets': 1, 'pax': 1})
+    assert result['ok'] is True
+    assert result['ventas_detalle'] == Decimal('100.00')
+    assert result['tickets_no_conciliados'] == []
