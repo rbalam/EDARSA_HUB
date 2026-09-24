@@ -1,0 +1,71 @@
+{
+  "base_sha": "14c742adb910afce882d5a02e06094aaf06b8456",
+  "blockers": [
+    "iscam_detail_backfill_failed:rc=1"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-24T00:51:13Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-JULIO-2026-ESTELAR-20260705-DETAIL-R3-CARLOS-20260924",
+  "operation": "ISCAM_DETAIL_BACKFILL",
+  "operation_summary": {
+    "dias_bloqueados": 1,
+    "dias_candidatos": 1,
+    "dias_evaluados": 1,
+    "dias_reparables": 0,
+    "dias_sin_runtime": 0,
+    "dias_ya_ok": 0,
+    "fecha_fin_exclusivo": "2026-07-06",
+    "fecha_inicio": "2026-07-05",
+    "filas_insertadas": 0,
+    "modo": "COMMIT",
+    "unidades": [
+      {
+        "bloqueados": 1,
+        "candidatos": 1,
+        "dias": [
+          {
+            "delta_pax": null,
+            "delta_tickets": null,
+            "delta_ventas": "",
+            "error_code": "RUNTIMEERROR_UNCLASSIFIED",
+            "error_type": "RuntimeError",
+            "fecha_operacion": "2026-07-05",
+            "filas_insertadas": 0,
+            "pax_pos": null,
+            "pax_runtime": 220,
+            "status": "ERROR",
+            "tickets_pos": null,
+            "tickets_runtime": 74,
+            "ventas_pos": "",
+            "ventas_runtime": "104347.00"
+          }
+        ],
+        "filas_insertadas": 0,
+        "reparables": 0,
+        "sin_runtime": 0,
+        "unidad": "ESTELAR",
+        "ya_ok": 0
+      }
+    ]
+  },
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-24T00:51:20Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-24T00:51:10Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "units": [
+    "ESTELAR"
+  ],
+  "work_completion": "NOT_CERTIFIED"
+}
