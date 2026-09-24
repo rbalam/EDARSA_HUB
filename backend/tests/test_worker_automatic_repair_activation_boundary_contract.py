@@ -334,7 +334,7 @@ def test_superseded_incident_is_not_published(
     monkeypatch.setattr(
         control,
         "repair_incident_is_superseded",
-        lambda result, paths: (
+        lambda result, paths, result_corpus=None: (
             True,
             "SUPERSEDED_BY_CURRENT_HEAD",
         ),
@@ -359,3 +359,233 @@ def test_superseded_incident_is_not_published(
         incident["repair_reason"]
         == "SUPERSEDED_BY_CURRENT_HEAD"
     )
+
+def test_certified_successor_fallback_supersedes_without_development_sha(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(control, "ROOT", tmp_path)
+
+    results = (
+        tmp_path
+        / ".git"
+        / "universal-worker-queue"
+        / "results"
+    )
+    maintenance = (
+        tmp_path
+        / ".git"
+        / "universal-worker-queue"
+        / "maintenance"
+    )
+
+    results.mkdir(parents=True)
+    maintenance.mkdir(parents=True)
+
+    control.atomic_json(
+        maintenance / "automation_state.json",
+        {
+            "schema": control.AUTOMATION_STATE_SCHEMA,
+            "enabled": True,
+            "enabled_at_utc": "2026-09-23T12:30:00Z",
+            "enabled_from_development_sha": "a" * 40,
+            "adopted_job_ids": ["FAILED"],
+            "production_allowed": False,
+        },
+    )
+
+    target = (
+        "tools/mirror_sync/"
+        "worker_control_plane.py"
+    )
+
+    source_anchor = "1" * 40
+    successor_sha = "2" * 40
+    current_head = "3" * 40
+
+    control.atomic_json(
+        results / "FAILED.json",
+        {
+            "schema": "edarsahub.worker-result.v2",
+            "job_id": "FAILED",
+            "status": "GIT_TESTS_FAILED",
+            "certification": "NOT_CERTIFIED",
+            "completed_at_utc":
+                "2026-09-23T12:31:00Z",
+            "production_touched": False,
+            "execution_base_sha": source_anchor,
+            "files_changed": [target],
+        },
+    )
+
+    control.atomic_json(
+        results / "SUCCESS.json",
+        {
+            "schema": "edarsahub.worker-result.v2",
+            "job_id": "SUCCESS",
+            "status": "INTEGRATED",
+            "quality_gate": "PASS",
+            "tests": "PASS",
+            "certification":
+                "PENDING_AUDIT_EVIDENCE",
+            "git_sync_status":
+                "CERTIFIED_GIT_SYNC",
+            "completed_at_utc":
+                "2026-09-23T12:32:00Z",
+            "production_touched": False,
+            "development_sha": successor_sha,
+            "candidate_sha": successor_sha,
+            "files_changed": [target],
+            "blockers": [],
+        },
+    )
+
+    def fake_git_output(*args):
+        if args == ("rev-parse", "HEAD"):
+            return current_head
+
+        if (
+            len(args) >= 6
+            and args[0] == "diff"
+            and args[1] == "--name-only"
+        ):
+            return target + "\n"
+
+        raise AssertionError(args)
+
+    monkeypatch.setattr(
+        control,
+        "git_output",
+        fake_git_output,
+    )
+
+    monkeypatch.setattr(
+        control,
+        "_git_is_ancestor",
+        lambda ancestor, descendant: (
+            (ancestor, descendant)
+            in {
+                (
+                    source_anchor,
+                    successor_sha,
+                ),
+                (
+                    successor_sha,
+                    current_head,
+                ),
+            }
+        ),
+    )
+
+    import tools.mirror_sync.worker_maintenance_runtime as runtime
+
+    monkeypatch.setattr(
+        runtime,
+        "STATE_DIR",
+        maintenance,
+    )
+    monkeypatch.setattr(
+        runtime,
+        "INCIDENT_DIR",
+        maintenance / "incidents",
+    )
+
+    monkeypatch.setattr(
+        control,
+        "declare_runtime_incident",
+        runtime.declare_runtime_incident,
+    )
+    monkeypatch.setattr(
+        control,
+        "supersede_runtime_incident",
+        runtime.supersede_runtime_incident,
+    )
+    monkeypatch.setattr(
+        control,
+        "repair_attempt_allowed",
+        runtime.repair_attempt_allowed,
+    )
+
+    summary = (
+        control.automatic_repair_orchestration()
+    )
+
+    match = [
+        item
+        for item in summary["incidents"]
+        if item.get("source_job_id")
+        == "FAILED"
+    ]
+
+    assert len(match) == 1
+
+    incident = match[0]
+
+    assert incident["state"] == "SUPERSEDED"
+    assert incident["repair_allowed"] is False
+    assert (
+        incident["publication_required"]
+        is False
+    )
+    assert (
+        incident["repair_reason"]
+        == "CERTIFIED_SUCCESSOR_RESULT"
+    )
+
+
+def test_certified_successor_fallback_fails_closed_without_full_path_coverage(
+    monkeypatch,
+):
+    target_a = (
+        "tools/mirror_sync/"
+        "worker_control_plane.py"
+    )
+    target_b = (
+        "tools/mirror_sync/"
+        "worker_repair_execution.py"
+    )
+
+    source = {
+        "job_id": "FAILED",
+        "execution_base_sha": "1" * 40,
+        "completed_at_utc":
+            "2026-09-23T12:31:00Z",
+    }
+
+    successor = {
+        "job_id": "SUCCESS",
+        "status": "INTEGRATED",
+        "quality_gate": "PASS",
+        "tests": "PASS",
+        "git_sync_status":
+            "CERTIFIED_GIT_SYNC",
+        "production_touched": False,
+        "blockers": [],
+        "development_sha": "2" * 40,
+        "completed_at_utc":
+            "2026-09-23T12:32:00Z",
+        "files_changed": [target_a],
+    }
+
+    monkeypatch.setattr(
+        control,
+        "_git_is_ancestor",
+        lambda *_args: True,
+    )
+
+    monkeypatch.setattr(
+        control,
+        "_target_diff_paths",
+        lambda *_args: {target_a, target_b},
+    )
+
+    result = (
+        control.find_certified_successor_result(
+            source,
+            (target_a, target_b),
+            (source, successor),
+            current_head="3" * 40,
+        )
+    )
+
+    assert result is None

@@ -108,3 +108,37 @@ def test_automatic_repair_supports_supersession_before_publication():
     assert "supersede_runtime_incident(" in helper
     assert '"publication_required": False' in helper
     assert '"repair_allowed": False' in helper
+
+def test_automatic_repair_loads_result_corpus_once_per_cycle():
+    helper = function_source(
+        "automatic_repair_orchestration"
+    )
+
+    assert (
+        helper.count(
+            'results_root.glob("*.json")'
+        )
+        == 1
+    )
+    assert "result_corpus" in helper
+    assert "result_corpus_tuple" in helper
+
+
+def test_certified_successor_fallback_is_canonical():
+    text = source()
+
+    assert "def automatic_repair_source_anchor(" in text
+    assert "def find_certified_successor_result(" in text
+    assert (
+        "CERTIFIED_SUCCESSOR_RESULT"
+        in text
+    )
+
+    helper = function_source(
+        "automatic_repair_orchestration"
+    )
+
+    assert (
+        "result_corpus=result_corpus_tuple"
+        in helper
+    )

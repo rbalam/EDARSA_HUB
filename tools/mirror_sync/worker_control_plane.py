@@ -477,72 +477,330 @@ def automatic_repair_result_is_eligible(
 
 
 
-def repair_incident_is_superseded(
+def _valid_git_sha(value: Any) -> str | None:
+    text = str(value or "").strip().lower()
+
+    if re.fullmatch(r"[0-9a-f]{40}", text):
+        return text
+
+    return None
+
+
+def automatic_repair_source_anchor(
     source_result: dict[str, Any],
-    target_paths: tuple[str, ...],
-) -> tuple[bool, str]:
-    development_sha = str(
-        source_result.get("development_sha") or ""
-    ).strip()
-
-    if not re.fullmatch(r"[0-9a-f]{40}", development_sha):
-        return False, "SOURCE_DEVELOPMENT_SHA_UNAVAILABLE"
-
-    try:
-        current_head = git_output("rev-parse", "HEAD").strip()
-    except Exception:
-        return False, "CURRENT_HEAD_UNAVAILABLE"
-
-    if not re.fullmatch(r"[0-9a-f]{40}", current_head):
-        return False, "CURRENT_HEAD_INVALID"
-
-    if development_sha == current_head:
-        return False, "SOURCE_IS_CURRENT_HEAD"
-
-    try:
-        ancestor = subprocess.run(
-            [
-                "git",
-                "merge-base",
-                "--is-ancestor",
-                development_sha,
-                current_head,
-            ],
-            cwd=str(ROOT),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            check=False,
+) -> tuple[str | None, str]:
+    for field in (
+        "candidate_sha",
+        "execution_base_sha",
+        "base_sha",
+        "initial_base_sha",
+        "remote_at_start",
+        "local_at_start",
+    ):
+        value = _valid_git_sha(
+            source_result.get(field)
         )
-    except Exception:
-        return False, "ANCESTRY_CHECK_FAILED"
 
-    if ancestor.returncode != 0:
-        return False, "SOURCE_NOT_ANCESTOR"
+        if value is not None:
+            return value, field
 
+    return None, "SOURCE_ANCHOR_UNAVAILABLE"
+
+
+def automatic_repair_result_commit(
+    result: dict[str, Any],
+) -> str | None:
+    return (
+        _valid_git_sha(result.get("development_sha"))
+        or _valid_git_sha(result.get("candidate_sha"))
+    )
+
+
+def automatic_repair_result_is_certified_successor(
+    result: dict[str, Any],
+) -> bool:
+    blockers = result.get("blockers")
+
+    return (
+        result.get("status") == "INTEGRATED"
+        and result.get("quality_gate") == "PASS"
+        and result.get("tests") == "PASS"
+        and result.get("git_sync_status")
+        == "CERTIFIED_GIT_SYNC"
+        and result.get("production_touched") is False
+        and blockers in (None, [])
+        and automatic_repair_result_commit(result)
+        is not None
+    )
+
+
+def _git_is_ancestor(
+    ancestor_sha: str,
+    descendant_sha: str,
+) -> bool:
+    proc = subprocess.run(
+        [
+            "git",
+            "merge-base",
+            "--is-ancestor",
+            ancestor_sha,
+            descendant_sha,
+        ],
+        cwd=str(ROOT),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        check=False,
+    )
+
+    return proc.returncode == 0
+
+
+def _target_diff_paths(
+    base_sha: str,
+    head_sha: str,
+    target_paths: tuple[str, ...],
+) -> set[str] | None:
     try:
-        changed_after = {
+        return {
             line.strip()
             for line in git_output(
                 "diff",
                 "--name-only",
-                development_sha,
-                current_head,
+                base_sha,
+                head_sha,
                 "--",
                 *target_paths,
             ).splitlines()
             if line.strip()
         }
     except Exception:
-        return False, "TARGET_DIFF_UNAVAILABLE"
+        return None
 
-    if not changed_after:
-        return False, "TARGETS_UNCHANGED"
 
-    if not set(target_paths).issubset(changed_after):
-        return False, "NOT_ALL_TARGETS_SUPERSEDED"
+def find_certified_successor_result(
+    source_result: dict[str, Any],
+    target_paths: tuple[str, ...],
+    result_corpus: tuple[dict[str, Any], ...],
+    *,
+    current_head: str,
+) -> dict[str, Any] | None:
+    source_anchor, _anchor_field = (
+        automatic_repair_source_anchor(
+            source_result
+        )
+    )
 
-    return True, "SUPERSEDED_BY_CURRENT_HEAD"
+    if source_anchor is None:
+        return None
+
+    if not _valid_git_sha(current_head):
+        return None
+
+    source_job_id = str(
+        source_result.get("job_id") or ""
+    ).strip()
+
+    source_completed = _parse_canonical_utc(
+        source_result.get("completed_at_utc")
+    )
+
+    required_paths = set(target_paths)
+
+    if not required_paths:
+        return None
+
+    candidates: list[
+        tuple[datetime, str, dict[str, Any]]
+    ] = []
+
+    for candidate in result_corpus:
+        if candidate is source_result:
+            continue
+
+        candidate_job_id = str(
+            candidate.get("job_id") or ""
+        ).strip()
+
+        if (
+            source_job_id
+            and candidate_job_id == source_job_id
+        ):
+            continue
+
+        if not automatic_repair_result_is_certified_successor(
+            candidate
+        ):
+            continue
+
+        successor_sha = (
+            automatic_repair_result_commit(candidate)
+        )
+
+        if successor_sha is None:
+            continue
+
+        candidate_completed = _parse_canonical_utc(
+            candidate.get("completed_at_utc")
+        )
+
+        if (
+            source_completed is not None
+            and candidate_completed is not None
+            and candidate_completed <= source_completed
+        ):
+            continue
+
+        candidate_paths_raw = (
+            candidate.get("files_changed") or []
+        )
+
+        if not isinstance(candidate_paths_raw, list):
+            continue
+
+        candidate_paths = {
+            str(path).strip()
+            for path in candidate_paths_raw
+            if isinstance(path, str)
+            and str(path).strip()
+        }
+
+        if not required_paths.issubset(
+            candidate_paths
+        ):
+            continue
+
+        if not _git_is_ancestor(
+            source_anchor,
+            successor_sha,
+        ):
+            continue
+
+        if not _git_is_ancestor(
+            successor_sha,
+            current_head,
+        ):
+            continue
+
+        changed = _target_diff_paths(
+            source_anchor,
+            successor_sha,
+            target_paths,
+        )
+
+        if changed is None:
+            continue
+
+        if not required_paths.issubset(changed):
+            continue
+
+        sort_time = (
+            candidate_completed
+            or datetime.min.replace(
+                tzinfo=timezone.utc
+            )
+        )
+
+        candidates.append(
+            (
+                sort_time,
+                successor_sha,
+                candidate,
+            )
+        )
+
+    if not candidates:
+        return None
+
+    candidates.sort(
+        key=lambda item: (
+            item[0],
+            item[1],
+            str(
+                item[2].get("job_id") or ""
+            ),
+        )
+    )
+
+    return candidates[0][2]
+
+
+def repair_incident_is_superseded(
+    source_result: dict[str, Any],
+    target_paths: tuple[str, ...],
+    *,
+    result_corpus: tuple[dict[str, Any], ...] = (),
+) -> tuple[bool, str]:
+    development_sha = _valid_git_sha(
+        source_result.get("development_sha")
+    )
+
+    try:
+        current_head = git_output(
+            "rev-parse",
+            "HEAD",
+        ).strip()
+    except Exception:
+        return False, "CURRENT_HEAD_UNAVAILABLE"
+
+    if not _valid_git_sha(current_head):
+        return False, "CURRENT_HEAD_INVALID"
+
+    if development_sha is not None:
+        if development_sha == current_head:
+            return False, "SOURCE_IS_CURRENT_HEAD"
+
+        if not _git_is_ancestor(
+            development_sha,
+            current_head,
+        ):
+            return False, "SOURCE_NOT_ANCESTOR"
+
+        changed_after = _target_diff_paths(
+            development_sha,
+            current_head,
+            target_paths,
+        )
+
+        if changed_after is None:
+            return False, "TARGET_DIFF_UNAVAILABLE"
+
+        if not changed_after:
+            return False, "TARGETS_UNCHANGED"
+
+        if not set(target_paths).issubset(
+            changed_after
+        ):
+            return (
+                False,
+                "NOT_ALL_TARGETS_SUPERSEDED",
+            )
+
+        return True, "SUPERSEDED_BY_CURRENT_HEAD"
+
+    successor = find_certified_successor_result(
+        source_result,
+        target_paths,
+        result_corpus,
+        current_head=current_head,
+    )
+
+    if successor is None:
+        anchor, anchor_reason = (
+            automatic_repair_source_anchor(
+                source_result
+            )
+        )
+
+        if anchor is None:
+            return False, anchor_reason
+
+        return (
+            False,
+            "CERTIFIED_SUCCESSOR_NOT_FOUND",
+        )
+
+    return True, "CERTIFIED_SUCCESSOR_RESULT"
 
 
 def automatic_repair_orchestration() -> dict[str, Any]:
@@ -588,6 +846,8 @@ def automatic_repair_orchestration() -> dict[str, Any]:
             "production_touched": False,
         }
 
+    result_corpus: list[dict[str, Any]] = []
+
     for result_path in sorted(results_root.glob("*.json")):
         try:
             result = json.loads(
@@ -599,6 +859,11 @@ def automatic_repair_orchestration() -> dict[str, Any]:
         if not isinstance(result, dict):
             continue
 
+        result_corpus.append(result)
+
+    result_corpus_tuple = tuple(result_corpus)
+
+    for result in result_corpus_tuple:
         observed += 1
 
         status = str(result.get("status") or "").strip()
@@ -719,6 +984,7 @@ def automatic_repair_orchestration() -> dict[str, Any]:
             repair_incident_is_superseded(
                 result,
                 target_paths,
+                result_corpus=result_corpus_tuple,
             )
         )
 
