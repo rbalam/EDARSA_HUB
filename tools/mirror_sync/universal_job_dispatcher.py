@@ -395,7 +395,16 @@ def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False) -> 
             pytest_args.extend(["-p", "no:cacheprovider"])
         cmd = [PYTHON_BIN, "-m", "pytest", *pytest_args, *paths]
         cwd = backend
-        env_extra = {**load_backend_runtime_env(), "PYTHONPATH": str(backend)}
+        python_path = os.pathsep.join(
+            (
+                str(backend),
+                str(worktree),
+            )
+        )
+        env_extra = {
+            **load_backend_runtime_env(),
+            "PYTHONPATH": python_path,
+        }
         if readonly:
             env_extra["PYTHONDONTWRITEBYTECODE"] = "1"
     elif kind == "repository_contract_audit":

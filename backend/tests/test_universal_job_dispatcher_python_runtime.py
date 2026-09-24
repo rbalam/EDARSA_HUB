@@ -1,6 +1,7 @@
 import importlib.util
 import os
 import sys
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -234,7 +235,12 @@ def test_pytest_loads_missing_backend_runtime_env(tmp_path, monkeypatch):
     )
 
     env_extra = calls[0][1]["env_extra"]
-    assert env_extra["PYTHONPATH"] == str(backend)
+    assert env_extra["PYTHONPATH"] == os.pathsep.join(
+        (
+            str(backend),
+            str(tmp_path),
+        )
+    )
     assert env_extra["EDARSAHUB_SQL_HOST"] == "db.example"
     assert env_extra["EDARSAHUB_SQL_PORT"] == "1433"
     assert env_extra["EDARSAHUB_SQL_DATABASE"] == "EDARSAHUB"
