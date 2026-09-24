@@ -1,0 +1,87 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-DEFINITIVE-R9-CARLOS-20260923",
+  "mode": "MUTATION",
+  "objective": "Solución definitiva del resync de pagos ISCAM MPRO: eliminar dependencia del resolvedor legacy ambiguo usando PosRuntimeResolver canónico directamente, mantener sucursal 0021 y JOIN por Vn_Documento, y soportar pymssql/pyodbc sin rc=2. No tocar Producción.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d4b8b73f7717b38e506256de7a45760f4d732825",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Formas de pagos ISCAM"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+      "expected_count": 1,
+      "old": "from core.sql_first.connection_factory import (\n    get_external_sql_connection,\n)\nfrom core.sql_first.db import get_sql_connection\n",
+      "new": "from core.sql_first.connection_factory import (\n    get_external_sql_connection,\n)\nfrom core.connections.pos_runtime_resolver import resolve_pos_runtime_context\nfrom core.sql_first.db import get_sql_connection\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+      "expected_count": 1,
+      "old": "    return get_external_sql_connection(\n        connection_config\n    )\n\n\ndef _hash_pago",
+      "new": "    return get_external_sql_connection(\n        connection_config\n    )\n\n\ndef _cursor_as_dict(conn):\n    \"\"\"Cursor compatible con pymssql y fallback pyodbc.\"\"\"\n    try:\n        return conn.cursor(as_dict=True)\n    except TypeError:\n        return conn.cursor()\n\n\ndef _fetchall_dicts(cur):\n    \"\"\"Normaliza filas del driver SQL a diccionarios.\"\"\"\n    rows = cur.fetchall() or []\n    if not rows:\n        return []\n    if isinstance(rows[0], dict):\n        return rows\n    columns = [item[0] for item in (cur.description or [])]\n    return [\n        {columns[index]: row[index] for index in range(len(columns))}\n        for row in rows\n    ]\n\n\ndef _hash_pago"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+      "expected_count": 2,
+      "old": "        cur = conn.cursor(as_dict=True)\n",
+      "new": "        cur = _cursor_as_dict(conn)\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+      "expected_count": 2,
+      "old": "        tipos = cur.fetchall() or []\n",
+      "new": "        tipos = _fetchall_dicts(cur)\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+      "expected_count": 2,
+      "old": "        pagos = cur.fetchall() or []\n",
+      "new": "        pagos = _fetchall_dicts(cur)\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+      "expected_count": 1,
+      "old": "def resync_pagos_unidad(unidad_codigo, fecha_inicio, fecha_fin, dry_run=False):\n    \"\"\"Resincroniza SOLO pagos por ticket para SoftRestaurant o ManagementPro en [fi, ff).\"\"\"\n    unidades = get_unidades_negocio_pos([unidad_codigo])\n    if not unidades:\n        return {\"unidad\": unidad_codigo, \"error\": \"unidad no encontrada en canonico\"}\n    unidad_row = unidades[0]\n    cfg = get_pos_config_for_unidad(unidad_row)\n    if not cfg or not cfg.get(\"host\"):\n        return {\"unidad\": unidad_codigo, \"error\": \"config POS no resuelta\"}\n\n    system = (cfg.get(\"system_type\") or \"\").upper()\n    is_mpro = \"MPRO\" in system or \"MANAG\" in system\n    sistema_origen = \"MPRO\" if is_mpro else \"SoftRestaurant\"\n    codigo = unidad_row.get(\"unidad_codigo\")\n",
+      "new": "def resync_pagos_unidad(unidad_codigo, fecha_inicio, fecha_fin, dry_run=False):\n    \"\"\"Resincroniza SOLO pagos por ticket para SoftRestaurant o ManagementPro en [fi, ff).\"\"\"\n    try:\n        context = resolve_pos_runtime_context(\n            unidad_codigo,\n            expected_system_types=(\"SOFTRESTAURANT\", \"MANAGEMENTPRO\"),\n        )\n    except Exception as e:\n        return {\n            \"unidad\": unidad_codigo,\n            \"error\": f\"config POS no resuelta: {type(e).__name__}\",\n        }\n\n    cfg = context.external_connection_config(as_dict=True)\n    cfg.update({\n        \"unidad\": context.unidad_codigo,\n        \"unidad_codigo\": context.unidad_codigo,\n        \"unidad_pk\": context.unidad_negocio_pk,\n        \"sucursal_origen_id\": context.sucursal_origen_id,\n        \"server_id\": context.server_id,\n        \"system_type\": context.system_type,\n    })\n\n    system = (context.system_type or \"\").upper()\n    is_mpro = \"MPRO\" in system or \"MANAG\" in system\n    sistema_origen = \"MPRO\" if is_mpro else \"SoftRestaurant\"\n    codigo = context.unidad_codigo\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_mpro_payments_definitive_r9.py",
+      "content": "from pathlib import Path\n\nfrom core.scheduler.jobs import inteligencia_comercial_enrich as enrich\n\nROOT = Path(__file__).resolve().parents[2]\nENRICH = ROOT / \"backend/core/scheduler/jobs/inteligencia_comercial_enrich.py\"\n\n\nclass _TupleCursor:\n    description = [(\"folio\",), (\"importe\",)]\n\n    def fetchall(self):\n        return [(\"T-1\", 125.50)]\n\n\nclass _FallbackConnection:\n    def __init__(self):\n        self.calls = []\n\n    def cursor(self, *args, **kwargs):\n        self.calls.append((args, kwargs))\n        if kwargs:\n            raise TypeError(\"pyodbc cursor no acepta as_dict\")\n        return _TupleCursor()\n\n\nclass _Context:\n    unidad_codigo = \"130QRO\"\n    unidad_negocio_pk = \"pk-130qro\"\n    sucursal_origen_id = \"0021\"\n    server_id = \"srv-mpro\"\n    system_type = \"MANAGEMENTPRO\"\n\n    def external_connection_config(self, *, as_dict):\n        assert as_dict is True\n        return {\n            \"host\": \"example.invalid\",\n            \"port\": 1433,\n            \"database\": \"CENTRAL2020\",\n            \"username\": \"u\",\n            \"password\": \"p\",\n            \"as_dict\": True,\n        }\n\n\ndef test_cursor_driver_fallback_normalizes_tuple_rows():\n    conn = _FallbackConnection()\n    cur = enrich._cursor_as_dict(conn)\n    assert enrich._fetchall_dicts(cur) == [{\"folio\": \"T-1\", \"importe\": 125.50}]\n    assert len(conn.calls) == 2\n\n\ndef test_payments_resync_uses_canonical_runtime_context(monkeypatch):\n    captured = {}\n\n    def fake_resolver(unit, expected_system_types=None):\n        captured[\"unit\"] = unit\n        captured[\"types\"] = expected_system_types\n        return _Context()\n\n    def fake_extract(cfg, fi, ff):\n        captured[\"cfg\"] = cfg\n        captured[\"period\"] = (fi, ff)\n        return [], [\n            {\n                \"folio\": \"21-0043748\",\n                \"codigo\": \"0006\",\n                \"forma\": \"TARJETA\",\n                \"importe\": 3652,\n                \"propina\": 476,\n                \"referencia\": None,\n                \"fecha\": \"2026-08-01\",\n            }\n        ]\n\n    monkeypatch.setattr(enrich, \"resolve_pos_runtime_context\", fake_resolver)\n    monkeypatch.setattr(enrich, \"_extract_mpro\", fake_extract)\n\n    result = enrich.resync_pagos_unidad(\n        \"130QRO\", \"2026-08-01\", \"2026-09-01\", dry_run=True\n    )\n\n    assert captured[\"unit\"] == \"130QRO\"\n    assert \"MANAGEMENTPRO\" in captured[\"types\"]\n    assert captured[\"cfg\"][\"sucursal_origen_id\"] == \"0021\"\n    assert captured[\"cfg\"][\"unidad_pk\"] == \"pk-130qro\"\n    assert result[\"sistema\"] == \"MPRO\"\n    assert result[\"pagos_extraidos\"] == 1\n    assert result[\"dry_run\"] is True\n\n\ndef test_mpro_payment_join_is_document_reference():\n    text = ENRICH.read_text(encoding=\"utf-8\")\n    block = text.split(\"def _extract_mpro\", 1)[1].split(\n        \"# ============================================================================\\n# ESCRITURA EN EDARSAHUB\", 1\n    )[0]\n    assert \"cp.Co_Folio = v.Vn_Documento\" in block\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/scheduler/jobs/inteligencia_comercial_enrich.py",
+        "backend/tests/test_iscam_mpro_payments_definitive_r9.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_mpro_payments_definitive_r9.py",
+        "backend/tests/test_iscam_mpro_payments_shared_server_join_r5.py",
+        "backend/tests/test_iscam_mpro_payments_daily_resync_r128.py",
+        "backend/tests/test_iscam_payments_only_resync_r56.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
