@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "ebdcc1d4ca06b853c0c18123d974a1b9335b167d",
-  "generated_at_utc": "2026-09-24T02:55:24Z",
+  "generated_at_utc": "2026-09-24T02:56:39Z",
   "history": {
     "done_total_local": 951,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 109,
+      "age_seconds": 184,
       "job_id": "EDARSAHUB-BOS-WORKER-DELIVERABLE-MATERIALIZER-GATE0-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,8 +36,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-24T02:55:20Z",
-    "last_receive_utc": "2026-09-24T02:55:22Z",
+    "last_cycle_utc": "2026-09-24T02:56:36Z",
+    "last_receive_utc": "2026-09-24T02:56:38Z",
     "last_terminal_utc": "2026-09-24T02:53:34Z",
     "pid": "436",
     "runtime_fingerprint": {
