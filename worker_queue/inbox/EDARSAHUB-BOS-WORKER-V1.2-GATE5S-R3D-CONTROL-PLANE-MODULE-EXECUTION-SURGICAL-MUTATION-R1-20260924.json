@@ -1,0 +1,80 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "expected_sha256": "c2586002346d0366ae9bd05137c9e336820435a49d055b50b382d27cccbcf7f2",
+      "new": "command=/root/.venv/bin/python -m tools.mirror_sync.worker_control_plane",
+      "old": "command=/root/.venv/bin/python /app/tools/mirror_sync/worker_control_plane.py",
+      "path": "tools/mirror_sync/edarsahub-worker-control-plane.conf",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "expected_sha256": "b1dce1695bca9d4c3ba578e3395dd10e84caa47bb33222a6a2e64779ea083e1c",
+      "new": "        \"command=/root/.venv/bin/python \"\n        \"-m tools.mirror_sync.worker_control_plane\"\n",
+      "old": "        \"command=/root/.venv/bin/python \"\n        \"/app/tools/mirror_sync/worker_control_plane.py\"\n",
+      "path": "backend/tests/test_worker_control_plane_supervisor_ownership_contract.py",
+      "type": "replace_text"
+    }
+  ],
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_control_plane.py",
+        "backend/tests/test_worker_control_plane_supervisor_ownership_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_control_plane_supervisor_ownership_contract.py",
+        "backend/tests/test_worker_control_plane_contract.py",
+        "backend/tests/test_worker_control_plane_maintenance_integration_contract.py",
+        "backend/tests/test_worker_automatic_repair_orchestration_contract.py",
+        "backend/tests/test_worker_automatic_repair_activation_boundary_contract.py",
+        "backend/tests/test_universal_worker_external_owner_contract.py",
+        "backend/tests/test_bootstrap_watchdog_safety_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "request": {
+        "exclude_patterns": [],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.conf"
+        ],
+        "max_results": 500,
+        "paths": [
+          "tools/mirror_sync/edarsahub-worker-control-plane.conf",
+          "tools/mirror_sync/worker_control_plane.py",
+          "tools/mirror_sync/mirror_sync_worker.sh",
+          "backend/tests/test_worker_control_plane_supervisor_ownership_contract.py",
+          "tools/bootstrap/install_bootstrap_watchdog.sh"
+        ],
+        "search_terms": [
+          "worker_control_plane.py",
+          "tools.mirror_sync.worker_control_plane",
+          "start_control_plane",
+          "ensure_control_plane",
+          "stop_control_plane",
+          "edarsahub-worker-control-plane",
+          "Edarsahub_Produccion"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-WORKER-V1.2-GATE5S-R3D-CONTROL-PLANE-MODULE-EXECUTION-SURGICAL-MUTATION-R1-20260924",
+  "mode": "MUTATION",
+  "objective": "Corregir de forma quirurgica el arranque Supervisor del worker control plane para ejecutarlo como modulo Python del repositorio, preservando un unico control plane, Universal Worker externo, mirror fail-closed, sin tocar Produccion, SQL, colas, dispatcher ni scheduler.",
+  "production_allowed": false,
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
