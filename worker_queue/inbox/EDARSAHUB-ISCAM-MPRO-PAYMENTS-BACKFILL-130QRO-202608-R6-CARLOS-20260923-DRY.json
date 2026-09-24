@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-BACKFILL-130QRO-202608-R6-CARLOS-20260923-DRY",
+  "mode": "ISCAM_PAYMENTS_ONLY_RESYNC",
+  "objective": "Validar en DRY RUN, ya con el fix R5 integrado, la extraccion de pagos ManagementPro de 130QRO para agosto 2026 antes del backfill real que poblara Formas de Pago (Corte) y Pagos por Ticket en ISCAM.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6a43a1eb253ae4dda2732dd1a61c5cd0db511af5",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Formas de pagos ISCAM"
+  },
+  "units": [
+    "130QRO"
+  ],
+  "fecha_inicio": "2026-08-01",
+  "fecha_fin": "2026-09-01",
+  "dry_run": true,
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "130qro_pagos_agosto_estado_previo",
+          "sql": "SELECT COUNT(*) AS filas, COUNT(DISTINCT NumeroTicket) AS tickets, CAST(ISNULL(SUM(Importe),0) AS decimal(18,2)) AS importe, CAST(ISNULL(SUM(Propina),0) AS decimal(18,2)) AS propina FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE UnidadNegocio='130QRO' AND FechaHora >= '2026-08-01' AND FechaHora < '2026-09-01' AND ISNULL(Activo,1)=1"
+        }
+      ]
+    }
+  ]
+}
