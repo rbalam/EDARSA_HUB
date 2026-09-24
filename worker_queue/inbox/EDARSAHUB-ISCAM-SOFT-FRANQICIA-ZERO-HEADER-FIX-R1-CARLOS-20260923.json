@@ -1,0 +1,59 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-SOFT-FRANQICIA-ZERO-HEADER-FIX-R1-CARLOS-20260923",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "5ffae0f78a01f8d3a5e2e0c3ee7f084a798914a5",
+  "production_allowed": false,
+  "objective": "Corregir transversalmente SoftRestaurant para que la excepción existente de ticket con encabezado cero y franquicia negativa reconozca también la variante ortográfica real FRANQICIA, observada en ESTELAR folio 20833. No relajar encabezado cero para otros productos.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+      "old": "        negative_franchise = any(\n            _d(row.get(\"importe_neto\")) < 0\n            and \"FRANQUICIA\" in _s(row.get(\"producto_nombre\")).upper()\n            for row in items\n        )\n",
+      "new": "        negative_franchise = any(\n            _d(row.get(\"importe_neto\")) < 0\n            and (\n                \"FRANQUICIA\" in _s(row.get(\"producto_nombre\")).upper()\n                or \"FRANQICIA\" in _s(row.get(\"producto_nombre\")).upper()\n            )\n            for row in items\n        )\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_header_folio_parent_r92.py",
+      "old": "def test_small_residual_is_adjusted_exactly_to_header():\n    src = _soft_add_ticket_adjustments([\n        _row('12', '100.00', '100.01', pax=1),\n    ])\n    assert src[-1]['producto_codigo_fuente'] == SOFT_AJUSTE_ENCABEZADO\n    assert src[-1]['importe_neto'] == Decimal('-0.01')\n    assert sum(x['importe_neto'] for x in src) == Decimal('100.00')\n\n    result = _validate(src, {'ventas': Decimal('100.00'), 'tickets': 1, 'pax': 1})\n    assert result['ok'] is True\n    assert result['ventas_detalle'] == Decimal('100.00')\n    assert result['tickets_no_conciliados'] == []\n",
+      "new": "def test_small_residual_is_adjusted_exactly_to_header():\n    src = _soft_add_ticket_adjustments([\n        _row('12', '100.00', '100.01', pax=1),\n    ])\n    assert src[-1]['producto_codigo_fuente'] == SOFT_AJUSTE_ENCABEZADO\n    assert src[-1]['importe_neto'] == Decimal('-0.01')\n    assert sum(x['importe_neto'] for x in src) == Decimal('100.00')\n\n    result = _validate(src, {'ventas': Decimal('100.00'), 'tickets': 1, 'pax': 1})\n    assert result['ok'] is True\n    assert result['ventas_detalle'] == Decimal('100.00')\n    assert result['tickets_no_conciliados'] == []\n\n\ndef test_zero_header_accepts_real_franqicia_spelling():\n    rows = [\n        _row('20833', '0.00', '195.00', pax=1, product='A ENSALADA CESAR'),\n        _row('20833', '0.00', '-200.00', pax=1, product='FRANQICIA DJ'),\n    ]\n    out = _soft_add_ticket_adjustments(rows)\n    assert out[-1]['importe_neto'] == Decimal('5.00')\n    assert sum(x['importe_neto'] for x in out) == Decimal('0.00')\n\n    result = _validate(out, {'ventas': Decimal('0.00'), 'tickets': 1, 'pax': 1})\n    assert result['ok'] is True\n    assert result['ventas_detalle'] == Decimal('0.00')\n    assert result['tickets_no_conciliados'] == []\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/scripts/poblar_ventas_detalle_producto_canonico.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_header_folio_parent_r92.py",
+        "backend/tests/test_iscam_no_prorate_adjustments_r49.py",
+        "backend/tests/test_iscam_detail_parity_backfill_r33.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "20260923 Julio 2026 conciliacion ventas"
+  },
+  "constraints": [
+    "Correccion transversal SoftRestaurant",
+    "Solo reconocer FRANQUICIA y FRANQICIA",
+    "No relajar otros encabezados cero",
+    "No modificar MPRO",
+    "No Production"
+  ]
+}
