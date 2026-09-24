@@ -1,0 +1,42 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-RANGE-SYNC-31DAY-FRONTEND-FIX-R1-CARLOS-20260924",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "4eb29655f2e70ddc37a28e41193e2badd16d128a",
+  "production_allowed": false,
+  "objective": "Acelerar la sincronizacion manual de Reportes ISCAM eliminando la division artificial de 1 dia por request. Usar chunks de hasta 31 dias, que ya es el rango maximo soportado por el backend, para que cada sucursal procese julio en una sola llamada por rango. No cambiar consultas ni logica de conciliacion.",
+  "human_summary_language": "es",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+      "old": "      const chunks = splitDateChunks(syncFrom, syncTo, 1);\n",
+      "new": "      const chunks = splitDateChunks(syncFrom, syncTo, 31);\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "frontend_build"
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Continuidad EDARSAHUB Julio 2026 Worker Universal V1.2"
+  },
+  "constraints": [
+    "No cambiar consultas de ventas",
+    "No cambiar logica del backfill canonico",
+    "No modificar MPRO",
+    "No Production",
+    "Mantener dry-run y ejecucion real existentes",
+    "Rango maximo 31 dias"
+  ]
+}
