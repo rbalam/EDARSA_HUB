@@ -1,0 +1,130 @@
+{
+  "base_sha": "32d0860ef6c899d1c9a42a3e900c4e4ece9353af",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-24T00:12:49Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-JULIO-2026-SOFT-DETAIL-ROUNDING-DIAG-R2-CARLOS-20260923",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-24T00:14:17Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "tickets",
+              "encabezado_total",
+              "productos_total",
+              "detalle_estimado",
+              "delta_estimado",
+              "tickets_residuo_tolerado",
+              "suma_residuos_tolerados",
+              "tickets_cero_con_detalle"
+            ],
+            "name": "130mid_20260701_rounding",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                14,
+                "33902.0000",
+                "34036.0751",
+                "33902.0751",
+                "-0.0751",
+                12,
+                "-0.0751",
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "tickets",
+              "encabezado_total",
+              "productos_total",
+              "detalle_estimado",
+              "delta_estimado",
+              "tickets_residuo_tolerado",
+              "suma_residuos_tolerados",
+              "tickets_cero_con_detalle"
+            ],
+            "name": "cienfuegos_20260701_rounding",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                30,
+                "85775.0000",
+                "89800.2357",
+                "85775.1337",
+                "-0.1337",
+                21,
+                "-0.1337",
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "tickets",
+              "encabezado_total",
+              "productos_total",
+              "detalle_estimado",
+              "delta_estimado",
+              "tickets_residuo_tolerado",
+              "suma_residuos_tolerados",
+              "tickets_cero_con_detalle"
+            ],
+            "name": "estelar_20260701_rounding",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                25,
+                "29795.0000",
+                "29790.0000",
+                "29795.0000",
+                "0.0000",
+                0,
+                "0.0000",
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-24T00:12:45Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
