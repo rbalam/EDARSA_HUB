@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-RC2-DIAG-130QRO-R7-CARLOS-20260923",
+  "mode": "READ_ONLY",
+  "objective": "Aislar el rc=2 restante del resync de pagos 130QRO verificando el system_type canonico de la unidad/servidor y la relación de servicio/pagos con el esquema vigente. Solo lectura, sin Produccion.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Formas de pagos ISCAM"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "130qro_runtime_mapping_types",
+          "sql": "SELECT u.codigo,u.nombre,u.id AS unidad_pk,u.server_id,u.sucursal_origen_id,u.system_type AS unidad_system_type,s.system_type AS servidor_system_type,s.database_name,s.activo AS servidor_activo FROM dbo.Unidades_Negocio u LEFT JOIN dbo.Servidores_Conexiones s ON s.id=u.server_id WHERE UPPER(u.codigo)='130QRO'"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "130QRO"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "queries": [
+        {
+          "name": "mpro_service_join_comparison",
+          "sql": "SELECT (SELECT COUNT(*) FROM Venta_Encabezado v WITH (NOLOCK) INNER JOIN Comanda c WITH (NOLOCK) ON c.Co_Folio=v.Vn_Folio AND c.Sc_Cve_Sucursal=v.Sc_Cve_Sucursal WHERE v.Sc_Cve_Sucursal='0021' AND CONVERT(date,v.Vn_Fecha)>='2026-08-01' AND CONVERT(date,v.Vn_Fecha)<'2026-09-01') AS servicio_por_vnfolio,(SELECT COUNT(*) FROM Venta_Encabezado v WITH (NOLOCK) INNER JOIN Comanda c WITH (NOLOCK) ON c.Co_Folio=v.Vn_Documento AND c.Sc_Cve_Sucursal=v.Sc_Cve_Sucursal WHERE v.Sc_Cve_Sucursal='0021' AND CONVERT(date,v.Vn_Fecha)>='2026-08-01' AND CONVERT(date,v.Vn_Fecha)<'2026-09-01') AS servicio_por_vndocumento"
+        },
+        {
+          "name": "mpro_exact_payment_extract_count",
+          "sql": "SELECT COUNT(*) AS pagos,COUNT(DISTINCT v.Vn_Folio) AS tickets,CAST(SUM(cp.Cp_Importe) AS decimal(18,2)) AS importe,CAST(SUM(cp.Cp_Propina) AS decimal(18,2)) AS propina FROM Venta_Encabezado v WITH (NOLOCK) INNER JOIN Comanda_Pago cp WITH (NOLOCK) ON cp.Co_Folio=v.Vn_Documento LEFT JOIN Forma_Pago fp WITH (NOLOCK) ON fp.Fp_Cve_Forma_Pago=cp.Fp_Cve_Forma_Pago WHERE CONVERT(date,v.Vn_Fecha)>='2026-08-01' AND CONVERT(date,v.Vn_Fecha)<'2026-09-01' AND v.Sc_Cve_Sucursal='0021' AND ISNULL(v.Es_Cve_Estado,'')<>'CA' AND cp.Cp_Importe>0"
+        }
+      ]
+    }
+  ]
+}
