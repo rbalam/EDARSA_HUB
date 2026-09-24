@@ -154,7 +154,7 @@ def _extract_mpro(cfg, fi, ff):
                        cp.Cp_Importe AS importe, cp.Cp_Propina AS propina,
                        cp.Cp_Referencia AS referencia, v.Vn_Fecha AS fecha
                 FROM Venta_Encabezado v WITH (NOLOCK)
-                INNER JOIN Comanda_Pago cp WITH (NOLOCK) ON cp.Co_Folio = v.Vn_Folio
+                INNER JOIN Comanda_Pago cp WITH (NOLOCK) ON cp.Co_Folio = v.Vn_Documento
                 LEFT JOIN Forma_Pago fp WITH (NOLOCK) ON fp.Fp_Cve_Forma_Pago = cp.Fp_Cve_Forma_Pago
                 WHERE CONVERT(date, v.Vn_Fecha) >= CONVERT(date, '{fi}') AND CONVERT(date, v.Vn_Fecha) < CONVERT(date, '{ff}')
                   AND v.Sc_Cve_Sucursal = '{suc}'
