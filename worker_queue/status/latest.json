@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "ebdcc1d4ca06b853c0c18123d974a1b9335b167d",
-  "generated_at_utc": "2026-09-24T01:52:30Z",
+  "generated_at_utc": "2026-09-24T01:53:42Z",
   "history": {
     "done_total_local": 950,
     "pending_total_local": 0,
@@ -16,55 +16,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 105,
+      "age_seconds": 177,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-ESTELAR-20260705-DETAIL-R4-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2169,
+      "age_seconds": 2242,
       "job_id": "EDARSAHUB-ISCAM-JULIO-2026-ESTELAR-20260705-POS-DIAG-R1-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1021,
+      "age_seconds": 1093,
       "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-BACKFILL-130QRO-202608-R10-REAL-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3376,
+      "age_seconds": 3448,
       "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-BACKFILL-130QRO-202608-R6-CARLOS-20260923-DRY",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1237,
+      "age_seconds": 1309,
       "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-DEFINITIVE-R9-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1676,
+      "age_seconds": 1748,
       "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-DRIVER-COMPAT-SUMMARY-R8-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1380,
+      "age_seconds": 1453,
       "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-DRIVER-COMPAT-SUMMARY-R8B-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2851,
+      "age_seconds": 2923,
       "job_id": "EDARSAHUB-ISCAM-MPRO-PAYMENTS-RC2-DIAG-130QRO-R7-CARLOS-20260923",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1669,
+      "age_seconds": 1741,
       "job_id": "EDARSAHUB-ISCAM-SOFT-ANTICIPO-ZERO-HEADER-FIX-R1-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
@@ -84,8 +84,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-24T01:52:23Z",
-    "last_receive_utc": "2026-09-24T01:52:18Z",
+    "last_cycle_utc": "2026-09-24T01:53:38Z",
+    "last_receive_utc": "2026-09-24T01:53:41Z",
     "last_terminal_utc": "2026-09-24T01:50:45Z",
     "pid": "361",
     "runtime_fingerprint": {
