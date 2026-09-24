@@ -74,3 +74,29 @@ def test_control_plane_remains_production_fail_closed():
 
     assert '"production_touched": False' in control
     assert "Edarsahub_Produccion" not in control
+
+
+def test_control_plane_writes_active_runtime_identity_ack():
+    control = CONTROL.read_text(encoding="utf-8")
+
+    assert "CONTROL_PLANE_RUNTIME_MARKER" in control
+    assert "CONTROL_PLANE_IDENTITY_PATHS" in control
+    assert "def control_plane_runtime_identity()" in control
+    assert "def write_control_plane_runtime_marker()" in control
+    assert "CONTROL_PLANE_RUNTIME_ACTIVE" in control
+    assert '"active_identity"' in control
+    assert '"pid": os.getpid()' in control
+
+
+def test_control_plane_does_not_restart_itself():
+    control = CONTROL.read_text(encoding="utf-8")
+
+    assert (
+        'supervisorctl", "restart", '
+        '"edarsahub-worker-control-plane"'
+        not in control
+    )
+    assert (
+        "CONTROL_PLANE_CODE_STALE"
+        not in control
+    )

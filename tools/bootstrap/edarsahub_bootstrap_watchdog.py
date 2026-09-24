@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import subprocess
@@ -27,6 +28,37 @@ SYNC_PAUSE = APP / ".git" / "EDARSAHUB_SYNC_PAUSED"
 STATUS = STATE / "status.json"
 AUDIT = STATE / "audit.jsonl"
 BACKEND_RECOVERY_STAMP = STATE / "backend_recovery_epoch"
+
+CONTROL_PLANE_SERVICE = os.environ.get(
+    "EDARSAHUB_CONTROL_PLANE_SERVICE",
+    "edarsahub-worker-control-plane",
+)
+CONTROL_PLANE_RUNTIME_STATE = (
+    STATE / "control_plane_runtime.json"
+)
+CONTROL_PLANE_ACTIVE_MARKER = (
+    STATE / "control_plane_active_runtime.json"
+)
+CONTROL_PLANE_RESTART_COOLDOWN_SECONDS = int(
+    os.environ.get(
+        "EDARSAHUB_CONTROL_PLANE_RESTART_COOLDOWN_SECONDS",
+        "60",
+    )
+)
+CONTROL_PLANE_MAX_RESTART_ATTEMPTS = int(
+    os.environ.get(
+        "EDARSAHUB_CONTROL_PLANE_MAX_RESTART_ATTEMPTS",
+        "2",
+    )
+)
+CONTROL_PLANE_IDENTITY_PATHS = (
+    "tools/mirror_sync/worker_control_plane.py",
+    "tools/mirror_sync/worker_maintenance_runtime.py",
+    "tools/mirror_sync/worker_maintenance_controller.py",
+    "tools/mirror_sync/worker_maintenance_contract.py",
+    "tools/mirror_sync/worker_auditor.py",
+    "tools/mirror_sync/worker_repair.py",
+)
 
 
 def now() -> str:
@@ -175,6 +207,307 @@ def mirror_authorization() -> dict:
     return {"authorized": True, "state": "AUTHORIZED"}
 
 
+def atomic_state_json(
+    path: Path,
+    payload: dict,
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_name(
+        path.name + ".tmp-" + str(os.getpid())
+    )
+    temp.write_text(
+        json.dumps(
+            payload,
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\\n",
+        encoding="utf-8",
+    )
+    os.replace(temp, path)
+
+
+def read_json(path: Path) -> dict | None:
+    try:
+        payload = json.loads(
+            path.read_text(encoding="utf-8")
+        )
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    return payload if isinstance(payload, dict) else None
+
+
+def control_plane_expected_identity() -> str | None:
+    components: list[str] = []
+
+    for rel in CONTROL_PLANE_IDENTITY_PATHS:
+        proc = run(
+            [
+                "git",
+                "rev-parse",
+                f"HEAD:{rel}",
+            ],
+            timeout=20,
+        )
+        blob = proc.stdout.strip()
+
+        if (
+            proc.returncode != 0
+            or len(blob) != 40
+            or any(
+                char not in "0123456789abcdef"
+                for char in blob.lower()
+            )
+        ):
+            return None
+
+        components.append(
+            f"{rel}={blob.lower()}"
+        )
+
+    return hashlib.sha256(
+        ("\\n".join(components) + "\\n").encode(
+            "utf-8"
+        )
+    ).hexdigest()
+
+
+def control_plane_repo_is_canonical() -> tuple[bool, str]:
+    branch = run(
+        ["git", "branch", "--show-current"],
+        timeout=20,
+    ).stdout.strip()
+
+    if branch != DEV:
+        return False, "WRONG_BRANCH"
+
+    dirty = run(
+        [
+            "git",
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+        ],
+        timeout=20,
+    )
+
+    if dirty.returncode != 0:
+        return False, "STATUS_FAILED"
+
+    if dirty.stdout.strip():
+        return False, "LOCAL_WORK_DIRTY"
+
+    local = run(
+        ["git", "rev-parse", "HEAD"],
+        timeout=20,
+    ).stdout.strip()
+    remote = run(
+        [
+            "git",
+            "rev-parse",
+            f"{REMOTE}/{DEV}",
+        ],
+        timeout=20,
+    ).stdout.strip()
+
+    if not local or local != remote:
+        return False, "DEVELOPMENT_NOT_CONVERGED"
+
+    return True, "CANONICAL"
+
+
+def control_plane_runtime_convergence() -> dict:
+    expected = control_plane_expected_identity()
+    active = read_json(
+        CONTROL_PLANE_ACTIVE_MARKER
+    ) or {}
+    state = read_json(
+        CONTROL_PLANE_RUNTIME_STATE
+    ) or {}
+
+    active_identity = str(
+        active.get("active_identity") or ""
+    ).strip()
+    active_pid = int(
+        active.get("pid") or 0
+    )
+
+    base = {
+        "expected_identity": expected,
+        "active_identity": active_identity or None,
+        "active_pid": active_pid or None,
+        "production_touched": False,
+    }
+
+    if not expected:
+        return {
+            **base,
+            "state": "IDENTITY_UNAVAILABLE",
+            "restart_requested": False,
+        }
+
+    if (
+        active_identity == expected
+        and active_pid > 1
+    ):
+        return {
+            **base,
+            "state": "CONVERGED",
+            "restart_requested": False,
+        }
+
+    canonical, canonical_reason = (
+        control_plane_repo_is_canonical()
+    )
+
+    if not canonical:
+        return {
+            **base,
+            "state": "DEFERRED",
+            "reason": canonical_reason,
+            "restart_requested": False,
+        }
+
+    attempts = int(
+        state.get("restart_attempts") or 0
+    )
+    cooldown_until = float(
+        state.get("cooldown_until_epoch") or 0
+    )
+    now_epoch = time.time()
+
+    if now_epoch < cooldown_until:
+        return {
+            **base,
+            "state": "COOLDOWN",
+            "restart_attempts": attempts,
+            "cooldown_until_epoch": cooldown_until,
+            "restart_requested": False,
+        }
+
+    if attempts >= CONTROL_PLANE_MAX_RESTART_ATTEMPTS:
+        return {
+            **base,
+            "state": "ATTEMPTS_EXHAUSTED",
+            "restart_attempts": attempts,
+            "restart_requested": False,
+        }
+
+    previous_pid = active_pid
+
+    request_state = {
+        "schema": (
+            "edarsahub.control-plane-runtime.v1"
+        ),
+        "expected_identity": expected,
+        "active_identity": (
+            active_identity or None
+        ),
+        "last_restart_requested_at_utc": now(),
+        "last_restart_reason": (
+            "CONTROL_PLANE_CODE_STALE"
+        ),
+        "last_successful_activation_at_utc": (
+            state.get(
+                "last_successful_activation_at_utc"
+            )
+        ),
+        "restart_attempts": attempts + 1,
+        "cooldown_until_epoch": (
+            now_epoch
+            + CONTROL_PLANE_RESTART_COOLDOWN_SECONDS
+        ),
+        "production_touched": False,
+    }
+
+    atomic_state_json(
+        CONTROL_PLANE_RUNTIME_STATE,
+        request_state,
+    )
+
+    restarted = supervisor_restart(
+        "CONTROL_PLANE_CODE_STALE",
+        CONTROL_PLANE_SERVICE,
+    )
+
+    if not restarted:
+        return {
+            **base,
+            "state": "RESTART_FAILED",
+            "restart_attempts": attempts + 1,
+            "restart_requested": True,
+            "restart_succeeded": False,
+        }
+
+    deadline = time.time() + 20
+
+    while time.time() < deadline:
+        time.sleep(0.5)
+
+        activated = read_json(
+            CONTROL_PLANE_ACTIVE_MARKER
+        ) or {}
+
+        new_identity = str(
+            activated.get("active_identity") or ""
+        ).strip()
+        new_pid = int(
+            activated.get("pid") or 0
+        )
+
+        if (
+            new_identity == expected
+            and new_pid > 1
+            and new_pid != previous_pid
+        ):
+            success = {
+                "schema": (
+                    "edarsahub.control-plane-runtime.v1"
+                ),
+                "expected_identity": expected,
+                "active_identity": expected,
+                "last_restart_requested_at_utc": (
+                    request_state[
+                        "last_restart_requested_at_utc"
+                    ]
+                ),
+                "last_restart_reason": (
+                    "CONTROL_PLANE_CODE_STALE"
+                ),
+                "last_successful_activation_at_utc": (
+                    now()
+                ),
+                "restart_attempts": 0,
+                "cooldown_until_epoch": None,
+                "active_pid": new_pid,
+                "production_touched": False,
+            }
+
+            atomic_state_json(
+                CONTROL_PLANE_RUNTIME_STATE,
+                success,
+            )
+
+            return {
+                **base,
+                "state": "CONVERGED_AFTER_RESTART",
+                "active_identity": expected,
+                "active_pid": new_pid,
+                "restart_requested": True,
+                "restart_succeeded": True,
+            }
+
+    return {
+        **base,
+        "state": "ACTIVATION_ACK_TIMEOUT",
+        "restart_attempts": attempts + 1,
+        "restart_requested": True,
+        "restart_succeeded": True,
+    }
+
+
 def supervisor_restart(reason: str, service: str = SERVICE) -> bool:
     if is_production_environment():
         audit("SUPERVISOR_RESTART_BLOCKED_PRODUCTION_ENV", reason=reason, service=service)
@@ -227,6 +560,9 @@ def cycle() -> dict:
     auth = mirror_authorization()
     ff = safe_fast_forward()
     backend = maybe_recover_backend()
+    control_plane_runtime = (
+        control_plane_runtime_convergence()
+    )
     age = age_seconds(RUNTIME / "last_receive_utc")
     stale = age is None or age > MAX_STALE
     restarted = False
@@ -251,6 +587,7 @@ def cycle() -> dict:
         "mirror_authorization": auth,
         "ff": ff,
         "backend_recovery": backend,
+        "control_plane_runtime": control_plane_runtime,
         "worker_receive_age_seconds": age,
         "worker_stale": stale,
         "restart_requested": restarted,

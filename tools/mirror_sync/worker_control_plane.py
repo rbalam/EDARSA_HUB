@@ -62,6 +62,24 @@ EXPECTED_GENERATION_RE = re.compile(r'^RUNTIME_GENERATION="([^"]+)"', re.MULTILI
 PID_RE = re.compile(r'(?i)["\']?pid["\']?\s*[:=]\s*["\']?(\d+)')
 WORKER_TOKEN_RE = re.compile(r"worker-[A-Za-z0-9._-]{3,160}")
 
+BOOTSTRAP_STATE = Path(
+    os.environ.get(
+        "EDARSAHUB_BOOTSTRAP_STATE",
+        "/var/lib/edarsahub-bootstrap",
+    )
+)
+CONTROL_PLANE_RUNTIME_MARKER = (
+    BOOTSTRAP_STATE / "control_plane_active_runtime.json"
+)
+CONTROL_PLANE_IDENTITY_PATHS = (
+    "tools/mirror_sync/worker_control_plane.py",
+    "tools/mirror_sync/worker_maintenance_runtime.py",
+    "tools/mirror_sync/worker_maintenance_controller.py",
+    "tools/mirror_sync/worker_maintenance_contract.py",
+    "tools/mirror_sync/worker_auditor.py",
+    "tools/mirror_sync/worker_repair.py",
+)
+
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -85,6 +103,61 @@ def run(args: list[str], timeout: int = 30, check: bool = False) -> subprocess.C
     if check and result.returncode != 0:
         raise RuntimeError(f"COMMAND_FAILED:{args}:{result.stdout[-1500:]}")
     return result
+
+
+def control_plane_runtime_identity() -> str:
+    components: list[str] = []
+
+    for rel in CONTROL_PLANE_IDENTITY_PATHS:
+        blob = git_output(
+            "rev-parse",
+            f"HEAD:{rel}",
+        ).strip()
+
+        if not re.fullmatch(r"[0-9a-f]{40}", blob):
+            raise RuntimeError(
+                f"CONTROL_PLANE_IDENTITY_INVALID:{rel}"
+            )
+
+        components.append(f"{rel}={blob}")
+
+    return hashlib.sha256(
+        ("\\n".join(components) + "\\n").encode("utf-8")
+    ).hexdigest()
+
+
+def write_control_plane_runtime_marker() -> dict[str, Any]:
+    identity = control_plane_runtime_identity()
+    development_sha = git_output(
+        "rev-parse",
+        "HEAD",
+    ).strip()
+
+    if not re.fullmatch(
+        r"[0-9a-f]{40}",
+        development_sha,
+    ):
+        raise RuntimeError(
+            "CONTROL_PLANE_DEVELOPMENT_SHA_INVALID"
+        )
+
+    payload = {
+        "schema": (
+            "edarsahub.control-plane-active-runtime.v1"
+        ),
+        "active_identity": identity,
+        "development_sha": development_sha,
+        "pid": os.getpid(),
+        "started_at_utc": utc_now(),
+        "production_touched": False,
+    }
+
+    atomic_json(
+        CONTROL_PLANE_RUNTIME_MARKER,
+        payload,
+    )
+
+    return payload
 
 
 def audit(event: str, **fields: Any) -> None:
@@ -1105,6 +1178,27 @@ def cycle() -> dict[str, Any]:
 
 def main() -> int:
     once = "--once" in os.sys.argv
+
+    try:
+        active_runtime = (
+            write_control_plane_runtime_marker()
+        )
+        audit(
+            "CONTROL_PLANE_RUNTIME_ACTIVE",
+            active_identity=active_runtime[
+                "active_identity"
+            ],
+            development_sha=active_runtime[
+                "development_sha"
+            ],
+            pid=active_runtime["pid"],
+        )
+    except Exception as exc:
+        audit(
+            "CONTROL_PLANE_RUNTIME_IDENTITY_FAILED",
+            error=str(exc),
+        )
+
     while True:
         try:
             payload = cycle()

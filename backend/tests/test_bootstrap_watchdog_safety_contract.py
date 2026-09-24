@@ -124,3 +124,63 @@ def test_all_watchdog_supervisor_restarts_are_production_guarded():
     assert "SUPERVISOR_RESTART_BLOCKED_PRODUCTION_ENV" in text
     fn = text.split("def supervisor_restart", 1)[1].split("def safe_fast_forward", 1)[0]
     assert "if is_production_environment():" in fn
+
+
+def test_bootstrap_owns_control_plane_runtime_convergence():
+    text = body()
+
+    assert "def control_plane_runtime_convergence()" in text
+    assert "CONTROL_PLANE_CODE_STALE" in text
+    assert "CONTROL_PLANE_ACTIVE_MARKER" in text
+    assert "CONTROL_PLANE_RUNTIME_STATE" in text
+    assert "CONTROL_PLANE_MAX_RESTART_ATTEMPTS" in text
+    assert "CONTROL_PLANE_RESTART_COOLDOWN_SECONDS" in text
+    assert (
+        'supervisor_restart(\n'
+        '        "CONTROL_PLANE_CODE_STALE",\n'
+        '        CONTROL_PLANE_SERVICE,'
+        in text
+    )
+
+
+def test_control_plane_convergence_requires_clean_canonical_development():
+    text = body()
+
+    assert "def control_plane_repo_is_canonical()" in text
+    assert '"branch", "--show-current"' in text
+    assert '"status",' in text
+    assert '"--porcelain=v1"' in text
+    assert "DEVELOPMENT_NOT_CONVERGED" in text
+    assert "LOCAL_WORK_DIRTY" in text
+
+
+def test_control_plane_convergence_uses_dependency_identity_not_head_only():
+    text = body()
+
+    assert "CONTROL_PLANE_IDENTITY_PATHS" in text
+    assert "worker_control_plane.py" in text
+    assert "worker_maintenance_runtime.py" in text
+    assert "worker_maintenance_controller.py" in text
+    assert "worker_auditor.py" in text
+    assert "worker_repair.py" in text
+    assert 'f"HEAD:{rel}"' in text
+    assert "hashlib.sha256" in text
+
+
+def test_control_plane_convergence_requires_runtime_ack():
+    text = body()
+
+    assert "active_identity" in text
+    assert "active_pid" in text
+    assert "new_pid != previous_pid" in text
+    assert "CONVERGED_AFTER_RESTART" in text
+    assert "ACTIVATION_ACK_TIMEOUT" in text
+
+
+def test_control_plane_convergence_remains_fail_closed():
+    text = body()
+
+    assert '"production_touched": False' in text
+    assert "Edarsahub_Produccion" not in text
+    assert "MIRROR_ENABLE.unlink" not in text
+    assert "MIRROR_STOP.unlink" not in text
