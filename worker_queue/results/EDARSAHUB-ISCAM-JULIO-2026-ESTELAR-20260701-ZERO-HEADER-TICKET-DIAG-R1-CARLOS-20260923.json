@@ -1,0 +1,78 @@
+{
+  "base_sha": "32d0860ef6c899d1c9a42a3e900c4e4ece9353af",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-24T00:18:03Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-JULIO-2026-ESTELAR-20260701-ZERO-HEADER-TICKET-DIAG-R1-CARLOS-20260923",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-24T00:18:11Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "PosRuntimeResolver+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "folio",
+              "fecha",
+              "encabezado",
+              "productos",
+              "delta",
+              "idproducto",
+              "descripcion",
+              "cantidad",
+              "precio",
+              "importe_linea"
+            ],
+            "name": "estelar_zero_header_ticket_20260701",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "20833",
+                "2026-07-01T21:15:21",
+                "0.0000",
+                "-5.0000",
+                "5.0000",
+                "A043003",
+                "A ENSALADA CESAR",
+                "1.0000",
+                "195.0000",
+                "195.0000"
+              ],
+              [
+                "20833",
+                "2026-07-01T21:15:21",
+                "0.0000",
+                "-5.0000",
+                "5.0000",
+                "C090005",
+                "FRANQICIA DJ",
+                "1.0000",
+                "-200.0000",
+                "-200.0000"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-24T00:18:02Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
