@@ -26,6 +26,7 @@ from datetime import datetime
 from core.sql_first.connection_factory import (
     get_external_sql_connection,
 )
+from core.connections.pos_runtime_resolver import resolve_pos_runtime_context
 from core.sql_first.db import get_sql_connection
 from core.scheduler.jobs.inteligencia_comercial_sync_job import (
     get_unidades_negocio_pos,
@@ -48,6 +49,28 @@ def _connect_pos(cfg):
     return get_external_sql_connection(
         connection_config
     )
+
+
+def _cursor_as_dict(conn):
+    """Cursor compatible con pymssql y fallback pyodbc."""
+    try:
+        return conn.cursor(as_dict=True)
+    except TypeError:
+        return conn.cursor()
+
+
+def _fetchall_dicts(cur):
+    """Normaliza filas del driver SQL a diccionarios."""
+    rows = cur.fetchall() or []
+    if not rows:
+        return []
+    if isinstance(rows[0], dict):
+        return rows
+    columns = [item[0] for item in (cur.description or [])]
+    return [
+        {columns[index]: row[index] for index in range(len(columns))}
+        for row in rows
+    ]
 
 
 def _hash_pago(sistema, unidad, ticket, codigo, importe, propina, referencia):
@@ -80,7 +103,7 @@ def _bulk_insert(cur, prefix, ncols, rows, max_params=2000):
 def _extract_softrestaurant(cfg, fi, ff):
     conn = _connect_pos(cfg)
     try:
-        cur = conn.cursor(as_dict=True)
+        cur = _cursor_as_dict(conn)
         cur.execute(f"""
             SELECT CONVERT(VARCHAR(64), ch.folio) AS folio,
                    ch.tipodeservicio AS tsid, ts.Desc_tiposervicio AS tsdesc
@@ -91,7 +114,7 @@ def _extract_softrestaurant(cfg, fi, ff):
               AND t.cierre IS NOT NULL
               AND ch.cancelado = 0 AND ch.total > 0
         """)
-        tipos = cur.fetchall() or []
+        tipos = _fetchall_dicts(cur)
         cur.execute(f"""
             SELECT CONVERT(VARCHAR(64), cp.folio) AS folio,
                    CONVERT(VARCHAR(40), cp.idformadepago) AS codigo,
@@ -115,7 +138,7 @@ def _extract_softrestaurant(cfg, fi, ff):
               AND t.cierre IS NOT NULL
               AND ch.cancelado = 0 AND ch.total > 0
         """)
-        pagos = cur.fetchall() or []
+        pagos = _fetchall_dicts(cur)
         cur.close()
     finally:
         conn.close()
@@ -134,7 +157,7 @@ def _extract_mpro(cfg, fi, ff):
     for intento in range(3):
         conn = _connect_pos(cfg)
         try:
-            cur = conn.cursor(as_dict=True)
+            cur = _cursor_as_dict(conn)
             cur.execute(f"""
                 SELECT CONVERT(VARCHAR(64), v.Vn_Folio) AS folio,
                        CONVERT(VARCHAR(20), c.Co_Tipo) AS tsid, CAST(NULL AS NVARCHAR(120)) AS tsdesc
@@ -146,7 +169,7 @@ def _extract_mpro(cfg, fi, ff):
                   AND ISNULL(v.Es_Cve_Estado, '') <> 'CA'
                   AND v.Vn_Precio_Neto_Importe > 0
             """)
-            tipos = cur.fetchall() or []
+            tipos = _fetchall_dicts(cur)
             cur.execute(f"""
                 SELECT CONVERT(VARCHAR(64), v.Vn_Folio) AS folio,
                        CONVERT(VARCHAR(40), cp.Fp_Cve_Forma_Pago) AS codigo,
@@ -161,7 +184,7 @@ def _extract_mpro(cfg, fi, ff):
                   AND ISNULL(v.Es_Cve_Estado, '') <> 'CA'
                   AND cp.Cp_Importe > 0
             """)
-            pagos = cur.fetchall() or []
+            pagos = _fetchall_dicts(cur)
             cur.close()
             return tipos, pagos
         except Exception as e:
@@ -350,18 +373,31 @@ def _write_payments_only(unidad_codigo, sistema, pagos, fi, ff):
 
 def resync_pagos_unidad(unidad_codigo, fecha_inicio, fecha_fin, dry_run=False):
     """Resincroniza SOLO pagos por ticket para SoftRestaurant o ManagementPro en [fi, ff)."""
-    unidades = get_unidades_negocio_pos([unidad_codigo])
-    if not unidades:
-        return {"unidad": unidad_codigo, "error": "unidad no encontrada en canonico"}
-    unidad_row = unidades[0]
-    cfg = get_pos_config_for_unidad(unidad_row)
-    if not cfg or not cfg.get("host"):
-        return {"unidad": unidad_codigo, "error": "config POS no resuelta"}
+    try:
+        context = resolve_pos_runtime_context(
+            unidad_codigo,
+            expected_system_types=("SOFTRESTAURANT", "MANAGEMENTPRO"),
+        )
+    except Exception as e:
+        return {
+            "unidad": unidad_codigo,
+            "error": f"config POS no resuelta: {type(e).__name__}",
+        }
 
-    system = (cfg.get("system_type") or "").upper()
+    cfg = context.external_connection_config(as_dict=True)
+    cfg.update({
+        "unidad": context.unidad_codigo,
+        "unidad_codigo": context.unidad_codigo,
+        "unidad_pk": context.unidad_negocio_pk,
+        "sucursal_origen_id": context.sucursal_origen_id,
+        "server_id": context.server_id,
+        "system_type": context.system_type,
+    })
+
+    system = (context.system_type or "").upper()
     is_mpro = "MPRO" in system or "MANAG" in system
     sistema_origen = "MPRO" if is_mpro else "SoftRestaurant"
-    codigo = unidad_row.get("unidad_codigo")
+    codigo = context.unidad_codigo
 
     try:
         if is_mpro:
