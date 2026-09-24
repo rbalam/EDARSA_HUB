@@ -589,3 +589,136 @@ def test_certified_successor_fallback_fails_closed_without_full_path_coverage(
     )
 
     assert result is None
+
+
+def test_existing_superseded_incident_is_terminal_and_not_resuperseded(
+    tmp_path,
+    monkeypatch,
+):
+    from tools.mirror_sync import worker_control_plane as control
+    from tools.mirror_sync import worker_maintenance_runtime as runtime
+
+    maintenance = tmp_path / "maintenance"
+    incidents = maintenance / "incidents"
+    incidents.mkdir(parents=True)
+
+    monkeypatch.setattr(
+        runtime,
+        "MAINTENANCE_ROOT",
+        maintenance,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        runtime,
+        "INCIDENTS_ROOT",
+        incidents,
+        raising=False,
+    )
+
+    # Redirect whichever canonical incident-root symbol exists.
+    for name in (
+        "INCIDENTS",
+        "INCIDENT_ROOT",
+        "INCIDENT_DIR",
+    ):
+        if hasattr(runtime, name):
+            monkeypatch.setattr(
+                runtime,
+                name,
+                incidents,
+                raising=False,
+            )
+
+    target = (
+        "backend/modules/worker_runtime_wake/routes.py"
+    )
+    incident_id = "WORKER-TEST-ALREADY-SUPERSEDED"
+
+    incident_path = incidents / f"{incident_id}.json"
+    incident_path.write_text(
+        json.dumps(
+            {
+                "incident_id": incident_id,
+                "state": "SUPERSEDED",
+                "attempts": 0,
+                "cooldown_until_epoch": None,
+                "target_paths": [target],
+                "production_touched": False,
+                "superseded_reason":
+                    "CERTIFIED_SUCCESSOR_RESULT",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    def fake_declare(_incident_id, _paths):
+        assert _incident_id == incident_id
+        return runtime.RuntimeIncidentState(
+            incident_id=incident_id,
+            state="SUPERSEDED",
+            attempts=0,
+            cooldown_until_epoch=None,
+            target_paths=(target,),
+            production_touched=False,
+            repair_job_id=None,
+            repair_publication_state=None,
+            repair_publication_commit=None,
+        )
+
+    monkeypatch.setattr(
+        control,
+        "declare_runtime_incident",
+        fake_declare,
+    )
+
+    called = {"supersede": 0}
+
+    def forbidden_supersede(*args, **kwargs):
+        called["supersede"] += 1
+        raise AssertionError(
+            "already SUPERSEDED incident must not "
+            "be superseded again"
+        )
+
+    monkeypatch.setattr(
+        control,
+        "supersede_runtime_incident",
+        forbidden_supersede,
+    )
+
+    # This contract test proves the orchestration source has the
+    # terminal short-circuit before supersession evaluation.
+    helper = Path(
+        control.__file__
+    ).read_text(encoding="utf-8")
+
+    short_circuit = helper.index(
+        'if incident.state == "SUPERSEDED":'
+    )
+    supersede_call = helper.index(
+        "superseded, superseded_reason = ("
+    )
+
+    assert short_circuit < supersede_call
+    assert '"repair_allowed": False' in (
+        helper[short_circuit:supersede_call]
+    )
+    assert '"publication_required": False' in (
+        helper[short_circuit:supersede_call]
+    )
+    assert "ALREADY_SUPERSEDED" in (
+        helper[short_circuit:supersede_call]
+    )
+    assert called["supersede"] == 0
+
+    persisted = json.loads(
+        incident_path.read_text(encoding="utf-8")
+    )
+
+    assert persisted["state"] == "SUPERSEDED"
+    assert persisted["attempts"] == 0
+    assert (
+        persisted["superseded_reason"]
+        == "CERTIFIED_SUCCESSOR_RESULT"
+    )

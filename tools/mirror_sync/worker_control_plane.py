@@ -1053,6 +1053,24 @@ def automatic_repair_orchestration() -> dict[str, Any]:
             )
             continue
 
+        # SUPERSEDED is a terminal, non-actionable maintenance
+        # state. Re-observing the same historical failure must
+        # never attempt SUPERSEDED -> SUPERSEDED.
+        if incident.state == "SUPERSEDED":
+            incidents.append(
+                {
+                    "incident_id": incident.incident_id,
+                    "source_job_id": source_job_id,
+                    "source_status": status,
+                    "state": incident.state,
+                    "target_paths": list(target_paths),
+                    "repair_allowed": False,
+                    "repair_reason": "ALREADY_SUPERSEDED",
+                    "publication_required": False,
+                }
+            )
+            continue
+
         superseded, superseded_reason = (
             repair_incident_is_superseded(
                 result,
