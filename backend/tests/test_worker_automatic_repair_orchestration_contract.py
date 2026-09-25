@@ -144,8 +144,16 @@ def test_certified_successor_fallback_is_canonical():
     )
 
 def test_git_lock_busy_is_a_repairable_worker_incident():
+    text = source()
     helper = function_source("automatic_repair_orchestration")
 
     assert '"GIT_LOCK_BUSY"' in helper
-    assert '"tools/mirror_sync/git_divergence_guard.py"' in helper
-    assert '"tools/mirror_sync/universal_job_dispatcher.py"' in helper
+    assert "GIT_LOCK_BUSY_REPAIR_PATHS" in helper
+    assert (
+        '"tools/mirror_sync/git_divergence_guard.py"'
+        in text
+    )
+    assert (
+        '"tools/mirror_sync/universal_job_dispatcher.py"'
+        in text
+    )
