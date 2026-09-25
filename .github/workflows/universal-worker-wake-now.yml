@@ -1,3 +1,4 @@
+# RH GLOBAL HCM Gate0 R2 wake 2026-09-24T19:12-06:00; existing READ_ONLY job; no duplicate; no Production
 # CRM CALENDAR Gate1 R2 wake 2026-09-24T18:50-06:00 preferred after active job; no duplicate; no Production
 # SERVIDORES DEFINITIVO R14 wake 2026-09-24T22:31Z preferred 000-EDARSAHUB-SERVIDORES-DEFINITIVO-R14-CARLOS-20260924; production untouched
 # recovery trigger 2026-09-23T19:24Z SERVIDORES listado/API diagnostic preferred pickup 000-EDARSAHUB-SERVIDORES-LISTADO-DIAG-R13A-20260923; no duplicate; no Production
