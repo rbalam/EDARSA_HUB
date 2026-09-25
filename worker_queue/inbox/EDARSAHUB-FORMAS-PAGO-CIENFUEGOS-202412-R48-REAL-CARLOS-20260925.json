@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-FORMAS-PAGO-CIENFUEGOS-202412-R48-REAL-CARLOS-20260925",
+  "mode": "ISCAM_PAYMENTS_ONLY_RESYNC",
+  "objective": "Formas de pago - CIENFUEGOS - reintento del bloque R47 2024-12-01..2025-01-01 con HEAD vigente, Worker Universal V1.2, procesamiento diario, idempotente y certificacion SQL.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a99eb707f65b8099502dc8f0dc1103ee620bb44c",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Formas de pagos ISCAM"
+  },
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "fecha_inicio": "2024-12-01",
+  "fecha_fin": "2025-01-01",
+  "dry_run": false,
+  "confirm_payments_only_resync": true,
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_202412_post",
+          "sql": "SELECT COUNT(*) AS filas,COUNT(DISTINCT NumeroTicket) AS tickets,MIN(CONVERT(date,FechaHora)) AS fecha_min,MAX(CONVERT(date,FechaHora)) AS fecha_max,CAST(ISNULL(SUM(Importe),0) AS decimal(18,2)) AS importe,CAST(ISNULL(SUM(Propina),0) AS decimal(18,2)) AS propina FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE UnidadNegocio='CIENFUEGOS' AND FechaHora>='2024-12-01' AND FechaHora<'2025-01-01' AND ISNULL(Activo,1)=1"
+        }
+      ]
+    }
+  ]
+}
