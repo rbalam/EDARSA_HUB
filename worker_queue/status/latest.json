@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "139ffe7cfd4f8a6af9331b10662a15777120c212",
-  "generated_at_utc": "2026-09-25T03:26:54Z",
+  "generated_at_utc": "2026-09-25T03:28:46Z",
   "history": {
     "done_total_local": 1058,
     "pending_total_local": 0,
@@ -16,14 +16,8 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3200,
+      "age_seconds": 3312,
       "job_id": "EDARSAHUB-BOS-WORKER-DELIVERABLE-MATERIALIZER-GATE0-R3-SCHEMAFIX-READONLY",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3562,
-      "job_id": "EDARSAHUB-PARRILLA-PHOTO-FINISH-GATE0-R3-DOSSIER-MATERIALIZATION-R2",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -36,14 +30,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 2,
+  "queue_result_ready_recent": 1,
   "queue_running": 0,
   "remote_development_sha": "139ffe7cfd4f8a6af9331b10662a15777120c212",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-25T03:26:41Z",
-    "last_receive_utc": "2026-09-25T03:26:53Z",
+    "last_cycle_utc": "2026-09-25T03:28:42Z",
+    "last_receive_utc": "2026-09-25T03:28:44Z",
     "last_terminal_utc": "2026-09-25T02:33:33Z",
     "pid": "668",
     "runtime_fingerprint": {
