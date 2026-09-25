@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-MULTI-202604-R2-REAL-CARLOS-20260925",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a99eb707f65b8099502dc8f0dc1103ee620bb44c",
+  "production_allowed": false,
+  "objective": "Sincronizador | Ventas | Abril 2026 | 5 sucursales | Encabezado + Detalle",
+  "description": "Sincronizador | Ventas | Abril 2026 | Bloque mensual multi-sucursal R2 | 130QRO, CIENFUEGOS, ESTELAR, 130MID, ORIGEN",
+  "human_summary_language": "es",
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "actions": [],
+  "units": [
+    "130QRO",
+    "CIENFUEGOS",
+    "ESTELAR",
+    "130MID",
+    "ORIGEN"
+  ],
+  "fecha_inicio": "2026-04-01",
+  "fecha_fin": "2026-04-30",
+  "dry_run": false,
+  "confirm_comercial_range_resync": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "ventas_multi_202604_audit_gate",
+          "sql": "SELECT 1 AS audit_gate"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Autoavance"
+  },
+  "constraints": [
+    "Sincronizador",
+    "Bloque mensual multi-sucursal",
+    "Procesar las 5 sucursales secuencialmente dentro del mismo Job",
+    "Encabezado + detalle",
+    "No Production",
+    "No dividir por dia",
+    "Continuar con las siguientes sucursales aunque una falle",
+    "Certificar el bloque completo solo si las 5 sucursales pasan"
+  ]
+}
