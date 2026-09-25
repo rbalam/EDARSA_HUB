@@ -1,0 +1,44 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CIENFUEGOS-202603-R6-REAL-CARLOS-20260924",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "139ffe7cfd4f8a6af9331b10662a15777120c212",
+  "production_allowed": false,
+  "objective": "Sincronizador | Ventas | CIENFUEGOS | Marzo 2026 | Encabezado + Detalle",
+  "description": "Sincronizador | Ventas | CIENFUEGOS | Marzo 2026 | Encabezado + Detalle",
+  "human_summary_language": "es",
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "actions": [],
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "fecha_inicio": "2026-03-01",
+  "fecha_fin": "2026-03-31",
+  "dry_run": false,
+  "confirm_comercial_range_resync": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "ventas_cienfuegos_202603_paridad",
+          "sql": "SELECT 1 AS audit_gate"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Autoavance"
+  },
+  "constraints": [
+    "Sincronizador",
+    "Mes completo",
+    "Encabezado + detalle",
+    "No Production",
+    "No dividir por dia"
+  ]
+}
