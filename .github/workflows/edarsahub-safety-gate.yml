@@ -93,6 +93,8 @@ jobs:
           EDARSAHUB_SQL_USER: ci_readonly
           EDARSAHUB_SQL_PASSWORD: ci-not-a-real-secret
           SERVER_SECRET_KEY: ci-openapi-smoke-only
+          JWT_SECRET: ci-jwt-smoke-only
+          ENV: development
         run: |
           set -euo pipefail
           python tools/repository_safety/backend_route_smoke.py
