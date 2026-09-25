@@ -1,0 +1,54 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-MULTI-202606-DETAIL-BACKFILL-R3-CARLOS-20260925",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "e2910f8ba5ee98b6b22e002bed57eca54fa80fa3",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "priority": "P0",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Autoavance"
+  },
+  "objective": "Sincronizador | Junio 2026 | Backfill mensual multi-sucursal R3 | CIENFUEGOS + ESTELAR + 130MID + ORIGEN | Excluir 130QRO | Reparar solo detalle ISCAM contra Runtime V2 y certificar el bloque completo.",
+  "actions": [],
+  "units": [
+    "CIENFUEGOS",
+    "ESTELAR",
+    "130MID",
+    "ORIGEN"
+  ],
+  "fecha_inicio": "2026-06-01",
+  "fecha_fin": "2026-07-01",
+  "dry_run": false,
+  "confirm_detail_backfill": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "audit_gate",
+          "sql": "SELECT 1 AS audit_gate"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No tocar Runtime V2/header",
+    "Junio 2026 completo",
+    "Solo detalle ISCAM",
+    "Excluir 130QRO",
+    "Una sola ejecucion multi-sucursal"
+  ],
+  "expected_output": {
+    "status": "OPERATIONAL_COMPLETE",
+    "quality_gate": "PASS",
+    "certification": "CERTIFIED_OPERATIONAL",
+    "production_touched": false
+  }
+}
