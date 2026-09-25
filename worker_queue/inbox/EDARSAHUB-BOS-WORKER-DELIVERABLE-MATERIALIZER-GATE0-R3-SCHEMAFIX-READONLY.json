@@ -1,0 +1,183 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-BOS-WORKER-DELIVERABLE-MATERIALIZER-GATE0-R3-SCHEMAFIX-READONLY",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "139ffe7cfd4f8a6af9331b10662a15777120c212",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "priority": "P0",
+  "objective": "Auditar en modo READ_ONLY el contrato de entregables del Universal Worker 1.2 despues de que Tablajeria Gate2 R2 quedo con completed_deliverables vacio y missing_deliverables 24/24, y despues de que el BOS Gate0 R2 anterior fue rechazado por esquema invalido. Debe explicar por que el Worker puede certificar checks PASS sin materializar deliverables obligatorios. No mutar codigo. No tocar Produccion. No DDL. No DML. No backend/frontend changes. No Gate3 Tablajeria.",
+  "context": {
+    "source_chat": "Tablajerias 4",
+    "blocked_domain_job": "EDARSAHUB-TABLAJERIA-GATE2-TECHNICAL-MAPPING-STRUCTURED-READONLY-R2",
+    "blocked_reason": "Gate2 R2 has checks PASS but completed_deliverables empty and missing_deliverables 24/24, therefore Gate3 remains HOLD.",
+    "previous_bos_rejected_job": "EDARSAHUB-BOS-WORKER-DELIVERABLE-MATERIALIZER-GATE0-READONLY-R2-FORCED-CONTRACT",
+    "previous_bos_rejection_reasons": [
+      "INVALID_SCHEMA",
+      "INVALID_TARGET_REPO",
+      "INVALID_TARGET_BRANCH",
+      "OBJECTIVE_REQUIRED",
+      "SUMMARY_LANGUAGE_MUST_BE_ES"
+    ],
+    "schemafix_basis": "This R3 follows edarsahub.worker-job.v2 with target_repo, target_branch, objective and human_summary_language=es.",
+    "gate3_tablajeria_status": "HOLD",
+    "mutation_allowed": false
+  },
+  "forbidden_actions": [
+    "touch_production",
+    "ddl",
+    "dml",
+    "create_definitive_sql",
+    "create_tables",
+    "alter_tables",
+    "create_or_alter_indexes",
+    "modify_backend",
+    "modify_frontend",
+    "publish_mutation",
+    "publish_gate3",
+    "touch_tablajeria_domain_code",
+    "touch_sql_server",
+    "use_mongo_as_source_cache_fallback_or_lock",
+    "use_live_user_endpoints",
+    "expose_secrets",
+    "manual_compensating_deliverables"
+  ],
+  "actions": [],
+  "required_deliverables": [
+    "REPOSITORY_EVIDENCE",
+    "DELIVERABLE_FLOW_MAP",
+    "REQUIRED_DELIVERABLES_PROPAGATION_AUDIT",
+    "RESULT_DELIVERABLES_CREATION_AUDIT",
+    "COMPLETED_DELIVERABLES_RULE_AUDIT",
+    "MISSING_DELIVERABLES_RULE_AUDIT",
+    "WORK_COMPLETION_CERTIFICATION_RULE_AUDIT",
+    "PUBLISHER_PRESERVATION_AUDIT",
+    "ROOT_CAUSE_HYPOTHESIS",
+    "FILES_TO_TOUCH_LATER",
+    "TESTS_TO_ADD_LATER",
+    "TABLAJERIA_GATE3_BLOCK_STATUS",
+    "FAIL_CLOSED_DECISION"
+  ],
+  "deliverable_contract": {
+    "must_materialize_result_deliverables_object": true,
+    "result_key": "deliverables",
+    "for_each_required_deliverable": {
+      "required_fields": [
+        "summary",
+        "evidence",
+        "decision_or_contract"
+      ],
+      "evidence_must_reference": [
+        "repository_path_or_function_or_test"
+      ],
+      "allow_empty": false
+    },
+    "terminal_fields_must_be_explicit": {
+      "production_touched": false,
+      "files_changed": [],
+      "gate3_allowed": false,
+      "tablajeria_gate3_block_status": "BLOCKED"
+    },
+    "fail_closed_rule": "If any required deliverable is missing or empty, certification must be PENDING_DELIVERABLES and work_completion must be PENDING_DELIVERABLES, never CERTIFIED_READ_ONLY or COMPLETE."
+  },
+  "technical_scope_to_map": [
+    "How required_deliverables is propagated from job payload into result evaluation.",
+    "Where result.deliverables is expected to be created or materialized.",
+    "How completed_deliverables and missing_deliverables are calculated.",
+    "How work_completion and certification_basis are selected when checks pass but deliverables are missing.",
+    "Whether universal_job_result_publisher preserves deliverables, completed_deliverables, missing_deliverables and certification_basis.",
+    "Which files and tests must be touched later in a mutation gate to add or repair a deterministic READ_ONLY_DELIVERABLE_MATERIALIZER."
+  ],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/worker_deliverable_contract.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "backend/tests/test_worker_deliverable_contract.py",
+          "backend/tests/test_worker_universal_queue_sla_contract.py",
+          "backend/tests/test_worker_runtime_reconciler_worktree_claim_contract.py"
+        ],
+        "search_terms": [
+          "required_deliverables",
+          "deliverables",
+          "completed_deliverables",
+          "missing_deliverables",
+          "PENDING_DELIVERABLES",
+          "work_completion",
+          "certification_basis",
+          "CERTIFIED_READ_ONLY",
+          "NON_MUTATING_CHECKS_ONLY",
+          "repository_contract_audit",
+          "result.deliverables",
+          "gate3_allowed",
+          "claim_one",
+          "release_agent_guard_claim",
+          "universal_job_result_publisher"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.json",
+          "*.md",
+          "*.yml",
+          "*.yaml"
+        ],
+        "exclude_patterns": [
+          "**/__pycache__/**",
+          "**/node_modules/**",
+          "**/build/**",
+          "**/dist/**",
+          "**/.venv/**",
+          "**/venv/**"
+        ],
+        "max_results": 2000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "required_output": [
+    "job_id",
+    "status",
+    "quality_gate",
+    "certification",
+    "percent_complete",
+    "production_touched",
+    "files_changed",
+    "blockers",
+    "tests",
+    "work_completion",
+    "certification_basis",
+    "required_deliverables",
+    "completed_deliverables",
+    "missing_deliverables",
+    "deliverables",
+    "repository_evidence",
+    "deliverable_flow_map",
+    "required_deliverables_propagation_audit",
+    "result_deliverables_creation_audit",
+    "completed_deliverables_rule_audit",
+    "missing_deliverables_rule_audit",
+    "work_completion_certification_rule_audit",
+    "publisher_preservation_audit",
+    "root_cause_hypothesis",
+    "files_to_touch_later",
+    "tests_to_add_later",
+    "tablajeria_gate3_block_status",
+    "fail_closed_decision"
+  ],
+  "expected_result_contract": {
+    "status": "READ_ONLY_COMPLETE",
+    "production_touched": false,
+    "files_changed": [],
+    "gate3_allowed": false,
+    "tablajeria_gate3_block_status": "BLOCKED",
+    "work_completion": "COMPLETE only if all required_deliverables are materialized; otherwise PENDING_DELIVERABLES",
+    "certification": "CERTIFIED_READ_ONLY only if all required deliverables are present; otherwise PENDING_DELIVERABLES"
+  }
+}
