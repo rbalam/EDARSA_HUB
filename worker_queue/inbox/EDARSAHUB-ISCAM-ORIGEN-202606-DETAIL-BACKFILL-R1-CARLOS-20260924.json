@@ -1,0 +1,43 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-ORIGEN-202606-DETAIL-BACKFILL-R1-CARLOS-20260924",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "eb0cfde5d4913cee35c58aaa8ced1518696e01d8",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "priority": "P0",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Autoavance"
+  },
+  "objective": "Sincronizador | ORIGEN | Junio 2026 | Reparar detalle ISCAM contra Runtime V2 y certificar paridad diaria.",
+  "actions": [],
+  "units": [
+    "ORIGEN"
+  ],
+  "fecha_inicio": "2026-06-01",
+  "fecha_fin": "2026-07-01",
+  "dry_run": false,
+  "confirm_detail_backfill": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "audit_gate",
+          "sql": "SELECT 1 AS audit_gate"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No tocar header",
+    "Solo junio 2026",
+    "Solo detalle ISCAM"
+  ]
+}
