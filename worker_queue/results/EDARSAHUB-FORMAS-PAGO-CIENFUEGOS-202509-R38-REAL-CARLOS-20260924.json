@@ -1,0 +1,20 @@
+{
+  "blockers": [
+    "processing_stale_after_single_requeue"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-25T01:59:39Z",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-FORMAS-PAGO-CIENFUEGOS-202509-R38-REAL-CARLOS-20260924",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-25T01:59:44Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "status": "BLOCKED",
+  "summary_es": "El job excedio el SLA de processing despues de un unico reintento seguro y fue cerrado terminalmente para no bloquear la cola.",
+  "work_completion": "NOT_CERTIFIED"
+}
