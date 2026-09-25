@@ -1,0 +1,5 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Recover Universal Worker runtime convergence after authoritative wake returned 503 worker runtime fast-forward reset failed. Target existing RH-RECLUTAMIENTO-ARQUITECTURA-GATE1-20260909T0802Z only after runtime is healthy. Do not modify the RH job, do not touch Production, do not perform business changes.",
+  "production_touched": false
+}

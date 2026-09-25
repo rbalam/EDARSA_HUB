@@ -4,8 +4,8 @@
 #
 # Rules:
 # - Never discard, stash, reset, restore, checkout or clean local /app work.
-# - A dirty /app is not itself a conflict: mirror update code must perform an
-#   explicit incoming-path collision audit before any fast-forward.
+# - A dirty /app is a hard blocker for automated synchronization/publication.
+#   No staged, unstaged or untracked state may be discarded or auto-stashed.
 # - Kill switch always wins.
 # - Worker execution must happen outside /app.
 
@@ -30,19 +30,20 @@ edarsahub_shared_app_is_dirty() {
 }
 
 edarsahub_require_clean_shared_app() {
-    # Compatibility entrypoint retained for existing mirror launchers. Dirty
-    # state is now observed, not treated as a blanket blocker. The authoritative
-    # safety decision belongs to check_remote_update.sh/apply_remote_update.sh,
-    # which compare incoming paths against staged, unstaged and untracked work.
-    if edarsahub_shared_app_is_dirty; then
-        echo "DECISION=LOCAL_DIRTY_COLLISION_AUDIT_REQUIRED"
-        echo "LOCAL_WORK_PRESERVATION_REQUIRED=YES"
-        echo "WRITE_OPERATION_EXECUTED=NO"
-    else
-        echo "DECISION=LOCAL_APP_CLEAN"
-    fi
-    return 0
+    local staged unstaged untracked
+    staged="$(git -C "$EDARSAHUB_APP" diff --cached --name-only | wc -l)"
+    unstaged="$(git -C "$EDARSAHUB_APP" diff --name-only | wc -l)"
+    untracked="$(git -C "$EDARSAHUB_APP" status --porcelain=v1 --untracked-files=all | grep '^?? ' | wc -l)"
+    echo "STAGED_COUNT=$staged"; echo "UNSTAGED_COUNT=$unstaged"; echo "UNTRACKED_COUNT=$untracked"
+    if [ "$staged" -ne 0 ] || [ "$unstaged" -ne 0 ] || [ "$untracked" -ne 0 ]; then echo "DECISION=GIT_WORKTREE_NOT_CLEAN"; echo "LOCAL_WORK_PRESERVATION_REQUIRED=YES"; echo "WRITE_OPERATION_EXECUTED=NO"; return 74; fi
+    echo "DECISION=LOCAL_APP_CLEAN"; return 0
 }
+
+edarsahub_git_guard_python() {
+    if [ -x /root/.venv/bin/python ]; then printf '%s\n' /root/.venv/bin/python; elif [ -x "$EDARSAHUB_APP/.venv/bin/python" ]; then printf '%s\n' "$EDARSAHUB_APP/.venv/bin/python"; else command -v python3; fi
+}
+edarsahub_acquire_git_writer_lock() { local job_id="$1" owner="$2" py; py="$(edarsahub_git_guard_python)" || return 75; "$py" "$EDARSAHUB_APP/tools/mirror_sync/git_divergence_guard.py" acquire-lock --repo "$EDARSAHUB_APP" --job-id "$job_id" --owner "$owner" --owner-pid "$$"; }
+edarsahub_release_git_writer_lock() { local job_id="$1" owner="$2" py; py="$(edarsahub_git_guard_python)" || return 75; "$py" "$EDARSAHUB_APP/tools/mirror_sync/git_divergence_guard.py" release-lock --repo "$EDARSAHUB_APP" --job-id "$job_id" --owner "$owner"; }
 
 edarsahub_require_worker_isolation() {
     case "$(pwd -P)" in

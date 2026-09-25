@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Post-fix recovery for existing READ_ONLY job EDARSAHUB-CRM-CALENDAR-CANONICAL-EVENTS-GATE1-R2 after canonical queue remote fallback was added to the wake endpoint. Consume the existing R2 only. Do not clone or re-emit. Do not touch Production. Do not modify functional code, SQL data, formulas, RBAC, dispatcher, supervisor, or watchdog.",
+  "existing_job_id": "EDARSAHUB-CRM-CALENDAR-CANONICAL-EVENTS-GATE1-R2",
+  "production_touched": false
+}

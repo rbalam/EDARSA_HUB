@@ -1101,9 +1101,9 @@ def _cxp_factura_dict(r, current_user=None):
     }
 
 
-def _cxp_listar_canonico(unidad_negocio_pk, tipo, solo_vencidas, solo_decision_pago=False, proveedor_id=None, fecha_corte=None, unidades_permitidas=None):
+def _cxp_listar_canonico(unidad_negocio_pk, tipo, solo_vencidas, solo_decision_pago=False, proveedor_id=None, fecha_corte=None, unidades_permitidas=None, current_user=None):
     facturas = [
-        _cxp_factura_dict(r)
+        _cxp_factura_dict(r, current_user)
         for r in _cxp_rows_canonico(
             unidad_negocio_pk,
             tipo,
@@ -1910,6 +1910,7 @@ async def listar_facturas_pendientes(
         proveedor_id,
         fecha_corte,
         unidades_permitidas,
+        current_user,
     )
 
 @router.get("/resumen")

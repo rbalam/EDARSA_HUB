@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import WorkerConsole from '@/pages/WorkerConsole';
 import Login from '@/pages/Login';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
@@ -60,9 +61,16 @@ import TablajeriaDashboard from '@/pages/tablajeria/TablajeriaDashboard';
 import PlantillasPage from '@/pages/tablajeria/PlantillasPage';
 import OrdenesPage from '@/pages/tablajeria/OrdenesPage';
 import CapturaDirectaPage from '@/pages/tablajeria/CapturaDirectaPage';
+import LotesProveedorPage from '@/pages/tablajeria/LotesProveedorPage';
 
 // Cava de Socios
-import { CavaSociosDashboard, SociosList, SocioDetail, SocioForm, InventarioCava, ConsumosCava } from '@/pages/cava-socios';
+import { CavaSociosDashboard, SociosList, SocioDetail, SocioForm, InventarioCava, ConsumosCava, BlindAuditCava } from '@/pages/cava-socios';
+
+// Cavas Corporativas B2B
+import CavasCorporativasDashboard from '@/pages/cavas-corporativas/CavasCorporativasDashboard';
+
+// Catalogo Ampliado / Gobierno Corporativo
+import CatalogoAmpliadoDashboard from '@/pages/catalogo-ampliado/CatalogoAmpliadoDashboard';
 
 // Costos y Márgenes (FASE 1C-3D)
 import CostosMargenes from '@/pages/comercial/CostosMargenes';
@@ -103,6 +111,7 @@ function App() {
       <BrowserRouter>
         <div className="App">
           <Routes>
+          <Route path="/worker-console" element={<ProtectedRoute><WorkerConsole /></ProtectedRoute>} />
           <Route path="/admin" element={<AdminHub />} />
           <Route path="/admin/centro-excepciones" element={<CentroExcepciones />} />
           <Route path="/admin/dashboard-ejecutivo" element={<DashboardEjecutivo />} />
@@ -171,6 +180,7 @@ function App() {
               <Route path="tablajeria/ordenes" element={<OrdenesPage />} />
               <Route path="tablajeria/captura-directa" element={<CapturaDirectaPage />} />
               <Route path="tablajeria/plantillas" element={<PlantillasPage />} />
+              <Route path="tablajeria/lotes-proveedor" element={<LotesProveedorPage />} />
               {/* Cava de Socios */}
               <Route path="cava-socios" element={<CavaSociosDashboard />} />
               <Route path="cava-socios/socios" element={<SociosList />} />
@@ -179,6 +189,11 @@ function App() {
               <Route path="cava-socios/socios/:id/editar" element={<SocioForm />} />
               <Route path="cava-socios/inventario" element={<InventarioCava />} />
               <Route path="cava-socios/consumos" element={<ConsumosCava />} />
+              <Route path="cava-socios/auditoria-ciega" element={<BlindAuditCava />} />
+              {/* Cavas Corporativas B2B - reglas y RBAC permanecen en backend */}
+              <Route path="cavas-corporativas" element={<CavasCorporativasDashboard />} />
+              {/* Catalogo Ampliado - frontend consume exclusivamente /api/catalogo-ampliado */}
+              <Route path="catalogo-ampliado" element={<CatalogoAmpliadoDashboard />} />
               <Route path="recursos-humanos" element={<RecursosHumanos />} />
               <Route path="importador-rh" element={<ImportadorRH />} />
               <Route path="reportes-bi" element={<ReportesBI />} />

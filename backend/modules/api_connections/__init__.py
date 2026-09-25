@@ -32,6 +32,12 @@ from .routes import router as api_connections_router
 from .universal_test_routes import router as api_universal_test_router
 from .universal_test_routes import set_verify_token as set_api_uqt_verify_token
 
+# GATE 5B: la fachada administrativa se monta sobre este APIRouter sin prefijo,
+# que ya es registrado por backend/server.py dentro de /api. Esto evita tocar
+# el bootstrap monolítico y conserva /api/integrations-center/*.
+from modules.integrations_center import router as integrations_center_router
+api_universal_test_router.include_router(integrations_center_router)
+
 __all__ = [
     'list_api_connections',
     'get_api_connection', 
@@ -43,5 +49,6 @@ __all__ = [
     'get_api_connections_for_adapters',
     'api_connections_router',
     'api_universal_test_router',
-    'set_api_uqt_verify_token'
+    'set_api_uqt_verify_token',
+    'integrations_center_router'
 ]

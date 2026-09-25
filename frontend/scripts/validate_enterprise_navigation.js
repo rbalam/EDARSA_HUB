@@ -258,13 +258,12 @@ const currentRoutes = new Set();
 const currentTabs = [];
 
 sourceFiles(SRC).forEach(file => {
-  const relative = path
-    .relative(
-      path.resolve(FRONTEND, ".."),
-      file
-    )
-    .split(path.sep)
-    .join("/");
+  const relative =
+    "frontend/" +
+    path
+      .relative(FRONTEND, file)
+      .split(path.sep)
+      .join("/");
 
   const content = fs.readFileSync(file, "utf8");
 

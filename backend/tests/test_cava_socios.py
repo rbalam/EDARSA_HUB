@@ -5,6 +5,7 @@ Pruebas unitarias de esquemas, rutas, resolución de alcance RBAC y servicio de 
 """
 
 import pytest
+from uuid import UUID
 from unittest.mock import MagicMock, patch
 from fastapi import HTTPException
 from pydantic import ValidationError
@@ -78,6 +79,8 @@ class TestCavaSociosSchemas:
 class TestCavaScopeResolution:
     """Pruebas para la resolución de alcance RBAC en Cavas"""
 
+    UNIT_ID = "19e076fb-c6de-4ea5-84ab-1caa9e86082c"
+
     @pytest.mark.unit
     @patch("modules.cava_socios.routes.context_service.get_user_context")
     @patch("modules.cava_socios.routes.enrich_current_user_with_sql_id")
@@ -85,15 +88,15 @@ class TestCavaScopeResolution:
         mock_user = {"id": "user-123", "email": "test@edarsa.com"}
         mock_enrich.return_value = mock_user
         mock_get_context.return_value = {
-            "unidad_activa": "UNIT-01",
+            "unidad_activa": self.UNIT_ID,
             "unidades_permitidas": [
-                {"UnidadNegocioID": "UNIT-01", "EmpresaID": "EMP-99"}
+                {"UnidadNegocioID": self.UNIT_ID, "EmpresaID": 5}
             ],
         }
 
-        scope = _resolve_cava_scope(mock_user, "UNIT-01")
-        assert scope["empresa_id"] == "EMP-99"
-        assert scope["unidad_negocio_pk"] == "UNIT-01"
+        scope = _resolve_cava_scope(mock_user, self.UNIT_ID)
+        assert scope["empresa_id"] == self.UNIT_ID
+        assert scope["unidad_negocio_pk"] == self.UNIT_ID
 
     @pytest.mark.unit
     @patch("modules.cava_socios.routes.context_service.get_user_context")
@@ -102,32 +105,84 @@ class TestCavaScopeResolution:
         mock_user = {"id": "user-123"}
         mock_enrich.return_value = mock_user
         mock_get_context.return_value = {
-            "unidad_activa": "UNIT-02",
+            "unidad_activa": "8d46691e-7f28-42fc-a7f8-7797e34e5c2e",
             "unidades_permitidas": [
-                {"UnidadNegocioID": "UNIT-01", "EmpresaID": "EMP-99"}
+                {"UnidadNegocioID": self.UNIT_ID, "EmpresaID": 5}
             ],
         }
 
         with pytest.raises(HTTPException) as exc_info:
-            _resolve_cava_scope(mock_user, "UNIT-02")
+            _resolve_cava_scope(mock_user, "8d46691e-7f28-42fc-a7f8-7797e34e5c2e")
         assert exc_info.value.status_code == 403
 
     @pytest.mark.unit
     @patch("modules.cava_socios.routes.context_service.get_user_context")
     @patch("modules.cava_socios.routes.enrich_current_user_with_sql_id")
-    def test_resolve_cava_scope_missing_empresa(self, mock_enrich, mock_get_context):
+    def test_resolve_cava_scope_uses_unit_when_corporate_empresa_missing(self, mock_enrich, mock_get_context):
         mock_user = {"id": "user-123"}
         mock_enrich.return_value = mock_user
         mock_get_context.return_value = {
-            "unidad_activa": "UNIT-01",
+            "unidad_activa": self.UNIT_ID,
             "unidades_permitidas": [
-                {"UnidadNegocioID": "UNIT-01", "EmpresaID": None}
+                {"UnidadNegocioID": self.UNIT_ID, "EmpresaID": None}
+            ],
+        }
+
+        scope = _resolve_cava_scope(mock_user, self.UNIT_ID)
+        assert scope["empresa_id"] == self.UNIT_ID
+        assert scope["unidad_negocio_pk"] == self.UNIT_ID
+
+    @pytest.mark.unit
+    @patch("modules.cava_socios.routes.context_service.get_user_context")
+    @patch("modules.cava_socios.routes.enrich_current_user_with_sql_id")
+    def test_resolve_cava_scope_normalizes_uuid_case(self, mock_enrich, mock_get_context):
+        mock_user = {"id": "user-123"}
+        mock_enrich.return_value = mock_user
+        mock_get_context.return_value = {
+            "unidad_activa": self.UNIT_ID.upper(),
+            "unidades_permitidas": [
+                {"UnidadNegocioID": self.UNIT_ID, "EmpresaID": None}
+            ],
+        }
+
+        scope = _resolve_cava_scope(mock_user, self.UNIT_ID.upper())
+        assert scope["empresa_id"] == self.UNIT_ID
+        assert scope["unidad_negocio_pk"] == self.UNIT_ID
+
+    @pytest.mark.unit
+    @patch("modules.cava_socios.routes.context_service.get_user_context")
+    @patch("modules.cava_socios.routes.enrich_current_user_with_sql_id")
+    def test_resolve_cava_scope_accepts_uuid_object(self, mock_enrich, mock_get_context):
+        mock_user = {"id": "user-123"}
+        mock_enrich.return_value = mock_user
+        unit_id = UUID(self.UNIT_ID)
+        mock_get_context.return_value = {
+            "unidad_activa": unit_id,
+            "unidades_permitidas": [
+                {"UnidadNegocioID": unit_id, "EmpresaID": None}
+            ],
+        }
+
+        scope = _resolve_cava_scope(mock_user, str(unit_id).upper())
+        assert scope["empresa_id"] == self.UNIT_ID
+        assert scope["unidad_negocio_pk"] == self.UNIT_ID
+
+    @pytest.mark.unit
+    @patch("modules.cava_socios.routes.context_service.get_user_context")
+    @patch("modules.cava_socios.routes.enrich_current_user_with_sql_id")
+    def test_resolve_cava_scope_invalid_uuid_fails_closed(self, mock_enrich, mock_get_context):
+        mock_user = {"id": "user-123"}
+        mock_enrich.return_value = mock_user
+        mock_get_context.return_value = {
+            "unidad_activa": "NOT-A-UUID",
+            "unidades_permitidas": [
+                {"UnidadNegocioID": self.UNIT_ID, "EmpresaID": None}
             ],
         }
 
         with pytest.raises(HTTPException) as exc_info:
-            _resolve_cava_scope(mock_user, "UNIT-01")
-        assert exc_info.value.status_code == 409
+            _resolve_cava_scope(mock_user, "NOT-A-UUID")
+        assert exc_info.value.status_code == 403
 
 
 class TestCavaSociosService:

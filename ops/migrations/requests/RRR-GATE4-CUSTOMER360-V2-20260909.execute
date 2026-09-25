@@ -1,0 +1,17 @@
+job=RRR-GATE4D-R2-CUSTOMER360-V2-EXECUTION-20260909
+target_branch=Edarsahub_Desarrollo
+production_allowed=false
+script=docs/RRR/sql/RRR_GATE4_CUSTOMER360_VIEWS_V2.sql
+rollback_cert=RRR-GATE4D-R1-ROLLBACK-ABSENCE-READONLY-20260909
+rollback_certification=CERTIFIED_READ_ONLY
+rollback_percent=100
+retry_job=RRR-GATE4D-R4-CANONICAL-RUNNER-RETRY-20260911
+retry_reason=canonical_runner
+retry_job_r5=RRR-GATE4D-R5-RUNTIME-DEPS-RETRY-20260913
+retry_reason_r5=install_canonical_runner_dependencies
+diagnostic_job_r6=RRR-GATE4D-R6-INSTRUMENTED-ROLLBACK-DIAGNOSTIC-20260914
+diagnostic_mode_r6=rollback_only_no_deploy
+diagnostic_job_r7=RRR-GATE4D-R7-CANONICAL-RUNNER-ROLLBACK-DIAGNOSTIC-20260914
+diagnostic_mode_r7=canonical_get_connection_cursor_as_dict_rollback_only
+deployment_job_r8=RRR-GATE4D-R8-CONTROLLED-COMMIT-DEPLOYMENT-20260914
+deployment_mode_r8=canonical_get_connection_cursor_as_dict_commit_with_durable_evidence

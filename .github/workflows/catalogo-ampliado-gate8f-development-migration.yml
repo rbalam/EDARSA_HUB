@@ -1,0 +1,141 @@
+name: Catalogo Ampliado Gate8F Development Migration
+
+on:
+  push:
+    branches: [Edarsahub_Desarrollo]
+    paths:
+      - ops/migrations/requests/CATALOGO-AMPLIADO-GATE8F-RECOVERY-20260910.execute
+
+permissions:
+  contents: read
+
+concurrency:
+  group: catalogo-ampliado-gate8f-development-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate-development:
+    if: github.ref == 'refs/heads/Edarsahub_Desarrollo'
+    runs-on: ubuntu-latest
+    environment: development
+    timeout-minutes: 20
+    env:
+      EDARSAHUB_SQL_HOST: '54.39.104.176'
+      EDARSAHUB_SQL_PORT: '1433'
+      EDARSAHUB_SQL_DATABASE: 'EDARSAHUB'
+      MIGRATION_SCRIPT: backend/database/migrations/20260910_003_catalogo_ampliado_notifications_config.sql
+      EXPECTED_MIGRATION_BLOB_SHA: '7a26d74e3520c344f90b02fea789056e5b274863'
+
+    steps:
+      - name: Checkout exact Development commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install SQL runtime
+        run: python -m pip install pymssql pydantic python-dotenv email-validator
+
+      - name: Verify Development and immutable migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF}" = 'refs/heads/Edarsahub_Desarrollo'
+          test -f "${MIGRATION_SCRIPT}"
+          actual_blob="$(git hash-object "${MIGRATION_SCRIPT}")"
+          echo "EXPECTED_MIGRATION_BLOB_SHA=${EXPECTED_MIGRATION_BLOB_SHA}"
+          echo "ACTUAL_MIGRATION_BLOB_SHA=${actual_blob}"
+          test "${actual_blob}" = "${EXPECTED_MIGRATION_BLOB_SHA}"
+          echo 'GATE8G_IMMUTABLE_MIGRATION=PASS'
+
+      - name: Preflight readonly identity and baseline
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          test -n "${EDARSAHUB_SQL_PASSWORD:-}"
+          python - <<'PY' | tee evidence/preflight.txt
+          import os,pymssql
+          c=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15)
+          q=c.cursor(as_dict=True)
+          q.execute("SELECT DB_NAME() database_name,SUSER_SNAME() login_name,USER_NAME() db_user")
+          ident=q.fetchone(); print({'identity':ident})
+          if ident['database_name']!='EDARSAHUB' or ident['login_name']!='HRLectura' or ident['db_user']!='HRLectura': raise SystemExit('GATE8G_READONLY_IDENTITY_MISMATCH')
+          q.execute("SELECT CASE WHEN OBJECT_ID('dbo.Sistema_NotificacionesConfig','U') IS NULL THEN 0 ELSE 1 END present")
+          if int(q.fetchone()['present'])!=1: raise SystemExit('GATE8G_CONFIG_TABLE_MISSING')
+          q.execute("SELECT SUM(CASE WHEN ColeccionOrigen='notification_provider_config' AND ((LOWER(PayloadMongo) LIKE '%\"canal\":\"email\"%' AND LOWER(PayloadMongo) LIKE '%\"provider\":\"smtp\"%') OR (LOWER(PayloadMongo) LIKE '%\"canal\":\"whatsapp\"%' AND LOWER(PayloadMongo) LIKE '%\"provider\":\"twilio\"%')) THEN 1 ELSE 0 END) provider_rows,SUM(CASE WHEN ColeccionOrigen='notification_templates' AND LOWER(PayloadMongo) LIKE '%catalogo_ampliado_documento_vencimiento%' AND (LOWER(PayloadMongo) LIKE '%\"canal\":\"email\"%' OR LOWER(PayloadMongo) LIKE '%\"canal\":\"whatsapp\"%') THEN 1 ELSE 0 END) template_rows,SUM(CASE WHEN ColeccionOrigen='notification_config' AND LOWER(PayloadMongo) LIKE '%catalogo_ampliado%' AND LOWER(PayloadMongo) LIKE '%documento_vencimiento%' AND LOWER(PayloadMongo) LIKE '%\"modo_envio\":\"real\"%' AND (LOWER(PayloadMongo) LIKE '%\"canal\":\"email\"%' OR LOWER(PayloadMongo) LIKE '%\"canal\":\"whatsapp\"%') THEN 1 ELSE 0 END) module_config_rows FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1")
+          row=q.fetchone(); print({'baseline':row})
+          q.close(); c.close(); print('GATE8G_PREFLIGHT=PASS')
+          PY
+
+      - name: Fail closed - Development migration writer is not configured
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'MIGRATION_WRITER_STATUS=UNCONFIGURED' | tee evidence/writer_permissions.txt
+          echo 'HRLECTURA_WRITER_FORBIDDEN=YES' | tee -a evidence/writer_permissions.txt
+          echo 'MIGRATION_EXECUTED=NO' | tee -a evidence/writer_permissions.txt
+          exit 78
+          test -n "${EDARSAHUB_SQL_USER:-}"
+          test -n "${EDARSAHUB_SQL_PASSWORD:-}"
+          python - <<'PY' | tee evidence/writer_permissions.txt
+          import os,pymssql
+          if os.environ['EDARSAHUB_SQL_USER'].strip().lower()=='hrlectura': raise SystemExit('GATE8G_HRLECTURA_WRITER_FORBIDDEN')
+          c=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15)
+          q=c.cursor(as_dict=True)
+          q.execute("SELECT DB_NAME() database_name,COALESCE(HAS_PERMS_BY_NAME('dbo.Sistema_NotificacionesConfig','OBJECT','INSERT'),0) can_insert,COALESCE(HAS_PERMS_BY_NAME('dbo.Sistema_NotificacionesConfig','OBJECT','UPDATE'),0) can_update")
+          row=q.fetchone(); print(row); q.close(); c.close()
+          if row['database_name']!='EDARSAHUB' or int(row['can_insert'])!=1: raise SystemExit('GATE8G_WRITER_PERMISSION_MISSING')
+          print('GATE8G_DEDICATED_WRITER=PASS')
+          PY
+
+      - name: Execute transactional migration
+        if: ${{ false }}
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+          EDARSAHUB_ALLOW_MIGRATIONS: 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE/backend" python backend/tools/edarsahub_sql_runner.py --mode migrate --script "${MIGRATION_SCRIPT}" 2>&1 | tee evidence/migration.txt
+          echo 'GATE8G_MIGRATION=PASS'
+
+      - name: Postcheck exact Gate8F materialization
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' | tee evidence/postcheck.txt
+          import os,pymssql
+          c=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15)
+          q=c.cursor(as_dict=True)
+          q.execute("SELECT DB_NAME() database_name,SUSER_SNAME() login_name,USER_NAME() db_user")
+          ident=q.fetchone(); print({'identity':ident})
+          if ident['database_name']!='EDARSAHUB' or ident['login_name']!='HRLectura' or ident['db_user']!='HRLectura': raise SystemExit('GATE8G_POSTCHECK_IDENTITY_MISMATCH')
+          q.execute("SELECT SUM(CASE WHEN ColeccionOrigen='notification_provider_config' AND ((LOWER(PayloadMongo) LIKE '%\"canal\":\"email\"%' AND LOWER(PayloadMongo) LIKE '%\"provider\":\"smtp\"%') OR (LOWER(PayloadMongo) LIKE '%\"canal\":\"whatsapp\"%' AND LOWER(PayloadMongo) LIKE '%\"provider\":\"twilio\"%')) THEN 1 ELSE 0 END) provider_rows,SUM(CASE WHEN ColeccionOrigen='notification_templates' AND LOWER(PayloadMongo) LIKE '%catalogo_ampliado_documento_vencimiento%' AND (LOWER(PayloadMongo) LIKE '%\"canal\":\"email\"%' OR LOWER(PayloadMongo) LIKE '%\"canal\":\"whatsapp\"%') THEN 1 ELSE 0 END) template_rows,SUM(CASE WHEN ColeccionOrigen='notification_config' AND LOWER(PayloadMongo) LIKE '%catalogo_ampliado%' AND LOWER(PayloadMongo) LIKE '%documento_vencimiento%' AND LOWER(PayloadMongo) LIKE '%\"modo_envio\":\"real\"%' AND (LOWER(PayloadMongo) LIKE '%\"canal\":\"email\"%' OR LOWER(PayloadMongo) LIKE '%\"canal\":\"whatsapp\"%') THEN 1 ELSE 0 END) module_config_rows FROM dbo.Sistema_NotificacionesConfig WHERE Activo=1")
+          row=q.fetchone(); print({'materialization':row}); q.close(); c.close()
+          if int(row['provider_rows'] or 0)<2 or int(row['template_rows'] or 0)<2 or int(row['module_config_rows'] or 0)<2: raise SystemExit('GATE8G_MATERIALIZATION_INCOMPLETE')
+          print('GATE8G_POSTCHECK=PASS')
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalogo-ampliado-gate8f-development-migration-${{ github.run_id }}
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 30

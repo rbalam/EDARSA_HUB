@@ -4,7 +4,7 @@
  * Página con información completa del socio y sus botellas en cava.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -55,6 +55,7 @@ import {
   useCorporateFilters,
 } from '../../filters';
 import { useAccessContext } from '../../hooks/useAccessContext';
+import PersonaLinkCard from './PersonaLinkCard';
 
 
 
@@ -538,6 +539,12 @@ function SocioDetailContent() {
           </Button>
         </div>
       </div>
+
+      <PersonaLinkCard
+        socioId={id}
+        unidadNegocioPk={unidadNegocioPk}
+        onChanged={fetchSocio}
+      />
 
       {/* Info del Socio */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

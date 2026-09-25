@@ -1,0 +1,7 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker for R2 build-only contract after R1 failed pre-cleanup with GIT_WORKTREE_NOT_CLEAN. /app was confirmed clean with STAGED=0 UNSTAGED=0 UNTRACKED=0. Do not publish R24F. Do not touch SQL or Production.",
+  "existing_job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-CERTIFICATION-MODE-R2-20260918",
+  "queue_sha": "c4b9c3fc254323a4799b08e46a371aa8ab0ad8cb",
+  "production_touched": false
+}

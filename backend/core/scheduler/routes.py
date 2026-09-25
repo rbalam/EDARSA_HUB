@@ -140,6 +140,25 @@ async def run_job_now(
     return result
 
 
+@router.post("/inventarios/retry-error/{record_id}")
+async def retry_inventario_error(
+    record_id: int,
+    current_user: dict = Depends(require_explicit_permission_dual("SCHEDULER_ADMIN"))
+):
+    """Reintenta exactamente un inventario en ERROR sin resetear el resto de la cola."""
+    from .scheduler_manager import get_scheduler_manager
+
+    manager = get_scheduler_manager()
+    result = await manager.retry_inventario_error_by_id(record_id)
+
+    if result.get("status") == "error":
+        raise HTTPException(status_code=409, detail=result.get("message"))
+    if result.get("status") == "NOT_ELIGIBLE":
+        raise HTTPException(status_code=404, detail=result.get("message"))
+
+    return result
+
+
 async def _run_netpay_manual_background(fecha_desde: date, fecha_hasta: date) -> None:
     """Ejecuta NetPay fuera del request HTTP para evitar timeouts de navegador/proxy."""
     from .jobs.netpay_sync_job import execute_netpay_sync_diario

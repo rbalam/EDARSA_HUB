@@ -1,0 +1,5 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Validate wake endpoint after preserving process environment for git subprocesses. Recover Universal Worker runtime, then allow existing RH-RECLUTAMIENTO-ARQUITECTURA-GATE1-20260909T0802Z to be received. Do not modify the RH job. Do not touch Production.",
+  "production_touched": false
+}

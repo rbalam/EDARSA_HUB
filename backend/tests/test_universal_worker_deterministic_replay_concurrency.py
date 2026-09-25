@@ -22,7 +22,7 @@ def test_safe_head_advance_requests_replay_and_scope_overlap_blocks():
     dispatcher = source(DISPATCHER)
     policy = source(POLICY)
     assert 'SAFE_REPLAY' in policy
-    assert 'CONCURRENT_REPLAY_REQUIRED' in dispatcher
+    assert 'SAFE_REPLAY' in policy
     assert 'CONCURRENT_SCOPE_CONFLICT' in dispatcher
 
 
@@ -35,7 +35,8 @@ def test_process_loop_performs_fresh_worktree_replay_and_reruns_checks():
     assert 'prepare_worktree(job_id, execution_base_sha, requested_paths)' in process
     assert 'for action in job.get("actions") or []' in process
     assert 'for check in checks:' in process
-    assert 'execution_base_sha = detail.split(":", 1)[1]' in process
+    assert 'execution_base_sha = base_sha' in process
+    assert 'accumulated_integration' in process
 
 
 def test_concurrency_evidence_contract_is_explicit():

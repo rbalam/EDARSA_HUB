@@ -37,6 +37,7 @@ from core.sql_first.connection_factory import (
     get_edarsahub_pymssql_connection,
     get_external_sql_connection,
 )
+from modules.integrations_runtime.sync_ledger import enrich_sync_start, mark_sync_finished
 from modules.compras.sync_service import (
     sync_inventarios_fisicos_from_server,
     sync_requisiciones_from_server,
@@ -133,6 +134,7 @@ def _acquire_sync_lock(run_id: str) -> bool:
             SET
                 Status = 'TIMEOUT',
                 FinishedAtMexico = %s,
+                FinishedAtUTC = COALESCE(FinishedAtUTC, SYSUTCDATETIME()),
                 ErrorMessage = COALESCE(
                     ErrorMessage,
                     'Lock vencido antes de nueva ejecución'
@@ -186,6 +188,11 @@ def _acquire_sync_lock(run_id: str) -> bool:
                 RegistrosActualizados, RegistrosError, Status, StartedAtMexico, CreatedAt
             ) VALUES (%s,%s,%s,%s,0,0,0,0,0,0,0,'IN_PROGRESS',%s,%s)
         """, (run_id, SYNC_TYPE, today, today, now_sql, now_sql))
+        enrich_sync_start(
+            cursor,
+            sync_run_id=run_id,
+            sync_type=SYNC_TYPE,
+        )
         conn.commit()
         logger.info(f"[SYNC-COMPRAS-LOCK] 🔒 Lock adquirido: {run_id}")
         return True
@@ -238,6 +245,7 @@ def _release_sync_lock(run_id: str, status: str, processed: int, errors: int, er
             SET Status=%s, FinishedAtMexico=%s, DurationSeconds=%s, RegistrosProcesados=%s, RegistrosError=%s, ErrorMessage=%s
             WHERE SyncRunID=%s
         """, (status, now_sql, duration, processed, errors, error_msg[:500] if error_msg else None, run_id))
+        mark_sync_finished(cursor, run_id)
         conn.commit()
         logger.info(f"[SYNC-COMPRAS-LOCK] 🔓 Lock liberado: {run_id} (status={status}, duration={duration}s)")
     except Exception as e:

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   AlertCircle,
   BarChart3,
@@ -10,19 +10,11 @@ import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import api from '../../lib/api';
 
-const asNumber = (value) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-
 export default function FinanzasDecisionPago({
-  cxpData,
   unidadesNegocio,
   selectedUnidad,
   loadingUnidades,
-  loading,
   onUnidadChange,
-  onActualizar,
   onAbrirCxp,
   canApplyPeriodOverride = false,
   formatCurrency
@@ -35,6 +27,7 @@ export default function FinanzasDecisionPago({
   const [selectedProveedor, setSelectedProveedor] = useState(null);
   const [analysisPeriod, setAnalysisPeriod] = useState('previous_month');
   const [effectivePeriodOverride, setEffectivePeriodOverride] = useState(false);
+  const [refreshNonce, setRefreshNonce] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -108,7 +101,8 @@ export default function FinanzasDecisionPago({
   }, [
     selectedUnidad,
     effectivePeriodOverride,
-    analysisPeriod
+    analysisPeriod,
+    refreshNonce
   ]);
 
   const resolveAnalysisPeriod = () => {
@@ -221,48 +215,12 @@ export default function FinanzasDecisionPago({
   const decisionResumen =
     decisionDashboard?.resumen || {};
 
-  const facturas = useMemo(
-    () =>
-      (cxpData?.proveedores || []).flatMap(
-        (grupo) => grupo?.facturas || []
-      ),
-    [cxpData]
-  );
-
-  const metrics = useMemo(() => {
-    return facturas.reduce(
-      (acc, factura) => {
-        const saldo = asNumber(factura?.saldo);
-        const importe = asNumber(factura?.importe_a_pagar);
-
-        acc.saldo += saldo;
-        acc.facturas += 1;
-
-        if (factura?.decision_pago) {
-          acc.seleccionado += importe > 0 ? importe : saldo;
-          acc.seleccionadas += 1;
-        }
-
-        if (
-          String(factura?.estado_autorizacion_pago || '')
-            .toUpperCase() === 'AUTORIZADO'
-        ) {
-          acc.autorizado += importe > 0 ? importe : saldo;
-          acc.autorizadas += 1;
-        }
-
-        return acc;
-      },
-      {
-        saldo: 0,
-        seleccionado: 0,
-        autorizado: 0,
-        facturas: 0,
-        seleccionadas: 0,
-        autorizadas: 0
-      }
-    );
-  }, [facturas]);
+  const renderDashboardAmount = (field) => {
+    if (decisionLoading) return 'Cargando...';
+    if (!decisionDashboard) return 'No disponible';
+    const value = decisionResumen?.[field];
+    return value == null ? 'No disponible' : formatCurrency(value);
+  };
 
   return (
     <div
@@ -375,12 +333,12 @@ export default function FinanzasDecisionPago({
 
           <Button
             variant="outline"
-            onClick={onActualizar}
-            disabled={loading}
+            onClick={() => setRefreshNonce((value) => value + 1)}
+            disabled={decisionLoading}
           >
             <RefreshCw
               className={`mr-2 h-4 w-4 ${
-                loading ? 'animate-spin' : ''
+                decisionLoading ? 'animate-spin' : ''
               }`}
             />
             Actualizar
@@ -400,10 +358,10 @@ export default function FinanzasDecisionPago({
               Saldo pendiente
             </div>
             <div className="mt-2 text-2xl font-semibold">
-              {formatCurrency(metrics.saldo)}
+              {renderDashboardAmount('saldo_cxp')}
             </div>
             <div className="mt-1 text-xs text-zinc-500">
-              {metrics.facturas} obligaciones
+              Saldo canónico de CxP
             </div>
           </CardContent>
         </Card>
@@ -414,10 +372,10 @@ export default function FinanzasDecisionPago({
               Seleccionado para pago
             </div>
             <div className="mt-2 text-2xl font-semibold">
-              {formatCurrency(metrics.seleccionado)}
+              {renderDashboardAmount('comprometido')}
             </div>
             <div className="mt-1 text-xs text-zinc-500">
-              {metrics.seleccionadas} obligaciones
+              Comprometido canónico
             </div>
           </CardContent>
         </Card>
@@ -428,10 +386,10 @@ export default function FinanzasDecisionPago({
               Autorizado
             </div>
             <div className="mt-2 text-2xl font-semibold">
-              {formatCurrency(metrics.autorizado)}
+              {renderDashboardAmount('autorizado')}
             </div>
             <div className="mt-1 text-xs text-zinc-500">
-              {metrics.autorizadas} obligaciones
+              Autorizado canónico
             </div>
           </CardContent>
         </Card>

@@ -1,0 +1,5 @@
+job=CATALOGO-AMPLIADO-GATE6-E2E-CERT-R9-20260908
+target=development
+production_allowed=false
+cleanup=required
+package_manager=yarn

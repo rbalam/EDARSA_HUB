@@ -3,6 +3,8 @@ from datetime import datetime
 
 import pytest
 
+import modules.comercial_analytics.repository_tickets as repository_tickets
+
 os.environ.setdefault(
     "JWT_SECRET",
     "test-ticket-repository-secret",
@@ -192,3 +194,36 @@ def test_ticket_detail_returns_not_found():
             allowed_unit_codes=["130MID"],
             query_executor=lambda sql, params: [],
         )
+
+
+def test_default_executor_uses_parameterized_edarsahub_query(monkeypatch):
+    calls = []
+
+    def fake_execute_sql_query_params(
+        host, port, database, username, password, query, params
+    ):
+        calls.append((host, port, database, username, password, query, params))
+        if "COUNT(*) AS total" in query:
+            return [{"total": 0}]
+        return []
+
+    monkeypatch.setattr(
+        repository_tickets,
+        "execute_sql_query_params",
+        fake_execute_sql_query_params,
+    )
+
+    result = repository_tickets.list_tickets(
+        fecha_inicio="2026-07-01",
+        fecha_fin="2026-07-31",
+        allowed_unit_codes=["CIENFUEGOS"],
+        unidad_negocio_id="CIENFUEGOS",
+    )
+
+    assert result["total"] == 0
+    assert len(calls) == 2
+    assert calls[0][-1] == (
+        "2026-07-01",
+        "2026-07-31",
+        "CIENFUEGOS",
+    )

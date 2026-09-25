@@ -20,34 +20,28 @@ import json
 from datetime import datetime
 
 from core.db import execute_sql_query
+from core.config.edarsahub_config import get_edarsahub_sql_config
 
 # ============================================================================
-# CONSTANTES
+# CONFIGURACION CANONICA EDARSAHUB
 # ============================================================================
 
-# ID del servidor EDARSA HUB (mismo que en repository.py principal)
-EDARSA_HUB_SERVER_ID = "bea40259-35f1-4693-bda2-d2d10e13e56a"
+_edarsa_cfg = get_edarsahub_sql_config()
 
-# ============================================================================
-# INYECCIÓN DE DEPENDENCIA
-# ============================================================================
+EDARSAHUB_CONFIG = {
+    'host': _edarsa_cfg.host,
+    'port': _edarsa_cfg.port,
+    'database': _edarsa_cfg.database,
+    'username': _edarsa_cfg.user,
+    'password': _edarsa_cfg.password,
+}
 
-_db = None
 _server_cache = None
 
 
 def init_importador_repository(database) -> None:
-    """Inicializa el repositorio con la conexión a MongoDB."""
-    global _db
-    _db = database
-    logging.info("Importador Repository inicializado")
-
-
-def get_db():
-    """Obtiene la conexión a MongoDB inyectada."""
-    if _db is None:
-        raise RuntimeError("Importador repository not initialized")
-    return _db
+    """Compatibilidad de inicializacion; el importador ya no depende de MongoDB."""
+    logging.info("Importador Repository inicializado con configuracion SQL-first")
 
 
 # ============================================================================
@@ -62,18 +56,17 @@ def escape_sql_string(value: str) -> str:
 
 
 async def get_edarsa_hub_server() -> Optional[Dict]:
-    """Obtiene la configuración del servidor EDARSA HUB."""
+    """Obtiene la configuracion SQL-first canonica de EDARSAHUB."""
     global _server_cache
     if _server_cache is not None:
         return _server_cache
-    
-    server = await get_db().servers.find_one(
-        {"id": EDARSA_HUB_SERVER_ID, "active": True},
-        {"_id": 0}
-    )
-    if server:
-        _server_cache = server
-    return server
+
+    if not EDARSAHUB_CONFIG.get('host') or not EDARSAHUB_CONFIG.get('database'):
+        logging.error("EDARSAHUB_CONFIG incompleto: falta host o database")
+        return None
+
+    _server_cache = EDARSAHUB_CONFIG
+    return _server_cache
 
 
 def execute_hub_query(server: Dict, query: str) -> List[Dict]:

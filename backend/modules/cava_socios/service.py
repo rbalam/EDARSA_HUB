@@ -79,7 +79,8 @@ class CavaSociosService:
                     "maximo_botellas": row['MaximoBotellas'],
                     "botellas_en_cava": row['botellas_en_cava'],
                     "estatus": row['Estatus'],
-                    "cliente_crm_id": str(row['ClienteCRMID']) if row['ClienteCRMID'] else None
+                    "cliente_crm_id": str(row['ClienteCRMID']) if row['ClienteCRMID'] else None,
+                    "persona_id": int(row['PersonaID']) if row.get('PersonaID') is not None else None
                 })
 
             return {"socios": socios, "total": total, "skip": skip, "limit": limit}
@@ -155,7 +156,8 @@ class CavaSociosService:
                 "total_botellas_en_cava": len([b for b in botellas if b['estatus'] == 'EN_CAVA']),
                 "valor_total_declarado": valor_total,
                 "saldo_pendiente": float(cargos['total_pendiente'] or 0),
-                "observaciones": socio['Observaciones']
+                "observaciones": socio['Observaciones'],
+                "persona_id": int(socio['PersonaID']) if socio.get('PersonaID') is not None else None
             }
 
         finally:
@@ -421,14 +423,22 @@ class CavaSociosService:
                 data.get('foto_evidencia'), usuario_id, data.get('observaciones')
             ))
 
-            # Generar cargo por descorche si aplica
+            # Generar cargo por descorche si aplica y reflejarlo en el movimiento.
             cargo_id = None
+            monto_descorche = float(data.get('monto_descorche', 350) or 0)
             if data.get('generar_cargo_descorche'):
                 cargo_id = self._crear_cargo(
                     cursor, botella['EmpresaID'], botella['SocioID'],
                     'SERVICIO_DESCORCHE', f"Descorche: {botella['ProductoNombre']}",
-                    data.get('monto_descorche', 350), botella_id, mov_id, usuario_id
+                    monto_descorche, botella_id, mov_id, usuario_id
                 )
+                cursor.execute("""
+                    UPDATE CavaSocios_Movimientos
+                       SET GeneroCargo = 1,
+                           MontoCargo = %s
+                     WHERE MovimientoID = %s
+                       AND EmpresaID = %s
+                """, (monto_descorche, mov_id, botella['EmpresaID']))
 
             conn.commit()
 

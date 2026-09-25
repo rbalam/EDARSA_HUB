@@ -1,0 +1,208 @@
+name: COA Core Development Migration
+
+on:
+  push:
+    branches:
+      - Edarsahub_Desarrollo
+    paths:
+      - ops/migrations/requests/COA-CORE-20260909.execute
+      - ops/migrations/requests/COA-CFDI-EMITIDOS-20260910.execute
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coa-core-development-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate-coa-core-development:
+    runs-on: ubuntu-latest
+    environment: development
+    timeout-minutes: 20
+    env:
+      EDARSAHUB_SQL_HOST: '54.39.104.176'
+      EDARSAHUB_SQL_PORT: '1433'
+      EDARSAHUB_SQL_DATABASE: 'EDARSAHUB'
+      MIGRATION_SCRIPT: ''
+      ROLLBACK_SCRIPT: ''
+      MIGRATION_KIND: ''
+
+    steps:
+      - name: Checkout exact Development commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+
+      - name: Resolve canonical migration contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          BEFORE='${{ github.event.before }}'
+          HEAD='${{ github.sha }}'
+          {
+            echo "before=${BEFORE}"
+            echo "head=${HEAD}"
+          } | tee evidence/trigger-resolution.txt
+          if [ -n "${BEFORE}" ] && [ "${BEFORE}" != '0000000000000000000000000000000000000000' ]; then
+            CHANGED="$(git diff --name-only "${BEFORE}" "${HEAD}")"
+          else
+            CHANGED="$(git diff-tree --no-commit-id --name-only -r "${HEAD}")"
+          fi
+          printf '%s\n' "${CHANGED}" | tee -a evidence/trigger-resolution.txt
+          if echo "${CHANGED}" | grep -qx 'ops/migrations/requests/COA-CFDI-EMITIDOS-20260910.execute'; then
+            echo 'MIGRATION_KIND=CFDI_EMITIDOS' >> "$GITHUB_ENV"
+            echo 'MIGRATION_SCRIPT=backend/database/migrations/20260910_coa_cfdi_emitidos.sql' >> "$GITHUB_ENV"
+            echo 'ROLLBACK_SCRIPT=backend/database/migrations/20260910_coa_cfdi_emitidos_rollback.sql' >> "$GITHUB_ENV"
+          elif echo "${CHANGED}" | grep -qx 'ops/migrations/requests/COA-CORE-20260909.execute'; then
+            echo 'MIGRATION_KIND=CORE' >> "$GITHUB_ENV"
+            echo 'MIGRATION_SCRIPT=backend/database/migrations/20260909_coa_core.sql' >> "$GITHUB_ENV"
+            echo 'ROLLBACK_SCRIPT=backend/database/migrations/20260909_coa_core_rollback.sql' >> "$GITHUB_ENV"
+          else
+            echo "No canonical COA migration trigger found" >&2
+            exit 1
+          fi
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install SQL runtime
+        run: python -m pip install pymssql pydantic python-dotenv email-validator
+
+      - name: Preflight with readonly canonical account
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          test "${GITHUB_REF}" = 'refs/heads/Edarsahub_Desarrollo'
+          test -f "${MIGRATION_SCRIPT}"
+          test -f "${ROLLBACK_SCRIPT}"
+          python - <<'PY' | tee evidence/preflight.txt
+          import os,pymssql
+          conn=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15)
+          cur=conn.cursor(as_dict=True)
+          kind=os.environ['MIGRATION_KIND']
+          if kind=='CORE':
+              names=['COA_Expedientes','COA_ExpedienteEventos','COA_ExpedienteReferencias','COA_ReglasComision','COA_ReglasComisionCondiciones','COA_ExcepcionesRegla','COA_ComisionAplicada']
+              cur.execute("SELECT name FROM sys.tables WHERE name IN (%s)" % ','.join(["'%s'"%n for n in names]))
+              rows=cur.fetchall(); print({'existing_coa_tables':rows})
+              if rows: raise SystemExit('COA_PREFLIGHT_OBJECT_COLLISION')
+              refs=[('Sistema_Empresas','EmpresaID'),('Unidades_Negocio','id'),('Usuario_Catalogo','UsuarioID'),('Cliente_Catalogo','ClienteID'),('Proveedor_Catalogo','ProveedorID'),('Proveedor_Monedas','MonedaID'),('Compras_DocumentosFiscales','DocumentoFiscalID'),('Finanzas_Pagos','PagoID'),('Finanzas_CxP_DecisionesPago','DecisionPagoID'),('RH_Nomina','NominaID'),('RH_Nomina_Dispersion','DispersionNominaID'),('RH_Nomina_Recibos','NominaReciboID'),('RH_Colaboradores_Expediente','ColaboradorID'),('CRM_Contratos','ContratoID')]
+          elif kind=='CFDI_EMITIDOS':
+              cur.execute("SELECT COUNT(*) AS n FROM sys.tables WHERE name IN ('Fiscal_DocumentosEmitidosEstatus','Fiscal_DocumentosEmitidos')")
+              rows=int(cur.fetchone()['n']); print({'existing_fiscal_tables':rows})
+              if rows!=0: raise SystemExit('COA_CFDI_PREFLIGHT_OBJECT_COLLISION')
+              cur.execute("SELECT COUNT(*) AS n FROM sys.columns WHERE object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND name IN ('VentaID','DocumentoFiscalEmitidoID')")
+              if int(cur.fetchone()['n'])!=0: raise SystemExit('COA_CFDI_PREFLIGHT_COLUMN_COLLISION')
+              refs=[('Sistema_Empresas','EmpresaID'),('Unidades_Negocio','id'),('Usuario_Catalogo','UsuarioID'),('Cliente_Catalogo','ClienteID'),('Proveedor_Monedas','MonedaID'),('Venta_Encabezado','VentaID')]
+              cur.execute("SELECT COUNT(*) AS n FROM dbo.COA_ExpedienteReferencias")
+              print({'coa_reference_rows':int(cur.fetchone()['n'])})
+          else:
+              raise SystemExit('COA_UNKNOWN_MIGRATION_KIND')
+          for t,c in refs:
+              cur.execute("SELECT COUNT(*) AS n FROM sys.columns WHERE object_id=OBJECT_ID(%s) AND name=%s",('dbo.'+t,c))
+              if int(cur.fetchone()['n'])!=1: raise SystemExit('COA_PREFLIGHT_REFERENCE_MISSING:%s.%s'%(t,c))
+          cur.close(); conn.close(); print('COA_PREFLIGHT=PASS')
+          PY
+
+      - name: Resolve configured SQL access and verify DDL permission
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${EDARSAHUB_SQL_PASSWORD:-}"
+          echo "EDARSAHUB_SQL_USER=HRLectura" >> "$GITHUB_ENV"
+          echo "EDARSAHUB_SQL_PASSWORD=${EDARSAHUB_SQL_PASSWORD}" >> "$GITHUB_ENV"
+          python - <<'PY' | tee evidence/writer-permissions.txt
+          import os,pymssql
+          conn=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15)
+          cur=conn.cursor(as_dict=True)
+          cur.execute("SELECT DB_NAME() database_name,SUSER_SNAME() login_name,COALESCE(HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE TABLE'),0) can_create,COALESCE(HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER'),0) can_alter_schema")
+          row=cur.fetchone(); print(row)
+          cur.close(); conn.close()
+          if row['database_name']!='EDARSAHUB' or row['login_name']!='HRLectura': raise SystemExit('COA_DDL_IDENTITY_MISMATCH')
+          if int(row['can_create'])!=1 or int(row['can_alter_schema'])!=1: raise SystemExit('COA_DDL_PERMISSION_NOT_CONFIRMED')
+          PY
+
+      - name: Execute transactional migration
+        id: migration
+        continue-on-error: true
+        env:
+          EDARSAHUB_ALLOW_MIGRATIONS: 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE/backend" python backend/tools/edarsahub_sql_runner.py --mode migrate --script "${MIGRATION_SCRIPT}" 2>&1 | tee evidence/migration.txt
+
+      - name: Postcheck exact schema
+        id: postcheck
+        if: steps.migration.outcome == 'success'
+        continue-on-error: true
+        env:
+          EDARSAHUB_SQL_USER: HRLectura
+          EDARSAHUB_SQL_PASSWORD: ${{ secrets.EDARSAHUB_SQL_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' | tee evidence/postcheck.txt
+          import os,pymssql
+          conn=pymssql.connect(server=os.environ['EDARSAHUB_SQL_HOST'],port=int(os.environ['EDARSAHUB_SQL_PORT']),database=os.environ['EDARSAHUB_SQL_DATABASE'],user=os.environ['EDARSAHUB_SQL_USER'],password=os.environ['EDARSAHUB_SQL_PASSWORD'],timeout=60,login_timeout=15)
+          cur=conn.cursor(as_dict=True)
+          kind=os.environ['MIGRATION_KIND']
+          if kind=='CORE':
+              cur.execute("SELECT COUNT(*) n FROM sys.tables WHERE name LIKE 'COA[_]%'"); tables=int(cur.fetchone()['n'])
+              cur.execute("SELECT COUNT(*) n FROM sys.key_constraints kc JOIN sys.tables t ON t.object_id=kc.parent_object_id WHERE kc.type='PK' AND t.name LIKE 'COA[_]%'"); pks=int(cur.fetchone()['n'])
+              cur.execute("SELECT COUNT(*) n FROM sys.indexes i JOIN sys.tables t ON t.object_id=i.object_id WHERE i.name LIKE 'IX_COA[_]%'"); indexes=int(cur.fetchone()['n'])
+              cur.execute("SELECT COUNT(*) n FROM sys.foreign_keys fk JOIN sys.tables t ON t.object_id=fk.parent_object_id WHERE t.name LIKE 'COA[_]%'"); fks=int(cur.fetchone()['n'])
+              cur.execute("SELECT SUM(p.rows) n FROM sys.tables t JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE t.name LIKE 'COA[_]%'"); rows=int(cur.fetchone()['n'] or 0)
+              print({'tables':tables,'pks':pks,'indexes':indexes,'fks':fks,'rows':rows})
+              if tables!=7 or pks!=7 or indexes!=12 or fks!=38 or rows!=0: raise SystemExit('COA_POSTCHECK_CONTRACT_MISMATCH')
+          elif kind=='CFDI_EMITIDOS':
+              cur.execute("SELECT COUNT(*) n FROM sys.tables WHERE name IN ('Fiscal_DocumentosEmitidosEstatus','Fiscal_DocumentosEmitidos')"); tables=int(cur.fetchone()['n'])
+              cur.execute("SELECT COUNT(*) n FROM sys.key_constraints kc WHERE kc.type='PK' AND kc.parent_object_id IN (OBJECT_ID('dbo.Fiscal_DocumentosEmitidosEstatus'),OBJECT_ID('dbo.Fiscal_DocumentosEmitidos'))"); pks=int(cur.fetchone()['n'])
+              cur.execute("SELECT COUNT(*) n FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.Fiscal_DocumentosEmitidos') AND name IN ('UX_Fiscal_DocumentosEmitidos_UUID','IX_Fiscal_DocumentosEmitidos_Cliente_Fecha','IX_Fiscal_DocumentosEmitidos_Empresa_Estatus','IX_Fiscal_DocumentosEmitidos_Unidad','IX_Fiscal_DocumentosEmitidos_Venta')"); fiscal_indexes=int(cur.fetchone()['n'])
+              cur.execute("SELECT COUNT(*) n FROM sys.foreign_keys WHERE parent_object_id=OBJECT_ID('dbo.Fiscal_DocumentosEmitidos') AND name IN ('FK_Fiscal_DocumentosEmitidos_Empresa','FK_Fiscal_DocumentosEmitidos_Unidad','FK_Fiscal_DocumentosEmitidos_Cliente','FK_Fiscal_DocumentosEmitidos_Venta','FK_Fiscal_DocumentosEmitidos_Estatus','FK_Fiscal_DocumentosEmitidos_Moneda','FK_Fiscal_DocumentosEmitidos_CreadoPor','FK_Fiscal_DocumentosEmitidos_ModificadoPor')"); fiscal_fks=int(cur.fetchone()['n'])
+              cur.execute("SELECT COUNT(*) n FROM sys.columns WHERE object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND ((name='VentaID' AND system_type_id=127 AND is_nullable=1) OR (name='DocumentoFiscalEmitidoID' AND system_type_id=127 AND is_nullable=1))"); coa_cols=int(cur.fetchone()['n'])
+              cur.execute("SELECT COUNT(*) n FROM sys.foreign_keys WHERE parent_object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND name IN ('FK_COA_ExpedienteReferencias_Venta','FK_COA_ExpedienteReferencias_DocumentoFiscalEmitido')"); coa_fks=int(cur.fetchone()['n'])
+              cur.execute("SELECT COUNT(*) n FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND name IN ('IX_COA_ExpedienteReferencias_Venta','IX_COA_ExpedienteReferencias_DocumentoFiscalEmitido') AND has_filter=1"); coa_indexes=int(cur.fetchone()['n'])
+              cur.execute("SELECT definition,is_disabled,is_not_trusted FROM sys.check_constraints WHERE parent_object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND name='CK_COA_ExpedienteReferencias_UnSoloDestino'"); ck=cur.fetchone()
+              ck_ok=bool(ck and not ck['is_disabled'] and not ck['is_not_trusted'] and 'VentaID' in ck['definition'] and 'DocumentoFiscalEmitidoID' in ck['definition'])
+              cur.execute("SELECT COUNT(*) n FROM sys.foreign_keys fk JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id JOIN sys.tables rt ON rt.object_id=fkc.referenced_object_id WHERE fkc.parent_object_id=OBJECT_ID('dbo.COA_ExpedienteReferencias') AND pc.name='DocumentoFiscalID' AND rt.name='Compras_DocumentosFiscales'"); compras_fk=int(cur.fetchone()['n'])
+              cur.execute("SELECT COALESCE(SUM(p.rows),0) n FROM sys.tables t JOIN sys.partitions p ON p.object_id=t.object_id AND p.index_id IN (0,1) WHERE t.name IN ('Fiscal_DocumentosEmitidosEstatus','Fiscal_DocumentosEmitidos')"); rows=int(cur.fetchone()['n'] or 0)
+              print({'tables':tables,'pks':pks,'fiscal_indexes':fiscal_indexes,'fiscal_fks':fiscal_fks,'coa_cols':coa_cols,'coa_fks':coa_fks,'coa_indexes':coa_indexes,'check_ok':ck_ok,'compras_fk':compras_fk,'rows':rows})
+              if not (tables==2 and pks==2 and fiscal_indexes==5 and fiscal_fks==8 and coa_cols==2 and coa_fks==2 and coa_indexes==2 and ck_ok and compras_fk==1 and rows==0): raise SystemExit('COA_CFDI_POSTCHECK_CONTRACT_MISMATCH')
+          else:
+              raise SystemExit('COA_UNKNOWN_MIGRATION_KIND')
+          cur.close(); conn.close(); print('COA_POSTCHECK=PASS')
+          PY
+
+      - name: Rollback automatically if migration or postcheck failed
+        if: steps.migration.outcome == 'failure' || steps.postcheck.outcome == 'failure'
+        env:
+          EDARSAHUB_ALLOW_MIGRATIONS: 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE/backend" python backend/tools/edarsahub_sql_runner.py --mode migrate --script "${ROLLBACK_SCRIPT}" 2>&1 | tee evidence/rollback.txt
+
+      - name: Fail gate after rollback
+        if: steps.migration.outcome == 'failure' || steps.postcheck.outcome == 'failure'
+        run: exit 1
+
+      - name: Upload migration evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coa-development-migration-evidence-${{ github.run_id }}
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 30

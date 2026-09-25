@@ -820,11 +820,13 @@ function FinanzasContent() {
     }
   };
   
-  // Initial load
+  // Los catalogos auxiliares de CxP se cargan solo cuando CxP esta abierto.
   useEffect(() => {
-    loadCategorias();
-    loadCxpSucursales();
-  }, [loadCategorias, loadCxpSucursales]);
+    if (activeTab === 'cxp') {
+      loadCategorias();
+      loadCxpSucursales();
+    }
+  }, [activeTab, loadCategorias, loadCxpSucursales]);
   
   // Load data on tab change or filter change
   useEffect(() => {
@@ -832,10 +834,7 @@ function FinanzasContent() {
       loadDashboard();
     } else if (activeTab === 'presupuestos') {
       loadPresupuestos();
-    } else if (
-      activeTab === 'cxp' ||
-      activeTab === 'decision-pago'
-    ) {
+    } else if (activeTab === 'cxp') {
       loadCuentasPorPagar();
     } else if (activeTab === 'ingresos') {
       loadIngresos();
@@ -845,7 +844,7 @@ function FinanzasContent() {
   // FASE 1 CxP: Recargar CxP cuando cambie la unidad de negocio seleccionada
   useEffect(() => {
     if (
-      (activeTab === 'cxp' || activeTab === 'decision-pago') &&
+      activeTab === 'cxp' &&
       selectedUnidad !== undefined
     ) {
       logger.log(`[CxP] Unidad cambiada a: ${selectedUnidad || 'Todas'}, recargando...`);
@@ -1264,13 +1263,10 @@ function FinanzasContent() {
 
   const renderDecisionPago = () => (
     <FinanzasDecisionPago
-      cxpData={cxpData}
       unidadesNegocio={unidadesNegocio}
       selectedUnidad={selectedUnidad}
       loadingUnidades={loadingUnidades}
-      loading={loading}
       onUnidadChange={setSelectedUnidad}
-      onActualizar={loadCuentasPorPagar}
       onAbrirCxp={() => setActiveTab('cxp')}
       canApplyPeriodOverride={finanzasPermissions.canAdmin}
       formatCurrency={formatCurrency}

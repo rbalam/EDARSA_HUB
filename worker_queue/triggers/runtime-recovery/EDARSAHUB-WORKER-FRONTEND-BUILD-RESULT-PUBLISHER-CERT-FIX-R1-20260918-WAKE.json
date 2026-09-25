@@ -1,0 +1,7 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker for EDARSAHUB-WORKER-FRONTEND-BUILD-RESULT-PUBLISHER-CERT-FIX-R1-20260918. This is a Worker result-publisher certification fix only. Do not touch product, frontend functional code, SQL, Production, Scheduler, NetPay, permissions, menu/layout, or R24F.",
+  "existing_job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-RESULT-PUBLISHER-CERT-FIX-R1-20260918",
+  "queue_sha": "81c058d29c901e35a96e389522eac842a0728348",
+  "production_touched": false
+}

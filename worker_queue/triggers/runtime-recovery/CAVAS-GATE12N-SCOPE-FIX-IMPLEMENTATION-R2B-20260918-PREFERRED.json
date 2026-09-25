@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.worker-runtime-recovery-trigger.v1",
+  "existing_job_id": "CAVAS-GATE12N-SCOPE-FIX-IMPLEMENTATION-R2B-20260918",
+  "reason": "Preferred wake for corrected Cavas Gate12N Scope Fix Implementation R2B; trigger is created before publishing request so request base_sha can target the post-trigger Development SHA.",
+  "production_allowed": false
+}

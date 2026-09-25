@@ -1,0 +1,5 @@
+job=CAVAS-CORPORATIVAS-GATE7C-CANONICAL-MENU-DDL-DML-01
+scope=development-only
+route=/cavas-corporativas
+module=CAVA_SOCIOS
+production=false

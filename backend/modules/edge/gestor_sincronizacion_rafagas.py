@@ -6,12 +6,14 @@ import sqlite3
 import json
 import time
 import http.client
-from typing import Dict, Any, List
+import os
+from typing import Dict, Any, List, Optional
 
 class GestorSincronizacionRafagas:
-    def __init__(self, db_path: str = "edarsa_edge_device.db", hub_host: str = "api.edarashub.internal"):
+    def __init__(self, db_path: str = "edarsa_edge_device.db", hub_host: str = "api.edarashub.internal", sync_agent_token: Optional[str] = None):
         self.db_path = db_path
         self.hub_host = hub_host
+        self.sync_agent_token = sync_agent_token or os.environ.get("EDARSAHUB_SYNC_AGENT_TOKEN")
 
     def verificar_enlace_rafaga_internet(self) -> bool:
         """
@@ -70,10 +72,24 @@ class GestorSincronizacionRafagas:
         Envía el paquete de datos al bus unificado de EdarasHub.
         """
         try:
+            attribution = dict(payload.get("rrr_attribution") or {})
+            if not attribution:
+                return False
+            if not self.sync_agent_token:
+                return False
+
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.sync_agent_token}",
+            }
             conexion = http.client.HTTPConnection(self.hub_host, timeout=2.0)
-            headers = {"Content-Type": "application/json"}
-            conexion.request("POST", "/v1/sync/transaccion", json.dumps(payload), headers)
+            conexion.request(
+                "POST",
+                "/api/rrr/attribution/transactions",
+                json.dumps(attribution),
+                headers,
+            )
             respuesta = conexion.getresponse()
-            return respuesta.status in [200, 201, 202] # Aceptado para procesamiento diferido
+            return respuesta.status in [200, 201, 202]
         except Exception:
             return False

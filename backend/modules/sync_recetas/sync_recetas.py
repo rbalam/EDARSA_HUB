@@ -1833,7 +1833,8 @@ def _registrar_ejecucion(result: SyncRecetasResult) -> None:
         INSERT INTO Sync_Control_Ejecuciones (
             SyncRunID, SyncType, FechaInicio, FechaFin, IsDryRun, Status,
             RegistrosProcesados, RegistrosInsertados, RegistrosActualizados, RegistrosError,
-            StartedAtMexico, FinishedAtMexico, DurationSeconds, CreatedAt
+            StartedAtMexico, FinishedAtMexico, DurationSeconds, CreatedAt,
+            StartedAtUTC, FinishedAtUTC, IdempotencyKey
         ) VALUES (
             '{result.sync_run_id}',
             'SYNC_RECETAS',
@@ -1848,7 +1849,10 @@ def _registrar_ejecucion(result: SyncRecetasResult) -> None:
             '{result.started_at.strftime("%Y-%m-%d %H:%M:%S")}',
             '{result.finished_at.strftime("%Y-%m-%d %H:%M:%S")}',
             {result.duration_seconds},
-            '{result.started_at.strftime("%Y-%m-%d %H:%M:%S")}'
+            '{result.started_at.strftime("%Y-%m-%d %H:%M:%S")}',
+            SYSUTCDATETIME(),
+            SYSUTCDATETIME(),
+            'SYNC_RECETAS:{result.sync_run_id}'
         )
         """
         execute_sql_query(

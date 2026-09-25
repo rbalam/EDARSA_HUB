@@ -19,9 +19,10 @@ import logging
 import os
 import pymssql
 import json
+import uuid
 
 from .schemas import (
-    Plantilla, PlantillaCreate, PlantillaUpdate,
+    Plantilla, PlantillaCreate, PlantillaUpdate, PlantillaDuplicateRequest,
     Orden, OrdenCreate, OrdenUpdate, OrdenCapturaDirectaCreate,
     SyncRequest, SyncResult,
     EstatusPlantilla, EstatusOrden, OrigenPlantilla
@@ -30,6 +31,7 @@ from .sync_service import TablajeriaSyncService
 from .ordenes_service import TablajeriaOrdenesService
 from core.security import get_current_user
 from core.config.edarsahub_config import get_edarsahub_sql_config
+from core.sql_first.db import get_sql_connection
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +50,35 @@ DB_CONFIG = {
 
 def get_connection():
     return get_sql_connection()
+
+
+def _current_user_id(current_user: Dict) -> Optional[str]:
+    if not current_user:
+        return None
+    return str(
+        current_user.get('usuario_id')
+        or current_user.get('id')
+        or current_user.get('UsuarioID')
+        or current_user.get('sub')
+        or ''
+    ) or None
+
+
+def _detalle_observaciones(detalle) -> Optional[str]:
+    extra = {
+        'sku_kg_codigo': getattr(detalle, 'sku_kg_codigo', None),
+        'sku_pieza_codigo': getattr(detalle, 'sku_pieza_codigo', None),
+        'gramaje_pieza_g': str(getattr(detalle, 'gramaje_pieza_g', None)) if getattr(detalle, 'gramaje_pieza_g', None) is not None else None,
+        'captura_por_piezas': getattr(detalle, 'captura_por_piezas', False),
+        'costo_fijo': getattr(detalle, 'costo_fijo', False),
+        'costo_fijo_unitario': str(getattr(detalle, 'costo_fijo_unitario', None)) if getattr(detalle, 'costo_fijo_unitario', None) is not None else None,
+        'prorratea_costo': getattr(detalle, 'prorratea_costo', True),
+    }
+    payload = {k: v for k, v in extra.items() if v is not None}
+    if not payload:
+        return getattr(detalle, 'observaciones', None)
+    payload['observaciones'] = getattr(detalle, 'observaciones', None)
+    return json.dumps({'uat_scope_lonja_plantillas': payload}, ensure_ascii=False)
 
 
 # ============================================================
@@ -181,6 +212,232 @@ async def obtener_plantilla(plantilla_id: str):
     except Exception as e:
         logger.error(f"[Tablajeria] Error obteniendo plantilla: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
+    finally:
+        conn.close()
+
+
+@router.post("/plantillas")
+async def crear_plantilla(data: PlantillaCreate, current_user: Dict = Depends(get_current_user)):
+    """Crea una plantilla editable en BORRADOR."""
+    conn = get_connection()
+    plantilla_id = str(uuid.uuid4())
+    now_utc = datetime.utcnow()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO Operaciones_Tablaje_Plantillas (
+                PlantillaID, EmpresaID, UnidadNegocioID, SucursalID,
+                CodigoPlantilla, NombrePlantilla, Descripcion,
+                TipoTransformacion, InsumoBaseCodigo, InsumoBaseNombre,
+                UnidadBaseCodigo, CantidadBaseEstandar,
+                RendimientoEsperadoPorcentaje, MermaEsperadaPorcentaje,
+                ToleranciaRendimiento, ReglaCosteo, OrigenPlantilla,
+                VersionActual, Estatus, Activo, FechaAltaUTC,
+                FechaOperacionMexico, UsuarioAltaID
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            )
+        """, (
+            plantilla_id, data.empresa_id, data.unidad_negocio_pk, data.sucursal_id,
+            data.codigo_plantilla, data.nombre_plantilla, data.descripcion,
+            data.tipo_transformacion, data.insumo_base_codigo, data.insumo_base_nombre,
+            data.unidad_base_codigo, data.cantidad_base_estandar,
+            data.rendimiento_esperado_porcentaje, data.merma_esperada_porcentaje,
+            data.tolerancia_rendimiento, data.regla_costeo.value if data.regla_costeo else None,
+            OrigenPlantilla.CAPTURA_DIRECTA_EDARSAHUB.value, 1,
+            EstatusPlantilla.BORRADOR.value, True, now_utc, date.today(),
+            _current_user_id(current_user)
+        ))
+        for detalle in data.detalles or []:
+            cursor.execute("""
+                INSERT INTO Operaciones_Tablaje_PlantillasDetalle (
+                    PlantillaDetalleID, PlantillaID, ProductoDerivadoCodigo,
+                    ProductoDerivadoNombre, TipoDerivado, UnidadDerivadoCodigo,
+                    CantidadEsperada, PorcentajeRendimientoEsperado, PorcentajeCostoAsignado,
+                    EsMerma, EsSubproducto, EsProductoVendible, EsInventariable,
+                    OrdenVisual, Observaciones, Activo
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                )
+            """, (
+                str(uuid.uuid4()), plantilla_id, detalle.producto_derivado_codigo,
+                detalle.producto_derivado_nombre, detalle.tipo_derivado.value,
+                detalle.unidad_derivado_codigo, detalle.cantidad_esperada,
+                detalle.porcentaje_rendimiento_esperado, detalle.porcentaje_costo_asignado,
+                detalle.es_merma, detalle.es_subproducto, detalle.es_producto_vendible,
+                detalle.es_inventariable, detalle.orden_visual, _detalle_observaciones(detalle), True
+            ))
+        conn.commit()
+        return {"mensaje": "Plantilla creada en borrador", "plantilla_id": plantilla_id}
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"[Tablajeria] Error creando plantilla: {e}")
+        raise HTTPException(status_code=500, detail="Error creando plantilla")
+    finally:
+        conn.close()
+
+
+@router.put("/plantillas/{plantilla_id}")
+async def editar_plantilla(plantilla_id: str, data: PlantillaUpdate, current_user: Dict = Depends(get_current_user)):
+    """Edita una plantilla solo si esta en BORRADOR/OBSERVADA. Plantillas publicadas se versionan con /duplicar."""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute("SELECT Estatus FROM Operaciones_Tablaje_Plantillas WHERE PlantillaID = %s AND Activo = 1", (plantilla_id,))
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Plantilla no encontrada")
+        if row['Estatus'] not in ('BORRADOR', 'OBSERVADA'):
+            raise HTTPException(status_code=409, detail="Plantilla ya usada/publicada: duplicar para crear nueva version")
+        updates = []
+        params = []
+        mapping = {
+            'nombre_plantilla': 'NombrePlantilla',
+            'descripcion': 'Descripcion',
+            'rendimiento_esperado_porcentaje': 'RendimientoEsperadoPorcentaje',
+            'merma_esperada_porcentaje': 'MermaEsperadaPorcentaje',
+            'tolerancia_rendimiento': 'ToleranciaRendimiento',
+            'regla_costeo': 'ReglaCosteo',
+            'estatus': 'Estatus'
+        }
+        for attr, column in mapping.items():
+            value = getattr(data, attr, None)
+            if value is not None:
+                updates.append(f"{column} = %s")
+                params.append(value.value if hasattr(value, 'value') else value)
+        if updates:
+            updates.append("FechaModificacionUTC = %s")
+            updates.append("UsuarioModificacionID = %s")
+            params.extend([datetime.utcnow(), _current_user_id(current_user)])
+            params.append(plantilla_id)
+            cursor.execute(f"UPDATE Operaciones_Tablaje_Plantillas SET {', '.join(updates)} WHERE PlantillaID = %s", tuple(params))
+        if data.detalles is not None:
+            cursor.execute("UPDATE Operaciones_Tablaje_PlantillasDetalle SET Activo = 0 WHERE PlantillaID = %s", (plantilla_id,))
+            for detalle in data.detalles:
+                cursor.execute("""
+                    INSERT INTO Operaciones_Tablaje_PlantillasDetalle (
+                        PlantillaDetalleID, PlantillaID, ProductoDerivadoCodigo, ProductoDerivadoNombre,
+                        TipoDerivado, UnidadDerivadoCodigo, CantidadEsperada, PorcentajeRendimientoEsperado,
+                        PorcentajeCostoAsignado, EsMerma, EsSubproducto, EsProductoVendible, EsInventariable,
+                        OrdenVisual, Observaciones, Activo
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    str(uuid.uuid4()), plantilla_id, detalle.producto_derivado_codigo, detalle.producto_derivado_nombre,
+                    detalle.tipo_derivado.value, detalle.unidad_derivado_codigo, detalle.cantidad_esperada,
+                    detalle.porcentaje_rendimiento_esperado, detalle.porcentaje_costo_asignado,
+                    detalle.es_merma, detalle.es_subproducto, detalle.es_producto_vendible, detalle.es_inventariable,
+                    detalle.orden_visual, _detalle_observaciones(detalle), True
+                ))
+        conn.commit()
+        return {"mensaje": "Plantilla actualizada", "plantilla_id": plantilla_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"[Tablajeria] Error editando plantilla: {e}")
+        raise HTTPException(status_code=500, detail="Error editando plantilla")
+    finally:
+        conn.close()
+
+
+@router.post("/plantillas/{plantilla_id}/duplicar")
+async def duplicar_plantilla(plantilla_id: str, data: PlantillaDuplicateRequest, current_user: Dict = Depends(get_current_user)):
+    """Duplica una plantilla para versionar sin reescribir historia operativa."""
+    conn = get_connection()
+    nueva_id = str(uuid.uuid4())
+    try:
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute("SELECT * FROM Operaciones_Tablaje_Plantillas WHERE PlantillaID = %s AND Activo = 1", (plantilla_id,))
+        base = cursor.fetchone()
+        if not base:
+            raise HTTPException(status_code=404, detail="Plantilla base no encontrada")
+        cursor.execute("""
+            INSERT INTO Operaciones_Tablaje_Plantillas (
+                PlantillaID, EmpresaID, UnidadNegocioID, SucursalID, CodigoPlantilla, NombrePlantilla,
+                Descripcion, TipoTransformacion, InsumoBaseCodigo, InsumoBaseNombre, UnidadBaseCodigo,
+                CantidadBaseEstandar, RendimientoEsperadoPorcentaje, MermaEsperadaPorcentaje,
+                ToleranciaRendimiento, ReglaCosteo, OrigenPlantilla, PlantillaPadreID,
+                VersionActual, Estatus, Activo, FechaAltaUTC, FechaOperacionMexico, UsuarioAltaID
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            nueva_id, base.get('EmpresaID'), base.get('UnidadNegocioID'), base.get('SucursalID'),
+            data.codigo_plantilla or f"{base.get('CodigoPlantilla')}-V{int(base.get('VersionActual') or 1) + 1}",
+            data.nombre_plantilla or f"{base.get('NombrePlantilla')} v{int(base.get('VersionActual') or 1) + 1}",
+            data.descripcion or base.get('Descripcion'), base.get('TipoTransformacion'), base.get('InsumoBaseCodigo'),
+            base.get('InsumoBaseNombre'), base.get('UnidadBaseCodigo'), base.get('CantidadBaseEstandar'),
+            base.get('RendimientoEsperadoPorcentaje'), base.get('MermaEsperadaPorcentaje'), base.get('ToleranciaRendimiento'),
+            base.get('ReglaCosteo'), OrigenPlantilla.CAPTURA_DIRECTA_EDARSAHUB.value, plantilla_id,
+            int(base.get('VersionActual') or 1) + 1, EstatusPlantilla.BORRADOR.value, True, datetime.utcnow(),
+            date.today(), _current_user_id(current_user)
+        ))
+        cursor.execute("SELECT * FROM Operaciones_Tablaje_PlantillasDetalle WHERE PlantillaID = %s AND Activo = 1 ORDER BY OrdenVisual", (plantilla_id,))
+        for det in cursor.fetchall():
+            cursor.execute("""
+                INSERT INTO Operaciones_Tablaje_PlantillasDetalle (
+                    PlantillaDetalleID, PlantillaID, ProductoDerivadoID, ProductoDerivadoCodigo, ProductoDerivadoNombre,
+                    TipoDerivado, UnidadDerivadoCodigo, CantidadEsperada, PorcentajeRendimientoEsperado,
+                    PorcentajeCostoAsignado, EsMerma, EsSubproducto, EsProductoVendible, EsInventariable,
+                    OrdenVisual, Observaciones, Activo
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                str(uuid.uuid4()), nueva_id, det.get('ProductoDerivadoID'), det.get('ProductoDerivadoCodigo'),
+                det.get('ProductoDerivadoNombre'), det.get('TipoDerivado'), det.get('UnidadDerivadoCodigo'),
+                det.get('CantidadEsperada'), det.get('PorcentajeRendimientoEsperado'), det.get('PorcentajeCostoAsignado'),
+                det.get('EsMerma'), det.get('EsSubproducto'), det.get('EsProductoVendible'), det.get('EsInventariable'),
+                det.get('OrdenVisual'), det.get('Observaciones'), True
+            ))
+        conn.commit()
+        return {"mensaje": "Plantilla duplicada como nueva version", "plantilla_id": nueva_id, "plantilla_padre_id": plantilla_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"[Tablajeria] Error duplicando plantilla: {e}")
+        raise HTTPException(status_code=500, detail="Error duplicando plantilla")
+    finally:
+        conn.close()
+
+
+@router.get("/lonjas-disponibles")
+async def listar_lonjas_disponibles(
+    empresa_id: Optional[str] = None,
+    unidad_negocio_pk: Optional[str] = None,
+    almacen_origen_id: Optional[str] = None,
+    limit: int = Query(default=100, le=500),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista lonjas disponibles no procesadas para tablajear una por una."""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor(as_dict=True)
+        query = """
+            SELECT TOP (%s) *
+            FROM dbo.Tablajeria_LonjasDisponibles
+            WHERE Procesada = 0 AND Activo = 1
+        """
+        params = [limit]
+        if empresa_id:
+            query += " AND EmpresaID = %s"
+            params.append(empresa_id)
+        if unidad_negocio_pk:
+            query += " AND UnidadNegocioID = %s"
+            params.append(unidad_negocio_pk)
+        if almacen_origen_id:
+            query += " AND AlmacenOrigenID = %s"
+            params.append(almacen_origen_id)
+        query += " ORDER BY FechaAltaUTC DESC"
+        cursor.execute(query, tuple(params))
+        rows = []
+        for row in cursor.fetchall():
+            item = dict(row)
+            for key, value in list(item.items()):
+                if value is not None and not isinstance(value, (str, int, float, bool)):
+                    item[key] = str(value)
+            rows.append(item)
+        return {"lonjas": rows, "total": len(rows), "modo": "NO_PROCESADAS"}
+    except Exception as e:
+        logger.error(f"[Tablajeria] Error listando lonjas disponibles: {e}")
+        raise HTTPException(status_code=500, detail="Error listando lonjas disponibles")
     finally:
         conn.close()
 
@@ -1074,7 +1331,6 @@ async def guardar_config_contable(
 # ============================================================================
 
 from .dashboard_service import get_tablajeria_dashboard_service
-from core.sql_first.db import get_sql_connection
 
 
 @router.get("/dashboard/kpis")
@@ -1443,4 +1699,93 @@ async def exportar_costeo(
         
     except Exception as e:
         logger.error(f"[Reportes] Error exportando costeo: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+# ============================================================================
+# R24: RENDIMIENTO POR LOTE PROVEEDOR Y RECLAMOS
+# ============================================================================
+
+from .lote_proveedor_service import get_tablajeria_lote_proveedor_service
+
+
+class ReclamoProveedorCreateRequest(BaseModel):
+    motivo: str
+    descripcion: Optional[str] = None
+    prioridad: str = "MEDIA"
+    evidencia: Optional[Dict] = None
+
+
+@router.get("/lotes-proveedor/rendimientos")
+async def listar_rendimientos_lote_proveedor(
+    empresa_id: Optional[str] = None,
+    proveedor_id: Optional[str] = None,
+    lote: Optional[str] = None,
+    semaforo: Optional[str] = None,
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista rendimientos de tablajeria por lote proveedor."""
+    try:
+        service = get_tablajeria_lote_proveedor_service()
+        return service.listar_rendimientos_lote(empresa_id, proveedor_id, lote, semaforo, limit, offset)
+    except Exception as e:
+        logger.error(f"[R24] Error listando rendimientos por lote proveedor: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+@router.get("/lotes-proveedor/{lote_rendimiento_id}/drilldown")
+async def obtener_drilldown_lote_proveedor(
+    lote_rendimiento_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Drilldown lote -> proveedor -> compra -> recepcion -> tablajeria -> reclamos."""
+    try:
+        service = get_tablajeria_lote_proveedor_service()
+        return service.obtener_drilldown_lote(lote_rendimiento_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"[R24] Error obteniendo drilldown de lote proveedor: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+@router.post("/lotes-proveedor/{lote_rendimiento_id}/reclamos")
+async def crear_reclamo_lote_proveedor(
+    lote_rendimiento_id: str,
+    data: ReclamoProveedorCreateRequest,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Abre reclamo proveedor ligado a rendimiento de lote."""
+    try:
+        usuario_id = current_user.get('public_uuid') or current_user.get('id') or str(current_user.get('_id', ''))
+        service = get_tablajeria_lote_proveedor_service()
+        return service.crear_reclamo_proveedor(
+            lote_rendimiento_id=lote_rendimiento_id,
+            motivo=data.motivo,
+            descripcion=data.descripcion,
+            prioridad=data.prioridad,
+            evidencia=data.evidencia,
+            usuario_id=usuario_id
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"[R24] Error creando reclamo proveedor: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+@router.get("/reclamos-proveedor")
+async def listar_reclamos_proveedor(
+    estatus: Optional[str] = None,
+    limit: int = Query(100, ge=1, le=500),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Lista reclamos proveedor de tablajeria."""
+    try:
+        service = get_tablajeria_lote_proveedor_service()
+        return service.listar_reclamos(estatus=estatus, limit=limit)
+    except Exception as e:
+        logger.error(f"[R24] Error listando reclamos proveedor: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")

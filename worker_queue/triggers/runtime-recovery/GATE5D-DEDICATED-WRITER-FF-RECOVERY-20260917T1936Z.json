@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Recover canonical Universal Worker runtime convergence for existing GATE5D-DEDICATED-MIGRATION-WRITER-CONTRACT-R1-20260917 after repeated authoritative wake failures with worker runtime fast-forward reset failed. Do not create a new Gate5D functional job. Use the canonical worker-runtime-recovery-probe flow, preserve fail-closed convergence rules, and do not touch Production.",
+  "existing_job_id": "GATE5D-DEDICATED-MIGRATION-WRITER-CONTRACT-R1-20260917",
+  "production_touched": false
+}

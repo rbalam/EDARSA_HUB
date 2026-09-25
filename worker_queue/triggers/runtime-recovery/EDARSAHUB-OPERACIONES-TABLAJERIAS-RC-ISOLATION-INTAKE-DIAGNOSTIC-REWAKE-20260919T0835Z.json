@@ -1,0 +1,8 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "triggered_at_utc": "2026-09-19T08:35:00Z",
+  "source": "chatgpt",
+  "project": "13. Produccion",
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-RC-ISOLATION-INTAKE-DIAGNOSTIC-READONLY-R1-20260919",
+  "reason": "Wake diagnostico de intake para RC Isolation. No ejecutar R2 funcional, no tocar codigo, no desplegar."
+}

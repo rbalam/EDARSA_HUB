@@ -23,7 +23,30 @@
         Learn how to configure a non-root public URL by running `npm run build`.
         -->
         <title>EDARSA HUB</title>
-        <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
+        <script>
+            // EDARSAHUB runtime guard: only contains known browser/platform noise.
+            // First-party application errors are never swallowed.
+            window.addEventListener("error", function (event) {
+                var isKnownPerformanceCloneError =
+                    event.error instanceof DOMException &&
+                    event.error.name === "DataCloneError" &&
+                    event.message &&
+                    event.message.includes("PerformanceServerTiming");
+
+                var isOpaqueCrossOriginScriptError =
+                    event.message === "Script error." &&
+                    !event.filename &&
+                    (event.error === null || event.error === undefined);
+
+                if (isKnownPerformanceCloneError || isOpaqueCrossOriginScriptError) {
+                    if (isOpaqueCrossOriginScriptError && window.console && console.warn) {
+                        console.warn("[EDARSAHUB_RUNTIME_GUARD] Opaque cross-origin script error contained");
+                    }
+                    event.stopImmediatePropagation();
+                    event.preventDefault();
+                }
+            }, true);
+        </script>
         <script src="https://assets.emergent.sh/scripts/emergent-main.js"></script>
     </head>
     <body>

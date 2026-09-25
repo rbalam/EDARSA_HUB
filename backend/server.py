@@ -120,6 +120,24 @@ logger.info("[DB] Sistema funcionando 100% SQL Server - MongoDB ELIMINADO (usand
 app = FastAPI(title="EDARSA HUB API")
 api_router = APIRouter(prefix="/api")
 
+# CAVAS CORPORATIVAS GATE 5 - API backend B2B separada y RBAC SQL explicito
+from modules.cavas_corporativas.routes import router as cavas_corporativas_router
+api_router.include_router(cavas_corporativas_router)
+
+# CATALOGO AMPLIADO GATE 4 - Gobierno corporativo SQL-first
+from modules.catalogo_ampliado.routes import router as catalogo_ampliado_router
+api_router.include_router(catalogo_ampliado_router)
+
+# TABLAJERIA - Operaciones / Produccion
+# Router existente con prefijo propio /api/tablajeria; se monta directo en app para evitar /api/api.
+from modules.tablajeria.routes import router as tablajeria_router
+app.include_router(tablajeria_router)
+
+# TABLAJERIA - Operaciones / Produccion
+# Router existente con prefijo propio /api/tablajeria; se monta directo en app para evitar /api/api.
+from modules.tablajeria.routes import router as tablajeria_router
+app.include_router(tablajeria_router)
+
 # Montar archivos estáticos para descargas
 STATIC_DIR = ROOT_DIR / "static"
 if STATIC_DIR.exists():
@@ -711,6 +729,10 @@ from modules.comercial.kpis_repository import init_kpis_repository
 init_sync_receiver(None)  # MongoDB eliminado
 init_kpis_repository(None)  # MongoDB eliminado
 api_router.include_router(sync_receiver_router)
+
+# RRR - atribucion determinista cliente <-> venta (Gate 4E)
+from modules.rrr.routes import router as rrr_attribution_router
+api_router.include_router(rrr_attribution_router)
 
 # ============================================================================
 # MÓDULO API CONNECTIONS: CRUD de conexiones a APIs locales
@@ -12265,7 +12287,7 @@ import os
 from datetime import datetime
 
 # Directorio para almacenar evidencias
-EVIDENCIAS_DIR = "/app/uploads/evidencias"
+EVIDENCIAS_DIR = os.environ.get("EDARSAHUB_EVIDENCIAS_DIR", "/app/uploads/evidencias")
 os.makedirs(EVIDENCIAS_DIR, exist_ok=True)
 
 # Modelos Pydantic para Informes de Auditoría
@@ -16317,8 +16339,16 @@ async def retirar_perfil_usuario(
 app.include_router(api_router)
 
 # WORKER: endpoint autenticado de runtime wake
-from modules.worker_runtime_wake.routes import router as worker_runtime_wake_router
+# Runtime reload marker 2026-09-20: fuerza recarga Preview sin cambio funcional; Produccion fuera de alcance.
+from modules.worker_runtime_wake.routes import (
+    router as worker_runtime_wake_router,
+    ensure_worker_runtime_on_preview_startup,
+)
 app.include_router(worker_runtime_wake_router, prefix="/api")
+
+# EDARSAHUB Universal Worker Console (Fase 1, solo lectura)
+from modules.worker_console.routes import router as worker_console_router
+app.include_router(worker_console_router, prefix="/api")
 
 # FASE6: health canónico V1.0 (SQL-First / NO-LIVE) -> /api/health/v1
 app.include_router(health_v1_router, prefix="/api")
@@ -16757,21 +16787,20 @@ except Exception as e:
     logger.warning(f"Error registrando SQL Compat Bridge router: {e}")
 
 
-# =============================================================================
-# UNIVERSAL WORKER - WAKE INTERNO CANONICO
-# =============================================================================
-try:
-    from modules.worker_runtime_wake.routes import router as worker_runtime_wake_router
-    app.include_router(worker_runtime_wake_router, prefix="/api")
-    logger.info("Universal Worker wake router registrado")
-except Exception as e:
-    logger.warning(f"Error registrando Universal Worker wake router: {e}")
+# UNIVERSAL WORKER: el router se registra una sola vez arriba.
+# El arranque del backend actua como frontera local de auto-recuperacion del Worker.
 
 
 # Startup: Iniciar scheduler
 @app.on_event("startup")
 async def startup_scheduler():
-    """Inicia el scheduler de jobs automáticos."""
+    """Inicia el scheduler y recupera el Universal Worker en Preview."""
+    try:
+        worker_runtime_state = ensure_worker_runtime_on_preview_startup()
+        logger.info(f"Universal Worker startup self-heal: {worker_runtime_state}")
+    except Exception as e:
+        logger.warning(f"Universal Worker startup self-heal no disponible: {e}")
+
     try:
         from core.scheduler import start_scheduler
         await start_scheduler(db)  # MongoDB ELIMINADO - StubDatabase para compatibilidad

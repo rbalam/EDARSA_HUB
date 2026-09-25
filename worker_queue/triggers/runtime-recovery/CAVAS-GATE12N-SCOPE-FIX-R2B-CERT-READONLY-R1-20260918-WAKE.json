@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker for the already-published READ_ONLY certification of Cavas Gate12N Scope Fix R2B. Preserve unrelated active work, consume the preferred job when available, no Production.",
+  "preferred_job_id": "CAVAS-GATE12N-SCOPE-FIX-R2B-CERT-READONLY-R1-20260918",
+  "production_touched": false
+}

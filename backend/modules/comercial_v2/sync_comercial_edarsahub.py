@@ -622,7 +622,7 @@ SELECT
 FROM cheques AS ch
 INNER JOIN turnos AS tr
     ON tr.idturno = ch.idturno
-WHERE CONVERT(varchar, tr.apertura, 112) = '{fecha_operacion_sql}'
+WHERE CONVERT(varchar, DATEADD(hour, -{offset_hours}, tr.apertura), 112) = '{fecha_operacion_sql}'
   AND ch.cancelado = 0
 """
 
@@ -637,13 +637,14 @@ def build_softrestaurant_ventas_cerradas_query(
     La pertenencia al dia se define SOLO por la fecha calendario de
     turnos.apertura. No usa turnos operativos, cierre ni idempresa.
     """
-    del server_config
+    offset_hours = 9 if str((server_config or {}).get('unidad_codigo') or '').strip().upper() == 'ESTELAR' else 0
     bloques = []
     fecha_actual = fecha_inicio
     while fecha_actual <= fecha_fin:
         bloques.append(QUERY_SOFTRESTAURANT_VENTAS_CERRADAS_DIA.format(
             fecha_operacion=fecha_actual.strftime('%Y-%m-%d'),
             fecha_operacion_sql=fecha_actual.strftime('%Y%m%d'),
+            offset_hours=offset_hours,
         ))
         fecha_actual += timedelta(days=1)
     return "\nUNION ALL\n".join(bloques)

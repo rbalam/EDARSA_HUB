@@ -1,6 +1,7 @@
 import importlib.util
 import os
 import sys
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -193,10 +194,9 @@ def test_all_internal_python_subprocesses_are_canonical():
         '"py_compile", *paths]'
     ) in text
 
-    assert (
-        'cmd = [PYTHON_BIN, "-m", '
-        '"pytest", "-q", *paths]'
-    ) in text
+    assert 'pytest_args = ["-q"]' in text
+    assert 'pytest_args.extend(["-p", "no:cacheprovider"])' in text
+    assert 'cmd = [PYTHON_BIN, "-m", "pytest", *pytest_args, *paths]' in text
 
     assert "/usr/bin/python3" not in text
     assert "/usr/local/bin/python3" not in text
@@ -235,7 +235,12 @@ def test_pytest_loads_missing_backend_runtime_env(tmp_path, monkeypatch):
     )
 
     env_extra = calls[0][1]["env_extra"]
-    assert env_extra["PYTHONPATH"] == str(backend)
+    assert env_extra["PYTHONPATH"] == os.pathsep.join(
+        (
+            str(backend),
+            str(tmp_path),
+        )
+    )
     assert env_extra["EDARSAHUB_SQL_HOST"] == "db.example"
     assert env_extra["EDARSAHUB_SQL_PORT"] == "1433"
     assert env_extra["EDARSAHUB_SQL_DATABASE"] == "EDARSAHUB"
@@ -299,7 +304,7 @@ def test_integrate_push_uses_only_repository_local_credential_helper():
     text = DISPATCHER.read_text(encoding="utf-8")
 
     assert 'git("config", "--local", "--get", "credential.helper", cwd=ROOT, check=False)' in text
-    assert '"-c", "credential.helper="' in text
+    assert '"credential.helper="' in text
     assert 'f"credential.helper={credential_helper}"' in text
-    assert '"push", REMOTE' in text
+    assert '"push",REMOTE' in text
     assert "gh auth git-credential" not in text

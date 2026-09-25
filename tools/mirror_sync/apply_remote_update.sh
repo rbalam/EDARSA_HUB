@@ -174,15 +174,10 @@ fi
 
 echo
 echo "===== 7. SAFE LOCAL FAST-FORWARD ====="
-# git merge --ff-only is allowed with non-overlapping staged/unstaged/untracked
-# work. Collision audit above guarantees that incoming paths do not overlap
-# local work. No stash/reset/clean/restore is used.
+# Canonical refresh uses writer lock, ref CAS and read-tree plumbing; no destructive sync command is executed.
 if [ "$LOCAL_BEFORE" != "$TARGET" ]; then
-    git merge --ff-only "$TARGET" || {
-        echo "ABORT=LOCAL_FAST_FORWARD_FAILED"
-        echo "LOCAL_WORK_PRESERVED=UNKNOWN"
-        exit 50
-    }
+    PY="$(edarsahub_git_guard_python)" || { echo "ABORT=GIT_GUARD_PYTHON_NOT_FOUND"; exit 50; }
+    "$PY" "$ROOT/tools/mirror_sync/git_divergence_guard.py" refresh --repo "$ROOT" --expected-remote "$TARGET" --job-id "mirror-sync-refresh-$$" --owner "mirror-sync-refresh" --owner-pid "$$" || { echo "ABORT=LOCAL_FAST_FORWARD_REFRESH_FAILED"; exit 50; }
 fi
 LOCAL_AFTER="$(git rev-parse HEAD)"
 test "$LOCAL_AFTER" = "$TARGET" || { echo "ABORT=LOCAL_FAST_FORWARD_VERIFY_FAILED"; exit 50; }

@@ -1,5 +1,24 @@
+# recovery trigger 2026-09-25T05:10Z certify abc2b3b6 after result-publisher empty artifact fix; converge mirror/emergent-live; no duplicate; no Production
+# RH GLOBAL HCM Gate0 R2 wake 2026-09-24T19:12-06:00; existing READ_ONLY job; no duplicate; no Production
+# CRM CALENDAR Gate1 R2 wake 2026-09-24T18:50-06:00 preferred after active job; no duplicate; no Production
+# SERVIDORES DEFINITIVO R14 wake 2026-09-24T22:31Z preferred 000-EDARSAHUB-SERVIDORES-DEFINITIVO-R14-CARLOS-20260924; production untouched
+# recovery trigger 2026-09-23T19:24Z SERVIDORES listado/API diagnostic preferred pickup 000-EDARSAHUB-SERVIDORES-LISTADO-DIAG-R13A-20260923; no duplicate; no Production
+# recovery trigger 2026-09-22T22:48Z ISCAM MPRO zero-gross fallback R15 pickup; no duplicate; no Production
+# recovery trigger 2026-09-22T22:46Z ISCAM 130QRO MPRO zero-gross diagnostic pickup; no duplicate; no Production
+# recovery trigger 2026-09-22T22:44Z ISCAM 130QRO 0808 backfill R14 pickup; prefer existing queued job; no duplicate; no Production
+# recovery trigger 2026-09-22T22:42Z ISCAM 130QRO 0808 preflight pickup EDARSAHUB-ISCAM-130QRO-0808-R13-PREFLIGHT-R1-CARLOS-20260922; no duplicate; no Production
+# recovery trigger 2026-09-22T22:40Z ISCAM V1.2 preferred pickup EDARSAHUB-ISCAM-V12-PUBLISHER-SQL-PREFLIGHT-R1-CARLOS-20260922; no duplicate; no Production
+# recovery trigger 2026-09-21T04:55Z converge runtime and consume preferred Cavas Gate16L after current job; no duplicate; no Production
+# recovery trigger 2026-09-21T04:42Z Cavas Gate16K existing request pickup; no duplicate; no Production
+# recovery trigger 2026-09-21T04:20Z Cavas V1 closure: converge runtime to Gate16J cert SHA and consume existing certification; no duplicate job; no Production
+# recovery trigger 2026-09-20T21:31Z retry local-ahead cert after wake-endpoint bootstrap; no Production
+# recovery trigger 2026-09-20T21:00Z local-ahead certification intake pickup; preserve certification job; no Production
+# recovery trigger 2026-09-20T20:50Z intake pickup recovery for Tablajerias queue; preserve jobs; no Production
+# recovery trigger 2026-09-20T16:06Z after mirror/emergent-live fast-forward; preserve R3B and Cavas 16J; no Production
+# recovery trigger 2026-09-20T15:51Z after backend-tree reload attempt; preserve R3B and Cavas 16J; no Production
+# recovery trigger 2026-09-20T15:40Z stale R3B runtime; preserve queued Cavas 16J; no Production
 name: Universal Worker Wake Now
-# recovery trigger 2026-09-07T22:31Z scope-concurrency convergence
+# recovery trigger 2026-09-17T19:27-06:00 gate5d dedicated-writer contract ff-refresh
 
 on:
   push:
@@ -37,13 +56,7 @@ jobs:
         run: |
           set -euo pipefail
           URL='https://erp-crm-enterprise-1.preview.emergentagent.com/api/internal/worker/wake'
-          HTTP_CODE="$(curl --silent --show-error --location \
-            --output /tmp/wake.json \
-            --write-out '%{http_code}' \
-            --request POST "$URL" \
-            --header "X-Worker-Queue-Sha: $QUEUE_SHA" \
-            --header 'Content-Type: application/json' \
-            --data '{}')"
+          HTTP_CODE="$(curl --silent --show-error --location             --output /tmp/wake.json             --write-out '%{http_code}'             --request POST "$URL"             --header "X-Worker-Queue-Sha: $QUEUE_SHA"             --header 'Content-Type: application/json'             --data '{}')"
           cat /tmp/wake.json || true
           echo "HTTP_CODE=$HTTP_CODE"
           case "$HTTP_CODE" in

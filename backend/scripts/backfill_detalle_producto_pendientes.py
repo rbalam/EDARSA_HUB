@@ -46,34 +46,26 @@ def _detalle_existente(
 ) -> Dict[date, Dict[str, Any]]:
     rows = _query_edarsahub_dicts(
         f"""
+        WITH detalle_ticket AS (
+            SELECT
+                fecha_operacion,
+                numero_ticket,
+                SUM(CAST(ISNULL(importe_neto, 0) AS decimal(19,4))) AS ventas_ticket,
+                MAX(CAST(ISNULL(pax, 0) AS bigint)) AS pax_ticket
+            FROM {DESTINO}
+            WHERE unidad_negocio_id = %s
+              AND fecha_operacion >= %s
+              AND fecha_operacion < %s
+              AND ISNULL(activo, 1) = 1
+              AND ISNULL(es_kpi_valido, 1) = 1
+            GROUP BY fecha_operacion, numero_ticket
+        )
         SELECT
             fecha_operacion,
-            SUM(
-                CASE
-                    WHEN ISNULL(es_kpi_valido, 1) = 1
-                    THEN ISNULL(importe_neto, 0)
-                    ELSE 0
-                END
-            ) AS ventas_detalle,
-            COUNT(DISTINCT
-                CASE
-                    WHEN ISNULL(es_kpi_valido, 1) = 1
-                    THEN numero_ticket
-                    ELSE NULL
-                END
-            ) AS tickets_detalle,
-            SUM(
-                CASE
-                    WHEN ISNULL(es_kpi_valido, 1) = 1
-                    THEN ISNULL(pax, 0)
-                    ELSE 0
-                END
-            ) AS pax_detalle
-        FROM {DESTINO}
-        WHERE unidad_negocio_id = %s
-          AND fecha_operacion >= %s
-          AND fecha_operacion < %s
-          AND ISNULL(activo, 1) = 1
+            SUM(ventas_ticket) AS ventas_detalle,
+            COUNT(*) AS tickets_detalle,
+            SUM(pax_ticket) AS pax_detalle
+        FROM detalle_ticket
         GROUP BY fecha_operacion
         """,
         (
@@ -107,6 +99,34 @@ def _detalle_concilia(
         and int(detalle.get("tickets") or 0) == int(runtime.get("tickets") or 0)
         and int(detalle.get("pax") or 0) == int(runtime.get("pax") or 0)
     )
+
+
+def _safe_error_code(exc: Exception) -> str:
+    text = str(exc or "").upper()
+    rules = (
+        ("TIMED OUT", "POS_TIMEOUT"),
+        ("TIMEOUT", "POS_TIMEOUT"),
+        ("DBPROCESS IS DEAD", "POS_CONNECTION_UNAVAILABLE"),
+        ("CONNECTION RESET", "POS_CONNECTION_UNAVAILABLE"),
+        ("CONNECTION REFUSED", "POS_CONNECTION_UNAVAILABLE"),
+        ("TICKET SIN DETALLE MONETARIO DISTRIBUIBLE", "MPRO_NO_DISTRIBUTABLE_DETAIL"),
+        ("VENTA NETA INCONSISTENTE", "MPRO_INCONSISTENT_HEADER_NET"),
+        ("IMPORTE BRUTO NEGATIVO", "MPRO_NEGATIVE_GROSS"),
+        ("RESIDUO DE PRORRATEO INVALIDO", "MPRO_INVALID_ALLOCATION_RESIDUAL"),
+        ("VENTA NETA DISTRIBUIDA NO CONCILIA", "MPRO_ALLOCATION_TOTAL_MISMATCH"),
+        ("INVALID COLUMN", "POS_SCHEMA_INVALID_COLUMN"),
+        ("INVALID OBJECT", "POS_SCHEMA_INVALID_OBJECT"),
+        ("DEADLOCK", "POS_DEADLOCK"),
+        ("1205", "POS_DEADLOCK"),
+        ("LOGIN FAILED", "POS_LOGIN_FAILED"),
+        ("SIN CONEXIÓN POS", "POS_CONNECTION_UNAVAILABLE"),
+        ("SIN CONEXION POS", "POS_CONNECTION_UNAVAILABLE"),
+        ("REQUIERE SUCURSAL_ORIGEN_ID", "MPRO_BRANCH_MISSING"),
+    )
+    for needle, code in rules:
+        if needle in text:
+            return code
+    return f"{type(exc).__name__.upper()}_UNCLASSIFIED"
 
 
 def ejecutar_backfill(
@@ -210,7 +230,8 @@ def ejecutar_backfill(
                     "status": "ERROR",
                     "unidad": unidad_codigo,
                     "fecha_operacion": dia,
-                    "error": str(exc),
+                    "error_type": type(exc).__name__,
+                    "error_code": _safe_error_code(exc),
                     "filas_insertadas": 0,
                 }
 
@@ -229,8 +250,10 @@ def ejecutar_backfill(
                 "delta_pax": result.get("delta_pax"),
                 "filas_insertadas": int(result.get("filas_insertadas") or 0),
             }
-            if result.get("error"):
-                item["error"] = result["error"]
+            if result.get("error_type"):
+                item["error_type"] = str(result["error_type"])
+            if result.get("error_code"):
+                item["error_code"] = str(result["error_code"])
 
             unidad_resumen["dias"].append(item)
 

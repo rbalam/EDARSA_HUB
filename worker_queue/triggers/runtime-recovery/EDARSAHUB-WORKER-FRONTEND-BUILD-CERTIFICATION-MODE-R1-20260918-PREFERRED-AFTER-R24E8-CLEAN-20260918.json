@@ -1,0 +1,13 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake canonical Universal Worker for existing preferred job EDARSAHUB-WORKER-FRONTEND-BUILD-CERTIFICATION-MODE-R1-20260918 after confirmed local /app cleanup of staged R24E-R8 artifact. Do not publish R24F. Do not touch SQL or Production.",
+  "existing_job_id": "EDARSAHUB-WORKER-FRONTEND-BUILD-CERTIFICATION-MODE-R1-20260918",
+  "queue_sha": "486f2882e4ad4a107fb8d0c1d509fe9d46405f10",
+  "cleanup_confirmed": {
+    "staged": 0,
+    "unstaged": 0,
+    "untracked": 0,
+    "dirty_artifact": "worker_queue/inbox/EDARSAHUB-OPERACIONES-TABLAJERIAS-R24E-R8-FRONTEND-BUILD-CAPABLE-CERT-R1.json"
+  },
+  "production_touched": false
+}

@@ -30,6 +30,7 @@ from ..templates.template_service import TemplateService
 from ..providers.base import BaseProvider, ProviderFactory
 from ..providers.mock_provider import MockProvider
 from ..providers.twilio_provider import TwilioWhatsAppProvider
+from ..providers.email_smtp_provider import EmailSMTPProvider
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +85,7 @@ class NotificationDispatcher:
         
         # 2. Intentar inicializar Twilio (credenciales desde env vars)
         try:
-            twilio_config = {
+            twilio_config = await self.repository.get_provider_config("whatsapp", "twilio") or {
                 "provider_type": "twilio",
                 "token_ref": "TWILIO_AUTH_TOKEN"
             }
@@ -101,14 +102,9 @@ class NotificationDispatcher:
         except Exception as e:
             logger.warning(f"No se pudo inicializar Twilio provider: {e}")
         
-        # 3. Cargar providers adicionales de BD (omitir si en modo stub)
-        if self._is_stub:
-            logger.info("[DISPATCHER] Modo SQL-only: omitiendo carga de providers desde MongoDB")
-            return
-        
+        # 3. Gate 5D: providers adicionales desde SQL canonico.
         try:
-            # SQL-FIRST P4B: providers legacy en Mongo neutralizados.
-            providers = []
+            providers = await self.repository.get_all_provider_configs(activo=True)
             
             for config in providers:
                 provider_name = config.get("provider")
@@ -276,6 +272,9 @@ class NotificationDispatcher:
         
         provider = self.get_provider(provider_name)
         if not provider:
+            if str(modo_envio).lower() == "real":
+                logger.error("Provider real no disponible para canal=%s provider=%s", canal, provider_name)
+                return {"all_sent": False, "should_retry": True, "error_code": "REAL_PROVIDER_UNAVAILABLE"}
             provider = self._providers.get("mock")
         
         # Renderizar template
@@ -292,7 +291,7 @@ class NotificationDispatcher:
         duplicates = 0
         
         for dest in destinatarios:
-            telefono = dest.get("telefono")
+            telefono = dest.get("email") if str(canal).lower() == "email" else dest.get("telefono")
             user_id = dest.get("user_id")
             
             if not telefono:
@@ -481,6 +480,9 @@ class NotificationDispatcher:
         
         provider = self.get_provider(provider_name)
         if not provider:
+            if str(modo_envio).lower() == "real":
+                result.errors.append("REAL_PROVIDER_UNAVAILABLE")
+                return result
             provider = self._providers.get("mock")
         
         # Renderizar
@@ -494,7 +496,7 @@ class NotificationDispatcher:
         
         # Enviar
         for dest in destinatarios:
-            telefono = dest.get("telefono")
+            telefono = dest.get("email") if str(event.canal).lower() == "email" else dest.get("telefono")
             if not telefono:
                 result.destinatarios_omitidos += 1
                 continue

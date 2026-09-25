@@ -8,11 +8,14 @@ MIRROR = ROOT / "tools" / "mirror_sync" / "mirror_sync_worker.sh"
 def test_control_plane_is_independent_and_supervised():
     control = CONTROL.read_text(encoding="utf-8")
     mirror = MIRROR.read_text(encoding="utf-8")
-    assert "worker_control_plane.py" in mirror
-    assert "start_control_plane" in mirror
-    assert "ensure_control_plane" in mirror
-    assert "CONTROL_PLANE_STARTED=YES" in mirror
+
     assert "edarsahub.worker-control-plane.v1" in control
+
+    # Supervisor owns the control-plane lifecycle independently.
+    assert "start_control_plane" not in mirror
+    assert "ensure_control_plane" not in mirror
+    assert "stop_control_plane" not in mirror
+    assert "CONTROL_PLANE_STARTED=YES" not in mirror
 
 
 def test_orphan_claims_are_quarantined_not_deleted():

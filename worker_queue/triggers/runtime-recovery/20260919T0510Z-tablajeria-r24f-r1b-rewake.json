@@ -1,0 +1,6 @@
+{
+  "existing_job_id": "EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-IMPLEMENTATION-MUTATION-R1B-20260919",
+  "reason": "rewake R24F implementation R1B because terminal not published and target file unchanged",
+  "created_at_utc": "2026-09-19T05:10:00Z",
+  "production_touched": false
+}

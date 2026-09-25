@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "CAVAS-GATE12N-SCOPE-FIX-R2B-CERT-READONLY-R1-20260918",
+  "reason": "Validate canonical wake endpoint after bootstrap PASS for the already-published Cavas Gate12N R2B READ_ONLY certification. Require HTTP 200/202. No new Gate, no duplicate certification, no Production.",
+  "production_touched": false
+}

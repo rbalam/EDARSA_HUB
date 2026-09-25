@@ -2,6 +2,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 BOOTSTRAP = ROOT / "tools/bootstrap/edarsahub_bootstrap_watchdog.py"
+INSTALLER = ROOT / "tools/bootstrap/install_bootstrap_watchdog.sh"
+MIRROR_CONF = ROOT / "tools/mirror_sync/supervisor/edarsahub-mirror-sync.conf"
+MIRROR_START = ROOT / "tools/mirror_sync/mirror_sync_start.sh"
 
 
 def body() -> str:
@@ -10,7 +13,6 @@ def body() -> str:
 
 def test_bootstrap_never_stashes_or_uses_destructive_git():
     text = body()
-
     assert '"stash"' not in text
     assert '"reset"' not in text
     assert '"clean"' not in text
@@ -21,7 +23,6 @@ def test_bootstrap_never_stashes_or_uses_destructive_git():
 
 def test_bootstrap_dirty_shared_app_defers():
     text = body()
-
     assert '"status", "--porcelain=v1", "--untracked-files=all"' in text
     assert "DEFERRED_LOCAL_DIRTY" in text
     assert "FAST_FORWARD_DEFERRED" in text
@@ -30,38 +31,156 @@ def test_bootstrap_dirty_shared_app_defers():
 
 def test_bootstrap_only_allows_strict_fast_forward():
     text = body()
-
     assert '"rev-list", "--left-right", "--count"' in text
     assert "left != 0 or right <= 0" in text
     assert '"merge", "--ff-only"' in text
     assert "NON_FF" in text
 
 
-def test_bootstrap_does_not_own_universal_worker_restart():
+def test_bootstrap_requires_explicit_persistent_authorization():
     text = body()
+    assert 'MIRROR_ENABLE = MIRROR_STATE / "ENABLED"' in text
+    assert 'MIRROR_STOP = MIRROR_STATE / "STOP"' in text
+    assert 'SYNC_PAUSE = APP / ".git" / "EDARSAHUB_SYNC_PAUSED"' in text
+    assert "EXPLICIT_ENABLE_REQUIRED" in text
+    assert "PERSISTENT_KILL_SWITCH" in text
+    assert "BLOCKED_PRODUCTION_ENV" in text
 
-    assert "DEFER_TO_CANONICAL_WORKER_OWNER" in text
-    assert "EXTERNAL_CANONICAL_OWNER" in text
-    assert 'supervisor_restart("WORKER_HEARTBEAT_STALE")' not in text
+
+def test_pod_bootstrap_forces_fail_closed_state():
+    text = INSTALLER.read_text(encoding="utf-8")
+    assert 'rm -f "$MIRROR_ENABLE"' in text
+    assert 'POD_BOOTSTRAP_FAIL_CLOSED_AT_UTC=' in text
+    assert 'supervisorctl stop "$MIRROR_SERVICE"' in text
+    assert "MIRROR_SYNC_STARTUP_POLICY=FAIL_CLOSED" in text
+
+
+def test_mirror_supervisor_does_not_autostart():
+    text = MIRROR_CONF.read_text(encoding="utf-8")
+    assert "autostart=false" in text
+    assert "autorestart=true" in text
+
+
+def test_bootstrap_can_recover_stale_universal_worker_without_mirror_dependency():
+    text = body()
+    assert 'WORKER_SERVICE = os.environ.get("EDARSAHUB_UNIVERSAL_WORKER_SERVICE", "edarsahub-universal-worker")' in text
+    assert "UNIVERSAL_WORKER_STALE_RECOVERY" in text
+    assert "BOOTSTRAP_WATCHDOG_SUPERVISOR_FALLBACK" in text
+    assert 'supervisor_restart("WORKER_HEARTBEAT_STALE", WORKER_SERVICE)' in text
 
 
 def test_bootstrap_may_restart_mirror_only_after_ff():
     text = body()
-
     assert 'SERVICE = os.environ.get("EDARSAHUB_SUPERVISOR_SERVICE", "edarsahub-mirror-sync")' in text
     assert 'supervisor_restart("FAST_FORWARD_APPLIED")' in text
 
 
 def test_bootstrap_explicitly_excludes_production():
     text = body()
-
     assert '"production_touched": False' in text
     assert "Edarsahub_Produccion" not in text
 
 
 def test_bootstrap_state_writes_are_outside_shared_worktree():
     text = body()
-
     assert 'STATE = Path(os.environ.get("EDARSAHUB_BOOTSTRAP_STATE", "/var/lib/edarsahub-bootstrap"))' in text
     assert "STATUS = STATE /" in text
     assert "AUDIT = STATE /" in text
+
+
+def test_mirror_enable_requires_health_gate_before_clearing_kill_switch():
+    text = MIRROR_START.read_text(encoding="utf-8")
+    assert "BLOCKED_PRODUCTION_ENV" in text
+    assert "BLOCKED_WRONG_BRANCH" in text
+    assert "BLOCKED_GLOBAL_PAUSE" in text
+    assert "DEFERRED_LOCAL_DIRTY" in text
+    assert '"HEAD...origin/$DEV_BRANCH"' in text
+    assert 'rm -f "$PERSISTENT_STOP" "$TEMP_STOP"' in text
+    assert text.index('git status --porcelain=v1 --untracked-files=all') < text.index('rm -f "$PERSISTENT_STOP" "$TEMP_STOP"')
+    assert "MIRROR_SYNC_HEALTH_GATE=PASS" in text
+
+
+def test_bootstrap_installs_and_starts_universal_worker_independently():
+    text = INSTALLER.read_text(encoding="utf-8")
+    assert 'WORKER_SERVICE="edarsahub-universal-worker"' in text
+    assert 'edarsahub-universal-worker.conf' in text
+    assert 'supervisorctl restart "$WORKER_SERVICE" || supervisorctl start "$WORKER_SERVICE"' in text
+
+
+def test_bootstrap_recovers_stale_preview_backend_out_of_band():
+    text = body()
+    assert 'BACKEND_SERVICE = os.environ.get("EDARSAHUB_BACKEND_SERVICE", "backend")' in text
+    assert 'BACKEND_WAKE_URL = os.environ.get("EDARSAHUB_BACKEND_WAKE_URL", "http://127.0.0.1:8001/api/internal/worker/wake")' in text
+    assert "def backend_wake_route_health()" in text
+    assert 'code == "401"' in text
+    assert 'supervisor_restart("WAKE_ROUTE_UNHEALTHY", BACKEND_SERVICE)' in text
+    assert "PREVIEW_BACKEND_STALE_RECOVERY" in text
+    assert "BACKEND_RECOVERY_COOLDOWN" in text
+
+
+def test_all_watchdog_supervisor_restarts_are_production_guarded():
+    text = body()
+    assert "def is_production_environment()" in text
+    assert "SUPERVISOR_RESTART_BLOCKED_PRODUCTION_ENV" in text
+    fn = text.split("def supervisor_restart", 1)[1].split("def safe_fast_forward", 1)[0]
+    assert "if is_production_environment():" in fn
+
+
+def test_bootstrap_owns_control_plane_runtime_convergence():
+    text = body()
+
+    assert "def control_plane_runtime_convergence()" in text
+    assert "CONTROL_PLANE_CODE_STALE" in text
+    assert "CONTROL_PLANE_ACTIVE_MARKER" in text
+    assert "CONTROL_PLANE_RUNTIME_STATE" in text
+    assert "CONTROL_PLANE_MAX_RESTART_ATTEMPTS" in text
+    assert "CONTROL_PLANE_RESTART_COOLDOWN_SECONDS" in text
+    assert (
+        'supervisor_restart(\n'
+        '        "CONTROL_PLANE_CODE_STALE",\n'
+        '        CONTROL_PLANE_SERVICE,'
+        in text
+    )
+
+
+def test_control_plane_convergence_requires_clean_canonical_development():
+    text = body()
+
+    assert "def control_plane_repo_is_canonical()" in text
+    assert '"branch", "--show-current"' in text
+    assert '"status",' in text
+    assert '"--porcelain=v1"' in text
+    assert "DEVELOPMENT_NOT_CONVERGED" in text
+    assert "LOCAL_WORK_DIRTY" in text
+
+
+def test_control_plane_convergence_uses_dependency_identity_not_head_only():
+    text = body()
+
+    assert "CONTROL_PLANE_IDENTITY_PATHS" in text
+    assert "worker_control_plane.py" in text
+    assert "worker_maintenance_runtime.py" in text
+    assert "worker_maintenance_controller.py" in text
+    assert "worker_auditor.py" in text
+    assert "worker_repair.py" in text
+    assert 'f"HEAD:{rel}"' in text
+    assert "hashlib.sha256" in text
+
+
+def test_control_plane_convergence_requires_runtime_ack():
+    text = body()
+
+    assert "active_identity" in text
+    assert "active_pid" in text
+    assert "new_pid != previous_pid" in text
+    assert "CONVERGED_AFTER_RESTART" in text
+    assert "ACTIVATION_ACK_TIMEOUT" in text
+
+
+def test_control_plane_convergence_remains_fail_closed():
+    text = body()
+
+    assert '"production_touched": False' in text
+    assert "Edarsahub_Produccion" not in text
+    assert "MIRROR_ENABLE.unlink" not in text
+    assert "MIRROR_STOP.unlink" not in text
