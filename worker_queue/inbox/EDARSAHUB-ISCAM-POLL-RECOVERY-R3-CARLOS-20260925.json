@@ -1,0 +1,104 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-POLL-RECOVERY-R3-CARLOS-20260925",
+  "mode": "MUTATION",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Inteligencia Comercial - Visualizacion Sincronizacion"
+  },
+  "objective": "Corregir la perdida temporal del seguimiento de sincronizacion ISCAM sin relanzar trabajos ni crear bucles: polling resiliente con backoff 2.5/5/10/15s, mantener seguimiento mas alla de 90s, recuperar automaticamente el job activo por unidad al recargar/navegar, mover endpoints SQL bloqueantes de create/status/active a handlers sync de FastAPI para threadpool, conservar diagnostico HTTP/transporte en apiGet/apiPost y mostrar reconexion en amarillo. Conservar maximo un retry POS por dia, SCHEDULER_ADMIN y production_allowed=false.",
+  "scheduling": {
+    "project_id": "EDARSAHUB-CONCILIACIONES",
+    "bounded_context": "INTELIGENCIA_COMERCIAL_REPORTES_ISCAM",
+    "priority_class": "P0",
+    "fairness_weight": 8,
+    "max_parallelism": 1,
+    "resource_claims": [
+      "backend/api/admin_scheduler_resync.py",
+      "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+      "frontend/src/portal-inteligencia/api/client.js",
+      "backend/tests/test_iscam_async_detail_batch_r1.py",
+      "backend/tests/test_iscam_poll_recovery_r3.py"
+    ],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "ISCAM_REPORTES_UI",
+      "ISCAM_DETAIL_BACKFILL"
+    ]
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "@router.post(\"/resync/iscam-detail/jobs\", status_code=202)\nasync def crear_iscam_detail_batch_job(\n    body: IscamDetailBatchRequest,\n    background_tasks: BackgroundTasks,\n    current_user: dict = Depends(require_explicit_permission(\"SCHEDULER_ADMIN\")),\n):\n    fechas = sorted(set(body.fechas or []))\n    if not fechas:\n        raise HTTPException(status_code=400, detail='Debe indicar al menos una fecha')\n    if len(fechas) > 63:\n        raise HTTPException(status_code=400, detail='El máximo por trabajo es 63 fechas')\n\n    unidad = _get_unidad_config(body.unidad_negocio_id)\n    if not unidad:\n        raise HTTPException(status_code=400, detail=f\"Unidad '{body.unidad_negocio_id}' no encontrada\")\n\n    active = _iscam_batch_find_active(body.unidad_negocio_id)\n    if active:\n        return {'success': True, 'reused_existing_job': True, **active}\n\n    payload = _iscam_batch_create(\n        body.unidad_negocio_id,\n        unidad.get('server_id', ''),\n        fechas,\n        body.motivo,\n        current_user.get('email', 'unknown'),\n    )\n    background_tasks.add_task(_run_iscam_detail_batch_job, int(payload['job_id']))\n    return {'success': True, 'reused_existing_job': False, **payload}\n\n\n@router.get(\"/resync/iscam-detail/jobs/{job_id}\")\nasync def obtener_iscam_detail_batch_job(\n    job_id: int,\n    current_user: dict = Depends(require_explicit_permission(\"SCHEDULER_ADMIN\")),\n):\n    row = _iscam_batch_read(job_id)\n    if not row:\n        raise HTTPException(status_code=404, detail='Trabajo ISCAM no encontrado')\n    return {'success': True, **_iscam_batch_payload_from_row(row)}\n\n\n",
+      "new": "@router.post(\"/resync/iscam-detail/jobs\", status_code=202)\ndef crear_iscam_detail_batch_job(\n    body: IscamDetailBatchRequest,\n    background_tasks: BackgroundTasks,\n    current_user: dict = Depends(require_explicit_permission(\"SCHEDULER_ADMIN\")),\n):\n    fechas = sorted(set(body.fechas or []))\n    if not fechas:\n        raise HTTPException(status_code=400, detail='Debe indicar al menos una fecha')\n    if len(fechas) > 63:\n        raise HTTPException(status_code=400, detail='El máximo por trabajo es 63 fechas')\n\n    unidad = _get_unidad_config(body.unidad_negocio_id)\n    if not unidad:\n        raise HTTPException(status_code=400, detail=f\"Unidad '{body.unidad_negocio_id}' no encontrada\")\n\n    active = _iscam_batch_find_active(body.unidad_negocio_id)\n    if active:\n        return {'success': True, 'reused_existing_job': True, **active}\n\n    payload = _iscam_batch_create(\n        body.unidad_negocio_id,\n        unidad.get('server_id', ''),\n        fechas,\n        body.motivo,\n        current_user.get('email', 'unknown'),\n    )\n    background_tasks.add_task(_run_iscam_detail_batch_job, int(payload['job_id']))\n    return {'success': True, 'reused_existing_job': False, **payload}\n\n\n@router.get(\"/resync/iscam-detail/active\")\ndef obtener_iscam_detail_batch_activo(\n    unidad_negocio_id: str,\n    current_user: dict = Depends(require_explicit_permission(\"SCHEDULER_ADMIN\")),\n):\n    active = _iscam_batch_find_active(unidad_negocio_id)\n    if not active:\n        return {'success': True, 'active': False}\n    return {'success': True, 'active': True, **active}\n\n\n@router.get(\"/resync/iscam-detail/jobs/{job_id}\")\ndef obtener_iscam_detail_batch_job(\n    job_id: int,\n    current_user: dict = Depends(require_explicit_permission(\"SCHEDULER_ADMIN\")),\n):\n    row = _iscam_batch_read(job_id)\n    if not row:\n        raise HTTPException(status_code=404, detail='Trabajo ISCAM no encontrado')\n    return {'success': True, **_iscam_batch_payload_from_row(row)}\n\n\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+      "expected_count": 1,
+      "old": "  useEffect(() => {\n    if (!syncJobId) return undefined;\n    let cancelled = false;\n    let timer = null;\n    let consecutivePollErrors = 0;\n\n    const finishJob = async (job) => {\n      if (cancelled) return;\n      setSyncJobId(null);\n      setSyncing(false);\n      await Promise.all([fetchReport(), fetchFreshness()]);\n      if (job.status === 'JOB_SUCCESS') {\n        setSyncMessage({ tipo: 'ok', texto: 'Detalle ISCAM sincronizado y validado.' });\n        return;\n      }\n      const failedDates = Array.isArray(job.failed_dates) ? job.failed_dates : [];\n      const sample = failedDates.slice(0, 3).map((item) => {\n        const code = item?.error_code ? ` (${item.error_code})` : '';\n        return `${item?.fecha || 'fecha'}${code}`;\n      }).join(', ');\n      const extra = failedDates.length > 3 ? ` y ${failedDates.length - 3} más` : '';\n      setSyncMessage({\n        tipo: 'error',\n        texto: `Proceso terminado sin bucle: ${job.successful || 0} día(s) sincronizado(s) y ${job.failed || 0} pendiente(s)${sample ? `: ${sample}${extra}` : ''}.`,\n      });\n    };\n\n    const poll = async () => {\n      const res = await apiGet(`/admin/scheduler/resync/iscam-detail/jobs/${syncJobId}`);\n      if (cancelled) return;\n\n      if (res.estado !== ESTADO.OK || !res.data?.success) {\n        consecutivePollErrors += 1;\n        if (consecutivePollErrors >= 3) {\n          setSyncJobId(null);\n          setSyncing(false);\n          setSyncMessage({\n            tipo: 'error',\n            texto: 'Se perdió temporalmente la lectura del avance. El trabajo del servidor no se reintentará en bucle; vuelve a pulsar Sincronizar faltantes para recuperar el trabajo activo.',\n          });\n          return;\n        }\n        timer = setTimeout(poll, 3000);\n        return;\n      }\n\n      consecutivePollErrors = 0;\n      const job = res.data;\n      setSyncProgress({\n        completed: Number(job.successful || 0),\n        total: Number(job.total || 0),\n        processed: Number(job.processed || 0),\n        failed: Number(job.failed || 0),\n        currentDate: job.current_date || null,\n      });\n\n      if (['JOB_SUCCESS', 'JOB_PARTIAL', 'JOB_FAILED', 'JOB_STALE'].includes(job.status)) {\n        await finishJob(job);\n        return;\n      }\n      timer = setTimeout(poll, 2500);\n    };\n\n    poll();\n    return () => {\n      cancelled = true;\n      if (timer) clearTimeout(timer);\n    };\n  }, [syncJobId, fetchReport, fetchFreshness]);\n\n",
+      "new": "  useEffect(() => {\n    if (!canSynchronize || sinUnidad || syncJobId || syncing) return undefined;\n    let cancelled = false;\n\n    const recoverActiveJob = async () => {\n      const res = await apiGet('/admin/scheduler/resync/iscam-detail/active', {\n        unidad_negocio_id: unidad,\n      });\n      if (cancelled || res.estado !== ESTADO.OK || !res.data?.success || !res.data?.active || !res.data?.job_id) return;\n\n      setSyncProgress({\n        completed: Number(res.data.successful || 0),\n        total: Number(res.data.total || 0),\n        processed: Number(res.data.processed || 0),\n        failed: Number(res.data.failed || 0),\n        currentDate: res.data.current_date || null,\n      });\n      setSyncing(true);\n      setSyncMessage({\n        tipo: 'warning',\n        texto: 'Se recuperó una sincronización ISCAM que ya estaba en curso. Continuando seguimiento sin crear otro trabajo.',\n      });\n      setSyncJobId(String(res.data.job_id));\n    };\n\n    recoverActiveJob();\n    return () => { cancelled = true; };\n  }, [canSynchronize, sinUnidad, syncJobId, syncing, unidad]);\n\n  useEffect(() => {\n    if (!syncJobId) return undefined;\n    let cancelled = false;\n    let timer = null;\n    let pollFailureStartedAt = null;\n\n    const finishJob = async (job) => {\n      if (cancelled) return;\n      setSyncJobId(null);\n      setSyncing(false);\n      await Promise.all([fetchReport(), fetchFreshness()]);\n      if (job.status === 'JOB_SUCCESS') {\n        setSyncMessage({ tipo: 'ok', texto: 'Detalle ISCAM sincronizado y validado.' });\n        return;\n      }\n      const failedDates = Array.isArray(job.failed_dates) ? job.failed_dates : [];\n      const sample = failedDates.slice(0, 3).map((item) => {\n        const code = item?.error_code ? ` (${item.error_code})` : '';\n        return `${item?.fecha || 'fecha'}${code}`;\n      }).join(', ');\n      const extra = failedDates.length > 3 ? ` y ${failedDates.length - 3} más` : '';\n      setSyncMessage({\n        tipo: 'error',\n        texto: `Proceso terminado sin bucle: ${job.successful || 0} día(s) sincronizado(s) y ${job.failed || 0} pendiente(s)${sample ? `: ${sample}${extra}` : ''}.`,\n      });\n    };\n\n    const scheduleRetry = (elapsedMs) => {\n      if (elapsedMs < 10000) return 2500;\n      if (elapsedMs < 30000) return 5000;\n      if (elapsedMs < 90000) return 10000;\n      return 15000;\n    };\n\n    const poll = async () => {\n      const res = await apiGet(`/admin/scheduler/resync/iscam-detail/jobs/${syncJobId}`);\n      if (cancelled) return;\n\n      if (res.estado === ESTADO.SIN_SESION || res.estado === ESTADO.SESION_EXPIRADA || res.estado === ESTADO.SIN_PERMISO) {\n        setSyncJobId(null);\n        setSyncing(false);\n        setSyncMessage({\n          tipo: 'error',\n          texto: res.mensaje || 'La sesión ya no permite consultar el avance de la sincronización.',\n        });\n        return;\n      }\n\n      if (res.estado !== ESTADO.OK || !res.data?.success) {\n        if (pollFailureStartedAt === null) pollFailureStartedAt = Date.now();\n        const elapsedMs = Date.now() - pollFailureStartedAt;\n        const diagnostic = [\n          res.status ? `HTTP ${res.status}` : null,\n          res.error_code || null,\n          res.mensaje || null,\n        ].filter(Boolean).join(' · ');\n        const longReconnect = elapsedMs >= 90000;\n        setSyncMessage({\n          tipo: 'warning',\n          texto: longReconnect\n            ? `No se ha podido leer el avance durante 90 segundos. El trabajo del servidor sigue intacto y continuaré reconectando cada 15 s${diagnostic ? ` · ${diagnostic}` : ''}.`\n            : `Sincronización en curso · reconectando al seguimiento${diagnostic ? ` · ${diagnostic}` : ''}.`,\n        });\n        timer = setTimeout(poll, scheduleRetry(elapsedMs));\n        return;\n      }\n\n      pollFailureStartedAt = null;\n      setSyncMessage((prev) => prev?.tipo === 'warning' ? null : prev);\n      const job = res.data;\n      setSyncProgress({\n        completed: Number(job.successful || 0),\n        total: Number(job.total || 0),\n        processed: Number(job.processed || 0),\n        failed: Number(job.failed || 0),\n        currentDate: job.current_date || null,\n      });\n\n      if (['JOB_SUCCESS', 'JOB_PARTIAL', 'JOB_FAILED', 'JOB_STALE'].includes(job.status)) {\n        await finishJob(job);\n        return;\n      }\n      timer = setTimeout(poll, 2500);\n    };\n\n    poll();\n    return () => {\n      cancelled = true;\n      if (timer) clearTimeout(timer);\n    };\n  }, [syncJobId, fetchReport, fetchFreshness]);\n\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+      "expected_count": 1,
+      "old": "          className={`text-sm rounded-lg px-4 py-3 border ${syncMessage.tipo === 'ok'\n            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'\n            : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}>",
+      "new": "          className={`text-sm rounded-lg px-4 py-3 border ${syncMessage.tipo === 'ok'\n            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'\n            : syncMessage.tipo === 'warning'\n              ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'\n              : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}>"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/api/client.js",
+      "expected_count": 1,
+      "old": "  } catch (err) {\n    const status = err?.response?.status;\n    if (status === 401) return { estado: ESTADO.SESION_EXPIRADA, data: null, status };\n    if (status === 403) return { estado: ESTADO.SIN_PERMISO, data: null, status };\n    return { estado: ESTADO.ERROR, data: null, status: status || 0 };\n  }\n}\n\n/** POST autenticado. `config` permite overrides puntuales (p.ej. timeout). */",
+      "new": "  } catch (err) {\n    const status = err?.response?.status || 0;\n    const data = err?.response?.data ?? null;\n    const detail = data?.detail;\n    const mensaje = typeof detail === 'string'\n      ? detail\n      : (typeof data?.message === 'string' ? data.message : (err?.message || 'Error de comunicación'));\n    const failure = { data, status, mensaje, error_code: err?.code || null };\n    if (status === 401) return { estado: ESTADO.SESION_EXPIRADA, ...failure };\n    if (status === 403) return { estado: ESTADO.SIN_PERMISO, ...failure };\n    return { estado: ESTADO.ERROR, ...failure };\n  }\n}\n\n/** POST autenticado. `config` permite overrides puntuales (p.ej. timeout). */"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/api/client.js",
+      "expected_count": 1,
+      "old": "  } catch (err) {\n    const status = err?.response?.status;\n    if (status === 401) return { estado: ESTADO.SESION_EXPIRADA, data: null, status };\n    if (status === 403) return { estado: ESTADO.SIN_PERMISO, data: null, status };\n    return { estado: ESTADO.ERROR, data: null, status: status || 0 };\n  }\n}\n\nexport { intelApi };",
+      "new": "  } catch (err) {\n    const status = err?.response?.status || 0;\n    const data = err?.response?.data ?? null;\n    const detail = data?.detail;\n    const mensaje = typeof detail === 'string'\n      ? detail\n      : (typeof data?.message === 'string' ? data.message : (err?.message || 'Error de comunicación'));\n    const failure = { data, status, mensaje, error_code: err?.code || null };\n    if (status === 401) return { estado: ESTADO.SESION_EXPIRADA, ...failure };\n    if (status === 403) return { estado: ESTADO.SIN_PERMISO, ...failure };\n    return { estado: ESTADO.ERROR, ...failure };\n  }\n}\n\nexport { intelApi };"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_async_detail_batch_r1.py",
+      "expected_count": 1,
+      "old": "def test_frontend_starts_one_job_and_polls_short_requests():\n    text = FRONTEND.read_text(encoding='utf-8')\n    assert \"const [syncJobId, setSyncJobId] = useState(null);\" in text\n    assert \"apiPost('/admin/scheduler/resync/iscam-detail/jobs'\" in text\n    assert \"apiGet(`/admin/scheduler/resync/iscam-detail/jobs/${syncJobId}`)\" in text\n    assert \"timer = setTimeout(poll, 2500);\" in text\n    assert \"consecutivePollErrors >= 3\" in text\n    assert \"Proceso terminado sin bucle:\" in text\n    assert \"Días procesados\" in text\n",
+      "new": "def test_frontend_starts_one_job_and_polls_with_recovery():\n    text = FRONTEND.read_text(encoding='utf-8')\n    assert \"const [syncJobId, setSyncJobId] = useState(null);\" in text\n    assert \"apiPost('/admin/scheduler/resync/iscam-detail/jobs'\" in text\n    assert \"apiGet(`/admin/scheduler/resync/iscam-detail/jobs/${syncJobId}`)\" in text\n    assert \"apiGet('/admin/scheduler/resync/iscam-detail/active'\" in text\n    assert \"pollFailureStartedAt\" in text\n    assert \"elapsedMs < 90000\" in text\n    assert \"return 15000;\" in text\n    assert \"Sincronización en curso · reconectando al seguimiento\" in text\n    assert \"consecutivePollErrors >= 3\" not in text\n    assert \"Proceso terminado sin bucle:\" in text\n    assert \"Días procesados\" in text\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_poll_recovery_r3.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nBACKEND = ROOT / 'backend' / 'api' / 'admin_scheduler_resync.py'\nFRONTEND = ROOT / 'frontend' / 'src' / 'portal-inteligencia' / 'pages' / 'ReportesISCAMPage.jsx'\nCLIENT = ROOT / 'frontend' / 'src' / 'portal-inteligencia' / 'api' / 'client.js'\n\n\ndef test_progress_endpoints_use_threadpool_friendly_sync_handlers_and_active_recovery():\n    text = BACKEND.read_text(encoding='utf-8')\n    assert '@router.get(\"/resync/iscam-detail/active\")' in text\n    assert 'def obtener_iscam_detail_batch_activo(' in text\n    assert 'async def obtener_iscam_detail_batch_activo(' not in text\n    assert 'def obtener_iscam_detail_batch_job(' in text\n    assert 'async def obtener_iscam_detail_batch_job(' not in text\n    assert 'def crear_iscam_detail_batch_job(' in text\n    assert \"return {'success': True, 'active': False}\" in text\n\n\ndef test_polling_never_relaunches_server_job_and_recovers_with_backoff():\n    text = FRONTEND.read_text(encoding='utf-8')\n    poll_block = text.split('let pollFailureStartedAt = null;', 1)[1].split('const syncMissingClosedDays', 1)[0]\n    assert \"apiPost('/admin/scheduler/resync/iscam-detail/jobs'\" not in poll_block\n    assert 'setSyncJobId(null);' not in poll_block.split(\"if (res.estado === ESTADO.SIN_SESION\", 1)[0]\n    assert 'elapsedMs >= 90000' in poll_block\n    assert 'timer = setTimeout(poll, scheduleRetry(elapsedMs));' in poll_block\n    assert 'return 15000;' in poll_block\n    assert \"prev?.tipo === 'warning' ? null : prev\" in poll_block\n\n\ndef test_frontend_recovers_existing_active_job_after_reload_or_navigation():\n    text = FRONTEND.read_text(encoding='utf-8')\n    assert \"apiGet('/admin/scheduler/resync/iscam-detail/active'\" in text\n    assert 'Continuando seguimiento sin crear otro trabajo.' in text\n    assert 'setSyncJobId(String(res.data.job_id));' in text\n\n\ndef test_api_client_preserves_transport_diagnostics():\n    text = CLIENT.read_text(encoding='utf-8')\n    assert text.count(\"error_code: err?.code || null\") == 2\n    assert text.count(\"const data = err?.response?.data ?? null;\") == 2\n    assert text.count(\"const mensaje = typeof detail === 'string'\") == 2\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/api/admin_scheduler_resync.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_poll_recovery_r3.py",
+        "backend/tests/test_iscam_async_detail_batch_r1.py",
+        "backend/tests/test_iscam_sync_permission_progress_r1.py",
+        "backend/tests/test_iscam_detail_only_manual_resync_r37.py"
+      ]
+    }
+  ]
+}
