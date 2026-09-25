@@ -83,14 +83,83 @@ def _read_json(path: Path) -> dict[str, Any]:
     except Exception: return {}
 
 def acquire_writer_lock(repo: Path, *, job_id: str, owner: str, owner_pid: int | None = None, stale_after_seconds: int = DEFAULT_LOCK_TTL_SECONDS) -> dict[str, Any]:
-    lock_dir = _git_dir(repo.resolve()) / "universal-worker-queue" / LOCK_NAME; lock_dir.parent.mkdir(parents=True,exist_ok=True); pid=int(owner_pid or os.getpid()); stale_evidence=None
+    lock_dir = _git_dir(repo.resolve()) / "universal-worker-queue" / LOCK_NAME
+    lock_dir.parent.mkdir(parents=True, exist_ok=True)
+    pid = int(owner_pid or os.getpid())
+    stale_evidence = None
+
     if lock_dir.exists():
-        previous=_read_json(lock_dir/"owner.json"); created=float(previous.get("created_epoch") or 0); previous_pid=int(previous.get("owner_pid") or 0); age=max(0.0,time.time()-created) if created else float("inf"); stale=age>=stale_after_seconds and not _pid_alive(previous_pid)
-        if not stale: raise GitGuardError("GIT_LOCK_BUSY", {"lock_owner":previous,"lock_dir":str(lock_dir),"age_seconds":age})
-        preserved=lock_dir.with_name(f"git-writer.lock.stale.{int(time.time())}.{previous.get('job_id','unknown')}"); os.replace(lock_dir,preserved); stale_evidence={"previous":previous,"preserved_at":str(preserved),"age_seconds":age}
-    try: lock_dir.mkdir()
-    except FileExistsError as exc: raise GitGuardError("GIT_LOCK_BUSY", {"lock_dir":str(lock_dir)}) from exc
-    token={"job_id":job_id,"owner":owner,"owner_pid":pid,"created_at_utc":utc_now(),"created_epoch":time.time(),"lock_dir":str(lock_dir),"stale_lock_recovered":stale_evidence}; (lock_dir/"owner.json").write_text(json.dumps(token,ensure_ascii=False,indent=2)+"\n",encoding="utf-8"); return token
+        previous = _read_json(lock_dir / "owner.json")
+        created = float(previous.get("created_epoch") or 0)
+        previous_pid = int(previous.get("owner_pid") or 0)
+        previous_pid_alive = _pid_alive(previous_pid)
+        age = (
+            max(0.0, time.time() - created)
+            if created
+            else float("inf")
+        )
+
+        # A process-owned lock cannot remain valid after its owner PID dies.
+        # Recover it immediately instead of forcing unrelated Worker jobs to
+        # wait for the full TTL. Locks without a trustworthy PID retain the
+        # conservative TTL policy.
+        dead_process_owner = previous_pid > 0 and not previous_pid_alive
+        ttl_expired_unknown_owner = (
+            previous_pid <= 0 and age >= stale_after_seconds
+        )
+        stale = dead_process_owner or ttl_expired_unknown_owner
+
+        if not stale:
+            raise GitGuardError(
+                "GIT_LOCK_BUSY",
+                {
+                    "lock_owner": previous,
+                    "lock_dir": str(lock_dir),
+                    "age_seconds": age,
+                    "owner_pid_alive": previous_pid_alive,
+                },
+            )
+
+        recovery_reason = (
+            "OWNER_PID_DEAD"
+            if dead_process_owner
+            else "TTL_EXPIRED_OWNER_UNKNOWN"
+        )
+        preserved = lock_dir.with_name(
+            "git-writer.lock.stale."
+            f"{int(time.time())}."
+            f"{previous.get('job_id', 'unknown')}"
+        )
+        os.replace(lock_dir, preserved)
+        stale_evidence = {
+            "previous": previous,
+            "preserved_at": str(preserved),
+            "age_seconds": age,
+            "recovery_reason": recovery_reason,
+        }
+
+    try:
+        lock_dir.mkdir()
+    except FileExistsError as exc:
+        raise GitGuardError(
+            "GIT_LOCK_BUSY",
+            {"lock_dir": str(lock_dir)},
+        ) from exc
+
+    token = {
+        "job_id": job_id,
+        "owner": owner,
+        "owner_pid": pid,
+        "created_at_utc": utc_now(),
+        "created_epoch": time.time(),
+        "lock_dir": str(lock_dir),
+        "stale_lock_recovered": stale_evidence,
+    }
+    (lock_dir / "owner.json").write_text(
+        json.dumps(token, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return token
 
 def release_writer_lock(repo: Path, token: dict[str, Any]) -> None:
     lock_dir=Path(str(token.get("lock_dir") or "")); current=_read_json(lock_dir/"owner.json") if lock_dir.is_dir() else {}
