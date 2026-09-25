@@ -1,0 +1,88 @@
+{
+  "job_id": "EDARSAHUB-BOS-WORKER-DELIVERABLE-MATERIALIZER-GATE0-READONLY-R2-FORCED-CONTRACT",
+  "title": "Worker BOS Deliverable Materializer Gate0 R2 Forced Contract ReadOnly",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "actions": [],
+  "domain": "BOS_WORKER",
+  "module": "UNIVERSAL_WORKER_DELIVERABLE_CONTRACT",
+  "triggered_by": "TABLAJERIAS_4_GATE2_R2_BLOCKED",
+  "context": {
+    "blocked_domain_job": "EDARSAHUB-TABLAJERIA-GATE2-TECHNICAL-MAPPING-STRUCTURED-READONLY-R2",
+    "blocked_reason": "Gate2 R2 has checks PASS but completed_deliverables empty and missing_deliverables 24/24",
+    "previous_bos_job": "EDARSAHUB-BOS-WORKER-DELIVERABLE-MATERIALIZER-GATE0-READONLY-R1",
+    "previous_bos_issue": "R1 certified READ_ONLY but repository_evidence, deliverable_flow_map, root_cause_hypothesis, files_to_touch_later, tests_to_add_later and tablajeria_gate3_block_status were missing",
+    "gate3_tablajeria_status": "HOLD",
+    "mutation_allowed": false
+  },
+  "required_deliverables": [
+    "REPOSITORY_EVIDENCE",
+    "DELIVERABLE_FLOW_MAP",
+    "REQUIRED_DELIVERABLES_PROPAGATION_AUDIT",
+    "RESULT_DELIVERABLES_CREATION_AUDIT",
+    "COMPLETED_DELIVERABLES_RULE_AUDIT",
+    "MISSING_DELIVERABLES_RULE_AUDIT",
+    "WORK_COMPLETION_CERTIFICATION_RULE_AUDIT",
+    "PUBLISHER_PRESERVATION_AUDIT",
+    "ROOT_CAUSE_HYPOTHESIS",
+    "FILES_TO_TOUCH_LATER",
+    "TESTS_TO_ADD_LATER",
+    "TABLAJERIA_GATE3_BLOCK_STATUS",
+    "FAIL_CLOSED_DECISION"
+  ],
+  "read_only_scope": {
+    "files_to_inspect": [
+      "tools/mirror_sync/worker_deliverable_contract.py",
+      "tools/mirror_sync/universal_job_dispatcher.py",
+      "tools/mirror_sync/universal_job_result_publisher.py",
+      "backend/tests/test_worker_deliverable_contract.py"
+    ],
+    "patterns_to_search": [
+      "required_deliverables",
+      "deliverables",
+      "completed_deliverables",
+      "missing_deliverables",
+      "PENDING_DELIVERABLES",
+      "work_completion",
+      "certification_basis",
+      "CERTIFIED_READ_ONLY",
+      "NON_MUTATING_CHECKS_ONLY"
+    ]
+  },
+  "mandatory_findings": {
+    "repository_evidence": "Map exact files/functions/lines related to deliverable contract evaluation.",
+    "deliverable_flow_map": "Explain required_deliverables -> deliverables -> completed_deliverables -> missing_deliverables -> work_completion -> certification_basis.",
+    "required_deliverables_propagation_audit": "State where required_deliverables are copied from job payload into result evaluation.",
+    "result_deliverables_creation_audit": "State whether result.deliverables is ever materialized from repository/sql evidence.",
+    "completed_deliverables_rule_audit": "Explain why completed_deliverables can be empty while checks PASS.",
+    "missing_deliverables_rule_audit": "Explain why all required deliverables can remain missing.",
+    "work_completion_certification_rule_audit": "Explain when COMPLETE vs PENDING_DELIVERABLES is selected.",
+    "publisher_preservation_audit": "Verify if publisher preserves deliverables/completed/missing/certification_basis.",
+    "root_cause_hypothesis": "Give exact root cause hypothesis, not generic PASS.",
+    "files_to_touch_later": "List exact files for a later mutation gate.",
+    "tests_to_add_later": "List exact tests required before mutation.",
+    "tablajeria_gate3_block_status": "Must be BLOCKED unless Gate2 R2 deliverables are complete.",
+    "fail_closed_decision": "If any mandatory finding is missing, certification must be PENDING_DELIVERABLES, not CERTIFIED_READ_ONLY."
+  },
+  "forbidden": [
+    "No production access",
+    "No DDL",
+    "No DML",
+    "No backend mutation",
+    "No frontend mutation",
+    "No SQL definitive creation",
+    "No MongoDB",
+    "No LIVE endpoints",
+    "No Gate3 Tablajeria",
+    "No compensating manual deliverables"
+  ],
+  "expected_result_contract": {
+    "status": "READ_ONLY_COMPLETE",
+    "production_touched": false,
+    "files_changed": [],
+    "gate3_allowed": false,
+    "tablajeria_gate3_block_status": "BLOCKED",
+    "work_completion": "COMPLETE only if all required_deliverables are materialized; otherwise PENDING_DELIVERABLES",
+    "certification": "CERTIFIED_READ_ONLY only if all required deliverables are present; otherwise PENDING_DELIVERABLES"
+  }
+}
