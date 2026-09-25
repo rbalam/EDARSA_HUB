@@ -1,0 +1,64 @@
+{
+  "base_sha": "139ffe7cfd4f8a6af9331b10662a15777120c212",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-09-25T01:38:36Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-FORMAS-PAGO-130QRO-202507-R40-REAL-CARLOS-20260924",
+  "operation": "ISCAM_PAYMENTS_ONLY_RESYNC",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-25T01:39:07Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "filas",
+              "tickets",
+              "fecha_min",
+              "fecha_max",
+              "importe",
+              "propina"
+            ],
+            "name": "130qro_202507_post",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                913,
+                839,
+                "2025-07-01",
+                "2025-07-31",
+                "4488606.00",
+                "432804.00"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-25T01:38:04Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker resincronizo exclusivamente Pagos por Ticket para una unidad y rango autorizados y certifico el resultado con SQL de solo lectura. No modifico Sync_Sales, Cuentas, Comandas, Cortes ni Produccion.",
+  "tests": "PASS",
+  "units": [
+    "130QRO"
+  ],
+  "work_completion": "COMPLETE"
+}
