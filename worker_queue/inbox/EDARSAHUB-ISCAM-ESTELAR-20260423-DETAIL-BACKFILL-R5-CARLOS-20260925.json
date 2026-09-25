@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-ESTELAR-20260423-DETAIL-BACKFILL-R5-CARLOS-20260925",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b5f1c51417f6eb46a104e2279ba748111f848986",
+  "production_allowed": false,
+  "objective": "Sincronizador | ESTELAR | 23 abril 2026 | Detalle ISCAM puntual",
+  "description": "Sincronizador | ESTELAR | 2026-04-23 | Reparar unico dia pendiente del detalle ISCAM",
+  "human_summary_language": "es",
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "actions": [],
+  "units": [
+    "ESTELAR"
+  ],
+  "fecha_inicio": "2026-04-23",
+  "fecha_fin": "2026-04-24",
+  "dry_run": false,
+  "confirm_detail_backfill": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "estelar_20260423_detail_audit_gate",
+          "sql": "SELECT 1 AS audit_gate"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Autoavance"
+  },
+  "constraints": [
+    "Sincronizador",
+    "Solo detalle ISCAM",
+    "No modificar encabezado",
+    "No Production",
+    "Solo 2026-04-23",
+    "No reprocesar otros dias"
+  ]
+}
