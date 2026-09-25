@@ -4,70 +4,76 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "e2910f8ba5ee98b6b22e002bed57eca54fa80fa3",
-  "generated_at_utc": "2026-09-25T16:17:37Z",
+  "generated_at_utc": "2026-09-25T16:18:54Z",
   "history": {
     "done_total_local": 1065,
-    "pending_total_local": 0,
+    "pending_total_local": 1,
     "processing_total_local": 1,
     "rejected_total_local": 947,
-    "results_total_local": 1827
+    "results_total_local": 1828
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 314,
+      "age_seconds": 1,
+      "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130QRO-202605-R6-REAL-CARLOS-20260925",
+      "reason": null,
+      "state": "PENDING"
+    },
+    {
+      "age_seconds": 392,
       "job_id": "EDARSAHUB-ISCAM-MULTI-202605-DETAIL-BACKFILL-R1-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 286,
+      "age_seconds": 363,
       "job_id": "EDARSAHUB-ISCAM-MULTI-202605-DETAIL-BACKFILL-R2-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3454,
+      "age_seconds": 3532,
       "job_id": "EDARSAHUB-ISCAM-MULTI-202606-DETAIL-BACKFILL-R2-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2973,
+      "age_seconds": 3050,
       "job_id": "EDARSAHUB-ISCAM-MULTI-202606-DETAIL-BACKFILL-R3-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1805,
-      "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130MID-202606-R4-REAL-CARLOS-20260925",
+      "age_seconds": 9,
+      "job_id": "EDARSAHUB-ISCAM-SYNC-PERMISSION-PROGRESS-R1-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 78,
-      "job_id": "EDARSAHUB-ISCAM-SYNC-PERMISSION-PROGRESS-R1-CARLOS-20260925",
+      "age_seconds": 1882,
+      "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130MID-202606-R4-REAL-CARLOS-20260925",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
     }
   ],
   "local_development_sha": "e2910f8ba5ee98b6b22e002bed57eca54fa80fa3",
-  "oldest_pending_age_seconds": 0,
+  "oldest_pending_age_seconds": 1,
   "production_touched": false,
   "queue_blocked": 0,
   "queue_depth": 1,
   "queue_done_local_recent": 0,
-  "queue_pending": 0,
+  "queue_pending": 1,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 5,
-  "queue_running": 1,
+  "queue_result_ready_recent": 6,
+  "queue_running": 0,
   "remote_development_sha": "e2910f8ba5ee98b6b22e002bed57eca54fa80fa3",
   "runtime": {
     "current_job_id": "EDARSAHUB-ISCAM-SYNC-PERMISSION-PROGRESS-R1-CARLOS-20260925",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-25T16:17:27Z",
-    "last_receive_utc": "2026-09-25T16:17:33Z",
+    "last_cycle_utc": "2026-09-25T16:18:49Z",
+    "last_receive_utc": "2026-09-25T16:18:53Z",
     "last_terminal_utc": "2026-09-25T16:12:41Z",
     "pid": "678",
     "runtime_fingerprint": {
