@@ -1,0 +1,55 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-MULTI-202606-DETAIL-BACKFILL-R1-CARLOS-20260924",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "abc2b3b6bdc54f0d8b422b40550bb5465f4f0008",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "priority": "P0",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Autoavance"
+  },
+  "objective": "Sincronizador | Junio 2026 | Backfill mensual multi-sucursal | CIENFUEGOS + ESTELAR + 130MID + ORIGEN | Excluir 130QRO | Reparar solo detalle ISCAM contra Runtime V2 y certificar el bloque completo.",
+  "actions": [],
+  "units": [
+    "CIENFUEGOS",
+    "ESTELAR",
+    "130MID",
+    "ORIGEN"
+  ],
+  "fecha_inicio": "2026-06-01",
+  "fecha_fin": "2026-07-01",
+  "dry_run": false,
+  "confirm_detail_backfill": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "junio_2026_multi_post_backfill",
+          "sql": "WITH u AS (SELECT unidad_negocio_id,CAST(fecha_operacion AS date) f,SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) v,SUM(CAST(ISNULL(tickets_total,0) AS bigint)) t,SUM(CAST(ISNULL(pax_total,0) AS bigint)) p FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id IN ('CIENFUEGOS','ESTELAR','130MID','ORIGEN') AND fecha_operacion>='2026-06-01' AND fecha_operacion<'2026-07-01' GROUP BY unidad_negocio_id,CAST(fecha_operacion AS date)),x AS (SELECT unidad_negocio_id,CAST(fecha_operacion AS date) f,numero_ticket,SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) v,MAX(CAST(ISNULL(pax,0) AS bigint)) p FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('CIENFUEGOS','ESTELAR','130MID','ORIGEN') AND fecha_operacion>='2026-06-01' AND fecha_operacion<'2026-07-01' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY unidad_negocio_id,CAST(fecha_operacion AS date),numero_ticket),d AS (SELECT unidad_negocio_id,f,SUM(v) v,COUNT_BIG(*) t,SUM(p) p FROM x GROUP BY unidad_negocio_id,f),m AS (SELECT COUNT(*) c FROM u FULL JOIN d ON d.unidad_negocio_id=u.unidad_negocio_id AND d.f=u.f WHERE ABS(ISNULL(u.v,0)-ISNULL(d.v,0))>0.05 OR ISNULL(u.t,0)<>ISNULL(d.t,0) OR ISNULL(u.p,0)<>ISNULL(d.p,0)) SELECT c dias_con_diferencia,1/CASE WHEN c=0 THEN 1 ELSE 0 END parity_gate FROM m"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No tocar Runtime V2/header",
+    "Junio 2026 completo",
+    "Solo detalle ISCAM",
+    "Excluir 130QRO",
+    "Una sola ejecucion multi-sucursal",
+    "Fail closed si queda cualquier diferencia"
+  ],
+  "expected_output": {
+    "status": "OPERATIONAL_COMPLETE",
+    "quality_gate": "PASS",
+    "certification": "CERTIFIED_OPERATIONAL",
+    "production_touched": false
+  }
+}
