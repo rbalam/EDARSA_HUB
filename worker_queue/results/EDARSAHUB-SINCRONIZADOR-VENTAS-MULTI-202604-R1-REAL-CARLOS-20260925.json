@@ -1,0 +1,116 @@
+{
+  "base_sha": "a99eb707f65b8099502dc8f0dc1103ee620bb44c",
+  "blockers": [
+    "comercial_range_resync_failed_units:ESTELAR"
+  ],
+  "canonical_sql_mutation": true,
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-25T17:36:18Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-MULTI-202604-R1-REAL-CARLOS-20260925",
+  "operation": "COMERCIAL_RANGE_RESYNC",
+  "operation_summary": {
+    "fecha_fin": "2026-04-30",
+    "fecha_inicio": "2026-04-01",
+    "unidades": [
+      {
+        "detail_success": true,
+        "header_success": true,
+        "records_errored": 0,
+        "records_inserted": 0,
+        "records_processed": 30,
+        "records_skipped": 30,
+        "records_updated": 0,
+        "returncode": 0,
+        "stage": "HEADER_KPI",
+        "success": true,
+        "unidad": "130QRO",
+        "warning": ""
+      },
+      {
+        "detail_success": true,
+        "header_success": true,
+        "records_errored": 0,
+        "records_inserted": 0,
+        "records_processed": 30,
+        "records_skipped": 2,
+        "records_updated": 28,
+        "returncode": 0,
+        "stage": "HEADER_KPI",
+        "success": true,
+        "unidad": "CIENFUEGOS",
+        "warning": ""
+      },
+      {
+        "detail_success": false,
+        "header_success": true,
+        "records_errored": 0,
+        "records_inserted": 0,
+        "records_processed": 30,
+        "records_skipped": 30,
+        "records_updated": 0,
+        "returncode": 5,
+        "stage": "HEADER_KPI",
+        "success": true,
+        "unidad": "ESTELAR",
+        "warning": "El detalle ISCAM tiene días bloqueados que no conciliaron contra Runtime V2."
+      },
+      {
+        "detail_success": true,
+        "header_success": true,
+        "records_errored": 0,
+        "records_inserted": 0,
+        "records_processed": 30,
+        "records_skipped": 11,
+        "records_updated": 19,
+        "returncode": 0,
+        "stage": "HEADER_KPI",
+        "success": true,
+        "unidad": "130MID",
+        "warning": ""
+      },
+      {
+        "detail_success": true,
+        "header_success": true,
+        "records_errored": 0,
+        "records_inserted": 0,
+        "records_processed": 30,
+        "records_skipped": 30,
+        "records_updated": 0,
+        "returncode": 0,
+        "stage": "HEADER_KPI",
+        "success": true,
+        "unidad": "ORIGEN",
+        "warning": ""
+      }
+    ],
+    "unidades_fallidas": [
+      "ESTELAR"
+    ],
+    "unidades_ok": 4,
+    "unidades_total": 5
+  },
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-25T17:36:32Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-25T17:21:03Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "units": [
+    "130QRO",
+    "CIENFUEGOS",
+    "ESTELAR",
+    "130MID",
+    "ORIGEN"
+  ],
+  "work_completion": "NOT_CERTIFIED"
+}
