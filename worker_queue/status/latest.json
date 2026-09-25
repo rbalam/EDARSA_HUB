@@ -4,167 +4,167 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "a99eb707f65b8099502dc8f0dc1103ee620bb44c",
-  "generated_at_utc": "2026-09-25T17:40:54Z",
+  "generated_at_utc": "2026-09-25T17:42:11Z",
   "history": {
     "done_total_local": 1077,
-    "pending_total_local": 2,
-    "processing_total_local": 0,
-    "rejected_total_local": 966,
-    "results_total_local": 1859
+    "pending_total_local": 0,
+    "processing_total_local": 1,
+    "rejected_total_local": 967,
+    "results_total_local": 1860
   },
-  "intake_sla_breached": true,
+  "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 169,
-      "job_id": "EDARSAHUB-FORMAS-PAGO-ORIGEN-202404-R49-REAL-CARLOS-20260925",
-      "reason": null,
-      "state": "PENDING"
-    },
-    {
-      "age_seconds": 2106,
+      "age_seconds": 2184,
       "job_id": "EDARSAHUB-FORMAS-PAGO-130MID-202412-R47-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1230,
+      "age_seconds": 1308,
       "job_id": "EDARSAHUB-FORMAS-PAGO-130MID-202412-R48-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2104,
+      "age_seconds": 2181,
       "job_id": "EDARSAHUB-FORMAS-PAGO-130QRO-202412-R47-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1286,
+      "age_seconds": 1364,
       "job_id": "EDARSAHUB-FORMAS-PAGO-130QRO-202412-R48-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 144,
+      "age_seconds": 222,
       "job_id": "EDARSAHUB-FORMAS-PAGO-130QRO-202412-R49-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2101,
+      "age_seconds": 2178,
       "job_id": "EDARSAHUB-FORMAS-PAGO-CIENFUEGOS-202412-R47-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1228,
+      "age_seconds": 1306,
       "job_id": "EDARSAHUB-FORMAS-PAGO-CIENFUEGOS-202412-R48-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 51,
+      "age_seconds": 128,
       "job_id": "EDARSAHUB-FORMAS-PAGO-CIENFUEGOS-202412-R49-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2099,
+      "age_seconds": 2176,
       "job_id": "EDARSAHUB-FORMAS-PAGO-ESTELAR-202412-R47-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1193,
+      "age_seconds": 1270,
       "job_id": "EDARSAHUB-FORMAS-PAGO-ESTELAR-202412-R48-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 0,
+      "age_seconds": 54,
       "job_id": "EDARSAHUB-FORMAS-PAGO-ESTELAR-202412-R49-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2109,
+      "age_seconds": 2186,
       "job_id": "EDARSAHUB-FORMAS-PAGO-ORIGEN-202404-R47-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1205,
+      "age_seconds": 1283,
       "job_id": "EDARSAHUB-FORMAS-PAGO-ORIGEN-202404-R48-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2204,
+      "age_seconds": 19,
+      "job_id": "EDARSAHUB-FORMAS-PAGO-ORIGEN-202404-R49-REAL-CARLOS-20260925",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2281,
       "job_id": "EDARSAHUB-ISCAM-ASYNC-DETAIL-SYNC-R1-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1797,
+      "age_seconds": 1874,
       "job_id": "EDARSAHUB-ISCAM-ASYNC-DETAIL-SYNC-R2-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3262,
+      "age_seconds": 3339,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130QRO-202604-R1-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2474,
+      "age_seconds": 2551,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CIENFUEGOS-202604-R1-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 227,
+      "age_seconds": 304,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-MULTI-202604-R1-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 79,
+      "age_seconds": 156,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-MULTI-202604-R2-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2498,
+      "age_seconds": 2575,
       "job_id": "EDARSAHUB-WORKER-COMERCIAL-MULTI-UNIT-R1-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2111,
+      "age_seconds": 2189,
       "job_id": "EDARSAHUB-WORKER-COMERCIAL-MULTI-UNIT-R2-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
   "local_development_sha": "a99eb707f65b8099502dc8f0dc1103ee620bb44c",
-  "oldest_pending_age_seconds": 169,
+  "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
-  "queue_pending": 1,
+  "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 21,
+  "queue_result_ready_recent": 22,
   "queue_running": 0,
   "remote_development_sha": "a99eb707f65b8099502dc8f0dc1103ee620bb44c",
   "runtime": {
-    "current_job_id": "EDARSAHUB-FORMAS-PAGO-ESTELAR-202412-R49-REAL-CARLOS-20260925",
+    "current_job_id": "EDARSAHUB-FORMAS-PAGO-ORIGEN-202404-R49-REAL-CARLOS-20260925",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-25T17:40:47Z",
-    "last_receive_utc": "2026-09-25T17:40:49Z",
-    "last_terminal_utc": "2026-09-25T17:40:03Z",
+    "last_cycle_utc": "2026-09-25T17:42:06Z",
+    "last_receive_utc": "2026-09-25T17:42:09Z",
+    "last_terminal_utc": "2026-09-25T17:41:17Z",
     "pid": "607",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "5c51c38ff6c2d0afeb185ce13079e2498087e12d",
