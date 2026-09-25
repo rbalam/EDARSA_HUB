@@ -84,6 +84,15 @@ jobs:
 
       - name: Backend OpenAPI smoke
         shell: bash
+        env:
+          # CI-only placeholders: route/OpenAPI import smoke must not require
+          # live Development or Production database credentials.
+          EDARSAHUB_SQL_HOST: ci.invalid
+          EDARSAHUB_SQL_PORT: "1433"
+          EDARSAHUB_SQL_DATABASE: EDARSAHUB_CI
+          EDARSAHUB_SQL_USER: ci_readonly
+          EDARSAHUB_SQL_PASSWORD: ci-not-a-real-secret
+          SERVER_SECRET_KEY: ci-openapi-smoke-only
         run: |
           set -euo pipefail
           python tools/repository_safety/backend_route_smoke.py
