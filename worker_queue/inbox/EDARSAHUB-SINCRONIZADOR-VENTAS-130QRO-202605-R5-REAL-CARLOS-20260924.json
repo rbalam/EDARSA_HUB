@@ -1,0 +1,46 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130QRO-202605-R5-REAL-CARLOS-20260924",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "eb0cfde5d4913cee35c58aaa8ced1518696e01d8",
+  "production_allowed": false,
+  "objective": "Sincronizador | Ventas | 130QRO | Mayo 2026 | Reintento R5 | Encabezado + Detalle | Reprocesamiento completo mensual para asegurar encabezado + detalle.",
+  "description": "Sincronizador | Ventas | 130QRO | Mayo 2026 | Reintento R5 | Encabezado + Detalle",
+  "human_summary_language": "es",
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "actions": [],
+  "units": [
+    "130QRO"
+  ],
+  "fecha_inicio": "2026-05-01",
+  "fecha_fin": "2026-05-31",
+  "dry_run": false,
+  "confirm_comercial_range_resync": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "ventas_130qro_202605_r5_paridad",
+          "sql": "SELECT 1 AS audit_gate"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Autoavance"
+  },
+  "constraints": [
+    "Sincronizador",
+    "130QRO",
+    "Mes completo",
+    "Encabezado + detalle",
+    "No Production",
+    "No dividir por dia",
+    "Reprocesamiento real"
+  ]
+}
