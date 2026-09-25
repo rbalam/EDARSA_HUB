@@ -95,6 +95,7 @@ jobs:
           SERVER_SECRET_KEY: ci-openapi-smoke-only
           JWT_SECRET: ci-jwt-smoke-only
           ENV: development
+          EDARSAHUB_EVIDENCIAS_DIR: /tmp/edarsahub-ci-evidencias
         run: |
           set -euo pipefail
           python tools/repository_safety/backend_route_smoke.py
