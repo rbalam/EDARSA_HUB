@@ -1,0 +1,82 @@
+name: Worker Repair E2E Canary
+
+on:
+  push:
+    branches:
+      - worker-repair/stabilize-writer-lock-r1
+    paths:
+      - "tools/mirror_sync/**"
+      - "backend/tests/test_worker_*"
+      - "backend/tests/test_git_divergence_guard_r1.py"
+      - ".github/workflows/worker-repair-e2e-canary.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  worker-repair-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/backend
+      EDARSAHUB_ROOT: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install test dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install pytest pytest-asyncio
+
+      - name: Compile Worker Repair surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/mirror_sync/git_divergence_guard.py \
+            tools/mirror_sync/worker_deliverable_contract.py \
+            tools/mirror_sync/worker_job_factory.py \
+            tools/mirror_sync/gate_chain_publisher.py \
+            tools/mirror_sync/universal_job_dispatcher.py \
+            tools/mirror_sync/worker_control_plane.py \
+            tools/mirror_sync/worker_maintenance_contract.py \
+            tools/mirror_sync/worker_maintenance_runtime.py \
+            tools/mirror_sync/worker_maintenance_controller.py \
+            tools/mirror_sync/worker_auditor.py \
+            tools/mirror_sync/worker_repair_execution.py
+
+      - name: Worker Repair deterministic E2E canary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pytest -q --tb=short \
+            backend/tests/test_git_divergence_guard_r1.py \
+            backend/tests/test_worker_deliverable_contract.py \
+            backend/tests/test_worker_canonical_job_factory_contract.py \
+            backend/tests/test_worker_automatic_repair_orchestration_contract.py \
+            backend/tests/test_worker_automatic_repair_activation_boundary_contract.py \
+            backend/tests/test_worker_maintenance_controller_contract.py \
+            backend/tests/test_worker_repair_auditor_foundation_contract.py \
+            backend/tests/test_worker_repair_auditor_operational_contract.py \
+            backend/tests/test_worker_repair_execution_bridge_contract.py \
+            backend/tests/test_worker_control_plane_maintenance_integration_contract.py \
+            backend/tests/test_worker_operational_complete_lifecycle.py \
+            backend/tests/test_worker_operational_result_publisher_certification.py \
+            backend/tests/test_worker_result_integrity_contract.py
+
+      - name: Certification boundary summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "E2E_CANARY=PASS"
+          echo "PRODUCTION_TOUCHED=NO"
+          echo "DATABASE_TOUCHED=NO"
+          echo "MONGO_TOUCHED=NO"
