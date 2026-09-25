@@ -12287,7 +12287,7 @@ import os
 from datetime import datetime
 
 # Directorio para almacenar evidencias
-EVIDENCIAS_DIR = "/app/uploads/evidencias"
+EVIDENCIAS_DIR = os.environ.get("EDARSAHUB_EVIDENCIAS_DIR", "/app/uploads/evidencias")
 os.makedirs(EVIDENCIAS_DIR, exist_ok=True)
 
 # Modelos Pydantic para Informes de Auditoría

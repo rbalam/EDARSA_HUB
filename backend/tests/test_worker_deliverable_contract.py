@@ -624,3 +624,124 @@ def test_bridge_rejects_invalid_deliverable_specs():
         "DELIVERABLE_SOURCE_OCCURRENCE_INVALID"
         in errors
     )
+
+
+def test_generic_materializer_composes_multisource_object():
+    from tools.mirror_sync.worker_deliverable_contract import (
+        materialize_deliverables,
+    )
+
+    checks = [
+        {
+            "type": "repository_contract_audit",
+            "repository_evidence": {
+                "files": ["a.py", "b.py"],
+            },
+        },
+        {
+            "type": "git_diff_check",
+            "status": "PASS",
+            "output": "clean",
+        },
+    ]
+
+    value = materialize_deliverables(
+        ["REPOSITORY_EVIDENCE"],
+        {
+            "REPOSITORY_EVIDENCE": {
+                "selector": {
+                    "type": "object",
+                    "fields": {
+                        "files": {
+                            "source": {
+                                "check_type": "repository_contract_audit",
+                                "occurrence": 1,
+                            },
+                            "selector": {
+                                "type": "json_path",
+                                "path": ["repository_evidence", "files"],
+                            },
+                        },
+                        "git_status": {
+                            "source": {
+                                "check_type": "git_diff_check",
+                                "occurrence": 1,
+                            },
+                            "selector": {
+                                "type": "json_path",
+                                "path": ["status"],
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        checks,
+    )
+
+    assert value == {
+        "REPOSITORY_EVIDENCE": {
+            "files": ["a.py", "b.py"],
+            "git_status": "PASS",
+        }
+    }
+
+
+def test_object_materializer_fails_closed_when_field_is_empty():
+    from tools.mirror_sync.worker_deliverable_contract import (
+        materialize_deliverables,
+    )
+
+    checks = [
+        {
+            "type": "repository_contract_audit",
+            "repository_evidence": {
+                "files": [],
+            },
+        },
+    ]
+
+    try:
+        materialize_deliverables(
+            ["REPOSITORY_EVIDENCE"],
+            {
+                "REPOSITORY_EVIDENCE": {
+                    "selector": {
+                        "type": "object",
+                        "fields": {
+                            "files": {
+                                "source": {
+                                    "check_type": "repository_contract_audit",
+                                    "occurrence": 1,
+                                },
+                                "selector": {
+                                    "type": "json_path",
+                                    "path": ["repository_evidence", "files"],
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            checks,
+        )
+    except ValueError as exc:
+        assert str(exc) == "DELIVERABLE_OBJECT_FIELD_EMPTY:files"
+    else:
+        raise AssertionError("empty object field must fail closed")
+
+
+def test_dispatcher_never_certifies_readonly_with_missing_deliverables():
+    dispatcher = (
+        ROOT
+        / "tools"
+        / "mirror_sync"
+        / "universal_job_dispatcher.py"
+    ).read_text(encoding="utf-8")
+
+    assert 'result["certification"] = "PENDING_DELIVERABLES"' in dispatcher
+    assert "deliverables_complete" in dispatcher
+    assert (
+        "not result.get(\"missing_deliverables\")"
+        in dispatcher
+    )

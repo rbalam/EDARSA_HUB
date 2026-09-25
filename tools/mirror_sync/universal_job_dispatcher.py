@@ -717,12 +717,22 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                 )
                 if not deliverable_evaluation.complete:
                     result["work_completion"] = "PENDING_DELIVERABLES"
-            if not result["blockers"]:
+            deliverables_complete = (
+                not result.get("required_deliverables")
+                or not result.get("missing_deliverables")
+            )
+            if not result["blockers"] and deliverables_complete:
                 result["status"] = "READ_ONLY_COMPLETE"
                 result["percent_complete"] = 100
                 result["certification"] = "CERTIFIED_READ_ONLY"
-                result["certification_basis"] = "NON_MUTATING_CHECKS_ONLY"
-                result["summary_es"] = "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, sin acciones, sin cambios tracked del repositorio y sin tocar Produccion."
+                result["certification_basis"] = "NON_MUTATING_CHECKS_PLUS_DELIVERABLES"
+                result["summary_es"] = "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion."
+            elif not result["blockers"]:
+                result["status"] = "READ_ONLY_COMPLETE"
+                result["percent_complete"] = 95
+                result["certification"] = "PENDING_DELIVERABLES"
+                result["work_completion"] = "PENDING_DELIVERABLES"
+                result["summary_es"] = "Los checks de solo lectura terminaron, pero faltan entregables requeridos; el resultado no se certifica."
             else:
                 result["percent_complete"] = 0
                 result["certification"] = "NOT_CERTIFIED"
@@ -766,11 +776,34 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
             result["files_changed"] = []
             result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
             result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
-            if not result["blockers"]:
+            if result.get("required_deliverables"):
+                deliverable_evaluation = evaluate_deliverables(
+                    result.get("required_deliverables"),
+                    result.get("deliverables"),
+                )
+                result["missing_deliverables"] = list(
+                    deliverable_evaluation.missing
+                )
+            else:
+                deliverable_evaluation = None
+
+            deliverables_complete = (
+                deliverable_evaluation is None
+                or deliverable_evaluation.complete
+            )
+
+            if not result["blockers"] and deliverables_complete:
                 result["status"] = "READ_ONLY_COMPLETE"
                 result["percent_complete"] = 100
                 result["certification"] = "CERTIFIED_READ_ONLY"
-                result["summary_es"] = "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura. No modifico repositorio, base ni Produccion."
+                result["work_completion"] = "COMPLETE"
+                result["summary_es"] = "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion."
+            elif not result["blockers"]:
+                result["status"] = "READ_ONLY_COMPLETE"
+                result["percent_complete"] = 95
+                result["certification"] = "PENDING_DELIVERABLES"
+                result["work_completion"] = "PENDING_DELIVERABLES"
+                result["summary_es"] = "Las auditorias SQL terminaron, pero faltan entregables requeridos; el resultado no se certifica."
             else:
                 result["percent_complete"] = 0
                 result["certification"] = "NOT_CERTIFIED"

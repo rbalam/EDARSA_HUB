@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sys
+import traceback
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -16,6 +17,7 @@ def main() -> int:
         import server
     except Exception as exc:
         print(f"BACKEND_IMPORT=FAIL:{type(exc).__name__}:{exc}")
+        traceback.print_exc()
         return 1
 
     app = getattr(server, "app", None)

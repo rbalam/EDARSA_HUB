@@ -44,6 +44,12 @@ def _job(
         "production_allowed": False,
         "objective": "Reparacion deterministica Worker.",
         "human_summary_language": "es",
+        "requester": {
+            "email": "worker-repair@edarsahub.internal",
+            "source": "worker_repair",
+            "project": "EDARSAHUB",
+            "chat": "worker-repair",
+        },
         "mode": "MUTATION",
         "actions": [
             {

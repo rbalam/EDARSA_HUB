@@ -42,6 +42,7 @@ PROTECTED_UNIVERSAL_COMPONENTS: Final[frozenset[str]] = frozenset(
         "tools/mirror_sync/worker_runtime_fingerprint.py",
         "tools/mirror_sync/gate_chain_publisher.py",
         "tools/mirror_sync/git_divergence_guard.py",
+        "tools/mirror_sync/worker_job_factory.py",
     }
 )
 
