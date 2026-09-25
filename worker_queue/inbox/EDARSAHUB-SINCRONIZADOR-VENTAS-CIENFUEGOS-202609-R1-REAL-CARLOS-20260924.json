@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CIENFUEGOS-202609-R1-REAL-CARLOS-20260924",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "139ffe7cfd4f8a6af9331b10662a15777120c212",
+  "production_allowed": false,
+  "objective": "Sincronizador | Ventas | CIENFUEGOS | Septiembre 2026 | Encabezado + Detalle | Ejecutar sincronizacion comercial mensual completa del 01/09/2026 al 30/09/2026 usando COMERCIAL_RANGE_RESYNC y certificar encabezado y detalle.",
+  "description": "Sincronizador | Ventas | CIENFUEGOS | Septiembre 2026 | Encabezado + Detalle",
+  "human_summary_language": "es",
+  "mode": "COMERCIAL_RANGE_RESYNC",
+  "actions": [],
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "fecha_inicio": "2026-09-01",
+  "fecha_fin": "2026-09-30",
+  "dry_run": false,
+  "confirm_comercial_range_resync": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "ventas_cienfuegos_202609_paridad",
+          "sql": "WITH r AS (\n  SELECT fecha_operacion,\n         CAST(SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) AS decimal(19,4)) ventas,\n         SUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets,\n         SUM(CAST(ISNULL(pax_total,0) AS bigint)) pax\n  FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime\n  WHERE unidad_negocio_id='CIENFUEGOS'\n    AND fecha_operacion>='2026-09-01' AND fecha_operacion<'2026-10-01'\n  GROUP BY fecha_operacion\n), dt AS (\n  SELECT fecha_operacion, numero_ticket,\n         SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) venta,\n         MAX(CAST(ISNULL(pax,0) AS bigint)) pax\n  FROM dbo.Comercial_Inteligencia_VentasDetalleProducto\n  WHERE unidad_negocio_id='CIENFUEGOS'\n    AND fecha_operacion>='2026-09-01' AND fecha_operacion<'2026-10-01'\n    AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1\n  GROUP BY fecha_operacion, numero_ticket\n), d AS (\n  SELECT fecha_operacion,\n         CAST(SUM(venta) AS decimal(19,4)) ventas,\n         COUNT_BIG(*) tickets,\n         SUM(CAST(ISNULL(pax,0) AS bigint)) pax\n  FROM dt\n  GROUP BY fecha_operacion\n), x AS (\n  SELECT COALESCE(r.fecha_operacion,d.fecha_operacion) fecha,\n         ISNULL(r.ventas,0) ventas_header, ISNULL(d.ventas,0) ventas_detail,\n         ISNULL(r.tickets,0) tickets_header, ISNULL(d.tickets,0) tickets_detail,\n         ISNULL(r.pax,0) pax_header, ISNULL(d.pax,0) pax_detail\n  FROM r\n  FULL OUTER JOIN d ON d.fecha_operacion=r.fecha_operacion\n)\nSELECT COUNT(*) dias_evaluados,\n       SUM(CASE WHEN ABS(ventas_header-ventas_detail)<=0.05\n                 AND tickets_header=tickets_detail\n                 AND pax_header=pax_detail THEN 1 ELSE 0 END) dias_paridad,\n       SUM(CASE WHEN ABS(ventas_header-ventas_detail)>0.05\n                 OR tickets_header<>tickets_detail\n                 OR pax_header<>pax_detail THEN 1 ELSE 0 END) dias_diferencia,\n       CAST(SUM(ventas_header) AS decimal(19,4)) ventas_header_mes,\n       CAST(SUM(ventas_detail) AS decimal(19,4)) ventas_detail_mes,\n       SUM(tickets_header) tickets_header_mes,\n       SUM(tickets_detail) tickets_detail_mes,\n       SUM(pax_header) pax_header_mes,\n       SUM(pax_detail) pax_detail_mes\nFROM x"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Autoavance"
+  },
+  "constraints": [
+    "Sincronizador",
+    "Mes completo en una sola ejecucion",
+    "Encabezado + detalle",
+    "No Production",
+    "No dividir por dia",
+    "Certificacion SQL posterior"
+  ]
+}
