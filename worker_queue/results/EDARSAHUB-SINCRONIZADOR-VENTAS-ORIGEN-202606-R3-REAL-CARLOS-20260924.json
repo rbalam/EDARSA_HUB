@@ -1,0 +1,71 @@
+{
+  "base_sha": "139ffe7cfd4f8a6af9331b10662a15777120c212",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-09-25T01:47:02Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-ORIGEN-202606-R3-REAL-CARLOS-20260924",
+  "operation": "COMERCIAL_RANGE_RESYNC",
+  "operation_summary": {
+    "committed": true,
+    "detail_success": true,
+    "event": "comercial_range_summary",
+    "fecha_fin": "2026-06-30",
+    "fecha_inicio": "2026-06-01",
+    "header_success": true,
+    "records_errored": 0,
+    "records_inserted": 0,
+    "records_processed": 30,
+    "records_skipped": 30,
+    "records_updated": 0,
+    "stage": "HEADER_KPI",
+    "success": true,
+    "unidad": "ORIGEN",
+    "warning": ""
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-25T01:47:10Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "audit_gate"
+            ],
+            "name": "ventas_origen_202606_paridad",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-25T01:46:56Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto la re-sincronizacion comercial cerrada para una unidad y rango autorizado usando el handler oficial; valido header KPI y detalle ISCAM y certifico el destino con SQL de solo lectura. No acepto shell, comandos ni rutas desde la solicitud y no toco Produccion.",
+  "tests": "PASS",
+  "units": [
+    "ORIGEN"
+  ],
+  "work_completion": "COMPLETE"
+}
