@@ -1,0 +1,87 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-SYNC-PERMISSION-PROGRESS-R2-CARLOS-20260925",
+  "mode": "MUTATION",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Inteligencia Comercial - Visualizacion Sincronizacion"
+  },
+  "objective": "Aplicar la correccion funcional ya validada de Reportes ISCAM: boton Sincronizar faltantes solo para permiso efectivo SCHEDULER_ADMIN y progreso real Días sincronizados X de Y. R2 corrige exclusivamente el bloqueo infraestructural de R1: el frontend_build de 140s excedio la ventana del Agent Guard antes del commit. Mantener MUTATION corta con pruebas pytest; el build se certificara despues mediante FRONTEND_BUILD_CERTIFICATION no mutante. No tocar SQL ni Produccion.",
+  "scheduling": {
+    "project_id": "EDARSAHUB-CONCILIACIONES",
+    "bounded_context": "INTELIGENCIA_COMERCIAL_REPORTES_ISCAM",
+    "priority_class": "P1",
+    "fairness_weight": 4,
+    "max_parallelism": 1,
+    "resource_claims": [
+      "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+      "backend/tests/test_iscam_freshness_manual_sync_r31.py",
+      "backend/tests/test_iscam_sync_permission_progress_r1.py"
+    ],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "ISCAM_REPORTES_UI"
+    ]
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+      "expected_count": 1,
+      "old": "  const [syncing, setSyncing] = useState(false);\n  const [syncMessage, setSyncMessage] = useState(null);\n\n  const unidad = unidadSeleccionada;",
+      "new": "  const [syncing, setSyncing] = useState(false);\n  const [syncMessage, setSyncMessage] = useState(null);\n  const [canSynchronize, setCanSynchronize] = useState(false);\n  const [syncPermissionLoading, setSyncPermissionLoading] = useState(true);\n  const [syncProgress, setSyncProgress] = useState({ completed: 0, total: 0 });\n\n  const unidad = unidadSeleccionada;"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+      "expected_count": 1,
+      "old": "  useEffect(() => {\n    fetchReport();\n    fetchFreshness();\n  }, [fetchReport, fetchFreshness]);\n\n  const syncMissingClosedDays = async () => {",
+      "new": "  const fetchSyncPermission = useCallback(async () => {\n    setSyncPermissionLoading(true);\n    const res = await apiGet('/auth/me/effective-permissions');\n    const flat = Array.isArray(res.data?.permissions_flat) ? res.data.permissions_flat : [];\n    setCanSynchronize(\n      res.estado === ESTADO.OK &&\n      flat.some((code) => String(code || '').trim().toUpperCase() === 'SCHEDULER_ADMIN')\n    );\n    setSyncPermissionLoading(false);\n  }, []);\n\n  useEffect(() => {\n    fetchReport();\n    fetchFreshness();\n  }, [fetchReport, fetchFreshness]);\n\n  useEffect(() => {\n    fetchSyncPermission();\n  }, [fetchSyncPermission]);\n\n  const syncMissingClosedDays = async () => {"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+      "expected_count": 1,
+      "old": "  const syncMissingClosedDays = async () => {\n    const headerGap = Boolean(freshness?.stale);\n    const detailGap = Boolean(freshness?.detail_stale);\n    const detailOnly = detailGap && !headerGap;\n    const syncFrom = detailOnly\n      ? freshness?.detail_missing_from\n      : (freshness?.missing_from || freshness?.detail_missing_from);\n    const syncTo = detailOnly\n      ? freshness?.detail_missing_to\n      : (freshness?.missing_to || freshness?.detail_missing_to);\n    if (!(headerGap || detailGap) || !syncFrom || !syncTo || syncing) return;\n    setSyncing(true);\n    setSyncMessage(null);\n    try {\n      const chunks = splitDateChunks(syncFrom, syncTo, 1);\n      for (const [fechaInicio, fechaFin] of chunks) {\n        const basePayload = {\n          tipo_sync: 'comercial_ventas_cerradas',\n          unidad_negocio_id: unidad,\n          fecha_inicio: fechaInicio,\n          fecha_fin: fechaFin,\n          motivo: detailOnly ? 'ISCAM sincronizar detalle faltante' : 'ISCAM sincronizar dias cerrados faltantes',\n          detail_only: detailOnly,\n        };\n        const dry = await apiPost('/admin/scheduler/resync/execute', { ...basePayload, dry_run: true }, { timeout: 120000 });\n        if (dry.estado !== ESTADO.OK || dry.data?.success !== true) {\n          const dryError = dry.data?.error_message || dry.data?.resultado?.error_message || dry.data?.detail || dry.mensaje;\n          throw new Error(dryError || `No se pudo validar la sincronización para ${fechaInicio} a ${fechaFin}`);\n        }\n        const real = await apiPost('/admin/scheduler/resync/execute', { ...basePayload, dry_run: false }, { timeout: 120000 });\n        if (real.estado !== ESTADO.OK || real.data?.success !== true) {\n          const realError = real.data?.error_message || real.data?.resultado?.error_message || real.data?.detail || real.mensaje;\n          throw new Error(realError || `No se pudo completar la sincronización para ${fechaInicio} a ${fechaFin}`);\n        }\n      }\n      await Promise.all([fetchReport(), fetchFreshness()]);\n      setSyncMessage({\n        tipo: 'ok',\n        texto: detailOnly ? 'Detalle ISCAM sincronizado y validado.' : 'Sincronización de faltantes completada.',\n      });\n    } catch (error) {\n      setSyncMessage({ tipo: 'error', texto: error?.message || 'No se pudo sincronizar el rango faltante.' });\n    } finally {\n      setSyncing(false);\n    }\n  };",
+      "new": "  const syncMissingClosedDays = async () => {\n    const headerGap = Boolean(freshness?.stale);\n    const detailGap = Boolean(freshness?.detail_stale);\n    const detailOnly = detailGap && !headerGap;\n    const syncFrom = detailOnly\n      ? freshness?.detail_missing_from\n      : (freshness?.missing_from || freshness?.detail_missing_from);\n    const syncTo = detailOnly\n      ? freshness?.detail_missing_to\n      : (freshness?.missing_to || freshness?.detail_missing_to);\n    if (!canSynchronize || !(headerGap || detailGap) || !syncFrom || !syncTo || syncing) return;\n\n    const candidateDates = detailOnly\n      ? (freshness?.detail_problem_dates || [])\n      : (freshness?.missing_closed_dates || []);\n    const syncDates = [...new Set(candidateDates.filter(Boolean))].sort();\n    const chunks = syncDates.length\n      ? syncDates.map((fecha) => [fecha, fecha])\n      : splitDateChunks(syncFrom, syncTo, 1);\n\n    setSyncProgress({ completed: 0, total: chunks.length });\n    setSyncing(true);\n    setSyncMessage(null);\n    try {\n      for (const [fechaInicio, fechaFin] of chunks) {\n        const basePayload = {\n          tipo_sync: 'comercial_ventas_cerradas',\n          unidad_negocio_id: unidad,\n          fecha_inicio: fechaInicio,\n          fecha_fin: fechaFin,\n          motivo: detailOnly ? 'ISCAM sincronizar detalle faltante' : 'ISCAM sincronizar dias cerrados faltantes',\n          detail_only: detailOnly,\n        };\n        const dry = await apiPost('/admin/scheduler/resync/execute', { ...basePayload, dry_run: true }, { timeout: 120000 });\n        if (dry.estado !== ESTADO.OK || dry.data?.success !== true) {\n          const dryError = dry.data?.error_message || dry.data?.resultado?.error_message || dry.data?.detail || dry.mensaje;\n          throw new Error(dryError || `No se pudo validar la sincronización para ${fechaInicio} a ${fechaFin}`);\n        }\n        const real = await apiPost('/admin/scheduler/resync/execute', { ...basePayload, dry_run: false }, { timeout: 120000 });\n        if (real.estado !== ESTADO.OK || real.data?.success !== true) {\n          const realError = real.data?.error_message || real.data?.resultado?.error_message || real.data?.detail || real.mensaje;\n          throw new Error(realError || `No se pudo completar la sincronización para ${fechaInicio} a ${fechaFin}`);\n        }\n        setSyncProgress((prev) => ({ ...prev, completed: prev.completed + 1 }));\n      }\n      await Promise.all([fetchReport(), fetchFreshness()]);\n      setSyncMessage({\n        tipo: 'ok',\n        texto: detailOnly ? 'Detalle ISCAM sincronizado y validado.' : 'Sincronización de faltantes completada.',\n      });\n    } catch (error) {\n      setSyncMessage({ tipo: 'error', texto: error?.message || 'No se pudo sincronizar el rango faltante.' });\n    } finally {\n      setSyncing(false);\n    }\n  };"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+      "expected_count": 1,
+      "old": "          <div className=\"self-center text-xs text-slate-400\" data-testid=\"iscam-freshness-status\">\n            {freshnessLoading\n              ? 'Verificando actualización...'\n              : freshness?.detail_stale\n                ? `Detalle incompleto: ${freshness.detail_problem_dates?.length || 0} día(s) · KPI hasta ${formatDateMx(freshness.latest_canonical_date)}`\n                : freshness?.latest_canonical_date\n                  ? `Actualizado hasta ${formatDateMx(freshness.latest_canonical_date)}`\n                  : 'Sin fecha canónica disponible'}\n          </div>\n          {(freshness?.stale || freshness?.detail_stale) && (\n            <button onClick={syncMissingClosedDays} disabled={syncing} data-testid=\"iscam-sync-missing\"\n              className=\"inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-sky-600 text-white hover:bg-sky-500 disabled:opacity-40 disabled:cursor-not-allowed\">\n              <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />\n              {syncing ? 'Sincronizando...' : 'Sincronizar faltantes'}\n            </button>\n          )}",
+      "new": "          <div className=\"self-center text-xs text-slate-400\" data-testid=\"iscam-freshness-status\">\n            {syncing\n              ? `Días sincronizados ${syncProgress.completed} de ${syncProgress.total} días`\n              : freshnessLoading\n                ? 'Verificando actualización...'\n                : freshness?.detail_stale\n                  ? `Detalle incompleto: ${freshness.detail_problem_dates?.length || 0} día(s) · KPI hasta ${formatDateMx(freshness.latest_canonical_date)}`\n                  : freshness?.latest_canonical_date\n                    ? `Actualizado hasta ${formatDateMx(freshness.latest_canonical_date)}`\n                    : 'Sin fecha canónica disponible'}\n          </div>\n          {!syncPermissionLoading && canSynchronize && (freshness?.stale || freshness?.detail_stale) && (\n            <button onClick={syncMissingClosedDays} disabled={syncing} data-testid=\"iscam-sync-missing\"\n              className=\"inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-sky-600 text-white hover:bg-sky-500 disabled:opacity-40 disabled:cursor-not-allowed\">\n              <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />\n              {syncing ? 'Sincronizando...' : 'Sincronizar faltantes'}\n            </button>\n          )}"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_iscam_freshness_manual_sync_r31.py",
+      "expected_count": 1,
+      "old": "    assert 'splitDateChunks(freshness.missing_from, freshness.missing_to, 30)' in text",
+      "new": "    assert 'splitDateChunks(syncFrom, syncTo, 1)' in text"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_sync_permission_progress_r1.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nFRONTEND = ROOT / 'frontend' / 'src' / 'portal-inteligencia' / 'pages' / 'ReportesISCAMPage.jsx'\n\n\ndef _source():\n    return FRONTEND.read_text(encoding='utf-8')\n\n\ndef test_sync_button_uses_canonical_effective_permission():\n    text = _source()\n    assert \"'/auth/me/effective-permissions'\" in text\n    assert \"'SCHEDULER_ADMIN'\" in text\n    assert 'const [canSynchronize, setCanSynchronize] = useState(false);' in text\n    assert '!syncPermissionLoading && canSynchronize && (freshness?.stale || freshness?.detail_stale)' in text\n    assert 'if (!canSynchronize || !(headerGap || detailGap)' in text\n\n\ndef test_sync_progress_counts_only_successful_real_days():\n    text = _source()\n    assert 'const [syncProgress, setSyncProgress] = useState({ completed: 0, total: 0 });' in text\n    assert 'Días sincronizados ${syncProgress.completed} de ${syncProgress.total} días' in text\n    assert 'freshness?.detail_problem_dates || []' in text\n    assert 'freshness?.missing_closed_dates || []' in text\n    assert 'syncDates.map((fecha) => [fecha, fecha])' in text\n    assert 'setSyncProgress({ completed: 0, total: chunks.length });' in text\n\n    real_pos = text.index(\"const real = await apiPost('/admin/scheduler/resync/execute'\")\n    real_ok_pos = text.index('if (real.estado !== ESTADO.OK || real.data?.success !== true)', real_pos)\n    increment_pos = text.index('setSyncProgress((prev) => ({ ...prev, completed: prev.completed + 1 }));', real_ok_pos)\n    assert real_pos < real_ok_pos < increment_pos\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_sync_permission_progress_r1.py",
+        "backend/tests/test_iscam_detail_only_manual_resync_r37.py",
+        "backend/tests/test_iscam_freshness_manual_sync_r31.py"
+      ]
+    }
+  ]
+}
