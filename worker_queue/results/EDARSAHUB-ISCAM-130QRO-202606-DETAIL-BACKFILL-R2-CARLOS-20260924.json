@@ -1,0 +1,220 @@
+{
+  "base_sha": "eb0cfde5d4913cee35c58aaa8ced1518696e01d8",
+  "blockers": [],
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-09-25T04:48:17Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-130QRO-202606-DETAIL-BACKFILL-R2-CARLOS-20260924",
+  "operation": "ISCAM_DETAIL_BACKFILL",
+  "operation_summary": {
+    "dias_bloqueados": 0,
+    "dias_candidatos": 2,
+    "dias_evaluados": 30,
+    "dias_reparables": 2,
+    "dias_sin_runtime": 0,
+    "dias_ya_ok": 28,
+    "fecha_fin_exclusivo": "2026-07-01",
+    "fecha_inicio": "2026-06-01",
+    "filas_insertadas": 564,
+    "modo": "COMMIT",
+    "unidades": [
+      {
+        "bloqueados": 0,
+        "candidatos": 2,
+        "dias": [
+          {
+            "fecha_operacion": "2026-06-01",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-02",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-03",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-04",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-05",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-06",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-07",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-08",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-09",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-10",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-11",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-12",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-13",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-14",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-15",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-16",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "delta_pax": 0,
+            "delta_tickets": 0,
+            "delta_ventas": "-8E-9",
+            "fecha_operacion": "2026-06-17",
+            "filas_insertadas": 229,
+            "pax_pos": 41,
+            "pax_runtime": 41,
+            "status": "OK_HEADER_CANONICO",
+            "tickets_pos": 13,
+            "tickets_runtime": 13,
+            "ventas_pos": "112811.999999992",
+            "ventas_runtime": "112812.00"
+          },
+          {
+            "delta_pax": 0,
+            "delta_tickets": 0,
+            "delta_ventas": "1.3E-8",
+            "fecha_operacion": "2026-06-18",
+            "filas_insertadas": 335,
+            "pax_pos": 61,
+            "pax_runtime": 61,
+            "status": "OK_HEADER_CANONICO",
+            "tickets_pos": 23,
+            "tickets_runtime": 23,
+            "ventas_pos": "112857.000000013",
+            "ventas_runtime": "112857.00"
+          },
+          {
+            "fecha_operacion": "2026-06-19",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-20",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-21",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-22",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-23",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-24",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-25",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-26",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-27",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-28",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-29",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-30",
+            "status": "YA_CONCILIADO"
+          }
+        ],
+        "filas_insertadas": 564,
+        "reparables": 2,
+        "sin_runtime": 0,
+        "unidad": "130QRO",
+        "ya_ok": 28
+      }
+    ]
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-25T04:49:01Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "dias_con_diferencia",
+              "parity_gate"
+            ],
+            "name": "cert_130qro_202606_runtime_vs_detail",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                0,
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-25T04:47:55Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto el backfill cerrado de detalle ISCAM para las unidades y fechas autorizadas y certifico el resultado con SQL de solo lectura. No acepto shell, rutas ni comandos externos y no toco Produccion.",
+  "tests": "PASS",
+  "units": [
+    "130QRO"
+  ],
+  "work_completion": "COMPLETE"
+}
