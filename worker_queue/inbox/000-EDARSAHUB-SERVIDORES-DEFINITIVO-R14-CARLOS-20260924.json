@@ -16,7 +16,7 @@
     "000-EDARSAHUB-SERVIDORES-LISTADO-DIAG-R13A-20260923",
     "000-EDARSAHUB-SERVIDORES-CIERRE-INTEGRAL-R12-20260918"
   ],
-  "objective": "CORRECCION DEFINITIVA del modulo Servidores/Conexiones API en Preview. Eliminar tres causas de regresion observables: (1) el cliente Axios convierte errores HTTP 500/502 en respuestas exitosas con data=[] y provoca falsos '0 servidores/0 APIs'; (2) el repositorio de API Connections usa variables EDARSAHUB_SQL_* capturadas con os.getenv al importar, mientras el registry de servidores ya usa el config canonico; un runtime recuperado con entorno parcial deja el repositorio API con credenciales None; (3) Servidores.js borra apiConnections ante cualquier error y presenta lista vacia como si fuera dato valido. Aplicar cambios genericos, sin hardcodes de servidores/APIs, mantener SQL-first y no tocar Produccion. El resultado correcto debe ser: si backend responde 200, mostrar los registros de dbo.Servidores_Conexiones; si backend falla, mostrar error real y conservar datos previos, nunca mostrar 0 como falso exito. RETRIGGER CONTROL-PLANE 2026-09-24: Emergent Worker ya fue despertado manualmente; consumir este MISMO R14 como siguiente job preferido. No crear variante adicional.",
+  "objective": "CORRECCION DEFINITIVA del modulo Servidores/Conexiones API en Preview. Eliminar tres causas de regresion observables: (1) el cliente Axios convierte errores HTTP 500/502 en respuestas exitosas con data=[] y provoca falsos '0 servidores/0 APIs'; (2) el repositorio de API Connections usa variables EDARSAHUB_SQL_* capturadas con os.getenv al importar, mientras el registry de servidores ya usa el config canonico; un runtime recuperado con entorno parcial deja el repositorio API con credenciales None; (3) Servidores.js borra apiConnections ante cualquier error y presenta lista vacia como si fuera dato valido. Aplicar cambios genericos, sin hardcodes de servidores/APIs, mantener SQL-first y no tocar Produccion. El resultado correcto debe ser: si backend responde 200, mostrar los registros de dbo.Servidores_Conexiones; si backend falla, mostrar error real y conservar datos previos, nunca mostrar 0 como falso exito. PRIORIDAD ALTA 2026-09-24: reintentar el MISMO R14 inmediatamente después de recuperar GIT_LOCK_BUSY; ejecutar como siguiente preferido, sin crear variante adicional ni tocar Producción.",
   "actions": [
     {
       "type": "replace_text",
@@ -117,5 +117,6 @@
     {
       "type": "git_diff_check"
     }
-  ]
+  ],
+  "priority": "HIGH"
 }
