@@ -1,0 +1,173 @@
+{
+  "base_sha": "139ffe7cfd4f8a6af9331b10662a15777120c212",
+  "blockers": [],
+  "candidate_sha": "eb0cfde5d4913cee35c58aaa8ced1518696e01d8",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-25T03:45:38Z",
+  "development_sha": "eb0cfde5d4913cee35c58aaa8ced1518696e01d8",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/database/migrations/20260924_001_production_quality_foundation.sql",
+    "backend/database/migrations/20260924_001_production_quality_foundation_rollback.sql",
+    "backend/tests/test_production_quality_foundation_migration_contract.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5D1-FOUNDATION-MIGRATION-ARTIFACTS-R3",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-25T03:46:31Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "empresaid",
+              "fechaoperacion",
+              "mongo",
+              "mongodb",
+              "production_item",
+              "production_qualityaction",
+              "sistema_empresas",
+              "unidades_negocio",
+              "unidadnegocioid",
+              "usuario_catalogo"
+            ],
+            "path": "backend/database/migrations/20260924_001_production_quality_foundation.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Production_Device",
+              "Production_DeviceCalibration",
+              "Production_Evidence",
+              "Production_Item",
+              "Production_Measurement",
+              "Production_QualityAction",
+              "Production_QualityDecision",
+              "Production_QualityStandard",
+              "Production_QualityStandardVersion",
+              "Production_Station",
+              "Sistema_Empresas",
+              "Unidades_Negocio",
+              "Usuario_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "production_item",
+              "production_qualityaction"
+            ],
+            "path": "backend/database/migrations/20260924_001_production_quality_foundation_rollback.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Production_Device",
+              "Production_DeviceCalibration",
+              "Production_Evidence",
+              "Production_Item",
+              "Production_Measurement",
+              "Production_QualityAction",
+              "Production_QualityDecision",
+              "Production_QualityStandard",
+              "Production_QualityStandardVersion",
+              "Production_Station"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "pymongo",
+              "pyodbc"
+            ],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "empresaid",
+              "fechaoperacion",
+              "mongo",
+              "mongodb",
+              "password",
+              "production_item",
+              "production_qualityaction",
+              "pymongo",
+              "secret",
+              "sistema_empresas",
+              "unidades_negocio",
+              "unidadnegocioid",
+              "usuario_catalogo"
+            ],
+            "path": "backend/tests/test_production_quality_foundation_migration_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_canonical_fk_contracts_are_reused",
+              "test_devices_do_not_persist_secrets",
+              "test_evidence_is_metadata_only",
+              "test_foundation_files_exist",
+              "test_foundation_tables_are_exactly_declared",
+              "test_gate5d1_has_no_runtime_sql_execution_contract",
+              "test_idempotency_contracts_exist",
+              "test_migration_is_transactional_and_idempotent",
+              "test_no_mongo_or_live_dependency",
+              "test_quality_actions_cover_rework_and_override",
+              "test_rollback_reverse_dependency_order",
+              "test_tenant_scope_and_operational_date_contract",
+              "text"
+            ],
+            "tables_referenced": [
+              "Production_Device",
+              "Production_DeviceCalibration",
+              "Production_Evidence",
+              "Production_Item",
+              "Production_Measurement",
+              "Production_QualityAction",
+              "Production_QualityDecision",
+              "Production_QualityStandard",
+              "Production_QualityStandardVersion",
+              "Production_Station",
+              "Sistema_Empresas",
+              "Unidades_Negocio",
+              "Usuario_Catalogo"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 3,
+          "scanned_files": 3,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-25T03:45:28Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
