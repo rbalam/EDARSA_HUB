@@ -899,7 +899,7 @@ def _run_iscam_detail_batch_job(job_id: int) -> None:
 
 
 @router.post("/resync/iscam-detail/jobs", status_code=202)
-async def crear_iscam_detail_batch_job(
+def crear_iscam_detail_batch_job(
     body: IscamDetailBatchRequest,
     background_tasks: BackgroundTasks,
     current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN")),
@@ -929,8 +929,19 @@ async def crear_iscam_detail_batch_job(
     return {'success': True, 'reused_existing_job': False, **payload}
 
 
+@router.get("/resync/iscam-detail/active")
+def obtener_iscam_detail_batch_activo(
+    unidad_negocio_id: str,
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN")),
+):
+    active = _iscam_batch_find_active(unidad_negocio_id)
+    if not active:
+        return {'success': True, 'active': False}
+    return {'success': True, 'active': True, **active}
+
+
 @router.get("/resync/iscam-detail/jobs/{job_id}")
-async def obtener_iscam_detail_batch_job(
+def obtener_iscam_detail_batch_job(
     job_id: int,
     current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN")),
 ):

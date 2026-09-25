@@ -26,13 +26,17 @@ def test_async_detail_job_uses_existing_sql_log_as_persistent_progress_store():
     assert "RegistrosAfectados = %s" in text
 
 
-def test_frontend_starts_one_job_and_polls_short_requests():
+def test_frontend_starts_one_job_and_polls_with_recovery():
     text = FRONTEND.read_text(encoding='utf-8')
     assert "const [syncJobId, setSyncJobId] = useState(null);" in text
     assert "apiPost('/admin/scheduler/resync/iscam-detail/jobs'" in text
     assert "apiGet(`/admin/scheduler/resync/iscam-detail/jobs/${syncJobId}`)" in text
-    assert "timer = setTimeout(poll, 2500);" in text
-    assert "consecutivePollErrors >= 3" in text
+    assert "apiGet('/admin/scheduler/resync/iscam-detail/active'" in text
+    assert "pollFailureStartedAt" in text
+    assert "elapsedMs < 90000" in text
+    assert "return 15000;" in text
+    assert "Sincronización en curso · reconectando al seguimiento" in text
+    assert "consecutivePollErrors >= 3" not in text
     assert "Proceso terminado sin bucle:" in text
     assert "Días procesados" in text
 

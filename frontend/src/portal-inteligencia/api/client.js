@@ -84,10 +84,16 @@ export async function apiGet(path, params) {
     const res = await client.get(path, { params, timeout: INTEL_REQUEST_TIMEOUT_MS });
     return { estado: ESTADO.OK, data: res.data, status: res.status };
   } catch (err) {
-    const status = err?.response?.status;
-    if (status === 401) return { estado: ESTADO.SESION_EXPIRADA, data: null, status };
-    if (status === 403) return { estado: ESTADO.SIN_PERMISO, data: null, status };
-    return { estado: ESTADO.ERROR, data: null, status: status || 0 };
+    const status = err?.response?.status || 0;
+    const data = err?.response?.data ?? null;
+    const detail = data?.detail;
+    const mensaje = typeof detail === 'string'
+      ? detail
+      : (typeof data?.message === 'string' ? data.message : (err?.message || 'Error de comunicación'));
+    const failure = { data, status, mensaje, error_code: err?.code || null };
+    if (status === 401) return { estado: ESTADO.SESION_EXPIRADA, ...failure };
+    if (status === 403) return { estado: ESTADO.SIN_PERMISO, ...failure };
+    return { estado: ESTADO.ERROR, ...failure };
   }
 }
 
@@ -101,10 +107,16 @@ export async function apiPost(path, payload, config = {}) {
     const res = await client.post(path, payload, { timeout: INTEL_REQUEST_TIMEOUT_MS, ...config });
     return { estado: ESTADO.OK, data: res.data, status: res.status };
   } catch (err) {
-    const status = err?.response?.status;
-    if (status === 401) return { estado: ESTADO.SESION_EXPIRADA, data: null, status };
-    if (status === 403) return { estado: ESTADO.SIN_PERMISO, data: null, status };
-    return { estado: ESTADO.ERROR, data: null, status: status || 0 };
+    const status = err?.response?.status || 0;
+    const data = err?.response?.data ?? null;
+    const detail = data?.detail;
+    const mensaje = typeof detail === 'string'
+      ? detail
+      : (typeof data?.message === 'string' ? data.message : (err?.message || 'Error de comunicación'));
+    const failure = { data, status, mensaje, error_code: err?.code || null };
+    if (status === 401) return { estado: ESTADO.SESION_EXPIRADA, ...failure };
+    if (status === 403) return { estado: ESTADO.SIN_PERMISO, ...failure };
+    return { estado: ESTADO.ERROR, ...failure };
   }
 }
 

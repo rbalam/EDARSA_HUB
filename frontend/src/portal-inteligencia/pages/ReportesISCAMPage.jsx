@@ -317,10 +317,39 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
   }, [fetchSyncPermission]);
 
   useEffect(() => {
+    if (!canSynchronize || sinUnidad || syncJobId || syncing) return undefined;
+    let cancelled = false;
+
+    const recoverActiveJob = async () => {
+      const res = await apiGet('/admin/scheduler/resync/iscam-detail/active', {
+        unidad_negocio_id: unidad,
+      });
+      if (cancelled || res.estado !== ESTADO.OK || !res.data?.success || !res.data?.active || !res.data?.job_id) return;
+
+      setSyncProgress({
+        completed: Number(res.data.successful || 0),
+        total: Number(res.data.total || 0),
+        processed: Number(res.data.processed || 0),
+        failed: Number(res.data.failed || 0),
+        currentDate: res.data.current_date || null,
+      });
+      setSyncing(true);
+      setSyncMessage({
+        tipo: 'warning',
+        texto: 'Se recuperó una sincronización ISCAM que ya estaba en curso. Continuando seguimiento sin crear otro trabajo.',
+      });
+      setSyncJobId(String(res.data.job_id));
+    };
+
+    recoverActiveJob();
+    return () => { cancelled = true; };
+  }, [canSynchronize, sinUnidad, syncJobId, syncing, unidad]);
+
+  useEffect(() => {
     if (!syncJobId) return undefined;
     let cancelled = false;
     let timer = null;
-    let consecutivePollErrors = 0;
+    let pollFailureStartedAt = null;
 
     const finishJob = async (job) => {
       if (cancelled) return;
@@ -343,26 +372,48 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
       });
     };
 
+    const scheduleRetry = (elapsedMs) => {
+      if (elapsedMs < 10000) return 2500;
+      if (elapsedMs < 30000) return 5000;
+      if (elapsedMs < 90000) return 10000;
+      return 15000;
+    };
+
     const poll = async () => {
       const res = await apiGet(`/admin/scheduler/resync/iscam-detail/jobs/${syncJobId}`);
       if (cancelled) return;
 
-      if (res.estado !== ESTADO.OK || !res.data?.success) {
-        consecutivePollErrors += 1;
-        if (consecutivePollErrors >= 3) {
-          setSyncJobId(null);
-          setSyncing(false);
-          setSyncMessage({
-            tipo: 'error',
-            texto: 'Se perdió temporalmente la lectura del avance. El trabajo del servidor no se reintentará en bucle; vuelve a pulsar Sincronizar faltantes para recuperar el trabajo activo.',
-          });
-          return;
-        }
-        timer = setTimeout(poll, 3000);
+      if (res.estado === ESTADO.SIN_SESION || res.estado === ESTADO.SESION_EXPIRADA || res.estado === ESTADO.SIN_PERMISO) {
+        setSyncJobId(null);
+        setSyncing(false);
+        setSyncMessage({
+          tipo: 'error',
+          texto: res.mensaje || 'La sesión ya no permite consultar el avance de la sincronización.',
+        });
         return;
       }
 
-      consecutivePollErrors = 0;
+      if (res.estado !== ESTADO.OK || !res.data?.success) {
+        if (pollFailureStartedAt === null) pollFailureStartedAt = Date.now();
+        const elapsedMs = Date.now() - pollFailureStartedAt;
+        const diagnostic = [
+          res.status ? `HTTP ${res.status}` : null,
+          res.error_code || null,
+          res.mensaje || null,
+        ].filter(Boolean).join(' · ');
+        const longReconnect = elapsedMs >= 90000;
+        setSyncMessage({
+          tipo: 'warning',
+          texto: longReconnect
+            ? `No se ha podido leer el avance durante 90 segundos. El trabajo del servidor sigue intacto y continuaré reconectando cada 15 s${diagnostic ? ` · ${diagnostic}` : ''}.`
+            : `Sincronización en curso · reconectando al seguimiento${diagnostic ? ` · ${diagnostic}` : ''}.`,
+        });
+        timer = setTimeout(poll, scheduleRetry(elapsedMs));
+        return;
+      }
+
+      pollFailureStartedAt = null;
+      setSyncMessage((prev) => prev?.tipo === 'warning' ? null : prev);
       const job = res.data;
       setSyncProgress({
         completed: Number(job.successful || 0),
@@ -675,7 +726,9 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
         <div data-testid="iscam-sync-message"
           className={`text-sm rounded-lg px-4 py-3 border ${syncMessage.tipo === 'ok'
             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-            : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}>
+            : syncMessage.tipo === 'warning'
+              ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+              : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}>
           {syncMessage.texto}
         </div>
       )}
