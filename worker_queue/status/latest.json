@@ -4,11 +4,11 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "b5f1c51417f6eb46a104e2279ba748111f848986",
-  "generated_at_utc": "2026-09-25T19:29:24Z",
+  "generated_at_utc": "2026-09-25T19:30:50Z",
   "history": {
     "done_total_local": 1079,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 971,
     "results_total_local": 1865
   },
@@ -16,28 +16,34 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2095,
+      "age_seconds": 2180,
       "job_id": "EDARSAHUB-ISCAM-JOB-PERSISTENCE-R5-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1,
+      "job_id": "EDARSAHUB-ISCAM-ESTELAR-20260423-DETAIL-BACKFILL-R5-CARLOS-20260925",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "local_development_sha": "b5f1c51417f6eb46a104e2279ba748111f848986",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 1,
-  "queue_running": 0,
+  "queue_running": 1,
   "remote_development_sha": "b5f1c51417f6eb46a104e2279ba748111f848986",
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "EDARSAHUB-ISCAM-ESTELAR-20260423-DETAIL-BACKFILL-R5-CARLOS-20260925",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-25T19:29:23Z",
-    "last_receive_utc": "2026-09-25T19:29:18Z",
+    "last_cycle_utc": "2026-09-25T19:30:44Z",
+    "last_receive_utc": "2026-09-25T19:30:39Z",
     "last_terminal_utc": "2026-09-25T18:54:29Z",
     "pid": "697",
     "runtime_fingerprint": {
