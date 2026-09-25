@@ -722,28 +722,52 @@ def _iscam_batch_create(
         'max_retries_per_day': 1,
         'execution_mode': 'SEQUENTIAL_SINGLE_REAL_PASS',
     }
-    rows = _execute_edarsahub_query(
-        """
-        INSERT INTO dbo.Sistema_Sync_ResyncLog
-            (TipoSync, ServerID, UnidadCodigo, Estado, Mensaje, Payload, RegistrosAfectados, SolicitadoPor)
-        OUTPUT INSERTED.ResyncLogID AS job_id
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """,
-        (
-            'iscam_detail_batch',
-            str(server_id or ''),
-            unidad_negocio_id,
-            'JOB_QUEUED',
-            'Trabajo ISCAM en cola.',
-            json.dumps(payload, default=str, ensure_ascii=False),
-            0,
-            requested_by,
-        ),
-    )
-    if not rows:
-        raise RuntimeError('No se pudo crear el trabajo de sincronización ISCAM')
-    payload['job_id'] = int(rows[0]['job_id'])
-    return payload
+
+    # Este INSERT usa OUTPUT INSERTED para obtener el job_id. El helper genérico
+    # solo hace commit cuando fetch=False; con fetch=True devolvía el ID pero la
+    # transacción se cerraba sin commit, por lo que el polling recibía 404 y la
+    # tarea background tampoco podía volver a leer el trabajo. Persistimos el
+    # job de forma explícita y atómica antes de devolver el 202 al frontend.
+    conn = get_sql_connection()
+    cursor = None
+    try:
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute(
+            """
+            INSERT INTO dbo.Sistema_Sync_ResyncLog
+                (TipoSync, ServerID, UnidadCodigo, Estado, Mensaje, Payload, RegistrosAfectados, SolicitadoPor)
+            OUTPUT INSERTED.ResyncLogID AS job_id
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                'iscam_detail_batch',
+                str(server_id or ''),
+                unidad_negocio_id,
+                'JOB_QUEUED',
+                'Trabajo ISCAM en cola.',
+                json.dumps(payload, default=str, ensure_ascii=False),
+                0,
+                requested_by,
+            ),
+        )
+        row = cursor.fetchone()
+        if not row or row.get('job_id') is None:
+            raise RuntimeError('No se pudo crear el trabajo de sincronización ISCAM')
+        payload['job_id'] = int(row['job_id'])
+        conn.commit()
+        return payload
+    except Exception:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        raise
+    finally:
+        try:
+            if cursor is not None:
+                cursor.close()
+        finally:
+            conn.close()
 
 
 def _iscam_batch_day_outcome(resultado: Dict[str, Any]) -> Dict[str, Any]:
