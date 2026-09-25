@@ -265,8 +265,8 @@ def validate(job: Any) -> list[str]:
         if actions not in (None, []):
             errors.append("COMERCIAL_RANGE_RESYNC_ACTIONS_FORBIDDEN")
         units = job.get("units", [])
-        if not isinstance(units, list) or len(units) != 1 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):
-            errors.append("COMERCIAL_RANGE_RESYNC_EXACTLY_ONE_UNIT_REQUIRED")
+        if not isinstance(units, list) or not units or len(units) > 32 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):
+            errors.append("COMERCIAL_RANGE_RESYNC_UNITS_INVALID")
         if not isinstance(job.get("fecha_inicio"), str) or not DATE_RE.fullmatch(job.get("fecha_inicio", "")):
             errors.append("COMERCIAL_RANGE_RESYNC_FECHA_INICIO_INVALID")
         if not isinstance(job.get("fecha_fin"), str) or not DATE_RE.fullmatch(job.get("fecha_fin", "")):

@@ -875,8 +875,8 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
             if job.get("actions") not in (None, []):
                 raise RuntimeError("COMERCIAL_RANGE_RESYNC_ACTIONS_FORBIDDEN")
             units = job.get("units", [])
-            if not isinstance(units, list) or len(units) != 1 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):
-                raise RuntimeError("COMERCIAL_RANGE_RESYNC_EXACTLY_ONE_UNIT_REQUIRED")
+            if not isinstance(units, list) or not units or len(units) > 32 or not all(isinstance(u, str) and UNIT_CODE_RE.fullmatch(u.strip()) for u in units):
+                raise RuntimeError("COMERCIAL_RANGE_RESYNC_UNITS_INVALID")
             fecha_inicio = str(job.get("fecha_inicio") or "")
             fecha_fin = str(job.get("fecha_fin") or "")
             if not DATE_RE.fullmatch(fecha_inicio) or not DATE_RE.fullmatch(fecha_fin):
@@ -897,32 +897,71 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
             script = ROOT / "backend" / "scripts" / "resync_comercial_range_worker.py"
             if not script.is_file():
                 raise RuntimeError("COMERCIAL_RANGE_RESYNC_SCRIPT_NOT_FOUND")
-            unit = units[0].strip().upper()
-            cmd = [PYTHON_BIN, str(script), "--unidad", unit, "--fecha-inicio", fecha_inicio, "--fecha-fin", fecha_fin]
-            if dry_run is False:
-                cmd.append("--commit")
+
+            normalized_units = [u.strip().upper() for u in units]
             backend = ROOT / "backend"
-            execution = run(cmd, cwd=ROOT, timeout=SOFTRESTAURANT_RESYNC_MAX_SECONDS, env_extra={**load_backend_runtime_env(), "PYTHONPATH": str(backend)})
-            summary = {}
-            for raw_line in reversed((execution.stdout or "").splitlines()):
-                try:
-                    candidate = json.loads(raw_line)
-                except Exception:
-                    continue
-                if isinstance(candidate, dict) and candidate.get("event") == "comercial_range_summary":
-                    summary = candidate
-                    break
+            unit_results = []
+            operation_outputs = []
+            failed_units = []
+
+            for unit in normalized_units:
+                cmd = [PYTHON_BIN, str(script), "--unidad", unit, "--fecha-inicio", fecha_inicio, "--fecha-fin", fecha_fin]
+                if dry_run is False:
+                    cmd.append("--commit")
+                execution = run(
+                    cmd,
+                    cwd=ROOT,
+                    timeout=SOFTRESTAURANT_RESYNC_MAX_SECONDS,
+                    env_extra={**load_backend_runtime_env(), "PYTHONPATH": str(backend)},
+                )
+                summary = {}
+                for raw_line in reversed((execution.stdout or "").splitlines()):
+                    try:
+                        candidate = json.loads(raw_line)
+                    except Exception:
+                        continue
+                    if isinstance(candidate, dict) and candidate.get("event") == "comercial_range_summary":
+                        summary = candidate
+                        break
+                unit_results.append({
+                    "unidad": unit,
+                    "returncode": execution.returncode,
+                    "success": bool(summary.get("success")),
+                    "header_success": bool(summary.get("header_success")),
+                    "detail_success": bool(summary.get("detail_success")),
+                    "records_processed": int(summary.get("records_processed") or 0),
+                    "records_inserted": int(summary.get("records_inserted") or 0),
+                    "records_updated": int(summary.get("records_updated") or 0),
+                    "records_skipped": int(summary.get("records_skipped") or 0),
+                    "records_errored": int(summary.get("records_errored") or 0),
+                    "stage": summary.get("stage"),
+                    "warning": str(summary.get("warning") or ""),
+                })
+                operation_outputs.append(f"===== {unit} =====\n{(execution.stdout or '')[-12000:]}")
+                if execution.returncode != 0:
+                    failed_units.append(unit)
+
             result["operation"] = COMERCIAL_RANGE_RESYNC_MODE
             result["dry_run"] = dry_run
-            result["units"] = [unit]
+            result["units"] = normalized_units
             result["canonical_sql_mutation"] = not dry_run
-            result["operation_output"] = (execution.stdout or "")[-20000:]
-            result["operation_summary"] = summary
+            result["operation_output"] = "\n".join(operation_outputs)[-40000:]
+            result["operation_summary"] = {
+                "fecha_inicio": fecha_inicio,
+                "fecha_fin": fecha_fin,
+                "unidades": unit_results,
+                "unidades_total": len(normalized_units),
+                "unidades_ok": len(normalized_units) - len(failed_units),
+                "unidades_fallidas": failed_units,
+            }
             result["files_changed"] = []
-            if execution.returncode != 0:
-                result["blockers"].append("comercial_range_resync_execution_failed")
+            if failed_units:
+                result["blockers"].append(
+                    "comercial_range_resync_failed_units:" + ",".join(failed_units)
+                )
+
             check_results = []
-            if execution.returncode == 0:
+            if not result["blockers"]:
                 for check in checks:
                     check_result = run_check(ROOT, check)
                     check_results.append(check_result)
@@ -930,16 +969,16 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                         result["blockers"].append("check_failed:sql_readonly_audit")
                         break
             result["checks"] = check_results
-            result["tests"] = "PASS" if execution.returncode == 0 and check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
+            result["tests"] = "PASS" if not failed_units and check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
             result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
             if not result["blockers"]:
                 result["status"] = "OPERATIONAL_COMPLETE"
                 result["percent_complete"] = 100
                 result["certification"] = "CERTIFIED_OPERATIONAL"
-                result["summary_es"] = "El Worker ejecuto la re-sincronizacion comercial cerrada para una unidad y rango autorizado usando el handler oficial; valido header KPI y detalle ISCAM y certifico el destino con SQL de solo lectura. No acepto shell, comandos ni rutas desde la solicitud y no toco Produccion."
+                result["summary_es"] = "El Worker ejecuto la re-sincronizacion comercial cerrada para todas las unidades y el rango autorizados usando el handler oficial; proceso cada sucursal de forma secuencial, valido header KPI y detalle ISCAM y certifico el bloque con SQL de solo lectura. No toco Produccion."
             else:
                 result["status"] = "BLOCKED"
-                result["percent_complete"] = 0
+                result["percent_complete"] = int(100 * (len(normalized_units) - len(failed_units)) / len(normalized_units))
                 result["certification"] = "NOT_CERTIFIED"
             return 0
 
