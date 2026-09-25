@@ -61,6 +61,158 @@ def normalize_required_deliverables(value: Any) -> tuple[str, ...]:
 MAX_DELIVERABLE_SELECTOR_DEPTH: Final[int] = 32
 
 
+def _normalize_source(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(
+            "DELIVERABLE_SOURCE_NOT_OBJECT"
+        )
+
+    check_type = str(
+        value.get("check_type") or ""
+    ).strip()
+
+    if not check_type:
+        raise ValueError(
+            "DELIVERABLE_SOURCE_CHECK_TYPE_REQUIRED"
+        )
+
+    occurrence = value.get("occurrence")
+
+    if (
+        not isinstance(occurrence, int)
+        or isinstance(occurrence, bool)
+        or occurrence < 1
+    ):
+        raise ValueError(
+            "DELIVERABLE_SOURCE_OCCURRENCE_INVALID"
+        )
+
+    return {
+        "check_type": check_type,
+        "occurrence": occurrence,
+    }
+
+
+def _normalize_json_path_selector(
+    selector: Any,
+) -> dict[str, Any]:
+    if not isinstance(selector, dict):
+        raise ValueError(
+            "DELIVERABLE_SELECTOR_NOT_OBJECT"
+        )
+
+    if str(selector.get("type") or "").strip() != "json_path":
+        raise ValueError(
+            "DELIVERABLE_SELECTOR_TYPE_UNSUPPORTED"
+        )
+
+    path = selector.get("path")
+
+    if not isinstance(path, list):
+        raise ValueError(
+            "DELIVERABLE_SELECTOR_PATH_NOT_LIST"
+        )
+
+    if (
+        not path
+        or len(path) > MAX_DELIVERABLE_SELECTOR_DEPTH
+    ):
+        raise ValueError(
+            "DELIVERABLE_SELECTOR_PATH_INVALID"
+        )
+
+    normalized_path: list[str | int] = []
+
+    for item in path:
+        if isinstance(item, bool):
+            raise ValueError(
+                "DELIVERABLE_SELECTOR_PATH_ITEM_INVALID"
+            )
+
+        if isinstance(item, int):
+            if item < 0:
+                raise ValueError(
+                    "DELIVERABLE_SELECTOR_PATH_ITEM_INVALID"
+                )
+            normalized_path.append(item)
+            continue
+
+        if isinstance(item, str):
+            key = item.strip()
+
+            if not key:
+                raise ValueError(
+                    "DELIVERABLE_SELECTOR_PATH_ITEM_INVALID"
+                )
+
+            normalized_path.append(key)
+            continue
+
+        raise ValueError(
+            "DELIVERABLE_SELECTOR_PATH_ITEM_INVALID"
+        )
+
+    return {
+        "type": "json_path",
+        "path": normalized_path,
+    }
+
+
+def _normalize_object_selector(
+    selector: Any,
+) -> dict[str, Any]:
+    if not isinstance(selector, dict):
+        raise ValueError(
+            "DELIVERABLE_SELECTOR_NOT_OBJECT"
+        )
+
+    fields = selector.get("fields")
+
+    if not isinstance(fields, dict) or not fields:
+        raise ValueError(
+            "DELIVERABLE_OBJECT_FIELDS_INVALID"
+        )
+
+    normalized_fields: dict[str, dict[str, Any]] = {}
+
+    for raw_field, raw_field_spec in fields.items():
+        if not isinstance(raw_field, str):
+            raise ValueError(
+                "DELIVERABLE_OBJECT_FIELD_NAME_INVALID"
+            )
+
+        field = raw_field.strip()
+
+        if not field:
+            raise ValueError(
+                "DELIVERABLE_OBJECT_FIELD_NAME_INVALID"
+            )
+
+        if field in normalized_fields:
+            raise ValueError(
+                "DELIVERABLE_OBJECT_FIELD_DUPLICATED"
+            )
+
+        if not isinstance(raw_field_spec, dict):
+            raise ValueError(
+                "DELIVERABLE_OBJECT_FIELD_SPEC_INVALID"
+            )
+
+        normalized_fields[field] = {
+            "source": _normalize_source(
+                raw_field_spec.get("source")
+            ),
+            "selector": _normalize_json_path_selector(
+                raw_field_spec.get("selector")
+            ),
+        }
+
+    return {
+        "type": "object",
+        "fields": normalized_fields,
+    }
+
+
 def normalize_deliverable_specs(
     value: Any,
     required_deliverables: Any,
@@ -107,105 +259,44 @@ def normalize_deliverable_specs(
                 "DELIVERABLE_SPEC_NOT_OBJECT"
             )
 
-        source = raw_spec.get("source")
         selector = raw_spec.get("selector")
-
-        if not isinstance(source, dict):
-            raise ValueError(
-                "DELIVERABLE_SOURCE_NOT_OBJECT"
-            )
 
         if not isinstance(selector, dict):
             raise ValueError(
                 "DELIVERABLE_SELECTOR_NOT_OBJECT"
             )
 
-        check_type = str(
-            source.get("check_type") or ""
-        ).strip()
-
-        if not check_type:
-            raise ValueError(
-                "DELIVERABLE_SOURCE_CHECK_TYPE_REQUIRED"
-            )
-
-        occurrence = source.get("occurrence")
-
-        if (
-            not isinstance(occurrence, int)
-            or isinstance(occurrence, bool)
-            or occurrence < 1
-        ):
-            raise ValueError(
-                "DELIVERABLE_SOURCE_OCCURRENCE_INVALID"
-            )
-
         selector_type = str(
             selector.get("type") or ""
         ).strip()
 
-        if selector_type != "json_path":
-            raise ValueError(
-                "DELIVERABLE_SELECTOR_TYPE_UNSUPPORTED"
-            )
+        if selector_type == "json_path":
+            normalized[name] = {
+                "source": _normalize_source(
+                    raw_spec.get("source")
+                ),
+                "selector": _normalize_json_path_selector(
+                    selector
+                ),
+            }
+            continue
 
-        path = selector.get("path")
-
-        if not isinstance(path, list):
-            raise ValueError(
-                "DELIVERABLE_SELECTOR_PATH_NOT_LIST"
-            )
-
-        if (
-            not path
-            or len(path)
-            > MAX_DELIVERABLE_SELECTOR_DEPTH
-        ):
-            raise ValueError(
-                "DELIVERABLE_SELECTOR_PATH_INVALID"
-            )
-
-        normalized_path: list[str | int] = []
-
-        for item in path:
-            if isinstance(item, bool):
+        if selector_type == "object":
+            if raw_spec.get("source") is not None:
                 raise ValueError(
-                    "DELIVERABLE_SELECTOR_PATH_ITEM_INVALID"
+                    "DELIVERABLE_OBJECT_TOP_LEVEL_SOURCE_FORBIDDEN"
                 )
 
-            if isinstance(item, int):
-                if item < 0:
-                    raise ValueError(
-                        "DELIVERABLE_SELECTOR_PATH_ITEM_INVALID"
-                    )
-                normalized_path.append(item)
-                continue
+            normalized[name] = {
+                "selector": _normalize_object_selector(
+                    selector
+                )
+            }
+            continue
 
-            if isinstance(item, str):
-                key = item.strip()
-
-                if not key:
-                    raise ValueError(
-                        "DELIVERABLE_SELECTOR_PATH_ITEM_INVALID"
-                    )
-
-                normalized_path.append(key)
-                continue
-
-            raise ValueError(
-                "DELIVERABLE_SELECTOR_PATH_ITEM_INVALID"
-            )
-
-        normalized[name] = {
-            "source": {
-                "check_type": check_type,
-                "occurrence": occurrence,
-            },
-            "selector": {
-                "type": "json_path",
-                "path": normalized_path,
-            },
-        }
+        raise ValueError(
+            "DELIVERABLE_SELECTOR_TYPE_UNSUPPORTED"
+        )
 
     return normalized
 
@@ -275,6 +366,21 @@ def resolve_json_path(
     return current
 
 
+def _materialize_leaf(
+    checks: Any,
+    spec: dict[str, Any],
+) -> Any:
+    source_check = resolve_check_source(
+        checks,
+        spec["source"],
+    )
+
+    return resolve_json_path(
+        source_check,
+        spec["selector"]["path"],
+    )
+
+
 def materialize_deliverables(
     required_deliverables: Any,
     deliverable_specs: Any,
@@ -288,18 +394,46 @@ def materialize_deliverables(
     materialized: dict[str, Any] = {}
 
     for name, spec in specs.items():
-        source_check = resolve_check_source(
-            checks,
-            spec["source"],
-        )
+        selector = spec["selector"]
 
-        payload = resolve_json_path(
-            source_check,
-            spec["selector"]["path"],
-        )
+        if selector["type"] == "json_path":
+            payload = _materialize_leaf(
+                checks,
+                spec,
+            )
 
-        if deliverable_payload_present(payload):
-            materialized[name] = payload
+            if deliverable_payload_present(payload):
+                materialized[name] = payload
+
+            continue
+
+        if selector["type"] == "object":
+            payload: dict[str, Any] = {}
+
+            for field, field_spec in selector[
+                "fields"
+            ].items():
+                value = _materialize_leaf(
+                    checks,
+                    field_spec,
+                )
+
+                if not deliverable_payload_present(value):
+                    raise ValueError(
+                        "DELIVERABLE_OBJECT_FIELD_EMPTY:"
+                        + field
+                    )
+
+                payload[field] = value
+
+            if deliverable_payload_present(payload):
+                materialized[name] = payload
+
+            continue
+
+        raise ValueError(
+            "DELIVERABLE_SELECTOR_TYPE_UNSUPPORTED"
+        )
 
     return materialized
 
