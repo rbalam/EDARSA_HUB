@@ -1,3 +1,4 @@
+# recovery trigger 2026-09-25T05:10Z certify abc2b3b6 after result-publisher empty artifact fix; converge mirror/emergent-live; no duplicate; no Production
 # RH GLOBAL HCM Gate0 R2 wake 2026-09-24T19:12-06:00; existing READ_ONLY job; no duplicate; no Production
 # CRM CALENDAR Gate1 R2 wake 2026-09-24T18:50-06:00 preferred after active job; no duplicate; no Production
 # SERVIDORES DEFINITIVO R14 wake 2026-09-24T22:31Z preferred 000-EDARSAHUB-SERVIDORES-DEFINITIVO-R14-CARLOS-20260924; production untouched
