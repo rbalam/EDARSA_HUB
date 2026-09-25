@@ -1,0 +1,87 @@
+{
+  "base_sha": "139ffe7cfd4f8a6af9331b10662a15777120c212",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-09-25T01:44:24Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130QRO-202608-R2-REAL-CARLOS-20260924",
+  "operation": "COMERCIAL_RANGE_RESYNC",
+  "operation_summary": {
+    "committed": true,
+    "detail_success": true,
+    "event": "comercial_range_summary",
+    "fecha_fin": "2026-08-31",
+    "fecha_inicio": "2026-08-01",
+    "header_success": true,
+    "records_errored": 0,
+    "records_inserted": 0,
+    "records_processed": 31,
+    "records_skipped": 31,
+    "records_updated": 0,
+    "stage": "HEADER_KPI",
+    "success": true,
+    "unidad": "130QRO",
+    "warning": ""
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-25T01:44:27Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "dias_evaluados",
+              "dias_paridad",
+              "dias_diferencia",
+              "ventas_header_mes",
+              "ventas_detail_mes",
+              "tickets_header_mes",
+              "tickets_detail_mes",
+              "pax_header_mes",
+              "pax_detail_mes"
+            ],
+            "name": "ventas_130qro_202608_paridad",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                31,
+                31,
+                0,
+                "4267150.0000",
+                "4267150.0000",
+                "825",
+                "825",
+                "2344",
+                "2344"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-25T01:44:16Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto la re-sincronizacion comercial cerrada para una unidad y rango autorizado usando el handler oficial; valido header KPI y detalle ISCAM y certifico el destino con SQL de solo lectura. No acepto shell, comandos ni rutas desde la solicitud y no toco Produccion.",
+  "tests": "PASS",
+  "units": [
+    "130QRO"
+  ],
+  "work_completion": "COMPLETE"
+}
