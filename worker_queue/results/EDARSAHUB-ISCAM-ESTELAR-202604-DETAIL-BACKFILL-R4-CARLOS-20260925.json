@@ -1,0 +1,187 @@
+{
+  "base_sha": "a99eb707f65b8099502dc8f0dc1103ee620bb44c",
+  "blockers": [
+    "iscam_detail_backfill_failed:rc=1"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-25T18:05:30Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-ESTELAR-202604-DETAIL-BACKFILL-R4-CARLOS-20260925",
+  "operation": "ISCAM_DETAIL_BACKFILL",
+  "operation_summary": {
+    "dias_bloqueados": 1,
+    "dias_candidatos": 1,
+    "dias_evaluados": 30,
+    "dias_reparables": 0,
+    "dias_sin_runtime": 0,
+    "dias_ya_ok": 29,
+    "fecha_fin_exclusivo": "2026-05-01",
+    "fecha_inicio": "2026-04-01",
+    "filas_insertadas": 0,
+    "modo": "COMMIT",
+    "unidades": [
+      {
+        "bloqueados": 1,
+        "candidatos": 1,
+        "dias": [
+          {
+            "fecha_operacion": "2026-04-01",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-02",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-03",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-04",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-05",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-06",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-07",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-08",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-09",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-10",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-11",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-12",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-13",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-14",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-15",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-16",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-17",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-18",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-19",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-20",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-21",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-22",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "delta_pax": null,
+            "delta_tickets": null,
+            "delta_ventas": "",
+            "error_code": "RUNTIMEERROR_UNCLASSIFIED",
+            "error_type": "RuntimeError",
+            "fecha_operacion": "2026-04-23",
+            "filas_insertadas": 0,
+            "pax_pos": null,
+            "pax_runtime": 201,
+            "status": "ERROR",
+            "tickets_pos": null,
+            "tickets_runtime": 68,
+            "ventas_pos": "",
+            "ventas_runtime": "97305.00"
+          },
+          {
+            "fecha_operacion": "2026-04-24",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-25",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-26",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-27",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-28",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-29",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-04-30",
+            "status": "YA_CONCILIADO"
+          }
+        ],
+        "filas_insertadas": 0,
+        "reparables": 0,
+        "sin_runtime": 0,
+        "unidad": "ESTELAR",
+        "ya_ok": 29
+      }
+    ]
+  },
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-25T18:05:48Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-25T18:05:27Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "units": [
+    "ESTELAR"
+  ],
+  "work_completion": "NOT_CERTIFIED"
+}
