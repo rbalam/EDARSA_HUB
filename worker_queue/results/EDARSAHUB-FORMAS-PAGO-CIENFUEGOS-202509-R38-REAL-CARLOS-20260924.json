@@ -1,20 +1,64 @@
 {
-  "blockers": [
-    "processing_stale_after_single_requeue"
-  ],
-  "certification": "NOT_CERTIFIED",
-  "completed_at_utc": "2026-09-25T01:59:39Z",
+  "base_sha": "139ffe7cfd4f8a6af9331b10662a15777120c212",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-09-25T02:00:30Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "EDARSAHUB-FORMAS-PAGO-CIENFUEGOS-202509-R38-REAL-CARLOS-20260924",
-  "percent_complete": 0,
+  "operation": "ISCAM_PAYMENTS_ONLY_RESYNC",
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-09-25T01:59:44Z",
-  "quality_gate": "FAIL",
+  "published_at_utc": "2026-09-25T02:00:52Z",
+  "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
   "source_repo": "rbalam/EDARSA_HUB",
-  "status": "BLOCKED",
-  "summary_es": "El job excedio el SLA de processing despues de un unico reintento seguro y fue cerrado terminalmente para no bloquear la cola.",
-  "work_completion": "NOT_CERTIFIED"
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "filas",
+              "tickets",
+              "fecha_min",
+              "fecha_max",
+              "importe",
+              "propina"
+            ],
+            "name": "cienfuegos_202509_post",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1623,
+                1333,
+                "2025-09-01",
+                "2025-09-30",
+                "5142797.00",
+                "460418.00"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-25T01:59:38Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker resincronizo exclusivamente Pagos por Ticket para una unidad y rango autorizados y certifico el resultado con SQL de solo lectura. No modifico Sync_Sales, Cuentas, Comandas, Cortes ni Produccion.",
+  "tests": "PASS",
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "work_completion": "COMPLETE"
 }
