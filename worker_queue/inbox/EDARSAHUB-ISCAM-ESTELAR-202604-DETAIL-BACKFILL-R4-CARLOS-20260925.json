@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-ESTELAR-202604-DETAIL-BACKFILL-R4-CARLOS-20260925",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "a99eb707f65b8099502dc8f0dc1103ee620bb44c",
+  "production_allowed": false,
+  "objective": "Analisis de Inventarios | ISCAM detalle | ESTELAR | Abril 2026 | reparar dias no conciliados contra Runtime V2",
+  "description": "Sincronizador | ESTELAR | Abril 2026 | Detalle ISCAM puntual",
+  "human_summary_language": "es",
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "actions": [],
+  "units": [
+    "ESTELAR"
+  ],
+  "fecha_inicio": "2026-04-01",
+  "fecha_fin": "2026-05-01",
+  "dry_run": false,
+  "confirm_detail_backfill": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "estelar_202604_detail_audit_gate",
+          "sql": "SELECT 1 AS audit_gate"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Autoavance"
+  },
+  "constraints": [
+    "Sincronizador",
+    "Solo detalle ISCAM",
+    "No modificar encabezado",
+    "No Production",
+    "Abril 2026",
+    "Identificar dias bloqueados y reparar solo los que cuadren"
+  ]
+}
