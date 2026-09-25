@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-FORMAS-PAGO-ESTELAR-202510-R37-REAL-CARLOS-20260924",
+  "mode": "ISCAM_PAYMENTS_ONLY_RESYNC",
+  "objective": "Formas de pago - ESTELAR - backfill operativo 2025-10-01..2025-11-01 con Worker Universal V1.2. Procesamiento diario, idempotente, escritura exclusiva en dbo.Finanzas_CortesCaja_DetallePagos y certificacion SQL.",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "139ffe7cfd4f8a6af9331b10662a15777120c212",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Formas de pagos ISCAM"
+  },
+  "units": [
+    "ESTELAR"
+  ],
+  "fecha_inicio": "2025-10-01",
+  "fecha_fin": "2025-11-01",
+  "dry_run": false,
+  "confirm_payments_only_resync": true,
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "estelar_202510_post",
+          "sql": "SELECT COUNT(*) AS filas,COUNT(DISTINCT NumeroTicket) AS tickets,MIN(CONVERT(date,FechaHora)) AS fecha_min,MAX(CONVERT(date,FechaHora)) AS fecha_max,CAST(ISNULL(SUM(Importe),0) AS decimal(18,2)) AS importe,CAST(ISNULL(SUM(Propina),0) AS decimal(18,2)) AS propina FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE UnidadNegocio='ESTELAR' AND FechaHora>='2025-10-01' AND FechaHora<'2025-11-01' AND ISNULL(Activo,1)=1"
+        }
+      ]
+    }
+  ]
+}
