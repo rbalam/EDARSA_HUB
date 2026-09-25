@@ -253,6 +253,9 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
   const [freshnessLoading, setFreshnessLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState(null);
+  const [canSynchronize, setCanSynchronize] = useState(false);
+  const [syncPermissionLoading, setSyncPermissionLoading] = useState(true);
+  const [syncProgress, setSyncProgress] = useState({ completed: 0, total: 0 });
 
   const unidad = unidadSeleccionada;
   const sinUnidad = !unidad || unidad === 'todas';
@@ -292,10 +295,25 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
     setFreshnessLoading(false);
   }, [sinUnidad, unidad, desdeStr, hastaStr]);
 
+  const fetchSyncPermission = useCallback(async () => {
+    setSyncPermissionLoading(true);
+    const res = await apiGet('/auth/me/effective-permissions');
+    const flat = Array.isArray(res.data?.permissions_flat) ? res.data.permissions_flat : [];
+    setCanSynchronize(
+      res.estado === ESTADO.OK &&
+      flat.some((code) => String(code || '').trim().toUpperCase() === 'SCHEDULER_ADMIN')
+    );
+    setSyncPermissionLoading(false);
+  }, []);
+
   useEffect(() => {
     fetchReport();
     fetchFreshness();
   }, [fetchReport, fetchFreshness]);
+
+  useEffect(() => {
+    fetchSyncPermission();
+  }, [fetchSyncPermission]);
 
   const syncMissingClosedDays = async () => {
     const headerGap = Boolean(freshness?.stale);
@@ -307,11 +325,20 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
     const syncTo = detailOnly
       ? freshness?.detail_missing_to
       : (freshness?.missing_to || freshness?.detail_missing_to);
-    if (!(headerGap || detailGap) || !syncFrom || !syncTo || syncing) return;
+    if (!canSynchronize || !(headerGap || detailGap) || !syncFrom || !syncTo || syncing) return;
+
+    const candidateDates = detailOnly
+      ? (freshness?.detail_problem_dates || [])
+      : (freshness?.missing_closed_dates || []);
+    const syncDates = [...new Set(candidateDates.filter(Boolean))].sort();
+    const chunks = syncDates.length
+      ? syncDates.map((fecha) => [fecha, fecha])
+      : splitDateChunks(syncFrom, syncTo, 1);
+
+    setSyncProgress({ completed: 0, total: chunks.length });
     setSyncing(true);
     setSyncMessage(null);
     try {
-      const chunks = splitDateChunks(syncFrom, syncTo, 1);
       for (const [fechaInicio, fechaFin] of chunks) {
         const basePayload = {
           tipo_sync: 'comercial_ventas_cerradas',
@@ -331,6 +358,7 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
           const realError = real.data?.error_message || real.data?.resultado?.error_message || real.data?.detail || real.mensaje;
           throw new Error(realError || `No se pudo completar la sincronización para ${fechaInicio} a ${fechaFin}`);
         }
+        setSyncProgress((prev) => ({ ...prev, completed: prev.completed + 1 }));
       }
       await Promise.all([fetchReport(), fetchFreshness()]);
       setSyncMessage({
@@ -509,15 +537,17 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
 
         <div className="ml-auto flex items-end gap-2">
           <div className="self-center text-xs text-slate-400" data-testid="iscam-freshness-status">
-            {freshnessLoading
-              ? 'Verificando actualización...'
-              : freshness?.detail_stale
-                ? `Detalle incompleto: ${freshness.detail_problem_dates?.length || 0} día(s) · KPI hasta ${formatDateMx(freshness.latest_canonical_date)}`
-                : freshness?.latest_canonical_date
-                  ? `Actualizado hasta ${formatDateMx(freshness.latest_canonical_date)}`
-                  : 'Sin fecha canónica disponible'}
+            {syncing
+              ? `Días sincronizados ${syncProgress.completed} de ${syncProgress.total} días`
+              : freshnessLoading
+                ? 'Verificando actualización...'
+                : freshness?.detail_stale
+                  ? `Detalle incompleto: ${freshness.detail_problem_dates?.length || 0} día(s) · KPI hasta ${formatDateMx(freshness.latest_canonical_date)}`
+                  : freshness?.latest_canonical_date
+                    ? `Actualizado hasta ${formatDateMx(freshness.latest_canonical_date)}`
+                    : 'Sin fecha canónica disponible'}
           </div>
-          {(freshness?.stale || freshness?.detail_stale) && (
+          {!syncPermissionLoading && canSynchronize && (freshness?.stale || freshness?.detail_stale) && (
             <button onClick={syncMissingClosedDays} disabled={syncing} data-testid="iscam-sync-missing"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-sky-600 text-white hover:bg-sky-500 disabled:opacity-40 disabled:cursor-not-allowed">
               <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
