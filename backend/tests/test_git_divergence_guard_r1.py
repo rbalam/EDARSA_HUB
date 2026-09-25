@@ -36,6 +36,17 @@ def test_case_10_two_writers_only_one_lock(tmp_path):
  m=load_guard();_,l,_=setup_pair(tmp_path);a=m.acquire_writer_lock(l,job_id='a',owner='one',owner_pid=os.getpid())
  with pytest.raises(m.GitGuardError,match='GIT_LOCK_BUSY'): m.acquire_writer_lock(l,job_id='b',owner='two',owner_pid=os.getpid())
  m.release_writer_lock(l,a)
+def test_case_10b_dead_writer_is_recovered_without_waiting_full_ttl(tmp_path):
+ m=load_guard();_,l,_=setup_pair(tmp_path);git_dir=Path(g(l,'rev-parse','--git-dir').stdout.strip());git_dir=(l/git_dir).resolve() if not git_dir.is_absolute() else git_dir;lock_dir=git_dir/'universal-worker-queue'/m.LOCK_NAME;lock_dir.mkdir(parents=True);(lock_dir/'owner.json').write_text('{"job_id":"dead","owner":"universal-worker","owner_pid":99999999,"created_epoch":1}\n')
+ token=m.acquire_writer_lock(l,job_id='replacement',owner='universal-worker',owner_pid=os.getpid(),stale_after_seconds=7200)
+ try:
+  assert token['stale_lock_recovered']['previous']['job_id']=='dead'
+  assert token['stale_lock_recovered']['recovery_reason']=='OWNER_PID_DEAD'
+ finally:m.release_writer_lock(l,token)
+def test_case_10c_live_writer_still_blocks_even_when_lock_is_old(tmp_path):
+ m=load_guard();_,l,_=setup_pair(tmp_path);a=m.acquire_writer_lock(l,job_id='live',owner='one',owner_pid=os.getpid())
+ with pytest.raises(m.GitGuardError,match='GIT_LOCK_BUSY'):m.acquire_writer_lock(l,job_id='other',owner='two',owner_pid=os.getpid(),stale_after_seconds=0)
+ m.release_writer_lock(l,a)
 def test_case_11_readonly_does_not_require_writer_lock(tmp_path):
  m=load_guard();_,l,_=setup_pair(tmp_path);a=m.acquire_writer_lock(l,job_id='w',owner='one',owner_pid=os.getpid());assert m.requires_writer_lock('READ_ONLY') is False and m.requires_writer_lock('MUTATION') is True;m.release_writer_lock(l,a)
 def test_case_12_out_of_scope_file_fails(tmp_path):
