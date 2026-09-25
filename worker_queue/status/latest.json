@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "e2910f8ba5ee98b6b22e002bed57eca54fa80fa3",
-  "generated_at_utc": "2026-09-25T15:43:12Z",
+  "generated_at_utc": "2026-09-25T15:44:26Z",
   "history": {
     "done_total_local": 1064,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1390,
+      "age_seconds": 1464,
       "job_id": "EDARSAHUB-ISCAM-MULTI-202606-DETAIL-BACKFILL-R2-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 909,
+      "age_seconds": 982,
       "job_id": "EDARSAHUB-ISCAM-MULTI-202606-DETAIL-BACKFILL-R3-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 49,
+      "age_seconds": 123,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130MID-202606-R4-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RUNNING"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130MID-202606-R4-REAL-CARLOS-20260925",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-25T15:43:06Z",
-    "last_receive_utc": "2026-09-25T15:43:08Z",
+    "last_cycle_utc": "2026-09-25T15:44:22Z",
+    "last_receive_utc": "2026-09-25T15:44:24Z",
     "last_terminal_utc": "2026-09-25T15:28:03Z",
     "pid": "678",
     "runtime_fingerprint": {
