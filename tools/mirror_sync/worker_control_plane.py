@@ -419,6 +419,11 @@ def requeue_stale_processing() -> int:
 
 
 
+GIT_LOCK_BUSY_REPAIR_PATHS = (
+    "tools/mirror_sync/git_divergence_guard.py",
+    "tools/mirror_sync/universal_job_dispatcher.py",
+)
+
 AUTOMATION_STATE_SCHEMA = "edarsahub.worker-repair-automation-state.v1"
 
 
@@ -972,10 +977,7 @@ def automatic_repair_orchestration() -> dict[str, Any]:
         )
 
         if status == "GIT_LOCK_BUSY" and not raw_paths:
-            raw_paths = [
-                "tools/mirror_sync/git_divergence_guard.py",
-                "tools/mirror_sync/universal_job_dispatcher.py",
-            ]
+            raw_paths = list(GIT_LOCK_BUSY_REPAIR_PATHS)
 
         if not isinstance(raw_paths, list):
             continue
