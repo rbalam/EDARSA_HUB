@@ -1,0 +1,58 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5D2-RBAC-MATERIALIZATION-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "base_sha": "eb0cfde5d4913cee35c58aaa8ced1518696e01d8",
+  "objective": "Auditar el RBAC canónico existente de EDARSAHUB para Production Quality / Foto Finish antes de materializar permisos. Identificar tablas, migraciones, helpers, repositorios, permisos, roles, módulos, acciones, scopes EmpresaID/UnidadNegocioID y patrones de rollback existentes. Clasificar REUSE, EXTEND, DO_NOT_CREATE, COLLISION y BLOCKER. No modificar archivos, no ejecutar SQL y no tocar Producción.",
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "frontend",
+          "tools",
+          "docs"
+        ],
+        "search_terms": [
+          "RBAC",
+          "permiso",
+          "permisos",
+          "rol",
+          "roles",
+          "modulo",
+          "modulos",
+          "accion",
+          "acciones",
+          "Usuario_Catalogo",
+          "Usuario_Modulos",
+          "Usuario_Acciones",
+          "SUPERADMIN",
+          "EmpresaID",
+          "UnidadNegocioID",
+          "permission",
+          "permissions",
+          "role",
+          "roles",
+          "production quality",
+          "foto finish",
+          "quality",
+          "evidence",
+          "measurement",
+          "device",
+          "calibration",
+          "rework",
+          "override"
+        ],
+        "include_patterns": [],
+        "exclude_patterns": [],
+        "max_results": 3000
+      }
+    }
+  ]
+}
