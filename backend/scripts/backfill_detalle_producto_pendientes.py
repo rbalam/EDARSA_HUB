@@ -104,6 +104,11 @@ def _detalle_concilia(
 def _safe_error_code(exc: Exception) -> str:
     text = str(exc or "").upper()
     rules = (
+        ("TIMED OUT", "POS_TIMEOUT"),
+        ("TIMEOUT", "POS_TIMEOUT"),
+        ("DBPROCESS IS DEAD", "POS_CONNECTION_UNAVAILABLE"),
+        ("CONNECTION RESET", "POS_CONNECTION_UNAVAILABLE"),
+        ("CONNECTION REFUSED", "POS_CONNECTION_UNAVAILABLE"),
         ("TICKET SIN DETALLE MONETARIO DISTRIBUIBLE", "MPRO_NO_DISTRIBUTABLE_DETAIL"),
         ("VENTA NETA INCONSISTENTE", "MPRO_INCONSISTENT_HEADER_NET"),
         ("IMPORTE BRUTO NEGATIVO", "MPRO_NEGATIVE_GROSS"),

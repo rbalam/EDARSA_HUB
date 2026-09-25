@@ -256,6 +256,7 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
   const [canSynchronize, setCanSynchronize] = useState(false);
   const [syncPermissionLoading, setSyncPermissionLoading] = useState(true);
   const [syncProgress, setSyncProgress] = useState({ completed: 0, total: 0 });
+  const [syncJobId, setSyncJobId] = useState(null);
 
   const unidad = unidadSeleccionada;
   const sinUnidad = !unidad || unidad === 'todas';
@@ -315,6 +316,76 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
     fetchSyncPermission();
   }, [fetchSyncPermission]);
 
+  useEffect(() => {
+    if (!syncJobId) return undefined;
+    let cancelled = false;
+    let timer = null;
+    let consecutivePollErrors = 0;
+
+    const finishJob = async (job) => {
+      if (cancelled) return;
+      setSyncJobId(null);
+      setSyncing(false);
+      await Promise.all([fetchReport(), fetchFreshness()]);
+      if (job.status === 'JOB_SUCCESS') {
+        setSyncMessage({ tipo: 'ok', texto: 'Detalle ISCAM sincronizado y validado.' });
+        return;
+      }
+      const failedDates = Array.isArray(job.failed_dates) ? job.failed_dates : [];
+      const sample = failedDates.slice(0, 3).map((item) => {
+        const code = item?.error_code ? ` (${item.error_code})` : '';
+        return `${item?.fecha || 'fecha'}${code}`;
+      }).join(', ');
+      const extra = failedDates.length > 3 ? ` y ${failedDates.length - 3} más` : '';
+      setSyncMessage({
+        tipo: 'error',
+        texto: `Proceso terminado sin bucle: ${job.successful || 0} día(s) sincronizado(s) y ${job.failed || 0} pendiente(s)${sample ? `: ${sample}${extra}` : ''}.`,
+      });
+    };
+
+    const poll = async () => {
+      const res = await apiGet(`/admin/scheduler/resync/iscam-detail/jobs/${syncJobId}`);
+      if (cancelled) return;
+
+      if (res.estado !== ESTADO.OK || !res.data?.success) {
+        consecutivePollErrors += 1;
+        if (consecutivePollErrors >= 3) {
+          setSyncJobId(null);
+          setSyncing(false);
+          setSyncMessage({
+            tipo: 'error',
+            texto: 'Se perdió temporalmente la lectura del avance. El trabajo del servidor no se reintentará en bucle; vuelve a pulsar Sincronizar faltantes para recuperar el trabajo activo.',
+          });
+          return;
+        }
+        timer = setTimeout(poll, 3000);
+        return;
+      }
+
+      consecutivePollErrors = 0;
+      const job = res.data;
+      setSyncProgress({
+        completed: Number(job.successful || 0),
+        total: Number(job.total || 0),
+        processed: Number(job.processed || 0),
+        failed: Number(job.failed || 0),
+        currentDate: job.current_date || null,
+      });
+
+      if (['JOB_SUCCESS', 'JOB_PARTIAL', 'JOB_FAILED', 'JOB_STALE'].includes(job.status)) {
+        await finishJob(job);
+        return;
+      }
+      timer = setTimeout(poll, 2500);
+    };
+
+    poll();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [syncJobId, fetchReport, fetchFreshness]);
+
   const syncMissingClosedDays = async () => {
     const headerGap = Boolean(freshness?.stale);
     const detailGap = Boolean(freshness?.detail_stale);
@@ -338,6 +409,35 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
     setSyncProgress({ completed: 0, total: chunks.length });
     setSyncing(true);
     setSyncMessage(null);
+
+    if (detailOnly) {
+      const fechas = syncDates.length ? syncDates : chunks.map(([fechaInicio]) => fechaInicio);
+      const start = await apiPost('/admin/scheduler/resync/iscam-detail/jobs', {
+        unidad_negocio_id: unidad,
+        fechas,
+        motivo: 'ISCAM reparar detalle faltante de forma asincrona y secuencial',
+      }, { timeout: 15000 });
+
+      if (start.estado !== ESTADO.OK || start.data?.success !== true || !start.data?.job_id) {
+        setSyncing(false);
+        setSyncMessage({
+          tipo: 'error',
+          texto: 'No se pudo iniciar el trabajo asíncrono de sincronización. No se realizaron reintentos automáticos.',
+        });
+        return;
+      }
+
+      setSyncProgress({
+        completed: Number(start.data.successful || 0),
+        total: Number(start.data.total || fechas.length),
+        processed: Number(start.data.processed || 0),
+        failed: Number(start.data.failed || 0),
+        currentDate: start.data.current_date || null,
+      });
+      setSyncJobId(String(start.data.job_id));
+      return;
+    }
+
     try {
       for (const [fechaInicio, fechaFin] of chunks) {
         const basePayload = {
@@ -363,7 +463,7 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
       await Promise.all([fetchReport(), fetchFreshness()]);
       setSyncMessage({
         tipo: 'ok',
-        texto: detailOnly ? 'Detalle ISCAM sincronizado y validado.' : 'Sincronización de faltantes completada.',
+        texto: 'Sincronización de faltantes completada.',
       });
     } catch (error) {
       setSyncMessage({ tipo: 'error', texto: error?.message || 'No se pudo sincronizar el rango faltante.' });
@@ -538,7 +638,7 @@ export default function ReportesISCAMPage({ unidadSeleccionada }) {
         <div className="ml-auto flex items-end gap-2">
           <div className="self-center text-xs text-slate-400" data-testid="iscam-freshness-status">
             {syncing
-              ? `Días sincronizados ${syncProgress.completed} de ${syncProgress.total} días`
+              ? `Días procesados ${syncProgress.processed ?? syncProgress.completed} de ${syncProgress.total} · Sincronizados ${syncProgress.completed} · Fallidos ${syncProgress.failed || 0}${syncProgress.currentDate ? ` · Procesando ${formatDateMx(syncProgress.currentDate)}` : ''}`
               : freshnessLoading
                 ? 'Verificando actualización...'
                 : freshness?.detail_stale

@@ -115,6 +115,13 @@ class ResyncExecuteRequest(BaseModel):
     detail_only: bool = Field(False, description="True=sincronizar solo detalle ISCAM sin reconsultar/regrabar el header comercial")
 
 
+class IscamDetailBatchRequest(BaseModel):
+    """Trabajo asíncrono de reparación de detalle ISCAM por fechas explícitas."""
+    unidad_negocio_id: str = Field(..., description="Código canónico de la unidad")
+    fechas: List[date] = Field(..., description="Fechas problemáticas a reparar")
+    motivo: str = Field(..., min_length=10, description="Motivo auditable del trabajo")
+
+
 class ResyncResponse(BaseModel):
     """Response de re-sync."""
     success: bool
@@ -578,6 +585,359 @@ async def _ejecutar_resync_inventarios_fisicos(unidad_negocio_id: str, dry_run: 
         if row.get('status') != 'OK':
             errors.append(row.get('error') or f"{s['unidad_codigo']}: {row.get('status')}")
     return {'success': not errors, 'records_processed': total, 'results': results, 'error_message': ' | '.join(errors) if errors else None}
+
+
+
+# =============================================================================
+# ISCAM DETAIL BATCH JOBS - ASINCRONO, SECUENCIAL, SIN BUCLES
+# =============================================================================
+
+_ISCAM_BATCH_ACTIVE = ('JOB_QUEUED', 'JOB_RUNNING')
+_ISCAM_BATCH_TERMINAL = ('JOB_SUCCESS', 'JOB_PARTIAL', 'JOB_FAILED', 'JOB_STALE')
+_ISCAM_BATCH_STALE_SECONDS = 600
+
+
+def _iscam_batch_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _iscam_batch_payload_from_row(row: Dict[str, Any]) -> Dict[str, Any]:
+    try:
+        payload = json.loads(row.get('Payload') or '{}')
+    except Exception:
+        payload = {}
+    payload['job_id'] = int(row.get('ResyncLogID') or 0)
+    payload['status'] = str(row.get('Estado') or payload.get('status') or '')
+    payload['message'] = str(row.get('Mensaje') or payload.get('message') or '')
+    return payload
+
+
+def _iscam_batch_read(job_id: int) -> Optional[Dict[str, Any]]:
+    rows = _execute_edarsahub_query(
+        """
+        SELECT TOP 1
+            ResyncLogID, TipoSync, ServerID, UnidadCodigo, Estado, Mensaje,
+            Payload, RegistrosAfectados, SolicitadoPor, FechaEjecucion
+        FROM dbo.Sistema_Sync_ResyncLog
+        WHERE ResyncLogID = %s
+          AND TipoSync = 'iscam_detail_batch'
+        """,
+        (int(job_id),),
+    )
+    return rows[0] if rows else None
+
+
+def _iscam_batch_update(job_id: int, payload: Dict[str, Any], status: str, message: str) -> None:
+    payload = dict(payload)
+    payload['status'] = status
+    payload['message'] = message
+    payload['updated_at_utc'] = _iscam_batch_now_iso()
+    _execute_edarsahub_query(
+        """
+        UPDATE dbo.Sistema_Sync_ResyncLog
+        SET Estado = %s,
+            Mensaje = %s,
+            Payload = %s,
+            RegistrosAfectados = %s
+        WHERE ResyncLogID = %s
+          AND TipoSync = 'iscam_detail_batch'
+        """,
+        (
+            status,
+            str(message or '')[:1990],
+            json.dumps(payload, default=str, ensure_ascii=False),
+            int(payload.get('successful') or 0),
+            int(job_id),
+        ),
+        fetch=False,
+    )
+
+
+def _iscam_batch_mark_stale(row: Dict[str, Any], payload: Dict[str, Any]) -> None:
+    payload = dict(payload)
+    payload['current_date'] = None
+    _iscam_batch_update(
+        int(row['ResyncLogID']),
+        payload,
+        'JOB_STALE',
+        'Trabajo anterior sin avance reciente; puede iniciarse uno nuevo.',
+    )
+
+
+def _iscam_batch_find_active(unidad_negocio_id: str) -> Optional[Dict[str, Any]]:
+    rows = _execute_edarsahub_query(
+        """
+        SELECT TOP 5
+            ResyncLogID, TipoSync, ServerID, UnidadCodigo, Estado, Mensaje,
+            Payload, RegistrosAfectados, SolicitadoPor, FechaEjecucion
+        FROM dbo.Sistema_Sync_ResyncLog
+        WHERE TipoSync = 'iscam_detail_batch'
+          AND UnidadCodigo = %s
+          AND Estado IN ('JOB_QUEUED', 'JOB_RUNNING')
+        ORDER BY ResyncLogID DESC
+        """,
+        (unidad_negocio_id,),
+    )
+    now = datetime.now(timezone.utc)
+    for row in rows or []:
+        payload = _iscam_batch_payload_from_row(row)
+        raw_updated = payload.get('updated_at_utc') or payload.get('created_at_utc')
+        try:
+            updated = datetime.fromisoformat(str(raw_updated).replace('Z', '+00:00'))
+            if updated.tzinfo is None:
+                updated = updated.replace(tzinfo=timezone.utc)
+            age_seconds = max(0, int((now - updated).total_seconds()))
+        except Exception:
+            age_seconds = _ISCAM_BATCH_STALE_SECONDS + 1
+
+        if age_seconds <= _ISCAM_BATCH_STALE_SECONDS:
+            return payload
+
+        _iscam_batch_mark_stale(row, payload)
+    return None
+
+
+def _iscam_batch_create(
+    unidad_negocio_id: str,
+    server_id: str,
+    fechas: List[date],
+    motivo: str,
+    requested_by: str,
+) -> Dict[str, Any]:
+    created_at = _iscam_batch_now_iso()
+    payload = {
+        'status': 'JOB_QUEUED',
+        'unidad_negocio_id': unidad_negocio_id,
+        'fechas': [d.isoformat() for d in fechas],
+        'motivo': motivo,
+        'total': len(fechas),
+        'processed': 0,
+        'successful': 0,
+        'failed': 0,
+        'current_date': None,
+        'failed_dates': [],
+        'results': [],
+        'created_at_utc': created_at,
+        'updated_at_utc': created_at,
+        'max_retries_per_day': 1,
+        'execution_mode': 'SEQUENTIAL_SINGLE_REAL_PASS',
+    }
+    rows = _execute_edarsahub_query(
+        """
+        INSERT INTO dbo.Sistema_Sync_ResyncLog
+            (TipoSync, ServerID, UnidadCodigo, Estado, Mensaje, Payload, RegistrosAfectados, SolicitadoPor)
+        OUTPUT INSERTED.ResyncLogID AS job_id
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """,
+        (
+            'iscam_detail_batch',
+            str(server_id or ''),
+            unidad_negocio_id,
+            'JOB_QUEUED',
+            'Trabajo ISCAM en cola.',
+            json.dumps(payload, default=str, ensure_ascii=False),
+            0,
+            requested_by,
+        ),
+    )
+    if not rows:
+        raise RuntimeError('No se pudo crear el trabajo de sincronización ISCAM')
+    payload['job_id'] = int(rows[0]['job_id'])
+    return payload
+
+
+def _iscam_batch_day_outcome(resultado: Dict[str, Any]) -> Dict[str, Any]:
+    resumen = resultado.get('resumen') or {}
+    day = {}
+    for unidad in resumen.get('unidades') or []:
+        dias = unidad.get('dias') or []
+        if dias:
+            day = dict(dias[0])
+            break
+    return {
+        'success': bool(resultado.get('success')),
+        'status': str(day.get('status') or ('OK' if resultado.get('success') else 'ERROR')),
+        'error_code': str(day.get('error_code') or ''),
+        'error_type': str(day.get('error_type') or ''),
+        'filas_insertadas': int(day.get('filas_insertadas') or resumen.get('filas_insertadas') or 0),
+    }
+
+
+def _iscam_batch_is_transient(outcome: Dict[str, Any]) -> bool:
+    if outcome.get('status') == 'NO_CUADRA_REVISAR':
+        return False
+    code = str(outcome.get('error_code') or '').upper()
+    error_type = str(outcome.get('error_type') or '').upper()
+    if code in {'POS_TIMEOUT', 'POS_DEADLOCK', 'POS_CONNECTION_UNAVAILABLE'}:
+        return True
+    if any(token in code for token in ('TIMEOUT', 'DEADLOCK', 'CONNECTION')):
+        return True
+    return error_type in {'OPERATIONALERROR', 'MSSQLDATABASEEXCEPTION'}
+
+
+def _run_iscam_detail_batch_job(job_id: int) -> None:
+    row = _iscam_batch_read(job_id)
+    if not row:
+        return
+    payload = _iscam_batch_payload_from_row(row)
+    fechas = [date.fromisoformat(str(v)[:10]) for v in payload.get('fechas') or []]
+    unidad = str(payload.get('unidad_negocio_id') or row.get('UnidadCodigo') or '').strip()
+
+    payload['current_date'] = None
+    _iscam_batch_update(job_id, payload, 'JOB_RUNNING', 'Sincronización ISCAM iniciada.')
+
+    try:
+        for dia in fechas:
+            payload['current_date'] = dia.isoformat()
+            _iscam_batch_update(
+                job_id,
+                payload,
+                'JOB_RUNNING',
+                f"Procesando {dia.isoformat()} ({int(payload.get('processed') or 0) + 1} de {int(payload.get('total') or len(fechas))}).",
+            )
+
+            max_attempts = 2
+            attempt = 0
+            resultado = None
+            outcome = None
+            elapsed_ms = 0
+
+            while attempt < max_attempts:
+                attempt += 1
+                started = time.time()
+                try:
+                    resultado = _ejecutar_backfill_detalle_iscam(
+                        unidad,
+                        dia,
+                        dia,
+                        commit=True,
+                    )
+                    outcome = _iscam_batch_day_outcome(resultado)
+                except Exception as exc:
+                    text_error = str(exc or '').upper()
+                    if 'TIMEOUT' in text_error or 'TIMED OUT' in text_error:
+                        code = 'POS_TIMEOUT'
+                    elif 'DEADLOCK' in text_error or '1205' in text_error:
+                        code = 'POS_DEADLOCK'
+                    elif 'CONNECTION' in text_error or 'DBPROCESS' in text_error:
+                        code = 'POS_CONNECTION_UNAVAILABLE'
+                    else:
+                        code = f"{type(exc).__name__.upper()}_UNCLASSIFIED"
+                    outcome = {
+                        'success': False,
+                        'status': 'ERROR',
+                        'error_code': code,
+                        'error_type': type(exc).__name__,
+                        'filas_insertadas': 0,
+                    }
+                elapsed_ms += int((time.time() - started) * 1000)
+
+                if outcome.get('success'):
+                    break
+                if attempt >= max_attempts or not _iscam_batch_is_transient(outcome):
+                    break
+                time.sleep(1)
+
+            payload['processed'] = int(payload.get('processed') or 0) + 1
+            result_row = {
+                'fecha': dia.isoformat(),
+                'success': bool(outcome and outcome.get('success')),
+                'status': str((outcome or {}).get('status') or 'ERROR'),
+                'error_code': str((outcome or {}).get('error_code') or ''),
+                'attempts': attempt,
+                'duration_ms': elapsed_ms,
+                'filas_insertadas': int((outcome or {}).get('filas_insertadas') or 0),
+            }
+            payload.setdefault('results', []).append(result_row)
+
+            if result_row['success']:
+                payload['successful'] = int(payload.get('successful') or 0) + 1
+            else:
+                payload['failed'] = int(payload.get('failed') or 0) + 1
+                payload.setdefault('failed_dates', []).append({
+                    'fecha': dia.isoformat(),
+                    'status': result_row['status'],
+                    'error_code': result_row['error_code'],
+                })
+
+            _iscam_batch_update(
+                job_id,
+                payload,
+                'JOB_RUNNING',
+                (
+                    f"{payload['processed']}/{payload['total']} procesados; "
+                    f"{payload['successful']} sincronizados; {payload['failed']} pendientes."
+                ),
+            )
+
+        payload['current_date'] = None
+        if int(payload.get('failed') or 0) == 0:
+            final_status = 'JOB_SUCCESS'
+        elif int(payload.get('successful') or 0) > 0:
+            final_status = 'JOB_PARTIAL'
+        else:
+            final_status = 'JOB_FAILED'
+
+        _iscam_batch_update(
+            job_id,
+            payload,
+            final_status,
+            (
+                f"{payload['processed']}/{payload['total']} procesados; "
+                f"{payload['successful']} sincronizados; {payload['failed']} pendientes."
+            ),
+        )
+    except Exception as exc:
+        payload['current_date'] = None
+        payload['fatal_error'] = f"{type(exc).__name__}: {str(exc)[:300]}"
+        _iscam_batch_update(
+            job_id,
+            payload,
+            'JOB_FAILED',
+            'El trabajo terminó por un error interno controlado.',
+        )
+
+
+@router.post("/resync/iscam-detail/jobs", status_code=202)
+async def crear_iscam_detail_batch_job(
+    body: IscamDetailBatchRequest,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN")),
+):
+    fechas = sorted(set(body.fechas or []))
+    if not fechas:
+        raise HTTPException(status_code=400, detail='Debe indicar al menos una fecha')
+    if len(fechas) > 63:
+        raise HTTPException(status_code=400, detail='El máximo por trabajo es 63 fechas')
+
+    unidad = _get_unidad_config(body.unidad_negocio_id)
+    if not unidad:
+        raise HTTPException(status_code=400, detail=f"Unidad '{body.unidad_negocio_id}' no encontrada")
+
+    active = _iscam_batch_find_active(body.unidad_negocio_id)
+    if active:
+        return {'success': True, 'reused_existing_job': True, **active}
+
+    payload = _iscam_batch_create(
+        body.unidad_negocio_id,
+        unidad.get('server_id', ''),
+        fechas,
+        body.motivo,
+        current_user.get('email', 'unknown'),
+    )
+    background_tasks.add_task(_run_iscam_detail_batch_job, int(payload['job_id']))
+    return {'success': True, 'reused_existing_job': False, **payload}
+
+
+@router.get("/resync/iscam-detail/jobs/{job_id}")
+async def obtener_iscam_detail_batch_job(
+    job_id: int,
+    current_user: dict = Depends(require_explicit_permission("SCHEDULER_ADMIN")),
+):
+    row = _iscam_batch_read(job_id)
+    if not row:
+        raise HTTPException(status_code=404, detail='Trabajo ISCAM no encontrado')
+    return {'success': True, **_iscam_batch_payload_from_row(row)}
 
 
 @router.post("/resync/execute", response_model=ResyncResponse)

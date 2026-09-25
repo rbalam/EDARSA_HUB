@@ -20,7 +20,9 @@ def test_sync_button_uses_canonical_effective_permission():
 def test_sync_progress_counts_only_successful_real_days():
     text = _source()
     assert 'const [syncProgress, setSyncProgress] = useState({ completed: 0, total: 0 });' in text
-    assert 'Días sincronizados ${syncProgress.completed} de ${syncProgress.total} días' in text
+    assert 'Días procesados ${syncProgress.processed ?? syncProgress.completed} de ${syncProgress.total}' in text
+    assert 'Sincronizados ${syncProgress.completed}' in text
+    assert 'Fallidos ${syncProgress.failed || 0}' in text
     assert 'freshness?.detail_problem_dates || []' in text
     assert 'freshness?.missing_closed_dates || []' in text
     assert 'syncDates.map((fecha) => [fecha, fecha])' in text
