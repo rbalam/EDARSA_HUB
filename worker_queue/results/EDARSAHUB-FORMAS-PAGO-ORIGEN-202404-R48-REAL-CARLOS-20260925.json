@@ -1,0 +1,31 @@
+{
+  "base_sha": "a99eb707f65b8099502dc8f0dc1103ee620bb44c",
+  "blockers": [
+    "iscam_payments_only_resync_failed:rc=1"
+  ],
+  "canonical_sql_mutation": true,
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-25T17:20:48Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-FORMAS-PAGO-ORIGEN-202404-R48-REAL-CARLOS-20260925",
+  "operation": "ISCAM_PAYMENTS_ONLY_RESYNC",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-25T17:20:59Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-25T17:20:27Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "units": [
+    "ORIGEN"
+  ],
+  "work_completion": "NOT_CERTIFIED"
+}
