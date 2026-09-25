@@ -30,6 +30,7 @@ from tools.mirror_sync.git_divergence_guard import (
     authorized_push,
     validate_commit_scope,
 )
+from tools.mirror_sync.worker_job_factory import canonicalize_job
 
 JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 
@@ -79,10 +80,9 @@ def _walk(value: Any):
 
 
 def validate_template(template: dict[str, Any]) -> dict[str, Any]:
-    if (
-        not isinstance(template, dict)
-        or template.get("schema") != "edarsahub.worker-job.v2"
-    ):
+    template = canonicalize_job(template)
+
+    if template.get("schema") != "edarsahub.worker-job.v2":
         raise ValueError("INVALID_JOB_TEMPLATE_SCHEMA")
 
     job_id = str(template.get("job_id") or "").strip()
