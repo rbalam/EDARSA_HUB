@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "eb0cfde5d4913cee35c58aaa8ced1518696e01d8",
-  "generated_at_utc": "2026-09-25T04:53:06Z",
+  "generated_at_utc": "2026-09-25T04:54:23Z",
   "history": {
     "done_total_local": 1062,
     "pending_total_local": 17,
@@ -16,128 +16,128 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 263,
+      "age_seconds": 340,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130MID-202512-R10-REAL-CARLOS-20260924",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 2136,
+      "age_seconds": 2213,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130MID-202601-R9-REAL-CARLOS-20260924",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 1897,
+      "age_seconds": 1974,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130QRO-202511-R11-REAL-CARLOS-20260924",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 1199,
+      "age_seconds": 1276,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130QRO-202605-R5-REAL-CARLOS-20260924",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 1206,
+      "age_seconds": 1284,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130QRO-202606-R5-REAL-CARLOS-20260924",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 1897,
+      "age_seconds": 1974,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CIENFUEGOS-202511-R11-REAL-CARLOS-20260924",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 2014,
+      "age_seconds": 2091,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CIENFUEGOS-202512-R10-REAL-CARLOS-20260924",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 2144,
+      "age_seconds": 2221,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CIENFUEGOS-202601-R9-REAL-CARLOS-20260924",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 1890,
+      "age_seconds": 1967,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-ESTELAR-202511-R11-REAL-CARLOS-20260924",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 2006,
+      "age_seconds": 2083,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-ESTELAR-202512-R10-REAL-CARLOS-20260924",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 2136,
+      "age_seconds": 2213,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-ESTELAR-202601-R9-REAL-CARLOS-20260924",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 1883,
+      "age_seconds": 1960,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-ORIGEN-202511-R11-REAL-CARLOS-20260924",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 2006,
+      "age_seconds": 2083,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-ORIGEN-202512-R10-REAL-CARLOS-20260924",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 2136,
+      "age_seconds": 2213,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-ORIGEN-202601-R9-REAL-CARLOS-20260924",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 44,
+      "age_seconds": 121,
       "job_id": "EDARSAHUB-BOS-WORKER-RESULT-PUBLISHER-EMPTY-RESULT-GATE1-MUTATION-R1",
       "reason": null,
       "state": "PENDING"
     },
     {
-      "age_seconds": 2694,
+      "age_seconds": 2771,
       "job_id": "EDARSAHUB-BOS-WORKER-RESULT-PUBLISHER-EMPTY-RESULT-GATE0-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 288,
+      "age_seconds": 365,
       "job_id": "EDARSAHUB-ISCAM-130QRO-202606-DETAIL-BACKFILL-R2-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 279,
+      "age_seconds": 356,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130MID-202511-R11-REAL-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1236,
+      "age_seconds": 1313,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130QRO-202512-R10-REAL-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1754,
+      "age_seconds": 1831,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130QRO-202601-R9-REAL-CARLOS-20260924",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
   "local_development_sha": "eb0cfde5d4913cee35c58aaa8ced1518696e01d8",
-  "oldest_pending_age_seconds": 44,
+  "oldest_pending_age_seconds": 121,
   "production_touched": false,
   "queue_blocked": 14,
   "queue_depth": 15,
@@ -150,8 +150,8 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130MID-202512-R10-REAL-CARLOS-20260924",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-25T04:53:00Z",
-    "last_receive_utc": "2026-09-25T04:53:04Z",
+    "last_cycle_utc": "2026-09-25T04:54:20Z",
+    "last_receive_utc": "2026-09-25T04:54:23Z",
     "last_terminal_utc": "2026-09-25T04:48:25Z",
     "pid": "669",
     "runtime_fingerprint": {
