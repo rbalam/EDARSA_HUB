@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "eb0cfde5d4913cee35c58aaa8ced1518696e01d8",
-  "generated_at_utc": "2026-09-25T04:11:01Z",
+  "generated_at_utc": "2026-09-25T04:12:19Z",
   "history": {
     "done_total_local": 1062,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2300,
+      "age_seconds": 2378,
       "job_id": "EDARSAHUB-BOS-WORKER-DELIVERABLE-MATERIALIZER-GATE0-R4-SPECS-READONLY",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 168,
+      "age_seconds": 247,
       "job_id": "EDARSAHUB-BOS-WORKER-RESULT-PUBLISHER-EMPTY-RESULT-GATE0-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1996,
+      "age_seconds": 2075,
       "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5D1-FOUNDATION-MIGRATION-ARTIFACTS-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1522,
+      "age_seconds": 1601,
       "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5D1-FOUNDATION-MIGRATION-ARTIFACTS-R3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1504,
+      "age_seconds": 1583,
       "job_id": "EDARSAHUB-TABLAJERIA-GATE2-TECHNICAL-MAPPING-STRUCTURED-READONLY-R3",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-25T04:10:58Z",
-    "last_receive_utc": "2026-09-25T04:11:00Z",
+    "last_cycle_utc": "2026-09-25T04:12:18Z",
+    "last_receive_utc": "2026-09-25T04:12:19Z",
     "last_terminal_utc": "2026-09-25T04:08:12Z",
     "pid": "669",
     "runtime_fingerprint": {
