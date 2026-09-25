@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-130QRO-202606-DETAIL-BACKFILL-R2-CARLOS-20260924",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "eb0cfde5d4913cee35c58aaa8ced1518696e01d8",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "ISCAM_DETAIL_BACKFILL",
+  "priority": "P0",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chat",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Autoavance"
+  },
+  "objective": "Sincronizador | 130QRO | Junio 2026 | Reparar exclusivamente el detalle ISCAM contra el encabezado Runtime V2 ya actualizado. El portal reporta 17 dias con diferencias, 436 cheques y $2,263,623 de diferencia. No regrabar header; escribir solo dias que pasen OK_HEADER_CANONICO y certificar paridad diaria.",
+  "actions": [],
+  "units": [
+    "130QRO"
+  ],
+  "fecha_inicio": "2026-06-01",
+  "fecha_fin": "2026-07-01",
+  "dry_run": false,
+  "confirm_detail_backfill": true,
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "cert_130qro_202606_runtime_vs_detail",
+          "sql": "WITH r AS (SELECT CAST(fecha_operacion AS date) fecha,SUM(CAST(ISNULL(ventas_total,0) AS decimal(19,4))) ventas,SUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets,SUM(CAST(ISNULL(pax_total,0) AS bigint)) pax FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE unidad_negocio_id='130QRO' AND fecha_operacion>='2026-06-01' AND fecha_operacion<'2026-07-01' GROUP BY CAST(fecha_operacion AS date)), d0 AS (SELECT CAST(fecha_operacion AS date) fecha,numero_ticket,SUM(CAST(ISNULL(importe_neto,0) AS decimal(19,4))) venta,MAX(CAST(ISNULL(pax,0) AS bigint)) pax FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id='130QRO' AND fecha_operacion>='2026-06-01' AND fecha_operacion<'2026-07-01' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY CAST(fecha_operacion AS date),numero_ticket), d AS (SELECT fecha,SUM(venta) ventas,COUNT_BIG(*) tickets,SUM(pax) pax FROM d0 GROUP BY fecha), f AS (SELECT COALESCE(r.fecha,d.fecha) fecha,ISNULL(r.ventas,0) rv,ISNULL(d.ventas,0) dv,ISNULL(r.tickets,0) rt,ISNULL(d.tickets,0) dt,ISNULL(r.pax,0) rp,ISNULL(d.pax,0) dp FROM r FULL OUTER JOIN d ON d.fecha=r.fecha), m AS (SELECT COUNT(*) mismatches FROM f WHERE ABS(rv-dv)>0.05 OR rt<>dt OR rp<>dp) SELECT mismatches dias_con_diferencia,1 / CASE WHEN mismatches=0 THEN 1 ELSE 0 END parity_gate FROM m"
+        }
+      ]
+    }
+  ],
+  "constraints": [
+    "No Production",
+    "No tocar Runtime V2/header",
+    "Solo junio 2026 completo",
+    "Solo detalle ISCAM",
+    "Paridad diaria ventas/tickets/PAX obligatoria",
+    "Fail closed si queda cualquier dia con diferencia"
+  ],
+  "expected_output": {
+    "status": "OPERATIONAL_COMPLETE",
+    "quality_gate": "PASS",
+    "certification": "CERTIFIED_OPERATIONAL",
+    "production_touched": false
+  }
+}
