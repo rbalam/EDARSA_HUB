@@ -1,0 +1,31 @@
+{
+  "base_sha": "a99eb707f65b8099502dc8f0dc1103ee620bb44c",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-25T17:43:38Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/api/admin_scheduler_resync.py",
+    "backend/tests/test_iscam_async_detail_batch_r1.py",
+    "backend/tests/test_iscam_poll_recovery_r3.py",
+    "frontend/src/portal-inteligencia/api/client.js",
+    "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-POLL-RECOVERY-R3-CARLOS-20260925",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-25T17:43:46Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-25T17:43:34Z",
+  "status": "GIT_TESTS_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
