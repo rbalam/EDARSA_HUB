@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "ae523b1feddac2d49f6abe550cf3752591cc714e",
-  "generated_at_utc": "2026-09-25T16:44:19Z",
+  "generated_at_utc": "2026-09-25T16:45:38Z",
   "history": {
     "done_total_local": 1071,
     "pending_total_local": 1,
@@ -16,98 +16,98 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 41,
+      "age_seconds": 121,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130QRO-202604-R1-REAL-CARLOS-20260925",
       "reason": null,
       "state": "PENDING"
     },
     {
-      "age_seconds": 1917,
+      "age_seconds": 1996,
       "job_id": "EDARSAHUB-ISCAM-MULTI-202605-DETAIL-BACKFILL-R1-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1888,
+      "age_seconds": 1968,
       "job_id": "EDARSAHUB-ISCAM-MULTI-202605-DETAIL-BACKFILL-R2-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1413,
+      "age_seconds": 1493,
       "job_id": "EDARSAHUB-ISCAM-SYNC-PERMISSION-PROGRESS-R1-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1356,
+      "age_seconds": 1436,
       "job_id": "EDARSAHUB-ISCAM-SYNC-PERMISSION-PROGRESS-R2-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1255,
+      "age_seconds": 1335,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130MID-202605-R1-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 621,
+      "age_seconds": 700,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130MID-202605-R2-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3407,
+      "age_seconds": 3487,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130MID-202606-R4-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1405,
+      "age_seconds": 1484,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130QRO-202605-R6-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1262,
+      "age_seconds": 1342,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CIENFUEGOS-202605-R1-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1057,
+      "age_seconds": 1136,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CIENFUEGOS-202605-R2-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1260,
+      "age_seconds": 1339,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-ESTELAR-202605-R1-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 598,
+      "age_seconds": 678,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-ESTELAR-202605-R2-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1253,
+      "age_seconds": 1332,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-ORIGEN-202605-R1-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 589,
+      "age_seconds": 669,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-ORIGEN-202605-R2-REAL-CARLOS-20260925",
       "reason": null,
       "state": "RESULT_READY"
     }
   ],
   "local_development_sha": "ae523b1feddac2d49f6abe550cf3752591cc714e",
-  "oldest_pending_age_seconds": 41,
+  "oldest_pending_age_seconds": 121,
   "production_touched": false,
   "queue_blocked": 0,
   "queue_depth": 1,
@@ -120,8 +120,8 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-130QRO-202604-R1-REAL-CARLOS-20260925",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-25T16:44:13Z",
-    "last_receive_utc": "2026-09-25T16:44:18Z",
+    "last_cycle_utc": "2026-09-25T16:45:33Z",
+    "last_receive_utc": "2026-09-25T16:45:37Z",
     "last_terminal_utc": "2026-09-25T16:34:29Z",
     "pid": "678",
     "runtime_fingerprint": {
