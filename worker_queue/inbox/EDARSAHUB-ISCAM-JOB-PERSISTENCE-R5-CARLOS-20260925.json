@@ -1,0 +1,65 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-JOB-PERSISTENCE-R5-CARLOS-20260925",
+  "mode": "MUTATION",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Inteligencia Comercial - Visualizacion Sincronizacion"
+  },
+  "objective": "Corregir el HTTP 404 'Trabajo ISCAM no encontrado' del nuevo flujo asincrono. Causa confirmada: _iscam_batch_create ejecuta INSERT ... OUTPUT mediante _execute_edarsahub_query con fetch=True, pero ese helper solo hace conn.commit() cuando fetch=False; devolvia un job_id no persistido. Cambiar exclusivamente la creacion del job para usar transaccion SQL explicita, fetchone, commit antes del 202, rollback fail-closed y cierre de recursos. No tocar el flujo Re-Sync existente, no ampliar alcance, no tocar Produccion.",
+  "scheduling": {
+    "project_id": "EDARSAHUB-CONCILIACIONES",
+    "bounded_context": "INTELIGENCIA_COMERCIAL_REPORTES_ISCAM",
+    "priority_class": "P0",
+    "fairness_weight": 10,
+    "max_parallelism": 1,
+    "resource_claims": [
+      "backend/api/admin_scheduler_resync.py",
+      "backend/tests/test_iscam_batch_persistence_r5.py"
+    ],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER",
+      "ISCAM_DETAIL_BACKFILL"
+    ]
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/api/admin_scheduler_resync.py",
+      "expected_count": 1,
+      "old": "def _iscam_batch_create(\n    unidad_negocio_id: str,\n    server_id: str,\n    fechas: List[date],\n    motivo: str,\n    requested_by: str,\n) -> Dict[str, Any]:\n    created_at = _iscam_batch_now_iso()\n    payload = {\n        'status': 'JOB_QUEUED',\n        'unidad_negocio_id': unidad_negocio_id,\n        'fechas': [d.isoformat() for d in fechas],\n        'motivo': motivo,\n        'total': len(fechas),\n        'processed': 0,\n        'successful': 0,\n        'failed': 0,\n        'current_date': None,\n        'failed_dates': [],\n        'results': [],\n        'created_at_utc': created_at,\n        'updated_at_utc': created_at,\n        'max_retries_per_day': 1,\n        'execution_mode': 'SEQUENTIAL_SINGLE_REAL_PASS',\n    }\n    rows = _execute_edarsahub_query(\n        \"\"\"\n        INSERT INTO dbo.Sistema_Sync_ResyncLog\n            (TipoSync, ServerID, UnidadCodigo, Estado, Mensaje, Payload, RegistrosAfectados, SolicitadoPor)\n        OUTPUT INSERTED.ResyncLogID AS job_id\n        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)\n        \"\"\",\n        (\n            'iscam_detail_batch',\n            str(server_id or ''),\n            unidad_negocio_id,\n            'JOB_QUEUED',\n            'Trabajo ISCAM en cola.',\n            json.dumps(payload, default=str, ensure_ascii=False),\n            0,\n            requested_by,\n        ),\n    )\n    if not rows:\n        raise RuntimeError('No se pudo crear el trabajo de sincronización ISCAM')\n    payload['job_id'] = int(rows[0]['job_id'])\n    return payload",
+      "new": "def _iscam_batch_create(\n    unidad_negocio_id: str,\n    server_id: str,\n    fechas: List[date],\n    motivo: str,\n    requested_by: str,\n) -> Dict[str, Any]:\n    created_at = _iscam_batch_now_iso()\n    payload = {\n        'status': 'JOB_QUEUED',\n        'unidad_negocio_id': unidad_negocio_id,\n        'fechas': [d.isoformat() for d in fechas],\n        'motivo': motivo,\n        'total': len(fechas),\n        'processed': 0,\n        'successful': 0,\n        'failed': 0,\n        'current_date': None,\n        'failed_dates': [],\n        'results': [],\n        'created_at_utc': created_at,\n        'updated_at_utc': created_at,\n        'max_retries_per_day': 1,\n        'execution_mode': 'SEQUENTIAL_SINGLE_REAL_PASS',\n    }\n\n    # Este INSERT usa OUTPUT INSERTED para obtener el job_id. El helper genérico\n    # solo hace commit cuando fetch=False; con fetch=True devolvía el ID pero la\n    # transacción se cerraba sin commit, por lo que el polling recibía 404 y la\n    # tarea background tampoco podía volver a leer el trabajo. Persistimos el\n    # job de forma explícita y atómica antes de devolver el 202 al frontend.\n    conn = get_sql_connection()\n    cursor = None\n    try:\n        cursor = conn.cursor(as_dict=True)\n        cursor.execute(\n            \"\"\"\n            INSERT INTO dbo.Sistema_Sync_ResyncLog\n                (TipoSync, ServerID, UnidadCodigo, Estado, Mensaje, Payload, RegistrosAfectados, SolicitadoPor)\n            OUTPUT INSERTED.ResyncLogID AS job_id\n            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)\n            \"\"\",\n            (\n                'iscam_detail_batch',\n                str(server_id or ''),\n                unidad_negocio_id,\n                'JOB_QUEUED',\n                'Trabajo ISCAM en cola.',\n                json.dumps(payload, default=str, ensure_ascii=False),\n                0,\n                requested_by,\n            ),\n        )\n        row = cursor.fetchone()\n        if not row or row.get('job_id') is None:\n            raise RuntimeError('No se pudo crear el trabajo de sincronización ISCAM')\n        payload['job_id'] = int(row['job_id'])\n        conn.commit()\n        return payload\n    except Exception:\n        try:\n            conn.rollback()\n        except Exception:\n            pass\n        raise\n    finally:\n        try:\n            if cursor is not None:\n                cursor.close()\n        finally:\n            conn.close()"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_iscam_batch_persistence_r5.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nBACKEND = ROOT / 'backend' / 'api' / 'admin_scheduler_resync.py'\n\n\ndef _create_block():\n    text = BACKEND.read_text(encoding='utf-8')\n    return text.split('def _iscam_batch_create(', 1)[1].split('def _iscam_batch_day_outcome', 1)[0]\n\n\ndef test_batch_job_insert_is_committed_before_returning_job_id():\n    block = _create_block()\n    assert 'conn = get_sql_connection()' in block\n    assert 'OUTPUT INSERTED.ResyncLogID AS job_id' in block\n    assert 'row = cursor.fetchone()' in block\n    assert \"payload['job_id'] = int(row['job_id'])\" in block\n    assert 'conn.commit()' in block\n    assert block.index('conn.commit()') < block.index('return payload')\n\n\ndef test_batch_job_insert_rolls_back_and_closes_on_failure():\n    block = _create_block()\n    assert 'conn.rollback()' in block\n    assert 'cursor.close()' in block\n    assert 'conn.close()' in block\n\n\ndef test_batch_job_create_no_longer_uses_fetch_without_commit_helper():\n    block = _create_block()\n    assert '_execute_edarsahub_query(' not in block\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/api/admin_scheduler_resync.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_iscam_batch_persistence_r5.py",
+        "backend/tests/test_iscam_poll_recovery_r3.py",
+        "backend/tests/test_iscam_async_detail_batch_r1.py",
+        "backend/tests/test_iscam_detail_only_manual_resync_r37.py"
+      ]
+    }
+  ]
+}
