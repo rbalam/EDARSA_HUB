@@ -28,12 +28,16 @@ from typing import Any
 # WORKER_RESULT_INTEGRITY_IMPORT_COMPAT_V1
 try:
     from tools.mirror_sync.worker_result_integrity import (
+        ResultState,
+        inspect_result_file,
         is_terminal_result_path,
         validate_terminal_result_file,
         validate_terminal_result_payload,
     )
 except ModuleNotFoundError:
     from worker_result_integrity import (
+        ResultState,
+        inspect_result_file,
         is_terminal_result_path,
         validate_terminal_result_file,
         validate_terminal_result_payload,
@@ -114,6 +118,72 @@ def load(path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError("RESULT_NOT_OBJECT")
     return value
+
+
+def invalid_result_artifact_payload(
+    path: Path,
+    inspection: Any,
+) -> dict[str, Any]:
+    """Build a terminal fail-closed result for corrupt local artifacts.
+
+    This prevents zero-byte or non-JSON artifacts from being preserved as if
+    they were valid worker results. The artifact remains auditable, but it is
+    explicitly NOT_CERTIFIED and cannot open a downstream gate.
+    """
+    raw_job_id = path.stem.strip()
+    allowed = (
+        "abcdefghijklmnopqrstuvwxyz"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "0123456789._-"
+    )
+    job_id = (
+        raw_job_id
+        if raw_job_id and all(ch in allowed for ch in raw_job_id)
+        else "INVALID-RESULT-ARTIFACT"
+    )
+    state = getattr(inspection, "state", "RESULT_INVALID_JSON")
+    state_value = getattr(state, "value", str(state))
+    reason = str(getattr(inspection, "reason", "") or state_value)
+    stamp = now()
+
+    return {
+        "schema": "edarsahub.worker-result.v2",
+        "job_id": job_id,
+        "started_at_utc": stamp,
+        "completed_at_utc": stamp,
+        "status": "INVALID_RESULT_ARTIFACT",
+        "executor": "universal-result-publisher",
+        "tests": "FAIL",
+        "quality_gate": "FAIL",
+        "files_changed": [],
+        "summary_es": (
+            "El publicador detecto un artifact terminal vacio, corrupto o no "
+            "procesable en worker/results y lo convirtio en evidencia "
+            "NOT_CERTIFIED para fallar cerrado."
+        ),
+        "blockers": [
+            f"invalid_result_artifact:{state_value}:{reason}",
+        ],
+        "percent_complete": 0,
+        "certification": "NOT_CERTIFIED",
+        "production_touched": False,
+        "invalid_result_artifact": True,
+        "source_result_path": path.as_posix(),
+        "result_integrity_state": state_value,
+        "result_integrity_reason": reason,
+        "result_size_bytes": int(getattr(inspection, "size_bytes", 0) or 0),
+        "result_sha256": str(getattr(inspection, "sha256", "") or ""),
+    }
+
+
+def load_publishable_result(path: Path) -> dict[str, Any]:
+    """Load a local result or synthesize a fail-closed invalid artifact result."""
+    if path.parent.name == "results":
+        inspection = inspect_result_file(path)
+        if inspection.state != ResultState.RESULT_TERMINAL_VALID:
+            return invalid_result_artifact_payload(path, inspection)
+
+    return load(path)
 
 
 def atomic_json(path: Path, payload: dict[str, Any]) -> None:
@@ -283,6 +353,15 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
         "work_completion": "PENDING_CERTIFICATION",
         "percent_complete": 95,
     }
+
+    if result.get("status") == "INVALID_RESULT_ARTIFACT":
+        return {
+            "certified": False,
+            "certification": "NOT_CERTIFIED",
+            "work_completion": "INVALID_RESULT_ARTIFACT",
+            "percent_complete": 0,
+            "certification_basis": "INVALID_RESULT_ARTIFACT_FAIL_CLOSED",
+        }
 
     if result.get("status") == "READ_ONLY_COMPLETE":
         readonly_evidence = sanitize_readonly_evidence(result)
@@ -523,6 +602,9 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
         "operation", "dry_run", "units", "canonical_sql_mutation",
         "operation_summary", "reasons", "received_at_utc", "source",
         "required_deliverables", "deliverables", "missing_deliverables",
+        "invalid_result_artifact", "source_result_path",
+        "result_integrity_state", "result_integrity_reason",
+        "result_size_bytes", "result_sha256",
     )
     public = {key: result.get(key) for key in allowed if key in result}
     public["published_at_utc"] = now()
@@ -762,7 +844,7 @@ def publish_one(path: Path) -> bool:
     PUBLISHED.mkdir(parents=True, exist_ok=True)
     marker = PUBLISHED / path.name
 
-    result = load(path)
+    result = load_publishable_result(path)
     public = sanitize(result)
 
     if marker_satisfied(marker, public):
