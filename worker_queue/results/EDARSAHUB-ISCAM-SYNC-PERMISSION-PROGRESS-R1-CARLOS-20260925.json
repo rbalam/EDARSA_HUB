@@ -1,0 +1,41 @@
+{
+  "base_sha": "e2910f8ba5ee98b6b22e002bed57eca54fa80fa3",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:GIT_FAILED:-c user.name=EDARSAHUB Worker -c user.email=worker@edarsahub.local commit -m worker(EDARSAHUB-ISCAM-SYNC-PERMISSION-PROGRESS-R1-CARLOS-20260925): apply ChatGPT deterministic changes:.vscode/tasks.json:1:1: error: AGENT_GUARD: agente sin claim activo\n",
+    "agent_guard_release_failed:.vscode/tasks.json:1:1: error: AGENT_GUARD: RuntimeError: Claim no encontrado\n"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-25T16:18:45Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_iscam_freshness_manual_sync_r31.py",
+    "backend/tests/test_iscam_sync_permission_progress_r1.py",
+    "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx"
+  ],
+  "frontend_build_evidence": {
+    "checks": [
+      {
+        "completed_at_utc": "2026-09-25T16:18:42Z",
+        "output_tail": "yarn run v1.22.22\n$ yarn validate:navigation && yarn install --frozen-lockfile --non-interactive --ignore-scripts --prefer-offline\n$ node scripts/validate_enterprise_navigation.js && node scripts/validate_executive_navigation.js\nENTERPRISE_NAVIGATION_GUARDIAN=PASS\nGROUPS=8\nMODULE_MAPPINGS=28\nMENU_MAPPINGS=73\nPLANNED_ITEMS=54\nREGISTERED_FUTURE_TABS=0\nNEW_BADGE_DAYS=30\nEXECUTIVE_NAVIGATION_GUARD=PASS\nMAIN_ROUTE=/tablero-ejecutivo\nMAIN_COMPONENT=TableroEjecutivo\nADMIN_ROUTE=/admin/dashboard-ejecutivo\nADMIN_COMPONENT=DashboardEjecutivo\nEXECUTIVE_TABS=comercial,finanzas,rh,bsc\nADMIN_ROUTE_IN_ENTERPRISE_MENU=NO\n[1/4] Resolving packages...\n[2/4] Fetching packages...\n[3/4] Linking dependencies...\nwarning \" > react-day-picker@8.10.1\" has incorrect peer dependency \"date-fns@^2.28.0 || ^3.0.0\".\nwarning \" > react-day-picker@8.10.1\" has incorrect peer dependency \"react@^16.8.0 || ^17.0.0 || ^18.0.0\".\nwarning \" > @babel/plugin-proposal-private-property-in-object@7.21.11\" has unmet peer dependency \"@babel/core@^7.0.0-0\".\nwarning \"react-scripts > eslint-config-react-app > eslint-plugin-flowtype@8.0.3\" has unmet peer dependency \"@babel/plugin-syntax-flow@^7.14.5\".\nwarning \"react-scripts > eslint-config-react-app > eslint-plugin-flowtype@8.0.3\" has unmet peer dependency \"@babel/plugin-transform-react-jsx@^7.14.9\".\nwarning \"react-scripts > react-dev-utils > fork-ts-checker-webpack-plugin@6.5.3\" has unmet peer dependency \"typescript@>= 2.7\".\nwarning \"react-scripts > eslint-config-react-app > @typescript-eslint/eslint-plugin > tsutils@3.21.0\" has unmet peer dependency \"typescript@>=2.8.0 || >= 3.2.0-dev || >= 3.3.0-dev || >= 3.4.0-dev || >= 3.5.0-dev || >= 3.6.0-dev || >= 3.6.0-beta || >= 3.7.0-dev || >= 3.7.0-beta\".\nwarning \" > recharts@3.6.0\" has unmet peer dependency \"react-is@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0\".\nwarning \"@craco/craco > cosmiconfig-typescript-loader@1.0.9\" has unmet peer dependency \"@types/node@*\".\nwarning \"@craco/craco > cosmiconfig-typescript-loader@1.0.9\" has unmet peer dependency \"typescript@>=3\".\nwarning \"@craco/craco > cosmiconfig-typescript-loader > ts-node@10.9.2\" has unmet peer dependency \"@types/node@*\".\nwarning \"@craco/craco > cosmiconfig-typescript-loader > ts-node@10.9.2\" has unmet peer dependency \"typescript@>=2.7\".\nwarning Workspaces can only be enabled in private projects.\nwarning Workspaces can only be enabled in private projects.\n[4/4] Building fresh packages...\nwarning Ignored scripts due to flag.\n$ DISABLE_ESLINT_PLUGIN=true CI=false craco build\nCannot find ESLint plugin (ESLintWebpackPlugin).\nCreating an optimized production build...\nBrowserslist: browsers data (caniuse-lite) is 9 months old. Please run:\n  npx update-browserslist-db@latest\n  Why you should do it regularly: https://github.com/browserslist/update-db#readme\nBrowserslist: browsers data (caniuse-lite) is 9 months old. Please run:\n  npx update-browserslist-db@latest\n  Why you should do it regularly: https://github.com/browserslist/update-db#readme\nCompiled successfully.\n\nFile sizes after gzip:\n\n  1.05 MB   build/static/js/main.924f3a77.js\n  46.35 kB  build/static/js/239.e39fb35b.chunk.js\n  43.29 kB  build/static/js/455.ba0306d1.chunk.js\n  23.89 kB  build/static/css/main.4deffca7.css\n  8.73 kB   build/static/js/977.8591a78c.chunk.js\n\nThe bundle size is significantly larger than recommended.\nConsider reducing it with code splitting: https://goo.gl/9VhYWB\nYou can also analyze the project dependencies: https://goo.gl/LeUzfb\n\nThe project was built assuming it is hosted at /.\nYou can control this with the homepage field in your package.json.\n\nThe build folder is ready to be deployed.\nYou may serve it with a static server:\n\n  yarn global add serve\n  serve -s build\n\nFind out more about deployment here:\n\n  https://cra.link/deployment\n\nDone in 140.17s.",
+        "returncode": 0,
+        "started_at_utc": "2026-09-25T16:16:22Z",
+        "status": "PASS"
+      }
+    ]
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-SYNC-PERMISSION-PROGRESS-R1-CARLOS-20260925",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-25T16:19:14Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-25T16:16:19Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
