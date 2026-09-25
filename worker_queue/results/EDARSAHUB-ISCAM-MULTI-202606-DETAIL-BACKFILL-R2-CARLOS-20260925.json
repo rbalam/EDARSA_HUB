@@ -1,0 +1,781 @@
+{
+  "base_sha": "e2910f8ba5ee98b6b22e002bed57eca54fa80fa3",
+  "blockers": [
+    "iscam_detail_backfill_failed:rc=1"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-25T15:20:02Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-MULTI-202606-DETAIL-BACKFILL-R2-CARLOS-20260925",
+  "operation": "ISCAM_DETAIL_BACKFILL",
+  "operation_summary": {
+    "dias_bloqueados": 21,
+    "dias_candidatos": 21,
+    "dias_evaluados": 120,
+    "dias_reparables": 0,
+    "dias_sin_runtime": 0,
+    "dias_ya_ok": 99,
+    "fecha_fin_exclusivo": "2026-07-01",
+    "fecha_inicio": "2026-06-01",
+    "filas_insertadas": 0,
+    "modo": "COMMIT",
+    "unidades": [
+      {
+        "bloqueados": 21,
+        "candidatos": 21,
+        "dias": [
+          {
+            "delta_pax": 2,
+            "delta_tickets": 2,
+            "delta_ventas": "835.0000",
+            "fecha_operacion": "2026-06-01",
+            "filas_insertadas": 0,
+            "pax_pos": 54,
+            "pax_runtime": 52,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 19,
+            "tickets_runtime": 17,
+            "ventas_pos": "80309.0000",
+            "ventas_runtime": "79474.00"
+          },
+          {
+            "delta_pax": -1,
+            "delta_tickets": -1,
+            "delta_ventas": "-275.0000",
+            "fecha_operacion": "2026-06-02",
+            "filas_insertadas": 0,
+            "pax_pos": 66,
+            "pax_runtime": 67,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 25,
+            "tickets_runtime": 26,
+            "ventas_pos": "113406.0000",
+            "ventas_runtime": "113681.00"
+          },
+          {
+            "delta_pax": 1,
+            "delta_tickets": 1,
+            "delta_ventas": "275.0000",
+            "fecha_operacion": "2026-06-03",
+            "filas_insertadas": 0,
+            "pax_pos": 36,
+            "pax_runtime": 35,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 18,
+            "tickets_runtime": 17,
+            "ventas_pos": "54144.0000",
+            "ventas_runtime": "53869.00"
+          },
+          {
+            "delta_pax": -2,
+            "delta_tickets": -1,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-06-04",
+            "filas_insertadas": 0,
+            "pax_pos": 35,
+            "pax_runtime": 37,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 16,
+            "tickets_runtime": 17,
+            "ventas_pos": "54838.0000",
+            "ventas_runtime": "54838.00"
+          },
+          {
+            "delta_pax": 0,
+            "delta_tickets": 0,
+            "delta_ventas": "-220.0000",
+            "fecha_operacion": "2026-06-05",
+            "filas_insertadas": 0,
+            "pax_pos": 96,
+            "pax_runtime": 96,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 33,
+            "tickets_runtime": 33,
+            "ventas_pos": "161858.0000",
+            "ventas_runtime": "162078.00"
+          },
+          {
+            "fecha_operacion": "2026-06-06",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "delta_pax": 1,
+            "delta_tickets": 0,
+            "delta_ventas": "220.0000",
+            "fecha_operacion": "2026-06-07",
+            "filas_insertadas": 0,
+            "pax_pos": 87,
+            "pax_runtime": 86,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 26,
+            "tickets_runtime": 26,
+            "ventas_pos": "115696.0000",
+            "ventas_runtime": "115476.00"
+          },
+          {
+            "delta_pax": 1,
+            "delta_tickets": 1,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-06-08",
+            "filas_insertadas": 0,
+            "pax_pos": 56,
+            "pax_runtime": 55,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 20,
+            "tickets_runtime": 19,
+            "ventas_pos": "101484.0000",
+            "ventas_runtime": "101484.00"
+          },
+          {
+            "delta_pax": -3,
+            "delta_tickets": -2,
+            "delta_ventas": "-150.0000",
+            "fecha_operacion": "2026-06-09",
+            "filas_insertadas": 0,
+            "pax_pos": 63,
+            "pax_runtime": 66,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 23,
+            "tickets_runtime": 25,
+            "ventas_pos": "123672.0000",
+            "ventas_runtime": "123822.00"
+          },
+          {
+            "delta_pax": -7,
+            "delta_tickets": -2,
+            "delta_ventas": "-9710.0000",
+            "fecha_operacion": "2026-06-10",
+            "filas_insertadas": 0,
+            "pax_pos": 67,
+            "pax_runtime": 74,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 19,
+            "tickets_runtime": 21,
+            "ventas_pos": "100324.0000",
+            "ventas_runtime": "110034.00"
+          },
+          {
+            "delta_pax": 7,
+            "delta_tickets": 2,
+            "delta_ventas": "9710.0000",
+            "fecha_operacion": "2026-06-11",
+            "filas_insertadas": 0,
+            "pax_pos": 35,
+            "pax_runtime": 28,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 14,
+            "tickets_runtime": 12,
+            "ventas_pos": "54110.0000",
+            "ventas_runtime": "44400.00"
+          },
+          {
+            "fecha_operacion": "2026-06-12",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-13",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "delta_pax": 1,
+            "delta_tickets": 1,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-06-14",
+            "filas_insertadas": 0,
+            "pax_pos": 84,
+            "pax_runtime": 83,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 25,
+            "tickets_runtime": 24,
+            "ventas_pos": "112120.0000",
+            "ventas_runtime": "112120.00"
+          },
+          {
+            "delta_pax": -1,
+            "delta_tickets": -1,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-06-15",
+            "filas_insertadas": 0,
+            "pax_pos": 36,
+            "pax_runtime": 37,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 13,
+            "tickets_runtime": 14,
+            "ventas_pos": "52757.0000",
+            "ventas_runtime": "52757.00"
+          },
+          {
+            "delta_pax": 2,
+            "delta_tickets": 1,
+            "delta_ventas": "-100.0000",
+            "fecha_operacion": "2026-06-16",
+            "filas_insertadas": 0,
+            "pax_pos": 63,
+            "pax_runtime": 61,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 25,
+            "tickets_runtime": 24,
+            "ventas_pos": "84297.0000",
+            "ventas_runtime": "84397.00"
+          },
+          {
+            "fecha_operacion": "2026-06-17",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-18",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "delta_pax": 1,
+            "delta_tickets": 1,
+            "delta_ventas": "250.0000",
+            "fecha_operacion": "2026-06-19",
+            "filas_insertadas": 0,
+            "pax_pos": 81,
+            "pax_runtime": 80,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 31,
+            "tickets_runtime": 30,
+            "ventas_pos": "148606.0000",
+            "ventas_runtime": "148356.00"
+          },
+          {
+            "delta_pax": -1,
+            "delta_tickets": -1,
+            "delta_ventas": "-70.0000",
+            "fecha_operacion": "2026-06-20",
+            "filas_insertadas": 0,
+            "pax_pos": 113,
+            "pax_runtime": 114,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 45,
+            "tickets_runtime": 46,
+            "ventas_pos": "185940.0000",
+            "ventas_runtime": "186010.00"
+          },
+          {
+            "fecha_operacion": "2026-06-21",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-22",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-23",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "delta_pax": -1,
+            "delta_tickets": -1,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-06-24",
+            "filas_insertadas": 0,
+            "pax_pos": 49,
+            "pax_runtime": 50,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 22,
+            "tickets_runtime": 23,
+            "ventas_pos": "67057.0000",
+            "ventas_runtime": "67057.00"
+          },
+          {
+            "fecha_operacion": "2026-06-25",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "delta_pax": 1,
+            "delta_tickets": 1,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-06-26",
+            "filas_insertadas": 0,
+            "pax_pos": 115,
+            "pax_runtime": 114,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 37,
+            "tickets_runtime": 36,
+            "ventas_pos": "197206.0000",
+            "ventas_runtime": "197206.00"
+          },
+          {
+            "delta_pax": 1,
+            "delta_tickets": 1,
+            "delta_ventas": "70.0000",
+            "fecha_operacion": "2026-06-27",
+            "filas_insertadas": 0,
+            "pax_pos": 157,
+            "pax_runtime": 156,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 56,
+            "tickets_runtime": 55,
+            "ventas_pos": "226180.0000",
+            "ventas_runtime": "226110.00"
+          },
+          {
+            "delta_pax": 0,
+            "delta_tickets": 0,
+            "delta_ventas": "894.0000",
+            "fecha_operacion": "2026-06-28",
+            "filas_insertadas": 0,
+            "pax_pos": 90,
+            "pax_runtime": 90,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 32,
+            "tickets_runtime": 32,
+            "ventas_pos": "133898.0000",
+            "ventas_runtime": "133004.00"
+          },
+          {
+            "delta_pax": -1,
+            "delta_tickets": -1,
+            "delta_ventas": "-56.0000",
+            "fecha_operacion": "2026-06-29",
+            "filas_insertadas": 0,
+            "pax_pos": 41,
+            "pax_runtime": 42,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 14,
+            "tickets_runtime": 15,
+            "ventas_pos": "55393.0000",
+            "ventas_runtime": "55449.00"
+          },
+          {
+            "delta_pax": 1,
+            "delta_tickets": 1,
+            "delta_ventas": "0.0000",
+            "fecha_operacion": "2026-06-30",
+            "filas_insertadas": 0,
+            "pax_pos": 77,
+            "pax_runtime": 76,
+            "status": "NO_CUADRA_REVISAR",
+            "tickets_pos": 31,
+            "tickets_runtime": 30,
+            "ventas_pos": "86843.0000",
+            "ventas_runtime": "86843.00"
+          }
+        ],
+        "filas_insertadas": 0,
+        "reparables": 0,
+        "sin_runtime": 0,
+        "unidad": "130MID",
+        "ya_ok": 9
+      },
+      {
+        "bloqueados": 0,
+        "candidatos": 0,
+        "dias": [
+          {
+            "fecha_operacion": "2026-06-01",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-02",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-03",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-04",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-05",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-06",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-07",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-08",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-09",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-10",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-11",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-12",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-13",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-14",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-15",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-16",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-17",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-18",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-19",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-20",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-21",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-22",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-23",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-24",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-25",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-26",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-27",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-28",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-29",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-30",
+            "status": "YA_CONCILIADO"
+          }
+        ],
+        "filas_insertadas": 0,
+        "reparables": 0,
+        "sin_runtime": 0,
+        "unidad": "CIENFUEGOS",
+        "ya_ok": 30
+      },
+      {
+        "bloqueados": 0,
+        "candidatos": 0,
+        "dias": [
+          {
+            "fecha_operacion": "2026-06-01",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-02",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-03",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-04",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-05",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-06",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-07",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-08",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-09",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-10",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-11",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-12",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-13",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-14",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-15",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-16",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-17",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-18",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-19",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-20",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-21",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-22",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-23",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-24",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-25",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-26",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-27",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-28",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-29",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-30",
+            "status": "YA_CONCILIADO"
+          }
+        ],
+        "filas_insertadas": 0,
+        "reparables": 0,
+        "sin_runtime": 0,
+        "unidad": "ESTELAR",
+        "ya_ok": 30
+      },
+      {
+        "bloqueados": 0,
+        "candidatos": 0,
+        "dias": [
+          {
+            "fecha_operacion": "2026-06-01",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-02",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-03",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-04",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-05",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-06",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-07",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-08",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-09",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-10",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-11",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-12",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-13",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-14",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-15",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-16",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-17",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-18",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-19",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-20",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-21",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-22",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-23",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-24",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-25",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-26",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-27",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-28",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-29",
+            "status": "YA_CONCILIADO"
+          },
+          {
+            "fecha_operacion": "2026-06-30",
+            "status": "YA_CONCILIADO"
+          }
+        ],
+        "filas_insertadas": 0,
+        "reparables": 0,
+        "sin_runtime": 0,
+        "unidad": "ORIGEN",
+        "ya_ok": 30
+      }
+    ]
+  },
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-25T15:20:18Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-25T15:19:38Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "units": [
+    "CIENFUEGOS",
+    "ESTELAR",
+    "130MID",
+    "ORIGEN"
+  ],
+  "work_completion": "NOT_CERTIFIED"
+}
