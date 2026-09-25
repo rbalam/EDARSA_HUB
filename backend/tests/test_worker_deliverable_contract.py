@@ -729,3 +729,19 @@ def test_object_materializer_fails_closed_when_field_is_empty():
         assert str(exc) == "DELIVERABLE_OBJECT_FIELD_EMPTY:files"
     else:
         raise AssertionError("empty object field must fail closed")
+
+
+def test_dispatcher_never_certifies_readonly_with_missing_deliverables():
+    dispatcher = (
+        ROOT
+        / "tools"
+        / "mirror_sync"
+        / "universal_job_dispatcher.py"
+    ).read_text(encoding="utf-8")
+
+    assert 'result["certification"] = "PENDING_DELIVERABLES"' in dispatcher
+    assert "deliverables_complete" in dispatcher
+    assert (
+        "not result.get(\"missing_deliverables\")"
+        in dispatcher
+    )
