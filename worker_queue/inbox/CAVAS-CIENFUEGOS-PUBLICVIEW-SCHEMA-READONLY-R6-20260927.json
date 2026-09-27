@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CIENFUEGOS-PUBLICVIEW-SCHEMA-READONLY-R6-20260927",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "85fc8af4e1e937b2199c96ffff2ca6026fb05af3",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar READ_ONLY las columnas físicas de dbo.Sistema_VW_Servidores_Conexiones_Publico para construir la consulta canónica de identidad de Cavas Cienfuegos sin asumir nombres de campos. No leer secretos, no fuente externa, no DDL/DML, no Producción.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "public_view_schema",
+          "sql": "SELECT c.column_id,c.name AS column_name,TYPE_NAME(c.user_type_id) AS data_type FROM sys.columns c WHERE c.object_id=OBJECT_ID('dbo.Sistema_VW_Servidores_Conexiones_Publico') ORDER BY c.column_id"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No secrets",
+    "No external source connection",
+    "No DDL/DML",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "CAVAS_PERSONALES",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
