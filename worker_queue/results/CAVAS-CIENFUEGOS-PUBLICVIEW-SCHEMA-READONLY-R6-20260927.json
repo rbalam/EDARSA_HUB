@@ -1,0 +1,187 @@
+{
+  "base_sha": "85fc8af4e1e937b2199c96ffff2ca6026fb05af3",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-27T21:56:45Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CIENFUEGOS-PUBLICVIEW-SCHEMA-READONLY-R6-20260927",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-27T21:57:00Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type"
+            ],
+            "name": "public_view_schema",
+            "row_count_returned": 28,
+            "rows": [
+              [
+                1,
+                "id",
+                "uniqueidentifier"
+              ],
+              [
+                2,
+                "nombre",
+                "nvarchar"
+              ],
+              [
+                3,
+                "system_type",
+                "nvarchar"
+              ],
+              [
+                4,
+                "tipo_conexion",
+                "nvarchar"
+              ],
+              [
+                5,
+                "host",
+                "nvarchar"
+              ],
+              [
+                6,
+                "port",
+                "int"
+              ],
+              [
+                7,
+                "database_name",
+                "nvarchar"
+              ],
+              [
+                8,
+                "activo",
+                "bit"
+              ],
+              [
+                9,
+                "visible_en_operaciones",
+                "bit"
+              ],
+              [
+                10,
+                "visible_en_listado",
+                "bit"
+              ],
+              [
+                11,
+                "es_editable_ui",
+                "bit"
+              ],
+              [
+                12,
+                "es_eliminable_ui",
+                "bit"
+              ],
+              [
+                13,
+                "empresa_id",
+                "nvarchar"
+              ],
+              [
+                14,
+                "EmpresaID",
+                "int"
+              ],
+              [
+                15,
+                "sucursales",
+                "nvarchar"
+              ],
+              [
+                16,
+                "categorias",
+                "nvarchar"
+              ],
+              [
+                17,
+                "departamentos",
+                "nvarchar"
+              ],
+              [
+                18,
+                "tipos_movimiento",
+                "nvarchar"
+              ],
+              [
+                19,
+                "date_calculation_method",
+                "nvarchar"
+              ],
+              [
+                20,
+                "queries_configured",
+                "bit"
+              ],
+              [
+                21,
+                "fecha_ultima_sincronizacion",
+                "datetime2"
+              ],
+              [
+                22,
+                "source_status",
+                "varchar"
+              ],
+              [
+                23,
+                "ultimo_error_sync",
+                "nvarchar"
+              ],
+              [
+                24,
+                "created_at",
+                "datetime"
+              ],
+              [
+                25,
+                "updated_at",
+                "datetime"
+              ],
+              [
+                26,
+                "created_by",
+                "nvarchar"
+              ],
+              [
+                27,
+                "updated_by",
+                "nvarchar"
+              ],
+              [
+                28,
+                "mongodb_id",
+                "nvarchar"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-27T21:56:44Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
