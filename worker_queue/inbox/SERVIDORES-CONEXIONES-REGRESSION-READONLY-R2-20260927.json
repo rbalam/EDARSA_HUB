@@ -1,0 +1,39 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"SERVIDORES-CONEXIONES-REGRESSION-READONLY-R2-20260927",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"85fc8af4e1e937b2199c96ffff2ca6026fb05af3",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Diagnosticar exclusivamente por SQL la regresion actual del menu Servidores/Conexiones: conexiones SQL Server no aparecen; faltan conexiones API agregadas, incluyendo CAVAS CIENFUEGOS; conexiones API visibles marcan error. SQL Server EDARSAHUB es la unica fuente de verdad. Confirmar que filas existen, su clasificacion y flags de visibilidad/actividad. No leer secretos, no probar credenciales, no ejecutar LIVE contra sistemas externos, no tocar Produccion.",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {
+          "name":"connection_inventory",
+          "sql":"SELECT CAST(id AS varchar(50)) AS id,nombre,system_type,tipo_conexion,activo,visible_en_listado,visible_en_operaciones,es_editable_ui,es_eliminable_ui,EmpresaID,host,port,database_name,api_url,CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(username,''))), '') IS NULL THEN 0 ELSE 1 END AS username_configured,CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(password_encrypted,''))), '') IS NULL THEN 0 ELSE 1 END AS password_configured,CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(api_key_encrypted,''))), '') IS NULL THEN 0 ELSE 1 END AS api_key_configured FROM dbo.Servidores_Conexiones ORDER BY tipo_conexion,nombre"
+        },
+        {
+          "name":"connection_counts_by_type",
+          "sql":"SELECT ISNULL(tipo_conexion,'<NULL>') AS tipo_conexion,ISNULL(system_type,'<NULL>') AS system_type,activo,visible_en_listado,COUNT(*) AS total FROM dbo.Servidores_Conexiones GROUP BY tipo_conexion,system_type,activo,visible_en_listado ORDER BY tipo_conexion,system_type,activo,visible_en_listado"
+        },
+        {
+          "name":"cavas_cienfuegos_lookup",
+          "sql":"SELECT CAST(id AS varchar(50)) AS id,nombre,system_type,tipo_conexion,activo,visible_en_listado,visible_en_operaciones,EmpresaID,host,port,database_name,api_url,CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(api_key_encrypted,''))), '') IS NULL THEN 0 ELSE 1 END AS api_key_configured FROM dbo.Servidores_Conexiones WHERE UPPER(ISNULL(nombre,'')) LIKE '%CAVA%' OR UPPER(ISNULL(nombre,'')) LIKE '%CIENFUEGOS%' OR UPPER(ISNULL(database_name,'')) LIKE '%CAVA%' OR UPPER(ISNULL(api_url,'')) LIKE '%CAVA%' ORDER BY nombre"
+        },
+        {
+          "name":"sql_server_candidates",
+          "sql":"SELECT CAST(id AS varchar(50)) AS id,nombre,system_type,tipo_conexion,activo,visible_en_listado,visible_en_operaciones,host,port,database_name FROM dbo.Servidores_Conexiones WHERE ISNULL(tipo_conexion,'') NOT IN ('CORE','API_LOCAL') ORDER BY nombre"
+        },
+        {
+          "name":"api_local_candidates",
+          "sql":"SELECT CAST(id AS varchar(50)) AS id,nombre,system_type,tipo_conexion,activo,visible_en_listado,visible_en_operaciones,host,port,database_name,api_url,CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(api_key_encrypted,''))), '') IS NULL THEN 0 ELSE 1 END AS api_key_configured FROM dbo.Servidores_Conexiones WHERE tipo_conexion='API_LOCAL' ORDER BY nombre"
+        }
+      ]
+    }
+  ],
+  "human_summary_language":"es"
+}
