@@ -1,0 +1,64 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CIENFUEGOS-SOURCE-IDENTITY-READONLY-R1-20260927",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "85fc8af4e1e937b2199c96ffff2ca6026fb05af3",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Identificar de forma canónica y READ_ONLY la fuente de datos de Cavas Cienfuegos antes de homologar/sincronizar. Auditar dbo.Servidores_Conexiones y mapeos de unidad para distinguir CIENFUEGOS principal, CIENFUEGOS TABLAJERIA y cualquier conexión CAVA/API registrada, sin exponer secretos. Confirmar estado de CavaSocios canónico en EDARSAHUB. No conectar aún a fuente externa, no DDL/DML, no Producción.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_connection_candidates",
+          "sql": "SELECT id,nombre,system_type,tipo_conexion,host,port,database_name,activo,visible_en_operaciones,visible_en_listado,es_editable_ui,empresa_id,EmpresaID,CASE WHEN api_url IS NULL OR LTRIM(RTRIM(api_url))='' THEN 0 ELSE 1 END AS api_url_configurada,CASE WHEN password_encrypted IS NULL OR LTRIM(RTRIM(password_encrypted))='' THEN 0 ELSE 1 END AS password_configurado,CASE WHEN api_key_encrypted IS NULL OR LTRIM(RTRIM(api_key_encrypted))='' THEN 0 ELSE 1 END AS api_key_configurada,source_status,fecha_ultima_sincronizacion,ultimo_error_sync FROM dbo.Servidores_Conexiones WHERE UPPER(nombre) LIKE '%CIENFUEGOS%' OR UPPER(nombre) LIKE '%CAVA%' ORDER BY nombre"
+        },
+        {
+          "name": "cienfuegos_unit_mapping",
+          "sql": "SELECT u.id AS unidad_negocio_pk,u.codigo,u.nombre,u.server_id,u.system_type,u.activo,s.nombre AS servidor_nombre,s.database_name,s.tipo_conexion,s.activo AS servidor_activo FROM dbo.Unidades_Negocio u LEFT JOIN dbo.Servidores_Conexiones s ON CONVERT(nvarchar(100),s.id)=CONVERT(nvarchar(100),u.server_id) WHERE UPPER(u.codigo)='CIENFUEGOS' OR UPPER(u.nombre) LIKE '%CIENFUEGOS%'"
+        },
+        {
+          "name": "cavas_canonical_counts",
+          "sql": "SELECT (SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Socios) AS socios,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Botellas) AS botellas,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Movimientos) AS movimientos,(SELECT COUNT_BIG(*) FROM dbo.CavaSocios_Cargos) AS cargos"
+        },
+        {
+          "name": "cavas_persona_link_counts",
+          "sql": "SELECT COUNT_BIG(*) AS socios_total,SUM(CASE WHEN PersonaID IS NOT NULL THEN 1 ELSE 0 END) AS socios_con_persona,SUM(CASE WHEN PersonaID IS NULL THEN 1 ELSE 0 END) AS socios_sin_persona FROM dbo.CavaSocios_Socios"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No external source connection in this gate",
+    "No secrets in evidence",
+    "No DDL/DML",
+    "No Production",
+    "EDARSAHUB remains sole source of truth"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "CAVAS_PERSONALES",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
