@@ -1,0 +1,59 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5D3-BACKEND-CONTRACT-DISCOVERY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "base_sha": "9539b249facba8cc7e0324003290d7e340f7f644",
+  "objective": "Auditar contratos backend canonicos para Production Quality / Foto Finish antes de materializar Gate5D3. Identificar patrones y helpers exactos para: conexion SQL EDARSAHUB, RBAC explicito dual, access context EmpresaID/UnidadNegocioID, FechaOperacion canonica, registro de routers, repository/service separation, manejo de idempotencia y tests. Confirmar ausencia de modulo backend production_quality previo y detectar colisiones semanticas. No modificar repositorio, no ejecutar SQL, no tocar Produccion.",
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core",
+          "backend/modules",
+          "backend/api",
+          "backend/server.py",
+          "backend/tests",
+          "backend/database/migrations/20260924_001_production_quality_foundation.sql",
+          "backend/database/migrations/20260924_002_production_quality_rbac.sql"
+        ],
+        "search_terms": [
+          "production_quality",
+          "Production_Item",
+          "Production_Station",
+          "Production_QualityStandard",
+          "Production_QualityStandardVersion",
+          "Production_Measurement",
+          "Production_Evidence",
+          "Production_QualityDecision",
+          "Production_QualityAction",
+          "Production_Device",
+          "Production_DeviceCalibration",
+          "get_sql_connection",
+          "require_explicit_permission_dual",
+          "resolve_user_access_context",
+          "EmpresaID",
+          "UnidadNegocioID",
+          "FechaOperacion",
+          "operational_window",
+          "get_operational_window",
+          "IdempotencyKey",
+          "include_router",
+          "repository",
+          "service"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sql"
+        ],
+        "exclude_patterns": [],
+        "max_results": 3000
+      }
+    }
+  ]
+}
