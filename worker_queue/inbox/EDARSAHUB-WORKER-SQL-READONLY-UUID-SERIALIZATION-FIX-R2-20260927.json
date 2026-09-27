@@ -1,0 +1,75 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-SQL-READONLY-UUID-SERIALIZATION-FIX-R2-20260927",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "85fc8af4e1e937b2199c96ffff2ca6026fb05af3",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Corregir exclusivamente el defecto transversal del auditor SQL READ_ONLY que falla al serializar UNIQUEIDENTIFIER/uuid.UUID. Añadir UUID->str y prueba de regresión. No modificar Cavas, SQL, datos ni Producción.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/sql_readonly_audit.py",
+      "old": "from typing import Any\n",
+      "new": "from typing import Any\nfrom uuid import UUID\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/sql_readonly_audit.py",
+      "old": "    if isinstance(value, bytes):\n        return value.hex()\n    return value\n",
+      "new": "    if isinstance(value, bytes):\n        return value.hex()\n    if isinstance(value, UUID):\n        return str(value)\n    return value\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_sql_readonly_audit.py",
+      "old": "def test_readonly_validator_rejects_mutation_and_multistatement():\n",
+      "new": "def test_json_value_serializes_uuid_to_string():\n    from uuid import UUID\n\n    m = load_helper()\n    value = UUID('12345678-1234-5678-1234-567812345678')\n    assert m._json_value(value) == '12345678-1234-5678-1234-567812345678'\n\n\ndef test_readonly_validator_rejects_mutation_and_multistatement():\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_sql_readonly_audit.py",
+        "backend/tests/test_worker_pos_sql_readonly_audit.py"
+      ]
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/sql_readonly_audit.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Cavas runtime changes",
+    "No SQL DDL/DML",
+    "No Production",
+    "Scope only sql_readonly_audit.py and regression test"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "WORKER_REPAIR",
+    "bounded_context": "UNIVERSAL_WORKER",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
