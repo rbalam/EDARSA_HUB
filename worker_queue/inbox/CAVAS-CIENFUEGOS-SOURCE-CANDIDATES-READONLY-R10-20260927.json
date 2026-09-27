@@ -1,0 +1,53 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CIENFUEGOS-SOURCE-CANDIDATES-READONLY-R10-20260927",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d512acf07cc5f8c2622462fbb930487c97f30747",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Identificar READ_ONLY, usando la vista pública canónica ya validada y el auditor UUID corregido/certificado, todas las conexiones relacionadas con CIENFUEGOS/CAVA. Determinar cuál corresponde a la fuente legacy de Cavas. No leer secretos, no conectar todavía a fuente externa, no DDL/DML, no Producción.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_cava_candidates",
+          "sql": "SELECT id,nombre,system_type,tipo_conexion,host,port,database_name,activo,visible_en_operaciones,visible_en_listado,empresa_id,EmpresaID,queries_configured,fecha_ultima_sincronizacion,source_status,ultimo_error_sync FROM dbo.Sistema_VW_Servidores_Conexiones_Publico WHERE UPPER(nombre) LIKE '%CIENFUEGOS%' OR UPPER(nombre) LIKE '%CAVA%' ORDER BY nombre"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "Public view only",
+    "No secrets",
+    "No external source connection",
+    "No DDL/DML",
+    "No Production",
+    "EDARSAHUB remains sole source of truth"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "CAVAS_PERSONALES",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
