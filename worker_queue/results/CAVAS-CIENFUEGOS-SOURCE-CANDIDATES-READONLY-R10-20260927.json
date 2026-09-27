@@ -1,0 +1,132 @@
+{
+  "base_sha": "d512acf07cc5f8c2622462fbb930487c97f30747",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-27T22:57:55Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CIENFUEGOS-SOURCE-CANDIDATES-READONLY-R10-20260927",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-27T22:58:17Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "id",
+              "nombre",
+              "system_type",
+              "tipo_conexion",
+              "host",
+              "port",
+              "database_name",
+              "activo",
+              "visible_en_operaciones",
+              "visible_en_listado",
+              "empresa_id",
+              "EmpresaID",
+              "queries_configured",
+              "fecha_ultima_sincronizacion",
+              "source_status",
+              "ultimo_error_sync"
+            ],
+            "name": "cienfuegos_cava_candidates",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "8016ab53-f1ef-4539-aebe-c01e5b978bbc",
+                "CAVAS",
+                "MPRO",
+                "DATA_SOURCE",
+                "54.39.104.176",
+                1433,
+                "cava_www",
+                false,
+                true,
+                true,
+                null,
+                null,
+                false,
+                null,
+                null,
+                null
+              ],
+              [
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                "CIENFUEGOS",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                "servercienfuegos.ddns.net",
+                6669,
+                "softrestaurant95pro",
+                true,
+                true,
+                true,
+                null,
+                3,
+                true,
+                null,
+                null,
+                null
+              ],
+              [
+                "31d62f39-632b-4684-b735-256bd9293a8f",
+                "CIENFUEGOS NOMINPAQ",
+                "SOFTRESTAURANT_PRO",
+                "API_LOCAL",
+                "",
+                4,
+                "CIENFUEGOS",
+                true,
+                false,
+                true,
+                "",
+                null,
+                false,
+                null,
+                null,
+                null
+              ],
+              [
+                "6d859026-710a-4920-9a44-6da98fabc690",
+                "CIENFUEGOS TABLAJERIA",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                "servercienfuegos.ddns.net,6669\\nationalsoft",
+                1433,
+                "Tablajeria",
+                true,
+                false,
+                true,
+                null,
+                3,
+                false,
+                null,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-27T22:57:55Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
