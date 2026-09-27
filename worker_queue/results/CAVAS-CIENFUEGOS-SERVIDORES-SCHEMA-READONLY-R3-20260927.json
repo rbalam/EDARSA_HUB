@@ -1,0 +1,301 @@
+{
+  "base_sha": "85fc8af4e1e937b2199c96ffff2ca6026fb05af3",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-27T21:40:17Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CIENFUEGOS-SERVIDORES-SCHEMA-READONLY-R3-20260927",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-27T21:40:48Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "is_nullable"
+            ],
+            "name": "servidores_conexiones_columns",
+            "row_count_returned": 36,
+            "rows": [
+              [
+                1,
+                "id",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                2,
+                "nombre",
+                "nvarchar",
+                200,
+                false
+              ],
+              [
+                3,
+                "system_type",
+                "nvarchar",
+                100,
+                false
+              ],
+              [
+                4,
+                "tipo_conexion",
+                "nvarchar",
+                40,
+                false
+              ],
+              [
+                5,
+                "host",
+                "nvarchar",
+                510,
+                true
+              ],
+              [
+                6,
+                "port",
+                "int",
+                4,
+                true
+              ],
+              [
+                7,
+                "database_name",
+                "nvarchar",
+                200,
+                true
+              ],
+              [
+                8,
+                "username",
+                "nvarchar",
+                200,
+                true
+              ],
+              [
+                9,
+                "password_encrypted",
+                "nvarchar",
+                1000,
+                true
+              ],
+              [
+                10,
+                "api_url",
+                "nvarchar",
+                1000,
+                true
+              ],
+              [
+                11,
+                "api_key_encrypted",
+                "nvarchar",
+                1000,
+                true
+              ],
+              [
+                12,
+                "activo",
+                "bit",
+                1,
+                true
+              ],
+              [
+                13,
+                "visible_en_operaciones",
+                "bit",
+                1,
+                true
+              ],
+              [
+                14,
+                "visible_en_listado",
+                "bit",
+                1,
+                true
+              ],
+              [
+                15,
+                "es_editable_ui",
+                "bit",
+                1,
+                true
+              ],
+              [
+                16,
+                "es_eliminable_ui",
+                "bit",
+                1,
+                true
+              ],
+              [
+                17,
+                "empresa_id",
+                "nvarchar",
+                200,
+                true
+              ],
+              [
+                18,
+                "sucursales",
+                "nvarchar",
+                -1,
+                true
+              ],
+              [
+                19,
+                "categorias",
+                "nvarchar",
+                -1,
+                true
+              ],
+              [
+                20,
+                "departamentos",
+                "nvarchar",
+                -1,
+                true
+              ],
+              [
+                21,
+                "date_calculation_method",
+                "nvarchar",
+                100,
+                true
+              ],
+              [
+                22,
+                "queries_configured",
+                "bit",
+                1,
+                true
+              ],
+              [
+                23,
+                "query_ventas",
+                "nvarchar",
+                -1,
+                true
+              ],
+              [
+                24,
+                "query_inventario",
+                "nvarchar",
+                -1,
+                true
+              ],
+              [
+                25,
+                "query_movimientos",
+                "nvarchar",
+                -1,
+                true
+              ],
+              [
+                26,
+                "created_at",
+                "datetime",
+                8,
+                true
+              ],
+              [
+                27,
+                "updated_at",
+                "datetime",
+                8,
+                true
+              ],
+              [
+                28,
+                "created_by",
+                "nvarchar",
+                200,
+                true
+              ],
+              [
+                29,
+                "updated_by",
+                "nvarchar",
+                200,
+                true
+              ],
+              [
+                30,
+                "mongodb_id",
+                "nvarchar",
+                200,
+                true
+              ],
+              [
+                31,
+                "EmpresaID",
+                "int",
+                4,
+                true
+              ],
+              [
+                32,
+                "tipos_movimiento",
+                "nvarchar",
+                -1,
+                true
+              ],
+              [
+                33,
+                "fecha_ultima_sincronizacion",
+                "datetime2",
+                8,
+                true
+              ],
+              [
+                34,
+                "source_status",
+                "varchar",
+                50,
+                true
+              ],
+              [
+                35,
+                "ultimo_error_sync",
+                "nvarchar",
+                1000,
+                true
+              ],
+              [
+                36,
+                "sistema_version_id",
+                "uniqueidentifier",
+                16,
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-27T21:40:16Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
