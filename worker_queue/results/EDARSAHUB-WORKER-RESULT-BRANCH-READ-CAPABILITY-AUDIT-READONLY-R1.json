@@ -1,0 +1,2637 @@
+{
+  "base_sha": "85fc8af4e1e937b2199c96ffff2ca6026fb05af3",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-27T22:29:56Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-WORKER-RESULT-BRANCH-READ-CAPABILITY-AUDIT-READONLY-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-27T22:30:44Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "tools/mirror_sync/gate_chain_controller.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "GateChainContractError",
+              "TransitionDecision",
+              "_gate_map",
+              "_result_ok",
+              "_text",
+              "decide_next",
+              "validate_chain"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "argparse",
+              "json",
+              "pathlib",
+              "re",
+              "subprocess",
+              "sys",
+              "tools.mirror_sync.gate_chain_controller",
+              "tools.mirror_sync.git_divergence_guard",
+              "tools.mirror_sync.worker_job_factory",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "repository_contract_audit"
+            ],
+            "path": "tools/mirror_sync/gate_chain_publisher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_cleanup_queue_worktree",
+              "_prepare_queue_worktree",
+              "_queue_remote_head",
+              "_release_agent_guard",
+              "_safe_id",
+              "_walk",
+              "build_plan",
+              "gate_for",
+              "git",
+              "main",
+              "publish",
+              "run",
+              "validate_template"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "argparse",
+              "json",
+              "pathlib",
+              "sys",
+              "tools.mirror_sync.gate_chain_controller",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "tools/mirror_sync/gate_chain_reconciler.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "discover_state",
+              "effective_entry",
+              "load_json",
+              "main",
+              "reconcile_all",
+              "reconcile_chain"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "argparse",
+              "datetime",
+              "json",
+              "os",
+              "pathlib",
+              "subprocess",
+              "time",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "tools/mirror_sync/git_divergence_guard.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "GitGuardError",
+              "__init__",
+              "_git_dir",
+              "_pid_alive",
+              "_read_json",
+              "_run",
+              "_status_counts",
+              "acquire_writer_lock",
+              "authorized_push",
+              "compare_and_swap",
+              "fast_forward_refresh",
+              "inspect_repository",
+              "main",
+              "mutation_policy",
+              "post_push_verify",
+              "prove_authorized_local_ahead",
+              "recover_authorized_local_ahead",
+              "release_writer_lock",
+              "requires_writer_lock",
+              "scoped_push_env",
+              "utc_now",
+              "validate_commit_scope"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [
+              "MongoClient",
+              "get_sql_connection",
+              "pymongo",
+              "pyodbc",
+              "readonly_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "corporate_identity_resolver",
+              "get_sql_connection",
+              "load_catalog_real",
+              "readonly_sql_connection",
+              "resolver_canonico"
+            ],
+            "imports": [
+              "__future__",
+              "argparse",
+              "ast",
+              "fnmatch",
+              "json",
+              "pathlib",
+              "re",
+              "typing"
+            ],
+            "integrations": [
+              "banorte",
+              "bbva",
+              "dynamics",
+              "mpro",
+              "netpay",
+              "oracle",
+              "sap",
+              "softrestaurant",
+              "twilio",
+              "vtiger"
+            ],
+            "matched_terms": [
+              "matched_files",
+              "read_only",
+              "repository_contract_audit",
+              "scanned_files"
+            ],
+            "path": "tools/mirror_sync/repository_contract_audit.py",
+            "rbac_contracts": [
+              "RBAC_Permisos",
+              "Sistema_RBAC",
+              "Usuario_Roles",
+              "Usuario_RolesContexto",
+              "get_current_user",
+              "menu-permissions"
+            ],
+            "routes": [],
+            "scheduler_contracts": [
+              "APScheduler",
+              "AsyncIOScheduler",
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [
+              "_is_sensitive",
+              "_matches_any",
+              "_ownership",
+              "_python_metadata",
+              "_safe_relative",
+              "main",
+              "scan_repository",
+              "validate_request"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [
+              "readonly_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "readonly_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "argparse",
+              "core.connections.pos_runtime_resolver",
+              "core.sql_first.connection_factory",
+              "core.sql_first.db",
+              "datetime",
+              "decimal",
+              "json",
+              "pathlib",
+              "re",
+              "sys",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "tools/mirror_sync/sql_readonly_audit.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_json_value",
+              "_query_evidence",
+              "_strip_literals_and_comments",
+              "execute_queries",
+              "main",
+              "validate_readonly_sql"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "json",
+              "os",
+              "pathlib",
+              "re",
+              "subprocess",
+              "sys",
+              "tools.mirror_sync.worker_deliverable_contract",
+              "typing",
+              "worker_deliverable_contract",
+              "worker_requester_rbac"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "read_only",
+              "repository_contract_audit",
+              "target_branch",
+              "universal_job_bridge"
+            ],
+            "path": "tools/mirror_sync/universal_job_bridge.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_read_json_file",
+              "already_claimed",
+              "archive_rejection_for_retry",
+              "ensure_dirs",
+              "git",
+              "main",
+              "queue_files",
+              "read_remote",
+              "receive",
+              "rejected_correction_retry_decision",
+              "resolve_queue_remote",
+              "safe_repo_path",
+              "status",
+              "validate",
+              "validate_action",
+              "validate_check",
+              "write_rejection"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "fcntl",
+              "git_divergence_guard",
+              "hashlib",
+              "json",
+              "os",
+              "pathlib",
+              "re",
+              "shutil",
+              "subprocess",
+              "sys",
+              "tempfile",
+              "tools.mirror_sync.worker_deliverable_contract",
+              "typing",
+              "worker_concurrency",
+              "worker_deliverable_contract",
+              "worker_scheduling",
+              "worker_slot_runtime"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "read_only",
+              "repository_contract_audit"
+            ],
+            "path": "tools/mirror_sync/universal_job_dispatcher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_load_preferred_job",
+              "_select_pending_job",
+              "apply_action",
+              "changed_files",
+              "claim_one",
+              "create_commit",
+              "dispatch",
+              "ensure_dirs",
+              "git",
+              "git_changed_paths",
+              "git_is_ancestor",
+              "integrate",
+              "load_backend_runtime_env",
+              "load_envelope",
+              "main",
+              "now",
+              "prepare_worktree",
+              "process_one",
+              "release_agent_guard_claim",
+              "resolve_canonical_python",
+              "resolve_repository_credential_helper",
+              "run",
+              "run_check",
+              "safe_path",
+              "sha256_file",
+              "summarize_iscam_detail_backfill_output",
+              "summarize_softrestaurant_output",
+              "validate_scope",
+              "verify_expected_hash",
+              "write_json"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "fcntl",
+              "json",
+              "os",
+              "pathlib",
+              "shutil",
+              "subprocess",
+              "tempfile",
+              "tools.mirror_sync.worker_deliverable_contract",
+              "tools.mirror_sync.worker_result_integrity",
+              "typing",
+              "worker_deliverable_contract",
+              "worker_result_integrity"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "read_only",
+              "repository_contract_audit",
+              "worker/results"
+            ],
+            "path": "tools/mirror_sync/universal_job_result_publisher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_sensitive_column",
+              "atomic_json",
+              "certification_evidence",
+              "create_attestation",
+              "generic_readonly_evidence",
+              "git",
+              "invalid_result_artifact_payload",
+              "load",
+              "load_publishable_result",
+              "main",
+              "marker_satisfied",
+              "now",
+              "prepare_queue_worktree",
+              "publish_one",
+              "publishable_paths",
+              "resolve_runtime_git_credential_helper",
+              "result_identity",
+              "run",
+              "runtime_git",
+              "runtime_git_command",
+              "runtime_git_env",
+              "sanitize",
+              "sanitize_frontend_build_evidence",
+              "sanitize_readonly_evidence",
+              "sanitize_repository_evidence",
+              "valid_sha"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "tools.mirror_sync.worker_maintenance_contract",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "tools/mirror_sync/worker_auditor.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AuditDecision",
+              "audit_repair_result",
+              "auditor_can_mutate"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "copy",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "target_branch"
+            ],
+            "path": "tools/mirror_sync/worker_job_factory.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_canonical_scheduling",
+              "_clean",
+              "_require_requester",
+              "canonicalize_job"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "pathlib",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "universal_job_bridge"
+            ],
+            "path": "tools/mirror_sync/worker_maintenance_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "MaintenanceAuthority",
+              "auditor_scope_allowed",
+              "is_worker_infrastructure_path",
+              "normalize_repo_path",
+              "repair_scope_allowed"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "hashlib",
+              "pathlib",
+              "tools.mirror_sync",
+              "tools.mirror_sync.worker_result_reader",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "target_branch"
+            ],
+            "path": "tools/mirror_sync/worker_repair_execution.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_action_paths",
+              "deterministic_repair_job_id",
+              "publish_repair_job",
+              "read_repair_terminal_result",
+              "reconcile_repair_result",
+              "validate_repair_worker_job"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "enum",
+              "hashlib",
+              "json",
+              "pathlib",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "tools/mirror_sync/worker_result_integrity.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ResultIdentity",
+              "ResultInspection",
+              "ResultState",
+              "_require_field",
+              "classify_source_consistency",
+              "compare_result_identity",
+              "inspect_result_file",
+              "is_terminal_result_path",
+              "is_terminal_status",
+              "result_identity_from_bytes",
+              "validate_terminal_result_file",
+              "validate_terminal_result_payload"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "json",
+              "pathlib",
+              "tools.mirror_sync.worker_result_integrity",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "worker_queue/results"
+            ],
+            "path": "tools/mirror_sync/worker_result_reader.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CanonicalResultRead",
+              "read_canonical_result"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "tools/mirror_sync/worker_scheduling.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "SchedulingMeta",
+              "_norm",
+              "_safe_int",
+              "can_shadow_parallel",
+              "claims_conflict",
+              "fairness_key",
+              "normalize_metadata"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "json",
+              "os",
+              "pathlib",
+              "re",
+              "tempfile",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "tools/mirror_sync/worker_slot_runtime.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "SlotRuntimeError",
+              "_parse_utc",
+              "_utc_now",
+              "_validate_payload",
+              "_validate_pid",
+              "_validate_slot_id",
+              "_validate_string",
+              "_validate_string_list",
+              "atomic_slot_write",
+              "create_slot",
+              "derive_legacy_current_job_id",
+              "heartbeat_slot",
+              "load_active_slots",
+              "load_slot",
+              "reclaim_stale_slot",
+              "release_slot",
+              "slot_is_live",
+              "slot_path",
+              "slot_runtime_summary",
+              "slots_directory",
+              "update_slot_state"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/config/gate_chains/bos_agent_harness_v1.disabled.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/config/gate_chains/example.disabled.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/EDARSA-LOGISTICS-GATE0-ASIS-CANONICAL-DISCOVERY-R1.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/EDARSAHUB-RH-GLOBAL-HCM-GATE0-ASIS-CANONICAL-DISCOVERY-R1.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/EDARSAHUB-SERVICES-GATE0-ASIS-CANONICAL-DISCOVERY-R1.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/BOS-V1-GATE-E-E3B-OWNER-CAPABILITY-AUDIT-R1-WAKE-20260919.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/CAVAS-GATE12J-RUNTIME-WAKE-20260918.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/CAVAS-GATE12N-SCOPE-FIX-R2B-CERT-READONLY-R1-20260918-PICKUP-CORRECTED.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/CAVAS-GATE12N-SCOPE-FIX-R2B-CERT-READONLY-R1-20260918-POST-BOOTSTRAP-VERIFY.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/CAVAS-GATE12N-SCOPE-FIX-R2B-CERT-READONLY-R1-20260918-POST-RELOAD-WAKE.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/CAVAS-GATE12N-SCOPE-FIX-R2B-CERT-READONLY-R1-20260918-WAKE.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only",
+              "repository_contract_audit"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/CAVAS-GATE12N-SCOPE-FIX-R2B-CERT-READONLY-R2-20260918-WAKE.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/CRM-CALENDAR-GATE1-R2-PREFERRED-20260924T1850Z.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/EDARSAHUB-ISCAM-R87A-WAKE-20260918T194800Z.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-DESIGN-CONTRACT-READONLY-R1-20260918-REWAKE-1.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-DESIGN-CONTRACT-READONLY-R1-20260918-REWAKE-AFTER-RUNTIME-RELOAD-1.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-DESIGN-CONTRACT-READONLY-R1-20260918-WAKE.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only",
+              "worker/results"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-WIRING-READONLY-R1-20260919-REPUBLISH-WAKE.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-WIRING-READONLY-R1-20260919-WAKE.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only",
+              "worker/results"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/EDARSAHUB-OPERACIONES-TABLAJERIAS-R24F-UAT-WIRING-READONLY-R2-20260919-WAKE.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/RH-GLOBAL-HCM-GATE0-R2-PREFERRED-20260924T1912Z.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/pickup-crm-calendar-canonical-events-gate1-20260917T1840Z.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/pickup-crm-calendar-canonical-events-gate1-r2-20260917T1848Z.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/pickup-crm-calendar-canonical-events-gate1-r2-post-queue-fallback-20260917T1850Z.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/pickup-crm-calendar-gate1-r2-diagnostic-20260917T1851Z.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/rewake-tablajeria-fase6-final-cert-readonly-r1-20260919T0753Z.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/rewake-tablajeria-fase6-postcheck-readonly-r1-20260919T075300Z.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/rewake-tablajeria-fase6-readonly-r1-20260919T073700Z.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/tablajeria-r24f-final-certification-readonly-r1-20260919.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/tablajeria-r24f-final-certification-readonly-r1-wake2-20260919.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "worker_queue",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only",
+              "worker/results"
+            ],
+            "path": "worker_queue/triggers/runtime-recovery/wake-results-publisher-consistency-readonly-r1-20260919.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": ".github/workflows/servers-integrations-gate5b-cert.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": ".github",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": ".github/workflows/universal-worker-wake-now.yml",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "worker/results"
+            ],
+            "path": "docs/ARCHITECTURE/AGENT_RUNTIME_ACTIVATION_PHASE_CERTIFIED_20260915.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/ARCHITECTURE/BOS_MARKETING_INTELLIGENCE_CONTENT_FACTORY_GATE4_CANONICAL_CONTENT_FACTORY_CONTRACT.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/BOS/ARBITROA_BOS_A2_REPOSITORY_CONTRACT_DISCOVERY_V1.md",
+            "rbac_contracts": [
+              "Sistema_RBAC",
+              "Usuario_Roles",
+              "Usuario_RolesContexto"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Gobierno_Persona",
+              "Gobierno_PersonaEmpresaRol",
+              "Gobierno_PersonaVinculo"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/BOS/BOS_AGENT_HARNESS_AH11_LOCAL_RUNTIME_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only",
+              "universal_job_bridge"
+            ],
+            "path": "docs/BOS/BOS_AGENT_HARNESS_AH4_WORKER_COMPILER_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "worker/results"
+            ],
+            "path": "docs/BOS/BOS_AGENT_HARNESS_AH5_EVIDENCE_PROVENANCE_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "worker/results"
+            ],
+            "path": "docs/BOS/BOS_AGENT_HARNESS_AH9_CONTROL_PLANE_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "worker/results"
+            ],
+            "path": "docs/BOS/BOS_AGENT_HARNESS_MASTER_ARCHITECTURE_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "worker/results"
+            ],
+            "path": "docs/BOS/BOS_DIRECTION_EVIDENCE_COLLECTOR.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "banorte",
+              "bbva",
+              "dynamics",
+              "mpro",
+              "netpay",
+              "oracle",
+              "sap",
+              "softrestaurant",
+              "twilio",
+              "vtiger"
+            ],
+            "matched_terms": [
+              "read_only",
+              "repository_contract_audit"
+            ],
+            "path": "docs/BOS/BOS_ENTERPRISE_CAPABILITY_MAP_GATE1_DOSSIER_V1.md",
+            "rbac_contracts": [
+              "menu-permissions"
+            ],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/BOS/BOS_UNIVERSAL_WORKER_GENERIC_READONLY_CONTRACT_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/BOS/EDARSAHUB_SERVICES_GATE0B_REPOSITORY_CONTRACT_DISCOVERY_R1.md",
+            "rbac_contracts": [
+              "RBAC_Permisos",
+              "Sistema_RBAC",
+              "Usuario_Roles",
+              "Usuario_RolesContexto"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Gobierno_Persona",
+              "Gobierno_PersonaVinculo"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/BOS/EDARSAHUB_SERVICES_GATE1_CAPABILITY_OWNERSHIP_MAP_R1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/BOS/EDARSAHUB_SERVICES_GATE2_DOMAIN_DATA_CONTRACT_R1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/BOS/EDARSAHUB_SERVICES_GATE3B_PHYSICAL_SCHEMA_DDL_DOSSIER_R1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/BOS/EDARSAHUB_SERVICES_GATE4A_FOUNDATION_R2_PHYSICAL_SCRIPTS_DESIGN_R1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/BOS/EDARSAHUB_SERVICES_GATE4A_MIGRATION_PHYSICAL_SCRIPTS_DESIGN_R1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/BOS/EDARSAHUB_SERVICES_GATE4_MIGRATION_PACKAGE_DESIGN_R1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "banorte",
+              "bbva"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/BOS/UNIVERSAL_BANKING_GATE1_CANONICAL_MINIMAL_DOMAIN_DESIGN.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": [
+              "Economia_Paises",
+              "Finanzas_Cat_CuentasBancarias",
+              "Finanzas_CxP_DecisionesPago",
+              "Finanzas_CxP_PagosOrigenQueue",
+              "Finanzas_CxP_Sync",
+              "Finanzas_EstatusPago",
+              "Finanzas_Pagos",
+              "Finanzas_SaldosBancarios",
+              "Global_Cat_Bancos",
+              "Proveedor_CuentasBancarias",
+              "Proveedor_Monedas",
+              "Servidores_ConexionEstado",
+              "Servidores_Conexiones",
+              "Sistema_Capacidades",
+              "Sistema_IdentificadoresExternos",
+              "Sistema_Sync_Capacidades",
+              "Sistema_Tipos",
+              "Sistema_VersionesSistemas",
+              "Sync_Control_Ejecuciones",
+              "Sync_Control_Evidencias",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/BOS/UNIVERSAL_WORKER_MULTIPROJECT_SHADOW_SCHEDULER_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/BOS/certifications/BOS_V1_GATE_C_FUNCTIONAL_COVERAGE_CERTIFICATION.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/BOS/certifications/BOS_V1_GATE_E_E2_MINIMAL_IMPLEMENTATION_PLAN_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/BOS/certifications/BOS_V1_GATE_E_EXECUTIVE_BOS_GAP_MATRIX_V2.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/BOS/certifications/BOS_V1_MASTER_STATUS_GLOBAL_PROGRESS.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/CAVAS/CAVAS_CORPORATIVAS_DDL_KEYS_EVIDENCE_DOSSIER.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Sistema_Empresas",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/CAVAS/CAVAS_CORPORATIVAS_GATE10_UAT_REGRESSION_RC.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "read_only",
+              "worker/results"
+            ],
+            "path": "docs/CAVAS/CAVAS_CORPORATIVAS_GATE2_EVIDENCE_DOSSIER.md",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Sistema_Empresas",
+              "Sistema_TurnosOperativosUnidad",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/CAVAS/CAVAS_CORPORATIVAS_GATE2_SQL_AUDIT_CONTRACT.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/CAVAS/CAVAS_CORPORATIVAS_GATE8_COMPOSITE_CERTIFICATION.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "netpay"
+            ],
+            "matched_terms": [
+              "read_only",
+              "worker_queue/results"
+            ],
+            "path": "docs/COA/COA_GATE2_CANONICAL_MODEL_DOSSIER.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "CRM_Contratos",
+              "CRM_Tareas",
+              "Cliente_Catalogo",
+              "Comercial_CostosMargenesConfiguracion",
+              "Comercial_ReglasPrecio",
+              "Compras_DocumentosFiscales",
+              "Compras_DocumentosFiscalesRelaciones",
+              "Finanzas_ComprobacionesDocumentos",
+              "Finanzas_ConfiguracionTPV_Sucursal",
+              "Finanzas_CxP_DecisionesPago",
+              "Finanzas_CxP_PagosOrigenQueue",
+              "Finanzas_Pagos",
+              "Finanzas_PropinasConfig",
+              "Operativo_DocumentosGenerados",
+              "Operativo_Notificaciones_Log",
+              "Proveedor_Catalogo",
+              "Proveedor_Contactos",
+              "Proveedor_Documentos",
+              "RH_Cat_Sucursales",
+              "RH_Colaboradores_Documentos",
+              "RH_Colaboradores_Expediente",
+              "RH_Contratos",
+              "RH_Flujo_Nomina_Sucursal",
+              "RH_Nomina",
+              "RH_Nomina_Detalle",
+              "RH_Nomina_Dispersion",
+              "RH_Nomina_Recibos",
+              "Sistema_Empresas",
+              "Unidades_Negocio",
+              "Usuario_Catalogo",
+              "Usuario_EmpresasAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "read_only",
+              "worker_queue/results"
+            ],
+            "path": "docs/COA/COA_GATE3B_DDL_AUDIT.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Proveedor_Monedas"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/COA/COA_GATE4_SQL_MIGRATION_CHANNEL.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "sap"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/COA/COA_GATE5C_CFDI_EMITIDOS_DESIGN.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Compras_DocumentosFiscales",
+              "Fiscal_DocumentosEmitidos",
+              "Fiscal_DocumentosEmitidosEstatus",
+              "Venta_Encabezado"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/COA/COA_GATE5E_CFDI_EMITIDOS_MIGRATION_AUDIT.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [
+              "pymongo",
+              "pyodbc",
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "netpay",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/EKS/EKS_0001_FUENTE_HOSPITALITY.md",
+            "rbac_contracts": [
+              "Sistema_RBAC"
+            ],
+            "routes": [
+              "/health",
+              "/servers",
+              "/servers/\n\n### EKS-SRC-08146 — DIAGNÓSTICO RUNTIME SYNC COMPRAS\n\n- Ruta: `docs/reports/DIAGNOSTICO_RUNTIME_SYNC_COMPRAS_20260604_053534.md`\n- Autoridad propuesta: `2/10`\n- Estado propuesto: `BORRADOR_CANDIDATO`\n- SHA-256: `e0ae7287ae9be3f41676e15aeebb4782c3dbf16600ccf5311ccce3099b4b03f3`\n- Temas: `filosofia_bos, hospitality, conectores_universales, toast_netpay, rbac_seguridad, ia_agentes, comercial, finanzas`\n\n> # DIAGNÓSTICO RUNTIME SYNC COMPRAS Fecha: Thu Jun 4 05:35:34 UTC 2026 ## 1. Scheduler / configuración del job ```text /app/backend/modules/comercial/rentabilidad.py:38: FROM dbo.Compras_Inventarios_Fisicos_Sync /app/backend/modules/fase2_operativo/repositories/sql_base_repository.py:57: ",
+              "/servers/{server_id}"
+            ],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": [
+              "Compras_Inventarios_Fisicos_Sync"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/EKS/consolidado/EKS_CAVAS_003_CANONICAL_AUDIT.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only",
+              "worker_queue/results"
+            ],
+            "path": "docs/EKS/consolidado/EKS_CAVAS_003_CANONICAL_AUDIT_R2.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only",
+              "worker/results"
+            ],
+            "path": "docs/ISCAM/ISCAM_130MID_PAYMENTS_COMANDAS_GATE1_EVIDENCE_DOSSIER.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Finanzas_CortesCaja",
+              "Finanzas_CortesCaja_DetallePagos"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/RRR/RRR_GATE0_CONTRATO_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/RRR/RRR_GATE0_STATUS.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/RRR/RRR_GATE1_READONLY_DOSSIER_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/RRR/RRR_GATE1_STATUS.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/RRR/RRR_GATE2_DDL_V2_CORRECTION.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Cliente_Catalogo",
+              "Sistema_Empresas",
+              "Usuario_Catalogo",
+              "Venta_Encabezado"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/RRR/RRR_GATE2_FINAL_CERTIFICATION_R2.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Cliente_Catalogo",
+              "Sistema_Empresas",
+              "Sistema_Sucursales",
+              "Unidades_Negocio",
+              "Usuario_Catalogo",
+              "Venta_Encabezado"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/RRR/RRR_GATE2_PHYSICAL_ARCHITECTURE_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "CavaSocios_",
+              "CavasCorporativas_",
+              "Cliente_Catalogo",
+              "Operativo_Notificaciones_Log",
+              "Producto_Catalogo",
+              "RRR_Beneficios",
+              "RRR_Eventos",
+              "RRR_LedgerMovimientos",
+              "RRR_RankingHistorial",
+              "RRR_Reglas",
+              "RRR_ReglasVersiones",
+              "RRR_ScoreHistorial",
+              "Usuario_Catalogo",
+              "Venta_Detalle",
+              "Venta_Encabezado",
+              "Venta_Pagos",
+              "vw_RRR_ClienteBalance",
+              "vw_RRR_ClienteEstadoActual"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/RRR/RRR_GATE2_STATUS.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/RRR/RRR_GATE4E_CUSTOMER_ATTRIBUTION_CONTRACT_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Cliente_Catalogo",
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "RRR_Eventos"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/RRR/RRR_GATE4E_R7_MINIMAL_ATTRIBUTION_ADAPTER_DESIGN_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Cliente_Catalogo",
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "RRR_Eventos"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/RRR/RRR_GATE4E_R9_ATTRIBUTION_RECEIVER_IMPLEMENTATION_CONTRACT_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Cliente_Catalogo",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/RRR/RRR_GATE4_CUSTOMER360_DESIGN_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "CRM_Cuentas",
+              "CRM_PostventaEncuestas",
+              "Cliente_Catalogo",
+              "Cliente_Contactos",
+              "Cliente_Direcciones",
+              "RRR_Eventos",
+              "RRR_LedgerMovimientos",
+              "RRR_RankingHistorial",
+              "RRR_ScoreHistorial",
+              "Venta_Encabezado",
+              "vw_RRR_ClienteActividadComercial",
+              "vw_RRR_ClienteRankingActual",
+              "vw_RRR_ClienteScoreActual",
+              "vw_RRR_Customer360"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/SERVIDORES/SERVIDORES_INTEGRACIONES_GATE2_CERTIFICATION.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [
+              "readonly_sql_connection"
+            ],
+            "helpers": [
+              "readonly_sql_connection"
+            ],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "netpay",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/SERVIDORES/SERVIDORES_INTEGRACIONES_GATE2_SQL_REPO_DOSSIER.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Sistema_Capacidades",
+              "Sistema_Empresas",
+              "Sistema_MapeoColumnasVersion",
+              "Sistema_MapeoTablasVersion",
+              "Sistema_Sync_Catalogo",
+              "Sistema_Tipos",
+              "Sistema_TiposVariantes",
+              "Sistema_UnidadesNegocioPerfilDigital",
+              "Sistema_VersionesSistemas"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/SERVIDORES/SERVIDORES_INTEGRACIONES_GATE3_PHYSICAL_DESIGN.md",
+            "rbac_contracts": [
+              "RBAC_Permisos",
+              "Sistema_RBAC"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Economia_ContextoOperativo",
+              "Servidores_ConexionEstado",
+              "Sistema_IdentificadoresExternos",
+              "Sistema_Sync_Capacidades",
+              "Sistema_UnidadesNegocioPerfilDigital",
+              "Sync_Control_Ejecuciones",
+              "Sync_Control_Evidencias",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay",
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/SERVIDORES/SERVIDORES_INTEGRACIONES_GATE5A_CONSUMER_AUDIT.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Servidores_ConexionEstado",
+              "Servidores_Conexiones"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/SERVIDORES/SERVIDORES_INTEGRACIONES_GATE5B_ADMIN_FACADE.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Operativo_Notificaciones_Log",
+              "Servidores_ConexionEstado",
+              "Servidores_Conexiones",
+              "Sistema_Capacidades",
+              "Sistema_NotificacionesConfig",
+              "Sistema_Sync_Capacidades",
+              "Sistema_Sync_Catalogo",
+              "Sistema_Tipos",
+              "Sistema_VersionesSistemas",
+              "Sync_Control_Ejecuciones"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/SERVIDORES/SERVIDORES_INTEGRACIONES_GATE5C_RUNTIME_ADOPTION.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Servidores_ConexionEstado"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap",
+              "twilio"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/SERVIDORES/SERVIDORES_INTEGRACIONES_GATE5D_COMMUNICATIONS.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": [
+              "Operativo_Notificaciones_Log",
+              "Operativo_Notificaciones_Queue",
+              "Sistema_NotificacionesConfig"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/WORKER_CONSOLE_README.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/architecture/CATALOGO_AMPLIADO_GATE2_DDL_DOSSIER.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/catalogo_ampliado/CATALOGO_AMPLIADO_GATE8B_ALERTAS_INTEGRATION_DESIGN.md",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": [
+              "Gobierno_AlertaEvento",
+              "Gobierno_AlertaRegla",
+              "Operativo_Notificaciones_Log",
+              "Sistema_NotificacionesConfig",
+              "Sistema_Tareas",
+              "Usuario_Catalogo",
+              "Usuario_PortalConfiguracion"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "netpay"
+            ],
+            "matched_terms": [
+              "read_only"
+            ],
+            "path": "docs/modules/production_quality/FOTO_FINISH_FOUNDATION_MUTATION_PLAN_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "target_branch",
+              "worker_queue/results"
+            ],
+            "path": "docs/operacion/WORKER_JOB_EXECUTION_PROTOCOL.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 112,
+          "scanned_files": 603,
+          "skipped_sensitive": 16
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-27T22:29:55Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
