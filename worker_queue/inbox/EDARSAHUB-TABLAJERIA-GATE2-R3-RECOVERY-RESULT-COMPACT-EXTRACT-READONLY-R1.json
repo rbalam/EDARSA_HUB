@@ -1,0 +1,128 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TABLAJERIA-GATE2-R3-RECOVERY-RESULT-COMPACT-EXTRACT-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9539b249facba8cc7e0324003290d7e340f7f644",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "priority": "P0",
+  "objective": "Extraer un resumen compacto y legible del resultado enorme de Tablajeria Gate2 R3 Recovery R1. No reejecutar auditorias. No tocar Produccion. No abrir Gate3. No modificar Tablajeria. Leer el artifact existente en worker/results y publicar solo campos compactos: status, certification, quality_gate, tests, work_completion, percent_complete, production_touched, files_changed, blockers, required_deliverables_count, completed_deliverables_count, missing_deliverables, gate3_allowed y un digest pequeno de evidencia.",
+  "context": {
+    "source_chat": "Tablajerias 4",
+    "large_result_path": "worker_queue/results/EDARSAHUB-TABLAJERIA-GATE2-TECHNICAL-MAPPING-STRUCTURED-READONLY-R3-RECOVERY-R1.json",
+    "large_result_commit": "661f22fb1fde0bdac0f62c28d81ca216ec1c3073",
+    "large_result_blob_sha": "3ed8e0455558049699a9928e8b308a05d6480a95",
+    "large_result_compare_evidence": "The result artifact was added with 1273157 lines; previous content empty from Contents API is size/clamp behavior, not zero-byte evidence.",
+    "gate3_tablajeria_status": "HOLD",
+    "mutation_allowed": false
+  },
+  "forbidden_actions": [
+    "touch_production",
+    "ddl",
+    "dml",
+    "modify_backend",
+    "modify_frontend",
+    "modify_tablajeria_domain_code",
+    "publish_gate3",
+    "publish_tablajeria_mutation",
+    "delete_or_overwrite_result_artifacts",
+    "manual_compensating_result",
+    "rerun_sql_audit",
+    "rerun_repository_audit",
+    "use_mongo_as_source_cache_fallback_or_lock",
+    "use_live_user_endpoints",
+    "expose_secrets",
+    "restart_production"
+  ],
+  "actions": [],
+  "required_deliverables": [
+    "SOURCE_RESULT_FILE_METADATA",
+    "COMPACT_STATUS_FIELDS",
+    "DELIVERABLE_COUNTS",
+    "MISSING_DELIVERABLES_LIST",
+    "BLOCKERS_LIST",
+    "GATE3_ALLOWED_DECISION",
+    "PRODUCTION_AND_FILES_CHANGED_CONFIRMATION",
+    "NEXT_STEP_DECISION"
+  ],
+  "deliverable_specs": {
+    "SOURCE_RESULT_FILE_METADATA": {"source": {"check_type": "result_file_compact_extract", "occurrence": 1}, "selector": {"type": "json_path", "path": ["source_result_metadata"]}},
+    "COMPACT_STATUS_FIELDS": {"source": {"check_type": "result_file_compact_extract", "occurrence": 1}, "selector": {"type": "json_path", "path": ["compact_status_fields"]}},
+    "DELIVERABLE_COUNTS": {"source": {"check_type": "result_file_compact_extract", "occurrence": 1}, "selector": {"type": "json_path", "path": ["deliverable_counts"]}},
+    "MISSING_DELIVERABLES_LIST": {"source": {"check_type": "result_file_compact_extract", "occurrence": 1}, "selector": {"type": "json_path", "path": ["missing_deliverables"]}},
+    "BLOCKERS_LIST": {"source": {"check_type": "result_file_compact_extract", "occurrence": 1}, "selector": {"type": "json_path", "path": ["blockers"]}},
+    "GATE3_ALLOWED_DECISION": {"source": {"check_type": "result_file_compact_extract", "occurrence": 1}, "selector": {"type": "json_path", "path": ["gate3_allowed"]}},
+    "PRODUCTION_AND_FILES_CHANGED_CONFIRMATION": {"source": {"check_type": "result_file_compact_extract", "occurrence": 1}, "selector": {"type": "json_path", "path": ["immutability_confirmation"]}},
+    "NEXT_STEP_DECISION": {"source": {"check_type": "result_file_compact_extract", "occurrence": 1}, "selector": {"type": "json_path", "path": ["next_step_decision"]}}
+  },
+  "checks": [
+    {
+      "type": "result_file_compact_extract",
+      "source_branch": "worker/results",
+      "source_path": "worker_queue/results/EDARSAHUB-TABLAJERIA-GATE2-TECHNICAL-MAPPING-STRUCTURED-READONLY-R3-RECOVERY-R1.json",
+      "max_output_lines": 240,
+      "max_output_bytes": 30000,
+      "include_fields": [
+        "job_id",
+        "schema",
+        "status",
+        "quality_gate",
+        "certification",
+        "certification_basis",
+        "percent_complete",
+        "production_touched",
+        "files_changed",
+        "blockers",
+        "tests",
+        "work_completion",
+        "required_deliverables",
+        "completed_deliverables",
+        "missing_deliverables",
+        "gate3_allowed"
+      ],
+      "count_fields": [
+        "required_deliverables",
+        "completed_deliverables",
+        "missing_deliverables"
+      ],
+      "exclude_large_fields": [
+        "repository_contract_evidence",
+        "repository_evidence",
+        "sql_readonly_evidence",
+        "sql_evidence",
+        "deliverables"
+      ]
+    },
+    {"type": "git_diff_check"}
+  ],
+  "required_output": [
+    "job_id",
+    "status",
+    "quality_gate",
+    "certification",
+    "percent_complete",
+    "production_touched",
+    "files_changed",
+    "blockers",
+    "tests",
+    "work_completion",
+    "certification_basis",
+    "source_result_file_metadata",
+    "required_deliverables_count",
+    "completed_deliverables_count",
+    "missing_deliverables_count",
+    "missing_deliverables",
+    "gate3_allowed",
+    "next_step_decision"
+  ],
+  "expected_result_contract": {
+    "status": "READ_ONLY_COMPLETE or COMPACT_EXTRACT_COMPLETE",
+    "production_touched": false,
+    "files_changed": [],
+    "certification": "CERTIFIED_READ_ONLY only if compact extraction succeeds without mutating target code",
+    "work_completion": "COMPLETE only if compact status fields and deliverable counts are extracted",
+    "gate3_allowed": false
+  }
+}
