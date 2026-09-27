@@ -2,8 +2,11 @@
   "base_sha": "5fd29fb8b112fccf494db19882e327e96b73bebc",
   "blockers": [],
   "candidate_sha": "85fc8af4e1e937b2199c96ffff2ca6026fb05af3",
-  "certification": "PENDING_AUDIT_EVIDENCE",
+  "certification": "CERTIFIED",
+  "certification_basis": "SHA_BOUND_ATTESTATION_PLUS_DESCENDANT_CONVERGENCE",
+  "certified_source_sha": "85fc8af4e1e937b2199c96ffff2ca6026fb05af3",
   "completed_at_utc": "2026-09-27T20:51:22Z",
+  "converged_head": "85fc8af4e1e937b2199c96ffff2ca6026fb05af3",
   "development_sha": "85fc8af4e1e937b2199c96ffff2ca6026fb05af3",
   "executor": "chatgpt-deterministic",
   "files_changed": [
@@ -18,9 +21,9 @@
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5D3-BACKEND-FOUNDATION-MATERIALIZATION-R2",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-09-27T20:51:56Z",
+  "published_at_utc": "2026-09-27T20:52:57Z",
   "quality_gate": "PASS",
   "repository_contract_evidence": {
     "checks": [
@@ -930,5 +933,5 @@
   "status": "INTEGRATED",
   "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
   "tests": "PASS",
-  "work_completion": "PENDING_CERTIFICATION"
+  "work_completion": "COMPLETE"
 }
