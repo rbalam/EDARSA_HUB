@@ -1,0 +1,52 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CIENFUEGOS-SOURCE-REGISTRY-READONLY-R2-20260927",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "85fc8af4e1e937b2199c96ffff2ca6026fb05af3",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Identificar de forma canónica y READ_ONLY las conexiones registradas para CIENFUEGOS/CAVAS en dbo.Servidores_Conexiones usando exclusivamente metadata no sensible. No conectar a fuentes externas. No DDL/DML. No Producción.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "connection_candidates",
+          "sql": "SELECT id,nombre,system_type,tipo_conexion,host,port,database_name,activo,visible_en_operaciones,visible_en_listado,empresa_id,EmpresaID,source_status,fecha_ultima_sincronizacion FROM dbo.Servidores_Conexiones WHERE UPPER(nombre) LIKE '%CIENFUEGOS%' OR UPPER(nombre) LIKE '%CAVA%' ORDER BY nombre"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No external source connection",
+    "No secrets",
+    "No DDL/DML",
+    "No Production",
+    "EDARSAHUB remains sole source of truth"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "CAVAS_PERSONALES",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
