@@ -1,0 +1,68 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CIENFUEGOS-PUBLICVIEW-ROW-DIAG-C1-READONLY-R1-20260927",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "85fc8af4e1e937b2199c96ffff2ca6026fb05af3",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Diagnóstico READ_ONLY del fallo de lectura de la vista pública de conexiones. Repetir exactamente el smoke de R9 y materializar únicamente el output del check para obtener el error SQL exacto. Sin cambios, sin secretos, sin fuente externa, sin DDL/DML, sin Producción.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "public_view_row_smoke",
+          "sql": "SELECT TOP 1 id,nombre FROM dbo.Sistema_VW_Servidores_Conexiones_Publico ORDER BY nombre"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No secrets",
+    "No external source connection",
+    "No DDL/DML",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "CAVAS_PERSONALES",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "required_deliverables": [
+    "SQL_CHECK_OUTPUT"
+  ],
+  "deliverable_specs": {
+    "SQL_CHECK_OUTPUT": {
+      "source": {
+        "check_type": "sql_readonly_audit",
+        "occurrence": 1
+      },
+      "selector": {
+        "type": "json_path",
+        "path": [
+          "output"
+        ]
+      }
+    }
+  }
+}
