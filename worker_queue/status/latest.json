@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "9539b249facba8cc7e0324003290d7e340f7f644",
-  "generated_at_utc": "2026-09-27T18:07:46Z",
+  "generated_at_utc": "2026-09-27T18:09:03Z",
   "history": {
     "done_total_local": 1081,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 545,
+      "age_seconds": 622,
       "job_id": "CAVAS-GATE16L-V1-TRANSVERSAL-AUDIT-CERT-READONLY-R2-20260927",
       "reasons": [
         "REQUESTER_RBAC_DENIED:REQUESTER_NOT_FOUND"
@@ -25,13 +25,13 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 789,
+      "age_seconds": 867,
       "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5D2-RBAC-MATERIALIZATION-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 972,
+      "age_seconds": 1049,
       "job_id": "EDARSAHUB-TABLAJERIA-GATE2-TECHNICAL-MAPPING-STRUCTURED-READONLY-R3-RECOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
@@ -51,8 +51,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-27T18:07:41Z",
-    "last_receive_utc": "2026-09-27T18:07:44Z",
+    "last_cycle_utc": "2026-09-27T18:08:58Z",
+    "last_receive_utc": "2026-09-27T18:09:01Z",
     "last_terminal_utc": "2026-09-27T17:54:36Z",
     "pid": "771",
     "runtime_fingerprint": {
