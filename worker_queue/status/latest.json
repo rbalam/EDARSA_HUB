@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "d512acf07cc5f8c2622462fbb930487c97f30747",
-  "generated_at_utc": "2026-09-27T22:51:53Z",
+  "generated_at_utc": "2026-09-27T22:53:30Z",
   "history": {
     "done_total_local": 1100,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1297,
+      "age_seconds": 1394,
       "job_id": "EDARSAHUB-WORKER-SQL-READONLY-UUID-SERIALIZATION-FIX-R1-20260927",
       "reasons": [
         "ACTION_1_INVALID_SHA256",
@@ -27,67 +27,67 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 2661,
+      "age_seconds": 2758,
       "job_id": "CAVAS-CIENFUEGOS-CONNECTION-PERMISSIONS-READONLY-R8-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3493,
+      "age_seconds": 3590,
       "job_id": "CAVAS-CIENFUEGOS-PUBLICVIEW-IDENTITY-READONLY-R5-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1747,
+      "age_seconds": 1844,
       "job_id": "CAVAS-CIENFUEGOS-PUBLICVIEW-ROW-DIAG-C1-READONLY-R1-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2438,
+      "age_seconds": 2535,
       "job_id": "CAVAS-CIENFUEGOS-PUBLICVIEW-ROW-SMOKE-READONLY-R9-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3307,
+      "age_seconds": 3404,
       "job_id": "CAVAS-CIENFUEGOS-PUBLICVIEW-SCHEMA-READONLY-R6-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3052,
+      "age_seconds": 3149,
       "job_id": "CAVAS-CIENFUEGOS-SOURCE-CANDIDATES-READONLY-R7-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2292,
+      "age_seconds": 2389,
       "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5D4A-DEVELOPMENT-SQL-READINESS-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 24,
+      "age_seconds": 121,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-SEMANTIC-EXTRACT-READONLY-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1316,
+      "age_seconds": 1413,
       "job_id": "EDARSAHUB-WORKER-RESULT-BRANCH-READ-CAPABILITY-AUDIT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1026,
+      "age_seconds": 1123,
       "job_id": "EDARSAHUB-WORKER-SQL-READONLY-UUID-SERIALIZATION-FIX-R2-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 17,
+      "age_seconds": 114,
       "job_id": "EDARSAHUB-WORKER-SQL-READONLY-UUID-SERIALIZATION-POSTAUDIT-R1-20260927",
       "reason": null,
       "state": "RESULT_READY"
@@ -107,8 +107,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-27T22:51:45Z",
-    "last_receive_utc": "2026-09-27T22:51:40Z",
+    "last_cycle_utc": "2026-09-27T22:53:24Z",
+    "last_receive_utc": "2026-09-27T22:53:29Z",
     "last_terminal_utc": "2026-09-27T22:51:35Z",
     "pid": "662",
     "runtime_fingerprint": {
