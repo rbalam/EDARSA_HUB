@@ -1,0 +1,1455 @@
+{
+  "base_sha": "5fd29fb8b112fccf494db19882e327e96b73bebc",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-27T20:49:49Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE16L-V1-TRANSVERSAL-AUDIT-CERT-READONLY-R4-20260927",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-27T20:51:05Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "migration_engine",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "adaptercontext",
+              "evidence",
+              "timezone"
+            ],
+            "path": "backend/modules/cava_socios/adapter_sdk.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AdapterCapabilities",
+              "AdapterCheckpoint",
+              "AdapterContext",
+              "AdapterHealth",
+              "CavasSourceAdapter",
+              "ExtractionBatch",
+              "__post_init__",
+              "adapter_code",
+              "adapter_manifest",
+              "adapter_version",
+              "capabilities",
+              "discover",
+              "extract_delta",
+              "extract_full",
+              "health",
+              "validate_adapter_contract",
+              "validate_context",
+              "validate_extraction"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "enum",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "backend/modules/cava_socios/blind_audit.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AuditFinding",
+              "BlindAuditResult",
+              "BlindAuditStatus",
+              "BlindObservation",
+              "ExpectedBottle",
+              "VisionReadinessRequest",
+              "VisionRecognitionCandidate",
+              "__post_init__",
+              "_level_mismatch",
+              "_required",
+              "_validate_pct",
+              "clean",
+              "reconcile_blind_audit",
+              "requires_review",
+              "validate_vision_candidates"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "blind_audit",
+              "hashlib",
+              "json",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "automatic_inventory_adjustment",
+              "automatic_inventory_movement",
+              "evidence"
+            ],
+            "path": "backend/modules/cava_socios/blind_audit_operational_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CavaBlindAuditOperationalService",
+              "get_cava_blind_audit_operational_service",
+              "reconcile"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "enum",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evidence",
+              "historical_reference",
+              "regularizacion_historica",
+              "source_system"
+            ],
+            "path": "backend/modules/cava_socios/domain.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BottleOrigin",
+              "BottleOriginEvidence",
+              "IntelligenceConsumptionSource",
+              "ProductReferenceKind",
+              "contributes_commercial_sale",
+              "intelligence_source_for_origin",
+              "validate_origin_evidence"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "datetime",
+              "enum",
+              "hashlib",
+              "json",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evidence",
+              "source_system"
+            ],
+            "path": "backend/modules/cava_socios/evidence_chain.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EvidenceKind",
+              "EvidenceReference",
+              "__post_init__",
+              "_require_aware",
+              "build_evidence",
+              "chain_hash",
+              "historical_evidence_metadata",
+              "sha256_bytes",
+              "verify_chain",
+              "verify_content"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "datetime",
+              "domain",
+              "enum",
+              "hashlib",
+              "json",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evidence",
+              "historical_reference",
+              "regularizacion_historica",
+              "source_system"
+            ],
+            "path": "backend/modules/cava_socios/migration_engine.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "DryRunItem",
+              "DryRunSummary",
+              "ExternalRecord",
+              "MappingDecision",
+              "MappingStatus",
+              "MigrationMode",
+              "ReconciliationMetric",
+              "ReconciliationResult",
+              "SourceIdentity",
+              "__post_init__",
+              "_json_default",
+              "_non_negative_int",
+              "_require_aware",
+              "_required",
+              "accepted_for_execution",
+              "canonical_payload_checksum",
+              "certifiable",
+              "checksum",
+              "execution_ready",
+              "historical_origin_evidence",
+              "idempotency_key",
+              "plan_dry_run",
+              "reconcile_counts",
+              "reconciled",
+              "requires_review"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.connection_factory",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cavasocios_",
+              "cliente_catalogo",
+              "gobierno_persona",
+              "gobierno_personavinculo",
+              "personaid",
+              "socioid"
+            ],
+            "path": "backend/modules/cava_socios/persona_link_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CavaSociosPersonaLinkService",
+              "_ensure_cliente_link",
+              "_ensure_persona",
+              "_get_connection",
+              "_locked_socio",
+              "_normalize_optional_text",
+              "_normalize_uuid",
+              "_update_socio_persona",
+              "buscar_personas",
+              "crear_persona_y_vincular",
+              "desvincular_persona",
+              "get_cava_socios_persona_link_service",
+              "obtener_link",
+              "vincular_persona_existente"
+            ],
+            "tables_referenced": [
+              "CavaSocios_Socios",
+              "Cliente_Catalogo",
+              "Gobierno_Persona",
+              "Gobierno_PersonaVinculo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "blind_audit_operational_service",
+              "core.auth.sql_user_identity",
+              "core.rbac",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "logging",
+              "modules.rbac_context_sql.context_service",
+              "notification_service",
+              "persona_link_service",
+              "pydantic",
+              "report_service",
+              "service",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "/cava-socios",
+              "_resolve_cava_scope",
+              "auditorias-ciegas/reconciliar",
+              "cava_socios_crear",
+              "cava_socios_editar",
+              "cava_socios_ver",
+              "cavasocios_",
+              "enviar-reporte",
+              "evidence",
+              "gobierno_persona",
+              "gobierno_personavinculo",
+              "inventario-inicial",
+              "kardex",
+              "registrar_consumo",
+              "reportes/socio",
+              "unidad_negocio_pk"
+            ],
+            "path": "backend/modules/cava_socios/routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/auditorias-ciegas/reconciliar",
+              "/botellas/{botella_id}/consumo",
+              "/botellas/{botella_id}/etiqueta",
+              "/clientes-canonicos",
+              "/clientes-canonicos/sync",
+              "/consumos",
+              "/dashboard",
+              "/inventario",
+              "/inventario-fisico/aplicar",
+              "/inventario-fisico/hoja",
+              "/inventario-inicial",
+              "/kardex",
+              "/personas-canonicas",
+              "/reportes/socio/{socio_id}/consumos",
+              "/reportes/socio/{socio_id}/estado-cuenta",
+              "/reportes/socio/{socio_id}/ficha",
+              "/socios",
+              "/socios/promover-cliente",
+              "/socios/{socio_id}",
+              "/socios/{socio_id}/botellas",
+              "/socios/{socio_id}/enviar-reporte",
+              "/socios/{socio_id}/enviar-todos-reportes",
+              "/socios/{socio_id}/persona-link",
+              "/socios/{socio_id}/persona-link/crear-persona"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BlindAuditObservationInput",
+              "BlindAuditReconcileRequest",
+              "BotellaCreate",
+              "ConsumoCreate",
+              "EnvioReporteRequest",
+              "InventarioFisicoAplicarRequest",
+              "InventarioFisicoItem",
+              "InventarioInicialBotellaItem",
+              "InventarioInicialCreate",
+              "PersonaCreateLinkRequest",
+              "PersonaExistingLinkRequest",
+              "PromoverClienteCreate",
+              "SincronizarClientesRequest",
+              "SocioCreate",
+              "SocioUpdate",
+              "_resolve_cava_actor",
+              "_resolve_cava_scope",
+              "actualizar_socio",
+              "aplicar_ajustes_inventario_fisico",
+              "crear_persona_y_vincular",
+              "crear_socio",
+              "descargar_estado_cuenta",
+              "descargar_ficha_socio",
+              "descargar_historial_consumos",
+              "desvincular_persona",
+              "enviar_reporte_socio",
+              "enviar_todos_reportes_socio",
+              "get_dashboard",
+              "listar_clientes_canonicos",
+              "listar_personas_canonicas",
+              "listar_socios",
+              "obtener_consumos",
+              "obtener_etiqueta_botella",
+              "obtener_hoja_inventario_fisico",
+              "obtener_inventario",
+              "obtener_kardex",
+              "obtener_persona_link",
+              "obtener_socio",
+              "promover_cliente_canonico",
+              "reconciliar_auditoria_ciega",
+              "registrar_botella",
+              "registrar_consumo",
+              "registrar_inventario_inicial",
+              "sincronizar_clientes_canonicos",
+              "vincular_persona_existente"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.cava_socios",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.connection_factory",
+              "datetime",
+              "logging",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cavasocios_",
+              "cavasocios_cargos",
+              "cliente_catalogo",
+              "kardex",
+              "personaid",
+              "registrar_consumo",
+              "socioid"
+            ],
+            "path": "backend/modules/cava_socios/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CavaSociosService",
+              "_crear_cargo",
+              "_generar_numero_socio",
+              "_get_connection",
+              "actualizar_socio",
+              "aplicar_ajustes_inventario_fisico",
+              "crear_socio",
+              "get_cava_socios_service",
+              "listar_clientes_canonicos",
+              "listar_socios",
+              "obtener_cargos_socio",
+              "obtener_dashboard",
+              "obtener_etiqueta_botella",
+              "obtener_historial_consumos_global",
+              "obtener_hoja_inventario_fisico",
+              "obtener_inventario_global",
+              "obtener_kardex",
+              "obtener_movimientos_socio",
+              "obtener_socio",
+              "promover_cliente_canonico",
+              "registrar_botella",
+              "registrar_consumo",
+              "registrar_inventario_inicial",
+              "sincronizar_clientes_canonicos"
+            ],
+            "tables_referenced": [
+              "CavaSocios_Socios",
+              "Cliente_Catalogo"
+            ]
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "/cava-socios",
+              "auditorias-ciegas/reconciliar",
+              "evidence",
+              "unidad_negocio_pk"
+            ],
+            "path": "frontend/src/pages/cava-socios/BlindAuditCava.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "/cava-socios",
+              "kardex"
+            ],
+            "path": "frontend/src/pages/cava-socios/CavaNavHeader.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "/cava-socios",
+              "unidad_negocio_pk"
+            ],
+            "path": "frontend/src/pages/cava-socios/CavaSociosDashboard.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "/cava-socios",
+              "unidad_negocio_pk"
+            ],
+            "path": "frontend/src/pages/cava-socios/ConsumosCava.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "/cava-socios",
+              "inventario-inicial",
+              "kardex",
+              "socioid",
+              "unidad_negocio_pk"
+            ],
+            "path": "frontend/src/pages/cava-socios/InventarioCava.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "/cava-socios",
+              "gobierno_persona",
+              "personaid",
+              "socioid",
+              "unidad_negocio_pk"
+            ],
+            "path": "frontend/src/pages/cava-socios/PersonaLinkCard.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "/cava-socios",
+              "enviar-reporte",
+              "reportes/socio",
+              "socioid",
+              "unidad_negocio_pk"
+            ],
+            "path": "frontend/src/pages/cava-socios/SocioDetail.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "/cava-socios",
+              "unidad_negocio_pk"
+            ],
+            "path": "frontend/src/pages/cava-socios/SocioForm.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "/cava-socios",
+              "unidad_negocio_pk"
+            ],
+            "path": "frontend/src/pages/cava-socios/SociosList.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "/cava-socios"
+            ],
+            "path": "frontend/src/pages/cava-socios/index.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "/cava-socios"
+            ],
+            "path": "frontend/src/config/enterpriseNavigationRegistry.json",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "cliente_catalogo",
+              "gobierno_persona",
+              "gobierno_personavinculo",
+              "historical_reference",
+              "migrationbatch",
+              "regularizacion_historica",
+              "source_system",
+              "timezone"
+            ],
+            "path": "docs/CAVAS/CAVAS_GATE16B_CANONICAL_INTEROPERABILITY_MIGRATION_CONTRACT.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 21,
+          "scanned_files": 25,
+          "skipped_sensitive": 8
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "schema_name",
+              "table_name"
+            ],
+            "name": "cavas_tables_present",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "dbo",
+                "CavaSocios_Botellas"
+              ],
+              [
+                "dbo",
+                "CavaSocios_Cargos"
+              ],
+              [
+                "dbo",
+                "CavaSocios_Configuracion"
+              ],
+              [
+                "dbo",
+                "CavaSocios_Movimientos"
+              ],
+              [
+                "dbo",
+                "CavaSocios_Socios"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name",
+              "column_name",
+              "data_type",
+              "max_length",
+              "is_nullable"
+            ],
+            "name": "cavas_critical_columns",
+            "row_count_returned": 84,
+            "rows": [
+              [
+                "CavaSocios_Botellas",
+                "BotellaID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "CavaSocios_Botellas",
+                "EmpresaID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "CavaSocios_Botellas",
+                "SocioID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "CavaSocios_Botellas",
+                "ProductoCodigo",
+                "varchar",
+                50,
+                true
+              ],
+              [
+                "CavaSocios_Botellas",
+                "ProductoNombre",
+                "nvarchar",
+                400,
+                false
+              ],
+              [
+                "CavaSocios_Botellas",
+                "Marca",
+                "nvarchar",
+                200,
+                true
+              ],
+              [
+                "CavaSocios_Botellas",
+                "TipoBebida",
+                "varchar",
+                50,
+                true
+              ],
+              [
+                "CavaSocios_Botellas",
+                "Añada",
+                "varchar",
+                10,
+                true
+              ],
+              [
+                "CavaSocios_Botellas",
+                "Capacidad",
+                "decimal",
+                9,
+                true
+              ],
+              [
+                "CavaSocios_Botellas",
+                "UbicacionCava",
+                "nvarchar",
+                100,
+                true
+              ],
+              [
+                "CavaSocios_Botellas",
+                "ValorDeclarado",
+                "decimal",
+                9,
+                true
+              ],
+              [
+                "CavaSocios_Botellas",
+                "EstatusBotella",
+                "varchar",
+                30,
+                true
+              ],
+              [
+                "CavaSocios_Botellas",
+                "FechaIngreso",
+                "datetime2",
+                8,
+                true
+              ],
+              [
+                "CavaSocios_Botellas",
+                "FechaConsumo",
+                "datetime2",
+                8,
+                true
+              ],
+              [
+                "CavaSocios_Botellas",
+                "FechaRetiro",
+                "datetime2",
+                8,
+                true
+              ],
+              [
+                "CavaSocios_Botellas",
+                "NivelActual",
+                "decimal",
+                5,
+                true
+              ],
+              [
+                "CavaSocios_Botellas",
+                "FotoIngresoURL",
+                "nvarchar",
+                1000,
+                true
+              ],
+              [
+                "CavaSocios_Botellas",
+                "FechaCreacion",
+                "datetime2",
+                8,
+                true
+              ],
+              [
+                "CavaSocios_Botellas",
+                "UsuarioCreacionID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                "CavaSocios_Botellas",
+                "FechaModificacion",
+                "datetime2",
+                8,
+                true
+              ],
+              [
+                "CavaSocios_Botellas",
+                "UsuarioModificacionID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                "CavaSocios_Botellas",
+                "Observaciones",
+                "nvarchar",
+                1000,
+                true
+              ],
+              [
+                "CavaSocios_Cargos",
+                "CargoID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "CavaSocios_Cargos",
+                "EmpresaID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "CavaSocios_Cargos",
+                "SocioID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "CavaSocios_Cargos",
+                "TipoCargo",
+                "varchar",
+                50,
+                false
+              ],
+              [
+                "CavaSocios_Cargos",
+                "ConceptoCargo",
+                "nvarchar",
+                400,
+                false
+              ],
+              [
+                "CavaSocios_Cargos",
+                "Monto",
+                "decimal",
+                9,
+                false
+              ],
+              [
+                "CavaSocios_Cargos",
+                "Impuesto",
+                "decimal",
+                9,
+                true
+              ],
+              [
+                "CavaSocios_Cargos",
+                "Total",
+                "decimal",
+                9,
+                false
+              ],
+              [
+                "CavaSocios_Cargos",
+                "EstatusCargo",
+                "varchar",
+                30,
+                true
+              ],
+              [
+                "CavaSocios_Cargos",
+                "BotellaID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                "CavaSocios_Cargos",
+                "MovimientoID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                "CavaSocios_Cargos",
+                "ReservacionID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                "CavaSocios_Cargos",
+                "FacturaID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                "CavaSocios_Cargos",
+                "FechaCargo",
+                "datetime2",
+                8,
+                true
+              ],
+              [
+                "CavaSocios_Cargos",
+                "FechaPago",
+                "datetime2",
+                8,
+                true
+              ],
+              [
+                "CavaSocios_Cargos",
+                "FechaCreacion",
+                "datetime2",
+                8,
+                true
+              ],
+              [
+                "CavaSocios_Cargos",
+                "UsuarioCreacionID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                "CavaSocios_Cargos",
+                "FechaModificacion",
+                "datetime2",
+                8,
+                true
+              ],
+              [
+                "CavaSocios_Cargos",
+                "UsuarioModificacionID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                "CavaSocios_Cargos",
+                "Observaciones",
+                "nvarchar",
+                1000,
+                true
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "MovimientoID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "EmpresaID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "BotellaID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "SocioID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "TipoMovimiento",
+                "varchar",
+                30,
+                false
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "NivelAnterior",
+                "decimal",
+                5,
+                true
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "NivelNuevo",
+                "decimal",
+                5,
+                true
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "CantidadConsumida",
+                "decimal",
+                9,
+                true
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "MotivoMovimiento",
+                "nvarchar",
+                400,
+                true
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "ReservacionID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "EventoID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "CuentaPOSID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "GeneroCargo",
+                "bit",
+                1,
+                true
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "MontoCargo",
+                "decimal",
+                9,
+                true
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "CargoConceptoID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "MeseroID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "AutorizadoPor",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "SucursalID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "FotoEvidenciaURL",
+                "nvarchar",
+                1000,
+                true
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "FechaMovimiento",
+                "datetime2",
+                8,
+                true
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "FechaCreacion",
+                "datetime2",
+                8,
+                true
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "UsuarioCreacionID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                "CavaSocios_Movimientos",
+                "Observaciones",
+                "nvarchar",
+                1000,
+                true
+              ],
+              [
+                "CavaSocios_Socios",
+                "SocioID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "CavaSocios_Socios",
+                "EmpresaID",
+                "uniqueidentifier",
+                16,
+                false
+              ],
+              [
+                "CavaSocios_Socios",
+                "NumeroSocio",
+                "varchar",
+                50,
+                false
+              ],
+              [
+                "CavaSocios_Socios",
+                "NombreCompleto",
+                "nvarchar",
+                400,
+                false
+              ],
+              [
+                "CavaSocios_Socios",
+                "Email",
+                "varchar",
+                150,
+                true
+              ],
+              [
+                "CavaSocios_Socios",
+                "Telefono",
+                "varchar",
+                50,
+                true
+              ],
+              [
+                "CavaSocios_Socios",
+                "ClienteCRMID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                "CavaSocios_Socios",
+                "TipoMembresia",
+                "varchar",
+                50,
+                true
+              ],
+              [
+                "CavaSocios_Socios",
+                "FechaAltaMembresia",
+                "date",
+                3,
+                true
+              ],
+              [
+                "CavaSocios_Socios",
+                "FechaVencimientoMembresia",
+                "date",
+                3,
+                true
+              ],
+              [
+                "CavaSocios_Socios",
+                "MaximoBotellas",
+                "int",
+                4,
+                true
+              ],
+              [
+                "CavaSocios_Socios",
+                "Estatus",
+                "varchar",
+                30,
+                true
+              ],
+              [
+                "CavaSocios_Socios",
+                "Activo",
+                "bit",
+                1,
+                true
+              ],
+              [
+                "CavaSocios_Socios",
+                "FechaCreacion",
+                "datetime2",
+                8,
+                true
+              ],
+              [
+                "CavaSocios_Socios",
+                "UsuarioCreacionID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                "CavaSocios_Socios",
+                "FechaModificacion",
+                "datetime2",
+                8,
+                true
+              ],
+              [
+                "CavaSocios_Socios",
+                "UsuarioModificacionID",
+                "uniqueidentifier",
+                16,
+                true
+              ],
+              [
+                "CavaSocios_Socios",
+                "Observaciones",
+                "nvarchar",
+                1000,
+                true
+              ],
+              [
+                "CavaSocios_Socios",
+                "PersonaID",
+                "bigint",
+                8,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EmpresaID",
+              "NumeroSocio",
+              "n"
+            ],
+            "name": "duplicate_socios_by_unit_number",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "orphan_bottles"
+            ],
+            "name": "orphan_bottles",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "cross_scope_rows"
+            ],
+            "name": "cross_scope_bottle_socios",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "orphan_movements"
+            ],
+            "name": "orphan_movements",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "orphan_persona_links"
+            ],
+            "name": "orphan_persona_links",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "socios",
+              "botellas",
+              "movimientos",
+              "cargos"
+            ],
+            "name": "cavas_counts",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "2",
+                "2",
+                "3",
+                "1"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-27T20:49:30Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
