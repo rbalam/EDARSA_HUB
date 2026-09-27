@@ -1,0 +1,52 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CIENFUEGOS-CONNECTION-PERMISSIONS-READONLY-R8-20260927",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "85fc8af4e1e937b2199c96ffff2ca6026fb05af3",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar READ_ONLY los permisos efectivos de la identidad SQL canónica usada por Universal Worker sobre dbo.Servidores_Conexiones y dbo.Sistema_VW_Servidores_Conexiones_Publico, sin leer filas de negocio ni secretos. Determinar si los fallos R2/R4/R7 son de permisos. No DDL/DML, no fuente externa, no Producción.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "connection_object_permissions",
+          "sql": "SELECT USER_NAME() AS database_user,HAS_PERMS_BY_NAME('dbo.Servidores_Conexiones','OBJECT','SELECT') AS can_select_table,HAS_PERMS_BY_NAME('dbo.Sistema_VW_Servidores_Conexiones_Publico','OBJECT','SELECT') AS can_select_public_view"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No row reads from connection objects",
+    "No secrets",
+    "No external source connection",
+    "No DDL/DML",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "CAVAS_PERSONALES",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
