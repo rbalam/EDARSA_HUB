@@ -1,0 +1,150 @@
+{
+  "base_sha": "b5f1c51417f6eb46a104e2279ba748111f848986",
+  "blockers": [],
+  "candidate_sha": "9539b249facba8cc7e0324003290d7e340f7f644",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-27T17:54:36Z",
+  "development_sha": "9539b249facba8cc7e0324003290d7e340f7f644",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/database/migrations/20260924_002_production_quality_rbac.sql",
+    "backend/database/migrations/20260924_002_production_quality_rbac_rollback.sql",
+    "backend/tests/test_production_quality_rbac_migration_contract.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5D2-RBAC-MATERIALIZATION-R2",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-27T17:55:03Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "production_quality",
+              "tablajeria",
+              "usuario_acciones",
+              "usuario_modulos",
+              "usuario_permisosrolmodulo",
+              "usuario_roles"
+            ],
+            "path": "backend/database/migrations/20260924_002_production_quality_rbac.sql",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Usuario_Acciones",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "production_quality",
+              "usuario_modulos",
+              "usuario_permisosrolmodulo"
+            ],
+            "path": "backend/database/migrations/20260924_002_production_quality_rbac_rollback.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "pyodbc"
+            ],
+            "helpers": [],
+            "imports": [
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "mongo",
+              "production_quality",
+              "tablajeria",
+              "usuario_acciones",
+              "usuario_modulos",
+              "usuario_permisosrolmodulo",
+              "usuario_roles"
+            ],
+            "path": "backend/tests/test_production_quality_rbac_migration_contract.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "read",
+              "test_does_not_create_parallel_rbac_tables",
+              "test_does_not_create_roles_or_actions",
+              "test_explicit_denies_fail_closed",
+              "test_grants_are_inherited_from_existing_permissions",
+              "test_migration_is_idempotent",
+              "test_modules_are_hidden_from_menu",
+              "test_no_action_ids_are_hardcoded",
+              "test_no_role_code_seed_is_used",
+              "test_no_role_ids_are_hardcoded",
+              "test_no_runtime_database_connection",
+              "test_override_uses_existing_admin_permission",
+              "test_production_quality_taxonomy_exists",
+              "test_rbac_artifacts_exist",
+              "test_reuses_generic_actions",
+              "test_rollback_is_gate_scoped",
+              "test_sensitive_capabilities_require_authorization",
+              "test_tablajeria_is_reused_as_source_policy",
+              "test_transaction_and_application_lock",
+              "test_uses_only_canonical_rbac_tables"
+            ],
+            "tables_referenced": [
+              "USUARIO_ACCIONES",
+              "USUARIO_ROLES",
+              "Usuario_Acciones",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 3,
+          "scanned_files": 3,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-27T17:54:19Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
