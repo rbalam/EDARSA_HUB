@@ -1,0 +1,92 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5D4A-DEVELOPMENT-SQL-READINESS-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "base_sha": "85fc8af4e1e937b2199c96ffff2ca6026fb05af3",
+  "scheduling": {
+    "project_id": "EDARSAHUB-PRODUCTION-QUALITY",
+    "bounded_context": "PRODUCTION_QUALITY",
+    "resource_claims": [
+      "EDARSAHUB_SQL_METADATA_READ"
+    ],
+    "conflict_domains": [],
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1
+  },
+  "objective": "Auditar readiness fisico SQL de Development para Production Quality / Foto Finish usando exclusivamente la conexion canonica READ_ONLY HRLectura. Verificar identidad de DB/login, objetos target, dependencias, tipos, FKs, indices, checks, RBAC fuente, acciones, cobertura de permisos y colisiones antes de ejecutar las migraciones certificadas Gate5D1/Gate5D2. No ejecutar DDL ni DML. No ejecutar migraciones. No tocar Produccion. No auto-advance a Gate5D4B.",
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "database_identity",
+          "sql": "SELECT\n    DB_NAME() AS database_name,\n    @@SERVERNAME AS server_name,\n    ORIGINAL_LOGIN() AS original_login,\n    SUSER_SNAME() AS current_login,\n    USER_NAME() AS database_user"
+        },
+        {
+          "name": "current_session_permissions",
+          "sql": "SELECT\n    HAS_PERMS_BY_NAME(DB_NAME(), 'DATABASE', 'CONNECT') AS can_connect,\n    HAS_PERMS_BY_NAME(DB_NAME(), 'DATABASE', 'CREATE TABLE') AS can_create_table,\n    HAS_PERMS_BY_NAME('dbo', 'SCHEMA', 'ALTER') AS can_alter_dbo,\n    HAS_PERMS_BY_NAME(DB_NAME(), 'DATABASE', 'CONTROL') AS has_database_control"
+        },
+        {
+          "name": "production_quality_objects",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    o.type_desc\nFROM sys.objects AS o\nWHERE o.name IN (\n    'Production_Item',\n    'Production_Station',\n    'Production_QualityStandard',\n    'Production_QualityStandardVersion',\n    'Production_Measurement',\n    'Production_Evidence',\n    'Production_QualityDecision',\n    'Production_QualityAction',\n    'Production_Device',\n    'Production_DeviceCalibration'\n)\nORDER BY o.name"
+        },
+        {
+          "name": "production_quality_columns",
+          "sql": "SELECT\n    o.name AS object_name,\n    c.column_id,\n    c.name AS column_name,\n    t.name AS data_type,\n    c.max_length,\n    c.precision,\n    c.scale,\n    c.is_nullable,\n    c.is_identity\nFROM sys.objects AS o\nJOIN sys.columns AS c\n  ON c.object_id = o.object_id\nJOIN sys.types AS t\n  ON t.user_type_id = c.user_type_id\nWHERE o.name IN (\n    'Production_Item',\n    'Production_Station',\n    'Production_QualityStandard',\n    'Production_QualityStandardVersion',\n    'Production_Measurement',\n    'Production_Evidence',\n    'Production_QualityDecision',\n    'Production_QualityAction',\n    'Production_Device',\n    'Production_DeviceCalibration'\n)\nORDER BY o.name, c.column_id"
+        },
+        {
+          "name": "production_quality_foreign_keys",
+          "sql": "SELECT\n    po.name AS parent_object,\n    fk.name AS foreign_key_name,\n    pc.name AS parent_column,\n    ro.name AS referenced_object,\n    rc.name AS referenced_column\nFROM sys.foreign_keys AS fk\nJOIN sys.foreign_key_columns AS fkc\n  ON fkc.constraint_object_id = fk.object_id\nJOIN sys.objects AS po\n  ON po.object_id = fk.parent_object_id\nJOIN sys.columns AS pc\n  ON pc.object_id = fkc.parent_object_id\n AND pc.column_id = fkc.parent_column_id\nJOIN sys.objects AS ro\n  ON ro.object_id = fk.referenced_object_id\nJOIN sys.columns AS rc\n  ON rc.object_id = fkc.referenced_object_id\n AND rc.column_id = fkc.referenced_column_id\nWHERE po.name IN (\n    'Production_Item',\n    'Production_Station',\n    'Production_QualityStandard',\n    'Production_QualityStandardVersion',\n    'Production_Measurement',\n    'Production_Evidence',\n    'Production_QualityDecision',\n    'Production_QualityAction',\n    'Production_Device',\n    'Production_DeviceCalibration'\n)\nORDER BY po.name, fk.name"
+        },
+        {
+          "name": "production_quality_indexes",
+          "sql": "SELECT\n    o.name AS object_name,\n    i.name AS index_name,\n    i.is_primary_key,\n    i.is_unique,\n    i.type_desc\nFROM sys.objects AS o\nJOIN sys.indexes AS i\n  ON i.object_id = o.object_id\nWHERE o.name IN (\n    'Production_Item',\n    'Production_Station',\n    'Production_QualityStandard',\n    'Production_QualityStandardVersion',\n    'Production_Measurement',\n    'Production_Evidence',\n    'Production_QualityDecision',\n    'Production_QualityAction',\n    'Production_Device',\n    'Production_DeviceCalibration'\n)\n  AND i.name IS NOT NULL\nORDER BY o.name, i.name"
+        },
+        {
+          "name": "production_quality_checks",
+          "sql": "SELECT\n    o.name AS object_name,\n    cc.name AS constraint_name,\n    cc.definition\nFROM sys.check_constraints AS cc\nJOIN sys.objects AS o\n  ON o.object_id = cc.parent_object_id\nWHERE o.name IN (\n    'Production_Item',\n    'Production_Station',\n    'Production_QualityStandard',\n    'Production_QualityStandardVersion',\n    'Production_Measurement',\n    'Production_Evidence',\n    'Production_QualityDecision',\n    'Production_QualityAction',\n    'Production_Device',\n    'Production_DeviceCalibration'\n)\nORDER BY o.name, cc.name"
+        },
+        {
+          "name": "canonical_dependencies",
+          "sql": "SELECT\n    o.name AS object_name,\n    o.type_desc\nFROM sys.objects AS o\nWHERE o.schema_id = SCHEMA_ID('dbo')\n  AND o.name IN (\n    'Sistema_Empresas',\n    'Unidades_Negocio',\n    'Usuario_Catalogo',\n    'Servidores',\n    'Usuario_Modulos',\n    'Usuario_Acciones',\n    'Usuario_Roles',\n    'Usuario_PermisosRolModulo'\n)\nORDER BY o.name"
+        },
+        {
+          "name": "canonical_dependency_key_columns",
+          "sql": "SELECT\n    o.name AS object_name,\n    c.name AS column_name,\n    t.name AS data_type,\n    c.max_length,\n    c.precision,\n    c.scale,\n    c.is_nullable,\n    c.is_identity\nFROM sys.objects AS o\nJOIN sys.columns AS c\n  ON c.object_id = o.object_id\nJOIN sys.types AS t\n  ON t.user_type_id = c.user_type_id\nWHERE\n       (o.name = 'Sistema_Empresas'\n        AND c.name = 'EmpresaID')\n    OR (o.name = 'Unidades_Negocio'\n        AND c.name IN ('id','server_id','activo'))\n    OR (o.name = 'Usuario_Catalogo'\n        AND c.name IN ('UsuarioID','PublicUUID','Activo'))\n    OR (o.name = 'Servidores'\n        AND c.name IN ('id','activo'))\n    OR (o.name = 'Usuario_Modulos'\n        AND c.name IN ('ModuloID','ModuloPadreID','CodigoModulo','Activo'))\n    OR (o.name = 'Usuario_Acciones'\n        AND c.name IN ('AccionID','CodigoAccion','Activo'))\n    OR (o.name = 'Usuario_Roles'\n        AND c.name IN ('RolID','CodigoRol','NivelJerarquia','Activo'))\n    OR (o.name = 'Usuario_PermisosRolModulo'\n        AND c.name IN (\n            'RolID',\n            'ModuloID',\n            'AccionID',\n            'Permitido',\n            'RestriccionPropietario',\n            'RestriccionSucursal',\n            'RequiereAutorizacion',\n            'NivelAutorizacionRequerido',\n            'Activo',\n            'CreatedBy'\n        ))\nORDER BY o.name, c.column_id"
+        },
+        {
+          "name": "rbac_source_modules",
+          "sql": "SELECT\n    ModuloID,\n    CodigoModulo,\n    NombreModulo,\n    ModuloPadreID,\n    EsVisibleMenu,\n    RequiereAutorizacion,\n    Activo\nFROM dbo.Usuario_Modulos\nWHERE LOWER(CodigoModulo) IN (\n    'tablajeria',\n    'tablajeria.config',\n    'auth'\n)\nORDER BY CodigoModulo"
+        },
+        {
+          "name": "rbac_required_actions",
+          "sql": "SELECT\n    AccionID,\n    CodigoAccion,\n    NombreAccion,\n    Activo\nFROM dbo.Usuario_Acciones\nWHERE UPPER(CodigoAccion) IN (\n    'VER',\n    'CREAR',\n    'GESTIONAR',\n    'AUTORIZAR',\n    'CONFIGURAR',\n    'ADMIN'\n)\nORDER BY CodigoAccion"
+        },
+        {
+          "name": "rbac_source_permission_coverage",
+          "sql": "SELECT\n    m.CodigoModulo,\n    a.CodigoAccion,\n    COUNT_BIG(*) AS active_allowed_role_count\nFROM dbo.Usuario_PermisosRolModulo AS prm\nJOIN dbo.Usuario_Modulos AS m\n  ON m.ModuloID = prm.ModuloID\nJOIN dbo.Usuario_Acciones AS a\n  ON a.AccionID = prm.AccionID\nJOIN dbo.Usuario_Roles AS r\n  ON r.RolID = prm.RolID\nWHERE (\n       (LOWER(m.CodigoModulo) = 'tablajeria'\n        AND UPPER(a.CodigoAccion) IN (\n            'VER',\n            'CREAR',\n            'AUTORIZAR'\n        ))\n    OR (LOWER(m.CodigoModulo) = 'tablajeria.config'\n        AND UPPER(a.CodigoAccion) IN (\n            'VER',\n            'CONFIGURAR'\n        ))\n    OR (LOWER(m.CodigoModulo) = 'auth'\n        AND UPPER(a.CodigoAccion) = 'ADMIN')\n)\n  AND ISNULL(prm.Activo, 1) = 1\n  AND ISNULL(prm.Permitido, 0) = 1\n  AND ISNULL(m.Activo, 1) = 1\n  AND ISNULL(a.Activo, 1) = 1\n  AND ISNULL(r.Activo, 1) = 1\nGROUP BY\n    m.CodigoModulo,\n    a.CodigoAccion\nORDER BY\n    m.CodigoModulo,\n    a.CodigoAccion"
+        },
+        {
+          "name": "existing_production_quality_rbac",
+          "sql": "SELECT\n    ModuloID,\n    CodigoModulo,\n    NombreModulo,\n    ModuloPadreID,\n    EsVisibleMenu,\n    RequiereAutorizacion,\n    Activo\nFROM dbo.Usuario_Modulos\nWHERE LOWER(CodigoModulo) LIKE 'production_quality%'\nORDER BY CodigoModulo"
+        },
+        {
+          "name": "existing_production_quality_permissions",
+          "sql": "SELECT\n    m.CodigoModulo,\n    a.CodigoAccion,\n    COUNT_BIG(*) AS permission_count\nFROM dbo.Usuario_PermisosRolModulo AS prm\nJOIN dbo.Usuario_Modulos AS m\n  ON m.ModuloID = prm.ModuloID\nJOIN dbo.Usuario_Acciones AS a\n  ON a.AccionID = prm.AccionID\nWHERE LOWER(m.CodigoModulo) LIKE 'production_quality%'\nGROUP BY\n    m.CodigoModulo,\n    a.CodigoAccion\nORDER BY\n    m.CodigoModulo,\n    a.CodigoAccion"
+        },
+        {
+          "name": "semantic_collision_objects",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    o.type_desc\nFROM sys.objects AS o\nWHERE\n       LOWER(o.name) LIKE '%production%quality%'\n    OR LOWER(o.name) LIKE '%foto%finish%'\n    OR LOWER(o.name) LIKE '%quality%standard%'\n    OR LOWER(o.name) LIKE '%quality%decision%'\n    OR LOWER(o.name) LIKE '%quality%action%'\n    OR LOWER(o.name) LIKE '%measurement%'\n    OR LOWER(o.name) LIKE '%evidenc%'\n    OR LOWER(o.name) LIKE '%device%calibr%'\nORDER BY\n    schema_name,\n    object_name"
+        }
+      ]
+    }
+  ]
+}
