@@ -1,0 +1,72 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C3-READONLY-R1-20260927",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "5fd29fb8b112fccf494db19882e327e96b73bebc",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Diagnóstico Gate16L C3 READ_ONLY: reejecutar exactamente el conjunto pytest de Gate16L después de corregir únicamente la resolución de ruta del test Gate12E. Sin cambios de archivos, sin SQL, sin Producción.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_cava_socios.py",
+        "backend/tests/test_cava_socios_persona_link.py",
+        "backend/tests/test_cava_socios_domain.py",
+        "backend/tests/test_cava_socios_evidence_chain.py",
+        "backend/tests/test_cava_socios_adapter_sdk.py",
+        "backend/tests/test_cava_socios_blind_audit.py",
+        "backend/tests/test_cava_socios_blind_audit_operational_service.py",
+        "backend/tests/test_cava_socios_migration_engine.py",
+        "backend/tests/test_cavas_gate12e_bos_persona_link_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "required_deliverables": [
+    "PYTEST_OUTPUT"
+  ],
+  "deliverable_specs": {
+    "PYTEST_OUTPUT": {
+      "source": {
+        "check_type": "pytest",
+        "occurrence": 1
+      },
+      "selector": {
+        "type": "json_path",
+        "path": [
+          "output"
+        ]
+      }
+    }
+  },
+  "constraints": [
+    "READ_ONLY only",
+    "No file changes",
+    "No SQL",
+    "No Production",
+    "Diagnostic only"
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "CAVAS_PERSONALES",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
