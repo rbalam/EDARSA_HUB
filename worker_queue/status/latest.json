@@ -4,11 +4,11 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "9539b249facba8cc7e0324003290d7e340f7f644",
-  "generated_at_utc": "2026-09-27T20:33:07Z",
+  "generated_at_utc": "2026-09-27T20:34:31Z",
   "history": {
     "done_total_local": 1082,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 974,
     "results_total_local": 1870
   },
@@ -16,34 +16,40 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 98,
+      "age_seconds": 182,
       "job_id": "CAVAS-GATE16L-V1-TRANSVERSAL-AUDIT-CERT-READONLY-R3-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 113,
+      "age_seconds": 197,
       "job_id": "EDARSAHUB-BOS-WORKER-RESULT-PUBLISHER-RUNTIME-PATH-AUDIT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2,
+      "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5D3-BACKEND-CONTRACT-DISCOVERY-R1",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "local_development_sha": "9539b249facba8cc7e0324003290d7e340f7f644",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 2,
-  "queue_running": 0,
+  "queue_running": 1,
   "remote_development_sha": "9539b249facba8cc7e0324003290d7e340f7f644",
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5D3-BACKEND-CONTRACT-DISCOVERY-R1",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-27T20:33:00Z",
-    "last_receive_utc": "2026-09-27T20:33:05Z",
+    "last_cycle_utc": "2026-09-27T20:34:25Z",
+    "last_receive_utc": "2026-09-27T20:34:29Z",
     "last_terminal_utc": "2026-09-27T20:31:28Z",
     "pid": "850",
     "runtime_fingerprint": {
