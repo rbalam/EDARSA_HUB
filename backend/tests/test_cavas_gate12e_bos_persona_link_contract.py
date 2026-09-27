@@ -1,6 +1,6 @@
 from pathlib import Path
 
-SQL = Path('backend/database/migrations/20260910_cavas_gate12e_bos_persona_link.sql').read_text(encoding='utf-8')
+SQL = (Path(__file__).resolve().parents[1] / 'database/migrations/20260910_cavas_gate12e_bos_persona_link.sql').read_text(encoding='utf-8')
 
 def test_gate12e_uses_single_bos_persona_link():
     assert 'ADD PersonaID BIGINT NULL' in SQL
