@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "85fc8af4e1e937b2199c96ffff2ca6026fb05af3",
-  "generated_at_utc": "2026-09-27T20:53:49Z",
+  "generated_at_utc": "2026-09-27T20:56:32Z",
   "history": {
     "done_total_local": 1087,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 883,
+      "age_seconds": 1047,
       "job_id": "EDARSAHUB-TABLAJERIA-GATE2-R3-RECOVERY-RESULT-COMPACT-EXTRACT-READONLY-R1",
       "reasons": [
         "READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED",
@@ -26,7 +26,7 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 672,
+      "age_seconds": 835,
       "job_id": "EDARSAHUB-TABLAJERIA-RECOVERY-AUDIT-WORKER-JOB-V2-R1",
       "reasons": [
         "ACTIONS_REQUIRED"
@@ -35,49 +35,49 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 757,
+      "age_seconds": 920,
       "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C2-READONLY-R1-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 374,
+      "age_seconds": 538,
       "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C3-READONLY-R1-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1340,
+      "age_seconds": 1504,
       "job_id": "CAVAS-GATE16L-V1-TRANSVERSAL-AUDIT-CERT-READONLY-R3-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 239,
+      "age_seconds": 402,
       "job_id": "CAVAS-GATE16L-V1-TRANSVERSAL-AUDIT-CERT-READONLY-R4-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 10,
+      "age_seconds": 173,
       "job_id": "CAVAS-PERSONALES-V1-FINAL-CLOSURE-CERT-READONLY-R1-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1355,
+      "age_seconds": 1518,
       "job_id": "EDARSAHUB-BOS-WORKER-RESULT-PUBLISHER-RUNTIME-PATH-AUDIT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1153,
+      "age_seconds": 1317,
       "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5D3-BACKEND-CONTRACT-DISCOVERY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 146,
+      "age_seconds": 310,
       "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5D3-BACKEND-FOUNDATION-MATERIALIZATION-R2",
       "reason": null,
       "state": "RESULT_READY"
@@ -97,10 +97,10 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-27T20:53:45Z",
-    "last_receive_utc": "2026-09-27T20:53:48Z",
+    "last_cycle_utc": "2026-09-27T20:56:29Z",
+    "last_receive_utc": "2026-09-27T20:56:24Z",
     "last_terminal_utc": "2026-09-27T20:53:38Z",
-    "pid": "850",
+    "pid": "760",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "5c51c38ff6c2d0afeb185ce13079e2498087e12d",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
