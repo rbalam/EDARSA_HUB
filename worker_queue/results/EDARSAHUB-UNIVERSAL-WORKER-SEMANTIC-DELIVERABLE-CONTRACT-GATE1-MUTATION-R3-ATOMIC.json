@@ -1,0 +1,23 @@
+{
+  "base_sha": "85fc8af4e1e937b2199c96ffff2ca6026fb05af3",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:EXPECTED_SHA256_MISMATCH:tools/mirror_sync/worker_deliverable_contract.py:7656ef5d3dd44eff0e868bc27f66c7b221654d26c828389552ebbeb1d3912b19"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-27T21:20:39Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-UNIVERSAL-WORKER-SEMANTIC-DELIVERABLE-CONTRACT-GATE1-MUTATION-R3-ATOMIC",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-27T21:20:54Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-27T21:20:37Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
