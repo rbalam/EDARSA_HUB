@@ -9,6 +9,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / 'backend'
@@ -47,6 +48,8 @@ def _json_value(value: Any) -> Any:
         return str(value)
     if isinstance(value, bytes):
         return value.hex()
+    if isinstance(value, UUID):
+        return str(value)
     return value
 
 ALLOWED_POS_SYSTEM_TYPES = {'MPRO', 'SOFTRESTAURANT'}
