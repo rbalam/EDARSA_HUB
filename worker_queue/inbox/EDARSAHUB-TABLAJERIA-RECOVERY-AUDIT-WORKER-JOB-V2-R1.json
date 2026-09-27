@@ -1,0 +1,297 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TABLAJERIA-RECOVERY-AUDIT-WORKER-JOB-V2-R1",
+  "title": "Tablajeria 4 recovery audit de implementacion real",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS / Tablajeria",
+    "chat": "Tablajerias 4"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "9539b249facba8cc7e0324003290d7e340f7f644",
+  "mode": "STRICT_READ_ONLY",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "priority": "P0",
+  "objective": "Recuperar el estado tecnico real actual de Tablajeria mediante evidencia del repositorio, worker_queue, lifecycle/results y SQL READ_ONLY cuando exista autorizacion. Calcular porcentaje real de implementacion contra la Verdad Operativa Canonica V1 y proponer el siguiente Gate permitido. No implementar gaps.",
+  "continuity_context": {
+    "chat": "Tablajerias 4",
+    "do_not_redirect_to": "Tablajeria 3",
+    "operational_truth_v1_status": "CLOSED_AND_FROZEN_FUNCTIONAL_100_PERCENT",
+    "technical_implementation_status": "UNKNOWN_UNTIL_THIS_AUDIT",
+    "worker_contract_basis": {
+      "exact_contract_discovery": "PASS",
+      "mutations": 0,
+      "production_touched": false,
+      "repository_contract_audit_shape": {"type": "repository_contract_audit", "request": {}},
+      "requester_shape": {"email": "string", "source": "string", "project": "string", "chat": "string"},
+      "sql_readonly_audit_shape": {"type": "sql_readonly_audit", "queries": [], "source": "EDARSAHUB"}
+    },
+    "rules": [
+      "SQL Server is the only canonical operational source of truth",
+      "MongoDB is forbidden as source, cache, fallback, lock, or operational authority",
+      "Do not use LIVE user endpoints",
+      "Do not touch Production",
+      "Do not open Gate3 automatically",
+      "Do not publish mutation gates automatically",
+      "Do not modify backend, frontend, SQL, inventory, production, recipes, accounting, or templates",
+      "Do not duplicate tables, columns, catalogs, services, engines, or canonical entities",
+      "Respect EmpresaID, UnidadNegocioID, ServerID, RBAC, company, unit, branch, warehouse, FechaOperacion, and America/Mexico_City",
+      "Do not break Scheduler, NetPay, or existing history"
+    ]
+  },
+  "forbidden_actions": [
+    "modify_code",
+    "modify_sql",
+    "execute_migrations",
+    "create_tables",
+    "alter_tables",
+    "insert_data",
+    "update_data",
+    "delete_data",
+    "touch_production",
+    "open_gate3",
+    "open_mutation_gate",
+    "fix_bugs",
+    "refactor",
+    "change_contracts",
+    "change_templates",
+    "change_tablajeria_functional_truth",
+    "change_inventory",
+    "change_production",
+    "change_recipes",
+    "change_accounting",
+    "use_mongo_as_source_cache_fallback_or_lock",
+    "use_live_user_endpoints",
+    "expose_secrets"
+  ],
+  "actions": [],
+  "audit_questions": [
+    "LAST_JOB",
+    "LAST_GATE_EXECUTED",
+    "LAST_GATE_INTEGRATED",
+    "LAST_GATE_CERTIFIED",
+    "LAST_PASS",
+    "LAST_FAILURE",
+    "LAST_BLOCKER",
+    "HEAD_BRANCH_COMMITS",
+    "BACKEND_IMPLEMENTATION_MAP",
+    "FRONTEND_IMPLEMENTATION_MAP",
+    "SQL_CONTRACTS_AND_MIGRATIONS_MAP",
+    "REAL_INTEGRATIONS_MAP",
+    "GAP_MATRIX_AGAINST_OPERATIONAL_TRUTH_V1",
+    "REAL_IMPLEMENTATION_PERCENT",
+    "NEXT_ALLOWED_GATE"
+  ],
+  "classification_required": [
+    "EXISTE",
+    "PARCIAL",
+    "INTEGRADO",
+    "NO_INTEGRADO",
+    "LEGACY",
+    "NO_VERIFICABLE"
+  ],
+  "functional_location_to_confirm": "Operaciones -> Produccion / Tablajeria",
+  "canonical_identity": ["EmpresaID", "UnidadNegocioID", "ServerID"],
+  "operational_timezone": "America/Mexico_City",
+  "operational_date_field": "FechaOperacion",
+  "audit_blocks": {
+    "A_INSUMO_BASE": ["recepcion", "lote", "proveedor", "peso", "costo", "identidad_fisica"],
+    "B_KG_PZ": ["un_solo_sku", "KG_GR", "PZ", "PZ_fraccionaria", "peso_variable"],
+    "C_N_LONJAS": ["seleccion_individual", "reserva", "procesamiento_multiple", "trazabilidad_individual"],
+    "D_PROCESAMIENTO_PARCIAL": ["procesado", "remanente", "costo_proporcional", "identidad_conservada"],
+    "E_RESULTADOS": ["derivado_principal", "derivado_secundario", "subproducto", "recorte", "merma", "diferencia"],
+    "F_CUADRE_DE_MASA": ["peso_procesado", "derivados", "subproductos", "recortes", "merma", "remanente", "diferencia_explicita"],
+    "G_COSTOS": ["VARIABLE", "FIJO", "NO_PRORRATEABLE", "valor_origen_igual_valor_distribuido"],
+    "H_PLANTILLAS": ["versionadas", "vigencia", "derivados", "rendimientos", "tolerancias", "politicas_de_costo", "evidencia"],
+    "I_KPI": ["STANDARD", "FORECAST", "REAL", "tolerancias", "excepciones"],
+    "J_GENEALOGIA": ["1_a_N", "N_a_M", "many_to_many", "multilevel", "reprocessing"],
+    "K_POOLS": ["mezcla_fisica", "composicion", "costos", "consumo_proporcional", "recall"],
+    "L_INVENTARIOS": ["salida_base", "entrada_derivados", "remanentes", "merma", "no_kardex_paralelo", "idempotencia"],
+    "M_ANALISIS_INVENTARIOS": ["KG", "PZ", "moneda", "teorico_vs_fisico", "consumo_real_vs_teorico", "inventario_potencial", "diferencias"],
+    "N_RECETAS": ["derivados_como_ingredientes", "no_duplicar_sku", "versionamiento", "subrecetas"],
+    "O_EXPLOSION_REVERSA": ["demanda", "inventario_derivado", "inventario_base", "produccion_potencial", "rendimientos", "coproductos", "safety_stock", "no_doble_uso_de_lonja"],
+    "P_COMPRAS": ["necesidad", "sugerencia", "autorizacion", "recepcion", "auditoria"],
+    "Q_CALIDAD": ["especificacion", "evidencia", "cuarentena", "bloqueo", "recall"],
+    "R_PROVEEDOR": ["excepcion", "disputa", "recuperacion", "nota_credito_reposicion"],
+    "S_CONTABILIDAD_FINANZAS": ["hechos_economicos", "eventos", "recuperacion", "no_contabilidad_paralela"],
+    "T_PRESUPUESTOS_PROYECTOS": ["dimensiones", "necesidad_vs_disponibilidad"],
+    "U_RRHH": ["hechos", "KPI", "causa", "no_penalizacion_automatica"],
+    "V_PARRILLA_FOTO_FINISH": ["trazabilidad_derivado_receta_parrilla_foto_finish"],
+    "W_CORRECCIONES_REVERSAS": ["no_borrar_original", "conservar_historia", "efectos_compensatorios"],
+    "X_FECHAOPERACION": ["corte_operativo", "operaciones_cruzan_medianoche"],
+    "Y_RBAC": ["empresa", "unidad", "sucursal", "almacen"],
+    "Z_DRILL_DOWN_UP": ["navegacion_hasta_ultimo_nivel_disponible"]
+  },
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": ["backend", "frontend", "tools", "docs", "memory"],
+        "search_terms": [
+          "tablajeria",
+          "tablajería",
+          "tablaje",
+          "Operaciones_Tablaje",
+          "plantilla",
+          "rendimiento",
+          "merma",
+          "derivado",
+          "insumo base",
+          "genealogia",
+          "genealogía",
+          "pool",
+          "prorrateo",
+          "costo fijo",
+          "costo variable",
+          "inventario",
+          "analisis inventarios",
+          "análisis inventarios",
+          "receta",
+          "proveedor",
+          "disputa",
+          "evidencia",
+          "FechaOperacion",
+          "FechaOperación",
+          "RBAC",
+          "produccion",
+          "producción",
+          "compra",
+          "auditoria",
+          "auditoría",
+          "contabilidad",
+          "Foto Finish",
+          "parrilla"
+        ],
+        "include_patterns": ["*.py", "*.js", "*.jsx", "*.ts", "*.tsx", "*.md", "*.json", "*.sql"],
+        "exclude_patterns": ["node_modules/*", "dist/*", "build/*", "coverage/*", "*.min.js"],
+        "max_results": 5000
+      }
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "worker_queue/inbox",
+          "worker_queue/requests",
+          "worker_queue/processing",
+          "worker_queue/results",
+          "worker_queue/done",
+          "worker_queue/published",
+          "worker_queue/rejected",
+          "worker_queue/rejected_history",
+          "worker_queue/lifecycle",
+          "worker_queue/manifests",
+          "worker_queue/certifications",
+          "worker_queue/maintenance/incidents"
+        ],
+        "search_terms": [
+          "TABLAJERIA",
+          "Tablajeria",
+          "tablajeria",
+          "tablajería",
+          "TABLAJE",
+          "Tablaje",
+          "Gate2",
+          "Gate3",
+          "CERTIFIED",
+          "CERTIFIED_READ_ONLY",
+          "PASS",
+          "FAIL",
+          "PENDING",
+          "blockers",
+          "quality_gate",
+          "work_completion",
+          "production_touched",
+          "percent_complete",
+          "INTEGRATED",
+          "RECOVERY",
+          "RESULT_COMPACT_EXTRACT"
+        ],
+        "include_patterns": ["*.json", "*.md", "*.txt", "*.log"],
+        "exclude_patterns": ["node_modules/*", "dist/*", "build/*", "coverage/*", "*.min.js"],
+        "max_results": 5000
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "tablajeria_sql_objects_by_name",
+          "sql": "SELECT s.name AS schema_name, o.name AS object_name, o.type_desc, o.create_date, o.modify_date FROM sys.objects o INNER JOIN sys.schemas s ON s.schema_id = o.schema_id WHERE o.name LIKE '%Tablaje%' OR o.name LIKE '%Tablajeria%' OR o.name LIKE '%Tablajería%' OR o.name LIKE '%Merma%' OR o.name LIKE '%Rendimiento%' OR o.name LIKE '%Genealogia%' OR o.name LIKE '%Genealogía%' OR o.name LIKE '%Derivado%' OR o.name LIKE '%Plantilla%' ORDER BY s.name, o.name;"
+        },
+        {
+          "name": "tablajeria_columns_identity_rbac_fechaoperacion",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, c.name AS column_name, ty.name AS data_type, c.max_length, c.precision, c.scale, c.is_nullable FROM sys.tables t INNER JOIN sys.schemas s ON s.schema_id = t.schema_id INNER JOIN sys.columns c ON c.object_id = t.object_id INNER JOIN sys.types ty ON ty.user_type_id = c.user_type_id WHERE (t.name LIKE '%Tablaje%' OR t.name LIKE '%Tablajeria%' OR t.name LIKE '%Tablajería%' OR t.name LIKE '%Merma%' OR t.name LIKE '%Rendimiento%' OR t.name LIKE '%Derivado%' OR t.name LIKE '%Plantilla%') AND (c.name IN ('EmpresaID','UnidadNegocioID','ServerID','SucursalID','AlmacenID','FechaOperacion','FechaOperación') OR c.name LIKE '%Estado%' OR c.name LIKE '%RBAC%' OR c.name LIKE '%Peso%' OR c.name LIKE '%Costo%' OR c.name LIKE '%Merma%' OR c.name LIKE '%Lote%' OR c.name LIKE '%Proveedor%') ORDER BY s.name, t.name, c.column_id;"
+        },
+        {
+          "name": "tablajeria_sql_modules_references",
+          "sql": "SELECT s.name AS schema_name, o.name AS object_name, o.type_desc FROM sys.sql_modules m INNER JOIN sys.objects o ON o.object_id = m.object_id INNER JOIN sys.schemas s ON s.schema_id = o.schema_id WHERE m.definition LIKE '%Tablaje%' OR m.definition LIKE '%Tablajeria%' OR m.definition LIKE '%Tablajería%' OR m.definition LIKE '%FechaOperacion%' OR m.definition LIKE '%Operaciones_Tablaje%' OR m.definition LIKE '%Merma%' OR m.definition LIKE '%Rendimiento%' OR m.definition LIKE '%Prorrateo%' ORDER BY s.name, o.name;"
+        },
+        {
+          "name": "tablajeria_foreign_keys_and_indexes",
+          "sql": "SELECT OBJECT_SCHEMA_NAME(t.object_id) AS schema_name, t.name AS table_name, fk.name AS foreign_key_name, OBJECT_SCHEMA_NAME(fk.referenced_object_id) AS referenced_schema, OBJECT_NAME(fk.referenced_object_id) AS referenced_table FROM sys.foreign_keys fk INNER JOIN sys.tables t ON t.object_id = fk.parent_object_id WHERE t.name LIKE '%Tablaje%' OR t.name LIKE '%Tablajeria%' OR t.name LIKE '%Tablajería%' OR t.name LIKE '%Merma%' OR t.name LIKE '%Derivado%' ORDER BY schema_name, table_name, foreign_key_name;"
+        }
+      ]
+    }
+  ],
+  "required_output": {
+    "schema": "edarsahub.worker-result.v2",
+    "must_include": [
+      "job_id",
+      "status",
+      "quality_gate",
+      "certification",
+      "work_completion",
+      "percent_complete",
+      "production_touched",
+      "mutations",
+      "head",
+      "branch",
+      "integration_branch",
+      "commit",
+      "timestamp",
+      "last_job",
+      "last_gate_executed",
+      "last_gate_integrated",
+      "last_gate_certified",
+      "last_pass",
+      "last_failure",
+      "last_blocker",
+      "backend_map",
+      "frontend_map",
+      "sql_map",
+      "worker_queue_map",
+      "gap_matrix",
+      "real_implementation_percent",
+      "next_allowed_gate",
+      "blockers",
+      "evidence"
+    ],
+    "status_allowed": ["CERTIFIED_READ_ONLY", "READ_ONLY_COMPLETE", "BLOCKED", "FAIL"],
+    "on_success": {
+      "production_touched": false,
+      "mutations": 0,
+      "gate3_opened": false
+    },
+    "on_missing_sql_credentials": {
+      "status": "BLOCKED",
+      "blocker_code": "SQL_READONLY_CREDENTIALS_REQUIRED",
+      "no_improvisation": true
+    },
+    "max_result_size_guidance": {
+      "avoid_huge_raw_evidence_dump": true,
+      "publish_compact_summary_first": true,
+      "attach_detailed_evidence_by_section_if_supported": true
+    }
+  },
+  "next_step_rules": {
+    "if_certified_read_only_pass": "Present real implementation percent and next allowed gate for explicit approval.",
+    "if_blocked": "Report only exact blocker and do not open another gate.",
+    "if_result_too_large": "Publish compact extract job only; do not infer from Contents API empty content.",
+    "if_conflicting_results": "Freeze Gate3 and report contradiction matrix."
+  }
+}
