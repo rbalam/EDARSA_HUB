@@ -1,0 +1,151 @@
+{
+  "base_sha": "d512acf07cc5f8c2622462fbb930487c97f30747",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-27T22:51:35Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-WORKER-SQL-READONLY-UUID-SERIALIZATION-POSTAUDIT-R1-20260927",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-27T22:52:32Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "tools",
+            "connections": [
+              "readonly_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "readonly_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "argparse",
+              "core.connections.pos_runtime_resolver",
+              "core.sql_first.connection_factory",
+              "core.sql_first.db",
+              "datetime",
+              "decimal",
+              "json",
+              "pathlib",
+              "re",
+              "sys",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "from uuid import uuid",
+              "isinstance(value, uuid)",
+              "return str(value)"
+            ],
+            "path": "tools/mirror_sync/sql_readonly_audit.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_json_value",
+              "_query_evidence",
+              "_strip_literals_and_comments",
+              "execute_queries",
+              "main",
+              "validate_readonly_sql"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "readonly_sql_connection"
+            ],
+            "helpers": [
+              "readonly_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "importlib.util",
+              "json",
+              "pathlib",
+              "sys",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "from uuid import uuid",
+              "test_json_value_serializes_uuid_to_string"
+            ],
+            "path": "backend/tests/test_worker_sql_readonly_audit.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "Completed",
+              "load_helper",
+              "test_json_value_serializes_uuid_to_string",
+              "test_readonly_validator_accepts_select_and_with",
+              "test_readonly_validator_rejects_mutation_and_multistatement",
+              "test_sql_readonly_evidence_survives_output_truncation",
+              "test_sql_readonly_invalid_json_is_not_promoted",
+              "test_worker_contract_exposes_readonly_mode_without_shell_execution",
+              "test_worker_python_precedence_is_repo_venv_then_sys_executable"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 2,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "id",
+              "nombre"
+            ],
+            "name": "public_view_row_smoke_after_uuid_fix",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                "130° MERIDA"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-27T22:51:31Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
