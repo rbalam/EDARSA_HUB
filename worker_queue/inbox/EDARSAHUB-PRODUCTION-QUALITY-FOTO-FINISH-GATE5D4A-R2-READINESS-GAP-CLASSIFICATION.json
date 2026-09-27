@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5D4A-R2-READINESS-GAP-CLASSIFICATION",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d512acf07cc5f8c2622462fbb930487c97f30747",
+  "mode": "READ_ONLY_SQL",
+  "production_allowed": false,
+  "actions": [],
+  "objective": "Resolver exclusivamente los gaps detectados por Gate5D4A-R1. Identificar dependencia canonica faltante, modulo RBAC faltante, cobertura real de permisos fuente y clasificar objetos semanticos potencialmente equivalentes. Confirmar si Production Quality requiere CREATE y determinar GATE5D4B_READY. No repetir la auditoria completa. No ejecutar DDL, DML ni migraciones. No tocar Produccion. No auto-advance.",
+  "human_summary_language": "es",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "dependency_gap",
+          "sql": "SELECT\n    expected.object_name,\n    CASE\n        WHEN o.object_id IS NULL THEN 'MISSING'\n        ELSE 'PRESENT'\n    END AS physical_state,\n    o.type_desc\nFROM (\n    VALUES\n        ('Sistema_Empresas'),\n        ('Unidades_Negocio'),\n        ('Usuario_Catalogo'),\n        ('Servidores'),\n        ('Usuario_Modulos'),\n        ('Usuario_Acciones'),\n        ('Usuario_Roles'),\n        ('Usuario_PermisosRolModulo')\n) expected(object_name)\nLEFT JOIN sys.objects o\n  ON o.schema_id = SCHEMA_ID('dbo')\n AND o.name = expected.object_name\nORDER BY expected.object_name"
+        },
+        {
+          "name": "rbac_module_gap",
+          "sql": "SELECT\n    expected.codigo_modulo,\n    m.ModuloID,\n    m.CodigoModulo,\n    m.NombreModulo,\n    m.Activo\nFROM (\n    VALUES\n        ('tablajeria'),\n        ('tablajeria.config'),\n        ('auth')\n) expected(codigo_modulo)\nLEFT JOIN dbo.Usuario_Modulos m\n  ON LOWER(m.CodigoModulo) = LOWER(expected.codigo_modulo)\nORDER BY expected.codigo_modulo"
+        },
+        {
+          "name": "rbac_permission_gaps",
+          "sql": "WITH required AS (\n    SELECT *\n    FROM (VALUES\n        ('tablajeria',        'VER'),\n        ('tablajeria',        'CREAR'),\n        ('tablajeria',        'AUTORIZAR'),\n        ('tablajeria.config', 'VER'),\n        ('tablajeria.config', 'CONFIGURAR'),\n        ('auth',              'ADMIN')\n    ) v(CodigoModulo, CodigoAccion)\n)\nSELECT\n    r.CodigoModulo,\n    r.CodigoAccion,\n    COUNT(\n        CASE\n            WHEN ISNULL(prm.Activo,1)=1\n             AND ISNULL(prm.Permitido,0)=1\n             AND ISNULL(role_row.Activo,1)=1\n            THEN 1\n        END\n    ) AS active_allowed_role_count\nFROM required r\nLEFT JOIN dbo.Usuario_Modulos m\n  ON LOWER(m.CodigoModulo)=LOWER(r.CodigoModulo)\nLEFT JOIN dbo.Usuario_Acciones a\n  ON UPPER(a.CodigoAccion)=UPPER(r.CodigoAccion)\nLEFT JOIN dbo.Usuario_PermisosRolModulo prm\n  ON prm.ModuloID=m.ModuloID\n AND prm.AccionID=a.AccionID\nLEFT JOIN dbo.Usuario_Roles role_row\n  ON role_row.RolID=prm.RolID\nGROUP BY\n    r.CodigoModulo,\n    r.CodigoAccion\nORDER BY\n    r.CodigoModulo,\n    r.CodigoAccion"
+        },
+        {
+          "name": "semantic_collision_objects",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    o.type_desc\nFROM sys.objects o\nWHERE\n       LOWER(o.name) LIKE '%production%quality%'\n    OR LOWER(o.name) LIKE '%foto%finish%'\n    OR LOWER(o.name) LIKE '%quality%standard%'\n    OR LOWER(o.name) LIKE '%quality%decision%'\n    OR LOWER(o.name) LIKE '%quality%action%'\n    OR LOWER(o.name) LIKE '%measurement%'\n    OR LOWER(o.name) LIKE '%evidenc%'\n    OR LOWER(o.name) LIKE '%device%calibr%'\nORDER BY schema_name, object_name"
+        },
+        {
+          "name": "semantic_collision_columns",
+          "sql": "SELECT\n    SCHEMA_NAME(o.schema_id) AS schema_name,\n    o.name AS object_name,\n    c.column_id,\n    c.name AS column_name,\n    t.name AS data_type,\n    c.max_length,\n    c.is_nullable\nFROM sys.objects o\nJOIN sys.columns c\n  ON c.object_id=o.object_id\nJOIN sys.types t\n  ON t.user_type_id=c.user_type_id\nWHERE\n       LOWER(o.name) LIKE '%production%quality%'\n    OR LOWER(o.name) LIKE '%foto%finish%'\n    OR LOWER(o.name) LIKE '%quality%standard%'\n    OR LOWER(o.name) LIKE '%quality%decision%'\n    OR LOWER(o.name) LIKE '%quality%action%'\n    OR LOWER(o.name) LIKE '%measurement%'\n    OR LOWER(o.name) LIKE '%evidenc%'\n    OR LOWER(o.name) LIKE '%device%calibr%'\nORDER BY o.name, c.column_id"
+        },
+        {
+          "name": "production_quality_target",
+          "sql": "SELECT\n    name AS object_name,\n    type_desc\nFROM sys.objects\nWHERE schema_id = SCHEMA_ID('dbo')\n  AND name IN (\n      'Production_Item',\n      'Production_Station',\n      'Production_QualityStandard',\n      'Production_QualityStandardVersion',\n      'Production_Measurement',\n      'Production_Evidence',\n      'Production_QualityDecision',\n      'Production_QualityAction',\n      'Production_Device',\n      'Production_DeviceCalibration'\n  )\nORDER BY name"
+        }
+      ]
+    }
+  ]
+}
