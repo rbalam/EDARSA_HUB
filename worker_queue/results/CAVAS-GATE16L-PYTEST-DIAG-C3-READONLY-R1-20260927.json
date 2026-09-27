@@ -1,0 +1,31 @@
+{
+  "base_sha": "5fd29fb8b112fccf494db19882e327e96b73bebc",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "GENERIC_READ_ONLY_NON_MUTATING_CHECKS_PASS",
+  "completed_at_utc": "2026-09-27T20:47:34Z",
+  "deliverables": {
+    "PYTEST_OUTPUT": "============================= test session starts ==============================\nplatform linux -- Python 3.11.16, pytest-9.0.2, pluggy-1.6.0\nrootdir: /app/backend\nconfigfile: pytest.ini\nplugins: asyncio-1.4.0, anyio-4.12.1\nasyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollected 60 items\n\ntests/test_cava_socios.py ..............                                 [ 23%]\ntests/test_cava_socios_persona_link.py ....                              [ 30%]\ntests/test_cava_socios_domain.py .......                                 [ 41%]\ntests/test_cava_socios_evidence_chain.py ......                          [ 51%]\ntests/test_cava_socios_adapter_sdk.py ......                             [ 61%]\ntests/test_cava_socios_blind_audit.py .......                            [ 73%]\ntests/test_cava_socios_blind_audit_operational_service.py ....           [ 80%]\ntests/test_cava_socios_migration_engine.py ........                      [ 93%]\ntests/test_cavas_gate12e_bos_persona_link_contract.py ....               [100%]\n\n=============================== warnings summary ===============================\n../../root/.venv/lib/python3.11/site-packages/starlette/formparsers.py:12\n  /root/.venv/lib/python3.11/site-packages/starlette/formparsers.py:12: PendingDeprecationWarning: Please use `import python_multipart` instead.\n    import multipart\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 60 passed, 1 warning in 20.40s ========================\n"
+  },
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C3-READONLY-R1-20260927",
+  "missing_deliverables": [],
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-27T20:48:03Z",
+  "quality_gate": "PASS",
+  "required_deliverables": [
+    "PYTEST_OUTPUT"
+  ],
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-27T20:47:11Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
