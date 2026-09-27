@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "85fc8af4e1e937b2199c96ffff2ca6026fb05af3",
-  "generated_at_utc": "2026-09-27T21:42:00Z",
+  "generated_at_utc": "2026-09-27T21:43:19Z",
   "history": {
     "done_total_local": 1092,
     "pending_total_local": 0,
@@ -16,16 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3563,
-      "job_id": "EDARSAHUB-TABLAJERIA-RECOVERY-AUDIT-WORKER-JOB-V2-R1",
-      "reasons": [
-        "ACTIONS_REQUIRED"
-      ],
-      "state": "REJECTED",
-      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
-    },
-    {
-      "age_seconds": 1191,
+      "age_seconds": 1270,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-READONLY-R1-20260927",
       "reasons": [
         "READ_ONLY_SQL_ONLY_AUDIT_CHECKS_ALLOWED",
@@ -35,73 +26,73 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 103,
+      "age_seconds": 182,
       "job_id": "CAVAS-CIENFUEGOS-SERVIDORES-SCHEMA-READONLY-R3-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1897,
+      "age_seconds": 1977,
       "job_id": "CAVAS-CIENFUEGOS-SOURCE-IDENTITY-READONLY-R1-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 921,
+      "age_seconds": 1000,
       "job_id": "CAVAS-CIENFUEGOS-SOURCE-REGISTRY-READONLY-R2-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 290,
+      "age_seconds": 370,
       "job_id": "CAVAS-CIENFUEGOS-SQL-READONLY-SMOKE-R1-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3265,
+      "age_seconds": 3345,
       "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C3-READONLY-R1-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3130,
+      "age_seconds": 3209,
       "job_id": "CAVAS-GATE16L-V1-TRANSVERSAL-AUDIT-CERT-READONLY-R4-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2901,
+      "age_seconds": 2981,
       "job_id": "CAVAS-PERSONALES-V1-FINAL-CLOSURE-CERT-READONLY-R1-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3037,
+      "age_seconds": 3117,
       "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5D3-BACKEND-FOUNDATION-MATERIALIZATION-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1218,
+      "age_seconds": 1297,
       "job_id": "EDARSAHUB-TABLAJERIA-RECOVERY-AUDIT-WORKER-JOB-V2-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 213,
+      "age_seconds": 292,
       "job_id": "EDARSAHUB-TABLAJERIA-RECOVERY-AUDIT-WORKER-JOB-V2-R2-COMPACT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1280,
+      "age_seconds": 1360,
       "job_id": "EDARSAHUB-UNIVERSAL-WORKER-SEMANTIC-DELIVERABLE-CONTRACT-GATE1-MUTATION-R3-ATOMIC",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 28,
+      "age_seconds": 108,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-READONLY-R2-20260927",
       "reason": null,
       "state": "RESULT_READY"
@@ -114,15 +105,15 @@
   "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 2,
+  "queue_rejected_recent": 1,
   "queue_result_ready_recent": 12,
   "queue_running": 0,
   "remote_development_sha": "85fc8af4e1e937b2199c96ffff2ca6026fb05af3",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-27T21:41:54Z",
-    "last_receive_utc": "2026-09-27T21:41:59Z",
+    "last_cycle_utc": "2026-09-27T21:43:17Z",
+    "last_receive_utc": "2026-09-27T21:43:19Z",
     "last_terminal_utc": "2026-09-27T21:41:31Z",
     "pid": "799",
     "runtime_fingerprint": {
