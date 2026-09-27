@@ -1,0 +1,318 @@
+{
+  "base_sha": "d512acf07cc5f8c2622462fbb930487c97f30747",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-27T23:00:04Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5D4A-R2-READINESS-GAP-CLASSIFICATION",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-27T23:00:11Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "object_name",
+              "physical_state",
+              "type_desc"
+            ],
+            "name": "dependency_gap",
+            "row_count_returned": 8,
+            "rows": [
+              [
+                "Servidores",
+                "MISSING",
+                null
+              ],
+              [
+                "Sistema_Empresas",
+                "PRESENT",
+                "USER_TABLE"
+              ],
+              [
+                "Unidades_Negocio",
+                "PRESENT",
+                "USER_TABLE"
+              ],
+              [
+                "Usuario_Acciones",
+                "PRESENT",
+                "USER_TABLE"
+              ],
+              [
+                "Usuario_Catalogo",
+                "PRESENT",
+                "USER_TABLE"
+              ],
+              [
+                "Usuario_Modulos",
+                "PRESENT",
+                "USER_TABLE"
+              ],
+              [
+                "Usuario_PermisosRolModulo",
+                "PRESENT",
+                "USER_TABLE"
+              ],
+              [
+                "Usuario_Roles",
+                "PRESENT",
+                "USER_TABLE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "codigo_modulo",
+              "ModuloID",
+              "CodigoModulo",
+              "NombreModulo",
+              "Activo"
+            ],
+            "name": "rbac_module_gap",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "auth",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "tablajeria",
+                39,
+                "tablajeria",
+                "Tablajería",
+                true
+              ],
+              [
+                "tablajeria.config",
+                49,
+                "tablajeria.config",
+                "Configuración",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "CodigoModulo",
+              "CodigoAccion",
+              "active_allowed_role_count"
+            ],
+            "name": "rbac_permission_gaps",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                "auth",
+                "ADMIN",
+                0
+              ],
+              [
+                "tablajeria",
+                "AUTORIZAR",
+                0
+              ],
+              [
+                "tablajeria",
+                "CREAR",
+                2
+              ],
+              [
+                "tablajeria",
+                "VER",
+                8
+              ],
+              [
+                "tablajeria.config",
+                "CONFIGURAR",
+                0
+              ],
+              [
+                "tablajeria.config",
+                "VER",
+                4
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "type_desc"
+            ],
+            "name": "semantic_collision_objects",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "dbo",
+                "CK_SCDH_evidencia",
+                "CHECK_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "CK_Sync_Control_Evidencias_Bytes",
+                "CHECK_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "DF_Sync_Control_Evidencias_FechaCapturaUTC",
+                "DEFAULT_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "FK_Sync_Control_Evidencias_Ejecucion",
+                "FOREIGN_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "PK_Sync_Control_Evidencias",
+                "PRIMARY_KEY_CONSTRAINT"
+              ],
+              [
+                "dbo",
+                "Sync_Control_Evidencias",
+                "USER_TABLE"
+              ],
+              [
+                "dbo",
+                "UQ_Sync_Control_Evidencias_RunHash",
+                "UNIQUE_CONSTRAINT"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "object_name",
+              "column_id",
+              "column_name",
+              "data_type",
+              "max_length",
+              "is_nullable"
+            ],
+            "name": "semantic_collision_columns",
+            "row_count_returned": 9,
+            "rows": [
+              [
+                "dbo",
+                "Sync_Control_Evidencias",
+                1,
+                "EvidenciaID",
+                "bigint",
+                8,
+                false
+              ],
+              [
+                "dbo",
+                "Sync_Control_Evidencias",
+                2,
+                "SyncControlID",
+                "int",
+                4,
+                false
+              ],
+              [
+                "dbo",
+                "Sync_Control_Evidencias",
+                3,
+                "TipoEvidencia",
+                "nvarchar",
+                100,
+                false
+              ],
+              [
+                "dbo",
+                "Sync_Control_Evidencias",
+                4,
+                "HashSHA256",
+                "char",
+                64,
+                false
+              ],
+              [
+                "dbo",
+                "Sync_Control_Evidencias",
+                5,
+                "Referencia",
+                "nvarchar",
+                2000,
+                true
+              ],
+              [
+                "dbo",
+                "Sync_Control_Evidencias",
+                6,
+                "NombreOriginal",
+                "nvarchar",
+                1000,
+                true
+              ],
+              [
+                "dbo",
+                "Sync_Control_Evidencias",
+                7,
+                "MimeType",
+                "nvarchar",
+                300,
+                true
+              ],
+              [
+                "dbo",
+                "Sync_Control_Evidencias",
+                8,
+                "Bytes",
+                "bigint",
+                8,
+                true
+              ],
+              [
+                "dbo",
+                "Sync_Control_Evidencias",
+                9,
+                "FechaCapturaUTC",
+                "datetime2",
+                7,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "object_name",
+              "type_desc"
+            ],
+            "name": "production_quality_target",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-27T23:00:03Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
