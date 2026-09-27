@@ -1,0 +1,32 @@
+{
+  "base_sha": "9539b249facba8cc7e0324003290d7e340f7f644",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-27T20:41:12Z",
+  "deliverables": {
+    "PYTEST_OUTPUT": "============================= test session starts ==============================\nplatform linux -- Python 3.11.16, pytest-9.0.2, pluggy-1.6.0\nrootdir: /app/backend\nconfigfile: pytest.ini\nplugins: asyncio-1.4.0, anyio-4.12.1\nasyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollected 56 items / 1 error\n\n==================================== ERRORS ====================================\n____ ERROR collecting tests/test_cavas_gate12e_bos_persona_link_contract.py ____\ntests/test_cavas_gate12e_bos_persona_link_contract.py:3: in <module>\n    SQL = Path('backend/database/migrations/20260910_cavas_gate12e_bos_persona_link.sql').read_text(encoding='utf-8')\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.11/pathlib.py:1058: in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors) as f:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/usr/local/lib/python3.11/pathlib.py:1044: in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE   FileNotFoundError: [Errno 2] No such file or directory: 'backend/database/migrations/20260910_cavas_gate12e_bos_persona_link.sql'\n=============================== warnings summary ===============================\n../../root/.venv/lib/python3.11/site-packages/starlette/formparsers.py:12\n  /root/.venv/lib/python3.11/site-packages/starlette/formparsers.py:12: PendingDeprecationWarning: Please use `import python_multipart` instead.\n    import multipart\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ============================\nERROR tests/test_cavas_gate12e_bos_persona_link_contract.py - FileNotFoundErr...\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n========================= 1 warning, 1 error in 1.07s ==========================\n"
+  },
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-GATE16L-PYTEST-DIAG-C2-READONLY-R1-20260927",
+  "missing_deliverables": [],
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-27T20:41:51Z",
+  "quality_gate": "FAIL",
+  "required_deliverables": [
+    "PYTEST_OUTPUT"
+  ],
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-27T20:41:10Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
