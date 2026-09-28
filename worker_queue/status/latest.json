@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
-  "generated_at_utc": "2026-09-28T22:59:49Z",
+  "generated_at_utc": "2026-09-28T23:01:02Z",
   "history": {
     "done_total_local": 1119,
     "pending_total_local": 0,
@@ -16,49 +16,49 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2536,
+      "age_seconds": 2609,
       "job_id": "CAVAS-CIENFUEGOS-LEGACY-SCHEMA-DIAG-READONLY-R17D1-20260928",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3501,
+      "age_seconds": 3574,
       "job_id": "CAVAS-CIENFUEGOS-LEGACY-SCHEMA-DISCOVERY-READONLY-R17-20260928",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2468,
+      "age_seconds": 2541,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-BITACORA-R3-CARLOS-20260928",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3214,
+      "age_seconds": 3287,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-STATUS-R1-CARLOS-20260928",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2706,
+      "age_seconds": 2779,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-UNIDADES-DIAG-R2-CARLOS-20260928",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3357,
+      "age_seconds": 3430,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-DIA-FINAL-CERT-R4-CARLOS-20260928",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2094,
+      "age_seconds": 2167,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-SEMANTIC-EXTRACT-READONLY-R4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3497,
+      "age_seconds": 3570,
       "job_id": "WORKER-REPAIR-1d448b15a5b4efcd8dde-A2",
       "reason": null,
       "state": "RESULT_READY"
@@ -78,8 +78,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-28T22:59:46Z",
-    "last_receive_utc": "2026-09-28T22:59:48Z",
+    "last_cycle_utc": "2026-09-28T23:01:01Z",
+    "last_receive_utc": "2026-09-28T23:00:56Z",
     "last_terminal_utc": "2026-09-28T22:24:54Z",
     "pid": "684",
     "runtime_fingerprint": {
