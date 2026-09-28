@@ -1,0 +1,58 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CIENFUEGOS-PHYSICAL-SOURCE-DISCOVERY-READONLY-R16-20260927",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "8c9505a81e22b2ec1cf3cd29c0800e364da5afc8",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Descubrir READ_ONLY si la fuente legacy de Cavas existe bajo otro nombre en la instancia SQL ns559627 o mediante un linked server. Listar metadata de bases visibles y servidores enlazados usando la conexión activa canónica del mismo host. No leer datos de negocio, no secretos, no DDL/DML, no Producción.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "SERVER",
+      "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+      "include_inactive": false,
+      "queries": [
+        {
+          "name": "visible_databases",
+          "sql": "SELECT name,database_id,state_desc,user_access_desc,containment_desc,create_date FROM sys.databases ORDER BY name"
+        },
+        {
+          "name": "linked_servers",
+          "sql": "SELECT name,product,provider,data_source,catalog,is_linked,is_remote_login_enabled FROM sys.servers ORDER BY server_id"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No business-row reads",
+    "No secret reads",
+    "No DDL/DML",
+    "No Production",
+    "Canonical active ServerID only"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "CAVAS_PERSONALES",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
