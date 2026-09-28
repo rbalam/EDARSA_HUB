@@ -47,9 +47,9 @@ QUEUE_REF = os.environ.get(
 SCHEMA = "edarsahub.worker-job.v2"
 JOB_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
 ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
-ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit", "repository_contract_audit"}
+ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract"}
 READ_ONLY_MODE = "READ_ONLY"
-READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest", "sql_readonly_audit", "repository_contract_audit"}
+READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract"}
 SOFTRESTAURANT_FULL_HISTORY_MODE = "SOFTRESTAURANT_FULL_HISTORY_RESYNC"
 MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
 COMERCIAL_RANGE_RESYNC_MODE = "COMERCIAL_RANGE_RESYNC"
@@ -194,6 +194,25 @@ def validate_check(check: Any, index: int) -> list[str]:
             sql = item.get("sql")
             if not isinstance(sql, str) or not sql.strip():
                 return [f"{prefix}_QUERY_SQL_REQUIRED"]
+    if kind == "worker_result_semantic_extract":
+        request = check.get("request")
+        if not isinstance(request, dict):
+            return [f"{prefix}_REQUEST_REQUIRED"]
+        source_result = request.get("source_result")
+        if not isinstance(source_result, dict):
+            return [f"{prefix}_SOURCE_RESULT_REQUIRED"]
+        if not safe_repo_path(source_result.get("path")):
+            return [f"{prefix}_INVALID_SOURCE_RESULT_PATH"]
+        branch = str(source_result.get("branch") or "worker/results").strip()
+        if branch != "worker/results":
+            return [f"{prefix}_INVALID_SOURCE_RESULT_BRANCH"]
+        for field in ("commit", "blob_sha"):
+            value = source_result.get(field)
+            if value is not None and not re.fullmatch(r"[0-9a-fA-F]{40}", str(value)):
+                return [f"{prefix}_INVALID_SOURCE_RESULT_{field.upper()}"]
+        fields = request.get("required_semantic_fields", [])
+        if fields is not None and (not isinstance(fields, list) or not all(isinstance(item, str) and item.strip() for item in fields)):
+            return [f"{prefix}_REQUIRED_SEMANTIC_FIELDS_INVALID"]
     if kind == "repository_contract_audit":
         request = check.get("request")
         if not isinstance(request, dict):
