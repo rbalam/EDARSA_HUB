@@ -1,40 +1,46 @@
 {
   "ahead_count": 0,
-  "behind_count": 0,
+  "behind_count": 1,
   "branch": "Edarsahub_Desarrollo",
-  "convergence_status": "SYNC",
-  "development_sha": "1b1fa59c1a67f076edf18cb3899708b0410b552a",
-  "generated_at_utc": "2026-09-28T01:05:58Z",
+  "convergence_status": "REMOTE_AHEAD_ONLY",
+  "development_sha": "75be42c8ed85de9c48454eb0898203de8743b896",
+  "generated_at_utc": "2026-09-28T01:14:13Z",
   "history": {
-    "done_total_local": 1104,
+    "done_total_local": 1105,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 989,
-    "results_total_local": 1902
+    "results_total_local": 1903
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 254,
+      "age_seconds": 750,
       "job_id": "CAVAS-CIENFUEGOS-LEGACY-CONNECTION-DIAG-C1-READONLY-R1-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 403,
+      "age_seconds": 898,
       "job_id": "CAVAS-CIENFUEGOS-LEGACY-CONNECTION-SMOKE-READONLY-R12-20260927",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 88,
+      "age_seconds": 7,
+      "job_id": "EDARSAHUB-SQL-EXTERNAL-CONNECTION-FAILCLOSED-FALLBACK-R1-20260927",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 584,
       "job_id": "EDARSAHUB-WORKER-SOURCE-RESULT-READER-BRIDGE-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1135,
+      "age_seconds": 1630,
       "job_id": "EDARSAHUB-WORKER-SQL-READONLY-SERVERID-SOURCE-R1-20260927",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,16 +54,16 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
-  "remote_development_sha": "1b1fa59c1a67f076edf18cb3899708b0410b552a",
+  "remote_development_sha": "75be42c8ed85de9c48454eb0898203de8743b896",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-28T01:05:57Z",
-    "last_receive_utc": "2026-09-28T01:05:52Z",
-    "last_terminal_utc": "2026-09-28T01:04:29Z",
-    "pid": "27373",
+    "last_cycle_utc": "2026-09-28T01:14:09Z",
+    "last_receive_utc": "2026-09-28T01:14:13Z",
+    "last_terminal_utc": "2026-09-28T01:14:06Z",
+    "pid": "316",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "ed7c2122ffbb1437b13848dd6d2d77d03abcfce6",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
