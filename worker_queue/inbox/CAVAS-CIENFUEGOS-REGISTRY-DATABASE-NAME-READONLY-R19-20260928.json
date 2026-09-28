@@ -1,0 +1,50 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CIENFUEGOS-REGISTRY-DATABASE-NAME-READONLY-R19-20260928",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Verificar READ_ONLY el database_name actual de la conexión CAVAS en dbo.Servidores_Conexiones y compararlo conceptualmente con la base fisica cavas_www ya confirmada por R16. No leer secretos, no DDL/DML, no Produccion.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cavas_registry_database_name",
+          "sql": "SELECT id,nombre,host,port,database_name,username,activo,updated_at FROM dbo.Servidores_Conexiones WHERE id=CAST('8016ab53-f1ef-4539-aebe-c01e5b978bbc' AS uniqueidentifier)"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No secret reads",
+    "No DDL/DML",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "CAVAS_PERSONALES",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
