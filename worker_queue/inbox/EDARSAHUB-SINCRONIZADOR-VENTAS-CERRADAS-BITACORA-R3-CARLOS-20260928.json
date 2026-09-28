@@ -1,0 +1,63 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-BITACORA-R3-CARLOS-20260928",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
+  "objective": "Diagnosticar en solo lectura por que cada ciclo automatico sync_comercial_v2 procesa 130MID y CIENFUEGOS pero no alcanza ESTELAR, 130QRO y ORIGEN. Revisar Scheduler_BitacoraJobs para START/FINISH, duracion, success_count/failed_count y detectar ejecuciones truncadas o reinicios. No modificar codigo ni datos. No tocar sync_comercial_abiertas_v2. Etiqueta: Sincronizador.",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "scheduler_bitacora_sync_comercial_v2",
+          "sql": "SELECT TOP (80) JobName,RunID,Accion,FechaAccion,Exito,MensajeError,DetallesJSON FROM dbo.Scheduler_BitacoraJobs WHERE JobName='sync_comercial_v2' ORDER BY FechaAccion DESC"
+        },
+        {
+          "name": "scheduler_start_finish_pairs",
+          "sql": "WITH x AS (SELECT RunID,MAX(CASE WHEN Accion='START' THEN FechaAccion END) AS started,MAX(CASE WHEN Accion='FINISH' THEN FechaAccion END) AS finished,MAX(CASE WHEN Accion='FINISH' THEN CAST(Exito AS int) END) AS exito,MAX(CASE WHEN Accion='FINISH' THEN MensajeError END) AS error FROM dbo.Scheduler_BitacoraJobs WHERE JobName='sync_comercial_v2' AND FechaAccion>=DATEADD(hour,-24,SYSUTCDATETIME()) GROUP BY RunID) SELECT TOP (50) RunID,started,finished,DATEDIFF(second,started,finished) AS duracion_seg,exito,error FROM x ORDER BY started DESC"
+        },
+        {
+          "name": "unfinished_scheduler_runs",
+          "sql": "WITH x AS (SELECT RunID,MAX(CASE WHEN Accion='START' THEN FechaAccion END) AS started,MAX(CASE WHEN Accion='FINISH' THEN FechaAccion END) AS finished FROM dbo.Scheduler_BitacoraJobs WHERE JobName='sync_comercial_v2' AND FechaAccion>=DATEADD(day,-2,SYSUTCDATETIME()) GROUP BY RunID) SELECT RunID,started,finished,DATEDIFF(minute,started,SYSUTCDATETIME()) AS age_minutes FROM x WHERE started IS NOT NULL AND finished IS NULL ORDER BY started DESC"
+        },
+        {
+          "name": "automatic_run_unit_counts",
+          "sql": "SELECT run_id,MIN(run_timestamp) AS primero,MAX(run_timestamp) AS ultimo,COUNT(DISTINCT unidad_negocio_id) AS unidades,COUNT(*) AS logs FROM dbo.Comercial_SyncLog_v2 WHERE run_type='INCREMENTAL' AND run_id LIKE 'INCR-%' AND run_timestamp>=DATEADD(hour,-24,SYSUTCDATETIME()) GROUP BY run_id ORDER BY primero DESC"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No DDL/DML",
+    "No code changes",
+    "Do not touch sync_comercial_abiertas_v2",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
