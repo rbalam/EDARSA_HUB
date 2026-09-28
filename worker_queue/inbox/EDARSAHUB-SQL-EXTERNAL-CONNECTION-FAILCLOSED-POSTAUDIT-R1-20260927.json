@@ -1,0 +1,99 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SQL-EXTERNAL-CONNECTION-FAILCLOSED-POSTAUDIT-R1-20260927",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "75be42c8ed85de9c48454eb0898203de8743b896",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Post-audit SHA-bound READ_ONLY de la corrección fail-closed de get_external_sql_connection. Verificar que los errores reales de pymssql ya no se oculten detrás de pyodbc y repetir el smoke READ_ONLY de la fuente CAVAS/cava_www por ServerID canónico para obtener la causa real o confirmar conexión. No DDL/DML, no cambios de negocio, no secretos, no Producción.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_external_sql_connection_endpoint.py",
+        "backend/tests/test_worker_pos_sql_readonly_audit.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/sql_first/connection_factory.py",
+          "backend/tests/test_external_sql_connection_endpoint.py"
+        ],
+        "search_terms": [
+          "except ImportError",
+          "pymssql is not None",
+          "test_external_factory_propagates_real_pymssql_connection_error",
+          "test_external_factory_falls_back_to_pyodbc_only_when_pymssql_import_missing"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 50
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "SERVER",
+      "server_id": "8016ab53-f1ef-4539-aebe-c01e5b978bbc",
+      "include_inactive": true,
+      "queries": [
+        {
+          "name": "legacy_identity_after_failclosed_fix",
+          "sql": "SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, ORIGINAL_LOGIN() AS original_login, CAST(SERVERPROPERTY('ProductVersion') AS varchar(100)) AS product_version, CAST(SERVERPROPERTY('Edition') AS varchar(200)) AS edition"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "required_deliverables": [
+    "SQL_CHECK_OUTPUT"
+  ],
+  "deliverable_specs": {
+    "SQL_CHECK_OUTPUT": {
+      "source": {
+        "check_type": "sql_readonly_audit",
+        "occurrence": 1
+      },
+      "selector": {
+        "type": "json_path",
+        "path": [
+          "output"
+        ]
+      }
+    }
+  },
+  "constraints": [
+    "READ_ONLY only",
+    "SHA-bound to 75be42c8ed85de9c48454eb0898203de8743b896",
+    "No DDL/DML",
+    "No secrets",
+    "No Production",
+    "No connection activation",
+    "Canonical ServerID only"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "UNIVERSAL_SQL_CONNECTIONS",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
