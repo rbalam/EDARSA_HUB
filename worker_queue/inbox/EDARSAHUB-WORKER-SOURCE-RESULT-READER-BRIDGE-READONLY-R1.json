@@ -1,0 +1,141 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-SOURCE-RESULT-READER-BRIDGE-READONLY-R1",
+  "title": "Source result reader bridge capability audit",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS / Tablajeria",
+    "chat": "Tablajerias 4"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "1b1fa59c1a67f076edf18cb3899708b0410b552a",
+  "mode": "READ_ONLY",
+  "strict_read_only_semantics": true,
+  "actions": [],
+  "production_allowed": false,
+  "sql_allowed": false,
+  "human_summary_language": "es",
+  "priority": "P0",
+  "objective": "Audit the exact repository gap that prevents the Worker from reading a large source result artifact from worker/results by branch/path/blob_sha and extracting required semantic fields. Do not change code. Produce a fail-closed bridge plan for the next mutation only if a runtime capability gap is proven.",
+  "source_problem": {
+    "blocker": "WORKER_RESULT_ARTIFACT_EXTRACTION_CAPABILITY_GAP",
+    "failed_semantic_job": "EDARSAHUB-TABLAJERIA-R2-SEMANTIC-EXTRACT-READONLY-R2",
+    "failed_semantic_result_path": "worker_queue/results/EDARSAHUB-TABLAJERIA-R2-SEMANTIC-EXTRACT-READONLY-R2.json",
+    "failed_semantic_result_branch": "worker/results",
+    "observed_failure_mode": "The job passed generic repository checks but did not emit source_result_read_status, gate3_allowed, last_gate_executed, last_gate_certified, real_implementation_percent, next_allowed_gate, or blocking_reason_if_any.",
+    "original_large_result": {
+      "job_id": "EDARSAHUB-TABLAJERIA-RECOVERY-AUDIT-WORKER-JOB-V2-R2",
+      "path": "worker_queue/results/EDARSAHUB-TABLAJERIA-RECOVERY-AUDIT-WORKER-JOB-V2-R2.json",
+      "branch": "worker/results",
+      "commit": "f67100bb74287ea86c66607400f6136bb37b51e2",
+      "blob_sha": "1d04c48286bb0457e15e89d2370d501e53d1e505",
+      "known_line_count": 45355
+    }
+  },
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync/worker_result_reader.py",
+          "tools/mirror_sync/worker_result_integrity.py",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/universal_job_dispatcher.py",
+          "tools/mirror_sync/universal_job_result_publisher.py",
+          "tools/mirror_sync/repository_contract_audit.py",
+          "tools/mirror_sync/worker_repair_execution.py",
+          "backend/tests/test_worker_result_reader_status_contract.py",
+          "docs/operacion/WORKER_JOB_EXECUTION_PROTOCOL.md",
+          "docs/BOS",
+          "worker_queue/config"
+        ],
+        "search_terms": [
+          "read_canonical_result",
+          "worker_result_reader",
+          "worker_result_integrity",
+          "validate_terminal_result_payload",
+          "worker_queue/results",
+          "worker/results",
+          "source_branch",
+          "source_result",
+          "source_result_path",
+          "source_result_branch",
+          "source_result_commit",
+          "source_result_blob_sha",
+          "blob_sha",
+          "git cat-file",
+          "fetch_blob",
+          "content=\"\"",
+          "gate3_allowed",
+          "last_gate_executed",
+          "last_gate_certified",
+          "real_implementation_percent",
+          "next_allowed_gate",
+          "UNSUPPORTED_CHECK",
+          "repository_contract_audit"
+        ],
+        "include_patterns": ["*.py", "*.json", "*.md", "*.yml", "*.yaml"],
+        "exclude_patterns": ["node_modules/**", "dist/**", "build/**", ".venv/**", "venv/**", "__pycache__/**"]
+      }
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/worker_result_reader.py",
+        "tools/mirror_sync/worker_result_integrity.py",
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/universal_job_result_publisher.py",
+        "tools/mirror_sync/repository_contract_audit.py",
+        "tools/mirror_sync/worker_repair_execution.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": ["backend/tests/test_worker_result_reader_status_contract.py"]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "required_output": {
+    "max_result_lines": 500,
+    "max_result_bytes": 100000,
+    "fields": [
+      "status",
+      "quality_gate",
+      "certification",
+      "tests",
+      "work_completion",
+      "percent_complete",
+      "production_touched",
+      "files_changed",
+      "blockers",
+      "bridge_verdict",
+      "runtime_gap_confirmed",
+      "source_result_reader_capability_current_state",
+      "can_read_worker_results_by_branch_path",
+      "can_read_worker_results_by_blob_sha",
+      "can_emit_semantic_fields_from_source_result",
+      "required_runtime_change",
+      "minimal_files_to_change_if_mutation_is_needed",
+      "tests_to_add_or_extend",
+      "next_allowed_step",
+      "gate3_allowed"
+    ]
+  },
+  "hard_fail_conditions": [
+    "Do not touch SQL or Production.",
+    "Do not modify tracked files in Edarsahub_Desarrollo.",
+    "Do not report Gate3 allowed unless explicit semantic fields are present in the source result or the bridge proves they can be extracted.",
+    "If the current Worker cannot read the source artifact by branch/path/blob_sha, report runtime_gap_confirmed=true and gate3_allowed=false.",
+    "If the check only performs repository_contract_audit without reading the source result artifact, report bridge_verdict=GAP_CONFIRMED and gate3_allowed=false."
+  ],
+  "expected_terminal_decision": {
+    "gate3_default": "HOLD",
+    "allowed_next_if_gap_confirmed": "EDARSAHUB-WORKER-SOURCE-RESULT-READER-BRIDGE-MUTATION-R1",
+    "allowed_next_if_gap_not_confirmed": "EDARSAHUB-TABLAJERIA-R2-SEMANTIC-EXTRACT-READONLY-R3"
+  }
+}
