@@ -574,6 +574,12 @@ class SchedulerManager:
             logger.warning("[SYNC_COMERCIAL_V2] No se pudo obtener lock - ya hay una ejecución en progreso")
             return
         
+        # Mantener el lock vivo durante ciclos largos, igual que la ejecución manual.
+        await lock.start_heartbeat_loop(
+            interval_seconds=30,
+            extend_seconds=600,
+        )
+
         job_logger = get_job_logger()
         log_entry = await job_logger.start_execution("sync_comercial_v2")
         

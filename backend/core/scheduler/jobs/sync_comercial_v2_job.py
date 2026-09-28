@@ -173,6 +173,10 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
         "pagos_iscam_extraidos": 0,
         "pagos_iscam_insertados": 0,
     }
+
+    # Header-first: los enriquecimientos esperan hasta que las ventas cerradas
+    # de todas las unidades hayan sido procesadas.
+    post_header_queue = []
     
     def _sync_detalle_post_header(
         unidad_codigo,
@@ -511,26 +515,12 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
             results["detalles_unidades"].append(detalle)
             
             if resultado.success:
-                _sync_pagos_post_header(
+                post_header_queue.append((
                     unidad_id,
                     fecha_inicio,
                     fecha_fin,
                     detalle,
-                )
-
-                for detail_day_offset in range(
-                    (fecha_fin - fecha_inicio).days + 1
-                ):
-                    detail_day = (
-                        fecha_inicio
-                        + timedelta(days=detail_day_offset)
-                    )
-
-                    _sync_detalle_post_header(
-                        unidad_id,
-                        detail_day,
-                        detalle,
-                    )
+                ))
 
                 results["unidades_exitosas"] += 1
                 results["total_insertados"] += resultado.records_inserted
@@ -623,26 +613,12 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
             results["detalles_unidades"].append(detalle)
             
             if resultado.success:
-                _sync_pagos_post_header(
+                post_header_queue.append((
                     unidad_id,
                     fecha_inicio,
                     fecha_fin,
                     detalle,
-                )
-
-                for detail_day_offset in range(
-                    (fecha_fin - fecha_inicio).days + 1
-                ):
-                    detail_day = (
-                        fecha_inicio
-                        + timedelta(days=detail_day_offset)
-                    )
-
-                    _sync_detalle_post_header(
-                        unidad_id,
-                        detail_day,
-                        detalle,
-                    )
+                ))
 
                 results["unidades_exitosas"] += 1
                 results["total_insertados"] += resultado.records_inserted
@@ -675,6 +651,36 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
                 "mensaje_error": str(e)
             })
     
+    # =========================================================================
+    # FASE P1: ENRIQUECER PAGOS Y DETALLE DESPUES DE TODOS LOS HEADERS
+    # =========================================================================
+
+    for (
+        unidad_id,
+        fecha_inicio,
+        fecha_fin,
+        detalle,
+    ) in post_header_queue:
+        _sync_pagos_post_header(
+            unidad_id,
+            fecha_inicio,
+            fecha_fin,
+            detalle,
+        )
+
+        for detail_day_offset in range(
+            (fecha_fin - fecha_inicio).days + 1
+        ):
+            detail_day = (
+                fecha_inicio
+                + timedelta(days=detail_day_offset)
+            )
+            _sync_detalle_post_header(
+                unidad_id,
+                detail_day,
+                detalle,
+            )
+
     # =========================================================================
     # FINALIZAR
     # =========================================================================
