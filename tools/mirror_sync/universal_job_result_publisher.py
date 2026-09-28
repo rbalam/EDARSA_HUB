@@ -294,6 +294,51 @@ def sanitize_repository_evidence(result: dict[str, Any]) -> dict[str, Any] | Non
 
 
 
+def sanitize_semantic_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
+    allowed_payload_keys = (
+        "status", "mode", "bridge_verdict", "runtime_gap_confirmed",
+        "source_result_reader_capability_current_state",
+        "can_read_worker_results_by_branch_path",
+        "can_read_worker_results_by_blob_sha",
+        "can_emit_semantic_fields_from_source_result",
+        "semantic_fields_complete", "missing_semantic_fields",
+        "semantic_fields", "gate3_allowed",
+        "source_result_read_status", "source_result_path",
+        "source_result_branch", "source_result_commit",
+        "source_result_blob_sha", "source_result_size_bytes",
+        "source_result_sha256", "source_result_loader",
+        "source_status", "source_quality_gate", "source_certification",
+        "source_work_completion", "source_percent_complete",
+        "source_production_touched", "source_files_changed",
+        "source_blockers", "required_runtime_change",
+        "next_allowed_step",
+    )
+    checks = []
+    promoted: dict[str, Any] = {}
+    for check in result.get("checks") or []:
+        if not isinstance(check, dict) or check.get("type") != "worker_result_semantic_extract":
+            continue
+        payload = check.get("semantic_evidence")
+        if not isinstance(payload, dict):
+            raw = check.get("output")
+            if isinstance(raw, str):
+                try:
+                    candidate = json.loads(raw.strip())
+                except (json.JSONDecodeError, TypeError):
+                    candidate = None
+                if isinstance(candidate, dict):
+                    payload = candidate
+        if not isinstance(payload, dict):
+            continue
+        safe_payload = {key: payload.get(key) for key in allowed_payload_keys if key in payload}
+        checks.append({"status": check.get("status"), "returncode": check.get("returncode"), "payload": safe_payload})
+        for key, value in safe_payload.items():
+            promoted.setdefault(key, value)
+    if not checks:
+        return None
+    return {"checks": checks, **promoted}
+
+
 def sanitize_frontend_build_evidence(result: dict[str, Any]) -> dict[str, Any] | None:
     """Expose only the tail needed to diagnose frontend build failures.
 
@@ -366,6 +411,7 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
     if result.get("status") == "READ_ONLY_COMPLETE":
         readonly_evidence = sanitize_readonly_evidence(result)
         repository_evidence = sanitize_repository_evidence(result)
+        semantic_evidence = sanitize_semantic_evidence(result)
         generic_evidence = generic_readonly_evidence(result)
         base_pass = (
             str(result.get("tests", "")).upper() == "PASS"
@@ -413,13 +459,23 @@ def certification_evidence(result: dict[str, Any]) -> dict[str, Any]:
                     "certification_basis":
                         "CHECKS_PASS_BUT_REQUIRED_DELIVERABLES_MISSING",
                 }
-        if base_pass and (readonly_evidence is not None or repository_evidence is not None):
+        if base_pass and (
+            readonly_evidence is not None
+            or repository_evidence is not None
+            or semantic_evidence is not None
+        ):
+            if readonly_evidence is not None:
+                basis = "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE"
+            elif semantic_evidence is not None:
+                basis = "READ_ONLY_SEMANTIC_EXTRACT_PASS_PLUS_SANITIZED_EVIDENCE"
+            else:
+                basis = "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE"
             return {
                 "certified": True,
                 "certification": "CERTIFIED_READ_ONLY",
                 "work_completion": "COMPLETE",
                 "percent_complete": 100,
-                "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE" if readonly_evidence is not None else "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+                "certification_basis": basis,
             }
         if base_pass and generic_evidence is not None and (result.get("files_changed") or []) == []:
             return {
@@ -618,6 +674,41 @@ def sanitize(result: dict[str, Any]) -> dict[str, Any]:
     repository_evidence = sanitize_repository_evidence(result)
     if repository_evidence is not None:
         public["repository_contract_evidence"] = repository_evidence
+    semantic_evidence = sanitize_semantic_evidence(result)
+    if semantic_evidence is not None:
+        public["worker_result_semantic_evidence"] = semantic_evidence
+        for key in (
+            "bridge_verdict",
+            "runtime_gap_confirmed",
+            "source_result_reader_capability_current_state",
+            "can_read_worker_results_by_branch_path",
+            "can_read_worker_results_by_blob_sha",
+            "can_emit_semantic_fields_from_source_result",
+            "semantic_fields_complete",
+            "missing_semantic_fields",
+            "semantic_fields",
+            "gate3_allowed",
+            "source_result_read_status",
+            "source_result_path",
+            "source_result_branch",
+            "source_result_commit",
+            "source_result_blob_sha",
+            "source_result_size_bytes",
+            "source_result_sha256",
+            "source_result_loader",
+            "source_status",
+            "source_quality_gate",
+            "source_certification",
+            "source_work_completion",
+            "source_percent_complete",
+            "source_production_touched",
+            "source_files_changed",
+            "source_blockers",
+            "required_runtime_change",
+            "next_allowed_step",
+        ):
+            if key in semantic_evidence:
+                public[key] = semantic_evidence[key]
     frontend_build_evidence = sanitize_frontend_build_evidence(result)
     if frontend_build_evidence is not None:
         public["frontend_build_evidence"] = frontend_build_evidence
