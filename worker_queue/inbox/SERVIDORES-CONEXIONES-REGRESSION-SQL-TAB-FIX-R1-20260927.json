@@ -1,0 +1,38 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"d512acf07cc5f8c2622462fbb930487c97f30747",
+  "objective":"Corregir exclusivamente la regresion del tab SQL Servers en Servidores. GET /api/servers debe volver a exponer solo conexiones DATA_SOURCE activas y visibles, porque API_LOCAL tiene su propio endpoint /api/api-connections y CORE tiene su flujo administrativo propio. No tocar datos SQL, no tocar Produccion, no cambiar RBAC, no cambiar Scheduler ni NetPay.",
+  "production_allowed":false,
+  "human_summary_language":"es",
+  "actions":[
+    {
+      "type":"replace_text",
+      "path":"backend/server.py",
+      "old":"    CORRECCIÓN 2026-05-20: Las conexiones CORE (ej. EDARSAHUB SQL) ahora aparecen\n    en el listado del menú administrativo de servidores.\n",
+      "new":"    CONTRATO UI: este endpoint alimenta exclusivamente el tab SQL Servers.\n    API_LOCAL se administra por /api/api-connections y CORE por su flujo administrativo dedicado.\n",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/server.py",
+      "old":"        filter_visible_listado=True,\n        exclude_core=False,\n        mask_secrets=True\n    )\n\n    return servers\n",
+      "new":"        filter_visible_listado=True,\n        exclude_core=True,\n        mask_secrets=True\n    )\n\n    # Contrato del tab SQL: nunca mezclar API_LOCAL ni CORE en /api/servers.\n    servers = [s for s in servers if s.get(\"tipo_conexion\") == \"DATA_SOURCE\"]\n\n    return servers\n",
+      "expected_count":1
+    },
+    {
+      "type":"replace_text",
+      "path":"backend/tests/test_server_sucursales_rbac_canonical.py",
+      "old":"def test_legacy_filter_still_exists_but_has_no_server_consumer():\n",
+      "new":"def test_get_servers_contract_is_datasource_only():\n    source = _get_function_source(SERVER, \"get_servers\")\n    assert \"exclude_core=True\" in source\n    assert \"s.get(\\\"tipo_conexion\\\") == \\\"DATA_SOURCE\\\"\" in source\n    assert \"API_LOCAL\" not in source\n\n\ndef test_legacy_filter_still_exists_but_has_no_server_consumer():\n",
+      "expected_count":1
+    }
+  ],
+  "checks":[
+    {"type":"git_diff_check"},
+    {"type":"py_compile","paths":["backend/server.py","backend/tests/test_server_sucursales_rbac_canonical.py"]},
+    {"type":"pytest","paths":["backend/tests/test_server_sucursales_rbac_canonical.py"]}
+  ]
+}
