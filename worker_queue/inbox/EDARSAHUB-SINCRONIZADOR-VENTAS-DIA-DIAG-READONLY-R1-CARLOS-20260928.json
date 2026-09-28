@@ -1,0 +1,54 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-DIA-DIAG-READONLY-R1-CARLOS-20260928",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "43e4c4996b694d22d023e77006df15bd25f1ef60",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Diagnosticar sin mutaciones por que el job automatico sync_comercial_abiertas_v2 (Ventas del Dia) dejo de actualizar desde el 26-09-2026. No ejecutar el job, no cambiar .env, no pausar/reanudar jobs, no reiniciar backend, no escribir SQL y no consultar POS en vivo. Determinar con evidencia SQL si el job esta pausado administrativamente, cuando fue su ultima invocacion real, cuando escribio por ultima vez Comercial_Ventas_Dia_Abiertas_v2, si existe un lock IN_PROGRESS estancado y si otros run_type del Scheduler siguieron ejecutandose despues del 26. Etiqueta funcional: Sincronizador.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "scheduler_pause_state",
+          "sql": "SELECT JobID,PausadoAdministrativo,FechaActualizacion FROM dbo.Sys_Scheduler_RuntimeState WHERE JobID='sync_comercial_abiertas_v2'"
+        },
+        {
+          "name": "ventas_dia_last_sync_logs",
+          "sql": "SELECT TOP (50) run_id,run_timestamp,run_type,unidad_negocio_id,server_id,sucursal_id,fecha_inicio,fecha_fin,status,error_code,error_message,source_connection_status FROM dbo.Comercial_SyncLog_v2 WHERE run_type='VENTAS_DIA' ORDER BY run_timestamp DESC"
+        },
+        {
+          "name": "sync_types_recent_activity",
+          "sql": "SELECT run_type,MAX(run_timestamp) AS ultima_ejecucion,COUNT(*) AS registros FROM dbo.Comercial_SyncLog_v2 WHERE run_timestamp>='2026-09-25' GROUP BY run_type ORDER BY ultima_ejecucion DESC"
+        },
+        {
+          "name": "ventas_dia_snapshot_freshness",
+          "sql": "SELECT unidad_negocio_id,sucursal_id,MAX(fecha_operacion) AS fecha_operacion,MAX(snapshot_timestamp) AS ultimo_snapshot,MAX(sync_run_id) AS ultimo_run_id,MAX(total_estimado_dia) AS ultimo_total FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 GROUP BY unidad_negocio_id,sucursal_id ORDER BY unidad_negocio_id,sucursal_id"
+        },
+        {
+          "name": "ventas_dia_control_runs",
+          "sql": "SELECT TOP (50) SyncRunID,SyncType,FechaInicio,FechaFin,Status,StartedAtMexico,FinishedAtMexico,RegistrosProcesados,RegistrosError,ErrorMessage FROM dbo.Sync_Control_Ejecuciones WHERE SyncType='VENTAS_DIA' ORDER BY StartedAtMexico DESC"
+        },
+        {
+          "name": "ventas_dia_stale_lock",
+          "sql": "SELECT TOP (10) SyncRunID,SyncType,Status,StartedAtMexico,FinishedAtMexico,ErrorMessage FROM dbo.Sync_Control_Ejecuciones WHERE SyncType='VENTAS_DIA' AND Status='IN_PROGRESS' AND FinishedAtMexico IS NULL ORDER BY StartedAtMexico"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "paths": [
+        "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+        "backend/core/scheduler/config.py",
+        "backend/core/scheduler/scheduler_manager.py",
+        "backend/core/scheduler/persistent_state_repository.py",
+        "scripts/p0_contencion_live_nativa.sh",
+        "scripts/p0_contencion_live_externos.sh"
+      ]
+    }
+  ],
+  "human_summary_language": "es"
+}
