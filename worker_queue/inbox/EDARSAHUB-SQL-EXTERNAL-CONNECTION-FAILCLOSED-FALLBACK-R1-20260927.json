@@ -1,0 +1,77 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SQL-EXTERNAL-CONNECTION-FAILCLOSED-FALLBACK-R1-20260927",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "1b1fa59c1a67f076edf18cb3899708b0410b552a",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Corregir exclusivamente el fallback amplio de get_external_sql_connection que oculta errores reales de pymssql detrás de pyodbc/libodbc. Política fail-closed: pymssql es primario; sólo si pymssql no puede importarse se permite fallback a pyodbc. Añadir regresiones para propagación de errores reales y fallback por driver ausente. No tocar Cavas, SQL, datos ni Producción.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/sql_first/connection_factory.py",
+      "old": "    try:\n        import pymssql\n\n        return pymssql.connect(\n            server=host,\n            port=port,\n            user=username,\n            password=password,\n            database=database,\n            login_timeout=login_timeout,\n            timeout=timeout,\n            tds_version=tds_version,\n            as_dict=as_dict,\n        )\n    except Exception:\n        import pyodbc\n\n        return pyodbc.connect(\n",
+      "new": "    try:\n        import pymssql\n    except ImportError:\n        pymssql = None\n\n    if pymssql is not None:\n        return pymssql.connect(\n            server=host,\n            port=port,\n            user=username,\n            password=password,\n            database=database,\n            login_timeout=login_timeout,\n            timeout=timeout,\n            tds_version=tds_version,\n            as_dict=as_dict,\n        )\n\n    import pyodbc\n\n    return pyodbc.connect(\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_external_sql_connection_endpoint.py",
+      "old": "import sys\nimport types\n\nfrom core.sql_first import connection_factory\n",
+      "new": "import sys\nimport types\n\nimport pytest\n\nfrom core.sql_first import connection_factory\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_external_sql_connection_endpoint.py",
+      "old": "    assert captured[\"port\"] == 1444\n",
+      "new": "    assert captured[\"port\"] == 1444\n\n\ndef test_external_factory_propagates_real_pymssql_connection_error(monkeypatch):\n    class ExpectedConnectionError(RuntimeError):\n        pass\n\n    def fail_connect(**kwargs):\n        raise ExpectedConnectionError(\"REAL_PYMSSQL_CONNECTION_ERROR\")\n\n    monkeypatch.setitem(\n        sys.modules,\n        \"pymssql\",\n        types.SimpleNamespace(connect=fail_connect),\n    )\n    monkeypatch.setitem(\n        sys.modules,\n        \"pyodbc\",\n        types.SimpleNamespace(\n            connect=lambda *args, **kwargs: pytest.fail(\n                \"pyodbc must not mask a real pymssql connection error\"\n            )\n        ),\n    )\n\n    with pytest.raises(ExpectedConnectionError, match=\"REAL_PYMSSQL_CONNECTION_ERROR\"):\n        connection_factory.get_external_sql_connection(_base_config())\n\n\ndef test_external_factory_falls_back_to_pyodbc_only_when_pymssql_import_missing(monkeypatch):\n    captured = {}\n\n    def fake_odbc_connect(connection_string, **kwargs):\n        captured[\"connection_string\"] = connection_string\n        captured.update(kwargs)\n        return object()\n\n    monkeypatch.setitem(sys.modules, \"pymssql\", None)\n    monkeypatch.setitem(\n        sys.modules,\n        \"pyodbc\",\n        types.SimpleNamespace(connect=fake_odbc_connect),\n    )\n\n    connection_factory.get_external_sql_connection(_base_config())\n\n    assert \"SERVER=example.invalid,6969\" in captured[\"connection_string\"]\n    assert \"DATABASE=db_test\" in captured[\"connection_string\"]\n    assert captured[\"timeout\"] == 10\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/sql_first/connection_factory.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_external_sql_connection_endpoint.py",
+        "backend/tests/test_worker_pos_sql_readonly_audit.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No Cavas business changes",
+    "No SQL DDL/DML",
+    "No Production",
+    "No driver installation",
+    "Do not mask real pymssql connection errors",
+    "Fallback to pyodbc only when pymssql import is unavailable"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "UNIVERSAL_SQL_CONNECTIONS",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
