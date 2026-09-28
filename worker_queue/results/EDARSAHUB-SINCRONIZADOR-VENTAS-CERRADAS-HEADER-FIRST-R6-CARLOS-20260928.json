@@ -1,0 +1,30 @@
+{
+  "base_sha": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
+  "blockers": [
+    "GIT_PUSH_FAILED"
+  ],
+  "candidate_sha": "2407fafce14ec1a0bfed8c3f372e225232fdc78c",
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-28T23:30:57Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+    "backend/core/scheduler/scheduler_manager.py",
+    "backend/tests/test_sync_comercial_v2_header_first_scheduler_guard.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-HEADER-FIRST-R6-CARLOS-20260928",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-28T23:31:13Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-28T23:30:48Z",
+  "status": "GIT_PUSH_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "PASS",
+  "work_completion": "NOT_CERTIFIED"
+}
