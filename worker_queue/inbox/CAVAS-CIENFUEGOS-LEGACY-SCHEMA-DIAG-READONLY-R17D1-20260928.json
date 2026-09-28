@@ -1,0 +1,76 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CIENFUEGOS-LEGACY-SCHEMA-DIAG-READONLY-R17D1-20260928",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Diagnóstico READ_ONLY del fallo de R17. Repetir únicamente la comprobación de acceso a cavas_www y una consulta mínima de metadata para obtener la causa exacta. Materializar el output del sql_readonly_audit. No leer datos de negocio, no DDL/DML, no secretos, no Producción.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "SERVER",
+      "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+      "include_inactive": false,
+      "queries": [
+        {
+          "name": "cavas_db_access",
+          "sql": "SELECT DB_ID('cavas_www') AS db_id,HAS_DBACCESS('cavas_www') AS has_dbaccess"
+        },
+        {
+          "name": "cavas_min_schema_probe",
+          "sql": "SELECT TOP 5 s.name AS schema_name,t.name AS table_name FROM cavas_www.sys.tables t INNER JOIN cavas_www.sys.schemas s ON s.schema_id=t.schema_id ORDER BY s.name,t.name"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No business-row reads",
+    "No secret reads",
+    "No GptEscritura usage",
+    "No DDL/DML",
+    "No Production",
+    "Reuse canonical active ServerID on same SQL instance"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "CAVAS_PERSONALES",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "required_deliverables": [
+    "SQL_CHECK_OUTPUT"
+  ],
+  "deliverable_specs": {
+    "SQL_CHECK_OUTPUT": {
+      "source": {
+        "check_type": "sql_readonly_audit",
+        "occurrence": 1
+      },
+      "selector": {
+        "type": "json_path",
+        "path": [
+          "output"
+        ]
+      }
+    }
+  }
+}
