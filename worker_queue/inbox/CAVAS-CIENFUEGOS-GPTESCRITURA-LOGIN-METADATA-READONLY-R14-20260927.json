@@ -1,0 +1,69 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CIENFUEGOS-GPTESCRITURA-LOGIN-METADATA-READONLY-R14-20260927",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "8c9505a81e22b2ec1cf3cd29c0800e364da5afc8",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar READ_ONLY la metadata no sensible del login GptEscritura en el mismo SQL Server donde vive cava_www, usando una conexión activa canónica del mismo host, y correlacionarla con metadata de configuración CAVAS en EDARSAHUB. Determinar si el login existe, está habilitado y cuál es su default database, sin leer o cambiar passwords, sin DDL/DML y sin Producción.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "SERVER",
+      "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+      "include_inactive": false,
+      "queries": [
+        {
+          "name": "gptescritura_login_metadata",
+          "sql": "SELECT name,type_desc,is_disabled,default_database_name,create_date,modify_date FROM sys.sql_logins WHERE name='GptEscritura'"
+        },
+        {
+          "name": "cava_database_metadata",
+          "sql": "SELECT name,state_desc,user_access_desc,containment_desc,create_date FROM sys.databases WHERE name='cava_www'"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cavas_registry_metadata",
+          "sql": "SELECT id,nombre,host,port,database_name,username,activo,created_at,updated_at,created_by,updated_by,source_status,fecha_ultima_sincronizacion,ultimo_error_sync FROM dbo.Servidores_Conexiones WHERE id=CAST('8016ab53-f1ef-4539-aebe-c01e5b978bbc' AS uniqueidentifier)"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No password/api key reads",
+    "No DDL/DML",
+    "No login changes",
+    "No database changes",
+    "No Production",
+    "Use canonical ServerID connections only"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "CAVAS_PERSONALES",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
