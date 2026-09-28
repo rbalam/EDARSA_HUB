@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
-  "generated_at_utc": "2026-09-28T22:57:21Z",
+  "generated_at_utc": "2026-09-28T22:58:35Z",
   "history": {
     "done_total_local": 1119,
     "pending_total_local": 0,
@@ -16,61 +16,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2388,
+      "age_seconds": 2462,
       "job_id": "CAVAS-CIENFUEGOS-LEGACY-SCHEMA-DIAG-READONLY-R17D1-20260928",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3353,
+      "age_seconds": 3427,
       "job_id": "CAVAS-CIENFUEGOS-LEGACY-SCHEMA-DISCOVERY-READONLY-R17-20260928",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2320,
+      "age_seconds": 2394,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-BITACORA-R3-CARLOS-20260928",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3066,
+      "age_seconds": 3140,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-STATUS-R1-CARLOS-20260928",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2558,
+      "age_seconds": 2632,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-UNIDADES-DIAG-R2-CARLOS-20260928",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3509,
+      "age_seconds": 3583,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-DIA-BLINDAJE-CONTENCION-R1-CARLOS-20260928",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3209,
+      "age_seconds": 3283,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-DIA-FINAL-CERT-R4-CARLOS-20260928",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3551,
-      "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-DIA-POSTRESTORE-READONLY-R3-CARLOS-20260928",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1946,
+      "age_seconds": 2020,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-SEMANTIC-EXTRACT-READONLY-R4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3349,
+      "age_seconds": 3423,
       "job_id": "WORKER-REPAIR-1d448b15a5b4efcd8dde-A2",
       "reason": null,
       "state": "RESULT_READY"
@@ -84,14 +78,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 10,
+  "queue_result_ready_recent": 9,
   "queue_running": 0,
   "remote_development_sha": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-28T22:57:14Z",
-    "last_receive_utc": "2026-09-28T22:57:17Z",
+    "last_cycle_utc": "2026-09-28T22:58:30Z",
+    "last_receive_utc": "2026-09-28T22:58:32Z",
     "last_terminal_utc": "2026-09-28T22:24:54Z",
     "pid": "684",
     "runtime_fingerprint": {
