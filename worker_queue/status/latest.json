@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "1b1fa59c1a67f076edf18cb3899708b0410b552a",
-  "generated_at_utc": "2026-09-28T00:51:17Z",
+  "generated_at_utc": "2026-09-28T00:53:07Z",
   "history": {
     "done_total_local": 1103,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 254,
+      "age_seconds": 364,
       "job_id": "EDARSAHUB-WORKER-SQL-READONLY-SERVERID-SOURCE-R1-20260927",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,12 +36,12 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-28T00:51:12Z",
-    "last_receive_utc": "2026-09-28T00:51:07Z",
+    "last_cycle_utc": "2026-09-28T00:53:03Z",
+    "last_receive_utc": "2026-09-28T00:52:58Z",
     "last_terminal_utc": "2026-09-28T00:47:02Z",
-    "pid": "800",
+    "pid": "27373",
     "runtime_fingerprint": {
-      "active_worker_code_tree_sha": "dab1074a3e8729dd87591b0cfc6fd72c890eaae1",
+      "active_worker_code_tree_sha": "ed7c2122ffbb1437b13848dd6d2d77d03abcfce6",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
       "development_sha": "1b1fa59c1a67f076edf18cb3899708b0410b552a",
@@ -58,7 +58,7 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": false,
+      "worker_code_tree_aligned": true,
       "worker_code_tree_sha": "ed7c2122ffbb1437b13848dd6d2d77d03abcfce6"
     }
   },
