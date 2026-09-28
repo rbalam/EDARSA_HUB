@@ -1,0 +1,114 @@
+{
+  "base_sha": "75be42c8ed85de9c48454eb0898203de8743b896",
+  "blockers": [
+    "check_failed:sql_readonly_audit"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-28T01:23:51Z",
+  "deliverables": {
+    "SQL_CHECK_OUTPUT": "{\"error\": \"OperationalError:(18456, b\\\"Error de inicio de sesi\\\\xc3\\\\xb3n del usuario 'GptEscritura'.DB-Lib error message 20018, severity 14:\\\\nGeneral SQL Server error: Check messages from the SQL Server\\\\nDB-Lib error message 20002, severity 9:\\\\nAdaptive Server connection failed (54.39.104.176)\\\\n\\\")\", \"status\": \"FAIL\"}\n"
+  },
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SQL-EXTERNAL-CONNECTION-FAILCLOSED-POSTAUDIT-R1-20260927",
+  "missing_deliverables": [],
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-28T01:24:14Z",
+  "quality_gate": "FAIL",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.sql_first",
+            "connections": [
+              "pyodbc",
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.db",
+              "pymssql",
+              "pyodbc"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "except importerror",
+              "pymssql is not none"
+            ],
+            "path": "backend/core/sql_first/connection_factory.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_connect_edarsahub_pymssql",
+              "get_edarsahub_connection",
+              "get_edarsahub_pymssql_connection",
+              "get_external_sql_connection"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "pyodbc",
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first",
+              "pytest",
+              "sys",
+              "types"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "test_external_factory_falls_back_to_pyodbc_only_when_pymssql_import_missing",
+              "test_external_factory_propagates_real_pymssql_connection_error"
+            ],
+            "path": "backend/tests/test_external_sql_connection_endpoint.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ExpectedConnectionError",
+              "FakeConnection",
+              "_base_config",
+              "fail_connect",
+              "fake_connect",
+              "fake_odbc_connect",
+              "test_external_factory_falls_back_to_pyodbc_only_when_pymssql_import_missing",
+              "test_external_factory_keeps_plain_host",
+              "test_external_factory_normalizes_host_and_port",
+              "test_external_factory_propagates_real_pymssql_connection_error"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 2,
+          "scanned_files": 2,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "required_deliverables": [
+    "SQL_CHECK_OUTPUT"
+  ],
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-28T01:23:50Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
