@@ -1,0 +1,92 @@
+{
+  "base_sha": "8c9505a81e22b2ec1cf3cd29c0800e364da5afc8",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-28T01:41:25Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CIENFUEGOS-SQL-INSTANCE-METADATA-READONLY-R15-20260927",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-28T01:41:31Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "server_registry+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "server_name",
+              "machine_name",
+              "instance_name",
+              "windows_auth_only",
+              "current_database",
+              "original_login"
+            ],
+            "name": "instance_identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "ns559627",
+                "ns559627",
+                null,
+                0,
+                "CENTRAL2020",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "can_view_any_database",
+              "can_view_any_definition",
+              "can_alter_any_login"
+            ],
+            "name": "metadata_permissions",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1,
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "cava_db_id",
+              "has_dbaccess_cava",
+              "visible_database_count"
+            ],
+            "name": "cava_visibility",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                null,
+                null,
+                21
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-28T01:41:24Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
