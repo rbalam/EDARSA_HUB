@@ -1,0 +1,243 @@
+{
+  "base_sha": "14c05db51ed7279452ce9d8a0736fc4957b7cef5",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-28T21:45:00Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CIENFUEGOS-PHYSICAL-SOURCE-DISCOVERY-READONLY-R16-20260927",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-28T21:47:51Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "server_registry+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "name",
+              "database_id",
+              "state_desc",
+              "user_access_desc",
+              "containment_desc",
+              "create_date"
+            ],
+            "name": "visible_databases",
+            "row_count_returned": 21,
+            "rows": [
+              [
+                "ALPUNTOYCOMA",
+                9,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2024-01-17T12:08:03.853000"
+              ],
+              [
+                "ALVILUX",
+                10,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2024-01-17T12:08:46.730000"
+              ],
+              [
+                "BARETTO",
+                17,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2024-05-17T13:38:42.573000"
+              ],
+              [
+                "cavas_www",
+                21,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2026-09-10T12:30:41.907000"
+              ],
+              [
+                "CENTRAL2018",
+                12,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2024-01-17T12:13:40.973000"
+              ],
+              [
+                "CENTRAL2020",
+                6,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2024-01-17T12:00:41.903000"
+              ],
+              [
+                "CF",
+                14,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2024-01-17T12:14:10.793000"
+              ],
+              [
+                "EDARSAHUB",
+                20,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2026-04-01T17:29:12.500000"
+              ],
+              [
+                "EMPRESAS",
+                11,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2024-01-17T12:09:13.943000"
+              ],
+              [
+                "HR2020",
+                7,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2024-01-17T12:00:54.427000"
+              ],
+              [
+                "MANTENIMIENTO",
+                8,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2024-01-17T12:01:10.843000"
+              ],
+              [
+                "master",
+                1,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2003-04-08T09:13:36.390000"
+              ],
+              [
+                "model",
+                3,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2003-04-08T09:13:36.390000"
+              ],
+              [
+                "MODELO",
+                19,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2024-05-28T12:44:56.687000"
+              ],
+              [
+                "msdb",
+                4,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2022-10-08T06:31:57.550000"
+              ],
+              [
+                "SANMARINO",
+                18,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2024-05-28T12:44:07.977000"
+              ],
+              [
+                "TABLAJERIA",
+                5,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2024-01-17T12:00:25.680000"
+              ],
+              [
+                "tablajeria_mpro",
+                15,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2024-01-17T13:32:17.127000"
+              ],
+              [
+                "tempdb",
+                2,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2026-09-28T09:20:21.240000"
+              ],
+              [
+                "TESTINVENTARIO",
+                16,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2024-03-11T09:34:18.810000"
+              ],
+              [
+                "VTSCTRL2020",
+                13,
+                "ONLINE",
+                "MULTI_USER",
+                "NONE",
+                "2024-01-17T12:13:54.047000"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "name",
+              "product",
+              "provider",
+              "data_source",
+              "catalog",
+              "is_linked",
+              "is_remote_login_enabled"
+            ],
+            "name": "linked_servers",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "ns559627",
+                "SQL Server",
+                "SQLNCLI",
+                "ns559627",
+                null,
+                false,
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-28T21:44:58Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
