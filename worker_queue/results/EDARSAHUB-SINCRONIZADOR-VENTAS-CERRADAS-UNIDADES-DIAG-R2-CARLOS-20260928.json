@@ -1,0 +1,271 @@
+{
+  "base_sha": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-28T22:14:43Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-UNIDADES-DIAG-R2-CARLOS-20260928",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-28T22:14:52Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_pk",
+              "codigo",
+              "nombre",
+              "system_type",
+              "server_id",
+              "sucursal_origen_id",
+              "activo"
+            ],
+            "name": "unidades_sync_classification",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "130MID",
+                "130° MERIDA",
+                "SoftRestaurant",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                null,
+                true
+              ],
+              [
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                "130QRO",
+                "130° QUERETARO",
+                "MPRO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0021",
+                true
+              ],
+              [
+                "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "SoftRestaurant",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                null,
+                true
+              ],
+              [
+                "DFB86008-1B81-472A-9E50-8A0821DEC4B2",
+                "ESTELAR",
+                "LA ESTELAR",
+                "SoftRestaurant",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                null,
+                true
+              ],
+              [
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "ORIGEN",
+                "ORIGEN",
+                "MPRO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0023",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "codigo",
+              "unidad",
+              "system_type",
+              "unidad_activa",
+              "server_id",
+              "servidor",
+              "server_system_type",
+              "tipo_conexion",
+              "servidor_activo",
+              "visible_en_operaciones"
+            ],
+            "name": "servers_for_units",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                "130° MERIDA",
+                "SoftRestaurant",
+                true,
+                "A5547321-1139-4D2B-9D53-182CA737B6B6",
+                "130° MERIDA",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                true,
+                true
+              ],
+              [
+                "130QRO",
+                "130° QUERETARO",
+                "MPRO",
+                true,
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "ManagmentPro",
+                "MPRO",
+                "DATA_SOURCE",
+                true,
+                true
+              ],
+              [
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "SoftRestaurant",
+                true,
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "CIENFUEGOS",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                true,
+                true
+              ],
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "SoftRestaurant",
+                true,
+                "A5FF0E25-F029-43DB-B634-D4AC814C904F",
+                "LA ESTELAR",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                true,
+                true
+              ],
+              [
+                "ORIGEN",
+                "ORIGEN",
+                "MPRO",
+                true,
+                "1B230A06-FFAF-4C70-BD27-B1BE3579DEA6",
+                "ManagmentPro",
+                "MPRO",
+                "DATA_SOURCE",
+                true,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "ejecuciones",
+              "primera",
+              "ultima"
+            ],
+            "name": "auto_incremental_units_6h",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                20,
+                "2026-09-28 16:28:49.5786298",
+                "2026-09-28 22:03:26.7399012"
+              ],
+              [
+                "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+                15,
+                "2026-09-28 16:48:43.4553101",
+                "2026-09-28 22:04:51.0415935"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "run_id",
+              "unidad_negocio_id",
+              "fecha_inicio",
+              "fecha_fin",
+              "run_timestamp",
+              "status"
+            ],
+            "name": "manual_resync_units_6h",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "RESYNC-ESTELAR-20260927-20260927-da8f",
+                "DFB86008-1B81-472A-9E50-8A0821DEC4B2",
+                "2026-09-27",
+                "2026-09-27",
+                "2026-09-28 22:02:30.6483621",
+                "SUCCESS"
+              ],
+              [
+                "RESYNC-130QRO-20260927-20260927-1bef",
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                "2026-09-27",
+                "2026-09-27",
+                "2026-09-28 22:00:19.9512410",
+                "SUCCESS"
+              ],
+              [
+                "RESYNC-130QRO-20260926-20260926-ef54",
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                "2026-09-26",
+                "2026-09-26",
+                "2026-09-28 21:59:30.3525607",
+                "SUCCESS"
+              ],
+              [
+                "RESYNC-130QRO-20260925-20260925-7357",
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                "2026-09-25",
+                "2026-09-25",
+                "2026-09-28 21:58:58.6163940",
+                "SUCCESS"
+              ],
+              [
+                "RESYNC-ORIGEN-20260927-20260927-5efc",
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "2026-09-27",
+                "2026-09-27",
+                "2026-09-28 21:58:09.7464761",
+                "SUCCESS"
+              ],
+              [
+                "RESYNC-ORIGEN-20260926-20260926-b1fd",
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "2026-09-26",
+                "2026-09-26",
+                "2026-09-28 21:57:38.1138486",
+                "SUCCESS"
+              ],
+              [
+                "RESYNC-ORIGEN-20260925-20260925-6477",
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "2026-09-25",
+                "2026-09-25",
+                "2026-09-28 21:57:11.0941322",
+                "SUCCESS"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-28T22:14:42Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
