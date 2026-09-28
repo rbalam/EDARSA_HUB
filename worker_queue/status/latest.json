@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
-  "generated_at_utc": "2026-09-28T23:22:27Z",
+  "generated_at_utc": "2026-09-28T23:23:40Z",
   "history": {
     "done_total_local": 1119,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3452,
+      "age_seconds": 3526,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-SEMANTIC-EXTRACT-READONLY-R4",
       "reason": null,
       "state": "RESULT_READY"
@@ -36,8 +36,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-28T23:22:27Z",
-    "last_receive_utc": "2026-09-28T23:22:22Z",
+    "last_cycle_utc": "2026-09-28T23:23:35Z",
+    "last_receive_utc": "2026-09-28T23:23:37Z",
     "last_terminal_utc": "2026-09-28T22:24:54Z",
     "pid": "684",
     "runtime_fingerprint": {
