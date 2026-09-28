@@ -1,0 +1,71 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CIENFUEGOS-LEGACY-SCHEMA-DISCOVERY-READONLY-R17-20260928",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Descubrir READ_ONLY el esquema físico de cavas_www ya confirmado ONLINE en ns559627, reutilizando una conexión activa canónica del mismo servidor. Obtener acceso, tablas, vistas, columnas y claves sin leer filas de negocio, sin usar GptEscritura, sin DDL/DML y sin Producción.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "SERVER",
+      "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+      "include_inactive": false,
+      "queries": [
+        {
+          "name": "cavas_db_access",
+          "sql": "SELECT DB_ID('cavas_www') AS db_id,HAS_DBACCESS('cavas_www') AS has_dbaccess"
+        },
+        {
+          "name": "cavas_tables",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,t.create_date,t.modify_date FROM cavas_www.sys.tables t INNER JOIN cavas_www.sys.schemas s ON s.schema_id=t.schema_id ORDER BY s.name,t.name"
+        },
+        {
+          "name": "cavas_views",
+          "sql": "SELECT s.name AS schema_name,v.name AS view_name,v.create_date,v.modify_date FROM cavas_www.sys.views v INNER JOIN cavas_www.sys.schemas s ON s.schema_id=v.schema_id ORDER BY s.name,v.name"
+        },
+        {
+          "name": "cavas_columns",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM cavas_www.sys.tables t INNER JOIN cavas_www.sys.schemas s ON s.schema_id=t.schema_id INNER JOIN cavas_www.sys.columns c ON c.object_id=t.object_id INNER JOIN cavas_www.sys.types ty ON ty.user_type_id=c.user_type_id ORDER BY s.name,t.name,c.column_id"
+        },
+        {
+          "name": "cavas_primary_keys",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,k.name AS pk_name,c.name AS column_name,ic.key_ordinal FROM cavas_www.sys.key_constraints k INNER JOIN cavas_www.sys.tables t ON t.object_id=k.parent_object_id INNER JOIN cavas_www.sys.schemas s ON s.schema_id=t.schema_id INNER JOIN cavas_www.sys.index_columns ic ON ic.object_id=t.object_id AND ic.index_id=k.unique_index_id INNER JOIN cavas_www.sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id WHERE k.type='PK' ORDER BY s.name,t.name,ic.key_ordinal"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No business-row reads",
+    "No secret reads",
+    "No GptEscritura usage",
+    "No DDL/DML",
+    "No Production",
+    "Reuse canonical active ServerID on same SQL instance"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "CAVAS_PERSONALES",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
