@@ -1,0 +1,37 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-PRODUCTION-QUALITY-FOTO-FINISH-GATE5D4A-R3-CANONICAL-RBAC-SOURCE-RESOLUTION",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "base_sha": "75be42c8ed85de9c48454eb0898203de8743b896",
+  "objective": "Resolver exclusivamente las fuentes RBAC canonicas existentes para corregir la politica de Production Quality. Identificar fuentes validas para override, decisiones/rework y configuracion. No crear modulos, acciones, roles ni permisos. No DDL. No DML. No migraciones. No Produccion. No auto-advance.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 500,
+      "queries": [
+        {
+          "name": "tablajeria_authorization_candidates",
+          "sql": "SELECT\n    m.ModuloID,\n    m.CodigoModulo,\n    m.NombreModulo,\n    a.CodigoAccion,\n    COUNT(DISTINCT prm.RolID) AS active_role_count,\n    MIN(r.NivelJerarquia) AS min_nivel,\n    MAX(r.NivelJerarquia) AS max_nivel\nFROM dbo.Usuario_Modulos m\nJOIN dbo.Usuario_PermisosRolModulo prm\n  ON prm.ModuloID=m.ModuloID\nJOIN dbo.Usuario_Acciones a\n  ON a.AccionID=prm.AccionID\nJOIN dbo.Usuario_Roles r\n  ON r.RolID=prm.RolID\nWHERE LOWER(m.CodigoModulo) LIKE 'tablajeria%'\n  AND UPPER(a.CodigoAccion) IN (\n      'AUTORIZAR',\n      'CONFIGURAR',\n      'GESTIONAR',\n      'ADMIN'\n  )\n  AND ISNULL(m.Activo,1)=1\n  AND ISNULL(a.Activo,1)=1\n  AND ISNULL(prm.Activo,1)=1\n  AND ISNULL(prm.Permitido,0)=1\n  AND ISNULL(r.Activo,1)=1\nGROUP BY\n    m.ModuloID,\n    m.CodigoModulo,\n    m.NombreModulo,\n    a.CodigoAccion\nORDER BY\n    m.CodigoModulo,\n    a.CodigoAccion"
+        },
+        {
+          "name": "administrative_authorization_candidates",
+          "sql": "SELECT\n    m.ModuloID,\n    m.CodigoModulo,\n    m.NombreModulo,\n    m.Descripcion,\n    m.TipoModulo,\n    m.ModuloPadreID,\n    a.CodigoAccion,\n    COUNT(DISTINCT prm.RolID) AS active_role_count,\n    MIN(r.NivelJerarquia) AS min_nivel,\n    MAX(r.NivelJerarquia) AS max_nivel\nFROM dbo.Usuario_Modulos m\nJOIN dbo.Usuario_PermisosRolModulo prm\n  ON prm.ModuloID=m.ModuloID\nJOIN dbo.Usuario_Acciones a\n  ON a.AccionID=prm.AccionID\nJOIN dbo.Usuario_Roles r\n  ON r.RolID=prm.RolID\nWHERE ISNULL(m.Activo,1)=1\n  AND ISNULL(a.Activo,1)=1\n  AND ISNULL(prm.Activo,1)=1\n  AND ISNULL(prm.Permitido,0)=1\n  AND ISNULL(r.Activo,1)=1\n  AND UPPER(a.CodigoAccion) IN (\n      'ADMIN',\n      'AUTORIZAR',\n      'CONFIGURAR',\n      'GESTIONAR'\n  )\n  AND (\n       LOWER(ISNULL(m.CodigoModulo,'')) LIKE '%admin%'\n    OR LOWER(ISNULL(m.CodigoModulo,'')) LIKE '%config%'\n    OR LOWER(ISNULL(m.CodigoModulo,'')) LIKE '%sistema%'\n    OR LOWER(ISNULL(m.CodigoModulo,'')) LIKE '%segur%'\n    OR LOWER(ISNULL(m.CodigoModulo,'')) LIKE '%usuario%'\n    OR LOWER(ISNULL(m.CodigoModulo,'')) LIKE '%rol%'\n    OR LOWER(ISNULL(m.NombreModulo,'')) LIKE '%admin%'\n    OR LOWER(ISNULL(m.NombreModulo,'')) LIKE '%config%'\n    OR LOWER(ISNULL(m.Descripcion,'')) LIKE '%rbac%'\n    OR LOWER(ISNULL(m.Descripcion,'')) LIKE '%permiso%'\n  )\nGROUP BY\n    m.ModuloID,\n    m.CodigoModulo,\n    m.NombreModulo,\n    m.Descripcion,\n    m.TipoModulo,\n    m.ModuloPadreID,\n    a.CodigoAccion\nORDER BY\n    m.CodigoModulo,\n    a.CodigoAccion"
+        },
+        {
+          "name": "candidate_permission_details",
+          "sql": "SELECT\n    m.CodigoModulo,\n    m.NombreModulo,\n    a.CodigoAccion,\n    r.CodigoRol,\n    r.NombreRol,\n    r.NivelJerarquia,\n    prm.RestriccionPropietario,\n    prm.RestriccionSucursal,\n    prm.RequiereAutorizacion,\n    prm.NivelAutorizacionRequerido\nFROM dbo.Usuario_PermisosRolModulo prm\nJOIN dbo.Usuario_Modulos m\n  ON m.ModuloID=prm.ModuloID\nJOIN dbo.Usuario_Acciones a\n  ON a.AccionID=prm.AccionID\nJOIN dbo.Usuario_Roles r\n  ON r.RolID=prm.RolID\nWHERE ISNULL(m.Activo,1)=1\n  AND ISNULL(a.Activo,1)=1\n  AND ISNULL(prm.Activo,1)=1\n  AND ISNULL(prm.Permitido,0)=1\n  AND ISNULL(r.Activo,1)=1\n  AND UPPER(a.CodigoAccion) IN (\n      'ADMIN',\n      'AUTORIZAR',\n      'CONFIGURAR',\n      'GESTIONAR'\n  )\n  AND (\n       LOWER(m.CodigoModulo) LIKE 'tablajeria%'\n    OR LOWER(m.CodigoModulo) LIKE '%admin%'\n    OR LOWER(m.CodigoModulo) LIKE '%config%'\n    OR LOWER(m.CodigoModulo) LIKE '%sistema%'\n    OR LOWER(m.CodigoModulo) LIKE '%segur%'\n  )\nORDER BY\n    m.CodigoModulo,\n    a.CodigoAccion,\n    r.NivelJerarquia,\n    r.CodigoRol"
+        },
+        {
+          "name": "current_invalid_policy_sources",
+          "sql": "WITH required AS (\n    SELECT *\n    FROM (VALUES\n      ('production_quality.override','AUTORIZAR','auth','ADMIN'),\n      ('production_quality.decisions','AUTORIZAR','tablajeria','AUTORIZAR'),\n      ('production_quality.rework','GESTIONAR','tablajeria','AUTORIZAR'),\n      ('production_quality.standards','CONFIGURAR','tablajeria.config','CONFIGURAR'),\n      ('production_quality.devices','CONFIGURAR','tablajeria.config','CONFIGURAR')\n    ) v(\n        TargetModule,\n        TargetAction,\n        SourceModule,\n        SourceAction\n    )\n)\nSELECT\n    req.TargetModule,\n    req.TargetAction,\n    req.SourceModule,\n    req.SourceAction,\n    m.ModuloID,\n    a.AccionID,\n    COUNT(DISTINCT CASE\n        WHEN ISNULL(prm.Activo,1)=1\n         AND ISNULL(prm.Permitido,0)=1\n         AND ISNULL(r.Activo,1)=1\n        THEN prm.RolID\n    END) AS active_role_coverage\nFROM required req\nLEFT JOIN dbo.Usuario_Modulos m\n  ON LOWER(m.CodigoModulo)=LOWER(req.SourceModule)\n AND ISNULL(m.Activo,1)=1\nLEFT JOIN dbo.Usuario_Acciones a\n  ON UPPER(a.CodigoAccion)=UPPER(req.SourceAction)\n AND ISNULL(a.Activo,1)=1\nLEFT JOIN dbo.Usuario_PermisosRolModulo prm\n  ON prm.ModuloID=m.ModuloID\n AND prm.AccionID=a.AccionID\nLEFT JOIN dbo.Usuario_Roles r\n  ON r.RolID=prm.RolID\nGROUP BY\n    req.TargetModule,\n    req.TargetAction,\n    req.SourceModule,\n    req.SourceAction,\n    m.ModuloID,\n    a.AccionID\nORDER BY\n    req.TargetModule"
+        }
+      ]
+    }
+  ]
+}
