@@ -1,0 +1,81 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-SOURCE-RESULT-READER-BRIDGE-MUTATION-R2",
+  "title": "Allow semantic extract check in worker ingress bridge",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS / Tablajeria",
+    "chat": "Tablajerias 4"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "8c9505a81e22b2ec1cf3cd29c0800e364da5afc8",
+  "mode": "MUTATION",
+  "production_allowed": false,
+  "sql_allowed": false,
+  "human_summary_language": "es",
+  "priority": "P0",
+  "objective": "Fix the worker ingress validator so READ_ONLY jobs can use the already integrated worker_result_semantic_extract check. This resolves the R3 rejection reasons READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED and CHECK_1_INVALID_TYPE. Worker bridge infrastructure only; do not touch SQL, Production, Scheduler, NetPay, frontend, or Tablajeria business code.",
+  "scope": {
+    "allowed_paths": [
+      "tools/mirror_sync/universal_job_bridge.py",
+      "backend/tests/test_universal_job_bridge_semantic_extract_contract.py"
+    ]
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\", \"sql_readonly_audit\", \"repository_contract_audit\"}",
+      "new": "ALLOWED_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"frontend_build\", \"sql_readonly_audit\", \"repository_contract_audit\", \"worker_result_semantic_extract\"}",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "READ_ONLY_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"sql_readonly_audit\", \"repository_contract_audit\"}",
+      "new": "READ_ONLY_CHECKS = {\"git_diff_check\", \"py_compile\", \"pytest\", \"sql_readonly_audit\", \"repository_contract_audit\", \"worker_result_semantic_extract\"}",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    if kind == \"repository_contract_audit\":\n        request = check.get(\"request\")\n        if not isinstance(request, dict):\n            return [f\"{prefix}_REQUEST_REQUIRED\"]",
+      "new": "    if kind == \"worker_result_semantic_extract\":\n        request = check.get(\"request\")\n        if not isinstance(request, dict):\n            return [f\"{prefix}_REQUEST_REQUIRED\"]\n        source_result = request.get(\"source_result\")\n        if not isinstance(source_result, dict):\n            return [f\"{prefix}_SOURCE_RESULT_REQUIRED\"]\n        if not safe_repo_path(source_result.get(\"path\")):\n            return [f\"{prefix}_INVALID_SOURCE_RESULT_PATH\"]\n        branch = str(source_result.get(\"branch\") or \"worker/results\").strip()\n        if branch != \"worker/results\":\n            return [f\"{prefix}_INVALID_SOURCE_RESULT_BRANCH\"]\n        for field in (\"commit\", \"blob_sha\"):\n            value = source_result.get(field)\n            if value is not None and not re.fullmatch(r\"[0-9a-fA-F]{40}\", str(value)):\n                return [f\"{prefix}_INVALID_SOURCE_RESULT_{field.upper()}\"]\n        fields = request.get(\"required_semantic_fields\", [])\n        if fields is not None and (not isinstance(fields, list) or not all(isinstance(item, str) and item.strip() for item in fields)):\n            return [f\"{prefix}_REQUIRED_SEMANTIC_FIELDS_INVALID\"]\n    if kind == \"repository_contract_audit\":\n        request = check.get(\"request\")\n        if not isinstance(request, dict):\n            return [f\"{prefix}_REQUEST_REQUIRED\"]",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_universal_job_bridge_semantic_extract_contract.py",
+      "content": "from tools.mirror_sync.universal_job_bridge import validate_check\n\n\ndef valid_semantic_extract_check():\n    return {\n        \"type\": \"worker_result_semantic_extract\",\n        \"request\": {\n            \"source_result\": {\n                \"path\": \"worker_queue/results/EDARSAHUB-TABLAJERIA-RECOVERY-AUDIT-WORKER-JOB-V2-R2.json\",\n                \"branch\": \"worker/results\",\n                \"commit\": \"f67100bb74287ea86c66607400f6136bb37b51e2\",\n                \"blob_sha\": \"1d04c48286bb0457e15e89d2370d501e53d1e505\",\n            },\n            \"required_semantic_fields\": [\n                \"gate3_allowed\",\n                \"last_gate_executed\",\n                \"last_gate_certified\",\n                \"real_implementation_percent\",\n                \"next_allowed_gate\",\n                \"blocking_reason_if_any\",\n            ],\n        },\n    }\n\n\ndef test_semantic_extract_check_is_valid_for_bridge() -> None:\n    assert validate_check(valid_semantic_extract_check(), 1) == []\n\n\ndef test_semantic_extract_requires_source_result() -> None:\n    check = {\"type\": \"worker_result_semantic_extract\", \"request\": {}}\n    assert validate_check(check, 1) == [\"CHECK_1_SOURCE_RESULT_REQUIRED\"]\n\n\ndef test_semantic_extract_rejects_non_results_branch() -> None:\n    check = valid_semantic_extract_check()\n    check[\"request\"][\"source_result\"][\"branch\"] = \"Edarsahub_Desarrollo\"\n    assert validate_check(check, 1) == [\"CHECK_1_INVALID_SOURCE_RESULT_BRANCH\"]\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_universal_job_bridge_semantic_extract_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "hard_fail_conditions": [
+    "Do not touch SQL or Production.",
+    "Do not touch Tablajeria business logic.",
+    "Do not touch frontend, Scheduler, NetPay, migrations, or API routes.",
+    "Fail if replacement count is not exactly 1.",
+    "Fail if write scope is outside the two allowed files.",
+    "Fail if tests do not pass."
+  ],
+  "next_after_success": "Republish semantic extraction as EDARSAHUB-TABLAJERIA-R2-SEMANTIC-EXTRACT-READONLY-R4 because R3 is already terminal rejected.",
+  "next_after_failure": "Report exact blocker; do not open Gate3."
+}
