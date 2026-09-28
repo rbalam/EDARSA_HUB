@@ -1,0 +1,63 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-UNIDADES-DIAG-R2-CARLOS-20260928",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
+  "objective": "Diagnosticar por que sync_comercial_v2 automatico solo procesa 130MID y CIENFUEGOS y deja fuera ORIGEN, 130QRO y ESTELAR, que tuvieron que resincronizarse manualmente desde Reportes ISCAM. Revisar exclusivamente configuracion canonica de Unidades_Negocio y conexiones asociadas. No modificar datos ni codigo. Etiqueta: Sincronizador.",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "unidades_sync_classification",
+          "sql": "SELECT CONVERT(varchar(36),id) AS unidad_pk,codigo,nombre,system_type,CONVERT(varchar(36),server_id) AS server_id,sucursal_origen_id,activo FROM dbo.Unidades_Negocio WHERE codigo IN ('130MID','130QRO','CIENFUEGOS','ESTELAR','ORIGEN') ORDER BY codigo"
+        },
+        {
+          "name": "servers_for_units",
+          "sql": "SELECT u.codigo,u.nombre AS unidad,u.system_type,u.activo AS unidad_activa,CONVERT(varchar(36),s.id) AS server_id,s.nombre AS servidor,s.system_type AS server_system_type,s.tipo_conexion,s.activo AS servidor_activo,s.visible_en_operaciones FROM dbo.Unidades_Negocio u LEFT JOIN dbo.Servidores_Conexiones s ON s.id=u.server_id WHERE u.codigo IN ('130MID','130QRO','CIENFUEGOS','ESTELAR','ORIGEN') ORDER BY u.codigo"
+        },
+        {
+          "name": "auto_incremental_units_6h",
+          "sql": "SELECT unidad_negocio_id,COUNT(*) AS ejecuciones,MIN(run_timestamp) AS primera,MAX(run_timestamp) AS ultima FROM dbo.Comercial_SyncLog_v2 WHERE run_type='INCREMENTAL' AND run_id LIKE 'INCR-%' AND run_timestamp>=DATEADD(hour,-6,SYSUTCDATETIME()) GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        },
+        {
+          "name": "manual_resync_units_6h",
+          "sql": "SELECT run_id,unidad_negocio_id,fecha_inicio,fecha_fin,run_timestamp,status FROM dbo.Comercial_SyncLog_v2 WHERE run_type='INCREMENTAL' AND run_id LIKE 'RESYNC-%' AND run_timestamp>=DATEADD(hour,-6,SYSUTCDATETIME()) ORDER BY run_timestamp DESC"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No DDL/DML",
+    "No code changes",
+    "Do not touch sync_comercial_abiertas_v2",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
