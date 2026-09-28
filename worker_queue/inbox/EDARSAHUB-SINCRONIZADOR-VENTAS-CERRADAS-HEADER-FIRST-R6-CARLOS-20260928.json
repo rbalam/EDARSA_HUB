@@ -1,0 +1,91 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-HEADER-FIRST-R6-CARLOS-20260928",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
+  "mode": "MUTATION",
+  "objective": "Corregir exclusivamente el automatico de Ventas Cerradas sync_comercial_v2. Mantener heartbeat del lock automatico durante ejecuciones largas y cambiar a HEADER-FIRST: primero completar headers de todas las unidades y despues pagos ISCAM/detalle. No modificar bajo ninguna circunstancia backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py ni la logica de Ventas del Dia. Etiqueta: Sincronizador.",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/scheduler_manager.py",
+      "old": "        job_logger = get_job_logger()\n        log_entry = await job_logger.start_execution(\"sync_comercial_v2\")",
+      "new": "        # Mantener el lock vivo durante ciclos largos, igual que la ejecución manual.\n        await lock.start_heartbeat_loop(\n            interval_seconds=30,\n            extend_seconds=600,\n        )\n\n        job_logger = get_job_logger()\n        log_entry = await job_logger.start_execution(\"sync_comercial_v2\")",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+      "old": "        \"pagos_iscam_insertados\": 0,\n    }\n    \n    def _sync_detalle_post_header(",
+      "new": "        \"pagos_iscam_insertados\": 0,\n    }\n\n    # Header-first: los enriquecimientos esperan hasta que las ventas cerradas\n    # de todas las unidades hayan sido procesadas.\n    post_header_queue = []\n    \n    def _sync_detalle_post_header(",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+      "old": "            if resultado.success:\n                _sync_pagos_post_header(\n                    unidad_id,\n                    fecha_inicio,\n                    fecha_fin,\n                    detalle,\n                )\n\n                for detail_day_offset in range(\n                    (fecha_fin - fecha_inicio).days + 1\n                ):\n                    detail_day = (\n                        fecha_inicio\n                        + timedelta(days=detail_day_offset)\n                    )\n\n                    _sync_detalle_post_header(\n                        unidad_id,\n                        detail_day,\n                        detalle,\n                    )\n\n                results[\"unidades_exitosas\"] += 1",
+      "new": "            if resultado.success:\n                post_header_queue.append((\n                    unidad_id,\n                    fecha_inicio,\n                    fecha_fin,\n                    detalle,\n                ))\n\n                results[\"unidades_exitosas\"] += 1",
+      "expected_count": 2
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+      "old": "    # =========================================================================\n    # FINALIZAR\n    # =========================================================================\n    \n    end_time = datetime.now(timezone.utc)",
+      "new": "    # =========================================================================\n    # FASE P1: ENRIQUECER PAGOS Y DETALLE DESPUES DE TODOS LOS HEADERS\n    # =========================================================================\n\n    for (\n        unidad_id,\n        fecha_inicio,\n        fecha_fin,\n        detalle,\n    ) in post_header_queue:\n        _sync_pagos_post_header(\n            unidad_id,\n            fecha_inicio,\n            fecha_fin,\n            detalle,\n        )\n\n        for detail_day_offset in range(\n            (fecha_fin - fecha_inicio).days + 1\n        ):\n            detail_day = (\n                fecha_inicio\n                + timedelta(days=detail_day_offset)\n            )\n            _sync_detalle_post_header(\n                unidad_id,\n                detail_day,\n                detalle,\n            )\n\n    # =========================================================================\n    # FINALIZAR\n    # =========================================================================\n    \n    end_time = datetime.now(timezone.utc)",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_sync_comercial_v2_header_first_scheduler_guard.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[1]\nJOB = ROOT / \"core/scheduler/jobs/sync_comercial_v2_job.py\"\nMANAGER = ROOT / \"core/scheduler/scheduler_manager.py\"\n\ndef test_closed_sales_headers_are_completed_before_enrichment():\n    text = JOB.read_text(encoding=\"utf-8\")\n    assert \"post_header_queue = []\" in text\n    assert text.count(\"post_header_queue.append((\") == 2\n    marker = \"# FASE P1: ENRIQUECER PAGOS Y DETALLE DESPUES DE TODOS LOS HEADERS\"\n    assert marker in text\n    phase = text.split(marker, 1)[1]\n    assert \"_sync_pagos_post_header(\" in phase\n    assert \"_sync_detalle_post_header(\" in phase\n\ndef test_automatic_closed_sales_lock_has_heartbeat():\n    text = MANAGER.read_text(encoding=\"utf-8\")\n    start = text.index(\"async def _run_sync_comercial_v2_job\")\n    end = text.index(\"async def _run_sync_comercial_abiertas_v2_job\")\n    block = text[start:end]\n    assert \"await lock.start_heartbeat_loop(\" in block\n    assert \"interval_seconds=30\" in block\n    assert \"extend_seconds=600\" in block\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/scheduler/scheduler_manager.py",
+        "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+        "backend/tests/test_sync_comercial_v2_header_first_scheduler_guard.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_sync_comercial_v2_header_first_scheduler_guard.py",
+        "backend/tests/test_sync_comercial_v2_multi_operational_date_no_dml.py",
+        "backend/tests/test_sync_comercial_v2_detail_runtime_no_dml.py",
+        "backend/tests/test_sync_comercial_v2_single_unit_scope_contract.py"
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not modify backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+    "Do not change open-sales scheduler behavior",
+    "No SQL DDL/DML",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
