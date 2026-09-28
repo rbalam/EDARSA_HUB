@@ -1,0 +1,67 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-DIA-POSTRESTORE-READONLY-R3-CARLOS-20260928",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "1c0c66f67c09811c8f905f955493df73f53bac37",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Validar despues de la restauracion runtime que el job protegido sync_comercial_abiertas_v2 vuelve a ejecutarse automaticamente sin modificar su codigo. Confirmar nuevas ejecuciones VENTAS_DIA posteriores a 2026-09-28T21:57:34Z, cinco sucursales y ausencia de pausa/lock. Etiqueta: Sincronizador.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "scheduler_pause_state",
+          "sql": "SELECT JobID,PausadoAdministrativo,FechaActualizacion FROM dbo.Sys_Scheduler_RuntimeState WHERE JobID='sync_comercial_abiertas_v2'"
+        },
+        {
+          "name": "ventas_dia_latest_runs",
+          "sql": "SELECT TOP (30) run_id,run_timestamp,run_type,unidad_negocio_id,fecha_inicio,fecha_fin,status,error_message,source_connection_status FROM dbo.Comercial_SyncLog_v2 WHERE run_type='VENTAS_DIA' ORDER BY run_timestamp DESC"
+        },
+        {
+          "name": "ventas_dia_new_after_restore",
+          "sql": "SELECT run_id,MIN(run_timestamp) AS inicio,MAX(run_timestamp) AS fin,COUNT(*) AS registros,SUM(CASE WHEN status='SUCCESS' THEN 1 ELSE 0 END) AS exitosos,SUM(CASE WHEN status<>'SUCCESS' THEN 1 ELSE 0 END) AS no_exitosos FROM dbo.Comercial_SyncLog_v2 WHERE run_type='VENTAS_DIA' AND run_timestamp>'2026-09-28T21:57:34' GROUP BY run_id ORDER BY fin DESC"
+        },
+        {
+          "name": "ventas_dia_snapshot_freshness",
+          "sql": "SELECT unidad_negocio_id,sucursal_id,fecha_operacion,snapshot_timestamp,sync_run_id,total_estimado_dia FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 ORDER BY unidad_negocio_id,sucursal_id"
+        },
+        {
+          "name": "ventas_dia_stale_lock",
+          "sql": "SELECT TOP (10) SyncRunID,SyncType,Status,StartedAtMexico,FinishedAtMexico,ErrorMessage FROM dbo.Sync_Control_Ejecuciones WHERE SyncType='VENTAS_DIA' AND Status='IN_PROGRESS' AND FinishedAtMexico IS NULL ORDER BY StartedAtMexico"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "Do not modify backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+    "No DDL/DML",
+    "No scheduler mutation",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Dia"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
