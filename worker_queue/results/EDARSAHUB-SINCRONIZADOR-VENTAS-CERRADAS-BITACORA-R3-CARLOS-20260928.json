@@ -1,0 +1,2746 @@
+{
+  "base_sha": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-28T22:18:41Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-BITACORA-R3-CARLOS-20260928",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-28T22:19:12Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "JobName",
+              "RunID",
+              "Accion",
+              "FechaAccion",
+              "Exito",
+              "MensajeError",
+              "DetallesJSON"
+            ],
+            "name": "scheduler_bitacora_sync_comercial_v2",
+            "row_count_returned": 80,
+            "rows": [
+              [
+                "sync_comercial_v2",
+                "079e39345fb0",
+                "START",
+                "2026-09-28T22:03:25.527000",
+                null,
+                null,
+                "{\"id\": \"702dcb5a-6ae0-4df8-9b9c-dfd050a90961\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"079e39345fb0\", \"started_at\": \"2026-09-28T22:03:25.310720+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "dd518dfa36c3",
+                "START",
+                "2026-09-28T21:45:54.270000",
+                null,
+                null,
+                "{\"id\": \"09391f50-c693-4897-9bf9-2a6eee934e22\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"dd518dfa36c3\", \"started_at\": \"2026-09-28T21:45:54.049467+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "ead78dcd5971",
+                "START",
+                "2026-09-28T21:34:28.193000",
+                null,
+                null,
+                "{\"id\": \"daa2ae26-7a71-4679-9014-7663fa8a5fbc\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"ead78dcd5971\", \"started_at\": \"2026-09-28T21:34:27.972672+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "db67930cfea9",
+                "START",
+                "2026-09-28T21:16:46.327000",
+                null,
+                null,
+                "{\"id\": \"b709a052-9ece-45c3-b55e-0865a02e28b0\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"db67930cfea9\", \"started_at\": \"2026-09-28T21:16:46.070696+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "d3c0dad233d5",
+                "START",
+                "2026-09-28T20:59:06.073000",
+                null,
+                null,
+                "{\"id\": \"d361a687-548e-48ad-b4f6-58a562dd09c5\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"d3c0dad233d5\", \"started_at\": \"2026-09-28T20:59:05.856101+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "97ec6ba22cd7",
+                "START",
+                "2026-09-28T20:40:50.250000",
+                null,
+                null,
+                "{\"id\": \"242d5b9b-d2c6-4227-83be-65c4d5521a14\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"97ec6ba22cd7\", \"started_at\": \"2026-09-28T20:40:50.026420+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "774ae6ed23dc",
+                "START",
+                "2026-09-28T20:23:02.180000",
+                null,
+                null,
+                "{\"id\": \"c91bc9b4-834d-4609-95c5-6a912fa21d70\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"774ae6ed23dc\", \"started_at\": \"2026-09-28T20:23:01.967357+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "2caef8b12daf",
+                "START",
+                "2026-09-28T20:05:12.653000",
+                null,
+                null,
+                "{\"id\": \"ce4128c5-0762-4296-acd3-1c79b5af72e8\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"2caef8b12daf\", \"started_at\": \"2026-09-28T20:05:12.423453+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "e35f8c8dd738",
+                "START",
+                "2026-09-28T19:47:33.587000",
+                null,
+                null,
+                "{\"id\": \"f57f658d-9d7f-4c35-b175-eee91a79c395\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"e35f8c8dd738\", \"started_at\": \"2026-09-28T19:47:33.366054+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "5a623d87538a",
+                "START",
+                "2026-09-28T19:29:30.323000",
+                null,
+                null,
+                "{\"id\": \"56681bc5-d471-4e36-82f3-fad48022ab40\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"5a623d87538a\", \"started_at\": \"2026-09-28T19:29:30.111790+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "35f513432422",
+                "START",
+                "2026-09-28T19:11:17.933000",
+                null,
+                null,
+                "{\"id\": \"6b7174ab-44fc-4c9c-91f1-e7651fa969ed\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"35f513432422\", \"started_at\": \"2026-09-28T19:11:17.689422+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "82fb5916a48f",
+                "START",
+                "2026-09-28T18:52:26.340000",
+                null,
+                null,
+                "{\"id\": \"42ac89ee-ec53-4e8b-b984-f59bbc17889f\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"82fb5916a48f\", \"started_at\": \"2026-09-28T18:52:26.128675+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "98eb2fd0f15c",
+                "START",
+                "2026-09-28T18:34:32.787000",
+                null,
+                null,
+                "{\"id\": \"d429a21c-850c-42a2-a30f-3d4c2c2f2dff\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"98eb2fd0f15c\", \"started_at\": \"2026-09-28T18:34:32.577480+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "4bd24042cd6b",
+                "START",
+                "2026-09-28T18:16:44.110000",
+                null,
+                null,
+                "{\"id\": \"5ee0dfb5-ce80-4a0c-8b03-799fc93f3877\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"4bd24042cd6b\", \"started_at\": \"2026-09-28T18:16:43.889556+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "9a5a7b484ab5",
+                "START",
+                "2026-09-28T17:58:53.027000",
+                null,
+                null,
+                "{\"id\": \"bc156b2f-0f4e-4b6e-ab5d-b5427e5ab19d\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"9a5a7b484ab5\", \"started_at\": \"2026-09-28T17:58:52.815718+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "feb88b528182",
+                "START",
+                "2026-09-28T17:41:12.433000",
+                null,
+                null,
+                "{\"id\": \"3b13100c-ff7f-4fb3-a7dd-9d75e34819a1\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"feb88b528182\", \"started_at\": \"2026-09-28T17:41:12.222528+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "88d74fa3b391",
+                "START",
+                "2026-09-28T17:23:06.933000",
+                null,
+                null,
+                "{\"id\": \"6dc9f278-b694-4db7-be61-de866d09245d\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"88d74fa3b391\", \"started_at\": \"2026-09-28T17:23:06.716294+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "b20e5bf164cf",
+                "START",
+                "2026-09-28T17:05:25.760000",
+                null,
+                null,
+                "{\"id\": \"0be62d1b-10d5-4337-9d54-459cf2a43e6d\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"b20e5bf164cf\", \"started_at\": \"2026-09-28T17:05:25.540448+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "35e89e86a190",
+                "START",
+                "2026-09-28T16:47:11.190000",
+                null,
+                null,
+                "{\"id\": \"51ca7d0b-8095-4dc6-aab0-aeaf5323147c\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"35e89e86a190\", \"started_at\": \"2026-09-28T16:47:10.888917+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "94fb98b2dabe",
+                "START",
+                "2026-09-28T16:28:47.973000",
+                null,
+                null,
+                "{\"id\": \"bccaa735-7186-4ab7-b34a-1811844fb32f\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"94fb98b2dabe\", \"started_at\": \"2026-09-28T16:28:47.754995+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "6e1957ae1614",
+                "START",
+                "2026-09-28T16:11:08.303000",
+                null,
+                null,
+                "{\"id\": \"17023dcd-3eb7-4635-a5aa-01067d89420f\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"6e1957ae1614\", \"started_at\": \"2026-09-28T16:11:08.090891+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "1b4ddb4095a4",
+                "START",
+                "2026-09-28T15:52:28.710000",
+                null,
+                null,
+                "{\"id\": \"29b07147-d6ee-4f30-866f-edbd8de743b7\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"1b4ddb4095a4\", \"started_at\": \"2026-09-28T15:52:28.503638+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "5b6306226846",
+                "START",
+                "2026-09-28T15:33:51.210000",
+                null,
+                null,
+                "{\"id\": \"0319a66a-53c5-4c2d-8917-7806550b39e4\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"5b6306226846\", \"started_at\": \"2026-09-28T15:33:50.984583+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "6d5eb6ca3170",
+                "START",
+                "2026-09-28T15:18:51.497000",
+                null,
+                null,
+                "{\"id\": \"73cdb812-0b4a-4dea-9ccc-1053ef7630c4\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"6d5eb6ca3170\", \"started_at\": \"2026-09-28T15:18:51.287311+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "4e5d39bbb061",
+                "START",
+                "2026-09-28T15:01:16.157000",
+                null,
+                null,
+                "{\"id\": \"78a6b543-7a41-42b6-bd78-725963a92d70\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"4e5d39bbb061\", \"started_at\": \"2026-09-28T15:01:15.895487+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "f3200408008c",
+                "START",
+                "2026-09-28T14:43:44.847000",
+                null,
+                null,
+                "{\"id\": \"26924760-863e-4158-9b02-3dcbe5ccfabe\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"f3200408008c\", \"started_at\": \"2026-09-28T14:43:44.640397+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "9cb376d9ac03",
+                "START",
+                "2026-09-28T14:25:39.190000",
+                null,
+                null,
+                "{\"id\": \"4733ce1c-05f6-46be-87e0-af8004fd42f8\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"9cb376d9ac03\", \"started_at\": \"2026-09-28T14:25:38.939957+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "7acfcfd4c016",
+                "START",
+                "2026-09-28T14:07:51.347000",
+                null,
+                null,
+                "{\"id\": \"7e5da9cf-3d88-4e94-ab4c-daf4fc998073\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"7acfcfd4c016\", \"started_at\": \"2026-09-28T14:07:51.121035+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "a9bf413e5c43",
+                "START",
+                "2026-09-28T13:50:08.490000",
+                null,
+                null,
+                "{\"id\": \"d8ddb0e3-67ad-4b66-b6c6-d88cd8adc728\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"a9bf413e5c43\", \"started_at\": \"2026-09-28T13:50:08.275382+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "1ff153adbf2c",
+                "START",
+                "2026-09-28T13:32:31.037000",
+                null,
+                null,
+                "{\"id\": \"1a1226c6-ef22-415d-8ee8-e74e8cc997bb\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"1ff153adbf2c\", \"started_at\": \"2026-09-28T13:32:30.822837+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "6ac6463feaaa",
+                "START",
+                "2026-09-28T13:14:40.273000",
+                null,
+                null,
+                "{\"id\": \"1325c1ca-a76b-4121-bc71-a4676fc89fd4\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"6ac6463feaaa\", \"started_at\": \"2026-09-28T13:14:40.060615+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "c8fbba5fdbf5",
+                "START",
+                "2026-09-28T12:57:03.123000",
+                null,
+                null,
+                "{\"id\": \"02a7f64b-3878-4565-ac02-26d1c7bdbafd\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"c8fbba5fdbf5\", \"started_at\": \"2026-09-28T12:57:02.909574+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "03fee18aa091",
+                "START",
+                "2026-09-28T12:39:21.877000",
+                null,
+                null,
+                "{\"id\": \"94f90297-25ee-4e69-8719-45ea5aa19ba7\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"03fee18aa091\", \"started_at\": \"2026-09-28T12:39:21.662761+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "2a7c0421cca1",
+                "START",
+                "2026-09-28T12:21:39.227000",
+                null,
+                null,
+                "{\"id\": \"dfcea1ff-fd5f-4359-a9ea-8248644f500e\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"2a7c0421cca1\", \"started_at\": \"2026-09-28T12:21:39.007754+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "e1b131da6635",
+                "START",
+                "2026-09-28T12:03:24.027000",
+                null,
+                null,
+                "{\"id\": \"0a502cff-bdf0-4604-ac93-622ba845304d\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"e1b131da6635\", \"started_at\": \"2026-09-28T12:03:23.815985+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "6cb0f0550cdb",
+                "START",
+                "2026-09-28T11:44:51.377000",
+                null,
+                null,
+                "{\"id\": \"0ab68754-30f3-4f1d-bde9-57b170737aa0\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"6cb0f0550cdb\", \"started_at\": \"2026-09-28T11:44:51.155091+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "450f437d7c58",
+                "START",
+                "2026-09-28T11:27:14.033000",
+                null,
+                null,
+                "{\"id\": \"8a4edb99-566e-418a-8d88-7ff027473867\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"450f437d7c58\", \"started_at\": \"2026-09-28T11:27:13.816010+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "0cf1b00a5641",
+                "START",
+                "2026-09-28T11:06:48.697000",
+                null,
+                null,
+                "{\"id\": \"0e0e3b56-6789-4b0a-863d-89d1ea37a5f4\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"0cf1b00a5641\", \"started_at\": \"2026-09-28T11:06:48.489765+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "4bd6d298e354",
+                "START",
+                "2026-09-28T10:48:52.443000",
+                null,
+                null,
+                "{\"id\": \"ef42e910-80fc-4d99-a3d6-eb8f4594ecb4\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"4bd6d298e354\", \"started_at\": \"2026-09-28T10:48:52.232485+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "aabac769d6b7",
+                "START",
+                "2026-09-28T10:30:14.573000",
+                null,
+                null,
+                "{\"id\": \"eb8eecfc-9bf0-4b0d-8b0e-6c1831f68ac4\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"aabac769d6b7\", \"started_at\": \"2026-09-28T10:30:14.340551+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "de6ee8ab502a",
+                "START",
+                "2026-09-28T10:12:12.040000",
+                null,
+                null,
+                "{\"id\": \"d34573d0-d3af-4234-8d0c-81565b37d119\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"de6ee8ab502a\", \"started_at\": \"2026-09-28T10:12:11.719641+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "49356452d6db",
+                "START",
+                "2026-09-28T09:52:49.043000",
+                null,
+                null,
+                "{\"id\": \"2374bb68-47f4-4464-99c8-86d34d653735\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"49356452d6db\", \"started_at\": \"2026-09-28T09:52:48.807773+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "c40123e5f547",
+                "START",
+                "2026-09-28T09:34:28.120000",
+                null,
+                null,
+                "{\"id\": \"9e4b077c-89a0-4d59-abc0-8244db140372\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"c40123e5f547\", \"started_at\": \"2026-09-28T09:34:27.905529+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "62ffc11a6e91",
+                "START",
+                "2026-09-28T09:16:17.257000",
+                null,
+                null,
+                "{\"id\": \"09b88947-a0b3-4b65-81d3-650a5615a4ab\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"62ffc11a6e91\", \"started_at\": \"2026-09-28T09:16:17.042913+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "ae306798bd3a",
+                "START",
+                "2026-09-28T08:58:16.390000",
+                null,
+                null,
+                "{\"id\": \"825f58bd-b05f-4951-b01c-e45b9508662e\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"ae306798bd3a\", \"started_at\": \"2026-09-28T08:58:16.110856+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "f7317dbbee22",
+                "START",
+                "2026-09-28T08:40:17.423000",
+                null,
+                null,
+                "{\"id\": \"2f9c3325-09cf-43d4-b467-df04fdaa8889\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"f7317dbbee22\", \"started_at\": \"2026-09-28T08:40:17.201662+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "3b98d761d026",
+                "START",
+                "2026-09-28T08:21:34.760000",
+                null,
+                null,
+                "{\"id\": \"3b644fb2-a684-4d3f-80e3-a4c1c064fb20\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"3b98d761d026\", \"started_at\": \"2026-09-28T08:21:34.321721+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "a3b87e6555e3",
+                "START",
+                "2026-09-28T08:03:39.573000",
+                null,
+                null,
+                "{\"id\": \"cc5cd408-a316-43c3-bd2a-923a31afa36d\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"a3b87e6555e3\", \"started_at\": \"2026-09-28T08:03:39.362506+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "24286fc02bff",
+                "START",
+                "2026-09-28T07:45:54.143000",
+                null,
+                null,
+                "{\"id\": \"985ff3e3-79a6-4db6-a2d6-e7edb5271433\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"24286fc02bff\", \"started_at\": \"2026-09-28T07:45:53.843565+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "d31a388bf7ea",
+                "START",
+                "2026-09-28T07:28:06.020000",
+                null,
+                null,
+                "{\"id\": \"67cb3d7d-f7b9-457b-b038-3bbb94d91566\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"d31a388bf7ea\", \"started_at\": \"2026-09-28T07:28:05.802027+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "08c9f9b4ca10",
+                "START",
+                "2026-09-28T07:10:12.523000",
+                null,
+                null,
+                "{\"id\": \"4586ebd8-51e2-44da-bc16-784db9cf8aac\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"08c9f9b4ca10\", \"started_at\": \"2026-09-28T07:10:12.311521+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "b08db37e18e8",
+                "START",
+                "2026-09-28T06:52:23.167000",
+                null,
+                null,
+                "{\"id\": \"aa17e875-fb42-420f-867b-08b5233d996b\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"b08db37e18e8\", \"started_at\": \"2026-09-28T06:52:22.948146+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "f44eade04a31",
+                "START",
+                "2026-09-28T06:34:27.233000",
+                null,
+                null,
+                "{\"id\": \"b58ecfff-e078-4bf8-903b-44044f511667\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"f44eade04a31\", \"started_at\": \"2026-09-28T06:34:27.023881+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "54cbece29c2b",
+                "START",
+                "2026-09-28T06:16:43.463000",
+                null,
+                null,
+                "{\"id\": \"f9408c0b-4f05-4ddd-bd7e-c8105d8d42fa\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"54cbece29c2b\", \"started_at\": \"2026-09-28T06:16:43.248767+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "477eb9e7448c",
+                "START",
+                "2026-09-28T05:58:47.623000",
+                null,
+                null,
+                "{\"id\": \"ce4dd2a2-7cd6-45be-bc61-963e22ec5b11\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"477eb9e7448c\", \"started_at\": \"2026-09-28T05:58:47.132876+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "e9526e174104",
+                "START",
+                "2026-09-28T05:41:05.057000",
+                null,
+                null,
+                "{\"id\": \"f7103996-177d-42d7-a7a4-4bc81c42cf1c\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"e9526e174104\", \"started_at\": \"2026-09-28T05:41:04.836999+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "d33129461412",
+                "START",
+                "2026-09-28T05:23:09.510000",
+                null,
+                null,
+                "{\"id\": \"f36ee3ae-b3f3-4630-91b3-ac60f3b11f1a\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"d33129461412\", \"started_at\": \"2026-09-28T05:23:09.095768+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "a795cb41f358",
+                "START",
+                "2026-09-28T05:05:17.450000",
+                null,
+                null,
+                "{\"id\": \"be40fedf-7e97-4ac0-9d10-9905e46084c4\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"a795cb41f358\", \"started_at\": \"2026-09-28T05:05:17.229396+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "be9ed9faf3cc",
+                "START",
+                "2026-09-28T04:47:20.343000",
+                null,
+                null,
+                "{\"id\": \"c3d6d4c0-fba9-4a62-8863-ea44c6584449\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"be9ed9faf3cc\", \"started_at\": \"2026-09-28T04:47:20.124074+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "9c86bdcfce26",
+                "START",
+                "2026-09-28T04:28:58.023000",
+                null,
+                null,
+                "{\"id\": \"62bd4aaf-4864-4e8c-a39f-08eaaecffbbf\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"9c86bdcfce26\", \"started_at\": \"2026-09-28T04:28:57.670373+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "5506b20a8c4b",
+                "START",
+                "2026-09-28T04:11:08.603000",
+                null,
+                null,
+                "{\"id\": \"2bed81b3-6308-4234-885d-346a18c54041\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"5506b20a8c4b\", \"started_at\": \"2026-09-28T04:11:08.396527+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "6714131d3d30",
+                "START",
+                "2026-09-28T03:53:14.330000",
+                null,
+                null,
+                "{\"id\": \"77f669ac-3ddc-4fea-b0ed-a21c7e0506b2\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"6714131d3d30\", \"started_at\": \"2026-09-28T03:53:14.027114+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "3b3fbd6f413e",
+                "START",
+                "2026-09-28T03:35:03.300000",
+                null,
+                null,
+                "{\"id\": \"efd77ba1-b4e5-4837-8bb9-e16ff4c842f9\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"3b3fbd6f413e\", \"started_at\": \"2026-09-28T03:35:03.073852+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "6a8678ffb895",
+                "START",
+                "2026-09-28T03:17:14.467000",
+                null,
+                null,
+                "{\"id\": \"d7419aa9-aa7a-4adc-97ce-c2e000c294c2\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"6a8678ffb895\", \"started_at\": \"2026-09-28T03:17:14.255686+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "dd6de5667ef5",
+                "START",
+                "2026-09-28T02:59:21.717000",
+                null,
+                null,
+                "{\"id\": \"b1591db0-ff63-4e1b-a55c-110383d2f28b\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"dd6de5667ef5\", \"started_at\": \"2026-09-28T02:59:21.494388+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "59eb8fe715e9",
+                "START",
+                "2026-09-28T02:41:34.760000",
+                null,
+                null,
+                "{\"id\": \"dbc6fcd8-7429-46a8-b244-847623ce7f1e\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"59eb8fe715e9\", \"started_at\": \"2026-09-28T02:41:34.532739+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "5283e69faa08",
+                "START",
+                "2026-09-28T02:23:39.857000",
+                null,
+                null,
+                "{\"id\": \"5f7787c3-bab5-43b4-b36d-9a5943db78bf\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"5283e69faa08\", \"started_at\": \"2026-09-28T02:23:39.553843+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "f26463fd9a3f",
+                "START",
+                "2026-09-28T02:05:52.593000",
+                null,
+                null,
+                "{\"id\": \"afc2115d-4d70-4b36-a4fe-f77a7e17e65b\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"f26463fd9a3f\", \"started_at\": \"2026-09-28T02:05:52.379531+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "778f30e1298c",
+                "START",
+                "2026-09-28T01:47:51.617000",
+                null,
+                null,
+                "{\"id\": \"2c7714ed-d7a2-424e-8123-47d55333596b\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"778f30e1298c\", \"started_at\": \"2026-09-28T01:47:51.405218+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "eb07a2e759b3",
+                "START",
+                "2026-09-28T01:29:17.730000",
+                null,
+                null,
+                "{\"id\": \"d715fac7-e863-4ad5-8930-381a1e611c1b\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"eb07a2e759b3\", \"started_at\": \"2026-09-28T01:29:17.515855+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "2c874c55b7b8",
+                "START",
+                "2026-09-28T01:14:28.187000",
+                null,
+                null,
+                "{\"id\": \"7fd799fc-bb8c-44cb-a69b-a22eda1fbe36\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"2c874c55b7b8\", \"started_at\": \"2026-09-28T01:14:27.968679+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "f1e2da274d46",
+                "START",
+                "2026-09-28T00:55:59.140000",
+                null,
+                null,
+                "{\"id\": \"e59a983a-40b3-441e-b77d-500405e142fe\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"f1e2da274d46\", \"started_at\": \"2026-09-28T00:55:58.927681+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "c79370fac2c6",
+                "START",
+                "2026-09-28T00:37:42.290000",
+                null,
+                null,
+                "{\"id\": \"17bc3323-a0e5-43d0-ac33-a2544107e60a\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"c79370fac2c6\", \"started_at\": \"2026-09-28T00:37:42.078008+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "7a2e5597e96f",
+                "START",
+                "2026-09-28T00:19:34.087000",
+                null,
+                null,
+                "{\"id\": \"0109e27c-59e2-4ee9-a118-4e176c5c5628\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"7a2e5597e96f\", \"started_at\": \"2026-09-28T00:19:33.876008+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "69c1c960f7fa",
+                "START",
+                "2026-09-28T00:01:44.540000",
+                null,
+                null,
+                "{\"id\": \"40c11fc0-8929-4a6a-b76b-b2206fb3ba02\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"69c1c960f7fa\", \"started_at\": \"2026-09-28T00:01:44.320235+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "dfad723fe7e6",
+                "START",
+                "2026-09-27T23:43:38.287000",
+                null,
+                null,
+                "{\"id\": \"2d1b649c-f48f-4d64-b1e2-c4e148262609\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"dfad723fe7e6\", \"started_at\": \"2026-09-27T23:43:37.998053+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "4bf589f90d9d",
+                "START",
+                "2026-09-27T23:27:50.760000",
+                null,
+                null,
+                "{\"id\": \"e0aba1d4-30df-4a51-b91f-a2bc4958283b\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"4bf589f90d9d\", \"started_at\": \"2026-09-27T23:27:50.371552+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "a26482a01268",
+                "START",
+                "2026-09-27T23:10:54.600000",
+                null,
+                null,
+                "{\"id\": \"bdc1fd53-aa41-4701-8c97-b4c0e2987599\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"a26482a01268\", \"started_at\": \"2026-09-27T23:10:54.391263+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "317c244c270d",
+                "START",
+                "2026-09-27T22:53:06.923000",
+                null,
+                null,
+                "{\"id\": \"fd81e7e3-0a3a-420d-968b-1930c59da94b\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"317c244c270d\", \"started_at\": \"2026-09-27T22:53:06.702271+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "e7c0591add05",
+                "START",
+                "2026-09-27T22:38:02.897000",
+                null,
+                null,
+                "{\"id\": \"54231d24-2318-4cbe-a185-c79f055fa225\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"e7c0591add05\", \"started_at\": \"2026-09-27T22:38:02.446186+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "RunID",
+              "started",
+              "finished",
+              "duracion_seg",
+              "exito",
+              "error"
+            ],
+            "name": "scheduler_start_finish_pairs",
+            "row_count_returned": 50,
+            "rows": [
+              [
+                "079e39345fb0",
+                "2026-09-28T22:03:25.527000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "dd518dfa36c3",
+                "2026-09-28T21:45:54.270000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "ead78dcd5971",
+                "2026-09-28T21:34:28.193000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "db67930cfea9",
+                "2026-09-28T21:16:46.327000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "d3c0dad233d5",
+                "2026-09-28T20:59:06.073000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "97ec6ba22cd7",
+                "2026-09-28T20:40:50.250000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "774ae6ed23dc",
+                "2026-09-28T20:23:02.180000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2caef8b12daf",
+                "2026-09-28T20:05:12.653000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "e35f8c8dd738",
+                "2026-09-28T19:47:33.587000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "5a623d87538a",
+                "2026-09-28T19:29:30.323000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "35f513432422",
+                "2026-09-28T19:11:17.933000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "82fb5916a48f",
+                "2026-09-28T18:52:26.340000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "98eb2fd0f15c",
+                "2026-09-28T18:34:32.787000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "4bd24042cd6b",
+                "2026-09-28T18:16:44.110000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "9a5a7b484ab5",
+                "2026-09-28T17:58:53.027000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "feb88b528182",
+                "2026-09-28T17:41:12.433000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "88d74fa3b391",
+                "2026-09-28T17:23:06.933000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "b20e5bf164cf",
+                "2026-09-28T17:05:25.760000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "35e89e86a190",
+                "2026-09-28T16:47:11.190000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "94fb98b2dabe",
+                "2026-09-28T16:28:47.973000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "6e1957ae1614",
+                "2026-09-28T16:11:08.303000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "1b4ddb4095a4",
+                "2026-09-28T15:52:28.710000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "5b6306226846",
+                "2026-09-28T15:33:51.210000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "6d5eb6ca3170",
+                "2026-09-28T15:18:51.497000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "4e5d39bbb061",
+                "2026-09-28T15:01:16.157000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "f3200408008c",
+                "2026-09-28T14:43:44.847000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "9cb376d9ac03",
+                "2026-09-28T14:25:39.190000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "7acfcfd4c016",
+                "2026-09-28T14:07:51.347000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "a9bf413e5c43",
+                "2026-09-28T13:50:08.490000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "1ff153adbf2c",
+                "2026-09-28T13:32:31.037000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "6ac6463feaaa",
+                "2026-09-28T13:14:40.273000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "c8fbba5fdbf5",
+                "2026-09-28T12:57:03.123000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "03fee18aa091",
+                "2026-09-28T12:39:21.877000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2a7c0421cca1",
+                "2026-09-28T12:21:39.227000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "e1b131da6635",
+                "2026-09-28T12:03:24.027000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "6cb0f0550cdb",
+                "2026-09-28T11:44:51.377000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "450f437d7c58",
+                "2026-09-28T11:27:14.033000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "0cf1b00a5641",
+                "2026-09-28T11:06:48.697000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "4bd6d298e354",
+                "2026-09-28T10:48:52.443000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "aabac769d6b7",
+                "2026-09-28T10:30:14.573000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "de6ee8ab502a",
+                "2026-09-28T10:12:12.040000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "49356452d6db",
+                "2026-09-28T09:52:49.043000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "c40123e5f547",
+                "2026-09-28T09:34:28.120000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "62ffc11a6e91",
+                "2026-09-28T09:16:17.257000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "ae306798bd3a",
+                "2026-09-28T08:58:16.390000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "f7317dbbee22",
+                "2026-09-28T08:40:17.423000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "3b98d761d026",
+                "2026-09-28T08:21:34.760000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "a3b87e6555e3",
+                "2026-09-28T08:03:39.573000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "24286fc02bff",
+                "2026-09-28T07:45:54.143000",
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "d31a388bf7ea",
+                "2026-09-28T07:28:06.020000",
+                null,
+                null,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "RunID",
+              "started",
+              "finished",
+              "age_minutes"
+            ],
+            "name": "unfinished_scheduler_runs",
+            "row_count_returned": 161,
+            "rows": [
+              [
+                "079e39345fb0",
+                "2026-09-28T22:03:25.527000",
+                null,
+                15
+              ],
+              [
+                "dd518dfa36c3",
+                "2026-09-28T21:45:54.270000",
+                null,
+                33
+              ],
+              [
+                "ead78dcd5971",
+                "2026-09-28T21:34:28.193000",
+                null,
+                44
+              ],
+              [
+                "db67930cfea9",
+                "2026-09-28T21:16:46.327000",
+                null,
+                62
+              ],
+              [
+                "d3c0dad233d5",
+                "2026-09-28T20:59:06.073000",
+                null,
+                79
+              ],
+              [
+                "97ec6ba22cd7",
+                "2026-09-28T20:40:50.250000",
+                null,
+                98
+              ],
+              [
+                "774ae6ed23dc",
+                "2026-09-28T20:23:02.180000",
+                null,
+                115
+              ],
+              [
+                "2caef8b12daf",
+                "2026-09-28T20:05:12.653000",
+                null,
+                133
+              ],
+              [
+                "e35f8c8dd738",
+                "2026-09-28T19:47:33.587000",
+                null,
+                151
+              ],
+              [
+                "5a623d87538a",
+                "2026-09-28T19:29:30.323000",
+                null,
+                169
+              ],
+              [
+                "35f513432422",
+                "2026-09-28T19:11:17.933000",
+                null,
+                187
+              ],
+              [
+                "82fb5916a48f",
+                "2026-09-28T18:52:26.340000",
+                null,
+                206
+              ],
+              [
+                "98eb2fd0f15c",
+                "2026-09-28T18:34:32.787000",
+                null,
+                224
+              ],
+              [
+                "4bd24042cd6b",
+                "2026-09-28T18:16:44.110000",
+                null,
+                242
+              ],
+              [
+                "9a5a7b484ab5",
+                "2026-09-28T17:58:53.027000",
+                null,
+                260
+              ],
+              [
+                "feb88b528182",
+                "2026-09-28T17:41:12.433000",
+                null,
+                277
+              ],
+              [
+                "88d74fa3b391",
+                "2026-09-28T17:23:06.933000",
+                null,
+                295
+              ],
+              [
+                "b20e5bf164cf",
+                "2026-09-28T17:05:25.760000",
+                null,
+                313
+              ],
+              [
+                "35e89e86a190",
+                "2026-09-28T16:47:11.190000",
+                null,
+                331
+              ],
+              [
+                "94fb98b2dabe",
+                "2026-09-28T16:28:47.973000",
+                null,
+                350
+              ],
+              [
+                "6e1957ae1614",
+                "2026-09-28T16:11:08.303000",
+                null,
+                367
+              ],
+              [
+                "1b4ddb4095a4",
+                "2026-09-28T15:52:28.710000",
+                null,
+                386
+              ],
+              [
+                "5b6306226846",
+                "2026-09-28T15:33:51.210000",
+                null,
+                405
+              ],
+              [
+                "6d5eb6ca3170",
+                "2026-09-28T15:18:51.497000",
+                null,
+                420
+              ],
+              [
+                "4e5d39bbb061",
+                "2026-09-28T15:01:16.157000",
+                null,
+                437
+              ],
+              [
+                "f3200408008c",
+                "2026-09-28T14:43:44.847000",
+                null,
+                455
+              ],
+              [
+                "9cb376d9ac03",
+                "2026-09-28T14:25:39.190000",
+                null,
+                473
+              ],
+              [
+                "7acfcfd4c016",
+                "2026-09-28T14:07:51.347000",
+                null,
+                491
+              ],
+              [
+                "a9bf413e5c43",
+                "2026-09-28T13:50:08.490000",
+                null,
+                508
+              ],
+              [
+                "1ff153adbf2c",
+                "2026-09-28T13:32:31.037000",
+                null,
+                526
+              ],
+              [
+                "6ac6463feaaa",
+                "2026-09-28T13:14:40.273000",
+                null,
+                544
+              ],
+              [
+                "c8fbba5fdbf5",
+                "2026-09-28T12:57:03.123000",
+                null,
+                561
+              ],
+              [
+                "03fee18aa091",
+                "2026-09-28T12:39:21.877000",
+                null,
+                579
+              ],
+              [
+                "2a7c0421cca1",
+                "2026-09-28T12:21:39.227000",
+                null,
+                597
+              ],
+              [
+                "e1b131da6635",
+                "2026-09-28T12:03:24.027000",
+                null,
+                615
+              ],
+              [
+                "6cb0f0550cdb",
+                "2026-09-28T11:44:51.377000",
+                null,
+                634
+              ],
+              [
+                "450f437d7c58",
+                "2026-09-28T11:27:14.033000",
+                null,
+                651
+              ],
+              [
+                "0cf1b00a5641",
+                "2026-09-28T11:06:48.697000",
+                null,
+                672
+              ],
+              [
+                "4bd6d298e354",
+                "2026-09-28T10:48:52.443000",
+                null,
+                690
+              ],
+              [
+                "aabac769d6b7",
+                "2026-09-28T10:30:14.573000",
+                null,
+                708
+              ],
+              [
+                "de6ee8ab502a",
+                "2026-09-28T10:12:12.040000",
+                null,
+                726
+              ],
+              [
+                "49356452d6db",
+                "2026-09-28T09:52:49.043000",
+                null,
+                746
+              ],
+              [
+                "c40123e5f547",
+                "2026-09-28T09:34:28.120000",
+                null,
+                764
+              ],
+              [
+                "62ffc11a6e91",
+                "2026-09-28T09:16:17.257000",
+                null,
+                782
+              ],
+              [
+                "ae306798bd3a",
+                "2026-09-28T08:58:16.390000",
+                null,
+                800
+              ],
+              [
+                "f7317dbbee22",
+                "2026-09-28T08:40:17.423000",
+                null,
+                818
+              ],
+              [
+                "3b98d761d026",
+                "2026-09-28T08:21:34.760000",
+                null,
+                837
+              ],
+              [
+                "a3b87e6555e3",
+                "2026-09-28T08:03:39.573000",
+                null,
+                855
+              ],
+              [
+                "24286fc02bff",
+                "2026-09-28T07:45:54.143000",
+                null,
+                873
+              ],
+              [
+                "d31a388bf7ea",
+                "2026-09-28T07:28:06.020000",
+                null,
+                890
+              ],
+              [
+                "08c9f9b4ca10",
+                "2026-09-28T07:10:12.523000",
+                null,
+                908
+              ],
+              [
+                "b08db37e18e8",
+                "2026-09-28T06:52:23.167000",
+                null,
+                926
+              ],
+              [
+                "f44eade04a31",
+                "2026-09-28T06:34:27.233000",
+                null,
+                944
+              ],
+              [
+                "54cbece29c2b",
+                "2026-09-28T06:16:43.463000",
+                null,
+                962
+              ],
+              [
+                "477eb9e7448c",
+                "2026-09-28T05:58:47.623000",
+                null,
+                980
+              ],
+              [
+                "e9526e174104",
+                "2026-09-28T05:41:05.057000",
+                null,
+                997
+              ],
+              [
+                "d33129461412",
+                "2026-09-28T05:23:09.510000",
+                null,
+                1015
+              ],
+              [
+                "a795cb41f358",
+                "2026-09-28T05:05:17.450000",
+                null,
+                1033
+              ],
+              [
+                "be9ed9faf3cc",
+                "2026-09-28T04:47:20.343000",
+                null,
+                1051
+              ],
+              [
+                "9c86bdcfce26",
+                "2026-09-28T04:28:58.023000",
+                null,
+                1070
+              ],
+              [
+                "5506b20a8c4b",
+                "2026-09-28T04:11:08.603000",
+                null,
+                1087
+              ],
+              [
+                "6714131d3d30",
+                "2026-09-28T03:53:14.330000",
+                null,
+                1105
+              ],
+              [
+                "3b3fbd6f413e",
+                "2026-09-28T03:35:03.300000",
+                null,
+                1123
+              ],
+              [
+                "6a8678ffb895",
+                "2026-09-28T03:17:14.467000",
+                null,
+                1141
+              ],
+              [
+                "dd6de5667ef5",
+                "2026-09-28T02:59:21.717000",
+                null,
+                1159
+              ],
+              [
+                "59eb8fe715e9",
+                "2026-09-28T02:41:34.760000",
+                null,
+                1177
+              ],
+              [
+                "5283e69faa08",
+                "2026-09-28T02:23:39.857000",
+                null,
+                1195
+              ],
+              [
+                "f26463fd9a3f",
+                "2026-09-28T02:05:52.593000",
+                null,
+                1213
+              ],
+              [
+                "778f30e1298c",
+                "2026-09-28T01:47:51.617000",
+                null,
+                1231
+              ],
+              [
+                "eb07a2e759b3",
+                "2026-09-28T01:29:17.730000",
+                null,
+                1249
+              ],
+              [
+                "2c874c55b7b8",
+                "2026-09-28T01:14:28.187000",
+                null,
+                1264
+              ],
+              [
+                "f1e2da274d46",
+                "2026-09-28T00:55:59.140000",
+                null,
+                1283
+              ],
+              [
+                "c79370fac2c6",
+                "2026-09-28T00:37:42.290000",
+                null,
+                1301
+              ],
+              [
+                "7a2e5597e96f",
+                "2026-09-28T00:19:34.087000",
+                null,
+                1319
+              ],
+              [
+                "69c1c960f7fa",
+                "2026-09-28T00:01:44.540000",
+                null,
+                1337
+              ],
+              [
+                "dfad723fe7e6",
+                "2026-09-27T23:43:38.287000",
+                null,
+                1355
+              ],
+              [
+                "4bf589f90d9d",
+                "2026-09-27T23:27:50.760000",
+                null,
+                1371
+              ],
+              [
+                "a26482a01268",
+                "2026-09-27T23:10:54.600000",
+                null,
+                1388
+              ],
+              [
+                "317c244c270d",
+                "2026-09-27T22:53:06.923000",
+                null,
+                1405
+              ],
+              [
+                "e7c0591add05",
+                "2026-09-27T22:38:02.897000",
+                null,
+                1420
+              ],
+              [
+                "e778086bb0c8",
+                "2026-09-27T22:20:22.777000",
+                null,
+                1438
+              ],
+              [
+                "a87b82608af7",
+                "2026-09-27T22:02:16.613000",
+                null,
+                1456
+              ],
+              [
+                "43bbcd11e9f4",
+                "2026-09-27T21:44:25.307000",
+                null,
+                1474
+              ],
+              [
+                "675a17e62400",
+                "2026-09-27T21:26:39.757000",
+                null,
+                1492
+              ],
+              [
+                "a0819034c8a0",
+                "2026-09-27T21:11:39.410000",
+                null,
+                1507
+              ],
+              [
+                "a3e49693378d",
+                "2026-09-27T20:53:39.987000",
+                null,
+                1525
+              ],
+              [
+                "1e0d703b0121",
+                "2026-09-27T20:35:39.300000",
+                null,
+                1543
+              ],
+              [
+                "2c72609e70bc",
+                "2026-09-27T20:17:52.917000",
+                null,
+                1561
+              ],
+              [
+                "9188ec269bb4",
+                "2026-09-27T19:59:54.993000",
+                null,
+                1579
+              ],
+              [
+                "3b0c563a1709",
+                "2026-09-27T19:42:06.883000",
+                null,
+                1596
+              ],
+              [
+                "74ed9da582a3",
+                "2026-09-27T19:24:08.670000",
+                null,
+                1614
+              ],
+              [
+                "e81b7412cf81",
+                "2026-09-27T19:06:23.910000",
+                null,
+                1632
+              ],
+              [
+                "f375dde9482c",
+                "2026-09-27T18:48:38.390000",
+                null,
+                1650
+              ],
+              [
+                "1e154e24bec0",
+                "2026-09-27T18:30:45.820000",
+                null,
+                1668
+              ],
+              [
+                "5ade7be20e60",
+                "2026-09-27T18:10:38.870000",
+                null,
+                1688
+              ],
+              [
+                "45c0948f85d4",
+                "2026-09-27T17:57:52.537000",
+                null,
+                1701
+              ],
+              [
+                "cba7ba5d24ab",
+                "2026-09-27T17:40:10.067000",
+                null,
+                1718
+              ],
+              [
+                "cbbeec6b313d",
+                "2026-09-27T17:22:18.377000",
+                null,
+                1736
+              ],
+              [
+                "d567cf7ff417",
+                "2026-09-27T17:04:34.793000",
+                null,
+                1754
+              ],
+              [
+                "83c205a4b385",
+                "2026-09-27T16:46:48.150000",
+                null,
+                1772
+              ],
+              [
+                "d303565de4a4",
+                "2026-09-27T16:28:47.323000",
+                null,
+                1790
+              ],
+              [
+                "cd88cae89c24",
+                "2026-09-27T16:10:51.377000",
+                null,
+                1808
+              ],
+              [
+                "2f4ece96668a",
+                "2026-09-27T15:52:46.180000",
+                null,
+                1826
+              ],
+              [
+                "71318bef6a80",
+                "2026-09-27T15:34:52.557000",
+                null,
+                1844
+              ],
+              [
+                "a65352fd5b35",
+                "2026-09-27T15:17:09.290000",
+                null,
+                1861
+              ],
+              [
+                "cdb9eea4956f",
+                "2026-09-27T14:59:23.697000",
+                null,
+                1879
+              ],
+              [
+                "9c17ce048393",
+                "2026-09-27T14:41:41.600000",
+                null,
+                1897
+              ],
+              [
+                "051c1fb36b4f",
+                "2026-09-27T14:23:55.320000",
+                null,
+                1915
+              ],
+              [
+                "a0d260cea452",
+                "2026-09-27T14:06:15.493000",
+                null,
+                1932
+              ],
+              [
+                "e7cd598467f1",
+                "2026-09-27T13:48:35.140000",
+                null,
+                1950
+              ],
+              [
+                "5f0ea3a31c4a",
+                "2026-09-27T13:30:52.907000",
+                null,
+                1968
+              ],
+              [
+                "81c616ec89f4",
+                "2026-09-27T13:13:02.603000",
+                null,
+                1985
+              ],
+              [
+                "58564d760ec5",
+                "2026-09-27T12:55:15.170000",
+                null,
+                2003
+              ],
+              [
+                "512578be6e79",
+                "2026-09-27T12:37:30.820000",
+                null,
+                2021
+              ],
+              [
+                "17042573a4b3",
+                "2026-09-27T12:19:56.333000",
+                null,
+                2039
+              ],
+              [
+                "ed38a20817c5",
+                "2026-09-27T12:02:13.107000",
+                null,
+                2056
+              ],
+              [
+                "2ac59b423f97",
+                "2026-09-27T11:44:32.763000",
+                null,
+                2074
+              ],
+              [
+                "90be1627651f",
+                "2026-09-27T11:26:52.333000",
+                null,
+                2092
+              ],
+              [
+                "87e084034dee",
+                "2026-09-27T11:09:00.073000",
+                null,
+                2109
+              ],
+              [
+                "9549179fa9b8",
+                "2026-09-27T10:51:06.307000",
+                null,
+                2127
+              ],
+              [
+                "e1b6fe5a5a21",
+                "2026-09-27T10:33:20.740000",
+                null,
+                2145
+              ],
+              [
+                "85cff90dab16",
+                "2026-09-27T10:15:45.597000",
+                null,
+                2163
+              ],
+              [
+                "125e4f2d9b8b",
+                "2026-09-27T09:57:57.273000",
+                null,
+                2181
+              ],
+              [
+                "42c459786fb5",
+                "2026-09-27T09:40:15.500000",
+                null,
+                2198
+              ],
+              [
+                "ca85bc85ba9d",
+                "2026-09-27T09:22:33.687000",
+                null,
+                2216
+              ],
+              [
+                "4b455783e28f",
+                "2026-09-27T09:04:46.983000",
+                null,
+                2234
+              ],
+              [
+                "15addf74bc96",
+                "2026-09-27T08:46:40.623000",
+                null,
+                2252
+              ],
+              [
+                "4012f6887a03",
+                "2026-09-27T08:28:51.853000",
+                null,
+                2270
+              ],
+              [
+                "1e286aa2816a",
+                "2026-09-27T08:11:02.277000",
+                null,
+                2287
+              ],
+              [
+                "2ca8f17f5d6c",
+                "2026-09-27T07:53:07.517000",
+                null,
+                2305
+              ],
+              [
+                "8509a99d4651",
+                "2026-09-27T07:35:06.823000",
+                null,
+                2323
+              ],
+              [
+                "a1372c968503",
+                "2026-09-27T07:17:19.123000",
+                null,
+                2341
+              ],
+              [
+                "07c48d0ecdf5",
+                "2026-09-27T06:59:14.573000",
+                null,
+                2359
+              ],
+              [
+                "aa9b07d03ef8",
+                "2026-09-27T06:41:16.163000",
+                null,
+                2377
+              ],
+              [
+                "02716695b60b",
+                "2026-09-27T06:23:17.207000",
+                null,
+                2395
+              ],
+              [
+                "953e21532b06",
+                "2026-09-27T06:05:23.177000",
+                null,
+                2413
+              ],
+              [
+                "25a5291c1fe8",
+                "2026-09-27T05:47:30.820000",
+                null,
+                2431
+              ],
+              [
+                "8c2ab9f35063",
+                "2026-09-27T05:29:26.123000",
+                null,
+                2449
+              ],
+              [
+                "b5eecd2891fe",
+                "2026-09-27T05:11:20.200000",
+                null,
+                2467
+              ],
+              [
+                "62cf9f08dc58",
+                "2026-09-27T04:53:31.200000",
+                null,
+                2485
+              ],
+              [
+                "05fb21fa4717",
+                "2026-09-27T04:35:41.003000",
+                null,
+                2503
+              ],
+              [
+                "490b7c7db652",
+                "2026-09-27T04:17:38.983000",
+                null,
+                2521
+              ],
+              [
+                "d85cfeec330c",
+                "2026-09-27T03:59:28.387000",
+                null,
+                2539
+              ],
+              [
+                "f1c7d1fd2e43",
+                "2026-09-27T03:41:41.553000",
+                null,
+                2557
+              ],
+              [
+                "6128b4011259",
+                "2026-09-27T03:23:47.770000",
+                null,
+                2575
+              ],
+              [
+                "41972a018160",
+                "2026-09-27T03:06:05.363000",
+                null,
+                2592
+              ],
+              [
+                "53412474d96e",
+                "2026-09-27T02:46:45.030000",
+                null,
+                2612
+              ],
+              [
+                "f9e153d51cee",
+                "2026-09-27T02:29:01.447000",
+                null,
+                2629
+              ],
+              [
+                "a475a90f1cf2",
+                "2026-09-27T02:11:13.853000",
+                null,
+                2647
+              ],
+              [
+                "8108475dae66",
+                "2026-09-27T01:53:19.453000",
+                null,
+                2665
+              ],
+              [
+                "689dcddb0035",
+                "2026-09-27T01:35:18.803000",
+                null,
+                2683
+              ],
+              [
+                "b2e04838e417",
+                "2026-09-27T01:17:09.417000",
+                null,
+                2701
+              ],
+              [
+                "58fadea2a3ac",
+                "2026-09-27T00:59:14.403000",
+                null,
+                2719
+              ],
+              [
+                "ee85a44ba8d2",
+                "2026-09-27T00:41:01.890000",
+                null,
+                2737
+              ],
+              [
+                "593061edc30d",
+                "2026-09-27T00:22:49.747000",
+                null,
+                2756
+              ],
+              [
+                "45055558f60c",
+                "2026-09-27T00:04:54.177000",
+                null,
+                2774
+              ],
+              [
+                "f577f6eb6f64",
+                "2026-09-26T23:46:55.390000",
+                null,
+                2792
+              ],
+              [
+                "e619e9d194ec",
+                "2026-09-26T23:29:02.857000",
+                null,
+                2809
+              ],
+              [
+                "c8049e5cc6ea",
+                "2026-09-26T23:11:25.987000",
+                null,
+                2827
+              ],
+              [
+                "63b6c2a8b0fd",
+                "2026-09-26T22:53:38.630000",
+                null,
+                2845
+              ],
+              [
+                "2d20ab2566d6",
+                "2026-09-26T22:35:50.153000",
+                null,
+                2863
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "run_id",
+              "primero",
+              "ultimo",
+              "unidades",
+              "logs"
+            ],
+            "name": "automatic_run_unit_counts",
+            "row_count_returned": 81,
+            "rows": [
+              [
+                "INCR-20260928-220325-6af6",
+                "2026-09-28 22:03:26.7399012",
+                "2026-09-28 22:04:51.0415935",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-214554-3185",
+                "2026-09-28 21:45:55.5385730",
+                "2026-09-28 21:47:04.5843667",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-213428-222c",
+                "2026-09-28 21:34:29.4873266",
+                "2026-09-28 21:35:51.1608957",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-211646-3317",
+                "2026-09-28 21:16:47.8647746",
+                "2026-09-28 21:17:57.9035750",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-205906-b609",
+                "2026-09-28 20:59:07.6600026",
+                "2026-09-28 21:00:18.6962930",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-204050-1307",
+                "2026-09-28 20:40:51.8316819",
+                "2026-09-28 20:42:04.2644625",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-202302-d8f1",
+                "2026-09-28 20:23:03.7517766",
+                "2026-09-28 20:24:12.0102444",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-200512-d936",
+                "2026-09-28 20:05:14.1794638",
+                "2026-09-28 20:06:23.8933550",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-194733-7929",
+                "2026-09-28 19:47:35.1697631",
+                "2026-09-28 19:48:45.6080978",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-192930-441c",
+                "2026-09-28 19:29:31.8534311",
+                "2026-09-28 19:30:42.1923671",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-191118-df39",
+                "2026-09-28 19:11:19.3705982",
+                "2026-09-28 19:12:26.8599850",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-185226-5eb7",
+                "2026-09-28 18:52:27.8489829",
+                "2026-09-28 18:53:54.6108319",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-183432-8e12",
+                "2026-09-28 18:34:34.4105464",
+                "2026-09-28 18:36:05.6264268",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-181644-03e3",
+                "2026-09-28 18:16:45.6412361",
+                "2026-09-28 18:16:45.6412361",
+                1,
+                1
+              ],
+              [
+                "INCR-20260928-175853-0c6f",
+                "2026-09-28 17:58:54.7181876",
+                "2026-09-28 17:58:54.7181876",
+                1,
+                1
+              ],
+              [
+                "INCR-20260928-174112-89d1",
+                "2026-09-28 17:41:14.1236268",
+                "2026-09-28 17:41:14.1236268",
+                1,
+                1
+              ],
+              [
+                "INCR-20260928-172307-c62d",
+                "2026-09-28 17:23:08.4730829",
+                "2026-09-28 17:24:41.4606804",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-170525-49ae",
+                "2026-09-28 17:05:27.3994255",
+                "2026-09-28 17:05:27.3994255",
+                1,
+                1
+              ],
+              [
+                "INCR-20260928-164711-8597",
+                "2026-09-28 16:47:13.0957094",
+                "2026-09-28 16:48:43.4553101",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-162848-3d2b",
+                "2026-09-28 16:28:49.5786298",
+                "2026-09-28 16:28:49.5786298",
+                1,
+                1
+              ],
+              [
+                "INCR-20260928-161108-62ff",
+                "2026-09-28 16:11:09.8792743",
+                "2026-09-28 16:11:09.8792743",
+                1,
+                1
+              ],
+              [
+                "INCR-20260928-155228-a5ba",
+                "2026-09-28 15:52:30.4977235",
+                "2026-09-28 15:52:30.4977235",
+                1,
+                1
+              ],
+              [
+                "INCR-20260928-153351-fcfd",
+                "2026-09-28 15:33:53.2186361",
+                "2026-09-28 15:33:53.2186361",
+                1,
+                1
+              ],
+              [
+                "INCR-20260928-151851-139c",
+                "2026-09-28 15:18:54.0461167",
+                "2026-09-28 15:18:54.0461167",
+                1,
+                1
+              ],
+              [
+                "INCR-20260928-150116-7f57",
+                "2026-09-28 15:01:18.0482748",
+                "2026-09-28 15:02:27.8256585",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-144344-0d8c",
+                "2026-09-28 14:43:46.3332753",
+                "2026-09-28 14:44:54.2412988",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-142539-3299",
+                "2026-09-28 14:25:40.8752595",
+                "2026-09-28 14:26:52.7158362",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-140751-6e41",
+                "2026-09-28 14:07:52.9035383",
+                "2026-09-28 14:09:07.9938897",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-135008-4587",
+                "2026-09-28 13:50:10.1458824",
+                "2026-09-28 13:51:16.9760812",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-133231-50fd",
+                "2026-09-28 13:32:32.5207283",
+                "2026-09-28 13:33:39.7205981",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-131440-f203",
+                "2026-09-28 13:14:41.7801450",
+                "2026-09-28 13:15:51.4441223",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-125703-8921",
+                "2026-09-28 12:57:04.6677061",
+                "2026-09-28 12:58:11.7389677",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-123922-6a8e",
+                "2026-09-28 12:39:24.3220001",
+                "2026-09-28 12:40:31.6589240",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-122139-cdec",
+                "2026-09-28 12:21:40.8541410",
+                "2026-09-28 12:22:52.6008874",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-120324-5381",
+                "2026-09-28 12:03:25.6302530",
+                "2026-09-28 12:04:34.5678099",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-114451-4103",
+                "2026-09-28 11:44:52.9410643",
+                "2026-09-28 11:46:00.8225107",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-112714-82a4",
+                "2026-09-28 11:27:15.9123385",
+                "2026-09-28 11:28:25.5773516",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-110648-b06f",
+                "2026-09-28 11:06:50.3372461",
+                "2026-09-28 11:06:50.3372461",
+                1,
+                1
+              ],
+              [
+                "INCR-20260928-104852-34b4",
+                "2026-09-28 10:48:54.1176792",
+                "2026-09-28 10:50:01.9297655",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-103015-da13",
+                "2026-09-28 10:30:16.4942696",
+                "2026-09-28 10:31:24.8556396",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-101212-f503",
+                "2026-09-28 10:12:13.9084260",
+                "2026-09-28 10:13:37.5510138",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-095249-0bca",
+                "2026-09-28 09:52:51.6446956",
+                "2026-09-28 09:54:13.9299176",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-093428-7ac1",
+                "2026-09-28 09:34:29.6782477",
+                "2026-09-28 09:35:41.6400806",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-091617-4a22",
+                "2026-09-28 09:16:18.8521795",
+                "2026-09-28 09:17:41.3561953",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-085816-6f3b",
+                "2026-09-28 08:58:18.0190531",
+                "2026-09-28 08:59:26.0746024",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-084017-c5f9",
+                "2026-09-28 08:40:19.1537677",
+                "2026-09-28 08:41:31.1788471",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-082136-512f",
+                "2026-09-28 08:21:38.3323537",
+                "2026-09-28 08:22:48.4055191",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-080339-cb5d",
+                "2026-09-28 08:03:41.1751826",
+                "2026-09-28 08:04:53.7952716",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-074554-dd89",
+                "2026-09-28 07:45:56.4062447",
+                "2026-09-28 07:47:08.8341978",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-072806-e71c",
+                "2026-09-28 07:28:07.4895520",
+                "2026-09-28 07:29:16.9909735",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-071012-2c4d",
+                "2026-09-28 07:10:14.1534561",
+                "2026-09-28 07:11:31.3334476",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-065223-a237",
+                "2026-09-28 06:52:24.7332590",
+                "2026-09-28 06:53:38.6094224",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-063427-61d1",
+                "2026-09-28 06:34:28.7365282",
+                "2026-09-28 06:35:42.4098972",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-061643-c9d7",
+                "2026-09-28 06:16:44.9526944",
+                "2026-09-28 06:17:53.3294989",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-055847-76ff",
+                "2026-09-28 05:58:49.8595572",
+                "2026-09-28 06:00:10.2291295",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-054105-2a25",
+                "2026-09-28 05:41:06.5022819",
+                "2026-09-28 05:42:26.3809686",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-052309-36a5",
+                "2026-09-28 05:23:12.0251795",
+                "2026-09-28 05:24:24.7013770",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-050517-6b35",
+                "2026-09-28 05:05:18.9374624",
+                "2026-09-28 05:06:27.1403132",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-044720-8b99",
+                "2026-09-28 04:47:21.9084933",
+                "2026-09-28 04:48:39.1007358",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-042858-7fc3",
+                "2026-09-28 04:29:00.5115032",
+                "2026-09-28 04:30:15.3624428",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-041108-1208",
+                "2026-09-28 04:11:10.1756496",
+                "2026-09-28 04:12:25.8978730",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-035314-c78c",
+                "2026-09-28 03:53:16.3962022",
+                "2026-09-28 03:54:23.3938774",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-033503-cbb0",
+                "2026-09-28 03:35:04.9683568",
+                "2026-09-28 03:36:17.7601683",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-031714-497c",
+                "2026-09-28 03:17:15.9654060",
+                "2026-09-28 03:18:39.2872927",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-025921-5692",
+                "2026-09-28 02:59:23.3175123",
+                "2026-09-28 03:00:30.7873872",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-024135-edfb",
+                "2026-09-28 02:41:36.5427363",
+                "2026-09-28 02:42:52.0191843",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-022340-4b75",
+                "2026-09-28 02:23:42.4558031",
+                "2026-09-28 02:24:57.3945025",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-020552-eaba",
+                "2026-09-28 02:05:54.2002915",
+                "2026-09-28 02:07:01.5097149",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-014751-2016",
+                "2026-09-28 01:47:53.7644939",
+                "2026-09-28 01:49:10.0660972",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-012917-879a",
+                "2026-09-28 01:29:18.9388778",
+                "2026-09-28 01:29:18.9388778",
+                1,
+                1
+              ],
+              [
+                "INCR-20260928-011428-d5db",
+                "2026-09-28 01:14:29.7970882",
+                "2026-09-28 01:15:43.2927913",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-005559-0767",
+                "2026-09-28 00:56:00.7648995",
+                "2026-09-28 00:57:18.1628917",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-003742-5da2",
+                "2026-09-28 00:37:43.9146081",
+                "2026-09-28 00:38:55.4906131",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-001934-4c7f",
+                "2026-09-28 00:19:35.7521197",
+                "2026-09-28 00:21:01.1387912",
+                2,
+                2
+              ],
+              [
+                "INCR-20260928-000144-dfbc",
+                "2026-09-28 00:01:46.1238831",
+                "2026-09-28 00:03:02.1081321",
+                2,
+                2
+              ],
+              [
+                "INCR-20260927-234338-8613",
+                "2026-09-27 23:43:39.8938531",
+                "2026-09-27 23:44:50.8531920",
+                2,
+                2
+              ],
+              [
+                "INCR-20260927-232751-1ce7",
+                "2026-09-27 23:27:52.3906190",
+                "2026-09-27 23:27:52.3906190",
+                1,
+                1
+              ],
+              [
+                "INCR-20260927-231054-c387",
+                "2026-09-27 23:10:56.1284638",
+                "2026-09-27 23:12:04.2174636",
+                2,
+                2
+              ],
+              [
+                "INCR-20260927-225307-ff23",
+                "2026-09-27 22:53:08.5711188",
+                "2026-09-27 22:54:28.2344808",
+                2,
+                2
+              ],
+              [
+                "INCR-20260927-223803-b25f",
+                "2026-09-27 22:38:04.0990909",
+                "2026-09-27 22:38:04.0990909",
+                1,
+                1
+              ],
+              [
+                "INCR-20260927-222022-9219",
+                "2026-09-27 22:20:24.3800985",
+                "2026-09-27 22:21:39.2017163",
+                2,
+                2
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-28T22:18:40Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
