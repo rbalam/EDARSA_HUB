@@ -1,0 +1,70 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-DIA-BLINDAJE-CONTENCION-R1-CARLOS-20260928",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
+  "objective": "Blindar el job protegido sync_comercial_abiertas_v2 contra futuras rutinas de contencion. Modificar UNICAMENTE scripts/p0_contencion_live_nativa.sh y scripts/p0_contencion_live_externos.sh para que JAMAS escriban SCHEDULER_SYNC_COMERCIAL_ABIERTAS_V2_ENABLED=false. No modificar backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py, scheduler_manager.py ni config.py. Mantener las demas flags de contencion sin cambios. Etiqueta: Sincronizador.",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "scripts/p0_contencion_live_nativa.sh",
+      "old": "    \"SCHEDULER_SYNC_COMERCIAL_V2_ENABLED\": \"false\",\n    \"SCHEDULER_SYNC_COMERCIAL_ABIERTAS_V2_ENABLED\": \"false\",\n    \"SCHEDULER_SYNC_INGRESOS_ENABLED\": \"false\",          # REAL\n",
+      "new": "    \"SCHEDULER_SYNC_COMERCIAL_V2_ENABLED\": \"false\",\n    # PROTEGIDO: sync_comercial_abiertas_v2 nunca debe ser deshabilitado por contencion.\n    \"SCHEDULER_SYNC_INGRESOS_ENABLED\": \"false\",          # REAL\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "scripts/p0_contencion_live_externos.sh",
+      "old": "  \"SCHEDULER_SYNC_COMERCIAL_V2_ENABLED\"\n  \"SCHEDULER_SYNC_COMERCIAL_ABIERTAS_V2_ENABLED\"\n  \"SCHEDULER_SYNC_INGRESOS_ENABLED\"\n",
+      "new": "  \"SCHEDULER_SYNC_COMERCIAL_V2_ENABLED\"\n  # PROTEGIDO: sync_comercial_abiertas_v2 nunca debe ser deshabilitado por contencion.\n  \"SCHEDULER_SYNC_INGRESOS_ENABLED\"\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "scripts/p0_contencion_live_nativa.sh",
+          "scripts/p0_contencion_live_externos.sh",
+          "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py"
+        ],
+        "search_terms": [
+          "SCHEDULER_SYNC_COMERCIAL_ABIERTAS_V2_ENABLED",
+          "sync_comercial_abiertas_v2"
+        ],
+        "max_results": 50
+      }
+    }
+  ],
+  "constraints": [
+    "Do not modify backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+    "Do not modify backend/core/scheduler/scheduler_manager.py",
+    "Do not modify backend/core/scheduler/config.py",
+    "Do not touch Production",
+    "Do not alter other containment flags"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Dia"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
