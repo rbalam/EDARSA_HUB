@@ -1,0 +1,18 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "triggered_at_utc": "2026-09-28T21:55:00Z",
+  "source": "chatgpt",
+  "project": "EDARSAHUB-CONCILIACIONES",
+  "requested_by": "carlosruz@edarsa.com.mx",
+  "reason": "Restaurar exclusivamente la activacion runtime del Scheduler para el job protegido sync_comercial_abiertas_v2 (Ventas del Dia). NO modificar backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py ni su logica bajo ninguna circunstancia. En /app/backend/.env establecer de forma idempotente SCHEDULER_SYNC_COMERCIAL_ABIERTAS_V2_ENABLED=true, conservar el intervalo configurado de 300 segundos, reiniciar solamente el backend/Scheduler si es necesario para releer el .env y verificar que el job quede registrado y vuelva a disparar automaticamente. No ejecutar scripts de contencion que apaguen este flag. No modificar datos SQL manualmente; las unicas escrituras permitidas son las normales del propio job una vez reactivado. No tocar Produccion.",
+  "protected_paths": [
+    "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py"
+  ],
+  "protected_job_id": "sync_comercial_abiertas_v2",
+  "required_runtime_flag": {
+    "key": "SCHEDULER_SYNC_COMERCIAL_ABIERTAS_V2_ENABLED",
+    "value": "true"
+  },
+  "required_interval_seconds": 300,
+  "production_touched": false
+}
