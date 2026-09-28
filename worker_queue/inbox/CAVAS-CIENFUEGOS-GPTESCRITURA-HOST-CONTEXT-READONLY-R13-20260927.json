@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CIENFUEGOS-GPTESCRITURA-HOST-CONTEXT-READONLY-R13-20260927",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "75be42c8ed85de9c48454eb0898203de8743b896",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar READ_ONLY el contexto canónico de conexiones registradas en EDARSAHUB para el host 54.39.104.176 y el login GptEscritura, sin leer passwords ni api keys. Determinar si el login se usa exitosamente/configuradamente para otras bases del mismo host y si cava_www es una excepción. No conectar a fuentes externas, no DDL/DML, no Producción.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "same_host_login_context",
+          "sql": "SELECT id,nombre,host,port,database_name,username,system_type,tipo_conexion,activo,visible_en_operaciones,visible_en_listado,EmpresaID,source_status,fecha_ultima_sincronizacion,ultimo_error_sync FROM dbo.Servidores_Conexiones WHERE host='54.39.104.176' OR username='GptEscritura' ORDER BY host,database_name,nombre"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "Do not read password_encrypted or api_key_encrypted",
+    "No external source connection",
+    "No DDL/DML",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "CAVAS_PERSONALES",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
