@@ -1,0 +1,544 @@
+{
+  "base_sha": "1b1fa59c1a67f076edf18cb3899708b0410b552a",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-28T01:04:29Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-WORKER-SOURCE-RESULT-READER-BRIDGE-READONLY-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-28T01:04:32Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "json",
+              "pathlib",
+              "tools.mirror_sync.worker_result_integrity",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "content=\"\"",
+              "read_canonical_result",
+              "worker_queue/results",
+              "worker_result_integrity",
+              "worker_result_reader"
+            ],
+            "path": "tools/mirror_sync/worker_result_reader.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CanonicalResultRead",
+              "read_canonical_result"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "enum",
+              "hashlib",
+              "json",
+              "pathlib",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "validate_terminal_result_payload",
+              "worker_result_integrity"
+            ],
+            "path": "tools/mirror_sync/worker_result_integrity.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ResultIdentity",
+              "ResultInspection",
+              "ResultState",
+              "_require_field",
+              "classify_source_consistency",
+              "compare_result_identity",
+              "inspect_result_file",
+              "is_terminal_result_path",
+              "is_terminal_status",
+              "result_identity_from_bytes",
+              "validate_terminal_result_file",
+              "validate_terminal_result_payload"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "json",
+              "os",
+              "pathlib",
+              "re",
+              "subprocess",
+              "sys",
+              "tools.mirror_sync.worker_deliverable_contract",
+              "typing",
+              "worker_deliverable_contract",
+              "worker_requester_rbac"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "repository_contract_audit"
+            ],
+            "path": "tools/mirror_sync/universal_job_bridge.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_read_json_file",
+              "already_claimed",
+              "archive_rejection_for_retry",
+              "ensure_dirs",
+              "git",
+              "main",
+              "queue_files",
+              "read_remote",
+              "receive",
+              "rejected_correction_retry_decision",
+              "resolve_queue_remote",
+              "safe_repo_path",
+              "status",
+              "validate",
+              "validate_action",
+              "validate_check",
+              "write_rejection"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "fcntl",
+              "git_divergence_guard",
+              "hashlib",
+              "json",
+              "os",
+              "pathlib",
+              "re",
+              "shutil",
+              "subprocess",
+              "sys",
+              "tempfile",
+              "tools.mirror_sync.worker_deliverable_contract",
+              "typing",
+              "worker_concurrency",
+              "worker_deliverable_contract",
+              "worker_scheduling",
+              "worker_slot_runtime"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "repository_contract_audit",
+              "unsupported_check"
+            ],
+            "path": "tools/mirror_sync/universal_job_dispatcher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_load_preferred_job",
+              "_select_pending_job",
+              "apply_action",
+              "changed_files",
+              "claim_one",
+              "create_commit",
+              "dispatch",
+              "ensure_dirs",
+              "git",
+              "git_changed_paths",
+              "git_is_ancestor",
+              "integrate",
+              "load_backend_runtime_env",
+              "load_envelope",
+              "main",
+              "now",
+              "prepare_worktree",
+              "process_one",
+              "release_agent_guard_claim",
+              "resolve_canonical_python",
+              "resolve_repository_credential_helper",
+              "run",
+              "run_check",
+              "safe_path",
+              "sha256_file",
+              "summarize_iscam_detail_backfill_output",
+              "summarize_softrestaurant_output",
+              "validate_scope",
+              "verify_expected_hash",
+              "write_json"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "datetime",
+              "fcntl",
+              "json",
+              "os",
+              "pathlib",
+              "shutil",
+              "subprocess",
+              "tempfile",
+              "tools.mirror_sync.worker_deliverable_contract",
+              "tools.mirror_sync.worker_result_integrity",
+              "typing",
+              "worker_deliverable_contract",
+              "worker_result_integrity"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "repository_contract_audit",
+              "source_branch",
+              "source_result",
+              "source_result_path",
+              "validate_terminal_result_payload",
+              "worker/results",
+              "worker_result_integrity"
+            ],
+            "path": "tools/mirror_sync/universal_job_result_publisher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_sensitive_column",
+              "atomic_json",
+              "certification_evidence",
+              "create_attestation",
+              "generic_readonly_evidence",
+              "git",
+              "invalid_result_artifact_payload",
+              "load",
+              "load_publishable_result",
+              "main",
+              "marker_satisfied",
+              "now",
+              "prepare_queue_worktree",
+              "publish_one",
+              "publishable_paths",
+              "resolve_runtime_git_credential_helper",
+              "result_identity",
+              "run",
+              "runtime_git",
+              "runtime_git_command",
+              "runtime_git_env",
+              "sanitize",
+              "sanitize_frontend_build_evidence",
+              "sanitize_readonly_evidence",
+              "sanitize_repository_evidence",
+              "valid_sha"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [
+              "MongoClient",
+              "get_sql_connection",
+              "pymongo",
+              "pyodbc",
+              "readonly_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "corporate_identity_resolver",
+              "get_sql_connection",
+              "load_catalog_real",
+              "readonly_sql_connection",
+              "resolver_canonico"
+            ],
+            "imports": [
+              "__future__",
+              "argparse",
+              "ast",
+              "fnmatch",
+              "json",
+              "pathlib",
+              "re",
+              "typing"
+            ],
+            "integrations": [
+              "banorte",
+              "bbva",
+              "dynamics",
+              "mpro",
+              "netpay",
+              "oracle",
+              "sap",
+              "softrestaurant",
+              "twilio",
+              "vtiger"
+            ],
+            "matched_terms": [
+              "repository_contract_audit"
+            ],
+            "path": "tools/mirror_sync/repository_contract_audit.py",
+            "rbac_contracts": [
+              "RBAC_Permisos",
+              "Sistema_RBAC",
+              "Usuario_Roles",
+              "Usuario_RolesContexto",
+              "get_current_user",
+              "menu-permissions"
+            ],
+            "routes": [],
+            "scheduler_contracts": [
+              "APScheduler",
+              "AsyncIOScheduler",
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [
+              "_is_sensitive",
+              "_matches_any",
+              "_ownership",
+              "_python_metadata",
+              "_safe_relative",
+              "main",
+              "scan_repository",
+              "validate_request"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "tools",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "hashlib",
+              "pathlib",
+              "tools.mirror_sync",
+              "tools.mirror_sync.worker_result_reader",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "read_canonical_result",
+              "worker_result_reader"
+            ],
+            "path": "tools/mirror_sync/worker_repair_execution.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_action_paths",
+              "deterministic_repair_job_id",
+              "publish_repair_job",
+              "read_repair_terminal_result",
+              "reconcile_repair_result",
+              "validate_repair_worker_job"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "json",
+              "pathlib",
+              "sys",
+              "tools.mirror_sync.worker_result_reader",
+              "tools.mirror_sync.worker_result_status"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "read_canonical_result",
+              "worker_result_reader"
+            ],
+            "path": "backend/tests/test_worker_result_reader_status_contract.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "test_absent_result_is_explicit",
+              "test_empty_result_is_explicit",
+              "test_job_id_mismatch_fails_closed",
+              "test_status_is_derived_reference_not_terminal_copy",
+              "test_valid_terminal_result_is_canonical",
+              "valid_payload"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "worker_queue/results"
+            ],
+            "path": "docs/operacion/WORKER_JOB_EXECUTION_PROTOCOL.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "worker/results"
+            ],
+            "path": "docs/BOS/BOS_AGENT_HARNESS_AH5_EVIDENCE_PROVENANCE_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "worker/results"
+            ],
+            "path": "docs/BOS/BOS_AGENT_HARNESS_AH9_CONTROL_PLANE_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "worker/results"
+            ],
+            "path": "docs/BOS/BOS_AGENT_HARNESS_MASTER_ARCHITECTURE_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "worker/results"
+            ],
+            "path": "docs/BOS/BOS_DIRECTION_EVIDENCE_COLLECTOR.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "banorte",
+              "bbva",
+              "dynamics",
+              "mpro",
+              "netpay",
+              "oracle",
+              "sap",
+              "softrestaurant",
+              "twilio",
+              "vtiger"
+            ],
+            "matched_terms": [
+              "repository_contract_audit"
+            ],
+            "path": "docs/BOS/BOS_ENTERPRISE_CAPABILITY_MAP_GATE1_DOSSIER_V1.md",
+            "rbac_contracts": [
+              "menu-permissions"
+            ],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 14,
+          "scanned_files": 58,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-28T01:04:28Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
