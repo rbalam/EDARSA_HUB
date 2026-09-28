@@ -1,0 +1,92 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-HEADER-FIRST-R5-CARLOS-20260928",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
+  "objective": "Corregir el automatico de Ventas Cerradas sync_comercial_v2 sin tocar sync_comercial_abiertas_v2. Mantener heartbeat del lock automatico durante ejecuciones largas y cambiar el orden del pipeline a HEADER-FIRST: primero sincronizar encabezados de todas las unidades SR/MPRO y solo despues ejecutar pagos ISCAM y detalle canonico. Con esto un enriquecimiento lento no debe impedir que las restantes sucursales reciban sus ventas cerradas. Etiqueta: Sincronizador. Reenvio R5: mismo alcance tecnico, corrigiendo exclusivamente el contrato del Worker con mode=MUTATION tras R4 bloqueado por MODE_INVALID.",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/scheduler_manager.py",
+      "old": "        if not lock_acquired:\\n            logger.warning(\\\"[SYNC_COMERCIAL_V2] No se pudo obtener lock - ya hay una ejecución en progreso\\\")\\n            return\\n        \\n        job_logger = get_job_logger()\\n",
+      "new": "        if not lock_acquired:\\n            logger.warning(\\\"[SYNC_COMERCIAL_V2] No se pudo obtener lock - ya hay una ejecución en progreso\\\")\\n            return\\n\\n        # Mantener el lock vivo durante ciclos largos. La ejecución manual ya\\n        # usa este heartbeat; el automático debe tener el mismo contrato.\\n        await lock.start_heartbeat_loop(\\n            interval_seconds=30,\\n            extend_seconds=600,\\n        )\\n        \\n        job_logger = get_job_logger()\\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+      "old": "        \\\"pagos_iscam_insertados\\\": 0,\\n    }\\n    \\n    def _sync_detalle_post_header(",
+      "new": "        \\\"pagos_iscam_insertados\\\": 0,\\n    }\\n\\n    # Los enriquecimientos se difieren hasta terminar los headers de TODAS\\n    # las unidades. Esto evita que pagos/detalle lentos bloqueen las ventas\\n    # cerradas de las sucursales que siguen en el ciclo.\\n    post_header_queue = []\\n    \\n    def _sync_detalle_post_header(",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+      "old": "            if resultado.success:\\n                _sync_pagos_post_header(\\n                    unidad_id,\\n                    fecha_inicio,\\n                    fecha_fin,\\n                    detalle,\\n                )\\n\\n                for detail_day_offset in range(\\n                    (fecha_fin - fecha_inicio).days + 1\\n                ):\\n                    detail_day = (\\n                        fecha_inicio\\n                        + timedelta(days=detail_day_offset)\\n                    )\\n\\n                    _sync_detalle_post_header(\\n                        unidad_id,\\n                        detail_day,\\n                        detalle,\\n                    )\\n\\n                results[\\\"unidades_exitosas\\\"] += 1\\n",
+      "new": "            if resultado.success:\\n                post_header_queue.append((\\n                    unidad_id,\\n                    fecha_inicio,\\n                    fecha_fin,\\n                    detalle,\\n                ))\\n\\n                results[\\\"unidades_exitosas\\\"] += 1\\n",
+      "expected_count": 2
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+      "old": "    # =========================================================================\\n    # FINALIZAR\\n    # =========================================================================\\n    \\n    end_time = datetime.now(timezone.utc)\\n",
+      "new": "    # =========================================================================\\n    # FASE P1: ENRIQUECER PAGOS Y DETALLE DESPUES DE TODOS LOS HEADERS\\n    # =========================================================================\\n\\n    for (\\n        unidad_id,\\n        fecha_inicio,\\n        fecha_fin,\\n        detalle,\\n    ) in post_header_queue:\\n        _sync_pagos_post_header(\\n            unidad_id,\\n            fecha_inicio,\\n            fecha_fin,\\n            detalle,\\n        )\\n\\n        for detail_day_offset in range(\\n            (fecha_fin - fecha_inicio).days + 1\\n        ):\\n            detail_day = (\\n                fecha_inicio\\n                + timedelta(days=detail_day_offset)\\n            )\\n\\n            _sync_detalle_post_header(\\n                unidad_id,\\n                detail_day,\\n                detalle,\\n            )\\n\\n    # =========================================================================\\n    # FINALIZAR\\n    # =========================================================================\\n    \\n    end_time = datetime.now(timezone.utc)\\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_sync_comercial_v2_header_first_scheduler_guard.py",
+      "content": "from pathlib import Path\n\n\nROOT = Path(__file__).resolve().parents[1]\nJOB = ROOT / \"core/scheduler/jobs/sync_comercial_v2_job.py\"\nMANAGER = ROOT / \"core/scheduler/scheduler_manager.py\"\n\n\ndef test_closed_sales_headers_are_completed_before_enrichment():\n    text = JOB.read_text(encoding=\"utf-8\")\n    assert text.count(\"post_header_queue.append(\") == 2\n    marker = \"# FASE P1: ENRIQUECER PAGOS Y DETALLE DESPUES DE TODOS LOS HEADERS\"\n    assert marker in text\n    phase = text.split(marker, 1)[1]\n    assert \"_sync_pagos_post_header(\" in phase\n    assert \"_sync_detalle_post_header(\" in phase\n\n\ndef test_automatic_closed_sales_lock_has_heartbeat():\n    text = MANAGER.read_text(encoding=\"utf-8\")\n    start = text.index(\"async def _run_sync_comercial_v2_job\")\n    end = text.index(\"async def _run_sync_comercial_abiertas_v2_job\")\n    block = text[start:end]\n    assert \"await lock.start_heartbeat_loop(\" in block\n    assert \"interval_seconds=30\" in block\n    assert \"extend_seconds=600\" in block\n\n\ndef test_protected_open_sales_job_is_not_part_of_this_change():\n    text = MANAGER.read_text(encoding=\"utf-8\")\n    start = text.index(\"async def _run_sync_comercial_abiertas_v2_job\")\n    assert start > 0\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/scheduler/scheduler_manager.py",
+        "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+        "backend/tests/test_sync_comercial_v2_header_first_scheduler_guard.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_sync_comercial_v2_header_first_scheduler_guard.py",
+        "backend/tests/test_sync_comercial_v2_multi_operational_date_no_dml.py",
+        "backend/tests/test_sync_comercial_v2_detail_runtime_no_dml.py",
+        "backend/tests/test_sync_comercial_v2_single_unit_scope_contract.py"
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not modify backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+    "Do not change the open-sales scheduler behavior",
+    "No SQL DDL/DML",
+    "No Production",
+    "Only closed-sales scheduler/pipeline files plus regression test"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "mode": "MUTATION"
+}
