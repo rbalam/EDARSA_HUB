@@ -1,0 +1,39 @@
+{
+  "schema":"edarsahub.worker-job.v2",
+  "job_id":"SERVIDORES-API-EMPRESA-HOMOLOGATION-READONLY-R1-20260927",
+  "target_repo":"rbalam/EDARSA_HUB",
+  "target_branch":"Edarsahub_Desarrollo",
+  "base_sha":"8c9505a81e22b2ec1cf3cd29c0800e364da5afc8",
+  "production_allowed":false,
+  "mode":"READ_ONLY_SQL",
+  "objective":"Resolver exclusivamente en READ_ONLY las relaciones canonicas Empresa/Unidad/Conexion para API_LOCAL activas del menu Servidores, con foco en CIENFUEGOS y CAVAS. No relajar RBAC, no inventar relaciones, no probar APIs externas, no leer secretos, no tocar Produccion.",
+  "actions":[],
+  "checks":[
+    {
+      "type":"sql_readonly_audit",
+      "queries":[
+        {
+          "name":"api_local_active_scope",
+          "sql":"SELECT CONVERT(varchar(36),sc.id) AS ConexionID,sc.nombre,sc.system_type,sc.tipo_conexion,sc.activo,sc.visible_en_listado,sc.visible_en_operaciones,sc.EmpresaID,sc.empresa_id,sc.database_name,sc.api_url FROM dbo.Servidores_Conexiones sc WHERE sc.tipo_conexion='API_LOCAL' AND sc.activo=1 ORDER BY sc.nombre"
+        },
+        {
+          "name":"empresa_server_links_for_api_local",
+          "sql":"SELECT CONVERT(varchar(36),sc.id) AS ConexionID,sc.nombre AS ConexionNombre,es.EmpresaID,e.CodigoEmpresa,e.NombreComercial,es.RolConexion,es.NumeroSucursalSistema FROM dbo.Servidores_Conexiones sc LEFT JOIN dbo.Sistema_EmpresasServidores es ON es.ServidorID=sc.id LEFT JOIN dbo.Sistema_Empresas e ON e.EmpresaID=es.EmpresaID WHERE sc.tipo_conexion='API_LOCAL' AND sc.activo=1 ORDER BY sc.nombre,es.EmpresaID"
+        },
+        {
+          "name":"unidad_profile_links_for_api_local",
+          "sql":"SELECT CONVERT(varchar(36),sc.id) AS ConexionID,sc.nombre AS ConexionNombre,p.EmpresaID,CONVERT(varchar(36),p.UnidadNegocioID) AS UnidadNegocioID,CONVERT(varchar(36),p.ServerID) AS PerfilServerID,p.NombreComercial,p.Pais,p.Moneda FROM dbo.Servidores_Conexiones sc LEFT JOIN dbo.Sistema_UnidadesNegocioPerfilDigital p ON p.ServerID=sc.id WHERE sc.tipo_conexion='API_LOCAL' AND sc.activo=1 ORDER BY sc.nombre,p.UnidadNegocioID"
+        },
+        {
+          "name":"cienfuegos_cavas_canonical_units",
+          "sql":"SELECT CONVERT(varchar(36),u.id) AS UnidadNegocioID,u.codigo,u.nombre,u.EmpresaID,u.server_id,u.activo FROM dbo.Unidades_Negocio u WHERE UPPER(ISNULL(u.codigo,'')) LIKE '%CIENFUEGOS%' OR UPPER(ISNULL(u.nombre,'')) LIKE '%CIENFUEGOS%' OR UPPER(ISNULL(u.codigo,'')) LIKE '%CAVA%' OR UPPER(ISNULL(u.nombre,'')) LIKE '%CAVA%' ORDER BY u.nombre"
+        },
+        {
+          "name":"cienfuegos_cavas_company_catalog",
+          "sql":"SELECT EmpresaID,CodigoEmpresa,NombreComercial,Activo FROM dbo.Sistema_Empresas WHERE UPPER(ISNULL(CodigoEmpresa,'')) LIKE '%CIENFUEGOS%' OR UPPER(ISNULL(NombreComercial,'')) LIKE '%CIENFUEGOS%' OR UPPER(ISNULL(CodigoEmpresa,'')) LIKE '%CAVA%' OR UPPER(ISNULL(NombreComercial,'')) LIKE '%CAVA%' ORDER BY EmpresaID"
+        }
+      ]
+    }
+  ],
+  "human_summary_language":"es"
+}
