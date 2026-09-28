@@ -169,6 +169,20 @@ def validate_check(check: Any, index: int) -> list[str]:
         if not safe_repo_path(directory):
             return [f"{prefix}_INVALID_DIRECTORY"]
     if kind == "sql_readonly_audit":
+        source = str(check.get("source") or "EDARSAHUB").strip().upper()
+        if source not in {"EDARSAHUB", "POS", "SERVER"}:
+            return [f"{prefix}_INVALID_READONLY_SOURCE"]
+        server_id = check.get("server_id")
+        include_inactive = check.get("include_inactive", False)
+        if not isinstance(include_inactive, bool):
+            return [f"{prefix}_INCLUDE_INACTIVE_MUST_BE_BOOL"]
+        if source == "SERVER":
+            if not isinstance(server_id, str) or not re.fullmatch(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", server_id):
+                return [f"{prefix}_SERVER_ID_REQUIRED_OR_INVALID"]
+            if check.get("units") is not None or check.get("system_types") is not None:
+                return [f"{prefix}_SERVER_POS_SELECTORS_FORBIDDEN"]
+        elif server_id is not None or include_inactive:
+            return [f"{prefix}_SERVER_SELECTORS_FORBIDDEN_FOR_SOURCE"]
         queries = check.get("queries")
         if not isinstance(queries, list) or not queries:
             return [f"{prefix}_QUERIES_REQUIRED"]

@@ -428,6 +428,10 @@ def run_check(worktree: Path, check: dict[str, Any], readonly: bool = False) -> 
             cmd.extend(["--units-json", json.dumps(check.get("units"), ensure_ascii=False)])
         if check.get("system_types") is not None:
             cmd.extend(["--system-types-json", json.dumps(check.get("system_types"), ensure_ascii=False)])
+        if check.get("server_id") is not None:
+            cmd.extend(["--server-id", str(check.get("server_id"))])
+        if check.get("include_inactive") is True:
+            cmd.append("--include-inactive")
         cwd = worktree
         env_extra = {**load_backend_runtime_env(), "PYTHONPATH": str(backend)}
     elif kind == "frontend_build":

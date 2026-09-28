@@ -19,7 +19,7 @@ def test_pos_readonly_reuses_canonical_resolver_and_connection_factory():
     assert 'list_pos_runtime_contexts' in text
     assert 'get_external_sql_connection' in text
     assert 'PosRuntimeResolver+get_external_sql_connection' in text
-    assert "choices=['EDARSAHUB', 'POS']" in text
+    assert "choices=['EDARSAHUB', 'POS', 'SERVER']" in text
 
 def test_pos_readonly_has_no_job_supplied_connection_or_shell_contract():
     text = HELPER.read_text(encoding='utf-8')
@@ -29,6 +29,19 @@ def test_pos_readonly_has_no_job_supplied_connection_or_shell_contract():
     assert 'shell=True' not in dispatcher
     assert '--units-json' in dispatcher
     assert '--system-types-json' in dispatcher
+    assert '--server-id' in dispatcher
+    assert '--include-inactive' in dispatcher
+    assert 'get_server_connection_info_with_secrets' in text
+    assert 'server_registry+get_external_sql_connection' in text
+
+
+def test_server_readonly_contract_has_no_job_supplied_credentials():
+    text = HELPER.read_text(encoding='utf-8')
+    for option in ('--host', '--database', '--username', '--password'):
+        assert option not in text
+    assert "source_name == 'SERVER'" in text
+    assert 'include_inactive=bool(include_inactive)' in text
+
 
 def test_pos_readonly_rejects_mutation_sql_before_connection():
     helper = load_helper()
