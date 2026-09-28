@@ -1,0 +1,108 @@
+{
+  "base_sha": "8c9505a81e22b2ec1cf3cd29c0800e364da5afc8",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-28T01:35:31Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CIENFUEGOS-GPTESCRITURA-LOGIN-METADATA-READONLY-R14-20260927",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-28T01:36:20Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "server_registry+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "name",
+              "type_desc",
+              "is_disabled",
+              "default_database_name",
+              "create_date",
+              "modify_date"
+            ],
+            "name": "gptescritura_login_metadata",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "name",
+              "state_desc",
+              "user_access_desc",
+              "containment_desc",
+              "create_date"
+            ],
+            "name": "cava_database_metadata",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      },
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "id",
+              "nombre",
+              "host",
+              "port",
+              "database_name",
+              "username",
+              "activo",
+              "created_at",
+              "updated_at",
+              "created_by",
+              "updated_by",
+              "source_status",
+              "fecha_ultima_sincronizacion",
+              "ultimo_error_sync"
+            ],
+            "name": "cavas_registry_metadata",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "8016ab53-f1ef-4539-aebe-c01e5b978bbc",
+                "CAVAS",
+                "54.39.104.176",
+                1433,
+                "cava_www",
+                "gptescritura",
+                false,
+                "2026-09-10T23:21:47",
+                "2026-09-10T23:25:21",
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-28T01:35:30Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
