@@ -1,0 +1,271 @@
+{
+  "base_sha": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-28T22:03:51Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-DIA-FINAL-CERT-R4-CARLOS-20260928",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-28T22:03:52Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "run_id",
+              "inicio",
+              "fin",
+              "registros",
+              "exitosos",
+              "no_exitosos",
+              "unidades"
+            ],
+            "name": "ventas_dia_post_convergence_runs",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "run_id",
+              "run_timestamp",
+              "unidad_negocio_id",
+              "fecha_inicio",
+              "status",
+              "error_message",
+              "source_connection_status"
+            ],
+            "name": "ventas_dia_latest_rows",
+            "row_count_returned": 20,
+            "rows": [
+              [
+                "ABIERTA-20260928-215649-368f",
+                "2026-09-28 21:56:58.7720779",
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "2026-09-28",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ],
+              [
+                "ABIERTA-20260928-215649-368f",
+                "2026-09-28 21:56:56.8611075",
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                "2026-09-28",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ],
+              [
+                "ABIERTA-20260928-215649-368f",
+                "2026-09-28 21:56:54.5323734",
+                "DFB86008-1B81-472A-9E50-8A0821DEC4B2",
+                "2026-09-28",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ],
+              [
+                "ABIERTA-20260928-215649-368f",
+                "2026-09-28 21:56:52.9656371",
+                "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+                "2026-09-28",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ],
+              [
+                "ABIERTA-20260928-215649-368f",
+                "2026-09-28 21:56:51.1241236",
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "2026-09-28",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ],
+              [
+                "ABIERTA-20260928-215108-9bab",
+                "2026-09-28 21:51:21.6649036",
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "2026-09-28",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ],
+              [
+                "ABIERTA-20260928-215108-9bab",
+                "2026-09-28 21:51:19.4650208",
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                "2026-09-28",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ],
+              [
+                "ABIERTA-20260928-215108-9bab",
+                "2026-09-28 21:51:17.1677148",
+                "DFB86008-1B81-472A-9E50-8A0821DEC4B2",
+                "2026-09-28",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ],
+              [
+                "ABIERTA-20260928-215108-9bab",
+                "2026-09-28 21:51:14.6652066",
+                "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+                "2026-09-28",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ],
+              [
+                "ABIERTA-20260928-215108-9bab",
+                "2026-09-28 21:51:12.1160959",
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "2026-09-28",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ],
+              [
+                "ABIERTA-20260928-014527-2ef7",
+                "2026-09-28 01:45:32.7513845",
+                "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+                "2026-09-27",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ],
+              [
+                "ABIERTA-20260928-014527-2ef7",
+                "2026-09-28 01:45:30.6089966",
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "2026-09-27",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ],
+              [
+                "ABIERTA-20260928-014027-c8b3",
+                "2026-09-28 01:40:38.1338059",
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "2026-09-27",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ],
+              [
+                "ABIERTA-20260928-014027-c8b3",
+                "2026-09-28 01:40:35.9598382",
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                "2026-09-27",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ],
+              [
+                "ABIERTA-20260928-014027-c8b3",
+                "2026-09-28 01:40:34.0925464",
+                "DFB86008-1B81-472A-9E50-8A0821DEC4B2",
+                "2026-09-27",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ],
+              [
+                "ABIERTA-20260928-014027-c8b3",
+                "2026-09-28 01:40:32.1423265",
+                "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+                "2026-09-27",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ],
+              [
+                "ABIERTA-20260928-014027-c8b3",
+                "2026-09-28 01:40:30.1669597",
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "2026-09-27",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ],
+              [
+                "ABIERTA-20260928-012916-1489",
+                "2026-09-28 01:29:25.4871718",
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "2026-09-27",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ],
+              [
+                "ABIERTA-20260928-012916-1489",
+                "2026-09-28 01:29:23.5956970",
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                "2026-09-27",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ],
+              [
+                "ABIERTA-20260928-012916-1489",
+                "2026-09-28 01:29:21.6904004",
+                "DFB86008-1B81-472A-9E50-8A0821DEC4B2",
+                "2026-09-27",
+                "SUCCESS",
+                null,
+                "ONLINE"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "JobID",
+              "PausadoAdministrativo",
+              "FechaActualizacion"
+            ],
+            "name": "scheduler_pause_state",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "SyncRunID",
+              "SyncType",
+              "Status",
+              "StartedAtMexico",
+              "FinishedAtMexico",
+              "ErrorMessage"
+            ],
+            "name": "ventas_dia_stale_lock",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-28T22:03:51Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
