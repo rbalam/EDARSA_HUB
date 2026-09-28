@@ -1,0 +1,67 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-STATUS-R1-CARLOS-20260928",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
+  "objective": "Verificar en solo lectura si las sincronizaciones automaticas de ventas cerradas siguen ejecutandose correctamente para las 5 sucursales. Revisar sync_comercial_v2 / run_type INCREMENTAL, frescura de encabezados/runtime y frescura del detalle canonico. No modificar ningun codigo ni datos. No tocar sync_comercial_abiertas_v2. Etiqueta: Sincronizador.",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "closed_sync_recent_runs",
+          "sql": "SELECT TOP (80) run_id,run_timestamp,run_type,unidad_negocio_id,fecha_inicio,fecha_fin,status,error_code,error_message,source_connection_status FROM dbo.Comercial_SyncLog_v2 WHERE run_type='INCREMENTAL' ORDER BY run_timestamp DESC"
+        },
+        {
+          "name": "closed_sync_recent_by_unit",
+          "sql": "SELECT unidad_negocio_id,MAX(run_timestamp) AS ultima_ejecucion,MAX(fecha_fin) AS ultima_fecha_fin,SUM(CASE WHEN status='SUCCESS' THEN 1 ELSE 0 END) AS exitosos_ultimas_24h,SUM(CASE WHEN status<>'SUCCESS' THEN 1 ELSE 0 END) AS no_exitosos_ultimas_24h FROM dbo.Comercial_SyncLog_v2 WHERE run_type='INCREMENTAL' AND run_timestamp>=DATEADD(hour,-24,SYSUTCDATETIME()) GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        },
+        {
+          "name": "runtime_closed_freshness",
+          "sql": "SELECT unidad_negocio_id,MAX(fecha_operacion) AS ultima_fecha_cerrada,COUNT(DISTINCT fecha_operacion) AS dias_ultimos_10 FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE fecha_operacion>=DATEADD(day,-10,CAST(GETDATE() AS date)) GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        },
+        {
+          "name": "detail_closed_freshness",
+          "sql": "SELECT unidad_negocio_id,MAX(fecha_operacion) AS ultima_fecha_detalle,COUNT(DISTINCT fecha_operacion) AS dias_ultimos_10,COUNT(*) AS lineas_ultimos_10 FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE ISNULL(activo,1)=1 AND fecha_operacion>=DATEADD(day,-10,CAST(GETDATE() AS date)) GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        },
+        {
+          "name": "closed_sync_failures_24h",
+          "sql": "SELECT TOP (50) run_id,run_timestamp,unidad_negocio_id,fecha_inicio,fecha_fin,status,error_code,error_message,source_connection_status FROM dbo.Comercial_SyncLog_v2 WHERE run_type='INCREMENTAL' AND run_timestamp>=DATEADD(hour,-24,SYSUTCDATETIME()) AND status<>'SUCCESS' ORDER BY run_timestamp DESC"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "Do not modify sync_comercial_abiertas_v2",
+    "Do not modify sync_comercial_v2",
+    "No DDL/DML",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
