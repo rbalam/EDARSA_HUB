@@ -1,0 +1,62 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CIENFUEGOS-SQL-INSTANCE-METADATA-READONLY-R15-20260927",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "8c9505a81e22b2ec1cf3cd29c0800e364da5afc8",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Aislar READ_ONLY si la ausencia de GptEscritura/cava_www en R14 se debe a metadata no visible para HRLectura o a que el registro CAVAS apunta a una identidad/base inexistente en esa instancia. Obtener identidad de instancia, permisos de metadata y DB_ID/HAS_DBACCESS de cava_www. No leer secretos, no DDL/DML, no Producción.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "SERVER",
+      "server_id": "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+      "include_inactive": false,
+      "queries": [
+        {
+          "name": "instance_identity",
+          "sql": "SELECT @@SERVERNAME AS server_name, CAST(SERVERPROPERTY('MachineName') AS varchar(200)) AS machine_name, CAST(SERVERPROPERTY('InstanceName') AS varchar(200)) AS instance_name, CAST(SERVERPROPERTY('IsIntegratedSecurityOnly') AS int) AS windows_auth_only, DB_NAME() AS current_database, ORIGINAL_LOGIN() AS original_login"
+        },
+        {
+          "name": "metadata_permissions",
+          "sql": "SELECT HAS_PERMS_BY_NAME(NULL,NULL,'VIEW ANY DATABASE') AS can_view_any_database,HAS_PERMS_BY_NAME(NULL,NULL,'VIEW ANY DEFINITION') AS can_view_any_definition,HAS_PERMS_BY_NAME(NULL,NULL,'ALTER ANY LOGIN') AS can_alter_any_login"
+        },
+        {
+          "name": "cava_visibility",
+          "sql": "SELECT DB_ID('cava_www') AS cava_db_id,HAS_DBACCESS('cava_www') AS has_dbaccess_cava,(SELECT COUNT(*) FROM sys.databases) AS visible_database_count"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No secret reads",
+    "No login changes",
+    "No database changes",
+    "No DDL/DML",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "CAVAS_PERSONALES",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
