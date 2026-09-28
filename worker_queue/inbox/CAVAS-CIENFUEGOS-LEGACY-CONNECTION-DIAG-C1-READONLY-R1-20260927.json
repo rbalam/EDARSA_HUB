@@ -1,0 +1,73 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-CIENFUEGOS-LEGACY-CONNECTION-DIAG-C1-READONLY-R1-20260927",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "1b1fa59c1a67f076edf18cb3899708b0410b552a",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Diagnóstico READ_ONLY del fallo del smoke legacy CAVAS. Repetir exactamente el mismo sql_readonly_audit source=SERVER contra el mismo ServerID y materializar exclusivamente el output del check para obtener la causa exacta. No cambiar consulta, no DDL/DML, no datos, no secretos, no Producción.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "SERVER",
+      "server_id": "8016ab53-f1ef-4539-aebe-c01e5b978bbc",
+      "include_inactive": true,
+      "queries": [
+        {
+          "name": "legacy_identity",
+          "sql": "SELECT DB_NAME() AS database_name, SUSER_SNAME() AS login_name, ORIGINAL_LOGIN() AS original_login, CAST(SERVERPROPERTY('ProductVersion') AS varchar(100)) AS product_version, CAST(SERVERPROPERTY('Edition') AS varchar(200)) AS edition"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "Canonical ServerID only",
+    "No host/database/username/password supplied by job",
+    "No business-row reads",
+    "No DDL/DML",
+    "Do not change connection active state",
+    "No Production mutation",
+    "EDARSAHUB remains sole source of truth"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "CAVAS_PERSONALES",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "required_deliverables": [
+    "SQL_CHECK_OUTPUT"
+  ],
+  "deliverable_specs": {
+    "SQL_CHECK_OUTPUT": {
+      "source": {
+        "check_type": "sql_readonly_audit",
+        "occurrence": 1
+      },
+      "selector": {
+        "type": "json_path",
+        "path": [
+          "output"
+        ]
+      }
+    }
+  }
+}
