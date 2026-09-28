@@ -1,0 +1,150 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-SQL-READONLY-SERVERID-SOURCE-R1-20260927",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "d512acf07cc5f8c2622462fbb930487c97f30747",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Agregar capacidad genérica y fail-closed source=SERVER al sql_readonly_audit para auditar una fuente SQL externa por ServerID canónico de EDARSAHUB, incluyendo opcionalmente registros inactivos sólo cuando include_inactive=true. Reusar server_registry, secret_manager y get_external_sql_connection; nunca aceptar host/database/username/password desde el job ni exponer secretos. Sin cambios de negocio, SQL schema/datos ni Producción.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/server_registry.py",
+      "old": "def _get_server_by_id_from_sql(server_id: str) -> Optional[Dict]:\n",
+      "new": "def _get_server_by_id_from_sql(server_id: str, include_inactive: bool = False) -> Optional[Dict]:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/server_registry.py",
+      "old": "        safe_id = server_id.replace(\"'\", \"''\")\n        \n        query = f\"\"\"\n        SELECT * FROM Servidores_Conexiones\n        WHERE (CAST(id AS VARCHAR(50)) = '{safe_id}' OR mongodb_id = '{safe_id}')\n          AND activo = 1\n        \"\"\"\n",
+      "new": "        safe_id = server_id.replace(\"'\", \"''\")\n        active_clause = \"\" if include_inactive else \"AND activo = 1\"\n        \n        query = f\"\"\"\n        SELECT * FROM Servidores_Conexiones\n        WHERE (CAST(id AS VARCHAR(50)) = '{safe_id}' OR mongodb_id = '{safe_id}')\n          {active_clause}\n        \"\"\"\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/server_registry.py",
+      "old": "def get_server_connection_info_with_secrets(server_id: str) -> Optional[Dict]:\n",
+      "new": "def get_server_connection_info_with_secrets(server_id: str, include_inactive: bool = False) -> Optional[Dict]:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/server_registry.py",
+      "old": "    server = _get_server_by_id_from_sql(server_id)\n    if not server:\n        logger.debug(f\"[SERVER_REGISTRY] Servidor {server_id} no encontrado para conexión\")\n",
+      "new": "    server = _get_server_by_id_from_sql(server_id, include_inactive=include_inactive)\n    if not server:\n        logger.debug(f\"[SERVER_REGISTRY] Servidor {server_id} no encontrado para conexión\")\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/sql_readonly_audit.py",
+      "old": "ALLOWED_POS_SYSTEM_TYPES = {'MPRO', 'SOFTRESTAURANT'}\nUNIT_CODE_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$')\n",
+      "new": "ALLOWED_POS_SYSTEM_TYPES = {'MPRO', 'SOFTRESTAURANT'}\nUNIT_CODE_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$')\nSERVER_ID_RE = re.compile(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/sql_readonly_audit.py",
+      "old": "def execute_queries(queries: list[dict[str, Any]], max_rows: int = 200, *, source: str = 'EDARSAHUB', units: list[str] | None = None, system_types: list[str] | None = None) -> dict[str, Any]:\n",
+      "new": "def execute_queries(queries: list[dict[str, Any]], max_rows: int = 200, *, source: str = 'EDARSAHUB', units: list[str] | None = None, system_types: list[str] | None = None, server_id: str | None = None, include_inactive: bool = False) -> dict[str, Any]:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/sql_readonly_audit.py",
+      "old": "    if source_name == 'EDARSAHUB':\n        if unit_codes or requested_types:\n            raise ValueError('EDARSAHUB_SOURCE_DOES_NOT_ACCEPT_POS_SELECTORS')\n        from core.sql_first.db import readonly_sql_connection\n        with readonly_sql_connection('default') as conn:\n            evidence = _query_evidence(conn, queries, max_rows)\n            try:\n                conn.rollback()\n            except Exception:\n                pass\n        return {'status': 'PASS', 'mode': 'READ_ONLY_SQL', 'connection': 'readonly_sql_connection:default', 'evidence': evidence}\n\n    if source_name != 'POS':\n        raise ValueError('INVALID_READONLY_SOURCE')\n",
+      "new": "    if source_name == 'EDARSAHUB':\n        if unit_codes or requested_types or server_id or include_inactive:\n            raise ValueError('EDARSAHUB_SOURCE_DOES_NOT_ACCEPT_EXTERNAL_SELECTORS')\n        from core.sql_first.db import readonly_sql_connection\n        with readonly_sql_connection('default') as conn:\n            evidence = _query_evidence(conn, queries, max_rows)\n            try:\n                conn.rollback()\n            except Exception:\n                pass\n        return {'status': 'PASS', 'mode': 'READ_ONLY_SQL', 'connection': 'readonly_sql_connection:default', 'evidence': evidence}\n\n    if source_name == 'SERVER':\n        if unit_codes or requested_types:\n            raise ValueError('SERVER_SOURCE_DOES_NOT_ACCEPT_POS_SELECTORS')\n        server_id_value = str(server_id or '').strip()\n        if not SERVER_ID_RE.fullmatch(server_id_value):\n            raise ValueError('SERVER_ID_REQUIRED_OR_INVALID')\n        from core.server_registry import get_server_connection_info_with_secrets\n        from core.secret_manager import decrypt_secret, is_encrypted_secret\n        from core.sql_first.connection_factory import get_external_sql_connection\n        server = get_server_connection_info_with_secrets(server_id_value, include_inactive=bool(include_inactive))\n        if not server:\n            raise ValueError('SERVER_NOT_RESOLVED')\n        password = server.get('password')\n        if not password:\n            raise ValueError('SERVER_PASSWORD_NOT_CONFIGURED')\n        if is_encrypted_secret(password):\n            password = decrypt_secret(password)\n        config = {\n            'host': server.get('host'),\n            'port': server.get('port', 1433),\n            'database': server.get('database'),\n            'username': server.get('username'),\n            'password_decrypted': password,\n            'timeout': 30,\n            'login_timeout': 10,\n        }\n        target = {\n            'server_id': str(server.get('id') or server_id_value),\n            'name': str(server.get('name') or ''),\n            'system_type': str(server.get('system_type') or ''),\n            'database': str(server.get('database') or ''),\n            'active': bool(server.get('active', False)),\n        }\n        conn = get_external_sql_connection(config)\n        try:\n            evidence = _query_evidence(conn, queries, max_rows, target=target)\n            try:\n                conn.rollback()\n            except Exception:\n                pass\n        finally:\n            conn.close()\n        return {\n            'status': 'PASS',\n            'mode': 'READ_ONLY_SQL',\n            'connection': 'server_registry+get_external_sql_connection',\n            'targets': [target],\n            'evidence': evidence,\n        }\n\n    if source_name != 'POS':\n        raise ValueError('INVALID_READONLY_SOURCE')\n    if server_id or include_inactive:\n        raise ValueError('POS_SOURCE_DOES_NOT_ACCEPT_SERVER_SELECTORS')\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/sql_readonly_audit.py",
+      "old": "    parser.add_argument('--source', choices=['EDARSAHUB', 'POS'], default='EDARSAHUB')\n    parser.add_argument('--units-json', default='[]')\n    parser.add_argument('--system-types-json', default='[]')\n",
+      "new": "    parser.add_argument('--source', choices=['EDARSAHUB', 'POS', 'SERVER'], default='EDARSAHUB')\n    parser.add_argument('--units-json', default='[]')\n    parser.add_argument('--system-types-json', default='[]')\n    parser.add_argument('--server-id')\n    parser.add_argument('--include-inactive', action='store_true')\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/sql_readonly_audit.py",
+      "old": "            source=args.source,\n            units=units,\n            system_types=system_types,\n        )\n",
+      "new": "            source=args.source,\n            units=units,\n            system_types=system_types,\n            server_id=args.server_id,\n            include_inactive=args.include_inactive,\n        )\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        if check.get(\"system_types\") is not None:\n            cmd.extend([\"--system-types-json\", json.dumps(check.get(\"system_types\"), ensure_ascii=False)])\n        cwd = worktree\n",
+      "new": "        if check.get(\"system_types\") is not None:\n            cmd.extend([\"--system-types-json\", json.dumps(check.get(\"system_types\"), ensure_ascii=False)])\n        if check.get(\"server_id\") is not None:\n            cmd.extend([\"--server-id\", str(check.get(\"server_id\"))])\n        if check.get(\"include_inactive\") is True:\n            cmd.append(\"--include-inactive\")\n        cwd = worktree\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    if kind == \"sql_readonly_audit\":\n        queries = check.get(\"queries\")\n",
+      "new": "    if kind == \"sql_readonly_audit\":\n        source = str(check.get(\"source\") or \"EDARSAHUB\").strip().upper()\n        if source not in {\"EDARSAHUB\", \"POS\", \"SERVER\"}:\n            return [f\"{prefix}_INVALID_READONLY_SOURCE\"]\n        server_id = check.get(\"server_id\")\n        include_inactive = check.get(\"include_inactive\", False)\n        if not isinstance(include_inactive, bool):\n            return [f\"{prefix}_INCLUDE_INACTIVE_MUST_BE_BOOL\"]\n        if source == \"SERVER\":\n            if not isinstance(server_id, str) or not re.fullmatch(r\"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\", server_id):\n                return [f\"{prefix}_SERVER_ID_REQUIRED_OR_INVALID\"]\n            if check.get(\"units\") is not None or check.get(\"system_types\") is not None:\n                return [f\"{prefix}_SERVER_POS_SELECTORS_FORBIDDEN\"]\n        elif server_id is not None or include_inactive:\n            return [f\"{prefix}_SERVER_SELECTORS_FORBIDDEN_FOR_SOURCE\"]\n        queries = check.get(\"queries\")\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_pos_sql_readonly_audit.py",
+      "old": "    assert \"choices=['EDARSAHUB', 'POS']\" in text\n",
+      "new": "    assert \"choices=['EDARSAHUB', 'POS', 'SERVER']\" in text\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_pos_sql_readonly_audit.py",
+      "old": "    assert '--system-types-json' in dispatcher\n\ndef test_pos_readonly_rejects_mutation_sql_before_connection():\n",
+      "new": "    assert '--system-types-json' in dispatcher\n    assert '--server-id' in dispatcher\n    assert '--include-inactive' in dispatcher\n    assert 'get_server_connection_info_with_secrets' in text\n    assert 'server_registry+get_external_sql_connection' in text\n\n\ndef test_server_readonly_contract_has_no_job_supplied_credentials():\n    text = HELPER.read_text(encoding='utf-8')\n    for option in ('--host', '--database', '--username', '--password'):\n        assert option not in text\n    assert \"source_name == 'SERVER'\" in text\n    assert 'include_inactive=bool(include_inactive)' in text\n\n\ndef test_pos_readonly_rejects_mutation_sql_before_connection():\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/server_registry.py",
+        "tools/mirror_sync/sql_readonly_audit.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/universal_job_bridge.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_sql_readonly_audit.py",
+        "backend/tests/test_worker_pos_sql_readonly_audit.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No application/business logic changes",
+    "No SQL DDL/DML",
+    "No Production",
+    "No host/database/username/password accepted from jobs",
+    "Reuse canonical server_registry, secret_manager and connection_factory",
+    "include_inactive defaults false and is explicit only for SERVER source"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "UNIVERSAL_WORKER",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
