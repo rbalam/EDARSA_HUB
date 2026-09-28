@@ -1,6 +1,8 @@
 import sys
 import types
 
+import pytest
+
 from core.sql_first import connection_factory
 
 
@@ -95,3 +97,51 @@ def test_external_factory_keeps_plain_host(
     )
 
     assert captured["port"] == 1444
+
+
+def test_external_factory_propagates_real_pymssql_connection_error(monkeypatch):
+    class ExpectedConnectionError(RuntimeError):
+        pass
+
+    def fail_connect(**kwargs):
+        raise ExpectedConnectionError("REAL_PYMSSQL_CONNECTION_ERROR")
+
+    monkeypatch.setitem(
+        sys.modules,
+        "pymssql",
+        types.SimpleNamespace(connect=fail_connect),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "pyodbc",
+        types.SimpleNamespace(
+            connect=lambda *args, **kwargs: pytest.fail(
+                "pyodbc must not mask a real pymssql connection error"
+            )
+        ),
+    )
+
+    with pytest.raises(ExpectedConnectionError, match="REAL_PYMSSQL_CONNECTION_ERROR"):
+        connection_factory.get_external_sql_connection(_base_config())
+
+
+def test_external_factory_falls_back_to_pyodbc_only_when_pymssql_import_missing(monkeypatch):
+    captured = {}
+
+    def fake_odbc_connect(connection_string, **kwargs):
+        captured["connection_string"] = connection_string
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setitem(sys.modules, "pymssql", None)
+    monkeypatch.setitem(
+        sys.modules,
+        "pyodbc",
+        types.SimpleNamespace(connect=fake_odbc_connect),
+    )
+
+    connection_factory.get_external_sql_connection(_base_config())
+
+    assert "SERVER=example.invalid,6969" in captured["connection_string"]
+    assert "DATABASE=db_test" in captured["connection_string"]
+    assert captured["timeout"] == 10
