@@ -1,0 +1,118 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "include_inactive": true,
+      "queries": [
+        {
+          "name": "CAVAS_CLIENTS_PROFILE",
+          "sql": "SELECT\n    COUNT_BIG(*) AS total_clients,\n    SUM(CASE WHEN active = 1 THEN 1 ELSE 0 END) AS active_clients,\n    SUM(CASE WHEN vip = 1 THEN 1 ELSE 0 END) AS vip_clients,\n    SUM(CASE WHEN email IS NULL OR LTRIM(RTRIM(email)) = '' THEN 1 ELSE 0 END) AS without_email,\n    SUM(CASE WHEN phone IS NULL OR LTRIM(RTRIM(phone)) = '' THEN 1 ELSE 0 END) AS without_phone,\n    MIN(created) AS created_min,\n    MAX(created) AS created_max,\n    MIN(last_visit) AS last_visit_min,\n    MAX(last_visit) AS last_visit_max\nFROM dbo.clients"
+        },
+        {
+          "name": "CAVAS_CLIENT_DUPLICATE_EMAILS",
+          "sql": "SELECT TOP (100)\n    LOWER(LTRIM(RTRIM(email))) AS email_normalized,\n    COUNT_BIG(*) AS rows_count\nFROM dbo.clients\nWHERE email IS NOT NULL\n  AND LTRIM(RTRIM(email)) <> ''\nGROUP BY LOWER(LTRIM(RTRIM(email)))\nHAVING COUNT_BIG(*) > 1\nORDER BY COUNT_BIG(*) DESC, email_normalized"
+        },
+        {
+          "name": "CAVAS_CLIENT_TYPES",
+          "sql": "SELECT\n    type,\n    relation_type,\n    COUNT_BIG(*) AS rows_count\nFROM dbo.clients\nGROUP BY type, relation_type\nORDER BY rows_count DESC"
+        },
+        {
+          "name": "CAVAS_CELLARS_PROFILE",
+          "sql": "SELECT\n    COUNT_BIG(*) AS total_cellars,\n    SUM(CASE WHEN active = 1 THEN 1 ELSE 0 END) AS active_cellars,\n    SUM(COALESCE(bottle_count,0)) AS stored_bottle_count,\n    SUM(COALESCE(client_count,0)) AS stored_client_count,\n    MIN(created) AS created_min,\n    MAX(created) AS created_max\nFROM dbo.cellars"
+        },
+        {
+          "name": "CAVAS_CELLARS_CLIENTS_CARDINALITY",
+          "sql": "SELECT\n    COUNT_BIG(*) AS links_total,\n    COUNT_BIG(DISTINCT cellar_id) AS linked_cellars,\n    COUNT_BIG(DISTINCT client_id) AS linked_clients,\n    SUM(CASE WHEN cellar_id IS NULL THEN 1 ELSE 0 END) AS null_cellar,\n    SUM(CASE WHEN client_id IS NULL THEN 1 ELSE 0 END) AS null_client\nFROM dbo.cellars_clients"
+        },
+        {
+          "name": "CAVAS_CELLARS_WITH_MULTIPLE_CLIENTS",
+          "sql": "SELECT TOP (100)\n    cellar_id,\n    COUNT_BIG(DISTINCT client_id) AS clients_count\nFROM dbo.cellars_clients\nWHERE cellar_id IS NOT NULL\n  AND client_id IS NOT NULL\nGROUP BY cellar_id\nHAVING COUNT_BIG(DISTINCT client_id) > 1\nORDER BY clients_count DESC, cellar_id"
+        },
+        {
+          "name": "CAVAS_CLIENTS_WITH_MULTIPLE_CELLARS",
+          "sql": "SELECT TOP (100)\n    client_id,\n    COUNT_BIG(DISTINCT cellar_id) AS cellars_count\nFROM dbo.cellars_clients\nWHERE cellar_id IS NOT NULL\n  AND client_id IS NOT NULL\nGROUP BY client_id\nHAVING COUNT_BIG(DISTINCT cellar_id) > 1\nORDER BY cellars_count DESC, client_id"
+        },
+        {
+          "name": "CAVAS_BOTTLES_PROFILE",
+          "sql": "SELECT\n    COUNT_BIG(*) AS total_bottles,\n    COUNT_BIG(DISTINCT cellar_id) AS cellars_with_bottles,\n    SUM(CASE WHEN cellar_id IS NULL THEN 1 ELSE 0 END) AS bottles_without_cellar,\n    MIN(created) AS created_min,\n    MAX(created) AS created_max\nFROM dbo.bottles"
+        },
+        {
+          "name": "CAVAS_BOTTLE_STATUS",
+          "sql": "SELECT\n    status,\n    COUNT_BIG(*) AS rows_count\nFROM dbo.bottles\nGROUP BY status\nORDER BY rows_count DESC"
+        },
+        {
+          "name": "CAVAS_BOTTLE_CAPACITY",
+          "sql": "SELECT TOP (100)\n    capacity,\n    COUNT_BIG(*) AS rows_count\nFROM dbo.bottles\nGROUP BY capacity\nORDER BY rows_count DESC, capacity"
+        },
+        {
+          "name": "CAVAS_BOTTLES_ORPHAN_CELLAR",
+          "sql": "SELECT COUNT_BIG(*) AS orphan_bottles\nFROM dbo.bottles b\nLEFT JOIN dbo.cellars c\n  ON c.id = b.cellar_id\nWHERE b.cellar_id IS NOT NULL\n  AND c.id IS NULL"
+        },
+        {
+          "name": "CAVAS_BOTTLE_LOG_ACTIONS",
+          "sql": "SELECT TOP (100)\n    action,\n    COUNT_BIG(*) AS rows_count,\n    MIN(created) AS created_min,\n    MAX(created) AS created_max\nFROM dbo.bottle_logs\nGROUP BY action\nORDER BY rows_count DESC, action"
+        },
+        {
+          "name": "CAVAS_BOTTLE_LOG_PROFILE",
+          "sql": "SELECT\n    COUNT_BIG(*) AS total_logs,\n    COUNT_BIG(DISTINCT bottle_id) AS bottles_logged,\n    COUNT_BIG(DISTINCT cellar_id) AS cellars_logged,\n    COUNT_BIG(DISTINCT client_id) AS clients_logged,\n    COUNT_BIG(DISTINCT user_id) AS users_logged,\n    COUNT_BIG(DISTINCT attendance_id) AS attendances_logged,\n    SUM(CASE WHEN bottle_id IS NULL THEN 1 ELSE 0 END) AS without_bottle,\n    SUM(CASE WHEN client_id IS NULL THEN 1 ELSE 0 END) AS without_client,\n    SUM(CASE WHEN attendance_id IS NULL THEN 1 ELSE 0 END) AS without_attendance,\n    MIN(created) AS created_min,\n    MAX(created) AS created_max\nFROM dbo.bottle_logs"
+        },
+        {
+          "name": "CAVAS_BOTTLE_LOG_ORPHANS",
+          "sql": "SELECT\n    SUM(CASE WHEN bl.bottle_id IS NOT NULL AND b.id IS NULL THEN 1 ELSE 0 END) AS orphan_bottle_refs,\n    SUM(CASE WHEN bl.cellar_id IS NOT NULL AND c.id IS NULL THEN 1 ELSE 0 END) AS orphan_cellar_refs,\n    SUM(CASE WHEN bl.client_id IS NOT NULL AND cl.id IS NULL THEN 1 ELSE 0 END) AS orphan_client_refs,\n    SUM(CASE WHEN bl.attendance_id IS NOT NULL AND a.id IS NULL THEN 1 ELSE 0 END) AS orphan_attendance_refs\nFROM dbo.bottle_logs bl\nLEFT JOIN dbo.bottles b ON b.id = bl.bottle_id\nLEFT JOIN dbo.cellars c ON c.id = bl.cellar_id\nLEFT JOIN dbo.clients cl ON cl.id = bl.client_id\nLEFT JOIN dbo.attendances a ON a.id = bl.attendance_id"
+        },
+        {
+          "name": "CAVAS_ATTENDANCES_PROFILE",
+          "sql": "SELECT\n    COUNT_BIG(*) AS total_attendances,\n    COUNT_BIG(DISTINCT client_id) AS clients_with_attendance,\n    SUM(CASE WHEN client_id IS NULL THEN 1 ELSE 0 END) AS without_client,\n    SUM(COALESCE(ticket_total,0)) AS ticket_total_sum,\n    SUM(COALESCE(person_amount,0)) AS person_amount_sum,\n    MIN(created) AS created_min,\n    MAX(created) AS created_max\nFROM dbo.attendances"
+        },
+        {
+          "name": "CAVAS_ATTENDANCE_CLIENT_ORPHANS",
+          "sql": "SELECT COUNT_BIG(*) AS orphan_attendances\nFROM dbo.attendances a\nLEFT JOIN dbo.clients c\n  ON c.id = a.client_id\nWHERE a.client_id IS NOT NULL\n  AND c.id IS NULL"
+        },
+        {
+          "name": "CAVAS_CLIENT_NOTES_PROFILE",
+          "sql": "SELECT\n    COUNT_BIG(*) AS total_notes,\n    COUNT_BIG(DISTINCT client_id) AS clients_with_notes,\n    COUNT_BIG(DISTINCT user_id) AS users_authoring_notes,\n    MIN(created) AS created_min,\n    MAX(created) AS created_max\nFROM dbo.client_notes"
+        },
+        {
+          "name": "CAVAS_USERS_PROFILE",
+          "sql": "SELECT\n    COUNT_BIG(*) AS total_users,\n    SUM(CASE WHEN active = 1 THEN 1 ELSE 0 END) AS active_users,\n    COUNT_BIG(DISTINCT role_id) AS role_ids,\n    MIN(created) AS created_min,\n    MAX(created) AS created_max,\n    MAX(last_login) AS latest_login\nFROM dbo.users"
+        },
+        {
+          "name": "CAVAS_MEDIA_MODEL_USAGE",
+          "sql": "SELECT TOP (100)\n    model,\n    collection,\n    type,\n    COUNT_BIG(*) AS rows_count\nFROM dbo.media\nGROUP BY model, collection, type\nORDER BY rows_count DESC"
+        },
+        {
+          "name": "CAVAS_LOG_MODEL_ACTION_USAGE",
+          "sql": "SELECT TOP (100)\n    model,\n    action,\n    COUNT_BIG(*) AS rows_count\nFROM dbo.logs\nGROUP BY model, action\nORDER BY rows_count DESC"
+        }
+      ],
+      "server_id": "8016ab53-f1ef-4539-aebe-c01e5b978bbc",
+      "source": "SERVER",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "CAVAS-CIENFUEGOS-DATA-PROFILING-READONLY-R1-20260929",
+  "mode": "READ_ONLY",
+  "objective": "Perfilar en modo READ_ONLY los datos operativos del legado Cavas Cienfuegos para validar relaciones lógicas, cardinalidades, estados, acciones, fechas, duplicados y huérfanos antes de diseñar homologación canónica hacia EDARSAHUB.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Cavas Personales 9",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
