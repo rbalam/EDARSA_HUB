@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "f892a10a7d9cc269ab95f9ffbb3b9e5051bb4920",
-  "generated_at_utc": "2026-09-29T17:06:17Z",
+  "generated_at_utc": "2026-09-29T17:07:31Z",
   "history": {
     "done_total_local": 1154,
     "pending_total_local": 0,
@@ -16,37 +16,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2512,
+      "age_seconds": 2586,
       "job_id": "CAVAS-CIENFUEGOS-REGISTRY-DATABASE-NAME-FIX-R2-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1686,
+      "age_seconds": 1761,
       "job_id": "CAVAS-CIENFUEGOS-SCHEMA-DISCOVERY-READONLY-R1-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 496,
+      "age_seconds": 570,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-FINAL-RUNTIME-R13-CARLOS-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2932,
+      "age_seconds": 3007,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-NONBLOCKING-R12-CARLOS-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2243,
+      "age_seconds": 2317,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-FUNCTIONAL-FLOW-AUDIT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3325,
+      "age_seconds": 3400,
       "job_id": "EDARSAHUB-WORKER-MATERIALIZATION-V2-R1C2-NEGATIVE-SOURCE-SHA-FAIL-CLOSED-R1",
       "reason": null,
       "state": "RESULT_READY"
@@ -66,8 +66,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-29T17:06:11Z",
-    "last_receive_utc": "2026-09-29T17:06:12Z",
+    "last_cycle_utc": "2026-09-29T17:07:27Z",
+    "last_receive_utc": "2026-09-29T17:07:30Z",
     "last_terminal_utc": "2026-09-29T16:58:01Z",
     "pid": "368",
     "runtime_fingerprint": {
