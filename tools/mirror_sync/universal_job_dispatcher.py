@@ -61,6 +61,7 @@ MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
 COMERCIAL_RANGE_RESYNC_MODE = "COMERCIAL_RANGE_RESYNC"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
 ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
+SERVER_REGISTRY_METADATA_UPDATE_MODE = "SERVER_REGISTRY_METADATA_UPDATE"
 SQL_MIGRATION_DEVELOPMENT_MODE = "SQL_MIGRATION_DEVELOPMENT"
 FRONTEND_BUILD_CERTIFICATION_MODE = "FRONTEND_BUILD_CERTIFICATION"
 UNIT_CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$")
@@ -1119,6 +1120,75 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                 result["percent_complete"] = 100
                 result["certification"] = "CERTIFIED_OPERATIONAL"
                 result["summary_es"] = "El Worker resincronizo exclusivamente Pagos por Ticket para una unidad y rango autorizados y certifico el resultado con SQL de solo lectura. No modifico Sync_Sales, Cuentas, Comandas, Cortes ni Produccion."
+            else:
+                result["percent_complete"] = 0
+                result["certification"] = "NOT_CERTIFIED"
+            return 0
+
+        if mode == SERVER_REGISTRY_METADATA_UPDATE_MODE:
+            if expected_base and expected_base != current_head:
+                raise RuntimeError(f"BASE_SHA_MISMATCH_OPERATIONAL_MODE:expected={expected_base}:actual={current_head}")
+            if job.get("actions") not in (None, []):
+                raise RuntimeError("SERVER_REGISTRY_METADATA_UPDATE_ACTIONS_FORBIDDEN")
+            for forbidden_field in ("sql", "command", "shell", "script", "path", "password", "secret", "username"):
+                if job.get(forbidden_field) is not None:
+                    raise RuntimeError(f"SERVER_REGISTRY_METADATA_UPDATE_FORBIDDEN_FIELD:{forbidden_field}")
+            server_id = str(job.get("server_id") or "").strip()
+            database_name = str(job.get("database_name") or "").strip()
+            if not re.fullmatch(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", server_id):
+                raise RuntimeError("SERVER_REGISTRY_METADATA_UPDATE_SERVER_ID_INVALID")
+            if not re.fullmatch(r"[A-Za-z0-9_]{1,128}", database_name):
+                raise RuntimeError("SERVER_REGISTRY_METADATA_UPDATE_DATABASE_NAME_INVALID")
+            if job.get("confirm_server_registry_metadata_update") is not True:
+                raise RuntimeError("SERVER_REGISTRY_METADATA_UPDATE_CONFIRMATION_REQUIRED")
+            preflight_checks = job.get("preflight_checks") or []
+            if not preflight_checks or any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in preflight_checks):
+                raise RuntimeError("SERVER_REGISTRY_METADATA_UPDATE_PREFLIGHT_REQUIRED")
+            preflight_results = []
+            for check in preflight_checks:
+                check_result = run_check(ROOT, check)
+                preflight_results.append(check_result)
+                if check_result["status"] != "PASS":
+                    result["blockers"].append("check_failed:server_registry_metadata_preflight")
+                    break
+            result["preflight_checks"] = preflight_results
+            script = ROOT / "backend" / "scripts" / "update_server_registry_metadata.py"
+            if not script.is_file():
+                raise RuntimeError("SERVER_REGISTRY_METADATA_UPDATE_SCRIPT_NOT_FOUND")
+            backend = ROOT / "backend"
+            if not result["blockers"]:
+                execution = run(
+                    [PYTHON_BIN, str(script), "--server-id", server_id, "--database-name", database_name, "--confirm"],
+                    cwd=ROOT,
+                    timeout=MAX_SECONDS,
+                    env_extra={**load_backend_runtime_env(), "PYTHONPATH": str(backend)},
+                )
+                result["operation"] = SERVER_REGISTRY_METADATA_UPDATE_MODE
+                result["canonical_sql_mutation"] = True
+                result["operation_output"] = (execution.stdout or "")[-12000:]
+                if execution.returncode != 0:
+                    result["blockers"].append(f"server_registry_metadata_update_failed:rc={execution.returncode}")
+            result["files_changed"] = []
+            checks = job.get("checks") or []
+            check_results = []
+            if not result["blockers"]:
+                if not checks or any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+                    result["blockers"].append("SERVER_REGISTRY_METADATA_UPDATE_POST_AUDIT_REQUIRED")
+                else:
+                    for check in checks:
+                        check_result = run_check(ROOT, check)
+                        check_results.append(check_result)
+                        if check_result["status"] != "PASS":
+                            result["blockers"].append("check_failed:server_registry_metadata_post_audit")
+                            break
+            result["checks"] = check_results
+            result["tests"] = "PASS" if (preflight_results and check_results and all(x["status"] == "PASS" for x in preflight_results + check_results)) else "FAIL"
+            result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
+            if not result["blockers"]:
+                result["status"] = "OPERATIONAL_COMPLETE"
+                result["percent_complete"] = 100
+                result["certification"] = "CERTIFIED_OPERATIONAL"
+                result["summary_es"] = "El Worker actualizo exclusivamente metadata permitida de Servidores_Conexiones mediante server_registry, con preflight y post-audit SQL de solo lectura, sin SQL inline, secretos ni Produccion."
             else:
                 result["percent_complete"] = 0
                 result["certification"] = "NOT_CERTIFIED"

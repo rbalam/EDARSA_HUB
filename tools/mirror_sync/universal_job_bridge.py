@@ -55,6 +55,7 @@ MPRO_FULL_HISTORY_MODE = "MPRO_FULL_HISTORY_RESYNC"
 COMERCIAL_RANGE_RESYNC_MODE = "COMERCIAL_RANGE_RESYNC"
 ISCAM_DETAIL_BACKFILL_MODE = "ISCAM_DETAIL_BACKFILL"
 ISCAM_PAYMENTS_ONLY_RESYNC_MODE = "ISCAM_PAYMENTS_ONLY_RESYNC"
+SERVER_REGISTRY_METADATA_UPDATE_MODE = "SERVER_REGISTRY_METADATA_UPDATE"
 SQL_MIGRATION_DEVELOPMENT_MODE = "SQL_MIGRATION_DEVELOPMENT"
 FRONTEND_BUILD_CERTIFICATION_MODE = "FRONTEND_BUILD_CERTIFICATION"
 UNIT_CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{1,31}$")
@@ -339,6 +340,28 @@ def validate(job: Any) -> list[str]:
             errors.append("ISCAM_PAYMENTS_ONLY_DRY_RUN_INVALID")
         if dry_run is False and job.get("confirm_payments_only_resync") is not True:
             errors.append("ISCAM_PAYMENTS_ONLY_CONFIRMATION_REQUIRED")
+    elif mode == SERVER_REGISTRY_METADATA_UPDATE_MODE:
+        if actions not in (None, []):
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_ACTIONS_FORBIDDEN")
+        for forbidden_field in ("sql", "command", "shell", "script", "path", "password", "secret", "username"):
+            if job.get(forbidden_field) is not None:
+                errors.append(f"SERVER_REGISTRY_METADATA_UPDATE_FORBIDDEN_FIELD:{forbidden_field}")
+        server_id = str(job.get("server_id") or "").strip()
+        if not re.fullmatch(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", server_id):
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_SERVER_ID_INVALID")
+        database_name = str(job.get("database_name") or "").strip()
+        if not re.fullmatch(r"[A-Za-z0-9_]{1,128}", database_name):
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_DATABASE_NAME_INVALID")
+        if job.get("confirm_server_registry_metadata_update") is not True:
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_CONFIRMATION_REQUIRED")
+        preflight_checks = job.get("preflight_checks")
+        if not isinstance(preflight_checks, list) or not preflight_checks:
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_PREFLIGHT_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in preflight_checks):
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_PREFLIGHT_ONLY_SQL_AUDIT_ALLOWED")
+        else:
+            for index, check in enumerate(preflight_checks, 1):
+                errors.extend(validate_check(check, index))
     elif mode == SQL_MIGRATION_DEVELOPMENT_MODE:
         if actions not in (None, []):
             errors.append("SQL_MIGRATION_ACTIONS_FORBIDDEN")
@@ -426,6 +449,11 @@ def validate(job: Any) -> list[str]:
             errors.append("ISCAM_PAYMENTS_ONLY_AUDIT_REQUIRED")
         elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
             errors.append("ISCAM_PAYMENTS_ONLY_ONLY_SQL_AUDIT_ALLOWED")
+    elif mode == SERVER_REGISTRY_METADATA_UPDATE_MODE:
+        if not isinstance(checks, list) or not checks:
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_POST_AUDIT_REQUIRED")
+        elif any(not isinstance(c, dict) or c.get("type") != "sql_readonly_audit" for c in checks):
+            errors.append("SERVER_REGISTRY_METADATA_UPDATE_POST_ONLY_SQL_AUDIT_ALLOWED")
     elif mode == SQL_MIGRATION_DEVELOPMENT_MODE:
         if not isinstance(checks, list) or not checks:
             errors.append("SQL_MIGRATION_POST_AUDIT_REQUIRED")
