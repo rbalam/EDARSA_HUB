@@ -1,0 +1,84 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-RBAC-GLOBAL-SCOPE-FIX-R1-CARLOS-20260929T2255Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir el 403/SIN_ACCESO de los endpoints individuales del menú Comercial para TODAS las sucursales/unidades activas, usando RBAC canónico y sin hardcodear 130 MERIDA. Prohibido tocar o ejecutar sincronización de Inteligencia Comercial, Scheduler, Sync_Sales, Sync_PAX, ISCAM, ventas abiertas/cerradas, Tablero Ejecutivo, Portal de Inteligencia Comercial o Producción. El cambio debe limitarse al validador RBAC de endpoints individuales de backend/modules/comercial/routes.py.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/routes.py",
+      "old": "from core.user_access_context import (\n    resolve_user_access_context,\n    has_server_access,\n    has_empresa_access,\n    has_permiso,\n    UserAccessContext,\n)\n",
+      "new": "from core.user_access_context import (\n    resolve_user_access_context,\n    has_server_access,\n    has_empresa_access,\n    has_permiso,\n    UserAccessContext,\n)\nfrom core.rbac_sql.service import RBACSQLService\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/routes.py",
+      "old": "async def validate_server_access_rbac(current_user: Dict, server_id: str) -> UserAccessContext:\n    \"\"\"\n    Validación unificada de acceso a servidor usando resolve_user_access_context().\n    \n    FASE 6-8: Esta función ahora usa la función centralizada de contexto de acceso.\n    NUNCA confía en parámetros del frontend.\n    \n    Args:\n        current_user: Usuario autenticado\n        server_id: ID del servidor a validar\n        \n    Returns:\n        UserAccessContext si tiene acceso\n        \n    Raises:\n        HTTPException 403 si no tiene acceso\n    \"\"\"\n    # Resolver contexto de acceso completo\n    context = await resolve_user_access_context(current_user)\n    \n    # Validar acceso al servidor usando la función centralizada\n    if has_server_access(context, server_id):\n        return context\n    \n    # No tiene acceso\n    logging.warning(\n        f\"[RBAC-DENEGADO] Usuario {current_user.get('email')} \"\n        f\"sin acceso a servidor {server_id}. \"\n        f\"Fuente: {context.fuente_acceso}, Servidores permitidos: {context.servers_ids}\"\n    )\n    raise HTTPException(\n        status_code=403, \n        detail=f\"No tiene acceso a este servidor. Fuente de acceso: {context.fuente_acceso}\"\n    )\n",
+      "new": "async def validate_server_access_rbac(current_user: Dict, server_id: str) -> UserAccessContext:\n    \"\"\"\n    Valida acceso a endpoints individuales del módulo Comercial.\n\n    Reglas:\n    - conserva el alcance explícito existente por servidor;\n    - si el usuario no tiene asignaciones explícitas y su permiso canónico\n      comercial_VER no restringe sucursal, permite cualquier servidor que\n      pertenezca a una unidad de negocio activa;\n    - nunca amplía usuarios con alcance explícito;\n    - no interviene en Tablero Ejecutivo, Inteligencia Comercial ni procesos\n      de sincronización.\n    \"\"\"\n    context = await resolve_user_access_context(current_user)\n\n    if has_server_access(context, server_id):\n        return context\n\n    usuario_id = (\n        current_user.get(\"_sql_usuario_id\")\n        or current_user.get(\"UsuarioID\")\n    )\n\n    try:\n        usuario_id = int(usuario_id)\n    except (TypeError, ValueError):\n        usuario_id = None\n\n    if usuario_id:\n        try:\n            permission = RBACSQLService.get_permission_scope_by_code(\n                usuario_id,\n                \"comercial_VER\",\n            )\n            assignment_state = RBACSQLService.get_scope_assignment_state(\n                usuario_id\n            )\n\n            if permission and assignment_state is not None:\n                has_explicit_scope = (\n                    int(assignment_state.get(\"server_assignment_count\", 0)) > 0\n                    or int(assignment_state.get(\"branch_assignment_count\", 0)) > 0\n                )\n                unrestricted = not bool(\n                    permission.get(\"restriccion_sucursal\")\n                )\n\n                if unrestricted and not has_explicit_scope:\n                    active_server_ids = {\n                        str(unit.get(\"server_id\") or \"\").strip().lower()\n                        for unit in UnidadesService.get_all()\n                        if unit.get(\"server_id\")\n                        and bool(unit.get(\"activo\", True))\n                    }\n\n                    if str(server_id).strip().lower() in active_server_ids:\n                        logging.info(\n                            \"[RBAC-COMERCIAL-GLOBAL] Usuario %s con \"\n                            \"comercial_VER sin restricción accede a servidor %s\",\n                            current_user.get(\"email\"),\n                            server_id,\n                        )\n                        return context\n        except Exception:\n            logging.exception(\n                \"[RBAC-COMERCIAL] Error validando permiso canónico para %s\",\n                current_user.get(\"email\"),\n            )\n\n    logging.warning(\n        f\"[RBAC-DENEGADO] Usuario {current_user.get('email')} \"\n        f\"sin acceso a servidor {server_id}. \"\n        f\"Fuente: {context.fuente_acceso}, Servidores permitidos: {context.servers_ids}\"\n    )\n    raise HTTPException(\n        status_code=403,\n        detail=f\"No tiene acceso a este servidor. Fuente de acceso: {context.fuente_acceso}\"\n    )\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial/routes.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_rbac_sql_scope.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial/routes.py"
+        ],
+        "search_terms": [
+          "RBAC-COMERCIAL-GLOBAL",
+          "comercial_VER",
+          "validate_server_access_rbac",
+          "tablero_ejecutivo",
+          "Sync_PAX",
+          "inteligencia"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 30
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "todas_unidades_comercial_activas",
+          "sql": "SELECT codigo,nombre,CONVERT(VARCHAR(100),server_id) AS ServidorID,CONVERT(VARCHAR(100),sucursal_origen_id) AS SucursalOrigenID,system_type,ISNULL(activo,0) AS Activo FROM dbo.Unidades_Negocio WITH (NOLOCK) WHERE ISNULL(activo,0)=1 ORDER BY nombre"
+        },
+        {
+          "name": "ricardo_permiso_comercial_ver",
+          "sql": "SELECT DISTINCT u.UsuarioID,u.Email,r.CodigoRol,m.CodigoModulo,a.CodigoAccion,ISNULL(prm.Permitido,0) AS Permitido,ISNULL(prm.RestriccionSucursal,0) AS RestriccionSucursal,ISNULL(prm.Activo,1) AS PermisoActivo FROM dbo.Usuario_Catalogo AS u WITH (NOLOCK) INNER JOIN dbo.Usuario_RolesAsignacion AS ura WITH (NOLOCK) ON ura.UsuarioID=u.UsuarioID AND ISNULL(ura.Activo,1)=1 INNER JOIN dbo.Usuario_Roles AS r WITH (NOLOCK) ON r.RolID=ura.RolID AND ISNULL(r.Activo,1)=1 INNER JOIN dbo.Usuario_PermisosRolModulo AS prm WITH (NOLOCK) ON prm.RolID=r.RolID INNER JOIN dbo.Usuario_Modulos AS m WITH (NOLOCK) ON m.ModuloID=prm.ModuloID INNER JOIN dbo.Usuario_Acciones AS a WITH (NOLOCK) ON a.AccionID=prm.AccionID WHERE LOWER(LTRIM(RTRIM(u.Email)))='ricardo@edarsa.com.mx' AND m.CodigoModulo='comercial' AND a.CodigoAccion='VER'"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
