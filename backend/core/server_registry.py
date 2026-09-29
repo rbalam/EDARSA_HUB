@@ -1060,8 +1060,9 @@ async def update_server(
             'sync_status': 'VALIDATION_ERROR'
         }
     
-    # Verificar que existe en SQL
-    existing = _get_server_by_id_from_sql(server_id)
+    # Verificar que existe en SQL, incluyendo registros inactivos para permitir
+    # su corrección/configuración sin activarlos implícitamente.
+    existing = _get_server_by_id_from_sql(server_id, include_inactive=True)
     if not existing:
         return {
             'success': False,
