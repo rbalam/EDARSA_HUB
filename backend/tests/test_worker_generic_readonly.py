@@ -222,3 +222,14 @@ def test_dispatcher_promotes_native_decision_after_every_checks_assignment():
 
     assert assignments >= 1
     assert calls == assignments
+
+def test_dispatcher_has_native_repository_decision_fallback():
+    text = DISPATCHER.read_text(encoding="utf-8")
+
+    assert "_native_decision_from_repository_contract_audit" in text
+    assert "NATIVE_REPOSITORY_EVIDENCE_DERIVED_FAIL_CLOSED" in text
+    assert "NATIVE_REPOSITORY_EVIDENCE_REQUIRES_REVIEW" in text
+    assert (
+        "native_repository_decision = _native_decision_from_repository_contract_audit"
+        in text
+    )

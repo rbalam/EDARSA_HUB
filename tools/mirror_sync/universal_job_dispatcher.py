@@ -592,6 +592,80 @@ def _semantic_extract_payload(check_result):
     return None
 
 
+
+def _native_decision_from_repository_contract_audit(result, check_results):
+    repository_reports = []
+
+    for check_result in check_results:
+        if (
+            check_result.get("type") == "repository_contract_audit"
+            and check_result.get("status") == "PASS"
+        ):
+            evidence = check_result.get("repository_evidence")
+            if not isinstance(evidence, dict):
+                output = check_result.get("output")
+                if isinstance(output, str) and output.strip():
+                    try:
+                        decoded = json.loads(output)
+                    except json.JSONDecodeError:
+                        decoded = None
+                    if isinstance(decoded, dict):
+                        evidence = decoded
+            if isinstance(evidence, dict):
+                repository_reports.append(evidence)
+
+    if not repository_reports:
+        return None
+
+    matched_terms = set()
+    matched_paths = []
+    scanned_files = 0
+    matched_files = 0
+
+    for report in repository_reports:
+        summary = report.get("summary")
+        if isinstance(summary, dict):
+            scanned_files += int(summary.get("scanned_files") or 0)
+            matched_files += int(summary.get("matched_files") or 0)
+
+        evidence_items = report.get("evidence")
+        if not isinstance(evidence_items, list):
+            continue
+
+        for item in evidence_items:
+            if not isinstance(item, dict):
+                continue
+
+            path = item.get("path")
+            if isinstance(path, str) and path:
+                matched_paths.append(path)
+
+            for term in item.get("matched_terms") or []:
+                if isinstance(term, str) and term:
+                    matched_terms.add(term)
+
+    gate_label = "GATE3" if "GATE3" in str(result.get("job_id", "")).upper() else "GATE"
+
+    return {
+        "gate3_allowed": False,
+        "last_gate_executed": result.get("job_id"),
+        "last_gate_certified": False,
+        "real_implementation_percent": None,
+        "next_allowed_gate": gate_label + "_HOLD_PENDING_NATIVE_DECISION_REVIEW",
+        "blocking_reason_if_any": "NATIVE_REPOSITORY_EVIDENCE_REQUIRES_REVIEW",
+        "source_semantic_fields_complete": False,
+        "semantic_fields_complete": True,
+        "bridge_verdict": "NATIVE_REPOSITORY_EVIDENCE_DERIVED_FAIL_CLOSED",
+        "native_decision_evidence": {
+            "source": "repository_contract_audit",
+            "matched_files": matched_files,
+            "scanned_files": scanned_files,
+            "matched_paths_sample": sorted(set(matched_paths))[:25],
+            "matched_terms_sample": sorted(matched_terms)[:50],
+            "reason": "repository evidence is present but does not by itself authorize opening the gate",
+        },
+    }
+
 def _promote_native_decision_from_semantic_extract(result, check_results):
     semantic_report = None
 
@@ -644,6 +718,30 @@ def _promote_native_decision_from_semantic_extract(result, check_results):
         "semantic_fields_complete"
     )
     result["bridge_verdict"] = semantic_report.get("bridge_verdict")
+
+    if semantic_report.get("source_semantic_fields_complete") is False:
+        native_repository_decision = _native_decision_from_repository_contract_audit(result, check_results)
+        if native_repository_decision is not None:
+            semantic_fields = {
+                "gate3_allowed": native_repository_decision.get("gate3_allowed"),
+                "last_gate_executed": native_repository_decision.get("last_gate_executed"),
+                "last_gate_certified": native_repository_decision.get("last_gate_certified"),
+                "real_implementation_percent": native_repository_decision.get("real_implementation_percent"),
+                "next_allowed_gate": native_repository_decision.get("next_allowed_gate"),
+                "blocking_reason_if_any": native_repository_decision.get("blocking_reason_if_any"),
+            }
+            result["native_decision_evidence"] = native_repository_decision.get("native_decision_evidence")
+            result["semantic_fields"] = dict(semantic_fields)
+            for field, value in semantic_fields.items():
+                result[field] = value
+            result["source_semantic_fields_complete"] = native_repository_decision.get(
+                "source_semantic_fields_complete"
+            )
+            result["semantic_fields_complete"] = native_repository_decision.get(
+                "semantic_fields_complete"
+            )
+            result["bridge_verdict"] = native_repository_decision.get("bridge_verdict")
+            return
 
     if semantic_report.get("semantic_fields_complete") is False:
         result["blockers"].append(
