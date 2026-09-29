@@ -1,0 +1,87 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-RBAC-DIAGNOSTICO-READONLY-R2-CARLOS-20260929T2220Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Diagnosticar exclusivamente la autorizacion RBAC que provoca 403/SIN_ACCESO en el menu Comercial de Preview. PROHIBIDO modificar o ejecutar procesos de sincronizacion del modulo Inteligencia Comercial, Scheduler, Sync_Sales, Sync_PAX, ISCAM, ventas abiertas/cerradas o cualquier proceso/fuente del Tablero Ejecutivo. No escribir SQL, no cambiar codigo, no reiniciar servicios funcionales, no tocar Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/user_access_context.py",
+          "backend/core/rbac_sql/service.py",
+          "backend/core/security.py",
+          "backend/modules/auth/repository.py",
+          "backend/modules/comercial/routes.py"
+        ],
+        "search_terms": [
+          "resolve_user_access_context",
+          "validate_server_access_rbac",
+          "has_server_access",
+          "tiene_acceso_global",
+          "fuente_acceso",
+          "Usuario_ServidoresAsignacion",
+          "Usuario_SucursalesAsignacion",
+          "SUPERADMIN",
+          "PublicUUID",
+          "precios-constantes",
+          "reporte-pax",
+          "dashboard/{server_id}"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "usuario_ricardo_identidad",
+          "sql": "SELECT TOP 5 u.UsuarioID,u.Email,u.NombreCompleto,u.Username,ISNULL(u.Activo,1) AS Activo,CONVERT(VARCHAR(36),u.PublicUUID) AS PublicUUID FROM dbo.Usuario_Catalogo AS u WITH (NOLOCK) WHERE LOWER(LTRIM(RTRIM(u.Email)))='ricardo@edarsa.com.mx' ORDER BY u.UsuarioID"
+        },
+        {
+          "name": "usuario_ricardo_roles_basicos",
+          "sql": "SELECT u.UsuarioID,u.Email,r.RolID,r.CodigoRol,r.NombreRol,ISNULL(r.Activo,1) AS RolActivo,ISNULL(ura.Activo,1) AS AsignacionActiva FROM dbo.Usuario_Catalogo AS u WITH (NOLOCK) LEFT JOIN dbo.Usuario_RolesAsignacion AS ura WITH (NOLOCK) ON ura.UsuarioID=u.UsuarioID LEFT JOIN dbo.Usuario_Roles AS r WITH (NOLOCK) ON r.RolID=ura.RolID WHERE LOWER(LTRIM(RTRIM(u.Email)))='ricardo@edarsa.com.mx' ORDER BY r.CodigoRol"
+        },
+        {
+          "name": "usuario_roles_columnas",
+          "sql": "SELECT COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Usuario_Roles' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "usuario_ricardo_scope_servidores",
+          "sql": "SELECT u.UsuarioID,u.Email,CONVERT(VARCHAR(100),usa.ServidorID) AS ServidorID,ISNULL(usa.Activo,1) AS Activo FROM dbo.Usuario_Catalogo AS u WITH (NOLOCK) LEFT JOIN dbo.Usuario_ServidoresAsignacion AS usa WITH (NOLOCK) ON usa.UsuarioID=u.UsuarioID AND ISNULL(usa.Activo,1)=1 WHERE LOWER(LTRIM(RTRIM(u.Email)))='ricardo@edarsa.com.mx' ORDER BY ServidorID"
+        },
+        {
+          "name": "usuario_ricardo_scope_sucursales",
+          "sql": "SELECT u.UsuarioID,u.Email,CONVERT(VARCHAR(100),usa.ServidorID) AS ServidorID,CONVERT(VARCHAR(100),usa.SucursalCodigo) AS SucursalCodigo,ISNULL(usa.Activo,1) AS Activo FROM dbo.Usuario_Catalogo AS u WITH (NOLOCK) LEFT JOIN dbo.Usuario_SucursalesAsignacion AS usa WITH (NOLOCK) ON usa.UsuarioID=u.UsuarioID AND ISNULL(usa.Activo,1)=1 WHERE LOWER(LTRIM(RTRIM(u.Email)))='ricardo@edarsa.com.mx' ORDER BY ServidorID,SucursalCodigo"
+        },
+        {
+          "name": "unidad_130_merida_metadata",
+          "sql": "SELECT CONVERT(VARCHAR(100),id) AS UnidadNegocioID,codigo,nombre,CONVERT(VARCHAR(100),server_id) AS ServidorID,CONVERT(VARCHAR(100),sucursal_origen_id) AS SucursalOrigenID,system_type,ISNULL(activo,0) AS Activo FROM dbo.Unidades_Negocio WITH (NOLOCK) WHERE UPPER(ISNULL(nombre,'')) LIKE '%130%MERIDA%' OR UPPER(ISNULL(codigo,'')) LIKE '%130%MID%' ORDER BY nombre"
+        },
+        {
+          "name": "usuario_ricardo_permisos_comercial",
+          "sql": "SELECT DISTINCT r.CodigoRol,m.CodigoModulo,a.CodigoAccion,ISNULL(prm.Permitido,0) AS Permitido,ISNULL(prm.RestriccionSucursal,0) AS RestriccionSucursal,ISNULL(prm.Activo,1) AS PermisoActivo FROM dbo.Usuario_Catalogo AS u WITH (NOLOCK) INNER JOIN dbo.Usuario_RolesAsignacion AS ura WITH (NOLOCK) ON ura.UsuarioID=u.UsuarioID AND ISNULL(ura.Activo,1)=1 INNER JOIN dbo.Usuario_Roles AS r WITH (NOLOCK) ON r.RolID=ura.RolID AND ISNULL(r.Activo,1)=1 INNER JOIN dbo.Usuario_PermisosRolModulo AS prm WITH (NOLOCK) ON prm.RolID=r.RolID INNER JOIN dbo.Usuario_Modulos AS m WITH (NOLOCK) ON m.ModuloID=prm.ModuloID INNER JOIN dbo.Usuario_Acciones AS a WITH (NOLOCK) ON a.AccionID=prm.AccionID WHERE LOWER(LTRIM(RTRIM(u.Email)))='ricardo@edarsa.com.mx' AND LOWER(ISNULL(m.CodigoModulo,'')) LIKE '%comercial%' ORDER BY m.CodigoModulo,a.CodigoAccion"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
