@@ -1,0 +1,84 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-DIAGNOSTICO-READONLY-R1-CARLOS-20260929T2204Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Diagnosticar por que el menu Comercial de Preview no carga datos, sin modificar codigo, procesos, SQL, sincronizadores, Tablero Ejecutivo ni Portal de Inteligencia Comercial. Confirmar causa de los errores 403/SIN_ACCESO, Precios Constantes y Reporte PAX antes de cualquier ajuste.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/user_access_context.py",
+          "backend/core/rbac_sql",
+          "backend/modules/comercial",
+          "backend/routes/portal_inteligencia.py",
+          "frontend/src/pages/Comercial.js"
+        ],
+        "search_terms": [
+          "SIN_ACCESO",
+          "validate_server_access_rbac",
+          "has_server_access",
+          "reporte-pax",
+          "precios-constantes",
+          "COMERCIAL_REPORTE_PAX_ENDPOINT_DEPRECATED",
+          "Sync_PAX_Detalle",
+          "periodo_actual",
+          "periodo_base",
+          "tablero-ejecutivo",
+          "Portal_Inteligencia_Usuarios"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx"
+        ],
+        "exclude_patterns": [],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "ricardo_canonical_identity",
+          "sql": "SELECT TOP 5 u.UsuarioID, u.Email, u.NombreCompleto, u.Username, ISNULL(u.Activo,1) AS Activo, CONVERT(VARCHAR(36),u.PublicUUID) AS PublicUUID FROM dbo.Usuario_Catalogo AS u WITH (NOLOCK) WHERE LOWER(LTRIM(RTRIM(u.Email)))='ricardo@edarsa.com.mx' OR UPPER(ISNULL(u.NombreCompleto,'')) LIKE '%RICARDO%BALAM%' ORDER BY u.UsuarioID"
+        },
+        {
+          "name": "ricardo_roles",
+          "sql": "SELECT u.UsuarioID,u.Email,r.RolID,r.CodigoRol,r.NombreRol,ISNULL(r.EsAccesoTotal,0) AS EsAccesoTotal,ISNULL(r.Activo,1) AS RolActivo,ISNULL(ura.Activo,1) AS AsignacionActiva FROM dbo.Usuario_Catalogo AS u WITH (NOLOCK) LEFT JOIN dbo.Usuario_RolesAsignacion AS ura WITH (NOLOCK) ON ura.UsuarioID=u.UsuarioID LEFT JOIN dbo.Usuario_Roles AS r WITH (NOLOCK) ON r.RolID=ura.RolID WHERE LOWER(LTRIM(RTRIM(u.Email)))='ricardo@edarsa.com.mx' ORDER BY r.CodigoRol"
+        },
+        {
+          "name": "ricardo_server_scope",
+          "sql": "SELECT u.UsuarioID,u.Email,CONVERT(VARCHAR(100),usa.ServidorID) AS ServidorID,ISNULL(usa.Activo,1) AS Activo FROM dbo.Usuario_Catalogo AS u WITH (NOLOCK) LEFT JOIN dbo.Usuario_ServidoresAsignacion AS usa WITH (NOLOCK) ON usa.UsuarioID=u.UsuarioID AND ISNULL(usa.Activo,1)=1 WHERE LOWER(LTRIM(RTRIM(u.Email)))='ricardo@edarsa.com.mx' ORDER BY ServidorID"
+        },
+        {
+          "name": "ricardo_branch_scope",
+          "sql": "SELECT u.UsuarioID,u.Email,CONVERT(VARCHAR(100),usa.ServidorID) AS ServidorID,CONVERT(VARCHAR(100),usa.SucursalCodigo) AS SucursalCodigo,ISNULL(usa.Activo,1) AS Activo FROM dbo.Usuario_Catalogo AS u WITH (NOLOCK) LEFT JOIN dbo.Usuario_SucursalesAsignacion AS usa WITH (NOLOCK) ON usa.UsuarioID=u.UsuarioID AND ISNULL(usa.Activo,1)=1 WHERE LOWER(LTRIM(RTRIM(u.Email)))='ricardo@edarsa.com.mx' ORDER BY ServidorID,SucursalCodigo"
+        },
+        {
+          "name": "unidad_130_merida",
+          "sql": "SELECT CONVERT(VARCHAR(100),id) AS UnidadNegocioID,codigo,nombre,CONVERT(VARCHAR(100),server_id) AS ServidorID,CONVERT(VARCHAR(100),sucursal_origen_id) AS SucursalOrigenID,system_type,ISNULL(activo,0) AS Activo FROM dbo.Unidades_Negocio WITH (NOLOCK) WHERE UPPER(ISNULL(nombre,'')) LIKE '%130%MERIDA%' OR UPPER(ISNULL(codigo,'')) LIKE '%130%MID%' ORDER BY nombre"
+        },
+        {
+          "name": "ricardo_comercial_permissions",
+          "sql": "SELECT DISTINCT r.CodigoRol,ISNULL(r.EsAccesoTotal,0) AS EsAccesoTotal,m.CodigoModulo,a.CodigoAccion,ISNULL(prm.Permitido,0) AS Permitido,ISNULL(prm.RestriccionSucursal,0) AS RestriccionSucursal,ISNULL(prm.Activo,1) AS PermisoActivo FROM dbo.Usuario_Catalogo AS u WITH (NOLOCK) INNER JOIN dbo.Usuario_RolesAsignacion AS ura WITH (NOLOCK) ON ura.UsuarioID=u.UsuarioID AND ISNULL(ura.Activo,1)=1 INNER JOIN dbo.Usuario_Roles AS r WITH (NOLOCK) ON r.RolID=ura.RolID AND ISNULL(r.Activo,1)=1 INNER JOIN dbo.Usuario_PermisosRolModulo AS prm WITH (NOLOCK) ON prm.RolID=r.RolID INNER JOIN dbo.Usuario_Modulos AS m WITH (NOLOCK) ON m.ModuloID=prm.ModuloID INNER JOIN dbo.Usuario_Acciones AS a WITH (NOLOCK) ON a.AccionID=prm.AccionID WHERE LOWER(LTRIM(RTRIM(u.Email)))='ricardo@edarsa.com.mx' AND LOWER(ISNULL(m.CodigoModulo,'')) LIKE '%comercial%' ORDER BY m.CodigoModulo,a.CodigoAccion"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
