@@ -1,0 +1,132 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [
+          ".git/*",
+          "node_modules/*",
+          "frontend/node_modules/*",
+          "__pycache__/*",
+          ".venv/*",
+          "venv/*"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql",
+          "*.md",
+          "*.json"
+        ],
+        "max_results": 5000,
+        "paths": [
+          "backend",
+          "frontend",
+          "docs",
+          "tools"
+        ],
+        "search_terms": [
+          "produccion",
+          "producción",
+          "production",
+          "transformacion",
+          "transformación",
+          "transformation",
+          "tablajeria",
+          "tablajería",
+          "receta",
+          "recetas",
+          "formula",
+          "formulas",
+          "subreceta",
+          "subrecetas",
+          "inventario",
+          "Inventario_Movimientos",
+          "Inventario_MovimientosDetalle",
+          "Inventario_Existencias",
+          "existencias",
+          "movimientos",
+          "lote",
+          "lotes",
+          "trazabilidad",
+          "unidad",
+          "unidades",
+          "costo",
+          "costos",
+          "margen",
+          "margenes",
+          "contabilidad",
+          "contable",
+          "evento contable",
+          "eventos contables",
+          "CentroCostoID",
+          "ProyectoID",
+          "OrdenTrabajoID",
+          "EtiquetaOperacionID",
+          "AreaProduccionID",
+          "EmpresaID",
+          "UnidadNegocioID",
+          "SucursalID",
+          "ServerID",
+          "FechaOperacion",
+          "America/Mexico_City",
+          "rbac",
+          "permiso",
+          "permisos",
+          "auditoria",
+          "bitacora",
+          "sustitucion",
+          "sustituciones",
+          "merma",
+          "mermas",
+          "rendimiento",
+          "rendimiento real",
+          "rendimiento esperado",
+          "reversa",
+          "reversas",
+          "maquila",
+          "interunidad",
+          "comisariato",
+          "produccion en proceso",
+          "work in process",
+          "cuarentena",
+          "calidad",
+          "compras",
+          "costos_margenes"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-PRODUCCION-TRANSFORMACION-GATE0-READONLY-R1B-SEMANTIC-EVIDENCE",
+  "mode": "READ_ONLY",
+  "objective": "READ_ONLY semantic repository evidence audit for Operaciones -> Produccion -> Procesos de Transformacion. R1A certified no-mutation only; this R1B must produce repository_evidence for production, transformation, tablajeria, recipes/formulas, inventory, costing, accounting, RBAC, audit, projects, tags, yield, waste, substitutions, maquila, interunit, WIP, and quality/quarantine. No production touch. No DDL/DML. No migrations. No tracked file changes.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Tablajerias Invertida",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
