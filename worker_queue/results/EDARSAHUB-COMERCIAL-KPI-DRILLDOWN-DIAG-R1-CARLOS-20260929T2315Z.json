@@ -1,0 +1,739 @@
+{
+  "base_sha": "6d32b613fd9d5df64f80efd6b16fca90736f60d9",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-29T23:29:35Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-KPI-DRILLDOWN-DIAG-R1-CARLOS-20260929T2315Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-29T23:30:13Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "cheque_vs_ano_anterior",
+              "cheques_total_vs_ano",
+              "detalle-movimientos",
+              "pax_total_vs_ano",
+              "pax_vs_ano_anterior",
+              "rotacion_vs_ano",
+              "vs_ano_anterior"
+            ],
+            "path": "frontend/src/pages/Comercial.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "calendar",
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.rbac_sql.service",
+              "core.security",
+              "core.server_registry",
+              "core.source_resolver",
+              "core.system_type_utils",
+              "core.unidades_registry",
+              "core.unidades_service",
+              "core.user_access_context",
+              "core.utils.date_filters",
+              "core.utils.operational_window",
+              "datetime",
+              "fastapi",
+              "logging",
+              "modules.comercial.adapters",
+              "modules.comercial.cache_service",
+              "modules.comercial.queries.mpro",
+              "modules.comercial.queries.softrestaurant",
+              "modules.comercial.repository",
+              "modules.comercial.service",
+              "modules.comercial_v2.repository_readonly",
+              "pymssql",
+              "pytz",
+              "service",
+              "typing",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "detalle-movimientos",
+              "get_dashboard_kpis_from_edarsahub",
+              "sync_metas_comerciales",
+              "vs_ano_anterior"
+            ],
+            "path": "backend/modules/comercial/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/comercial/dashboard/{server_id}",
+              "/comercial/detalle-movimientos/{server_id}",
+              "/comercial/mesas/{server_id}",
+              "/comercial/metas/{server_id}",
+              "/comercial/precios-constantes/{server_id}",
+              "/comercial/reporte-pax/{server_id}",
+              "/comercial/sucursales/{server_id}",
+              "/comercial/tablero-ejecutivo",
+              "/comercial/ticket-perfecto/{server_id}",
+              "/comercial/ventas-tiempo/{server_id}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_agrupar_por_unidad",
+              "_empty_mesas_unidad",
+              "_filtrar_server",
+              "_safe_float",
+              "_safe_int",
+              "_tablero_ejecutivo_internal",
+              "check_live_guard_rail",
+              "comercial_dashboard",
+              "comercial_detalle_movimientos",
+              "comercial_mesas",
+              "comercial_metas",
+              "comercial_reporte_pax",
+              "comercial_ticket_perfecto",
+              "comercial_ventas_tiempo",
+              "empty_response",
+              "get_user_context_or_403",
+              "get_ventas_dia_snapshot_from_edarsahub",
+              "obtener_sucursales",
+              "resolver_codigo_dedup",
+              "sql_fecha",
+              "tablero_ejecutivo",
+              "validate_server_access_rbac",
+              "ventas_precios_constantes"
+            ],
+            "tables_referenced": [
+              "Sync_Mesas"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "calendar",
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.empresa_resolver",
+              "core.kpis_canonicos",
+              "core.server_registry",
+              "core.source_resolver",
+              "core.sql_first.connection_factory",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "core.utils.date_filters",
+              "core.utils.operational_window",
+              "datetime",
+              "fastapi",
+              "logging",
+              "modules.comercial",
+              "modules.comercial.adapters",
+              "modules.comercial.queries.mpro",
+              "modules.comercial.queries.softrestaurant",
+              "os",
+              "pymssql",
+              "pytz",
+              "time",
+              "typing",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "get_dashboard_kpis_from_edarsahub",
+              "vs_ano_anterior"
+            ],
+            "path": "backend/modules/comercial/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CacheStatus",
+              "DataStatus",
+              "LiveStatus",
+              "SourceRealStatus",
+              "SourceUsed",
+              "_calcular_variacion_pct",
+              "_cargar_catalogo_unidades_negocio",
+              "_fecha_fin_exclusiva",
+              "_get_edarsahub_tablero_config",
+              "_get_kpis_periodo_edarsahub",
+              "_get_ultimo_dia_con_datos_edarsahub",
+              "_get_ventas_abiertas_edarsahub",
+              "_mapear_codigo_a_unidad_negocio_pk",
+              "_normalizar_clave_unidad",
+              "_obtener_codigo_canonico_mpro",
+              "_obtener_config_mpro_canonica",
+              "_obtener_kpis_tablero_desde_edarsahub",
+              "_obtener_servidor_conexion",
+              "_obtener_sucursales_mpro_desde_resolver",
+              "_query_edarsahub_tablero",
+              "_resolver_unidad_pks_dashboard",
+              "_ventas_periodo_canonicas",
+              "add_pk",
+              "agregar_totales",
+              "build_unit_response",
+              "calcular_consumo_promedio",
+              "calcular_porcentaje_cumplimiento",
+              "calcular_ticket_promedio",
+              "classify_connection_error",
+              "get_dashboard_kpis_from_edarsahub",
+              "get_kpis_mpro",
+              "get_kpis_mpro_con_estado",
+              "get_kpis_mpro_por_sucursal",
+              "get_kpis_softrestaurant",
+              "get_last_valid_snapshot_edarsahub",
+              "guardar_metas",
+              "obtener_metas",
+              "obtener_sucursales_servidor",
+              "obtener_unidad_negocio_edarsahub",
+              "procesar_ventas_sucursal",
+              "resolver_unidad_pks_dashboard"
+            ],
+            "tables_referenced": [
+              "Comercial_KPIs_Diarios_v2",
+              "Servidores_Conexiones",
+              "Unidades_Negocio"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 3,
+          "scanned_files": 3,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "COLUMN_NAME",
+              "DATA_TYPE"
+            ],
+            "name": "schema_detalle_canonico",
+            "row_count_returned": 38,
+            "rows": [
+              [
+                "id",
+                "uniqueidentifier"
+              ],
+              [
+                "unidad_negocio_id",
+                "nvarchar"
+              ],
+              [
+                "unidad_negocio_nombre",
+                "nvarchar"
+              ],
+              [
+                "server_id",
+                "nvarchar"
+              ],
+              [
+                "sucursal_id",
+                "nvarchar"
+              ],
+              [
+                "sucursal_nombre",
+                "nvarchar"
+              ],
+              [
+                "sistema_origen",
+                "nvarchar"
+              ],
+              [
+                "fecha_operacion",
+                "date"
+              ],
+              [
+                "fecha_hora",
+                "datetime2"
+              ],
+              [
+                "numero_ticket",
+                "nvarchar"
+              ],
+              [
+                "id_transaccion",
+                "nvarchar"
+              ],
+              [
+                "producto_codigo_fuente",
+                "nvarchar"
+              ],
+              [
+                "producto_id",
+                "uniqueidentifier"
+              ],
+              [
+                "producto_nombre",
+                "nvarchar"
+              ],
+              [
+                "familia_id",
+                "uniqueidentifier"
+              ],
+              [
+                "familia_nombre",
+                "nvarchar"
+              ],
+              [
+                "subfamilia_id",
+                "uniqueidentifier"
+              ],
+              [
+                "subfamilia_nombre",
+                "nvarchar"
+              ],
+              [
+                "casa",
+                "nvarchar"
+              ],
+              [
+                "porcentaje_alcohol",
+                "decimal"
+              ],
+              [
+                "es_alcohol",
+                "bit"
+              ],
+              [
+                "cantidad",
+                "decimal"
+              ],
+              [
+                "precio_unitario",
+                "decimal"
+              ],
+              [
+                "importe_bruto",
+                "decimal"
+              ],
+              [
+                "importe_neto",
+                "decimal"
+              ],
+              [
+                "descuento",
+                "decimal"
+              ],
+              [
+                "propina",
+                "decimal"
+              ],
+              [
+                "pax",
+                "int"
+              ],
+              [
+                "sync_run_id",
+                "nvarchar"
+              ],
+              [
+                "hash_origen",
+                "nvarchar"
+              ],
+              [
+                "fecha_sincronizacion",
+                "datetime2"
+              ],
+              [
+                "activo",
+                "bit"
+              ],
+              [
+                "estado_origen",
+                "nvarchar"
+              ],
+              [
+                "cancelado_origen",
+                "bit"
+              ],
+              [
+                "es_kpi_valido",
+                "bit"
+              ],
+              [
+                "folio_origen",
+                "nvarchar"
+              ],
+              [
+                "documento_origen",
+                "nvarchar"
+              ],
+              [
+                "fuente_original",
+                "nvarchar"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "COLUMN_NAME",
+              "DATA_TYPE"
+            ],
+            "name": "schema_metas",
+            "row_count_returned": 25,
+            "rows": [
+              [
+                "ID",
+                "int"
+              ],
+              [
+                "MetaID",
+                "nvarchar"
+              ],
+              [
+                "ServerID",
+                "nvarchar"
+              ],
+              [
+                "SucursalID",
+                "nvarchar"
+              ],
+              [
+                "SucursalNombre",
+                "nvarchar"
+              ],
+              [
+                "Anio",
+                "int"
+              ],
+              [
+                "Mes",
+                "int"
+              ],
+              [
+                "MetaVentaBruta",
+                "decimal"
+              ],
+              [
+                "MetaVentaNeta",
+                "decimal"
+              ],
+              [
+                "MetaTicketPromedio",
+                "decimal"
+              ],
+              [
+                "MetaCuentas",
+                "int"
+              ],
+              [
+                "MetaComensales",
+                "int"
+              ],
+              [
+                "MetaProductosMes",
+                "int"
+              ],
+              [
+                "VentaBrutaActual",
+                "decimal"
+              ],
+              [
+                "VentaNetaActual",
+                "decimal"
+              ],
+              [
+                "TicketPromedioActual",
+                "decimal"
+              ],
+              [
+                "CuentasActual",
+                "int"
+              ],
+              [
+                "ComensalesActual",
+                "int"
+              ],
+              [
+                "PorcentajeCumplimiento",
+                "decimal"
+              ],
+              [
+                "DiasTranscurridos",
+                "int"
+              ],
+              [
+                "DiasRestantes",
+                "int"
+              ],
+              [
+                "ProyeccionMes",
+                "decimal"
+              ],
+              [
+                "FechaActualizacion",
+                "datetime2"
+              ],
+              [
+                "FechaSync",
+                "datetime2"
+              ],
+              [
+                "Activo",
+                "bit"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "codigo",
+              "nombre",
+              "UnidadPK",
+              "ServerID",
+              "SucursalOrigenID",
+              "system_type"
+            ],
+            "name": "unidades_activas",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                "130° MERIDA",
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                null,
+                "SoftRestaurant"
+              ],
+              [
+                "130QRO",
+                "130° QUERETARO",
+                "9BC05CED-6B2B-4A0A-AA90-CE649B78E12C",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0021",
+                "MPRO"
+              ],
+              [
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                null,
+                "SoftRestaurant"
+              ],
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "DFB86008-1B81-472A-9E50-8A0821DEC4B2",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                null,
+                "SoftRestaurant"
+              ],
+              [
+                "ORIGEN",
+                "ORIGEN",
+                "23CA0B76-6580-4874-BA9B-672B122CA197",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0023",
+                "MPRO"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "numero_ticket",
+              "fecha",
+              "pax",
+              "total_venta",
+              "pax_promedio_cuenta"
+            ],
+            "name": "detalle_130mid_sept_2026",
+            "row_count_returned": 10,
+            "rows": [
+              [
+                "102907",
+                "2026-09-21 19:31:35.0000000",
+                14,
+                "30333.0000",
+                "2166.642857"
+              ],
+              [
+                "102897",
+                "2026-09-21 14:03:46.0000000",
+                13,
+                "18476.0000",
+                "1421.230769"
+              ],
+              [
+                "102350",
+                "2026-09-01 14:02:53.0000000",
+                12,
+                "18414.0000",
+                "1534.500000"
+              ],
+              [
+                "102692",
+                "2026-09-13 13:16:32.0000000",
+                12,
+                "14606.0000",
+                "1217.166666"
+              ],
+              [
+                "102473",
+                "2026-09-05 14:26:07.0000000",
+                10,
+                "23282.0004",
+                "2328.200040"
+              ],
+              [
+                "102595",
+                "2026-09-10 13:23:44.0000000",
+                10,
+                "15748.0000",
+                "1574.800000"
+              ],
+              [
+                "103041",
+                "2026-09-26 15:06:23.0000000",
+                10,
+                "13658.0000",
+                "1365.800000"
+              ],
+              [
+                "102476",
+                "2026-09-05 14:51:04.0000000",
+                10,
+                "12976.0002",
+                "1297.600020"
+              ],
+              [
+                "102735",
+                "2026-09-14 20:28:19.0000000",
+                10,
+                "10916.0000",
+                "1091.600000"
+              ],
+              [
+                "103016",
+                "2026-09-25 19:30:10.0000000",
+                10,
+                "7830.0000",
+                "783.000000"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "folios",
+              "pax",
+              "venta"
+            ],
+            "name": "detalle_cobertura_5_unidades_sept_2026",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                748,
+                2023,
+                "3266142.0056"
+              ],
+              [
+                "130QRO",
+                706,
+                2127,
+                "3818060.0000"
+              ],
+              [
+                "CIENFUEGOS",
+                1049,
+                3090,
+                "4123284.1889"
+              ],
+              [
+                "ESTELAR",
+                1683,
+                4613,
+                "2398366.9900"
+              ],
+              [
+                "ORIGEN",
+                859,
+                2370,
+                "1870821.0905"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "SucursalID",
+              "SucursalNombre",
+              "Anio",
+              "Mes",
+              "MetaVentaBruta",
+              "MetaVentaNeta",
+              "Activo"
+            ],
+            "name": "presupuestos_5_unidades_2026",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-29T23:29:33Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
