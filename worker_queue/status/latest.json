@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "db21afe0615e845fc82d1c1ef7916577981be9ea",
-  "generated_at_utc": "2026-09-29T20:11:03Z",
+  "generated_at_utc": "2026-09-29T20:54:14Z",
   "history": {
     "done_total_local": 1161,
     "pending_total_local": 0,
@@ -16,26 +16,8 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 68,
+      "age_seconds": 2659,
       "job_id": "CAVAS-CIENFUEGOS-CANONICAL-HOMOLOGATION-R2-20260929",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1453,
-      "job_id": "CAVAS-CIENFUEGOS-DATA-PROFILING-READONLY-R1-20260929",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1699,
-      "job_id": "CAVAS-CIENFUEGOS-DOMAIN-SCHEMA-DISCOVERY-READONLY-R1-20260929",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1664,
-      "job_id": "EDARSAHUB-SINCRONIZADOR-SEPT-01-24-HUB-FIX-R19-CARLOS-20260929",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -48,16 +30,16 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 1,
   "queue_running": 0,
   "remote_development_sha": "db21afe0615e845fc82d1c1ef7916577981be9ea",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-29T20:10:58Z",
-    "last_receive_utc": "2026-09-29T20:11:02Z",
+    "last_cycle_utc": "2026-09-29T20:54:14Z",
+    "last_receive_utc": "2026-09-29T20:54:09Z",
     "last_terminal_utc": "2026-09-29T20:09:54Z",
-    "pid": "160616",
+    "pid": "448",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "9fca18f2512942ff4674b8b1d6e4f6bc28ae993f",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
