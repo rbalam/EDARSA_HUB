@@ -1,0 +1,55 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-WORKER-SERVER-REGISTRY-METADATA-UPDATE-CERT-READONLY-R1-20260928",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "81cd02e181ce286c3ab541d4821798b064557770",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar READ_ONLY la capability SERVER_REGISTRY_METADATA_UPDATE ya integrada en 81cd02e181ce286c3ab541d4821798b064557770. Ejecutar py_compile, pytest del contrato dedicado y git_diff_check. No modificar archivos, SQL, CAVAS ni Produccion.",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/git_divergence_guard.py",
+        "backend/scripts/update_server_registry_metadata.py",
+        "backend/tests/test_worker_server_registry_metadata_update_capability.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_server_registry_metadata_update_capability.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No SQL",
+    "No CAVAS mutation",
+    "No repository mutation",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "WORKER_INFRASTRUCTURE",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": []
+  }
+}
