@@ -1,0 +1,71 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-NONBLOCKING-R12-CARLOS-20260929",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "0641ede68934e3f5c752a77f27133591e12355de",
+  "mode": "MUTATION",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Corregir el automatico de Ventas Cerradas sync_comercial_v2 para ejecutar el I/O POS/SQL sincrono fuera del event loop del backend. Mantener HEADER-FIRST y heartbeat del lock. No compartir self.db con el thread porque execute_sync_comercial_v2 no usa ese parametro. Corregir la prueba R11 que fallo por buscar una expresion multilinea como texto de una sola linea. No modificar bajo ninguna circunstancia sync_comercial_abiertas_v2. Etiqueta: Sincronizador.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/scheduler_manager.py",
+      "old": "            logger.info(\"[SYNC_COMERCIAL_V2] Iniciando sincronización incremental de KPIs comerciales V2\")\n            result = await execute_sync_comercial_v2(self.db)",
+      "new": "            logger.info(\"[SYNC_COMERCIAL_V2] Iniciando sincronización incremental de KPIs comerciales V2\")\n\n            # El sincronizador realiza I/O POS/SQL sincrono. Si corre directo\n            # dentro del AsyncIOScheduler bloquea el event loop del backend y\n            # puede disparar reinicios antes de completar las cinco unidades.\n            # Ejecutarlo en un thread dedicado mantiene health, scheduler y\n            # heartbeat del lock responsivos durante todo el ciclo.\n            result = await asyncio.to_thread(\n                lambda: asyncio.run(\n                    execute_sync_comercial_v2()\n                )\n            )",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_sync_comercial_v2_nonblocking_scheduler_guard.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[1]\nMANAGER = ROOT / \"core/scheduler/scheduler_manager.py\"\n\n\ndef _closed_block():\n    text = MANAGER.read_text(encoding=\"utf-8\")\n    start = text.index(\"async def _run_sync_comercial_v2_job\")\n    end = text.index(\"async def _run_sync_comercial_abiertas_v2_job\")\n    return text[start:end]\n\n\ndef test_closed_sales_runs_off_main_event_loop():\n    block = _closed_block()\n    assert \"await asyncio.to_thread(\" in block\n    assert \"asyncio.run(\" in block\n    assert \"execute_sync_comercial_v2()\" in block\n    assert \"execute_sync_comercial_v2(self.db)\" not in block\n\n\ndef test_closed_sales_keeps_lock_heartbeat():\n    block = _closed_block()\n    assert \"await lock.start_heartbeat_loop(\" in block\n    assert \"interval_seconds=30\" in block\n    assert \"extend_seconds=600\" in block\n\n\ndef test_open_sales_wrapper_remains_present():\n    text = MANAGER.read_text(encoding=\"utf-8\")\n    assert \"async def _run_sync_comercial_abiertas_v2_job\" in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/scheduler/scheduler_manager.py",
+        "backend/tests/test_sync_comercial_v2_nonblocking_scheduler_guard.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_sync_comercial_v2_nonblocking_scheduler_guard.py",
+        "backend/tests/test_sync_comercial_v2_header_first_scheduler_guard.py",
+        "backend/tests/test_sync_comercial_v2_multi_operational_date_no_dml.py",
+        "backend/tests/test_sync_comercial_v2_detail_runtime_no_dml.py",
+        "backend/tests/test_sync_comercial_v2_single_unit_scope_contract.py"
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not modify backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+    "Do not change open-sales scheduler behavior",
+    "Do not modify backend/core/scheduler/jobs/sync_comercial_v2_job.py in this patch",
+    "No SQL DDL/DML",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
