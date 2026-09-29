@@ -4,67 +4,67 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "0f446003d78fa677f8f39560d4f86b999f4161d4",
-  "generated_at_utc": "2026-09-29T22:46:16Z",
+  "generated_at_utc": "2026-09-29T22:47:42Z",
   "history": {
-    "done_total_local": 1166,
+    "done_total_local": 1167,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1032,
-    "results_total_local": 2001
+    "results_total_local": 2002
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1125,
+      "age_seconds": 1211,
       "job_id": "CAVAS-CIENFUEGOS-ADAPTER-GATE1-R1-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 164,
+      "age_seconds": 251,
       "job_id": "EDARSAHUB-BOS-CANONICAL-INGRESS-END2END-CANARY-R1-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 210,
+      "age_seconds": 297,
       "job_id": "EDARSAHUB-BOS-CANONICAL-JOB-INGRESS-POSTAUDIT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2175,
+      "age_seconds": 2262,
       "job_id": "EDARSAHUB-BOS-PRODUCCION-TRANSFORMACION-GATE0-READONLY-R1A",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2578,
+      "age_seconds": 2665,
       "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-RETRY-BINDING-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2072,
+      "age_seconds": 2159,
       "job_id": "EDARSAHUB-COMERCIAL-DIAGNOSTICO-READONLY-R1-CARLOS-20260929T2204Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3536,
-      "job_id": "WORKER-REPAIR-574a0f59bbf9eb14606e-A1",
+      "age_seconds": 53,
+      "job_id": "EDARSAHUB-COMERCIAL-RBAC-DIAGNOSTICO-READONLY-R2-CARLOS-20260929T2220Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2134,
+      "age_seconds": 2220,
       "job_id": "WORKER-REPAIR-574a0f59bbf9eb14606e-A1-RETRY1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 465,
+      "age_seconds": 552,
       "job_id": "WORKER-REPAIR-574a0f59bbf9eb14606e-A1-RETRY2",
       "reason": null,
       "state": "RESULT_READY"
@@ -84,9 +84,9 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-29T22:46:05Z",
-    "last_receive_utc": "2026-09-29T22:46:11Z",
-    "last_terminal_utc": "2026-09-29T22:43:31Z",
+    "last_cycle_utc": "2026-09-29T22:47:32Z",
+    "last_receive_utc": "2026-09-29T22:47:38Z",
+    "last_terminal_utc": "2026-09-29T22:46:48Z",
     "pid": "125590",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "84f16bf4902eb4216bd9d4a3d2bd90c9987ecac8",
