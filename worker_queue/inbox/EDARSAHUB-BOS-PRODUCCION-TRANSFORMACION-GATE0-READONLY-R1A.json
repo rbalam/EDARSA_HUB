@@ -1,0 +1,33 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-PRODUCCION-TRANSFORMACION-GATE0-READONLY-R1A",
+  "mode": "READ_ONLY",
+  "objective": "\nEDARSAHUB-BOS-PRODUCCION-TRANSFORMACION-GATE0-READONLY-R1A\n\nAuditar exclusivamente en modo READ_ONLY el diseño existente de EDARSAHUB para preparar el bounded context:\n\nOperaciones -> Produccion -> Procesos de Transformacion\n\nDebe cubrir:\n- 1 -> 1\n- 1 -> N\n- N -> 1\n- N -> M\n- Produccion experimental\n- Reproceso\n- Porcionado / cambio de presentacion\n- Produccion por etapas\n- Maquila / produccion por tercero\n\nContexto:\nEDARSAHUB no debe quedar limitado a restaurantes. Debe soportar restaurantes, comisariatos, panaderias, madererias, talleres, fabricas ligeras y cualquier empresa que transforme insumos en productos.\n\nRestricciones:\n- READ_ONLY.\n- No modificar archivos durante la auditoria.\n- No ejecutar migraciones.\n- No tocar produccion.\n- No ejecutar DDL/DML.\n- No usar MongoDB como fuente, cache ni lock.\n- SQL Server es unica fuente de verdad.\n- No conexiones LIVE desde endpoints de usuario.\n- No hardcode.\n- No duplicar catalogos, tablas ni logica.\n- Reutilizar helpers, conexiones y servicios canonicos existentes.\n- Respetar EmpresaID, UnidadNegocioID, SucursalID, ServerID.\n- Usar FechaOperacion y timezone America/Mexico_City.\n- No exponer secretos.\n- No romper dependencias existentes.\n\nAuditar:\n1. Produccion / transformacion existente.\n2. Inventario.\n3. Costeo.\n4. Contabilidad / finanzas.\n5. Formulas / recetas / plantillas.\n6. Rendimiento esperado vs rendimiento real.\n7. Sustituciones.\n8. Produccion experimental.\n9. Proyectos, etiquetas y centros de costo.\n10. Rutas especiales.\n11. RBAC.\n12. Frontend / UX.\n13. Auditoria.\n14. Errores arquitectonicos a evitar.\n\nOutput obligatorio:\nA) RESULTADO GENERAL\n- job_id\n- mode: READ_ONLY\n- status: PASS / PARTIAL / FAIL\n- certified_read_only: true/false\n- blockers: []\n- warnings: []\n- repo_branch\n- commit_sha\n- fecha_operacion_timezone: America/Mexico_City\n\nB) MAPA DE EVIDENCIA\nPor cada hallazgo:\n- area auditada\n- archivo revisado\n- ruta exacta\n- lineas relevantes si aplica\n- entidad/servicio/ruta/pantalla detectada\n- clasificacion: reutilizable, gap, riesgo o duplicidad\n- recomendacion\n\nC) MATRIZ DE REUTILIZACION\nClasificar:\n- REUTILIZAR\n- EXTENDER\n- NO USAR\n- REEMPLAZAR DESPUES\n- RIESGO DE DUPLICIDAD\n\nD) MAPA CANONICO PROPUESTO V1\nDebe incluir:\n- bounded context Produccion\n- Procesos de Transformacion como motor\n- Tablajeria como tipo de transformacion\n- Formulas/Plantillas como definicion reutilizable\n- Ordenes de Produccion como documento operativo\n- Inventario afectado solo al cierre\n- Costo real derivado de consumo real + rendimiento real\n- Produccion experimental controlada\n- Sustituciones autorizadas\n- merma normal/anormal\n- reversas\n- auditoria\n- eventos contables\n- centro de costo/proyecto/etiquetas\n\nCriterio PASS:\nSolo PASS si:\n- No modifico archivos.\n- No ejecuto migraciones.\n- No toco produccion.\n- Reviso backend, frontend, migraciones/schema o documentacion relevante.\n- Identifico componentes existentes reutilizables.\n- Identifico gaps reales.\n- Confirmo riesgos de duplicidad.\n- Propuso fases sin cambios fisicos.\n- Reporto blockers=[] o blockers explicitos.\n- Confirmo CERTIFIED_READ_ONLY.\n\nCriterio PARTIAL:\nUsar PARTIAL si:\n- No pudo revisar alguna zona critica.\n- No encontro documentacion de errores arquitectonicos.\n- No pudo confirmar una tabla/servicio por falta de acceso.\n- Hay evidencia incompleta.\n\nCriterio FAIL:\nUsar FAIL si:\n- Se modifico algo.\n- Se ejecuto DDL/DML.\n- Se toco produccion.\n- Se usaron secretos.\n- Se propuso duplicar inventario, recetas, productos o costos.\n- Se diseno el modulo solo para restaurantes.\n- No se respeto SQL Server como fuente de verdad.\n\nBlockers criticos:\n- modelo canonico de inventario reutilizable\n- movimiento de entrada/salida reversible\n- unidad de medida canonica\n- costo real/costo estandar\n- lote/trazabilidad\n- RBAC\n- auditoria\n- multiempresa/unidad/sucursal\n- fecha operacion\n- compatibilidad con centros de costo/proyectos\n- separacion entre Produccion, Compras e Inventario\n- soporte para ordenes cerradas no editables\n\nRiesgos especiales:\n- Produccion experimental usada como salida manual de inventario.\n- Formulas sin versionado.\n- Sustituciones sin autorizacion.\n- Rendimientos reales sin tolerancia.\n- Merma mezclada con desperdicio no autorizado.\n- Costo real calculado con rendimiento esperado en vez de real.\n- Inventario afectado desde borradores.\n- Produccion cerrada editable.\n- Eventos contables generados sin trazabilidad.\n- Modulo demasiado restaurantero.\n- Duplicidad con Tablajeria existente.\n- Duplicidad con Costos/Margenes.\n- Duplicidad con Inventario.\n- Duplicidad con Compras.\n- Ausencia de ruta para maquila/interunidad.\n- Ausencia de produccion en proceso.\n\nSiguiente gate recomendado:\nEl Worker debe proponer el siguiente gate, pero no ejecutarlo:\n- GATE1_CANONICAL_CONTRACTS_READONLY\n- GATE2_DESIGN_PATCH_PLAN\n- GATE3_SCHEMA_PROPOSAL_NO_DDL\n- GATE4_BACKEND_CONTRACT_NO_WRITE\n- GATE5_FRONTEND_UX_CONTRACT_NO_WRITE\n",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Tablajerias Invertida",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
