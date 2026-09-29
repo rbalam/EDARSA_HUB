@@ -1,0 +1,119 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-SEPT-01-24-AUDIT-R18-CARLOS-20260929",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "db21afe0615e845fc82d1c1ef7916577981be9ea",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Auditar Ventas Cerradas del 01 al 24 de septiembre de 2026 para 130MID, CIENFUEGOS, ESTELAR, 130QRO y ORIGEN. Comparar fuente POS real contra EDARSAHUB por fecha en ventas_total, tickets_total y pax_total. Solo lectura; no resincronizar ni modificar datos. Etiqueta: Sincronizador.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "130MID",
+        "CIENFUEGOS"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "max_rows": 100,
+      "queries": [
+        {
+          "name": "sr_sep01_24_offset0",
+          "sql": "\nSELECT\n    CONVERT(date, DATEADD(hour, -0, tr.apertura)) AS fecha_operacion,\n    CAST(ROUND(SUM(ISNULL(ch.total,0)),2) AS decimal(18,2)) AS ventas_total,\n    COUNT(DISTINCT ch.folio) AS tickets_total,\n    SUM(ISNULL(ch.nopersonas,0)) AS pax_total\nFROM cheques AS ch\nINNER JOIN turnos AS tr\n    ON tr.idturno = ch.idturno\nWHERE CONVERT(date, DATEADD(hour, -0, tr.apertura))\n      BETWEEN '2026-09-01' AND '2026-09-24'\n  AND ch.cancelado = 0\nGROUP BY CONVERT(date, DATEADD(hour, -0, tr.apertura))\nORDER BY fecha_operacion"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ESTELAR"
+      ],
+      "system_types": [
+        "SOFTRESTAURANT"
+      ],
+      "max_rows": 100,
+      "queries": [
+        {
+          "name": "estelar_sep01_24_offset9",
+          "sql": "\nSELECT\n    CONVERT(date, DATEADD(hour, -9, tr.apertura)) AS fecha_operacion,\n    CAST(ROUND(SUM(ISNULL(ch.total,0)),2) AS decimal(18,2)) AS ventas_total,\n    COUNT(DISTINCT ch.folio) AS tickets_total,\n    SUM(ISNULL(ch.nopersonas,0)) AS pax_total\nFROM cheques AS ch\nINNER JOIN turnos AS tr\n    ON tr.idturno = ch.idturno\nWHERE CONVERT(date, DATEADD(hour, -9, tr.apertura))\n      BETWEEN '2026-09-01' AND '2026-09-24'\n  AND ch.cancelado = 0\nGROUP BY CONVERT(date, DATEADD(hour, -9, tr.apertura))\nORDER BY fecha_operacion"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "130QRO"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "max_rows": 100,
+      "queries": [
+        {
+          "name": "qro_sep01_24",
+          "sql": "\nSELECT\n    CAST(ve.Vn_Fecha AS date) AS fecha_operacion,\n    CAST(ROUND(SUM(ISNULL(ve.Vn_Precio_Neto_Importe,0)),2) AS decimal(18,2)) AS ventas_total,\n    COUNT(DISTINCT ve.Vn_Folio) AS tickets_total,\n    SUM(ISNULL(c.Co_Personas,1)) AS pax_total\nFROM Venta_Encabezado ve\nLEFT JOIN Comanda c\n  ON ve.Vn_Documento = c.Co_Folio\n AND ve.Sc_Cve_Sucursal = c.Sc_Cve_Sucursal\nWHERE ve.Vn_Fecha >= '2026-09-01'\n  AND ve.Vn_Fecha < '2026-09-25'\n  AND ve.Sc_Cve_Sucursal = '0021'\n  AND ISNULL(ve.Es_Cve_Estado,'') IN ('AC','FA')\nGROUP BY CAST(ve.Vn_Fecha AS date)\nORDER BY fecha_operacion"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "POS",
+      "units": [
+        "ORIGEN"
+      ],
+      "system_types": [
+        "MPRO"
+      ],
+      "max_rows": 100,
+      "queries": [
+        {
+          "name": "origen_sep01_24",
+          "sql": "\nSELECT\n    CAST(ve.Vn_Fecha AS date) AS fecha_operacion,\n    CAST(ROUND(SUM(ISNULL(ve.Vn_Precio_Neto_Importe,0)),2) AS decimal(18,2)) AS ventas_total,\n    COUNT(DISTINCT ve.Vn_Folio) AS tickets_total,\n    SUM(ISNULL(c.Co_Personas,1)) AS pax_total\nFROM Venta_Encabezado ve\nLEFT JOIN Comanda c\n  ON ve.Vn_Documento = c.Co_Folio\n AND ve.Sc_Cve_Sucursal = c.Sc_Cve_Sucursal\nWHERE ve.Vn_Fecha >= '2026-09-01'\n  AND ve.Vn_Fecha < '2026-09-25'\n  AND ve.Sc_Cve_Sucursal = '0023'\n  AND ISNULL(ve.Es_Cve_Estado,'') IN ('AC','FA')\nGROUP BY CAST(ve.Vn_Fecha AS date)\nORDER BY fecha_operacion"
+        }
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 200,
+      "queries": [
+        {
+          "name": "hub_sep01_24",
+          "sql": "\nSELECT\n    u.codigo,\n    k.fecha_operacion,\n    CAST(ROUND(SUM(ISNULL(k.ventas_total,0)),2) AS decimal(18,2)) AS ventas_total,\n    SUM(ISNULL(k.tickets_total,0)) AS tickets_total,\n    SUM(ISNULL(k.pax_total,0)) AS pax_total,\n    COUNT(*) AS registros_activos\nFROM dbo.Comercial_KPIs_Diarios_v2 k\nINNER JOIN dbo.Unidades_Negocio u\n  ON CONVERT(varchar(36),u.id)=CONVERT(varchar(36),k.unidad_negocio_id)\nWHERE ISNULL(k.activo,1)=1\n  AND k.fecha_operacion BETWEEN '2026-09-01' AND '2026-09-24'\n  AND u.codigo IN ('130MID','CIENFUEGOS','ESTELAR','130QRO','ORIGEN')\nGROUP BY u.codigo,k.fecha_operacion\nORDER BY u.codigo,k.fecha_operacion"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No DDL/DML",
+    "No resync",
+    "Do not modify sync_comercial_abiertas_v2",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": []
+  }
+}
