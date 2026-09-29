@@ -18,6 +18,7 @@ Repository mutation remains exclusively the responsibility of Universal Worker.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import subprocess
@@ -525,3 +526,815 @@ def publish_planned_repair(
         "publication": publication,
         "production_touched": False,
     }
+
+
+# WORKER_REPAIR_CANONICAL_JOB_INGRESS_CAPABILITY_V1
+
+_CANONICAL_INGRESS_INCIDENT = (
+    "EDARSAHUB-BOS-WORKER-V1.2-"
+    "CANONICAL-JOB-INGRESS-R1"
+)
+
+_CANONICAL_INGRESS_PUBLISHER = (
+    "tools/mirror_sync/"
+    "gate_chain_publisher.py"
+)
+
+_CANONICAL_INGRESS_TEST = (
+    "backend/tests/"
+    "test_worker_canonical_job_ingress_contract.py"
+)
+
+
+def _canonical_job_ingress_recipe(
+    incident: Any,
+    context: dict[str, Any],
+) -> dict[str, Any]:
+
+    publisher_path = (
+        ROOT
+        / _CANONICAL_INGRESS_PUBLISHER
+    )
+
+    if not publisher_path.is_file():
+        raise ValueError(
+            "CANONICAL_INGRESS_PUBLISHER_MISSING"
+        )
+
+    publisher = publisher_path.read_text(
+        encoding="utf-8"
+    )
+
+    old_imports = """import argparse
+import json
+import re
+import subprocess
+import sys
+"""
+
+    new_imports = """import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+import tempfile
+"""
+
+    if publisher.count(old_imports) != 1:
+        raise ValueError(
+            "CANONICAL_INGRESS_IMPORT_ANCHOR_DRIFT"
+        )
+
+    old_forbidden = """    for key, _ in _walk(template):
+        if key in FORBIDDEN_KEYS:
+            raise ValueError(f"FORBIDDEN_TEMPLATE_KEY:{key}")
+"""
+
+    new_forbidden = """    def walk_with_path(
+        value: Any,
+        path: tuple[Any, ...] = (),
+    ):
+        if isinstance(value, dict):
+            for raw_key, item in value.items():
+                key = str(raw_key).lower()
+                child = path + (str(raw_key),)
+                yield child, key, item
+                yield from walk_with_path(
+                    item,
+                    child,
+                )
+        elif isinstance(value, list):
+            for index, item in enumerate(value):
+                yield from walk_with_path(
+                    item,
+                    path + (index,),
+                )
+
+    for path, key, _ in walk_with_path(
+        template
+    ):
+        readonly_sql_query = (
+            key == "sql"
+            and str(
+                template.get("mode") or ""
+            ).strip().upper()
+            == "READ_ONLY_SQL"
+            and len(path) == 5
+            and path[0] == "checks"
+            and isinstance(path[1], int)
+            and path[2] == "queries"
+            and isinstance(path[3], int)
+            and path[4] == "sql"
+        )
+
+        if (
+            key in FORBIDDEN_KEYS
+            and not readonly_sql_query
+        ):
+            raise ValueError(
+                f"FORBIDDEN_TEMPLATE_KEY:{key}"
+            )
+"""
+
+    if publisher.count(old_forbidden) != 1:
+        raise ValueError(
+            "CANONICAL_INGRESS_SQL_ANCHOR_DRIFT"
+        )
+
+    main_anchor = "def main() -> int:\n"
+
+    if publisher.count(main_anchor) != 1:
+        raise ValueError(
+            "CANONICAL_INGRESS_MAIN_ANCHOR_DRIFT"
+        )
+
+    submit_block = r"""
+STATE = (
+    ROOT
+    / ".git"
+    / "universal-worker-queue"
+)
+
+DRAFTS = STATE / "drafts"
+PENDING = STATE / "pending"
+PROCESSING = STATE / "processing"
+RESULTS = STATE / "results"
+DONE = STATE / "done"
+REJECTED = STATE / "rejected"
+
+
+def _atomic_submit_draft(
+    job: dict[str, Any],
+) -> Path:
+
+    DRAFTS.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    path = (
+        DRAFTS
+        / f"{job['job_id']}.json"
+    )
+
+    serialized = (
+        json.dumps(
+            job,
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
+    )
+
+    if path.is_file():
+        current = path.read_text(
+            encoding="utf-8"
+        )
+
+        if current != serialized:
+            raise ValueError(
+                "JOB_DRAFT_IDEMPOTENCY_CONFLICT"
+            )
+
+        return path
+
+    with tempfile.NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        dir=DRAFTS,
+        delete=False,
+    ) as handle:
+
+        handle.write(serialized)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+        temporary = Path(
+            handle.name
+        )
+
+    os.replace(
+        temporary,
+        path,
+    )
+
+    return path
+
+
+def _submit_local_lifecycle(
+    job_id: str,
+) -> str | None:
+
+    name = f"{job_id}.json"
+
+    if (
+        (RESULTS / name).is_file()
+        or (DONE / name).is_file()
+    ):
+        return "ALREADY_COMPLETED"
+
+    if (PROCESSING / name).is_file():
+        return "ALREADY_PROCESSING"
+
+    if (PENDING / name).is_file():
+        return "ALREADY_SUBMITTED"
+
+    if (REJECTED / name).is_file():
+        return "INVALID_JOB"
+
+    return None
+
+
+def _submit_remote_exists(
+    job_id: str,
+    *,
+    remote: str,
+    queue_branch: str,
+) -> bool:
+
+    rel = (
+        "worker_queue/inbox/"
+        f"{job_id}.json"
+    )
+
+    fetched = git(
+        "fetch",
+        remote,
+        queue_branch,
+        check=False,
+    )
+
+    if fetched.returncode != 0:
+        return False
+
+    return (
+        git(
+            "cat-file",
+            "-e",
+            f"{remote}/{queue_branch}:{rel}",
+            check=False,
+        ).returncode
+        == 0
+    )
+
+
+def _submit_convergence(
+    *,
+    remote: str,
+) -> dict[str, Any]:
+
+    for branch in (
+        "Edarsahub_Desarrollo",
+        "mirror/emergent-live",
+    ):
+        fetched = git(
+            "fetch",
+            remote,
+            branch,
+            check=False,
+        )
+
+        if fetched.returncode != 0:
+            return {
+                "converged": False,
+                "reason": "FETCH_FAILED",
+            }
+
+    local = git(
+        "rev-parse",
+        "HEAD",
+        check=False,
+    ).stdout.strip()
+
+    development = git(
+        "rev-parse",
+        f"{remote}/Edarsahub_Desarrollo",
+        check=False,
+    ).stdout.strip()
+
+    mirror = git(
+        "rev-parse",
+        f"{remote}/mirror/emergent-live",
+        check=False,
+    ).stdout.strip()
+
+    return {
+        "local": local,
+        "development": development,
+        "mirror": mirror,
+        "converged": bool(
+            local
+            and local
+            == development
+            == mirror
+        ),
+    }
+
+
+def _submit_failure_status(
+    error: Exception,
+) -> str:
+
+    message = (
+        f"{type(error).__name__}:{error}"
+    ).upper()
+
+    if (
+        "REMOTE_MOVED_RETRY_REQUIRED"
+        in message
+    ):
+        return "REMOTE_MOVED_RETRYABLE"
+
+    if "GIT_LOCK_BUSY" in message:
+        return "WRITER_BUSY"
+
+    if (
+        "CLAIM" in message
+        and "BUSY" in message
+    ):
+        return "CLAIM_BUSY"
+
+    if (
+        "WRITER" in message
+        and "BUSY" in message
+    ):
+        return "WRITER_BUSY"
+
+    return "RECOVERY_REQUIRED"
+
+
+def submit(
+    job_spec: dict[str, Any],
+    *,
+    remote: str = "origin",
+    queue_branch: str = "worker/requests",
+) -> dict[str, Any]:
+
+    try:
+        template = validate_template(
+            job_spec
+        )
+
+        from tools.mirror_sync.universal_job_bridge import (
+            validate as validate_worker_job,
+        )
+
+        errors = validate_worker_job(
+            template
+        )
+
+        if errors:
+            return {
+                "status": "INVALID_JOB",
+                "errors": errors,
+                "production_touched": False,
+            }
+
+    except Exception as exc:
+        return {
+            "status": "INVALID_JOB",
+            "reason": (
+                f"{type(exc).__name__}:{exc}"
+            ),
+            "production_touched": False,
+        }
+
+    job_id = str(
+        template["job_id"]
+    )
+
+    try:
+        draft = _atomic_submit_draft(
+            template
+        )
+    except Exception as exc:
+        return {
+            "status": "RECOVERY_REQUIRED",
+            "job_id": job_id,
+            "reason": (
+                f"{type(exc).__name__}:{exc}"
+            ),
+            "production_touched": False,
+        }
+
+    lifecycle = _submit_local_lifecycle(
+        job_id
+    )
+
+    if lifecycle:
+        return {
+            "status": lifecycle,
+            "job_id": job_id,
+            "draft_path": str(draft),
+            "production_touched": False,
+        }
+
+    if _submit_remote_exists(
+        job_id,
+        remote=remote,
+        queue_branch=queue_branch,
+    ):
+        return {
+            "status": "ALREADY_SUBMITTED",
+            "job_id": job_id,
+            "draft_path": str(draft),
+            "production_touched": False,
+        }
+
+    try:
+        from tools.mirror_sync.worker_requester_rbac import (
+            authorize_requester,
+        )
+
+        authorization = authorize_requester(
+            template["requester"]
+        )
+
+    except Exception as exc:
+        return {
+            "status": "REQUESTER_DENIED",
+            "job_id": job_id,
+            "reason": (
+                f"{type(exc).__name__}:{exc}"
+            ),
+            "production_touched": False,
+        }
+
+    if (
+        authorization.get("allowed")
+        is not True
+    ):
+        return {
+            "status": "REQUESTER_DENIED",
+            "job_id": job_id,
+            "reason": authorization.get(
+                "reason"
+            ),
+            "production_touched": False,
+        }
+
+    convergence = _submit_convergence(
+        remote=remote
+    )
+
+    if (
+        convergence.get("converged")
+        is not True
+    ):
+        return {
+            "status": "WAITING_FOR_CONVERGENCE",
+            "job_id": job_id,
+            "draft_path": str(draft),
+            "convergence": convergence,
+            "production_touched": False,
+        }
+
+    plan = {
+        "status": "READY_TO_PUBLISH",
+        "job_id": job_id,
+        "template": template,
+    }
+
+    try:
+        publication = publish(
+            plan,
+            remote=remote,
+            queue_branch=queue_branch,
+        )
+
+    except Exception as exc:
+        return {
+            "status": _submit_failure_status(
+                exc
+            ),
+            "job_id": job_id,
+            "draft_path": str(draft),
+            "reason": (
+                f"{type(exc).__name__}:{exc}"
+            ),
+            "production_touched": False,
+        }
+
+    publication_status = str(
+        publication.get("status")
+        or ""
+    ).strip()
+
+    if publication_status == "PUBLISHED":
+        final = "SUBMITTED"
+    elif publication_status == "EXISTS":
+        final = "ALREADY_SUBMITTED"
+    else:
+        final = "RECOVERY_REQUIRED"
+
+    return {
+        "status": final,
+        "job_id": job_id,
+        "draft_path": str(draft),
+        "publication": publication,
+        "production_touched": False,
+    }
+"""
+
+    ingress_test = r"""from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from tools.mirror_sync import gate_chain_publisher as ingress
+
+
+def requester():
+    return {
+        "email": "test@example.invalid",
+        "source": "pytest",
+        "project": "EDARSAHUB",
+        "chat": "canonical-ingress",
+    }
+
+
+def readonly_job(job_id):
+    return {
+        "job_id": job_id,
+        "objective": "Test canonical ingress.",
+        "requester": requester(),
+        "mode": "READ_ONLY",
+        "actions": [],
+        "checks": [
+            {
+                "type": "git_diff_check",
+            }
+        ],
+    }
+
+
+def readonly_sql_job(job_id):
+    return {
+        "job_id": job_id,
+        "objective": "Test READ_ONLY_SQL ingress.",
+        "requester": requester(),
+        "mode": "READ_ONLY_SQL",
+        "actions": [],
+        "checks": [
+            {
+                "type": "sql_readonly_audit",
+                "source": "EDARSAHUB",
+                "queries": [
+                    {
+                        "name": "identity",
+                        "sql": (
+                            "SELECT DB_NAME() "
+                            "AS database_name"
+                        ),
+                    }
+                ],
+            }
+        ],
+    }
+
+
+def redirect_state(
+    tmp_path,
+    monkeypatch,
+):
+    for name in (
+        "DRAFTS",
+        "PENDING",
+        "PROCESSING",
+        "RESULTS",
+        "DONE",
+        "REJECTED",
+    ):
+        path = (
+            tmp_path
+            / name.lower()
+        )
+
+        path.mkdir()
+
+        monkeypatch.setattr(
+            ingress,
+            name,
+            path,
+        )
+
+
+def test_submit_exists():
+    assert callable(
+        ingress.submit
+    )
+
+
+def test_readonly_sql_allowed_only_in_query():
+    result = ingress.validate_template(
+        readonly_sql_job(
+            "INGRESS-SQL-1"
+        )
+    )
+
+    assert (
+        result["mode"]
+        == "READ_ONLY_SQL"
+    )
+
+    bad = readonly_sql_job(
+        "INGRESS-SQL-2"
+    )
+
+    bad["requester"]["sql"] = (
+        "SELECT 1"
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="FORBIDDEN_TEMPLATE_KEY:sql",
+    ):
+        ingress.validate_template(
+            bad
+        )
+
+
+def test_completed_idempotency(
+    tmp_path,
+    monkeypatch,
+):
+    redirect_state(
+        tmp_path,
+        monkeypatch,
+    )
+
+    (
+        ingress.RESULTS
+        / "INGRESS-DONE.json"
+    ).write_text(
+        "{}\n",
+        encoding="utf-8",
+    )
+
+    result = ingress.submit(
+        readonly_job(
+            "INGRESS-DONE"
+        )
+    )
+
+    assert (
+        result["status"]
+        == "ALREADY_COMPLETED"
+    )
+
+
+def test_processing_idempotency(
+    tmp_path,
+    monkeypatch,
+):
+    redirect_state(
+        tmp_path,
+        monkeypatch,
+    )
+
+    (
+        ingress.PROCESSING
+        / "INGRESS-PROCESSING.json"
+    ).write_text(
+        "{}\n",
+        encoding="utf-8",
+    )
+
+    result = ingress.submit(
+        readonly_job(
+            "INGRESS-PROCESSING"
+        )
+    )
+
+    assert (
+        result["status"]
+        == "ALREADY_PROCESSING"
+    )
+
+
+def test_pending_idempotency(
+    tmp_path,
+    monkeypatch,
+):
+    redirect_state(
+        tmp_path,
+        monkeypatch,
+    )
+
+    (
+        ingress.PENDING
+        / "INGRESS-PENDING.json"
+    ).write_text(
+        "{}\n",
+        encoding="utf-8",
+    )
+
+    result = ingress.submit(
+        readonly_job(
+            "INGRESS-PENDING"
+        )
+    )
+
+    assert (
+        result["status"]
+        == "ALREADY_SUBMITTED"
+    )
+
+
+def test_no_tmp_dependency():
+    assert "/tmp" not in str(
+        ingress.DRAFTS
+    )
+
+
+def test_submit_reuses_canonical_publisher():
+    source = Path(
+        ingress.__file__
+    ).read_text(
+        encoding="utf-8"
+    )
+
+    assert "def submit(" in source
+    assert "publication = publish(" in source
+"""
+
+    publisher_sha = hashlib.sha256(
+        publisher.encode("utf-8")
+    ).hexdigest()
+
+    return {
+        "objective": (
+            "Materializar canonical job ingress "
+            "submit(job_spec), persistente, "
+            "idempotente y fail-closed."
+        ),
+        "actions": [
+            {
+                "type": "replace_text",
+                "path": _CANONICAL_INGRESS_PUBLISHER,
+                "old": old_imports,
+                "new": new_imports,
+                "expected_count": 1,
+                "expected_sha256": publisher_sha,
+            },
+            {
+                "type": "replace_text",
+                "path": _CANONICAL_INGRESS_PUBLISHER,
+                "old": old_forbidden,
+                "new": new_forbidden,
+                "expected_count": 1,
+            },
+            {
+                "type": "replace_text",
+                "path": _CANONICAL_INGRESS_PUBLISHER,
+                "old": main_anchor,
+                "new": (
+                    submit_block
+                    + "\n\n"
+                    + main_anchor
+                ),
+                "expected_count": 1,
+            },
+            {
+                "type": "write_file",
+                "path": _CANONICAL_INGRESS_TEST,
+                "content": ingress_test,
+            },
+        ],
+        "checks": [
+            {
+                "type": "py_compile",
+                "paths": [
+                    _CANONICAL_INGRESS_PUBLISHER,
+                    _CANONICAL_INGRESS_TEST,
+                ],
+            },
+            {
+                "type": "pytest",
+                "paths": [
+                    _CANONICAL_INGRESS_TEST,
+                ],
+            },
+            {
+                "type": "git_diff_check",
+            },
+        ],
+    }
+
+
+register_capability(
+    RepairCapability(
+        code="CANONICAL_JOB_INGRESS",
+        incident_ids=(
+            _CANONICAL_INGRESS_INCIDENT,
+        ),
+        required_paths=(
+            _CANONICAL_INGRESS_PUBLISHER,
+            _CANONICAL_INGRESS_TEST,
+        ),
+        builder=_canonical_job_ingress_recipe,
+    )
+)
