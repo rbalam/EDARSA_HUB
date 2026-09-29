@@ -15,8 +15,10 @@ from __future__ import annotations
 # WORKER_DELIVERABLE_IMPORT_COMPAT_V1
 try:
     from tools.mirror_sync.worker_deliverable_contract import evaluate_deliverables, materialize_deliverables, normalize_deliverable_specs, normalize_required_deliverables
+    from tools.mirror_sync.worker_mutation_materializer import V2_ACTIONS, apply_mutation
 except ModuleNotFoundError:
     from worker_deliverable_contract import evaluate_deliverables, materialize_deliverables, normalize_deliverable_specs, normalize_required_deliverables
+    from worker_mutation_materializer import V2_ACTIONS, apply_mutation
 
 import fcntl
 import hashlib
@@ -52,7 +54,7 @@ DEV_BRANCH = "Edarsahub_Desarrollo"
 MAX_SECONDS = int(os.environ.get("EDARSAHUB_JOB_MAX_SECONDS", "1800"))
 MAX_CONCURRENCY_REPLAY_ATTEMPTS = int(os.environ.get("EDARSAHUB_CONCURRENCY_REPLAY_ATTEMPTS", "3"))
 JOB_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
-ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
+ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file", "insert_before", "insert_after", "append_once"}
 ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract"}
 READ_ONLY_MODE = "READ_ONLY"
 READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract"}
@@ -333,6 +335,22 @@ def apply_action(worktree: Path, action: dict[str, Any]) -> str:
         and not target.exists()
     ):
         raise RuntimeError(f"CORE_GROWTH_FORBIDDEN:{relative}")
+    is_v2 = (
+        kind in V2_ACTIONS
+        and (
+            kind != "replace_text"
+            or "source_sha256" in action
+            or "old_text" in action
+        )
+    )
+
+    if is_v2:
+        evidence = apply_mutation(target, action)
+        return {
+            "path": relative,
+            **evidence,
+        }
+
     verify_expected_hash(target, action)
     if kind == "replace_text":
         if not target.is_file():
@@ -1544,9 +1562,23 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
             agent_guard_claim_created = True
             result["job_branch"] = branch
             allowed_files: set[str] = set()
+            mutation_evidence: list[dict[str, Any]] = []
+
             for action in job.get("actions") or []:
-                relative = apply_action(worktree, action)
+                applied = apply_action(worktree, action)
+
+                if isinstance(applied, dict):
+                    relative = str(applied.get("path") or "")
+                    if not relative:
+                        raise RuntimeError("MUTATION_EVIDENCE_PATH_MISSING")
+                    mutation_evidence.append(applied)
+                else:
+                    relative = str(applied)
+
                 allowed_files.add(relative)
+
+            if mutation_evidence:
+                result["mutation_evidence"] = mutation_evidence
             scope_blockers = validate_scope(worktree, execution_base_sha, allowed_files)
             if scope_blockers:
                 result["status"] = "GIT_SCOPE_VIOLATION"

@@ -38,6 +38,9 @@ ALLOWED_ACTIONS = {
     "replace_text",
     "write_file",
     "delete_file",
+    "insert_before",
+    "insert_after",
+    "append_once",
 }
 
 ALLOWED_CHECKS = {

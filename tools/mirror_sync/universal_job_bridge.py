@@ -12,8 +12,10 @@ from __future__ import annotations
 # WORKER_DELIVERABLE_IMPORT_COMPAT_V1
 try:
     from tools.mirror_sync.worker_deliverable_contract import normalize_deliverable_specs, normalize_required_deliverables
+    from tools.mirror_sync.worker_mutation_materializer import V2_ACTIONS
 except ModuleNotFoundError:
     from worker_deliverable_contract import normalize_deliverable_specs, normalize_required_deliverables
+    from worker_mutation_materializer import V2_ACTIONS
 
 import json
 import os
@@ -46,7 +48,7 @@ QUEUE_REF = os.environ.get(
 )
 SCHEMA = "edarsahub.worker-job.v2"
 JOB_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,120}$")
-ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file"}
+ALLOWED_ACTIONS = {"replace_text", "write_file", "delete_file", "insert_before", "insert_after", "append_once"}
 ALLOWED_CHECKS = {"git_diff_check", "py_compile", "pytest", "frontend_build", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract"}
 READ_ONLY_MODE = "READ_ONLY"
 READ_ONLY_CHECKS = {"git_diff_check", "py_compile", "pytest", "sql_readonly_audit", "repository_contract_audit", "worker_result_semantic_extract"}
@@ -118,6 +120,44 @@ def validate_action(action: Any, index: int) -> list[str]:
         return errors
     if not safe_repo_path(action.get("path")):
         errors.append(f"{prefix}_INVALID_PATH")
+
+    is_v2 = (
+        kind in V2_ACTIONS
+        and (
+            kind != "replace_text"
+            or "source_sha256" in action
+            or "old_text" in action
+        )
+    )
+
+    if is_v2:
+        source_sha = action.get("source_sha256")
+        if not isinstance(source_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", source_sha):
+            errors.append(f"{prefix}_SOURCE_SHA256_REQUIRED_OR_INVALID")
+
+        replacement = action.get("replacement")
+        if not isinstance(replacement, str):
+            errors.append(f"{prefix}_REPLACEMENT_REQUIRED")
+
+        expected_occurrences = action.get("expected_occurrences", 1)
+        if (
+            not isinstance(expected_occurrences, int)
+            or expected_occurrences < 1
+            or expected_occurrences > 1000
+        ):
+            errors.append(f"{prefix}_INVALID_EXPECTED_OCCURRENCES")
+
+        if kind in {"insert_before", "insert_after"}:
+            anchor = action.get("anchor")
+            if not isinstance(anchor, str) or not anchor:
+                errors.append(f"{prefix}_ANCHOR_REQUIRED")
+
+        if kind == "replace_text":
+            old_text = action.get("old_text")
+            if not isinstance(old_text, str) or not old_text:
+                errors.append(f"{prefix}_OLD_TEXT_REQUIRED")
+
+        return errors
     relative = str(action.get("path") or "")
     repo_path = Path(relative)
     if (
