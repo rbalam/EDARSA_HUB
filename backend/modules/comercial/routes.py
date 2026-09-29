@@ -85,6 +85,7 @@ from core.user_access_context import (
     has_permiso,
     UserAccessContext,
 )
+from core.rbac_sql.service import RBACSQLService
 from core.source_resolver import QueryStatus, SourceQueryResult
 from core.db import (
     check_column_exists, 
@@ -299,36 +300,80 @@ def sql_fecha(fecha_str: str, con_hora: bool = True, hora: str = "00:00:00") -> 
 
 async def validate_server_access_rbac(current_user: Dict, server_id: str) -> UserAccessContext:
     """
-    Validación unificada de acceso a servidor usando resolve_user_access_context().
-    
-    FASE 6-8: Esta función ahora usa la función centralizada de contexto de acceso.
-    NUNCA confía en parámetros del frontend.
-    
-    Args:
-        current_user: Usuario autenticado
-        server_id: ID del servidor a validar
-        
-    Returns:
-        UserAccessContext si tiene acceso
-        
-    Raises:
-        HTTPException 403 si no tiene acceso
+    Valida acceso a endpoints individuales del módulo Comercial.
+
+    Reglas:
+    - conserva el alcance explícito existente por servidor;
+    - si el usuario no tiene asignaciones explícitas y su permiso canónico
+      comercial_VER no restringe sucursal, permite cualquier servidor que
+      pertenezca a una unidad de negocio activa;
+    - nunca amplía usuarios con alcance explícito;
+    - no interviene en Tablero Ejecutivo, Inteligencia Comercial ni procesos
+      de sincronización.
     """
-    # Resolver contexto de acceso completo
     context = await resolve_user_access_context(current_user)
-    
-    # Validar acceso al servidor usando la función centralizada
+
     if has_server_access(context, server_id):
         return context
-    
-    # No tiene acceso
+
+    usuario_id = (
+        current_user.get("_sql_usuario_id")
+        or current_user.get("UsuarioID")
+    )
+
+    try:
+        usuario_id = int(usuario_id)
+    except (TypeError, ValueError):
+        usuario_id = None
+
+    if usuario_id:
+        try:
+            permission = RBACSQLService.get_permission_scope_by_code(
+                usuario_id,
+                "comercial_VER",
+            )
+            assignment_state = RBACSQLService.get_scope_assignment_state(
+                usuario_id
+            )
+
+            if permission and assignment_state is not None:
+                has_explicit_scope = (
+                    int(assignment_state.get("server_assignment_count", 0)) > 0
+                    or int(assignment_state.get("branch_assignment_count", 0)) > 0
+                )
+                unrestricted = not bool(
+                    permission.get("restriccion_sucursal")
+                )
+
+                if unrestricted and not has_explicit_scope:
+                    active_server_ids = {
+                        str(unit.get("server_id") or "").strip().lower()
+                        for unit in UnidadesService.get_all()
+                        if unit.get("server_id")
+                        and bool(unit.get("activo", True))
+                    }
+
+                    if str(server_id).strip().lower() in active_server_ids:
+                        logging.info(
+                            "[RBAC-COMERCIAL-GLOBAL] Usuario %s con "
+                            "comercial_VER sin restricción accede a servidor %s",
+                            current_user.get("email"),
+                            server_id,
+                        )
+                        return context
+        except Exception:
+            logging.exception(
+                "[RBAC-COMERCIAL] Error validando permiso canónico para %s",
+                current_user.get("email"),
+            )
+
     logging.warning(
         f"[RBAC-DENEGADO] Usuario {current_user.get('email')} "
         f"sin acceso a servidor {server_id}. "
         f"Fuente: {context.fuente_acceso}, Servidores permitidos: {context.servers_ids}"
     )
     raise HTTPException(
-        status_code=403, 
+        status_code=403,
         detail=f"No tiene acceso a este servidor. Fuente de acceso: {context.fuente_acceso}"
     )
 
