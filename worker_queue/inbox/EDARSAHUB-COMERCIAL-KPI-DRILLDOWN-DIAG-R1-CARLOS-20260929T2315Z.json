@@ -5,7 +5,7 @@
   "target_branch": "Edarsahub_Desarrollo",
   "production_allowed": false,
   "mode": "READ_ONLY",
-  "objective": "Diagnosticar los comparativos y drill-down del menu Comercial para las 5 unidades activas. Verificar fuentes ya existentes para folios/PAX y presupuesto sin modificar ningun proceso de sincronizacion, sin ejecutar Scheduler/Sync_Sales/Sync_PAX/ISCAM, sin tocar Inteligencia Comercial, Tablero Ejecutivo, Portal de Inteligencia Comercial ni Produccion. Solo lectura de EDARSAHUB y auditoria de codigo.",
+  "objective": "[Mejora-TABEJE | KPI-DRILLDOWN-DIAGNOSTICO] Diagnosticar los comparativos y drill-down del menu Comercial para las 5 unidades activas. Verificar fuentes ya existentes para folios/PAX y presupuesto sin modificar ningun proceso de sincronizacion, sin ejecutar Scheduler/Sync_Sales/Sync_PAX/ISCAM, sin tocar Inteligencia Comercial, Tablero Ejecutivo, Portal de Inteligencia Comercial ni Produccion. Solo lectura de EDARSAHUB y auditoria de codigo.",
   "human_summary_language": "es",
   "requester": {
     "email": "carlosruz@edarsa.com.mx",
@@ -76,5 +76,49 @@
     {
       "type": "git_diff_check"
     }
-  ]
+  ],
+  "labels": [
+    "Mejora-TABEJE",
+    "Tablero Ejecutivo",
+    "KPI-DRILLDOWN-DIAGNOSTICO",
+    "READ_ONLY",
+    "CARLOS"
+  ],
+  "tracking": {
+    "display_label": "Mejora-TABEJE | KPI-DRILLDOWN-DIAGNOSTICO | EDARSAHUB-COMERCIAL-KPI-DRILLDOWN-DIAG-R1-CARLOS-20260929T2315Z",
+    "project_label": "Mejora-TABEJE",
+    "status_legend": {
+      "VERDE": [
+        "DONE",
+        "PASS",
+        "CERTIFIED",
+        "CERTIFIED_READ_ONLY",
+        "CERTIFIED_OPERATIONAL"
+      ],
+      "AMARILLO": [
+        "PENDING",
+        "PROCESSING",
+        "RESULT_READY",
+        "WAITING",
+        "IN_PROGRESS"
+      ],
+      "ROJO": [
+        "REJECTED",
+        "ERROR",
+        "FAILED",
+        "BLOCKED"
+      ]
+    }
+  },
+  "scheduling": {
+    "project_id": "Mejora-TABEJE",
+    "bounded_context": "Tablero Ejecutivo",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
 }
