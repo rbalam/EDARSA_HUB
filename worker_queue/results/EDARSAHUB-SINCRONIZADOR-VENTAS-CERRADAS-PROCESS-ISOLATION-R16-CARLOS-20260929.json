@@ -1,0 +1,31 @@
+{
+  "base_sha": "f892a10a7d9cc269ab95f9ffbb3b9e5051bb4920",
+  "blockers": [],
+  "candidate_sha": "db21afe0615e845fc82d1c1ef7916577981be9ea",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-29T17:51:42Z",
+  "development_sha": "db21afe0615e845fc82d1c1ef7916577981be9ea",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+    "backend/core/scheduler/scheduler_manager.py",
+    "backend/scripts/sync_comercial_v2_header_worker.py",
+    "backend/tests/test_sync_comercial_v2_nonblocking_scheduler_guard.py",
+    "backend/tests/test_sync_comercial_v2_process_isolation_guard.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-PROCESS-ISOLATION-R16-CARLOS-20260929",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-29T17:51:52Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-29T17:51:30Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
