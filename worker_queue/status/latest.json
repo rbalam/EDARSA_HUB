@@ -4,37 +4,43 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "db21afe0615e845fc82d1c1ef7916577981be9ea",
-  "generated_at_utc": "2026-09-29T22:11:13Z",
+  "generated_at_utc": "2026-09-29T22:15:50Z",
   "history": {
     "done_total_local": 1162,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1031,
-    "results_total_local": 1996
+    "rejected_total_local": 1032,
+    "results_total_local": 1997
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 73,
+      "age_seconds": 350,
       "job_id": "EDARSAHUB-BOS-PRODUCCION-TRANSFORMACION-GATE0-READONLY-R1A",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 476,
+      "age_seconds": 753,
       "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-RETRY-BINDING-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1434,
+      "age_seconds": 247,
+      "job_id": "EDARSAHUB-COMERCIAL-DIAGNOSTICO-READONLY-R1-CARLOS-20260929T2204Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1711,
       "job_id": "WORKER-REPAIR-574a0f59bbf9eb14606e-A1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 32,
+      "age_seconds": 309,
       "job_id": "WORKER-REPAIR-574a0f59bbf9eb14606e-A1-RETRY1",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,16 +54,16 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "remote_development_sha": "db21afe0615e845fc82d1c1ef7916577981be9ea",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-29T22:11:06Z",
-    "last_receive_utc": "2026-09-29T22:11:10Z",
-    "last_terminal_utc": "2026-09-29T22:10:41Z",
-    "pid": "476",
+    "last_cycle_utc": "2026-09-29T22:15:37Z",
+    "last_receive_utc": "2026-09-29T22:15:48Z",
+    "last_terminal_utc": "2026-09-29T22:11:43Z",
+    "pid": "386",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "9fca18f2512942ff4674b8b1d6e4f6bc28ae993f",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
