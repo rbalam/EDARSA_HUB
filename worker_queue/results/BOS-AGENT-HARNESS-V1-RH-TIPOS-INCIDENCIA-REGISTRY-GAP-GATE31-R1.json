@@ -1,0 +1,767 @@
+{
+  "base_sha": "0641ede68934e3f5c752a77f27133591e12355de",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-29T14:56:18Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-AGENT-HARNESS-V1-RH-TIPOS-INCIDENCIA-REGISTRY-GAP-GATE31-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-29T14:58:02Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "rh_cat_sucursales"
+            ],
+            "path": "backend/database/migrations/007_crear_tabla_migracion_mongosql_mapeo.sql",
+            "rbac_contracts": [
+              "RBAC_Permisos"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Sistema_Migracion_MongoSQL_Mapeo"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "rh_cat_sucursales"
+            ],
+            "path": "backend/database/migrations/030_diagnostico_mapeo_rbac_mongo_a_sql.sql",
+            "rbac_contracts": [
+              "RBAC_Permisos",
+              "Sistema_RBAC",
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Global_Cat_Empresas",
+              "RH_Cat_Sucursales",
+              "Servidores_Conexiones",
+              "Sistema_Migracion_MongoSQL_Mapeo",
+              "Unidades_Negocio",
+              "Usuario_Acciones",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "rh_cat_sucursales"
+            ],
+            "path": "backend/database/migrations/20260702_015_finanzas_presupuestos_unidad_negocio.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Finanzas_Presupuestos",
+              "Finanzas_Presupuestos_Legacy_Backup",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "rh_cat_departamentos",
+              "rh_cat_puestos",
+              "rh_cat_sucursales",
+              "sistema_catalogosconfig"
+            ],
+            "path": "backend/database/migrations/20260819_035_catalogos_rbac_registry_canonico.sql",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Sistema_CatalogosConfig"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "catalogo_workflow",
+              "sistema_catalogosconfig"
+            ],
+            "path": "backend/database/validation/20260819_035_catalogos_rbac_registry_canonico_validation.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Sistema_CatalogosConfig",
+              "Sistema_CatalogosPermisos"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.rh",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.unidades_service",
+              "logging",
+              "os",
+              "re",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "rh_cat_puestos",
+              "rh_cat_sucursales",
+              "rh_cat_tipos_incidencias",
+              "tipos_incidencia"
+            ],
+            "path": "backend/modules/rh/repository.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "escape_sql_string",
+              "execute_hub_query",
+              "execute_hub_query_params",
+              "get_db",
+              "get_edarsa_hub_server",
+              "get_edarsa_hub_server_sync",
+              "get_script_reclutamiento",
+              "init_rh_repository",
+              "query_actualizar_candidato",
+              "query_actualizar_colaborador",
+              "query_actualizar_estatus_flujo",
+              "query_actualizar_puesto",
+              "query_actualizar_tipo_incidencia",
+              "query_actualizar_vacante",
+              "query_asistencias_colaborador",
+              "query_auditoria_colaborador",
+              "query_crear_candidato",
+              "query_crear_colaborador",
+              "query_crear_flujo_nomina",
+              "query_crear_incidencia",
+              "query_crear_puesto",
+              "query_crear_tipo_incidencia",
+              "query_crear_vacante",
+              "query_dar_baja_colaborador",
+              "query_dashboard_reclutamiento",
+              "query_dashboard_rh",
+              "query_desactivar_tipo_incidencia",
+              "query_eliminar_candidato",
+              "query_eliminar_puesto",
+              "query_eliminar_vacante",
+              "query_incidencias_colaborador",
+              "query_insertar_incidencia_importacion",
+              "query_listar_asistencias",
+              "query_listar_auditoria_fiscal",
+              "query_listar_candidatos",
+              "query_listar_colaboradores",
+              "query_listar_flujos_nomina",
+              "query_listar_incidencias",
+              "query_listar_puestos",
+              "query_listar_sucursales",
+              "query_listar_tipos_incidencias",
+              "query_listar_vacantes",
+              "query_obtener_colaborador",
+              "query_obtener_colaboradores_activos_para_importacion",
+              "query_obtener_estatus_flujo",
+              "query_obtener_tipos_incidencias_validos",
+              "query_registrar_asistencia",
+              "query_validar_asistencia",
+              "query_verificar_colaboradores_puesto",
+              "query_verificar_flujo_existente",
+              "validate_identifier"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.rh",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "io",
+              "logging",
+              "modules.rh.repository",
+              "modules.rh.schemas",
+              "openpyxl",
+              "openpyxl.styles",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "rh_cat_puestos",
+              "rh_cat_tipos_incidencias",
+              "tipos_incidencia"
+            ],
+            "path": "backend/modules/rh/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RHAsistenciaService",
+              "RHAuditoriaService",
+              "RHCatalogosService",
+              "RHColaboradoresService",
+              "RHFlujoNominaService",
+              "RHIncidenciasService",
+              "RHReclutamientoService",
+              "_check_admin_role",
+              "_get_server",
+              "_transicion_estado",
+              "_validar_tipo_incidencia",
+              "_validar_transicion",
+              "actualizar_candidato",
+              "actualizar_colaborador",
+              "actualizar_puesto",
+              "actualizar_tipo_incidencia",
+              "actualizar_vacante",
+              "autorizar_dg",
+              "crear_candidato",
+              "crear_colaborador",
+              "crear_flujo",
+              "crear_incidencia",
+              "crear_puesto",
+              "crear_tipo_incidencia",
+              "crear_vacante",
+              "dar_baja_colaborador",
+              "eliminar_candidato",
+              "eliminar_puesto",
+              "eliminar_tipo_incidencia",
+              "eliminar_vacante",
+              "enviar_a_rh",
+              "enviar_tesoreria",
+              "generar_plantilla_excel",
+              "get_dashboard",
+              "get_script_inicializacion",
+              "importar_desde_excel",
+              "listar_asistencias",
+              "listar_auditoria",
+              "listar_candidatos",
+              "listar_colaboradores",
+              "listar_flujos",
+              "listar_incidencias",
+              "listar_puestos",
+              "listar_sucursales",
+              "listar_tipos_incidencias",
+              "listar_vacantes",
+              "marcar_pagado",
+              "obtener_colaborador_detalle",
+              "obtener_script_inicializacion",
+              "registrar_asistencia",
+              "validar_asistencia",
+              "validar_gerente"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.rh",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.security",
+              "core.unidades_service",
+              "core.user_access_context",
+              "fastapi",
+              "fastapi.responses",
+              "io",
+              "modules.rh.schemas",
+              "modules.rh.service",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "rh_cat_puestos",
+              "rh_cat_sucursales",
+              "rh_cat_tipos_incidencias",
+              "tipos_incidencia"
+            ],
+            "path": "backend/modules/rh/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/asistencia",
+              "/asistencia/{check_id}/validar",
+              "/auditoria-fiscal",
+              "/candidatos",
+              "/candidatos/{candidato_id}",
+              "/catalogos/puestos",
+              "/catalogos/puestos/{puesto_id}",
+              "/catalogos/script-inicializacion",
+              "/catalogos/sucursales",
+              "/catalogos/tipos-incidencias",
+              "/catalogos/tipos-incidencias/{tipo_id}",
+              "/colaboradores",
+              "/colaboradores/{colaborador_id}",
+              "/dashboard",
+              "/incidencias",
+              "/incidencias/importar-excel",
+              "/incidencias/plantilla-excel",
+              "/nominas/flujo",
+              "/nominas/flujo/{flujo_id}/autorizar-dg",
+              "/nominas/flujo/{flujo_id}/enviar-rh",
+              "/nominas/flujo/{flujo_id}/enviar-tesoreria",
+              "/nominas/flujo/{flujo_id}/marcar-pagado",
+              "/nominas/flujo/{flujo_id}/validar-gerente",
+              "/reclutamiento/dashboard",
+              "/reclutamiento/script-inicializacion",
+              "/vacantes",
+              "/vacantes/{vacante_id}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_empresas_codigos_sql",
+              "get_user_sucursales_permitidas_rh",
+              "rrhh_actualizar_candidato",
+              "rrhh_actualizar_colaborador",
+              "rrhh_actualizar_puesto",
+              "rrhh_actualizar_tipo_incidencia",
+              "rrhh_actualizar_vacante",
+              "rrhh_autorizar_nomina_dg",
+              "rrhh_catalogos_script",
+              "rrhh_crear_candidato",
+              "rrhh_crear_colaborador",
+              "rrhh_crear_flujo_nomina",
+              "rrhh_crear_incidencia",
+              "rrhh_crear_puesto",
+              "rrhh_crear_tipo_incidencia",
+              "rrhh_crear_vacante",
+              "rrhh_dar_baja_colaborador",
+              "rrhh_dashboard",
+              "rrhh_eliminar_candidato",
+              "rrhh_eliminar_puesto",
+              "rrhh_eliminar_tipo_incidencia",
+              "rrhh_eliminar_vacante",
+              "rrhh_enviar_nomina_rh",
+              "rrhh_enviar_nomina_tesoreria",
+              "rrhh_importar_incidencias_excel",
+              "rrhh_listar_asistencias",
+              "rrhh_listar_auditoria_fiscal",
+              "rrhh_listar_candidatos",
+              "rrhh_listar_colaboradores",
+              "rrhh_listar_flujos_nomina",
+              "rrhh_listar_incidencias",
+              "rrhh_listar_puestos",
+              "rrhh_listar_sucursales",
+              "rrhh_listar_tipos_incidencias",
+              "rrhh_listar_vacantes",
+              "rrhh_marcar_nomina_pagada",
+              "rrhh_obtener_colaborador",
+              "rrhh_plantilla_incidencias_excel",
+              "rrhh_reclutamiento_dashboard",
+              "rrhh_reclutamiento_script",
+              "rrhh_registrar_asistencia",
+              "rrhh_validar_asistencia",
+              "rrhh_validar_nomina_gerente"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.rh",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.rbac_helper_sql",
+              "core.security",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "logging",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "tipos_incidencia"
+            ],
+            "path": "backend/modules/rh/solicitudes_catalogo.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/catalogos-disponibles",
+              "/pendientes-notificacion",
+              "/{solicitud_id}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "SolicitudCatalogoCreate",
+              "SolicitudCatalogoUpdate",
+              "actualizar_solicitud",
+              "crear_solicitud",
+              "get_catalogos_disponibles",
+              "get_pendientes_notificacion",
+              "get_solicitud",
+              "listar_solicitudes"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogos_workflow_sql",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.sql_first.db",
+              "modules.catalogos_workflow_sql.fecha_operativa_service"
+            ],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "catalogosworkflowsqlrepository",
+              "sistema_catalogosconfig",
+              "sistema_catalogossolicitudes"
+            ],
+            "path": "backend/modules/catalogos_workflow_sql/repository.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CatalogosWorkflowSQLRepository",
+              "aprobar_solicitud",
+              "corregir_solicitud",
+              "crear_solicitud_catalogo",
+              "crear_tarea",
+              "get_catalogos_disponibles",
+              "get_historial_solicitud_catalogo",
+              "get_mis_permisos_catalogos",
+              "get_permisos_catalogo_usuario",
+              "get_solicitud_catalogo",
+              "liberar_solicitud",
+              "listar_mis_tareas",
+              "listar_solicitudes_catalogo",
+              "listar_solicitudes_fecha_operativa_autorizables",
+              "listar_solicitudes_workflow",
+              "listar_tareas",
+              "listar_usuarios_asignables",
+              "rechazar_solicitud",
+              "upsert_niveles_catalogo",
+              "upsert_permisos_catalogo"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.catalogos_workflow_compat",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.auth.sql_user_identity",
+              "core.security",
+              "fastapi",
+              "modules.catalogos_workflow_sql.repository",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "catalogosworkflowsqlrepository"
+            ],
+            "path": "backend/modules/catalogos_workflow_compat/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/sistema/catalogos-disponibles",
+              "/sistema/catalogos/permisos/{user_id}",
+              "/sistema/catalogos/solicitudes",
+              "/sistema/catalogos/{catalogo_id}/niveles",
+              "/sistema/mis-permisos-catalogos",
+              "/sistema/mis-tareas",
+              "/sistema/permisos-catalogos",
+              "/sistema/solicitudes",
+              "/sistema/solicitudes/{solicitud_id}",
+              "/sistema/solicitudes/{solicitud_id}/aprobar",
+              "/sistema/solicitudes/{solicitud_id}/corregir",
+              "/sistema/solicitudes/{solicitud_id}/historial",
+              "/sistema/solicitudes/{solicitud_id}/liberar",
+              "/sistema/solicitudes/{solicitud_id}/rechazar",
+              "/sistema/tareas",
+              "/sistema/usuarios-asignables"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "compat_aprobar_solicitud",
+              "compat_corregir_solicitud",
+              "compat_get_catalogos_disponibles",
+              "compat_get_historial_solicitud",
+              "compat_get_mis_permisos_catalogos",
+              "compat_get_mis_tareas",
+              "compat_get_permisos_catalogo",
+              "compat_get_solicitud",
+              "compat_get_solicitudes_catalogo",
+              "compat_get_tareas",
+              "compat_get_usuarios_asignables",
+              "compat_liberar_solicitud",
+              "compat_list_solicitudes_workflow",
+              "compat_post_permisos_catalogo",
+              "compat_post_solicitud_catalogo",
+              "compat_post_tarea",
+              "compat_put_catalogo_niveles",
+              "compat_rechazar_solicitud"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.admin_sql",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.config.edarsahub_sql",
+              "core.corporate_filters.service",
+              "core.rbac_helper_sql",
+              "core.security",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "fastapi",
+              "json",
+              "logging",
+              "modules.admin_sql",
+              "re",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "sistema_catalogosconfig"
+            ],
+            "path": "backend/modules/admin_sql/routes.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "get_current_user"
+            ],
+            "routes": [
+              "/catalogos-disponibles",
+              "/permisos-catalogos",
+              "/roles",
+              "/roles/modulos",
+              "/roles/{role_id}",
+              "/servers",
+              "/users",
+              "/users/{user_id}/toggle-activo",
+              "/usuarios-asignables"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "create_role_sql",
+              "delete_role_sql",
+              "execute_query",
+              "execute_write",
+              "get_catalogos_disponibles",
+              "get_modulos",
+              "get_roles",
+              "get_servers",
+              "get_users",
+              "get_usuarios_asignables",
+              "is_admin",
+              "require_admin",
+              "save_permisos_catalogos",
+              "toggle_user_activo",
+              "update_role_sql"
+            ],
+            "tables_referenced": [
+              "Sistema_CatalogosConfig",
+              "Sistema_CatalogosPermisos",
+              "Sistema_Modulos",
+              "Sistema_ModulosMenus",
+              "Usuario_Acciones",
+              "Usuario_Catalogo",
+              "Usuario_Modulos",
+              "Usuario_PermisosCatalogosFlujo",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "pathlib",
+              "re"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "catalogo_workflow",
+              "sistema_catalogosconfig"
+            ],
+            "path": "backend/tests/test_catalogos_rbac_registry_canonical.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/catalogos-disponibles"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "target_codes",
+              "test_global_cat_bancos_only_once_and_nonphysical_excluded",
+              "test_migration_has_exactly_52_unique_physical_codes",
+              "test_migration_is_fail_closed_and_does_not_touch_permission_or_module_tables",
+              "test_no_hardcoded_user_or_role_ids",
+              "test_rollback_is_slice_scoped",
+              "test_runtime_routes_keep_canonical_permission_table",
+              "test_validation_requires_52_and_100_percent",
+              "test_workflow_is_preserved_and_no_general_delete_exists",
+              "text"
+            ],
+            "tables_referenced": [
+              "SISTEMA_CATALOGOSCONFIG",
+              "SISTEMA_CATALOGOSPERMISOS",
+              "USUARIO_MODULOS"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "ast",
+              "pathlib"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "sistema_catalogosconfig",
+              "sistema_catalogossolicitudes"
+            ],
+            "path": "backend/tests/test_catalogos_runtime_canonical_universe.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_function_source",
+              "test_get_catalogos_does_not_expand_registry_from_permissions",
+              "test_get_catalogos_does_not_expand_registry_from_requests",
+              "test_get_catalogos_uses_config_as_registry",
+              "test_no_usuario_modulos_registry_in_catalog_runtime",
+              "test_permission_table_remains_permission_store",
+              "test_save_does_not_use_permissions_as_registry",
+              "test_save_does_not_use_requests_as_registry",
+              "test_save_validates_catalog_against_config"
+            ],
+            "tables_referenced": [
+              "Sistema_CatalogosConfig",
+              "Sistema_CatalogosPermisos",
+              "Sistema_CatalogosSolicitudes",
+              "USUARIO_MODULOS"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "conftest",
+              "os",
+              "pytest",
+              "requests"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "rh_cat_puestos",
+              "rh_cat_tipos_incidencias",
+              "tipos_incidencia"
+            ],
+            "path": "backend/tests/test_catalogos_rrhh.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "TestCatalogosPuestos",
+              "TestCatalogosRRHHAuth",
+              "TestCatalogosTiposIncidencias",
+              "TestPermissionControl",
+              "TestScriptInicializacion",
+              "admin_token",
+              "supervisor_token",
+              "test_admin_can_create_puesto",
+              "test_admin_can_create_tipo_incidencia",
+              "test_admin_login",
+              "test_get_puestos_requires_auth",
+              "test_get_puestos_returns_list",
+              "test_get_script_returns_sql",
+              "test_get_tipos_incidencias_requires_auth",
+              "test_get_tipos_incidencias_returns_list",
+              "test_supervisor_cannot_create_puesto",
+              "test_supervisor_cannot_create_tipo_incidencia",
+              "test_supervisor_login"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 15,
+          "scanned_files": 165,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-29T14:56:11Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
