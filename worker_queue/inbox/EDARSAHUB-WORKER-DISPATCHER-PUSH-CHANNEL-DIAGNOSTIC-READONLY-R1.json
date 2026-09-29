@@ -1,0 +1,114 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-DISPATCHER-PUSH-CHANNEL-DIAGNOSTIC-READONLY-R1",
+  "title": "Worker dispatcher push channel diagnostic readonly R1",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS / Worker Runtime",
+    "chat": "Tablajerias 4"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "sql_allowed": false,
+  "human_summary_language": "es",
+  "priority": "P0",
+  "objective": "Diagnosticar en modo solo lectura por que dos mutaciones consecutivas del Worker terminaron en dispatcher_exception:RuntimeError:GIT_PUSH_FAILED aunque el worker si pudo publicar resultados en worker/results. No mutar repositorio, SQL ni Produccion. No abrir Gate3. Separar evidencia de codigo/configuracion del Worker contra inferencias sobre permisos, branch protection, storage o ambiente runtime.",
+  "context": {
+    "failed_jobs": [
+      {
+        "job_id": "EDARSAHUB-WORKER-RESULT-SEMANTIC-EXTRACT-FAIL-CLOSED-MUTATION-R1",
+        "status": "GIT_PUSH_FAILED",
+        "blocker": "dispatcher_exception:RuntimeError:GIT_PUSH_FAILED"
+      },
+      {
+        "job_id": "EDARSAHUB-WORKER-RESULT-SEMANTIC-EXTRACT-FAIL-CLOSED-MUTATION-R2",
+        "status": "GIT_PUSH_FAILED",
+        "blocker": "dispatcher_exception:RuntimeError:GIT_PUSH_FAILED"
+      }
+    ],
+    "last_verified_head": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
+    "last_verified_change_integrated": false,
+    "worker_results_publish_working": true,
+    "target_branch_push_failing": true
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "tools/mirror_sync",
+          ".github",
+          "scripts"
+        ],
+        "search_terms": [
+          "GIT_PUSH_FAILED",
+          "git push",
+          "EDARSA_ALLOW_PUSH",
+          "EDARSA_PUSH_JOB_ID",
+          "EDARSA_PUSH_OWNER",
+          "AGENT_STORAGE_POLICY_V1",
+          "index.lock",
+          "SLOT_NOT_FOUND",
+          "branch protection",
+          "push --dry-run",
+          "worker/results",
+          "Edarsahub_Desarrollo"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sh",
+          "*.yml",
+          "*.yaml",
+          "*.json",
+          "*.md"
+        ],
+        "exclude_patterns": [
+          "node_modules/**",
+          ".git/**",
+          "dist/**",
+          "build/**",
+          "__pycache__/**"
+        ],
+        "max_results": 2000
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "expected_output": {
+    "push_channel_status": "WORKING_OR_FAILING_OR_INCONCLUSIVE",
+    "root_cause_candidates": [
+      "storage_guard_or_disk_policy",
+      "missing_push_authorization_env",
+      "git_lock_or_dirty_worktree",
+      "non_fast_forward_or_base_drift",
+      "github_permission_or_branch_protection",
+      "dispatcher_slot_bookkeeping",
+      "inconclusive_requires_runtime_probe"
+    ],
+    "must_include_evidence": [
+      "files_and_line_references_for_push_logic",
+      "exact_guard_or_error_strings_found",
+      "whether dispatcher has code path for target branch push",
+      "whether worker_results publish path is separate from target branch push path",
+      "minimal_next_repair_job_name"
+    ]
+  },
+  "hard_fail_conditions": [
+    "Do not change any repository file.",
+    "Do not execute SQL.",
+    "Do not touch Production.",
+    "Do not publish or infer Gate3 approval.",
+    "Do not retry fail-closed extractor mutation inside this diagnostic.",
+    "Fail if output does not preserve exact GIT_PUSH_FAILED evidence from R1/R2.",
+    "Fail if output recommends a write without first identifying the smallest repair scope."
+  ],
+  "next_after_success": "Use the diagnostic to decide whether to publish a minimal dispatcher push-channel repair job, or to switch the fail-closed extractor mutation to an approved PR/recovery-branch path. Gate3 remains HOLD.",
+  "next_after_failure": "Report exact blocker and keep Gate3 on HOLD."
+}
