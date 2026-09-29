@@ -1,0 +1,57 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "queries": [
+        {
+          "name": "database_identity",
+          "sql": "SELECT DB_NAME() AS database_name, @@SERVERNAME AS server_name;"
+        },
+        {
+          "name": "expected_tables_presence",
+          "sql": "\nWITH expected(table_name) AS (\n    SELECT 'Tablajeria_Ordenes' UNION ALL\n    SELECT 'Tablajeria_OrdenesDetalle' UNION ALL\n    SELECT 'Tablajeria_Plantillas' UNION ALL\n    SELECT 'Tablajeria_PlantillasDetalle' UNION ALL\n    SELECT 'Tablajeria_Resultados' UNION ALL\n    SELECT 'Tablajeria_Mermas' UNION ALL\n    SELECT 'Tablajeria_Costeo' UNION ALL\n    SELECT 'Tablajeria_ConfigContable' UNION ALL\n    SELECT 'Tablajeria_LotesProveedorRendimiento' UNION ALL\n    SELECT 'Tablajeria_ReclamosProveedor' UNION ALL\n    SELECT 'Tablajeria_LonjasDisponibles' UNION ALL\n    SELECT 'Inventario_Movimientos' UNION ALL\n    SELECT 'Inventario_MovimientosDetalle' UNION ALL\n    SELECT 'Inventario_Existencias' UNION ALL\n    SELECT 'Inventario_TipoMovimiento' UNION ALL\n    SELECT 'Operaciones_Tablaje_EventosContables'\n)\nSELECT\n    expected.table_name,\n    CASE\n        WHEN objects.object_id IS NULL THEN 'MISSING'\n        ELSE 'PRESENT'\n    END AS status\nFROM expected\nLEFT JOIN sys.objects AS objects\n    ON objects.name = expected.table_name\n   AND objects.type = 'U'\nORDER BY expected.table_name;\n"
+        },
+        {
+          "name": "critical_column_presence",
+          "sql": "\nWITH expected(table_name, column_name) AS (\n    SELECT 'Tablajeria_Ordenes', 'EmpresaID' UNION ALL\n    SELECT 'Tablajeria_Ordenes', 'UnidadNegocioID' UNION ALL\n    SELECT 'Tablajeria_Ordenes', 'ServerID' UNION ALL\n    SELECT 'Tablajeria_Ordenes', 'FechaOperacion' UNION ALL\n    SELECT 'Tablajeria_Ordenes', 'OrdenID' UNION ALL\n    SELECT 'Tablajeria_Ordenes', 'Estatus' UNION ALL\n    SELECT 'Tablajeria_Ordenes', 'UsuarioID' UNION ALL\n    SELECT 'Tablajeria_OrdenesDetalle', 'OrdenID' UNION ALL\n    SELECT 'Tablajeria_OrdenesDetalle', 'ProductoID' UNION ALL\n    SELECT 'Tablajeria_OrdenesDetalle', 'InsumoID' UNION ALL\n    SELECT 'Tablajeria_OrdenesDetalle', 'DerivadoID' UNION ALL\n    SELECT 'Tablajeria_OrdenesDetalle', 'Cantidad' UNION ALL\n    SELECT 'Tablajeria_OrdenesDetalle', 'PesoKg' UNION ALL\n    SELECT 'Tablajeria_OrdenesDetalle', 'Piezas' UNION ALL\n    SELECT 'Tablajeria_OrdenesDetalle', 'PorcentajeEsperado' UNION ALL\n    SELECT 'Tablajeria_Mermas', 'OrdenID' UNION ALL\n    SELECT 'Tablajeria_Mermas', 'MermaKg' UNION ALL\n    SELECT 'Tablajeria_Mermas', 'MermaLt' UNION ALL\n    SELECT 'Tablajeria_Costeo', 'OrdenID' UNION ALL\n    SELECT 'Tablajeria_Costeo', 'CostoUnitario' UNION ALL\n    SELECT 'Tablajeria_Costeo', 'CostoTotal'\n)\nSELECT\n    expected.table_name,\n    expected.column_name,\n    CASE\n        WHEN columns.column_id IS NULL THEN 'MISSING'\n        ELSE 'PRESENT'\n    END AS status\nFROM expected\nLEFT JOIN sys.tables AS tables\n    ON tables.name = expected.table_name\nLEFT JOIN sys.columns AS columns\n    ON columns.object_id = tables.object_id\n   AND columns.name = expected.column_name\nORDER BY expected.table_name, expected.column_name;\n"
+        },
+        {
+          "name": "tablajeria_physical_columns",
+          "sql": "\nSELECT\n    schemas.name AS schema_name,\n    tables.name AS table_name,\n    columns.name AS column_name,\n    types.name AS data_type,\n    columns.is_nullable\nFROM sys.tables AS tables\nJOIN sys.schemas AS schemas\n    ON schemas.schema_id = tables.schema_id\nJOIN sys.columns AS columns\n    ON columns.object_id = tables.object_id\nJOIN sys.types AS types\n    ON types.user_type_id = columns.user_type_id\nWHERE\n    tables.name LIKE 'Tablajeria_%'\n    OR tables.name IN (\n        'Inventario_Movimientos',\n        'Inventario_MovimientosDetalle',\n        'Inventario_Existencias',\n        'Inventario_TipoMovimiento',\n        'Operaciones_Tablaje_EventosContables'\n    )\nORDER BY tables.name, columns.column_id;\n"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "expected_result": {
+    "files_changed": [],
+    "production_touched": false,
+    "status": "READ_ONLY_COMPLETE"
+  },
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-SQL-SCHEMA-READINESS-AUDIT-READONLY-R1",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar en READ_ONLY_SQL si Tablajeria R2 tiene esquema SQL fisico suficiente para Gate3: tablas, columnas criticas, integracion canonica con inventario/costos/contabilidad y no duplicidad. Solo SELECT metadata.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Tablajerias 5",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt-classic"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
