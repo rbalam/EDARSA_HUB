@@ -1,0 +1,62 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-FINAL-RUNTIME-R13-CARLOS-20260929",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "f892a10a7d9cc269ab95f9ffbb3b9e5051bb4920",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Certificar operativamente R12 de Ventas Cerradas. Verificar exclusivamente en solo lectura ciclos automaticos INCR posteriores a 2026-09-29T16:17:24Z, confirmar que un mismo run_id procese las cinco sucursales 130MID, CIENFUEGOS, ESTELAR, 130QRO y ORIGEN, y que Scheduler_BitacoraJobs registre FINISH para sync_comercial_v2. No modificar codigo ni datos. No tocar sync_comercial_abiertas_v2. Etiqueta: Sincronizador.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "post_r12_runs",
+          "sql": "SELECT TOP (20) run_id,MIN(run_timestamp) AS primero,MAX(run_timestamp) AS ultimo,COUNT(DISTINCT unidad_negocio_id) AS unidades,COUNT(*) AS logs,SUM(CASE WHEN status='SUCCESS' THEN 1 ELSE 0 END) AS exitosos,SUM(CASE WHEN status<>'SUCCESS' THEN 1 ELSE 0 END) AS no_exitosos FROM dbo.Comercial_SyncLog_v2 WHERE run_type='INCREMENTAL' AND run_id LIKE 'INCR-%' AND run_timestamp>'2026-09-29T16:17:24' GROUP BY run_id ORDER BY primero DESC"
+        },
+        {
+          "name": "latest_post_r12_units",
+          "sql": "WITH latest AS (SELECT TOP (1) run_id FROM dbo.Comercial_SyncLog_v2 WHERE run_type='INCREMENTAL' AND run_id LIKE 'INCR-%' AND run_timestamp>'2026-09-29T16:17:24' ORDER BY run_timestamp DESC) SELECT s.run_id,u.codigo,u.nombre,s.run_timestamp,s.fecha_inicio,s.fecha_fin,s.status,s.source_connection_status,s.error_code,s.error_message FROM dbo.Comercial_SyncLog_v2 s JOIN latest l ON l.run_id=s.run_id LEFT JOIN dbo.Unidades_Negocio u ON CONVERT(varchar(36),u.id)=CONVERT(varchar(36),s.unidad_negocio_id) ORDER BY s.run_timestamp"
+        },
+        {
+          "name": "scheduler_post_r12",
+          "sql": "SELECT TOP (30) JobName,RunID,Accion,FechaAccion,Exito,MensajeError,DetallesJSON FROM dbo.Scheduler_BitacoraJobs WHERE JobName='sync_comercial_v2' AND FechaAccion>'2026-09-29T16:17:24' ORDER BY FechaAccion DESC"
+        },
+        {
+          "name": "lock_post_r12",
+          "sql": "SELECT JobName,OwnerID,AcquiredAt,HeartbeatAt,LockUntil FROM dbo.Scheduler_DistributedLocks WHERE JobName='sync_comercial_v2'"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No DDL/DML",
+    "Do not modify backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
