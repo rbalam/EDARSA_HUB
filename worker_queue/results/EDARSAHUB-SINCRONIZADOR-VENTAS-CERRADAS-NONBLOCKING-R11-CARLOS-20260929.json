@@ -1,0 +1,28 @@
+{
+  "base_sha": "0641ede68934e3f5c752a77f27133591e12355de",
+  "blockers": [
+    "check_failed:pytest"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-29T15:27:06Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/core/scheduler/scheduler_manager.py",
+    "backend/tests/test_sync_comercial_v2_nonblocking_scheduler_guard.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-NONBLOCKING-R11-CARLOS-20260929",
+  "percent_complete": 80,
+  "production_touched": false,
+  "published_at_utc": "2026-09-29T15:35:01Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-29T15:26:57Z",
+  "status": "GIT_TESTS_FAILED",
+  "summary_es": "La orden de ChatGPT no se integro porque una validacion o candado fallo. El worker se detuvo sin ampliar el alcance y sin tocar Produccion.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
