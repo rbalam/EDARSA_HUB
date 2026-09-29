@@ -1,0 +1,82 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-WORKER-RESULT-SEMANTIC-EXTRACT-FAIL-CLOSED-MUTATION-R4",
+  "title": "Worker result semantic extract fail-closed mutation R4",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS / Worker Runtime",
+    "chat": "Tablajerias 4"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "b88c7a98f01221056215d23a3d47f49abba2ad73",
+  "mode": "MUTATION",
+  "production_allowed": false,
+  "sql_allowed": false,
+  "human_summary_language": "es",
+  "priority": "P0",
+  "supersedes": {
+    "job_ids": [
+      "EDARSAHUB-WORKER-RESULT-SEMANTIC-EXTRACT-FAIL-CLOSED-MUTATION-R1",
+      "EDARSAHUB-WORKER-RESULT-SEMANTIC-EXTRACT-FAIL-CLOSED-MUTATION-R2",
+      "EDARSAHUB-WORKER-RESULT-SEMANTIC-EXTRACT-FAIL-CLOSED-MUTATION-R3"
+    ],
+    "r1_r2_terminal_status": "GIT_PUSH_FAILED",
+    "r3_terminal_status": "BLOCKED",
+    "r3_blocker": "WRITE_EXISTING_REQUIRES_EXPECTED_SHA256:backend/tests/test_worker_result_semantic_extract_contract.py",
+    "r4_fix": "Use replace_text with expected_count=1 for the existing test file instead of write_file. Update base_sha to current verified HEAD b88c7a98f01221056215d23a3d47f49abba2ad73."
+  },
+  "objective": "Apply the minimal fail-closed semantic extractor mutation using replace_text-only surgical changes. When a readable source result lacks explicit gate semantic fields, emit a complete fail-closed decision: gate3_allowed=false, blocking_reason_if_any=SOURCE_SEMANTIC_FIELDS_MISSING, next_allowed_gate=GATE3_HOLD_PENDING_EXPLICIT_SEMANTIC_FIELDS. Do not infer Gate3 approval from generic status, percent_complete, certification, or quality_gate.",
+  "scope": {
+    "allowed_paths": [
+      "tools/mirror_sync/worker_result_semantic_extract.py",
+      "backend/tests/test_worker_result_semantic_extract_contract.py"
+    ]
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/worker_result_semantic_extract.py",
+      "old": "def build_report(payload: dict[str, Any], request: dict[str, Any], meta: dict[str, Any]) -> dict[str, Any]:\n    fields = request.get(\"required_semantic_fields\")\n    if not isinstance(fields, list) or not fields:\n        fields = DEFAULT_FIELDS\n    semantic_fields = {str(field): find_key(payload, str(field)) for field in fields}\n    missing = sorted(key for key, value in semantic_fields.items() if value is None)\n    source_blockers = payload.get(\"blockers\") or []\n    source_pass = (\n        str(payload.get(\"tests\") or \"\").upper() == \"PASS\"\n        and str(payload.get(\"quality_gate\") or \"\").upper() == \"PASS\"\n        and payload.get(\"production_touched\") is False\n        and not source_blockers\n    )\n    semantic_complete = not missing\n    gate3_allowed = bool(source_pass and semantic_complete and truthy(semantic_fields.get(\"gate3_allowed\")))\n    if not semantic_complete:\n        bridge_verdict = \"SOURCE_SEMANTIC_FIELDS_MISSING\"\n    elif gate3_allowed:\n        bridge_verdict = \"SOURCE_SEMANTIC_FIELDS_COMPLETE_GATE3_ALLOWED\"\n    else:\n        bridge_verdict = \"SOURCE_SEMANTIC_FIELDS_COMPLETE_GATE3_HOLD\"\n    return {\n        \"status\": \"PASS\",\n        \"mode\": \"READ_ONLY_WORKER_RESULT_SEMANTIC_EXTRACT\",\n        \"bridge_verdict\": bridge_verdict,\n        \"runtime_gap_confirmed\": False,\n        \"source_result_reader_capability_current_state\": \"CAN_READ_SOURCE_RESULT_ARTIFACT\",\n        \"can_read_worker_results_by_branch_path\": str(meta.get(\"source_result_loader\") or \"\").startswith(\"git_show\"),\n        \"can_read_worker_results_by_blob_sha\": str(meta.get(\"source_result_loader\") or \"\").startswith(\"git_cat_file\"),\n        \"can_emit_semantic_fields_from_source_result\": True,\n        \"semantic_fields_complete\": semantic_complete,\n        \"missing_semantic_fields\": missing,\n        \"semantic_fields\": semantic_fields,\n        \"gate3_allowed\": gate3_allowed,\n        \"source_status\": payload.get(\"status\"),\n        \"source_quality_gate\": payload.get(\"quality_gate\"),\n        \"source_certification\": payload.get(\"certification\"),\n        \"source_work_completion\": payload.get(\"work_completion\"),\n        \"source_percent_complete\": payload.get(\"percent_complete\"),\n        \"source_production_touched\": payload.get(\"production_touched\"),\n        \"source_files_changed\": payload.get(\"files_changed\") or [],\n        \"source_blockers\": source_blockers,\n        \"required_runtime_change\": None,\n        \"next_allowed_step\": \"GATE3_PREP_ALLOWED\" if gate3_allowed else \"EDARSAHUB-TABLAJERIA-R2-SEMANTIC-EXTRACT-READONLY-R3\",\n        **meta,\n    }\n",
+      "new": "def build_report(payload: dict[str, Any], request: dict[str, Any], meta: dict[str, Any]) -> dict[str, Any]:\n    requested = request.get(\"required_semantic_fields\")\n    if not isinstance(requested, list) or not requested:\n        requested = DEFAULT_FIELDS\n\n    fields = list(dict.fromkeys([*DEFAULT_FIELDS, *(str(field) for field in requested)]))\n    raw_semantic_fields = {str(field): find_key(payload, str(field)) for field in fields}\n    source_missing = sorted(key for key, value in raw_semantic_fields.items() if value is None)\n    source_semantic_complete = not source_missing\n\n    semantic_fields = dict(raw_semantic_fields)\n    if not source_semantic_complete:\n        fail_closed = {\n            \"gate3_allowed\": False,\n            \"last_gate_executed\": payload.get(\"job_id\") or payload.get(\"status\") or \"UNKNOWN_SOURCE_RESULT\",\n            \"last_gate_certified\": False,\n            \"real_implementation_percent\": None,\n            \"next_allowed_gate\": \"GATE3_HOLD_PENDING_EXPLICIT_SEMANTIC_FIELDS\",\n            \"blocking_reason_if_any\": \"SOURCE_SEMANTIC_FIELDS_MISSING\",\n        }\n        for key, value in fail_closed.items():\n            if semantic_fields.get(key) is None:\n                semantic_fields[key] = value\n\n    source_blockers = payload.get(\"blockers\") or []\n    source_pass = (\n        str(payload.get(\"tests\") or \"\").upper() == \"PASS\"\n        and str(payload.get(\"quality_gate\") or \"\").upper() == \"PASS\"\n        and payload.get(\"production_touched\") is False\n        and not source_blockers\n    )\n    gate3_allowed = bool(source_pass and source_semantic_complete and truthy(raw_semantic_fields.get(\"gate3_allowed\")))\n\n    if not source_semantic_complete:\n        bridge_verdict = \"SOURCE_SEMANTIC_FIELDS_DERIVED_FAIL_CLOSED\"\n    elif gate3_allowed:\n        bridge_verdict = \"SOURCE_SEMANTIC_FIELDS_COMPLETE_GATE3_ALLOWED\"\n    else:\n        bridge_verdict = \"SOURCE_SEMANTIC_FIELDS_COMPLETE_GATE3_HOLD\"\n\n    missing = [] if not source_semantic_complete else sorted(key for key, value in semantic_fields.items() if value is None)\n    semantic_complete = not missing\n\n    if gate3_allowed:\n        next_allowed_step = \"GATE3_PREP_ALLOWED\"\n    elif not source_semantic_complete:\n        next_allowed_step = \"GATE3_HOLD_PENDING_EXPLICIT_SEMANTIC_FIELDS\"\n    else:\n        next_allowed_step = \"GATE3_HOLD_SEMANTIC_FIELDS_COMPLETE_NOT_ALLOWED\"\n\n    return {\n        \"status\": \"PASS\",\n        \"mode\": \"READ_ONLY_WORKER_RESULT_SEMANTIC_EXTRACT\",\n        \"bridge_verdict\": bridge_verdict,\n        \"runtime_gap_confirmed\": False,\n        \"source_result_reader_capability_current_state\": \"CAN_READ_SOURCE_RESULT_ARTIFACT\",\n        \"can_read_worker_results_by_branch_path\": str(meta.get(\"source_result_loader\") or \"\").startswith(\"git_show\"),\n        \"can_read_worker_results_by_blob_sha\": str(meta.get(\"source_result_loader\") or \"\").startswith(\"git_cat_file\"),\n        \"can_emit_semantic_fields_from_source_result\": True,\n        \"source_semantic_fields_complete\": source_semantic_complete,\n        \"source_missing_semantic_fields\": source_missing,\n        \"semantic_fields_complete\": semantic_complete,\n        \"missing_semantic_fields\": missing,\n        \"semantic_fields\": semantic_fields,\n        \"gate3_allowed\": gate3_allowed,\n        \"source_status\": payload.get(\"status\"),\n        \"source_quality_gate\": payload.get(\"quality_gate\"),\n        \"source_certification\": payload.get(\"certification\"),\n        \"source_work_completion\": payload.get(\"work_completion\"),\n        \"source_percent_complete\": payload.get(\"percent_complete\"),\n        \"source_production_touched\": payload.get(\"production_touched\"),\n        \"source_files_changed\": payload.get(\"files_changed\") or [],\n        \"source_blockers\": source_blockers,\n        \"required_runtime_change\": None,\n        \"next_allowed_step\": next_allowed_step,\n        **meta,\n    }\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_worker_result_semantic_extract_contract.py",
+      "old": "from tools.mirror_sync.worker_result_semantic_extract import build_report, failure_report\n\n\ndef test_build_report_holds_when_required_fields_are_missing() -> None:\n    payload = {\n        \"status\": \"READ_ONLY_COMPLETE\",\n        \"tests\": \"PASS\",\n        \"quality_gate\": \"PASS\",\n        \"certification\": \"CERTIFIED_READ_ONLY\",\n        \"work_completion\": \"COMPLETE\",\n        \"percent_complete\": 100,\n        \"production_touched\": False,\n        \"files_changed\": [],\n        \"blockers\": [],\n    }\n    report = build_report(payload, {\"required_semantic_fields\": [\"gate3_allowed\"]}, {\"source_result_read_status\": \"RESULT_READ_OK\", \"source_result_loader\": \"git_show:x\"})\n    assert report[\"status\"] == \"PASS\"\n    assert report[\"runtime_gap_confirmed\"] is False\n    assert report[\"gate3_allowed\"] is False\n    assert report[\"bridge_verdict\"] == \"SOURCE_SEMANTIC_FIELDS_MISSING\"\n    assert report[\"missing_semantic_fields\"] == [\"gate3_allowed\"]\n\n\ndef test_build_report_allows_only_explicit_complete_gate3() -> None:\n    payload = {\n        \"status\": \"READ_ONLY_COMPLETE\",\n        \"tests\": \"PASS\",\n        \"quality_gate\": \"PASS\",\n        \"certification\": \"CERTIFIED_READ_ONLY\",\n        \"work_completion\": \"COMPLETE\",\n        \"percent_complete\": 100,\n        \"production_touched\": False,\n        \"files_changed\": [],\n        \"blockers\": [],\n        \"decision\": {\n            \"gate3_allowed\": True,\n            \"last_gate_executed\": \"Gate2\",\n            \"last_gate_certified\": \"Gate2\",\n            \"real_implementation_percent\": 95,\n            \"next_allowed_gate\": \"Gate3\",\n            \"blocking_reason_if_any\": \"\",\n        },\n    }\n    report = build_report(payload, {}, {\"source_result_read_status\": \"RESULT_READ_OK\", \"source_result_loader\": \"git_show:x\"})\n    assert report[\"semantic_fields_complete\"] is True\n    assert report[\"gate3_allowed\"] is True\n    assert report[\"bridge_verdict\"] == \"SOURCE_SEMANTIC_FIELDS_COMPLETE_GATE3_ALLOWED\"\n\n\ndef test_failure_report_is_fail_closed() -> None:\n    report = failure_report({\"required_semantic_fields\": [\"gate3_allowed\"]}, {\"source_result_read_status\": \"RESULT_READ_FAILED\"})\n    assert report[\"status\"] == \"FAIL\"\n    assert report[\"runtime_gap_confirmed\"] is True\n    assert report[\"gate3_allowed\"] is False\n",
+      "new": "from tools.mirror_sync.worker_result_semantic_extract import build_report, failure_report\n\n\ndef test_build_report_derives_fail_closed_when_required_fields_are_missing() -> None:\n    payload = {\n        \"job_id\": \"SOURCE-R2\",\n        \"status\": \"READ_ONLY_COMPLETE\",\n        \"tests\": \"PASS\",\n        \"quality_gate\": \"PASS\",\n        \"certification\": \"CERTIFIED_READ_ONLY\",\n        \"work_completion\": \"COMPLETE\",\n        \"percent_complete\": 100,\n        \"production_touched\": False,\n        \"files_changed\": [],\n        \"blockers\": [],\n    }\n    report = build_report(\n        payload,\n        {\"required_semantic_fields\": [\"gate3_allowed\"]},\n        {\n            \"source_result_read_status\": \"RESULT_READ_OK\",\n            \"source_result_loader\": \"git_show:x\",\n        },\n    )\n\n    assert report[\"status\"] == \"PASS\"\n    assert report[\"runtime_gap_confirmed\"] is False\n    assert report[\"gate3_allowed\"] is False\n    assert report[\"bridge_verdict\"] == \"SOURCE_SEMANTIC_FIELDS_DERIVED_FAIL_CLOSED\"\n    assert report[\"source_semantic_fields_complete\"] is False\n    assert \"gate3_allowed\" in report[\"source_missing_semantic_fields\"]\n    assert report[\"semantic_fields_complete\"] is True\n    assert report[\"missing_semantic_fields\"] == []\n    assert report[\"semantic_fields\"][\"gate3_allowed\"] is False\n    assert report[\"semantic_fields\"][\"last_gate_executed\"] == \"SOURCE-R2\"\n    assert report[\"semantic_fields\"][\"last_gate_certified\"] is False\n    assert report[\"semantic_fields\"][\"blocking_reason_if_any\"] == \"SOURCE_SEMANTIC_FIELDS_MISSING\"\n    assert report[\"next_allowed_step\"] == \"GATE3_HOLD_PENDING_EXPLICIT_SEMANTIC_FIELDS\"\n\n\ndef test_build_report_allows_only_explicit_complete_gate3() -> None:\n    payload = {\n        \"status\": \"READ_ONLY_COMPLETE\",\n        \"tests\": \"PASS\",\n        \"quality_gate\": \"PASS\",\n        \"certification\": \"CERTIFIED_READ_ONLY\",\n        \"work_completion\": \"COMPLETE\",\n        \"percent_complete\": 100,\n        \"production_touched\": False,\n        \"files_changed\": [],\n        \"blockers\": [],\n        \"decision\": {\n            \"gate3_allowed\": True,\n            \"last_gate_executed\": \"Gate2\",\n            \"last_gate_certified\": \"Gate2\",\n            \"real_implementation_percent\": 95,\n            \"next_allowed_gate\": \"Gate3\",\n            \"blocking_reason_if_any\": \"\",\n        },\n    }\n    report = build_report(\n        payload,\n        {},\n        {\n            \"source_result_read_status\": \"RESULT_READ_OK\",\n            \"source_result_loader\": \"git_show:x\",\n        },\n    )\n    assert report[\"source_semantic_fields_complete\"] is True\n    assert report[\"semantic_fields_complete\"] is True\n    assert report[\"gate3_allowed\"] is True\n    assert report[\"bridge_verdict\"] == \"SOURCE_SEMANTIC_FIELDS_COMPLETE_GATE3_ALLOWED\"\n\n\ndef test_failure_report_is_fail_closed() -> None:\n    report = failure_report(\n        {\"required_semantic_fields\": [\"gate3_allowed\"]},\n        {\"source_result_read_status\": \"RESULT_READ_FAILED\"},\n    )\n    assert report[\"status\"] == \"FAIL\"\n    assert report[\"runtime_gap_confirmed\"] is True\n    assert report[\"gate3_allowed\"] is False\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/worker_result_semantic_extract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_result_semantic_extract_contract.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "hard_fail_conditions": [
+    "Do not touch SQL or Production.",
+    "Do not touch Tablajeria business logic.",
+    "Do not touch frontend, Scheduler, NetPay, migrations, API routes, or runtime slots.",
+    "Do not infer Gate3 approval from generic percent_complete, status, quality_gate, or certification.",
+    "gate3_allowed may become true only when source semantic fields are explicitly present and gate3_allowed is truthy.",
+    "Fail if either replacement count is not exactly 1.",
+    "Fail if write scope is outside the two allowed files.",
+    "Fail if tests do not pass."
+  ],
+  "next_after_success": "Publish EDARSAHUB-TABLAJERIA-R2-SEMANTIC-EXTRACT-READONLY-R5 to re-read the same source result and obtain complete fail-closed semantic fields. Gate3 must remain HOLD unless R5 gate3_allowed=true.",
+  "next_after_failure": "Report exact blocker and keep Gate3 on HOLD."
+}
