@@ -1,0 +1,108 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-PROCESS-ISOLATION-R14-CARLOS-20260929",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "f892a10a7d9cc269ab95f9ffbb3b9e5051bb4920",
+  "mode": "MUTATION",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Correccion integral del automatico de Ventas Cerradas. R12 demuestra que el proceso deja de avanzar inmediatamente despues de 130MID y el heartbeat tampoco alcanza su primer ciclo. Aislar cada HEADER de unidad en un proceso hijo con timeout para que una conexion POS o fallo nativo no termine el backend ni impida procesar las otras unidades. Mantener el mismo run_id INCR, HEADER-FIRST y heartbeat. El aislamiento solo se activa desde el scheduler automatico; ejecuciones directas/manuales conservan el comportamiento actual. No modificar bajo ninguna circunstancia sync_comercial_abiertas_v2. Etiqueta: Sincronizador.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+      "old": "SYNC_INCREMENTAL_DAYS = int(os.environ.get(\"SYNC_COMERCIAL_V2_DAYS\", \"3\"))\n\n\ndef _resolve_estatus_general",
+      "new": "SYNC_INCREMENTAL_DAYS = int(os.environ.get(\"SYNC_COMERCIAL_V2_DAYS\", \"3\"))\n\n# Tiempo maximo por header aislado. Una unidad lenta o un fallo nativo del\n# driver SQL no puede detener el proceso principal del Scheduler.\nSYNC_HEADER_PROCESS_TIMEOUT_SECONDS = int(\n    os.environ.get(\n        \"SYNC_COMERCIAL_V2_HEADER_TIMEOUT_SECONDS\",\n        \"120\",\n    )\n)\n\n\ndef _run_header_sync_isolated(\n    unidad: Dict[str, Any],\n    fecha_inicio: date,\n    fecha_fin: date,\n    run_id: str,\n):\n    \"\"\"Ejecuta un header en proceso hijo y devuelve un objeto tipo SyncResult.\"\"\"\n    import json\n    import subprocess\n    import sys\n    from pathlib import Path\n    from types import SimpleNamespace\n\n    backend_root = Path(__file__).resolve().parents[3]\n    worker_script = (\n        backend_root\n        / \"scripts\"\n        / \"sync_comercial_v2_header_worker.py\"\n    )\n\n    cmd = [\n        sys.executable,\n        str(worker_script),\n        \"--unidad\",\n        str(unidad[\"unidad_negocio_id\"]),\n        \"--fecha-inicio\",\n        fecha_inicio.isoformat(),\n        \"--fecha-fin\",\n        fecha_fin.isoformat(),\n        \"--run-id\",\n        run_id,\n    ]\n\n    try:\n        completed = subprocess.run(\n            cmd,\n            cwd=str(backend_root),\n            capture_output=True,\n            text=True,\n            timeout=SYNC_HEADER_PROCESS_TIMEOUT_SECONDS,\n            check=False,\n        )\n    except subprocess.TimeoutExpired as exc:\n        raise RuntimeError(\n            \"HEADER_TIMEOUT \"\n            f\"unidad={unidad['unidad_negocio_id']} \"\n            f\"timeout={SYNC_HEADER_PROCESS_TIMEOUT_SECONDS}s\"\n        ) from exc\n\n    marker = \"EDARSAHUB_HEADER_RESULT=\"\n    payload = None\n\n    for line in reversed((completed.stdout or \"\").splitlines()):\n        if line.startswith(marker):\n            payload = json.loads(line[len(marker):])\n            break\n\n    if payload is None:\n        stderr_tail = (completed.stderr or \"\")[-500:]\n        raise RuntimeError(\n            \"HEADER_SUBPROCESS_NO_RESULT \"\n            f\"unidad={unidad['unidad_negocio_id']} \"\n            f\"returncode={completed.returncode} \"\n            f\"stderr={stderr_tail}\"\n        )\n\n    return SimpleNamespace(\n        success=bool(payload.get(\"success\")),\n        records_processed=int(payload.get(\"records_processed\") or 0),\n        records_inserted=int(payload.get(\"records_inserted\") or 0),\n        records_updated=int(payload.get(\"records_updated\") or 0),\n        records_skipped=int(payload.get(\"records_skipped\") or 0),\n        records_errored=int(payload.get(\"records_errored\") or 0),\n        duration_seconds=float(payload.get(\"duration_seconds\") or 0),\n        error_message=payload.get(\"error_message\"),\n    )\n\n\ndef _resolve_estatus_general",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+      "old": "async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_unidades: Optional[List[str]] = None) -> Dict[str, Any]:",
+      "new": "async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_unidades: Optional[List[str]] = None, isolated_headers: bool = False) -> Dict[str, Any]:",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+      "old": "            # Ejecutar sync\n            resultado = sync_softrestaurant_ventas_cerradas(\n                config=config,\n                fecha_inicio=fecha_inicio,\n                fecha_fin=fecha_fin,\n                run_id=run_id\n            )",
+      "new": "            # Ejecutar sync. El scheduler automatico usa proceso hijo para\n            # contener hangs/segfaults del driver POS por unidad.\n            if isolated_headers:\n                resultado = _run_header_sync_isolated(\n                    unidad,\n                    fecha_inicio,\n                    fecha_fin,\n                    run_id,\n                )\n            else:\n                resultado = sync_softrestaurant_ventas_cerradas(\n                    config=config,\n                    fecha_inicio=fecha_inicio,\n                    fecha_fin=fecha_fin,\n                    run_id=run_id\n                )",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+      "old": "            # Ejecutar sync\n            resultado = sync_mpro_ventas_cerradas(\n                config=config,\n                sucursal_id=sucursal_id,\n                fecha_inicio=fecha_inicio,\n                fecha_fin=fecha_fin,\n                run_id=run_id\n            )",
+      "new": "            # Ejecutar sync. El scheduler automatico usa proceso hijo para\n            # contener hangs/segfaults del driver POS por unidad.\n            if isolated_headers:\n                resultado = _run_header_sync_isolated(\n                    unidad,\n                    fecha_inicio,\n                    fecha_fin,\n                    run_id,\n                )\n            else:\n                resultado = sync_mpro_ventas_cerradas(\n                    config=config,\n                    sucursal_id=sucursal_id,\n                    fecha_inicio=fecha_inicio,\n                    fecha_fin=fecha_fin,\n                    run_id=run_id\n                )",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/scheduler_manager.py",
+      "old": "                    execute_sync_comercial_v2()\n",
+      "new": "                    execute_sync_comercial_v2(\n                        isolated_headers=True,\n                    )\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/scripts/sync_comercial_v2_header_worker.py",
+      "content": "#!/usr/bin/env python3\n\"\"\"Isolated header worker for automatic Comercial V2 closed-sales sync.\"\"\"\nfrom __future__ import annotations\n\nimport argparse\nimport json\nimport sys\nfrom datetime import date\nfrom pathlib import Path\n\nBACKEND_ROOT = Path(__file__).resolve().parents[1]\nif str(BACKEND_ROOT) not in sys.path:\n    sys.path.insert(0, str(BACKEND_ROOT))\n\nRESULT_PREFIX = \"EDARSAHUB_HEADER_RESULT=\"\n\n\ndef _emit(payload: dict) -> None:\n    print(\n        RESULT_PREFIX\n        + json.dumps(payload, ensure_ascii=False, default=str),\n        flush=True,\n    )\n\n\ndef main() -> int:\n    parser = argparse.ArgumentParser()\n    parser.add_argument(\"--unidad\", required=True)\n    parser.add_argument(\"--fecha-inicio\", required=True)\n    parser.add_argument(\"--fecha-fin\", required=True)\n    parser.add_argument(\"--run-id\", required=True)\n    args = parser.parse_args()\n\n    unidad_codigo = args.unidad.strip().upper()\n    fecha_inicio = date.fromisoformat(args.fecha_inicio)\n    fecha_fin = date.fromisoformat(args.fecha_fin)\n\n    try:\n        from core.unidades_service import UnidadesService\n        from modules.comercial_v2.schemas import (\n            SistemaOrigen,\n            UnidadNegocioConfig,\n        )\n        from modules.comercial_v2.sync_comercial_edarsahub import (\n            sync_mpro_ventas_cerradas,\n            sync_softrestaurant_ventas_cerradas,\n        )\n\n        unidad = None\n        for item in UnidadesService.get_all():\n            if str(item.get(\"codigo\") or \"\").strip().upper() == unidad_codigo:\n                unidad = item\n                break\n\n        if unidad is None:\n            _emit({\n                \"success\": False,\n                \"unidad\": unidad_codigo,\n                \"error_message\": \"UNIT_NOT_FOUND\",\n            })\n            return 4\n\n        sistema = str(unidad.get(\"system_type\") or \"\").upper()\n        if \"SOFTRESTAURANT\" in sistema:\n            sistema_origen = SistemaOrigen.SOFTRESTAURANT\n        elif \"MPRO\" in sistema:\n            sistema_origen = SistemaOrigen.MPRO\n        else:\n            _emit({\n                \"success\": False,\n                \"unidad\": unidad_codigo,\n                \"error_message\": \"SYSTEM_NOT_SUPPORTED\",\n                \"system_type\": sistema,\n            })\n            return 4\n\n        sucursal_id = (\n            unidad.get(\"sucursal_origen_id\")\n            or \"DEFAULT\"\n        )\n\n        config = UnidadNegocioConfig(\n            unidad_negocio_pk=unidad.get(\"unidad_negocio_pk\"),\n            unidad_negocio_nombre=unidad.get(\"nombre\"),\n            server_id=unidad.get(\"server_id\"),\n            sucursal_id=sucursal_id,\n            sucursal_nombre=unidad.get(\"nombre\"),\n            sistema_origen=sistema_origen,\n            activo=True,\n        )\n\n        if sistema_origen == SistemaOrigen.SOFTRESTAURANT:\n            result = sync_softrestaurant_ventas_cerradas(\n                config=config,\n                fecha_inicio=fecha_inicio,\n                fecha_fin=fecha_fin,\n                run_id=args.run_id,\n            )\n        else:\n            result = sync_mpro_ventas_cerradas(\n                config=config,\n                sucursal_id=sucursal_id,\n                fecha_inicio=fecha_inicio,\n                fecha_fin=fecha_fin,\n                run_id=args.run_id,\n            )\n\n        payload = {\n            \"success\": bool(result.success),\n            \"unidad\": unidad_codigo,\n            \"records_processed\": int(result.records_processed or 0),\n            \"records_inserted\": int(result.records_inserted or 0),\n            \"records_updated\": int(result.records_updated or 0),\n            \"records_skipped\": int(result.records_skipped or 0),\n            \"records_errored\": int(result.records_errored or 0),\n            \"duration_seconds\": float(result.duration_seconds or 0),\n            \"error_message\": result.error_message,\n        }\n        _emit(payload)\n        return 0 if payload[\"success\"] else 5\n\n    except Exception as exc:\n        _emit({\n            \"success\": False,\n            \"unidad\": unidad_codigo,\n            \"records_processed\": 0,\n            \"records_inserted\": 0,\n            \"records_updated\": 0,\n            \"records_skipped\": 0,\n            \"records_errored\": 1,\n            \"duration_seconds\": 0,\n            \"error_message\": f\"{type(exc).__name__}: {exc}\",\n        })\n        return 10\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_sync_comercial_v2_process_isolation_guard.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[1]\nJOB = ROOT / \"core/scheduler/jobs/sync_comercial_v2_job.py\"\nMANAGER = ROOT / \"core/scheduler/scheduler_manager.py\"\nWORKER = ROOT / \"scripts/sync_comercial_v2_header_worker.py\"\n\n\ndef test_automatic_scheduler_requests_isolated_headers():\n    text = MANAGER.read_text(encoding=\"utf-8\")\n    start = text.index(\"async def _run_sync_comercial_v2_job\")\n    end = text.index(\"async def _run_sync_comercial_abiertas_v2_job\")\n    block = text[start:end]\n    assert \"execute_sync_comercial_v2(\" in block\n    assert \"isolated_headers=True\" in block\n\n\ndef test_closed_sales_job_has_process_isolation_timeout():\n    text = JOB.read_text(encoding=\"utf-8\")\n    assert \"isolated_headers: bool = False\" in text\n    assert \"def _run_header_sync_isolated(\" in text\n    assert \"subprocess.run(\" in text\n    assert \"SYNC_HEADER_PROCESS_TIMEOUT_SECONDS\" in text\n    assert \"TimeoutExpired\" in text\n\n\ndef test_isolated_worker_preserves_parent_incremental_run_id():\n    text = WORKER.read_text(encoding=\"utf-8\")\n    assert 'parser.add_argument(\"--run-id\", required=True)' in text\n    assert \"run_id=args.run_id\" in text\n    assert \"sync_softrestaurant_ventas_cerradas(\" in text\n    assert \"sync_mpro_ventas_cerradas(\" in text\n\n\ndef test_open_sales_file_is_not_part_of_isolation_patch():\n    assert \"abiertas\" not in WORKER.name.lower()\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+        "backend/core/scheduler/scheduler_manager.py",
+        "backend/scripts/sync_comercial_v2_header_worker.py",
+        "backend/tests/test_sync_comercial_v2_process_isolation_guard.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_sync_comercial_v2_process_isolation_guard.py",
+        "backend/tests/test_sync_comercial_v2_nonblocking_scheduler_guard.py",
+        "backend/tests/test_sync_comercial_v2_header_first_scheduler_guard.py",
+        "backend/tests/test_sync_comercial_v2_multi_operational_date_no_dml.py",
+        "backend/tests/test_sync_comercial_v2_detail_runtime_no_dml.py",
+        "backend/tests/test_sync_comercial_v2_single_unit_scope_contract.py"
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not modify backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+    "Do not change open-sales scheduler behavior",
+    "Preserve HEADER-FIRST",
+    "Preserve automatic lock heartbeat",
+    "No SQL DDL/DML in the mutation",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
