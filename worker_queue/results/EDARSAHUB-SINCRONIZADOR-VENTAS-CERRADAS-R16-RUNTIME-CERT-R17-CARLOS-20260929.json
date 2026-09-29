@@ -1,0 +1,186 @@
+{
+  "base_sha": "db21afe0615e845fc82d1c1ef7916577981be9ea",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-29T18:04:32Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-R16-RUNTIME-CERT-R17-CARLOS-20260929",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-29T18:04:54Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "run_id",
+              "primero",
+              "ultimo",
+              "unidades",
+              "logs",
+              "exitosos",
+              "no_exitosos"
+            ],
+            "name": "post_r16_runs",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "INCR-20260929-175143-b89c",
+                "2026-09-29 17:51:44.5246852",
+                "2026-09-29 17:51:48.3251172",
+                5,
+                5,
+                5,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "run_id",
+              "codigo",
+              "nombre",
+              "run_timestamp",
+              "fecha_inicio",
+              "fecha_fin",
+              "status",
+              "source_connection_status",
+              "error_code",
+              "error_message"
+            ],
+            "name": "latest_post_r16_units",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "INCR-20260929-175143-b89c",
+                "130MID",
+                "130° MERIDA",
+                "2026-09-29 17:51:44.5246852",
+                "2026-09-25",
+                "2026-09-28",
+                "SUCCESS",
+                "ONLINE",
+                null,
+                null
+              ],
+              [
+                "INCR-20260929-175143-b89c",
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "2026-09-29 17:51:45.6375365",
+                "2026-09-25",
+                "2026-09-28",
+                "SUCCESS",
+                "ONLINE",
+                null,
+                null
+              ],
+              [
+                "INCR-20260929-175143-b89c",
+                "ESTELAR",
+                "LA ESTELAR",
+                "2026-09-29 17:51:46.8384557",
+                "2026-09-25",
+                "2026-09-28",
+                "SUCCESS",
+                "ONLINE",
+                null,
+                null
+              ],
+              [
+                "INCR-20260929-175143-b89c",
+                "130QRO",
+                "130° QUERETARO",
+                "2026-09-29 17:51:47.5869085",
+                "2026-09-25",
+                "2026-09-28",
+                "SUCCESS",
+                "ONLINE",
+                null,
+                null
+              ],
+              [
+                "INCR-20260929-175143-b89c",
+                "ORIGEN",
+                "ORIGEN",
+                "2026-09-29 17:51:48.3251172",
+                "2026-09-26",
+                "2026-09-29",
+                "SUCCESS",
+                "ONLINE",
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "JobName",
+              "RunID",
+              "Accion",
+              "FechaAccion",
+              "Exito",
+              "MensajeError",
+              "DetallesJSON"
+            ],
+            "name": "scheduler_post_r16",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "sync_comercial_v2",
+                "36a61bae6d77",
+                "FINISH",
+                "2026-09-29T17:58:37.837000",
+                true,
+                null,
+                "{\"id\": \"1f7bffbc-8845-46cd-be8c-c075f59c3dc0\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"36a61bae6d77\", \"started_at\": \"2026-09-29T17:51:43.180149+00:00\", \"finished_at\": \"2026-09-29T17:58:37.585583+00:00\", \"duration_ms\": 414405, \"status\": \"success\", \"processed_count\": 19, \"success_count\": 5, \"failed_count\": 0, \"skipped_count\": 18, \"message\": \"Unidades: 5/5, Insertados: 0, Actualizados: 1, Omitidos: 18, Detalle OK: 19, Detalle fallido: 0, Detalle omitido: 1\", \"error_detail\": null, \"metadata\": {\"result_summary\": {\"job_name\": \"sync_comercial_v2\", \"run_id\": \"INCR-20260929-175143-b89c\", \"tipo_sync\": \"INCREMENTAL\", \"dias_atras\": 3, \"fecha_inicio\": null, \"fecha_fin\": null, \"rango_fecha_operacion_por_unidad\": true, \"solo_unidades\": null, \"inicio_ejecucion\": \"2026-09-29T17:51:43.485420+00:00\", \"unidades_procesadas\": 5, \"unidades_exitosas\": 5, \"unidades_fallidas\": 0, \"total_insertados\": 0, \"total_actualizados\": 1, \"total_omitidos\": 18, \"total_errores\": 0, \"detalles_unidades\": [{\"unidad_negocio_id\": \"130MID\", \"unidad\": \"130° MERIDA\", \"sistema\": \"SoftRestaurant\", \"fecha_inicio\": \"2026-09-25\", \"fecha_fin\": \"2026-09-28\", \"estatus\": \"SUCCESS\", \"procesados\": 4, \"insertados\": 0, \"actualizados\": 0, \"omitidos\": 4, \"errores\": 0, \"duracion_seg\": 1, \"mensaje_error\": null, \"pagos_iscam_dias\": [{\"fecha_operacion\": \"2026-09-25\", \"status\": \"OK\", \"pagos_extraidos\": 40, \"pagos_insertados\": 40}, {\"fecha_operacion\": \"2026-09-26\", \"status\": \"OK\", \"pagos_extraidos\": 56, \"pagos_insertados\": 56}, {\"fecha_operacion\": \"2026-09-27\", \"status\": \"OK\", \"pagos_extraidos\": 29, \"pagos_insertados\": 29}, {\"fecha_operacion\": \"2026-09-28\", \"status\": \"OK\", \"pagos_extraidos\": 28, \"pagos_insertados\": 28}], \"pagos_iscam_status\": \"OK\", \"pagos_iscam_extraidos\": 153, \"pagos_iscam_insertados\": 153, \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-25\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 443, \"filas_preparadas\": 443}, {\"fecha_operacion\": \"2026-09-26\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 736, \"filas_preparadas\": 736}, {\"fecha_operacion\": \"2026-09-27\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 421, \"filas_preparadas\": 421}, {\"fecha_operacion\": \"2026-09-28\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 297, \"filas_preparadas\": 297}], \"detalle_producto_status\": \"OK_HEADER_CANONICO\", \"detalle_producto_filas_insertadas\": 1897}, {\"unidad_negocio_id\": \"CIENFUEGOS\", \"unidad\": \"CIENFUEGOS\", \"sistema\": \"SoftRestaurant\", \"fecha_inicio\": \"2026-09-25\", \"fecha_fin\": \"2026-09-28\", \"estatus\": \"SUCCESS\", \"procesados\": 4, \"insertados\": 0, \"actualizados\": 0, \"omitidos\": 4, \"errores\": 0, \"duracion_seg\": 1, \"mensaje_error\": null, \"pagos_iscam_dias\": [{\"fecha_operacion\": \"2026-09-25\", \"status\": \"OK\", \"pagos_extraidos\": 60, \"pagos_insertados\": 60}, {\"fecha_operacion\": \"2026-09-26\", \"status\": \"OK\", \"pagos_extraidos\": 65, \"pagos_insertados\": 65}, {\"fecha_operacion\": \"2026-09-27\", \"status\": \"OK\", \"pagos_extraidos\": 26, \"pagos_insertados\": 26}, {\"fecha_operacion\": \"2026-09-28\", \"status\": \"OK\", \"pagos_extraidos\": 23, \"pagos_insertados\": 23}], \"pagos_iscam_status\": \"OK\", \"pagos_iscam_extraidos\": 174, \"pagos_iscam_insertados\": 174, \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-25\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 529, \"filas_preparadas\": 529}, {\"fecha_operacion\": \"2026-09-26\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 546, \"filas_preparadas\": 546}, {\"fecha_operacion\": \"2026-09-27\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 305, \"filas_preparadas\": 305}, {\"fecha_operacion\": \"2026-09-28\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 252, \"filas_preparadas\": 252}], \"detalle_producto_status\": \"OK_HEADER_CANONICO\", \"detalle_producto_filas_insertadas\": 1632}, {\"unidad_negocio_id\": \"ESTELAR\", \"unidad\": \"LA ESTELAR\", \"sistema\": \"SoftRestaurant\", \"fecha_inicio\": \"2026-09-25\", \"fecha_fin\": \"2026-09-28\", \"estatus\": \"SUCCESS\", \"procesados\": 4, \"insertados\": 0, \"actualizados\": 1, \"omitidos\": 3, \"errores\": 0, \"duracion_seg\": 1, \"mensaje_error\": null, \"pagos_iscam_dias\": [{\"fecha_operacion\": \"2026-09-25\", \"status\": \"OK\", \"pagos_extraidos\": 123, \"pagos_insertados\": 123}, {\"fecha_operacion\": \"2026-09-26\", \"status\": \"OK\", \"pagos_extraidos\": 231, \"pagos_insertados\": 231}, {\"fecha_operacion\": \"2026-09-27\", \"status\": \"OK\", \"pagos_extraidos\": 25, \"pagos_insertados\": 25}, {\"fecha_operacion\": \"2026-09-28\", \"status\": \"OK\", \"pagos_extraidos\": 24, \"pagos_insertados\": 24}], \"pagos_iscam_status\": \"OK\", \"pagos_iscam_extraidos\": 403, \"pagos_iscam_insertados\": 403, \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-25\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 708, \"filas_preparadas\": 708}, {\"fecha_operacion\": \"2026-09-26\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 1350, \"filas_preparadas\": 1350}, {\"fecha_operacion\": \"2026-09-27\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 188, \"filas_preparadas\": 188}, {\"fecha_operacion\": \"2026-09-28\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 145, \"filas_preparadas\": 145}], \"detalle_producto_status\": \"OK_HEADER_CANONICO\", \"detalle_producto_filas_insertadas\": 2391}, {\"unidad_negocio_id\": \"130QRO\", \"unidad\": \"130° QUERETARO\", \"sistema\": \"MPRO\", \"fecha_inicio\": \"2026-09-25\", \"fecha_fin\": \"2026-09-28\", \"sucursal_id\": \"0021\", \"estatus\": \"SUCCESS\", \"procesados\": 4, \"insertados\": 0, \"actualizados\": 0, \"omitidos\": 4, \"errores\": 0, \"duracion_seg\": 0, \"mensaje_error\": null, \"pagos_iscam_dias\": [{\"fecha_operacion\": \"2026-09-25\", \"status\": \"OK\", \"pagos_extraidos\": 32, \"pagos_insertados\": 32}, {\"fecha_operacion\": \"2026-09-26\", \"status\": \"OK\", \"pagos_extraidos\": 57, \"pagos_insertados\": 57}, {\"fecha_operacion\": \"2026-09-27\", \"status\": \"OK\", \"pagos_extraidos\": 12, \"pagos_insertados\": 12}, {\"fecha_operacion\": \"2026-09-28\", \"status\": \"OK\", \"pagos_extraidos\": 11, \"pagos_insertados\": 11}], \"pagos_iscam_status\": \"OK\", \"pagos_iscam_extraidos\": 112, \"pagos_iscam_insertados\": 112, \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-25\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 489, \"filas_preparadas\": 489}, {\"fecha_operacion\": \"2026-09-26\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 862, \"filas_preparadas\": 862}, {\"fecha_operacion\": \"2026-09-27\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 166, \"filas_preparadas\": 166}, {\"fecha_operacion\": \"2026-09-28\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 144, \"filas_preparadas\": 144}], \"detalle_producto_status\": \"OK_HEADER_CANONICO\", \"detalle_producto_filas_insertadas\": 1661}, {\"unidad_negocio_id\": \"ORIGEN\", \"unidad\": \"ORIGEN\", \"sistema\": \"MPRO\", \"fecha_inicio\": \"2026-09-26\", \"fecha_fin\": \"2026-09-29\", \"sucursal_id\": \"0023\", \"estatus\": \"SUCCESS\", \"procesados\": 3, \"insertados\": 0, \"actualizados\": 0, \"omitidos\": 3, \"errores\": 0, \"duracion_seg\": 0, \"mensaje_error\": null, \"pagos_iscam_dias\": [{\"fecha_operacion\": \"2026-09-26\", \"status\": \"OK\", \"pagos_extraidos\": 48, \"pagos_insertados\": 48}, {\"fecha_operacion\": \"2026-09-27\", \"status\": \"OK\", \"pagos_extraidos\": 25, \"pagos_insertados\": 25}, {\"fecha_operacion\": \"2026-09-28\", \"status\": \"OK\", \"pagos_extraidos\": 25, \"pagos_insertados\": 25}, {\"fecha_operacion\": \"2026-09-29\", \"status\": \"OK\", \"pagos_extraidos\": 0, \"pagos_insertados\": 0}], \"pagos_iscam_status\": \"OK\", \"pagos_iscam_extraidos\": 98, \"pagos_iscam_insertados\": 98, \"detalle_producto_dias\": [{\"fecha_operacion\": \"2026-09-26\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 489, \"filas_preparadas\": 489}, {\"fecha_operacion\": \"2026-09-27\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 267, \"filas_preparadas\": 267}, {\"fecha_operacion\": \"2026-09-28\", \"status\": \"OK_HEADER_CANONICO\", \"filas_insertadas\": 184, \"filas_preparadas\": 184}, {\"fecha_operacion\": \"2026-09-29\", \"status\": \"NO_PROBAR_ABIERTO_REAL\", \"filas_insertadas\": 0, \"filas_preparadas\": 0}], \"detalle_producto_status\": \"NO_PROBAR_ABIERTO_REAL\", \"detalle_producto_filas_insertadas\": 940}], \"errores\": [], \"detalle_producto_exitosos\": 19, \"detalle_producto_fallidos\": 0, \"detalle_producto_omitidos\": 1, \"detalle_producto_filas_insertadas\": 24341, \"pagos_iscam_exitosos\": 20, \"pagos_iscam_fallidos\": 0, \"pagos_iscam_extraidos\": 940, \"pagos_iscam_insertados\": 940, \"fin_ejecucion\": \"2026-09-29T17:58:37.585306+00:00\", \"duracion_ms\": 414099, \"estatus_general\": \"COMPLETADO\"}}}"
+              ],
+              [
+                "sync_comercial_v2",
+                "36a61bae6d77",
+                "START",
+                "2026-09-29T17:51:43.390000",
+                null,
+                null,
+                "{\"id\": \"1f7bffbc-8845-46cd-be8c-c075f59c3dc0\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"36a61bae6d77\", \"started_at\": \"2026-09-29T17:51:43.180149+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "JobName",
+              "OwnerID",
+              "AcquiredAt",
+              "HeartbeatAt",
+              "LockUntil"
+            ],
+            "name": "lock_post_r16",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-29T18:04:31Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
