@@ -1,0 +1,69 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-SERVER-REGISTRY-INACTIVE-UPDATE-FIX-R1-20260928",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "fd470a2818dc6c1b430f640d6d11f7423af3ecad",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Corregir de forma quirurgica server_registry.update_server para que pueda actualizar por ID una conexion inactiva sin activarla. Reutilizar _get_server_by_id_from_sql(include_inactive=True), preservar proteccion CORE, cifrado canonico de secretos y sync_mongo=False. Agregar regresion determinista. No tocar datos CAVAS ni SQL en este gate.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/server_registry.py",
+      "old": "    existing = _get_server_by_id_from_sql(server_id)\n",
+      "new": "    existing = _get_server_by_id_from_sql(server_id, include_inactive=True)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_server_registry_inactive_update.py",
+      "content": "import asyncio\n\nfrom core import server_registry\n\n\ndef test_update_server_can_resolve_inactive_record_without_activating_it(monkeypatch):\n    seen = {}\n\n    def fake_get(server_id, include_inactive=False):\n        seen['server_id'] = server_id\n        seen['include_inactive'] = include_inactive\n        return {'tipo_conexion': 'DATA_SOURCE'}\n\n    def fake_validate(payload, mode):\n        assert mode == 'update'\n        return dict(payload)\n\n    captured = {}\n\n    def fake_write(query, values):\n        captured['query'] = query\n        captured['values'] = values\n        return True\n\n    monkeypatch.setattr(server_registry, '_get_server_by_id_from_sql', fake_get)\n    monkeypatch.setattr(server_registry, 'validate_server_payload', fake_validate)\n    monkeypatch.setattr(server_registry, '_execute_sql_write', fake_write)\n\n    result = asyncio.run(\n        server_registry.update_server(\n            'inactive-server-id',\n            {'database_name': 'cavas_www'},\n        )\n    )\n\n    assert result['success'] is True\n    assert seen == {\n        'server_id': 'inactive-server-id',\n        'include_inactive': True,\n    }\n    assert 'database_name = %s' in captured['query']\n    assert 'activo' not in captured['query'].lower()\n    assert captured['values'][0] == 'cavas_www'\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/server_registry.py",
+        "backend/tests/test_server_registry_inactive_update.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_server_registry_inactive_update.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No SQL execution",
+    "No CAVAS data mutation",
+    "Do not activate inactive connections",
+    "Preserve CORE protection",
+    "Preserve canonical secret encryption",
+    "Preserve sync_mongo=False",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "SERVERS_REGISTRY",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
