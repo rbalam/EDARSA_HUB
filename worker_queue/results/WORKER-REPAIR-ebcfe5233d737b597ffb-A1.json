@@ -1,0 +1,28 @@
+{
+  "base_sha": "9ab05603340c9a3451d6ce5bc775e17d0f0316cc",
+  "blockers": [],
+  "candidate_sha": "0641ede68934e3f5c752a77f27133591e12355de",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-29T04:28:41Z",
+  "development_sha": "0641ede68934e3f5c752a77f27133591e12355de",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/tests/test_worker_repair_planner_canonical_ingress_capability.py",
+    "tools/mirror_sync/worker_repair_planner.py"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "WORKER-REPAIR-ebcfe5233d737b597ffb-A1",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-29T04:28:42Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-29T04:28:34Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
