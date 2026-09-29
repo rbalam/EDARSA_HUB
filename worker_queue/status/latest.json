@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "aa799300859ba58be213a872fed8fdb593ceaed6",
-  "generated_at_utc": "2026-09-29T23:41:08Z",
+  "generated_at_utc": "2026-09-29T23:42:22Z",
   "history": {
     "done_total_local": 1177,
     "pending_total_local": 0,
@@ -16,79 +16,79 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2850,
+      "age_seconds": 2923,
       "job_id": "CAVAS-CIENFUEGOS-DRYRUN-GATE2-R1-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3457,
+      "age_seconds": 3531,
       "job_id": "EDARSAHUB-BOS-CANONICAL-INGRESS-END2END-CANARY-R1-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3503,
+      "age_seconds": 3577,
       "job_id": "EDARSAHUB-BOS-CANONICAL-JOB-INGRESS-POSTAUDIT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3002,
+      "age_seconds": 3076,
       "job_id": "EDARSAHUB-BOS-PRODUCCION-TRANSFORMACION-GATE0-READONLY-R1B-SEMANTIC-EVIDENCE",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2274,
+      "age_seconds": 2347,
       "job_id": "EDARSAHUB-BOS-PRODUCCION-TRANSFORMACION-GATE1-CANONICAL-CONTRACTS-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3196,
+      "age_seconds": 3270,
       "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-RETRY-BINDING-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 123,
+      "age_seconds": 197,
       "job_id": "EDARSAHUB-COMERCIAL-KPI-COMPARATIVOS-DRILLDOWN-FIX-R1-CARLOS-20260929T2338Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 692,
+      "age_seconds": 766,
       "job_id": "EDARSAHUB-COMERCIAL-KPI-DRILLDOWN-DIAG-R1-CARLOS-20260929T2315Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3259,
+      "age_seconds": 3333,
       "job_id": "EDARSAHUB-COMERCIAL-RBAC-DIAGNOSTICO-READONLY-R2-CARLOS-20260929T2220Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2799,
+      "age_seconds": 2873,
       "job_id": "EDARSAHUB-COMERCIAL-RBAC-GLOBAL-SCOPE-FIX-R1-CARLOS-20260929T2255Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2235,
+      "age_seconds": 2308,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-CANONICAL-INTEGRATION-AUDIT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2899,
+      "age_seconds": 2972,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-SQL-SCHEMA-READINESS-AUDIT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 348,
+      "age_seconds": 422,
       "job_id": "EDARSAHUB-TABLERO-EJECUTIVO-DRILLDOWN-DIAG-R1-CARLOS-20260929T2332Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -108,8 +108,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-29T23:41:07Z",
-    "last_receive_utc": "2026-09-29T23:41:02Z",
+    "last_cycle_utc": "2026-09-29T23:42:17Z",
+    "last_receive_utc": "2026-09-29T23:42:19Z",
     "last_terminal_utc": "2026-09-29T23:39:04Z",
     "pid": "705",
     "runtime_fingerprint": {
