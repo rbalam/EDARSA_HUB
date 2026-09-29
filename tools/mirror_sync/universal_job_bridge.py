@@ -234,6 +234,19 @@ def validate_check(check: Any, index: int) -> list[str]:
     return []
 
 
+
+def _expected_native_decision_requires_semantic_extract(job):
+    expected = job.get("expected_native_decision")
+    return isinstance(expected, dict) and bool(expected)
+
+
+def _has_worker_result_semantic_extract(checks):
+    return any(
+        isinstance(check, dict)
+        and check.get("type") == "worker_result_semantic_extract"
+        for check in (checks or [])
+    )
+
 def validate(job: Any) -> list[str]:
     errors: list[str] = []
     if not isinstance(job, dict):
@@ -434,6 +447,8 @@ def validate(job: Any) -> list[str]:
             errors.append("READ_ONLY_CHECK_REQUIRED")
         elif any(not isinstance(c, dict) or c.get("type") not in READ_ONLY_CHECKS for c in checks):
             errors.append("READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED")
+        if _expected_native_decision_requires_semantic_extract(job) and not _has_worker_result_semantic_extract(checks):
+            errors.append("EXPECTED_NATIVE_DECISION_REQUIRES_WORKER_RESULT_SEMANTIC_EXTRACT")
     elif mode == COMERCIAL_RANGE_RESYNC_MODE:
         if not isinstance(checks, list) or not checks:
             errors.append("COMERCIAL_RANGE_RESYNC_AUDIT_REQUIRED")

@@ -138,3 +138,69 @@ def test_dispatcher_has_dedicated_readonly_terminal_and_no_shell_execution():
     assert 'READ_ONLY_ONLY_NON_MUTATING_CHECKS_ALLOWED' in text
     assert 'readonly_tracked_repo_mutation_detected' in text
     assert 'shell=True' not in text
+
+def semantic_extract_check():
+    return {
+        "type": "worker_result_semantic_extract",
+        "request": {
+            "source_result": {
+                "path": "worker_queue/results/EDARSAHUB-TABLAJERIA-R2-GATE3-ELIGIBILITY-AUDIT-READONLY-R1.json",
+                "branch": "worker/results",
+                "commit": "f67100bb74287ea86c66607400f6136bb37b51e2",
+                "blob_sha": "1d04c48286bb0457e15e89d2370d501e53d1e505",
+            },
+            "required_semantic_fields": [
+                "gate3_allowed",
+                "last_gate_executed",
+                "last_gate_certified",
+                "real_implementation_percent",
+                "next_allowed_gate",
+                "blocking_reason_if_any",
+            ],
+        },
+    }
+
+
+def test_bridge_rejects_expected_native_decision_without_semantic_extract():
+    bridge = load_module(BRIDGE, "generic_readonly_bridge_native_decision_missing_semantic")
+    job = base_job()
+    job["checks"] = [
+        {
+            "type": "repository_contract_audit",
+            "request": {
+                "paths": ["backend", "tools/mirror_sync"],
+                "search_terms": ["gate3_allowed"],
+                "max_results": 10,
+            },
+        }
+    ]
+    job["expected_native_decision"] = {
+        "gate3_allowed": "boolean",
+    }
+
+    assert (
+        "EXPECTED_NATIVE_DECISION_REQUIRES_WORKER_RESULT_SEMANTIC_EXTRACT"
+        in bridge.validate(job)
+    )
+
+
+def test_bridge_accepts_expected_native_decision_with_semantic_extract():
+    bridge = load_module(BRIDGE, "generic_readonly_bridge_native_decision_with_semantic")
+    job = base_job()
+    job["checks"] = [semantic_extract_check()]
+    job["expected_native_decision"] = {
+        "gate3_allowed": "boolean",
+    }
+
+    assert bridge.validate(job) == []
+
+
+def test_dispatcher_has_native_decision_fail_closed_contract():
+    text = DISPATCHER.read_text(encoding="utf-8")
+
+    assert "_native_decision_contract_required" in text
+    assert "_promote_native_decision_from_semantic_extract" in text
+    assert (
+        "expected_native_decision_requires_worker_result_semantic_extract"
+        in text
+    )

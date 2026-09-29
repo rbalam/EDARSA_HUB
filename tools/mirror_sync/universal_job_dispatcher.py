@@ -547,6 +547,91 @@ def release_agent_guard_claim(job_id: str) -> tuple[bool, str]:
     return True, released.stdout[-1000:]
 
 
+
+def _native_decision_contract_required(job):
+    expected = job.get("expected_native_decision")
+    return isinstance(expected, dict) and bool(expected)
+
+
+def _semantic_extract_payload(check_result):
+    for key in (
+        "semantic_evidence",
+        "worker_result_semantic_extract",
+        "repository_evidence",
+    ):
+        value = check_result.get(key)
+        if isinstance(value, dict):
+            return value
+
+    output = check_result.get("output")
+    if isinstance(output, str) and output.strip():
+        try:
+            decoded = json.loads(output)
+        except json.JSONDecodeError:
+            return None
+        if isinstance(decoded, dict):
+            return decoded
+    return None
+
+
+def _promote_native_decision_from_semantic_extract(result, check_results):
+    semantic_report = None
+
+    for check_result in check_results:
+        if (
+            check_result.get("type") == "worker_result_semantic_extract"
+            and check_result.get("status") == "PASS"
+        ):
+            semantic_report = _semantic_extract_payload(check_result)
+            if semantic_report is not None:
+                break
+
+    if semantic_report is None:
+        result["blockers"].append(
+            "expected_native_decision_requires_worker_result_semantic_extract"
+        )
+        return
+
+    result["native_decision_evidence"] = semantic_report
+
+    semantic_fields = semantic_report.get("semantic_fields")
+    if not isinstance(semantic_fields, dict):
+        semantic_fields = {}
+
+    for field in (
+        "gate3_allowed",
+        "last_gate_executed",
+        "last_gate_certified",
+        "real_implementation_percent",
+        "next_allowed_gate",
+        "blocking_reason_if_any",
+        "evidence_by_file",
+        "evidence_by_module",
+    ):
+        if field in semantic_fields:
+            result[field] = semantic_fields[field]
+        elif field in semantic_report:
+            result[field] = semantic_report[field]
+
+    if "blockers" in semantic_fields:
+        result["native_decision_blockers"] = semantic_fields["blockers"]
+    elif "blockers" in semantic_report:
+        result["native_decision_blockers"] = semantic_report["blockers"]
+
+    result["semantic_fields"] = dict(semantic_fields)
+    result["source_semantic_fields_complete"] = semantic_report.get(
+        "source_semantic_fields_complete"
+    )
+    result["semantic_fields_complete"] = semantic_report.get(
+        "semantic_fields_complete"
+    )
+    result["bridge_verdict"] = semantic_report.get("bridge_verdict")
+
+    if semantic_report.get("semantic_fields_complete") is False:
+        result["blockers"].append(
+            "expected_native_decision_semantic_fields_incomplete"
+        )
+
 def process_one(path: Path, *, already_claimed: bool = False) -> int:
     envelope = load_envelope(path)
     job = envelope["job"]
