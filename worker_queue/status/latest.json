@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "f892a10a7d9cc269ab95f9ffbb3b9e5051bb4920",
-  "generated_at_utc": "2026-09-29T17:31:45Z",
+  "generated_at_utc": "2026-09-29T17:33:44Z",
   "history": {
     "done_total_local": 1154,
     "pending_total_local": 0,
@@ -16,19 +16,19 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3215,
+      "age_seconds": 3333,
       "job_id": "CAVAS-CIENFUEGOS-SCHEMA-DISCOVERY-READONLY-R1-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2024,
+      "age_seconds": 2142,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-FINAL-RUNTIME-R13-CARLOS-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 986,
+      "age_seconds": 1104,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-PROCESS-ISOLATION-R14-CARLOS-20260929",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,8 +48,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-29T17:31:40Z",
-    "last_receive_utc": "2026-09-29T17:31:42Z",
+    "last_cycle_utc": "2026-09-29T17:33:41Z",
+    "last_receive_utc": "2026-09-29T17:33:43Z",
     "last_terminal_utc": "2026-09-29T17:15:19Z",
     "pid": "368",
     "runtime_fingerprint": {
