@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "9bd9b8bbbcfce385a4c642c9f7c3ef8ae11b22c4",
-  "generated_at_utc": "2026-09-29T22:27:39Z",
+  "generated_at_utc": "2026-09-29T22:29:24Z",
   "history": {
     "done_total_local": 1163,
     "pending_total_local": 0,
@@ -16,37 +16,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 8,
+      "age_seconds": 113,
       "job_id": "CAVAS-CIENFUEGOS-ADAPTER-GATE1-R1-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1059,
+      "age_seconds": 1164,
       "job_id": "EDARSAHUB-BOS-PRODUCCION-TRANSFORMACION-GATE0-READONLY-R1A",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1462,
+      "age_seconds": 1567,
       "job_id": "EDARSAHUB-BOS-WORKER-REPAIR-RETRY-BINDING-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 956,
+      "age_seconds": 1061,
       "job_id": "EDARSAHUB-COMERCIAL-DIAGNOSTICO-READONLY-R1-CARLOS-20260929T2204Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2420,
+      "age_seconds": 2525,
       "job_id": "WORKER-REPAIR-574a0f59bbf9eb14606e-A1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1018,
+      "age_seconds": 1123,
       "job_id": "WORKER-REPAIR-574a0f59bbf9eb14606e-A1-RETRY1",
       "reason": null,
       "state": "RESULT_READY"
@@ -66,10 +66,10 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-29T22:27:31Z",
-    "last_receive_utc": "2026-09-29T22:27:36Z",
+    "last_cycle_utc": "2026-09-29T22:29:17Z",
+    "last_receive_utc": "2026-09-29T22:29:19Z",
     "last_terminal_utc": "2026-09-29T22:27:30Z",
-    "pid": "55325",
+    "pid": "58051",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "9fca18f2512942ff4674b8b1d6e4f6bc28ae993f",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
