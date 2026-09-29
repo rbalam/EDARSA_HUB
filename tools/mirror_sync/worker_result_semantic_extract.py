@@ -138,11 +138,29 @@ def truthy(value: Any) -> bool:
 
 
 def build_report(payload: dict[str, Any], request: dict[str, Any], meta: dict[str, Any]) -> dict[str, Any]:
-    fields = request.get("required_semantic_fields")
-    if not isinstance(fields, list) or not fields:
-        fields = DEFAULT_FIELDS
-    semantic_fields = {str(field): find_key(payload, str(field)) for field in fields}
-    missing = sorted(key for key, value in semantic_fields.items() if value is None)
+    requested = request.get("required_semantic_fields")
+    if not isinstance(requested, list) or not requested:
+        requested = DEFAULT_FIELDS
+
+    fields = list(dict.fromkeys([*DEFAULT_FIELDS, *(str(field) for field in requested)]))
+    raw_semantic_fields = {str(field): find_key(payload, str(field)) for field in fields}
+    source_missing = sorted(key for key, value in raw_semantic_fields.items() if value is None)
+    source_semantic_complete = not source_missing
+
+    semantic_fields = dict(raw_semantic_fields)
+    if not source_semantic_complete:
+        fail_closed = {
+            "gate3_allowed": False,
+            "last_gate_executed": payload.get("job_id") or payload.get("status") or "UNKNOWN_SOURCE_RESULT",
+            "last_gate_certified": False,
+            "real_implementation_percent": None,
+            "next_allowed_gate": "GATE3_HOLD_PENDING_EXPLICIT_SEMANTIC_FIELDS",
+            "blocking_reason_if_any": "SOURCE_SEMANTIC_FIELDS_MISSING",
+        }
+        for key, value in fail_closed.items():
+            if semantic_fields.get(key) is None:
+                semantic_fields[key] = value
+
     source_blockers = payload.get("blockers") or []
     source_pass = (
         str(payload.get("tests") or "").upper() == "PASS"
@@ -150,14 +168,25 @@ def build_report(payload: dict[str, Any], request: dict[str, Any], meta: dict[st
         and payload.get("production_touched") is False
         and not source_blockers
     )
-    semantic_complete = not missing
-    gate3_allowed = bool(source_pass and semantic_complete and truthy(semantic_fields.get("gate3_allowed")))
-    if not semantic_complete:
-        bridge_verdict = "SOURCE_SEMANTIC_FIELDS_MISSING"
+    gate3_allowed = bool(source_pass and source_semantic_complete and truthy(raw_semantic_fields.get("gate3_allowed")))
+
+    if not source_semantic_complete:
+        bridge_verdict = "SOURCE_SEMANTIC_FIELDS_DERIVED_FAIL_CLOSED"
     elif gate3_allowed:
         bridge_verdict = "SOURCE_SEMANTIC_FIELDS_COMPLETE_GATE3_ALLOWED"
     else:
         bridge_verdict = "SOURCE_SEMANTIC_FIELDS_COMPLETE_GATE3_HOLD"
+
+    missing = [] if not source_semantic_complete else sorted(key for key, value in semantic_fields.items() if value is None)
+    semantic_complete = not missing
+
+    if gate3_allowed:
+        next_allowed_step = "GATE3_PREP_ALLOWED"
+    elif not source_semantic_complete:
+        next_allowed_step = "GATE3_HOLD_PENDING_EXPLICIT_SEMANTIC_FIELDS"
+    else:
+        next_allowed_step = "GATE3_HOLD_SEMANTIC_FIELDS_COMPLETE_NOT_ALLOWED"
+
     return {
         "status": "PASS",
         "mode": "READ_ONLY_WORKER_RESULT_SEMANTIC_EXTRACT",
@@ -167,6 +196,8 @@ def build_report(payload: dict[str, Any], request: dict[str, Any], meta: dict[st
         "can_read_worker_results_by_branch_path": str(meta.get("source_result_loader") or "").startswith("git_show"),
         "can_read_worker_results_by_blob_sha": str(meta.get("source_result_loader") or "").startswith("git_cat_file"),
         "can_emit_semantic_fields_from_source_result": True,
+        "source_semantic_fields_complete": source_semantic_complete,
+        "source_missing_semantic_fields": source_missing,
         "semantic_fields_complete": semantic_complete,
         "missing_semantic_fields": missing,
         "semantic_fields": semantic_fields,
@@ -180,7 +211,7 @@ def build_report(payload: dict[str, Any], request: dict[str, Any], meta: dict[st
         "source_files_changed": payload.get("files_changed") or [],
         "source_blockers": source_blockers,
         "required_runtime_change": None,
-        "next_allowed_step": "GATE3_PREP_ALLOWED" if gate3_allowed else "EDARSAHUB-TABLAJERIA-R2-SEMANTIC-EXTRACT-READONLY-R3",
+        "next_allowed_step": next_allowed_step,
         **meta,
     }
 
