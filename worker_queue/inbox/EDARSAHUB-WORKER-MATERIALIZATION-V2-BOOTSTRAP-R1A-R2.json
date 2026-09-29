@@ -1,0 +1,61 @@
+{
+  "actions": [
+    {
+      "content": "from __future__ import annotations\nimport hashlib\nfrom pathlib import Path\n\nV2_ACTIONS={\"insert_before\",\"insert_after\",\"append_once\"}\n\ndef apply_mutation(target:Path,action:dict):\n    raw=target.read_bytes()\n    actual=hashlib.sha256(raw).hexdigest()\n    expected=str(action[\"source_sha256\"])\n    text=raw.decode(\"utf-8\")\n    replacement=str(action[\"replacement\"])\n    kind=str(action[\"type\"])\n    anchor=action.get(\"anchor\")\n\n    if kind==\"append_once\" and replacement in text:\n        return {\"state\":\"ALREADY_APPLIED\",\"final_sha256\":actual}\n\n    if anchor and (\n        (kind==\"insert_before\" and replacement+anchor in text) or\n        (kind==\"insert_after\" and anchor+replacement in text)\n    ):\n        return {\"state\":\"ALREADY_APPLIED\",\"final_sha256\":actual}\n\n    if actual!=expected:\n        raise RuntimeError(\"SOURCE_SHA_MISMATCH\")\n\n    expected_count=int(action.get(\"expected_occurrences\",1))\n\n    if kind==\"append_once\":\n        new=text+replacement\n    else:\n        count=text.count(anchor)\n        if count!=expected_count:\n            raise RuntimeError(\"ANCHOR_OCCURRENCE_MISMATCH\")\n        if kind==\"insert_before\":\n            new=text.replace(anchor,replacement+anchor)\n        elif kind==\"insert_after\":\n            new=text.replace(anchor,anchor+replacement)\n        else:\n            raise RuntimeError(\"UNSUPPORTED_V2_ACTION\")\n\n    target.write_text(new,encoding=\"utf-8\")\n    return {\n        \"state\":\"APPLIED\",\n        \"final_sha256\":hashlib.sha256(target.read_bytes()).hexdigest(),\n    }\n",
+      "path": "tools/mirror_sync/worker_mutation_materializer.py",
+      "type": "write_file"
+    },
+    {
+      "content": "import hashlib\nimport pytest\nfrom tools.mirror_sync.worker_mutation_materializer import apply_mutation\n\ndef sha(p):\n    return hashlib.sha256(p.read_bytes()).hexdigest()\n\ndef test_positive_and_replay(tmp_path):\n    p=tmp_path/\"a.py\"\n    p.write_text(\"a\\\\nanchor\\\\nz\\\\n\")\n    action={\n        \"type\":\"insert_after\",\n        \"source_sha256\":sha(p),\n        \"anchor\":\"anchor\\\\n\",\n        \"expected_occurrences\":1,\n        \"replacement\":\"new\\\\n\",\n    }\n    assert apply_mutation(p,action)[\"state\"]==\"APPLIED\"\n    assert apply_mutation(p,action)[\"state\"]==\"ALREADY_APPLIED\"\n    assert p.read_text().count(\"new\\\\n\")==1\n\ndef test_bad_sha_fail_closed(tmp_path):\n    p=tmp_path/\"a.py\"\n    p.write_text(\"anchor\\\\n\")\n    before=p.read_bytes()\n    with pytest.raises(RuntimeError,match=\"SOURCE_SHA_MISMATCH\"):\n        apply_mutation(p,{\n            \"type\":\"insert_after\",\n            \"source_sha256\":\"0\"*64,\n            \"anchor\":\"anchor\\\\n\",\n            \"replacement\":\"new\\\\n\",\n        })\n    assert p.read_bytes()==before\n",
+      "path": "backend/tests/test_worker_mutation_materializer.py",
+      "type": "write_file"
+    }
+  ],
+  "allowed_paths": [
+    "tools/mirror_sync/worker_mutation_materializer.py",
+    "backend/tests/test_worker_mutation_materializer.py"
+  ],
+  "base_sha": "16db89174811aa25ea8ad83b945b8ed279daf06b",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_mutation_materializer.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_mutation_materializer.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-WORKER-MATERIALIZATION-V2-BOOTSTRAP-R1A-R2",
+  "mode": "MUTATION",
+  "objective": "Instalar el materializador canonico Mutation Materialization V2 y sus pruebas unitarias, sin wiring aun, sin Produccion y sin modificar otros componentes.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Bitacoras de Parrilla",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "13. Produccion",
+    "source": "chatgpt-classic"
+  },
+  "scheduling": {
+    "bounded_context": "13. Produccion",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "13. Produccion",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
