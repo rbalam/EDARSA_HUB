@@ -593,7 +593,7 @@ class SchedulerManager:
             # heartbeat del lock responsivos durante todo el ciclo.
             result = await asyncio.to_thread(
                 lambda: asyncio.run(
-                    execute_sync_comercial_v2()
+                    execute_sync_comercial_v2(isolated_headers=True)
                 )
             )
             

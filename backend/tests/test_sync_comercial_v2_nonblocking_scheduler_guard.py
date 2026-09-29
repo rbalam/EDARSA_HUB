@@ -15,7 +15,8 @@ def test_closed_sales_runs_off_main_event_loop():
     block = _closed_block()
     assert "await asyncio.to_thread(" in block
     assert "asyncio.run(" in block
-    assert "execute_sync_comercial_v2()" in block
+    assert "execute_sync_comercial_v2(" in block
+    assert "isolated_headers=True" in block
     assert "execute_sync_comercial_v2(self.db)" not in block
 
 

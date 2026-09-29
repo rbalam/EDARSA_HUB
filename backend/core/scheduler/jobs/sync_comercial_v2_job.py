@@ -45,6 +45,59 @@ logger = logging.getLogger(__name__)
 JOB_NAME = "sync_comercial_v2"
 SYNC_INCREMENTAL_DAYS = int(os.environ.get("SYNC_COMERCIAL_V2_DAYS", "3"))
 
+SYNC_HEADER_PROCESS_TIMEOUT_SECONDS = int(
+    os.environ.get("SYNC_COMERCIAL_V2_HEADER_TIMEOUT_SECONDS", "120")
+)
+
+def _run_header_sync_isolated(unidad, fecha_inicio, fecha_fin, run_id):
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    script = Path(__file__).resolve().parents[3] / "scripts" / "sync_comercial_v2_header_worker.py"
+    cmd = [
+        sys.executable, str(script),
+        "--unidad", str(unidad["unidad_negocio_id"]),
+        "--fecha-inicio", fecha_inicio.isoformat(),
+        "--fecha-fin", fecha_fin.isoformat(),
+        "--run-id", run_id,
+    ]
+    try:
+        done = subprocess.run(
+            cmd, cwd=str(script.parents[1]), capture_output=True, text=True,
+            timeout=SYNC_HEADER_PROCESS_TIMEOUT_SECONDS, check=False,
+        )
+    except subprocess.TimeoutExpired:
+        return SimpleNamespace(
+            success=False, records_processed=0, records_inserted=0,
+            records_updated=0, records_skipped=0, records_errored=1,
+            duration_seconds=SYNC_HEADER_PROCESS_TIMEOUT_SECONDS,
+            error_message=f"HEADER_TIMEOUT:{unidad['unidad_negocio_id']}",
+        )
+
+    prefix = "EDARSAHUB_HEADER_RESULT="
+    payload = None
+    for line in reversed((done.stdout or "").splitlines()):
+        if line.startswith(prefix):
+            payload = json.loads(line[len(prefix):])
+            break
+    if payload is None:
+        payload = {
+            "success": False, "records_errored": 1,
+            "error_message": f"HEADER_PROCESS_EXIT:{done.returncode}",
+        }
+    return SimpleNamespace(
+        success=bool(payload.get("success")),
+        records_processed=int(payload.get("records_processed") or 0),
+        records_inserted=int(payload.get("records_inserted") or 0),
+        records_updated=int(payload.get("records_updated") or 0),
+        records_skipped=int(payload.get("records_skipped") or 0),
+        records_errored=int(payload.get("records_errored") or 0),
+        duration_seconds=float(payload.get("duration_seconds") or 0),
+        error_message=payload.get("error_message"),
+    )
 
 def _resolve_estatus_general(results: Dict[str, Any]) -> str:
     """No declara COMPLETADO si detalle o pagos ISCAM tienen fallos."""
@@ -111,7 +164,7 @@ def _get_unidades_from_edarsahub() -> tuple:
 # FUNCIÓN PRINCIPAL DEL JOB
 # =============================================================================
 
-async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_unidades: Optional[List[str]] = None) -> Dict[str, Any]:
+async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_unidades: Optional[List[str]] = None, isolated_headers: bool = False) -> Dict[str, Any]:
     """
     Ejecuta sincronización incremental de KPIs comerciales V2.
     
@@ -489,12 +542,7 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
             )
             
             # Ejecutar sync
-            resultado = sync_softrestaurant_ventas_cerradas(
-                config=config,
-                fecha_inicio=fecha_inicio,
-                fecha_fin=fecha_fin,
-                run_id=run_id
-            )
+            resultado = (_run_header_sync_isolated(unidad, fecha_inicio, fecha_fin, run_id) if isolated_headers else sync_softrestaurant_ventas_cerradas(config=config, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, run_id=run_id))
             
             detalle = {
                 "unidad_negocio_id": unidad_id,
@@ -585,13 +633,7 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
             )
             
             # Ejecutar sync
-            resultado = sync_mpro_ventas_cerradas(
-                config=config,
-                sucursal_id=sucursal_id,
-                fecha_inicio=fecha_inicio,
-                fecha_fin=fecha_fin,
-                run_id=run_id
-            )
+            resultado = (_run_header_sync_isolated(unidad, fecha_inicio, fecha_fin, run_id) if isolated_headers else sync_mpro_ventas_cerradas(config=config, sucursal_id=sucursal_id, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, run_id=run_id))
             
             detalle = {
                 "unidad_negocio_id": unidad_id,
