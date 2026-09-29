@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "REMOTE_AHEAD_ONLY",
   "development_sha": "9ab05603340c9a3451d6ce5bc775e17d0f0316cc",
-  "generated_at_utc": "2026-09-29T03:53:18Z",
+  "generated_at_utc": "2026-09-29T03:54:37Z",
   "history": {
     "done_total_local": 1147,
     "pending_total_local": 0,
@@ -16,121 +16,121 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1073,
+      "age_seconds": 1153,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-ELIGIBILITY-AUDIT-NATIVE-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 753,
+      "age_seconds": 832,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-ELIGIBILITY-AUDIT-NATIVE-READONLY-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2936,
+      "age_seconds": 3016,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-ELIGIBILITY-CONTRACT-HARDENING-PATCH-R3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2662,
+      "age_seconds": 2741,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-ELIGIBILITY-CONTRACT-HARDENING-PATCH-R4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1937,
+      "age_seconds": 2017,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-ELIGIBILITY-CONTRACT-HARDENING-PATCH-R5",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2489,
+      "age_seconds": 2569,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-ELIGIBILITY-CONTRACT-HARDENING-POSTAUDIT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1352,
+      "age_seconds": 1432,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-ELIGIBILITY-CONTRACT-HARDENING-POSTAUDIT-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2361,
+      "age_seconds": 2440,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-ELIGIBILITY-DECISION-SEMANTIC-RERUN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1350,
+      "age_seconds": 1430,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-ELIGIBILITY-DECISION-SEMANTIC-RERUN-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 965,
+      "age_seconds": 1045,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-NATIVE-DECISION-CAPABILITY-GAP-AUDIT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 762,
+      "age_seconds": 842,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-NATIVE-DECISION-CAPABILITY-PATCH-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 759,
+      "age_seconds": 838,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-NATIVE-DECISION-CAPABILITY-POSTAUDIT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 192,
+      "age_seconds": 272,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-OPEN-CRITERIA-REVIEW-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1863,
+      "age_seconds": 1942,
       "job_id": "EDARSAHUB-WORKER-MATERIALIZATION-V2-BOOTSTRAP-R1A3-CONTRACT-HARDENING-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1167,
+      "age_seconds": 1247,
       "job_id": "EDARSAHUB-WORKER-MATERIALIZATION-V2-BOOTSTRAP-R1B-WIRING-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 813,
+      "age_seconds": 892,
       "job_id": "EDARSAHUB-WORKER-MATERIALIZATION-V2-R1C1-POSITIVE-IDEMPOTENCY-LEGACY-CANARY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1790,
+      "age_seconds": 1869,
       "job_id": "WORKER-REPAIR-43bbc713377c98cef96c-A1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 158,
+      "age_seconds": 238,
       "job_id": "WORKER-REPAIR-4b288e47c2a75112eb33-A1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 32,
+      "age_seconds": 111,
       "job_id": "WORKER-REPAIR-5ce99513418825204c0f-A1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3075,
+      "age_seconds": 3155,
       "job_id": "WORKER-REPAIR-bf0baa80c68fc451f2ac-A1",
       "reason": null,
       "state": "RESULT_READY"
@@ -150,8 +150,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-29T03:53:12Z",
-    "last_receive_utc": "2026-09-29T03:53:16Z",
+    "last_cycle_utc": "2026-09-29T03:54:32Z",
+    "last_receive_utc": "2026-09-29T03:54:36Z",
     "last_terminal_utc": "2026-09-29T03:52:46Z",
     "pid": "18212",
     "runtime_fingerprint": {
