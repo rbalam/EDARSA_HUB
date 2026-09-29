@@ -1,0 +1,56 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "queries": [
+        {
+          "name": "CAVAS_REGISTRY_POST_AUDIT",
+          "sql": "SELECT\n    CAST(ServerID AS varchar(36)) AS ServerID,\n    Nombre,\n    Host,\n    Puerto,\n    database_name,\n    username,\n    activo\nFROM dbo.Servidores_Conexiones\nWHERE ServerID = '8016ab53-f1ef-4539-aebe-c01e5b978bbc';"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "confirm_server_registry_metadata_update": true,
+  "database_name": "cavas_www",
+  "expected_base_sha": "0641ede68934e3f5c752a77f27133591e12355de",
+  "human_summary_language": "es",
+  "job_id": "CAVAS-CIENFUEGOS-REGISTRY-DATABASE-NAME-FIX-R1-20260928",
+  "mode": "SERVER_REGISTRY_METADATA_UPDATE",
+  "objective": "Corregir exclusivamente database_name del registro CAVAS de cava_www a cavas_www mediante SERVER_REGISTRY_METADATA_UPDATE, preservando activo, username, host, port, ServerID y secreto cifrado.",
+  "preflight_checks": [
+    {
+      "queries": [
+        {
+          "name": "CAVAS_REGISTRY_PRE_AUDIT",
+          "sql": "SELECT\n    CAST(ServerID AS varchar(36)) AS ServerID,\n    Nombre,\n    Host,\n    Puerto,\n    database_name,\n    username,\n    activo\nFROM dbo.Servidores_Conexiones\nWHERE ServerID = '8016ab53-f1ef-4539-aebe-c01e5b978bbc';"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "production_allowed": false,
+  "requester": {
+    "chat": "Cavas Personales 9",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "server_id": "8016ab53-f1ef-4539-aebe-c01e5b978bbc",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
