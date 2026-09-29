@@ -4,71 +4,71 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "f892a10a7d9cc269ab95f9ffbb3b9e5051bb4920",
-  "generated_at_utc": "2026-09-29T17:15:19Z",
+  "generated_at_utc": "2026-09-29T17:16:33Z",
   "history": {
     "done_total_local": 1154,
     "pending_total_local": 0,
-    "processing_total_local": 1,
-    "rejected_total_local": 1026,
-    "results_total_local": 1983
+    "processing_total_local": 0,
+    "rejected_total_local": 1027,
+    "results_total_local": 1984
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3054,
+      "age_seconds": 3128,
       "job_id": "CAVAS-CIENFUEGOS-REGISTRY-DATABASE-NAME-FIX-R2-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2228,
+      "age_seconds": 2303,
       "job_id": "CAVAS-CIENFUEGOS-SCHEMA-DISCOVERY-READONLY-R1-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1038,
+      "age_seconds": 1112,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-FINAL-RUNTIME-R13-CARLOS-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3474,
+      "age_seconds": 3549,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-NONBLOCKING-R12-CARLOS-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2785,
-      "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-FUNCTIONAL-FLOW-AUDIT-READONLY-R1",
+      "age_seconds": 74,
+      "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-PROCESS-ISOLATION-R14-CARLOS-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 10,
-      "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-PROCESS-ISOLATION-R14-CARLOS-20260929",
+      "age_seconds": 2859,
+      "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-FUNCTIONAL-FLOW-AUDIT-READONLY-R1",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
     }
   ],
   "local_development_sha": "f892a10a7d9cc269ab95f9ffbb3b9e5051bb4920",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 5,
-  "queue_running": 1,
+  "queue_result_ready_recent": 6,
+  "queue_running": 0,
   "remote_development_sha": "f892a10a7d9cc269ab95f9ffbb3b9e5051bb4920",
   "runtime": {
-    "current_job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-PROCESS-ISOLATION-R14-CARLOS-20260929",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-29T17:15:14Z",
-    "last_receive_utc": "2026-09-29T17:15:17Z",
-    "last_terminal_utc": "2026-09-29T16:58:01Z",
+    "last_cycle_utc": "2026-09-29T17:16:27Z",
+    "last_receive_utc": "2026-09-29T17:16:29Z",
+    "last_terminal_utc": "2026-09-29T17:15:19Z",
     "pid": "368",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "9fca18f2512942ff4674b8b1d6e4f6bc28ae993f",
