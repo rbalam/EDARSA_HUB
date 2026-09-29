@@ -781,6 +781,8 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                 }
                 result["blockers"].append("readonly_tracked_repo_mutation_detected")
             result["checks"] = check_results
+            if _native_decision_contract_required(job):
+                _promote_native_decision_from_semantic_extract(result, check_results)
             if (
                 result.get("required_deliverables")
                 and result.get("deliverable_specs")
@@ -851,6 +853,8 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                     result["blockers"].append("check_failed:sql_readonly_audit")
                     break
             result["checks"] = check_results
+            if _native_decision_contract_required(job):
+                _promote_native_decision_from_semantic_extract(result, check_results)
             if (
                 result.get("required_deliverables")
                 and result.get("deliverable_specs")
@@ -931,6 +935,8 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
             if status_after != status_before:
                 result["blockers"].append("frontend_build_certification_repo_mutation_detected")
             result["checks"] = check_results
+            if _native_decision_contract_required(job):
+                _promote_native_decision_from_semantic_extract(result, check_results)
             if (
                 result.get("required_deliverables")
                 and result.get("deliverable_specs")
@@ -1068,6 +1074,8 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                         result["blockers"].append("check_failed:sql_readonly_audit")
                         break
             result["checks"] = check_results
+            if _native_decision_contract_required(job):
+                _promote_native_decision_from_semantic_extract(result, check_results)
             result["tests"] = "PASS" if not failed_units and check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
             result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
             if not result["blockers"]:
@@ -1134,6 +1142,8 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                         result["blockers"].append("check_failed:sql_readonly_audit")
                         break
             result["checks"] = check_results
+            if _native_decision_contract_required(job):
+                _promote_native_decision_from_semantic_extract(result, check_results)
             result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
             result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
             if not result["blockers"]:
@@ -1198,6 +1208,8 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                         result["blockers"].append("check_failed:sql_readonly_audit")
                         break
             result["checks"] = check_results
+            if _native_decision_contract_required(job):
+                _promote_native_decision_from_semantic_extract(result, check_results)
             result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
             result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
             if not result["blockers"]:
@@ -1267,6 +1279,8 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                             result["blockers"].append("check_failed:server_registry_metadata_post_audit")
                             break
             result["checks"] = check_results
+            if _native_decision_contract_required(job):
+                _promote_native_decision_from_semantic_extract(result, check_results)
             result["tests"] = "PASS" if (preflight_results and check_results and all(x["status"] == "PASS" for x in preflight_results + check_results)) else "FAIL"
             result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
             if not result["blockers"]:
@@ -1380,6 +1394,8 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                         result["blockers"].append("check_failed:sql_migration_post_audit")
                         break
             result["checks"] = check_results
+            if _native_decision_contract_required(job):
+                _promote_native_decision_from_semantic_extract(result, check_results)
             result["tests"] = "PASS" if (preflight_results and check_results and all(x["status"] == "PASS" for x in preflight_results + check_results)) else "FAIL"
             result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
             if not result["blockers"]:
@@ -1433,6 +1449,8 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                         result["blockers"].append("check_failed:sql_readonly_audit")
                         break
             result["checks"] = check_results
+            if _native_decision_contract_required(job):
+                _promote_native_decision_from_semantic_extract(result, check_results)
             result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
             result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
             if not result["blockers"]:
@@ -1489,6 +1507,8 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                         result["blockers"].append("check_failed:sql_readonly_audit")
                         break
             result["checks"] = check_results
+            if _native_decision_contract_required(job):
+                _promote_native_decision_from_semantic_extract(result, check_results)
             result["tests"] = "PASS" if check_results and all(x["status"] == "PASS" for x in check_results) else "FAIL"
             result["quality_gate"] = "PASS" if not result["blockers"] else "FAIL"
             if not result["blockers"]:
@@ -1543,6 +1563,8 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
                     result["blockers"].append(f"check_failed:{check_result['type']}")
                     break
             result["checks"] = check_results
+            if _native_decision_contract_required(job):
+                _promote_native_decision_from_semantic_extract(result, check_results)
             if (
                 result.get("required_deliverables")
                 and result.get("deliverable_specs")

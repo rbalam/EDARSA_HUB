@@ -204,3 +204,21 @@ def test_dispatcher_has_native_decision_fail_closed_contract():
         "expected_native_decision_requires_worker_result_semantic_extract"
         in text
     )
+
+def test_dispatcher_promotes_native_decision_after_every_checks_assignment():
+    text = DISPATCHER.read_text(encoding="utf-8")
+
+    assignments = sum(
+        1
+        for line in text.splitlines()
+        if 'result["checks"] = check_results' in line
+    )
+    calls = sum(
+        1
+        for line in text.splitlines()
+        if line.strip()
+        == "_promote_native_decision_from_semantic_extract(result, check_results)"
+    )
+
+    assert assignments >= 1
+    assert calls == assignments
