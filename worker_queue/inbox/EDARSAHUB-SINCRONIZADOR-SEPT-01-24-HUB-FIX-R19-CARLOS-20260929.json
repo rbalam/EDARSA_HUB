@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-SEPT-01-24-HUB-FIX-R19-CARLOS-20260929",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "db21afe0615e845fc82d1c1ef7916577981be9ea",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Corregir exclusivamente la lectura EDARSAHUB de la auditoria R18 del 01 al 24 de septiembre 2026. unidad_negocio_id en Comercial_KPIs_Diarios_v2 es el codigo canonico, por lo que no debe unirse contra Unidades_Negocio.id. Obtener ventas_total, tickets_total y pax_total por codigo y fecha para las 5 sucursales. Solo lectura, sin resync ni cambios. Etiqueta: Sincronizador.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "max_rows": 200,
+      "queries": [
+        {
+          "name": "hub_sep01_24_corrected",
+          "sql": "\nSELECT\n    unidad_negocio_id AS codigo,\n    fecha_operacion,\n    CAST(ROUND(SUM(ISNULL(ventas_total,0)),2) AS decimal(18,2)) AS ventas_total,\n    SUM(ISNULL(tickets_total,0)) AS tickets_total,\n    SUM(ISNULL(pax_total,0)) AS pax_total,\n    COUNT(*) AS registros_activos\nFROM dbo.Comercial_KPIs_Diarios_v2\nWHERE ISNULL(activo,1)=1\n  AND fecha_operacion BETWEEN '2026-09-01' AND '2026-09-24'\n  AND unidad_negocio_id IN ('130MID','CIENFUEGOS','ESTELAR','130QRO','ORIGEN')\nGROUP BY unidad_negocio_id,fecha_operacion\nORDER BY unidad_negocio_id,fecha_operacion"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "No DDL/DML",
+    "No resync",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": []
+  }
+}
