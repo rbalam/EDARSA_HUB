@@ -1,0 +1,79 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [
+          "node_modules/*",
+          "__pycache__/*"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sql",
+          "*.js",
+          "*.jsx",
+          "*.json",
+          "*.md"
+        ],
+        "max_results": 5000,
+        "paths": [
+          "backend",
+          "frontend/src",
+          "tools/mirror_sync"
+        ],
+        "search_terms": [
+          "CavaSocios",
+          "Gobierno_Persona",
+          "Gobierno_PersonaVinculo",
+          "Cliente_Catalogo",
+          "Usuario_Catalogo",
+          "EmpresaID",
+          "UnidadNegocioID",
+          "ServerID",
+          "cava",
+          "botella",
+          "socio",
+          "cliente",
+          "inventario",
+          "movimiento",
+          "visita",
+          "attendance",
+          "nota",
+          "media",
+          "evidencia",
+          "auditoria",
+          "RBAC",
+          "legacy",
+          "external_id",
+          "idempot"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "CAVAS-CIENFUEGOS-CANONICAL-HOMOLOGATION-R2-20260929",
+  "mode": "READ_ONLY",
+  "objective": "Auditar exhaustivamente EDARSAHUB BOS para determinar el mapa canonico reutilizable para integrar CAVAS Cienfuegos, localizar entidades existentes de personas, clientes, socios, cavas, botellas, inventario, movimientos, visitas, notas, media, auditoria, usuarios y RBAC; identificar gaps reales sin proponer duplicados.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Cavas Personales",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
