@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "f892a10a7d9cc269ab95f9ffbb3b9e5051bb4920",
-  "generated_at_utc": "2026-09-29T17:23:03Z",
+  "generated_at_utc": "2026-09-29T17:24:18Z",
   "history": {
     "done_total_local": 1154,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3518,
+      "age_seconds": 3593,
       "job_id": "CAVAS-CIENFUEGOS-REGISTRY-DATABASE-NAME-FIX-R2-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2693,
+      "age_seconds": 2768,
       "job_id": "CAVAS-CIENFUEGOS-SCHEMA-DISCOVERY-READONLY-R1-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1502,
+      "age_seconds": 1577,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-FINAL-RUNTIME-R13-CARLOS-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 463,
+      "age_seconds": 539,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-PROCESS-ISOLATION-R14-CARLOS-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3249,
+      "age_seconds": 3324,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-FUNCTIONAL-FLOW-AUDIT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-29T17:23:01Z",
-    "last_receive_utc": "2026-09-29T17:23:03Z",
+    "last_cycle_utc": "2026-09-29T17:24:11Z",
+    "last_receive_utc": "2026-09-29T17:24:15Z",
     "last_terminal_utc": "2026-09-29T17:15:19Z",
     "pid": "368",
     "runtime_fingerprint": {
