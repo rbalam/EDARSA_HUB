@@ -1,0 +1,54 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "include_inactive": true,
+      "queries": [
+        {
+          "name": "CAVAS_DOMAIN_COLUMNS",
+          "sql": "SELECT\n    t.name AS table_name,\n    c.column_id,\n    c.name AS column_name,\n    ty.name AS data_type,\n    c.max_length,\n    c.precision,\n    c.scale,\n    c.is_nullable,\n    c.is_identity\nFROM sys.tables t\nJOIN sys.columns c\n  ON c.object_id=t.object_id\nJOIN sys.types ty\n  ON ty.user_type_id=c.user_type_id\nWHERE t.name IN ('clients','bottles','bottle_logs','attendances','cellars','cellars_clients','client_notes','users','categories','media','logs')\nORDER BY t.name,c.column_id"
+        },
+        {
+          "name": "CAVAS_DOMAIN_INDEXES",
+          "sql": "SELECT\n    t.name AS table_name,\n    i.name AS index_name,\n    i.is_unique,\n    i.is_primary_key,\n    c.name AS column_name,\n    ic.key_ordinal,\n    ic.is_included_column\nFROM sys.tables t\nJOIN sys.indexes i\n  ON i.object_id=t.object_id\nJOIN sys.index_columns ic\n  ON ic.object_id=i.object_id\n AND ic.index_id=i.index_id\nJOIN sys.columns c\n  ON c.object_id=ic.object_id\n AND c.column_id=ic.column_id\nWHERE t.name IN ('clients','bottles','bottle_logs','attendances','cellars','cellars_clients','client_notes','users','categories','media','logs')\n  AND i.index_id>0\nORDER BY t.name,i.name,ic.key_ordinal,c.column_id"
+        },
+        {
+          "name": "CAVAS_DOMAIN_DEFAULTS",
+          "sql": "SELECT\n    t.name AS table_name,\n    c.name AS column_name,\n    dc.definition\nFROM sys.tables t\nJOIN sys.columns c\n  ON c.object_id=t.object_id\nLEFT JOIN sys.default_constraints dc\n  ON dc.parent_object_id=t.object_id\n AND dc.parent_column_id=c.column_id\nWHERE t.name IN ('clients','bottles','bottle_logs','attendances','cellars','cellars_clients','client_notes','users','categories','media','logs')\n  AND dc.object_id IS NOT NULL\nORDER BY t.name,c.column_id"
+        },
+        {
+          "name": "CAVAS_DOMAIN_CHECK_CONSTRAINTS",
+          "sql": "SELECT\n    t.name AS table_name,\n    cc.name AS constraint_name,\n    cc.definition\nFROM sys.tables t\nJOIN sys.check_constraints cc\n  ON cc.parent_object_id=t.object_id\nWHERE t.name IN ('clients','bottles','bottle_logs','attendances','cellars','cellars_clients','client_notes','users','categories','media','logs')\nORDER BY t.name,cc.name"
+        }
+      ],
+      "server_id": "8016ab53-f1ef-4539-aebe-c01e5b978bbc",
+      "source": "SERVER",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "CAVAS-CIENFUEGOS-DOMAIN-SCHEMA-DISCOVERY-READONLY-R1-20260929",
+  "mode": "READ_ONLY",
+  "objective": "Descubrir en modo READ_ONLY el contrato físico completo de las tablas funcionales principales del legado Cavas Cienfuegos para preparar homologación canónica hacia EDARSAHUB sin mutar datos.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Cavas Personales 9",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
