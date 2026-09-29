@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-KPI-DRILLDOWN-DIAG-R1-CARLOS-20260929T2315Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Diagnosticar los comparativos y drill-down del menu Comercial para las 5 unidades activas. Verificar fuentes ya existentes para folios/PAX y presupuesto sin modificar ningun proceso de sincronizacion, sin ejecutar Scheduler/Sync_Sales/Sync_PAX/ISCAM, sin tocar Inteligencia Comercial, Tablero Ejecutivo, Portal de Inteligencia Comercial ni Produccion. Solo lectura de EDARSAHUB y auditoria de codigo.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/Comercial.js",
+          "backend/modules/comercial/routes.py",
+          "backend/modules/comercial/service.py"
+        ],
+        "search_terms": [
+          "get_dashboard_kpis_from_edarsahub",
+          "vs_ano_anterior",
+          "pax_vs_ano_anterior",
+          "cheque_vs_ano_anterior",
+          "rotacion_vs_ano",
+          "pax_total_vs_ano",
+          "cheques_total_vs_ano",
+          "detalle-movimientos",
+          "Comercial_Inteligencia_VentasDetalleProducto",
+          "Sync_Metas_Comerciales"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js"
+        ],
+        "exclude_patterns": [],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "schema_detalle_canonico",
+          "sql": "SELECT COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Comercial_Inteligencia_VentasDetalleProducto' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "schema_metas",
+          "sql": "SELECT COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Sync_Metas_Comerciales' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "unidades_activas",
+          "sql": "SELECT codigo,nombre,CONVERT(VARCHAR(100),id) AS UnidadPK,CONVERT(VARCHAR(100),server_id) AS ServerID,CONVERT(VARCHAR(100),sucursal_origen_id) AS SucursalOrigenID,system_type FROM dbo.Unidades_Negocio WITH (NOLOCK) WHERE ISNULL(activo,0)=1 ORDER BY nombre"
+        },
+        {
+          "name": "detalle_130mid_sept_2026",
+          "sql": "WITH tickets AS (SELECT id_transaccion,numero_ticket,MIN(fecha_hora) AS fecha,SUM(ISNULL(importe_neto,0)) AS total_venta,MAX(ISNULL(pax,0)) AS pax FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK) WHERE unidad_negocio_id='130MID' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND fecha_operacion>='2026-09-01' AND fecha_operacion<'2026-10-01' GROUP BY id_transaccion,numero_ticket) SELECT TOP 10 numero_ticket,fecha,pax,total_venta,CASE WHEN pax>0 THEN total_venta/pax ELSE NULL END AS pax_promedio_cuenta FROM tickets ORDER BY pax DESC,total_venta DESC"
+        },
+        {
+          "name": "detalle_cobertura_5_unidades_sept_2026",
+          "sql": "WITH tickets AS (SELECT unidad_negocio_id,id_transaccion,numero_ticket,MAX(ISNULL(pax,0)) AS pax,SUM(ISNULL(importe_neto,0)) AS total_venta FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK) WHERE unidad_negocio_id IN ('130MID','130QRO','CIENFUEGOS','ESTELAR','ORIGEN') AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND fecha_operacion>='2026-09-01' AND fecha_operacion<'2026-10-01' GROUP BY unidad_negocio_id,id_transaccion,numero_ticket) SELECT unidad_negocio_id,COUNT(*) AS folios,SUM(pax) AS pax,SUM(total_venta) AS venta FROM tickets GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        },
+        {
+          "name": "presupuestos_5_unidades_2026",
+          "sql": "SELECT ServerID,SucursalID,SucursalNombre,Anio,Mes,MetaVentaBruta,MetaVentaNeta,Activo FROM dbo.Sync_Metas_Comerciales WITH (NOLOCK) WHERE Anio=2026 AND Mes BETWEEN 1 AND 12 AND ISNULL(Activo,1)=1 ORDER BY ServerID,SucursalID,Mes"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
