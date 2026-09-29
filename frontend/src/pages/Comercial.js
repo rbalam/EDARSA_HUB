@@ -169,29 +169,36 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
   const titulos = {
     ventas: { titulo: 'Detalle de Ventas', icono: DollarSign, color: 'text-green-600' },
     ticket: { titulo: 'Detalle de Cheques', icono: Receipt, color: 'text-blue-600' },
-    pax: { titulo: 'Detalle de Comensales (PAX)', icono: Users, color: 'text-purple-600' },
-    rotacion: { titulo: 'Detalle de Mesas', icono: Utensils, color: 'text-orange-600' }
+    pax: { titulo: 'Detalle PAX Total', icono: Users, color: 'text-purple-600' },
+    pax_promedio: { titulo: 'Detalle PAX Promedio por Cuenta', icono: Users, color: 'text-purple-600' },
+    rotacion: { titulo: 'Rotación de Mesas por Mes', icono: Utensils, color: 'text-orange-600' }
   };
 
   const config = titulos[tipoKpi] || titulos.ventas;
   const IconComponent = config.icono;
+  const esRotacion = tipoKpi === 'rotacion';
+  const esPaxPromedio = tipoKpi === 'pax_promedio';
+
+  useEffect(() => {
+    setPage(1);
+  }, [tipoKpi, selectedMeses, selectedAnios]);
 
   useEffect(() => {
     if (isOpen && serverId && sucursal) {
       cargarDetalle();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, serverId, sucursal, page, periodo]);
+  }, [isOpen, serverId, sucursal, page, periodo, tipoKpi, selectedMeses, selectedAnios]);
 
   const cargarDetalle = async () => {
     setLoading(true);
     try {
       const response = await api.get(`/comercial/detalle-movimientos/${serverId}`, {
-        params: { 
-          sucursal, 
-          tipo: tipoKpi, 
-          periodo, 
-          page, 
+        params: {
+          sucursal,
+          tipo: tipoKpi,
+          periodo,
+          page,
           limit: 50,
           meses: selectedMeses?.join(',') || '',
           anios: selectedAnios?.join(',') || ''
@@ -225,82 +232,78 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
           </div>
         ) : data?.movimientos?.length > 0 ? (
           <div className="flex-1 overflow-hidden flex flex-col">
-            {/* Info del período */}
             <div className="flex items-center justify-between mb-3 px-1">
               <span className="text-sm text-zinc-500">
                 Período: {data.periodo?.inicio} a {data.periodo?.fin}
               </span>
               <span className="text-sm font-medium">
-                {data.total} movimientos
+                {data.total} {esRotacion ? 'mes(es)' : 'folio(s)'}
               </span>
             </div>
 
-            {/* Tabla de movimientos */}
             <div className="flex-1 overflow-auto border rounded-lg">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-zinc-800 text-white">
-                  <tr>
-                    <th className="py-2 px-3 text-left">Folio</th>
-                    <th className="py-2 px-3 text-left">Fecha/Hora</th>
-                    <th className="py-2 px-3 text-right">Importe</th>
-                    <th className="py-2 px-3 text-center">PAX</th>
-                    <th className="py-2 px-3 text-center">Productos</th>
-                    <th className="py-2 px-3 text-left">Tipo</th>
-                  </tr>
+                  {esRotacion ? (
+                    <tr>
+                      <th className="py-2 px-3 text-left">Mes</th>
+                      <th className="py-2 px-3 text-right">Rotación</th>
+                      <th className="py-2 px-3 text-right">Cheques</th>
+                      <th className="py-2 px-3 text-right">PAX</th>
+                    </tr>
+                  ) : (
+                    <tr>
+                      <th className="py-2 px-3 text-left">Folio</th>
+                      <th className="py-2 px-3 text-left">Fecha</th>
+                      <th className="py-2 px-3 text-center">PAX</th>
+                      <th className="py-2 px-3 text-right">Total Venta</th>
+                      {esPaxPromedio && <th className="py-2 px-3 text-right">PAX Promedio</th>}
+                    </tr>
+                  )}
                 </thead>
                 <tbody>
                   {data.movimientos.map((mov, idx) => (
-                    <tr key={mov.folio || `mov-${idx}`} className="border-b hover:bg-zinc-50 transition-colors">
-                      <td className="py-2 px-3 font-mono text-xs font-medium">{mov.folio}</td>
-                      <td className="py-2 px-3 text-zinc-600">{mov.fecha}</td>
-                      <td className="py-2 px-3 text-right font-semibold text-green-600">
-                        {formatCurrency(mov.importe)}
-                      </td>
-                      <td className="py-2 px-3 text-center">
-                        {mov.pax > 0 ? (
-                          <span className="inline-flex items-center gap-1">
-                            <Users className="h-3 w-3 text-purple-500" />
-                            {mov.pax}
-                          </span>
-                        ) : '-'}
-                      </td>
-                      <td className="py-2 px-3 text-center text-zinc-500">{mov.num_productos}</td>
-                      <td className="py-2 px-3">
-                        <span className={`px-2 py-0.5 rounded text-xs ${
-                          mov.tipo_servicio === 'Comedor' ? 'bg-blue-100 text-blue-700' :
-                          mov.tipo_servicio === 'Domicilio' ? 'bg-orange-100 text-orange-700' :
-                          mov.tipo_servicio === 'Para llevar' ? 'bg-green-100 text-green-700' :
-                          'bg-zinc-100 text-zinc-700'
-                        }`}>
-                          {mov.tipo_servicio}
-                        </span>
-                      </td>
-                    </tr>
+                    esRotacion ? (
+                      <tr key={mov.folio || `rot-${idx}`} className="border-b hover:bg-zinc-50 transition-colors">
+                        <td className="py-2 px-3 font-medium">{mov.mes_label || mov.fecha}</td>
+                        <td className="py-2 px-3 text-right font-semibold">{Number(mov.rotacion || 0).toFixed(2)}x</td>
+                        <td className="py-2 px-3 text-right">{formatNumber(mov.cheques)}</td>
+                        <td className="py-2 px-3 text-right">{formatNumber(mov.pax)}</td>
+                      </tr>
+                    ) : (
+                      <tr key={`${mov.folio || 'mov'}-${idx}`} className="border-b hover:bg-zinc-50 transition-colors">
+                        <td className="py-2 px-3 font-mono text-xs font-medium">{mov.folio}</td>
+                        <td className="py-2 px-3 text-zinc-600">{mov.fecha}</td>
+                        <td className="py-2 px-3 text-center">
+                          {mov.pax > 0 ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Users className="h-3 w-3 text-purple-500" />
+                              {mov.pax}
+                            </span>
+                          ) : '-'}
+                        </td>
+                        <td className="py-2 px-3 text-right font-semibold text-green-600">
+                          {formatCurrency(mov.importe)}
+                        </td>
+                        {esPaxPromedio && (
+                          <td className="py-2 px-3 text-right font-semibold text-purple-600">
+                            {mov.pax_promedio == null ? '-' : formatCurrency(mov.pax_promedio)}
+                          </td>
+                        )}
+                      </tr>
+                    )
                   ))}
                 </tbody>
               </table>
             </div>
 
-            {/* Paginación */}
-            {data.pages > 1 && (
+            {!esRotacion && data.pages > 1 && (
               <div className="flex items-center justify-between pt-3 border-t mt-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page <= 1}
-                >
+                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>
                   <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
                 </Button>
-                <span className="text-sm text-zinc-500">
-                  Página {page} de {data.pages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => Math.min(data.pages, p + 1))}
-                  disabled={page >= data.pages}
-                >
+                <span className="text-sm text-zinc-500">Página {page} de {data.pages}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(data.pages, p + 1))} disabled={page >= data.pages}>
                   Siguiente <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>
@@ -713,7 +716,7 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
       {/* Instrucción de drill-down */}
       {kpis && (
         <p className="text-xs text-zinc-500 italic text-center">
-          💡 Doble clic en cualquier tarjeta para ver el detalle de movimientos
+          💡 Doble clic para ver el detalle. Rotación de Mesas muestra detalle solo cuando seleccionas varios meses.
         </p>
       )}
 
@@ -758,7 +761,7 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
             {/* Pax Promedio (MORADO) */}
             <Card 
               className="border bg-gradient-to-br from-purple-50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
-              onDoubleClick={() => handleDoubleClick('pax')}
+              onDoubleClick={() => handleDoubleClick('pax_promedio')}
               data-testid="kpi-pax-promedio"
             >
               <CardContent className="py-4">
@@ -830,8 +833,9 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {/* Rotación Mesas (VERDE - debajo de Ventas) */}
             <Card 
-              className="border bg-gradient-to-br from-green-50/50 to-white cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all"
-              onDoubleClick={() => handleDoubleClick('rotacion')}
+              className={`border bg-gradient-to-br from-green-50/50 to-white transition-all ${esMultiMes ? 'cursor-pointer hover:shadow-lg hover:scale-[1.02]' : 'cursor-default'}`}
+              onDoubleClick={() => esMultiMes && handleDoubleClick('rotacion')}
+              title={esMultiMes ? 'Doble clic para ver rotación por mes' : 'Selecciona varios meses para ver el detalle mensual'}
               data-testid="kpi-rotacion"
             >
               <CardContent className="py-4">
@@ -927,33 +931,34 @@ function DashboardVentas({ servers, unidadesNegocio, selectedUnidad, setSelected
                 <CardTitle className="text-base">Comparativo de Ventas</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className={`grid ${esMultiMes ? 'grid-cols-2' : 'grid-cols-3'} gap-4`}>
-                  {/* Ocultar "vs Período Anterior" cuando hay multiselección de meses */}
-                  {!esMultiMes && (
-                    <div className="text-center p-4 bg-zinc-50 rounded">
-                      <p className="text-xs text-zinc-500 mb-1">vs Período Anterior</p>
-                      <p className={`text-xl font-bold ${comparativo.vs_periodo_anterior >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatPercent(comparativo.vs_periodo_anterior)}
-                        {comparativo?.sin_datos_periodo_anterior && (
-                          <span className="ml-1 text-sm text-zinc-400 cursor-help" title="Sin datos del período anterior">*</span>
-                        )}
-                      </p>
-                    </div>
-                  )}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center p-4 bg-zinc-50 rounded">
-                    <p className="text-xs text-zinc-500 mb-1">{esMultiMes ? 'vs Mismo Periodo Año Ant.' : 'vs Año Anterior'}</p>
+                    <p className="text-xs text-zinc-500 mb-1">vs Período Anterior</p>
+                    <p className={`text-xl font-bold ${comparativo.vs_periodo_anterior >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatPercent(comparativo.vs_periodo_anterior)}
+                      {comparativo?.sin_datos_periodo_anterior && (
+                        <span className="ml-1 text-sm text-zinc-400 cursor-help" title="Sin datos del período anterior">*</span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="text-center p-4 bg-zinc-50 rounded">
+                    <p className="text-xs text-zinc-500 mb-1">vs Mismo Período Año Anterior</p>
                     <p className={`text-xl font-bold ${comparativo.vs_ano_anterior >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {formatPercent(comparativo.vs_ano_anterior)}
                       {comparativo?.sin_datos_ano_anterior && (
-                        <span className="ml-1 text-sm text-zinc-400 cursor-help" title="Sin datos del año anterior - No había operación en este período">*</span>
+                        <span className="ml-1 text-sm text-zinc-400 cursor-help" title="Sin datos del año anterior">*</span>
                       )}
                     </p>
                   </div>
                   <div className="text-center p-4 bg-zinc-50 rounded">
                     <p className="text-xs text-zinc-500 mb-1">vs Presupuesto</p>
-                    <p className={`text-xl font-bold ${comparativo.vs_presupuesto >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatPercent(comparativo.vs_presupuesto)}
-                    </p>
+                    {comparativo?.presupuesto_disponible === false || comparativo?.vs_presupuesto == null ? (
+                      <p className="text-xl font-bold text-zinc-500">Sin presupuesto</p>
+                    ) : (
+                      <p className={`text-xl font-bold ${comparativo.vs_presupuesto >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatPercent(comparativo.vs_presupuesto)}
+                      </p>
+                    )}
                   </div>
                 </div>
               </CardContent>

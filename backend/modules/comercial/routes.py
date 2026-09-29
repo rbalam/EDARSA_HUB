@@ -3209,177 +3209,257 @@ async def comercial_mesas(
 
 @router.get("/comercial/detalle-movimientos/{server_id}")
 async def comercial_detalle_movimientos(
-    server_id: str, 
+    server_id: str,
     sucursal: str = Query(default=""),
-    tipo: str = Query(default="ventas"),  # ventas, pax, cheques
-    periodo: str = Query(default="mes"),  # dia, semana, mes
-    meses: str = Query(default=""),  # FIX 2026-06-04: Soporte para filtro de meses
-    anios: str = Query(default=""),  # FIX 2026-06-04: Soporte para filtro de años
+    tipo: str = Query(default="ventas"),
+    periodo: str = Query(default="mes"),
+    meses: str = Query(default=""),
+    anios: str = Query(default=""),
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=50, le=200),
     current_user: Dict = Depends(get_current_user)
 ):
     """
-    Detalle de movimientos para drill-down en KPIs.
-    
-    FIX 2026-06-04: MIGRADO A SQL-FIRST
-    Este endpoint ahora lee de vw_Comercial_KPIs_Diarios_v2_Runtime en EDARSAHUB SQL.
-    Ya no usa conexiones LIVE a SoftRestaurant/MPRO.
-    
-    Columnas reales de la tabla:
-    - fecha_operacion, ventas_total, tickets_total, pax_total, sistema_origen
+    Drill-down del Dashboard Comercial exclusivamente desde EDARSAHUB.
+    No abre conexiones LIVE ni ejecuta sincronizadores.
     """
     server = await get_server_by_id(server_id)
     if not server:
         raise HTTPException(status_code=404, detail="Servidor no encontrado")
-    
-    # FASE 6-8: Validación centralizada de acceso
+
     await validate_server_access_rbac(current_user, server_id)
-    
-    # FIX 2026-06-04: MODAL DETALLE DESDE EDARSAHUB SQL, NO LIVE
+
     try:
-        from .service import _query_edarsahub_tablero, resolver_unidad_pks_dashboard
+        from .service import _query_edarsahub_tablero
 
         hoy = datetime.now()
-
-        # Parsear meses y años si vienen como parámetros
-        if anios:
-            lista_anios = [int(a.strip()) for a in anios.split(',') if a.strip()]
-        else:
-            lista_anios = [hoy.year]
-
-        if meses:
-            lista_meses = [m.strip() for m in meses.split(',') if m.strip()]
-        else:
-            lista_meses = [str(hoy.month).zfill(2)]
-
+        lista_anios = (
+            [int(a.strip()) for a in anios.split(",") if a.strip()]
+            if anios else [hoy.year]
+        )
+        lista_meses = (
+            [int(m.strip()) for m in meses.split(",") if m.strip()]
+            if meses else [hoy.month]
+        )
         year = max(lista_anios)
-        mes_min = min(int(m) for m in lista_meses)
-        mes_max = max(int(m) for m in lista_meses)
+        lista_meses = sorted(set(m for m in lista_meses if 1 <= m <= 12))
+        if not lista_meses:
+            lista_meses = [hoy.month]
 
+        mes_min = min(lista_meses)
+        mes_max = max(lista_meses)
         fecha_ini = f"{year}-{mes_min:02d}-01"
-
-        es_mes_actual = year == hoy.year and mes_max == hoy.month
-        if es_mes_actual:
+        if year == hoy.year and mes_max == hoy.month:
             fecha_fin = (hoy - timedelta(days=1)).strftime("%Y-%m-%d")
         else:
-            ultimo_dia = calendar.monthrange(year, mes_max)[1]
-            fecha_fin = f"{year}-{mes_max:02d}-{ultimo_dia:02d}"
+            fecha_fin = (
+                f"{year}-{mes_max:02d}-"
+                f"{calendar.monthrange(year, mes_max)[1]:02d}"
+            )
 
+        safe_server = str(server_id).replace("'", "''")
+        safe_sucursal = str(sucursal or "").replace("'", "''")
+
+        unidad_query = f"""
+        SELECT TOP 1 codigo, nombre
+        FROM dbo.Unidades_Negocio WITH (NOLOCK)
+        WHERE CONVERT(VARCHAR(100), server_id) = '{safe_server}'
+          AND ISNULL(activo,1) = 1
+        """
+        if safe_sucursal and safe_sucursal.upper() not in ("DEFAULT", "ALL", "TODAS"):
+            unidad_query += f"""
+              AND (
+                    CONVERT(VARCHAR(100), sucursal_origen_id) = '{safe_sucursal}'
+                 OR UPPER(ISNULL(codigo,'')) = UPPER('{safe_sucursal}')
+                 OR UPPER(ISNULL(nombre,'')) = UPPER('{safe_sucursal}')
+              )
+            """
+        unidad_query += " ORDER BY nombre"
+
+        unidad_rows = _query_edarsahub_tablero(unidad_query)
+        if not unidad_rows:
+            unidad_rows = _query_edarsahub_tablero(
+                f"""
+                SELECT TOP 1 codigo, nombre
+                FROM dbo.Unidades_Negocio WITH (NOLOCK)
+                WHERE CONVERT(VARCHAR(100), server_id) = '{safe_server}'
+                  AND ISNULL(activo,1) = 1
+                ORDER BY nombre
+                """
+            )
+        if not unidad_rows:
+            raise ValueError("No se pudo resolver la unidad de negocio del servidor")
+
+        unidad_codigo = str(unidad_rows[0].get("codigo") or "").replace("'", "''")
+        unidad_nombre = unidad_rows[0].get("nombre") or server.get("name")
+        meses_sql = ",".join(str(m) for m in lista_meses)
+        filtro_periodo = (
+            f"YEAR(fecha_operacion) = {year} "
+            f"AND MONTH(fecha_operacion) IN ({meses_sql}) "
+            f"AND fecha_operacion >= '{fecha_ini}' "
+            f"AND fecha_operacion <= '{fecha_fin}'"
+        )
+        filtro_base = f"""
+            unidad_negocio_id = '{unidad_codigo}'
+            AND ISNULL(activo,1) = 1
+            AND ISNULL(es_kpi_valido,1) = 1
+            AND ISNULL(cancelado_origen,0) = 0
+            AND {filtro_periodo}
+        """
+
+        if tipo == "rotacion":
+            rows = _query_edarsahub_tablero(
+                f"""
+                WITH tickets AS (
+                    SELECT YEAR(fecha_operacion) AS anio,
+                           MONTH(fecha_operacion) AS mes,
+                           id_transaccion,
+                           numero_ticket,
+                           MAX(ISNULL(pax,0)) AS pax
+                    FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK)
+                    WHERE {filtro_base}
+                    GROUP BY YEAR(fecha_operacion), MONTH(fecha_operacion),
+                             id_transaccion, numero_ticket
+                )
+                SELECT anio, mes, COUNT(*) AS cheques, SUM(pax) AS pax,
+                       CASE WHEN SUM(pax) > 0
+                            THEN CAST(COUNT(*) AS DECIMAL(18,6)) / SUM(pax)
+                            ELSE 0 END AS rotacion
+                FROM tickets
+                GROUP BY anio, mes
+                ORDER BY anio ASC, mes ASC
+                """
+            )
+            nombres_meses = [
+                "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+            ]
+            movimientos = []
+            for r in rows or []:
+                anio_row = int(r.get("anio") or year)
+                mes_row = int(r.get("mes") or 0)
+                label = f"{nombres_meses[mes_row]} {anio_row}"
+                movimientos.append({
+                    "folio": f"{anio_row}-{mes_row:02d}",
+                    "fecha": label,
+                    "mes_label": label,
+                    "rotacion": round(float(r.get("rotacion") or 0), 4),
+                    "cheques": int(r.get("cheques") or 0),
+                    "pax": int(r.get("pax") or 0),
+                    "importe": 0,
+                    "pax_promedio": None,
+                })
+
+            total = len(movimientos)
+            return {
+                "source_status": "SUCCESS" if total else "NO_DATA",
+                "source_message": "Rotación mensual desde detalle canónico EDARSAHUB",
+                "source": "Comercial_Inteligencia_VentasDetalleProducto",
+                "movimientos": movimientos,
+                "items": movimientos,
+                "total": total,
+                "page": 1,
+                "limit": 12,
+                "pages": 1 if total else 0,
+                "periodo": {"inicio": fecha_ini, "fin": fecha_fin},
+                "servidor": server.get("name"),
+                "unidad": unidad_nombre,
+            }
+
+        order_sql = (
+            "ORDER BY CASE WHEN TRY_CONVERT(BIGINT, numero_ticket) IS NULL THEN 1 ELSE 0 END, "
+            "TRY_CONVERT(BIGINT, numero_ticket) ASC, numero_ticket ASC, fecha ASC"
+        )
+        if tipo == "pax":
+            order_sql = "ORDER BY pax DESC, total_venta DESC, fecha ASC, numero_ticket ASC"
+        elif tipo == "pax_promedio":
+            order_sql = (
+                "ORDER BY CASE WHEN pax > 0 THEN total_venta / pax ELSE 0 END DESC, "
+                "pax DESC, total_venta DESC, numero_ticket ASC"
+            )
+        elif tipo == "ticket":
+            order_sql = "ORDER BY total_venta DESC, fecha ASC, numero_ticket ASC"
+
+        cte_tickets = f"""
+            WITH tickets AS (
+                SELECT id_transaccion,
+                       numero_ticket,
+                       MIN(COALESCE(fecha_hora, CAST(fecha_operacion AS DATETIME2))) AS fecha,
+                       SUM(ISNULL(importe_neto,0)) AS total_venta,
+                       MAX(ISNULL(pax,0)) AS pax,
+                       COUNT(*) AS num_productos
+                FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK)
+                WHERE {filtro_base}
+                GROUP BY id_transaccion, numero_ticket
+            )
+        """
+
+        total_rows = _query_edarsahub_tablero(
+            cte_tickets + " SELECT COUNT(*) AS total FROM tickets"
+        )
+        total = int(total_rows[0].get("total") or 0) if total_rows else 0
         offset = (page - 1) * limit
-        sucursal_sql = sucursal or "DEFAULT"
-
-        # Obtener IDs de unidad de negocio asociados al servidor
-        unidad_ids = []
-        if server.get("unidad_negocio_pk"):
-            unidad_ids.append(server.get("unidad_negocio_pk"))
-        if server.get("codigo_unidad"):
-            unidad_ids.append(server.get("codigo_unidad"))
-        unidad_ids_extra = resolver_unidad_pks_dashboard(server_id, sucursal_sql) or []
-        unidad_ids.extend(unidad_ids_extra)
-
-        unidad_ids = list(dict.fromkeys([u for u in unidad_ids if u]))
-
-        # Construir filtro principal
-        if unidad_ids:
-            filtro_unidades = ",".join([f"'{u}'" for u in unidad_ids])
-            filtro_principal = f"(unidad_negocio_pk IN ({filtro_unidades}) OR server_id = '{server_id}')"
-        else:
-            filtro_principal = f"server_id = '{server_id}'"
-
-        # Query para obtener totales (columnas reales de vw_Comercial_KPIs_Diarios_v2_Runtime)
-        query_total = f"""
-        SELECT
-            ISNULL(SUM(ventas_total),0) AS venta_total,
-            ISNULL(SUM(tickets_total),0) AS cheques_total,
-            ISNULL(SUM(pax_total),0) AS pax_total,
-            COUNT(*) AS total
-        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-        WHERE {filtro_principal}
-          AND fecha_operacion >= '{fecha_ini}'
-          AND fecha_operacion <= '{fecha_fin}'
-          AND ventas_total > 0
-        """
-
-        resumen_rows = _query_edarsahub_tablero(query_total)
-        resumen = resumen_rows[0] if resumen_rows else {}
-
-        # Query para detalle por día (columnas reales)
-        query_detalle = f"""
-        SELECT
-            fecha_operacion,
-            ventas_total,
-            tickets_total,
-            pax_total,
-            ticket_promedio,
-            sucursal_nombre,
-            unidad_negocio_nombre,
-            sistema_origen
-        FROM vw_Comercial_KPIs_Diarios_v2_Runtime
-        WHERE {filtro_principal}
-          AND fecha_operacion >= '{fecha_ini}'
-          AND fecha_operacion <= '{fecha_fin}'
-          AND ventas_total > 0
-        ORDER BY fecha_operacion DESC
-        OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
-        """
-
-        rows = _query_edarsahub_tablero(query_detalle)
+        rows = _query_edarsahub_tablero(
+            cte_tickets
+            + f"""
+            SELECT numero_ticket, fecha, total_venta, pax, num_productos,
+                   CASE WHEN pax > 0 THEN total_venta / pax ELSE NULL END AS pax_promedio
+            FROM tickets
+            {order_sql}
+            OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
+            """
+        )
 
         movimientos = []
         for r in rows or []:
-            fecha = r.get("fecha_operacion")
-            fecha_str = fecha.strftime("%Y-%m-%d") if hasattr(fecha, "strftime") else str(fecha)
+            fecha = r.get("fecha")
+            fecha_str = (
+                fecha.strftime("%Y-%m-%d %H:%M:%S")
+                if hasattr(fecha, "strftime")
+                else str(fecha)
+            )
             movimientos.append({
-                "folio": f"DIA-{fecha_str}",
+                "folio": str(r.get("numero_ticket") or ""),
                 "fecha": fecha_str,
-                "importe": float(r.get("ventas_total") or 0),
-                "pax": int(r.get("pax_total") or 0),
-                "descuento": 0,
-                "propina": 0,
-                "tipo_servicio": r.get("sistema_origen") or "EDARSAHUB",
-                "num_productos": int(r.get("tickets_total") or 0)
+                "importe": float(r.get("total_venta") or 0),
+                "pax": int(r.get("pax") or 0),
+                "pax_promedio": (
+                    float(r.get("pax_promedio"))
+                    if r.get("pax_promedio") is not None else None
+                ),
+                "num_productos": int(r.get("num_productos") or 0),
             })
-
-        total = int(resumen.get("total") or 0)
-
-        logging.info(
-            "[DETALLE_VENTAS_EDARSAHUB] server_id=%s sucursal=%s fechas=%s/%s rows=%s venta=%s cheques=%s pax=%s",
-            server_id, sucursal_sql, fecha_ini, fecha_fin, len(movimientos),
-            resumen.get("venta_total"), resumen.get("cheques_total"), resumen.get("pax_total")
-        )
 
         return {
             "source_status": "SUCCESS" if total > 0 else "NO_DATA",
-            "source_message": "Detalle consultado desde EDARSAHUB SQL",
-            "source": "EDARSAHUB_SQL_V2",
+            "source_message": "Folios consultados desde detalle canónico EDARSAHUB",
+            "source": "Comercial_Inteligencia_VentasDetalleProducto",
             "movimientos": movimientos,
-            "items": movimientos,  # Compatibilidad con guard rail legacy
+            "items": movimientos,
             "total": total,
             "page": page,
             "limit": limit,
             "pages": (total + limit - 1) // limit if total > 0 else 0,
             "periodo": {"inicio": fecha_ini, "fin": fecha_fin},
             "servidor": server.get("name"),
-            "resumen": {
-                "venta_total": float(resumen.get("venta_total") or 0),
-                "cheques_total": int(resumen.get("cheques_total") or 0),
-                "pax_total": int(resumen.get("pax_total") or 0)
-            }
+            "unidad": unidad_nombre,
         }
 
     except Exception as e:
-        logging.error("[DETALLE_VENTAS_EDARSAHUB] Error consultando EDARSAHUB SQL: %s", e)
+        logging.error(
+            "[DETALLE_COMERCIAL_CANONICO] Error consultando detalle EDARSAHUB: %s",
+            e,
+        )
         return {
             "source_status": "ERROR",
             "source_message": str(e),
-            "source": "EDARSAHUB_SQL_V2",
+            "source": "Comercial_Inteligencia_VentasDetalleProducto",
             "movimientos": [],
             "items": [],
             "total": 0,
             "page": page,
             "limit": limit,
-            "pages": 0
+            "pages": 0,
         }
 
 
@@ -3750,31 +3830,42 @@ async def comercial_dashboard(
                     ultimo_dia = datetime(year, mes_max + 1, 1) - timedelta(days=1)
                 fecha_fin = ultimo_dia.strftime('%Y-%m-%d')
             
-            if tipo_comparacion == "mes_completo" or not es_mes_actual:
-                if mes_min == 1:
-                    fecha_ini_ant = f"{year - 1}-12-01"
-                    fecha_fin_ant = f"{year - 1}-12-31"
-                else:
-                    mes_ant = mes_min - 1
-                    fecha_ini_ant = f"{year}-{str(mes_ant).zfill(2)}-01"
-                    if mes_ant == 12:
-                        ultimo_dia_ant = datetime(year + 1, 1, 1) - timedelta(days=1)
-                    else:
-                        ultimo_dia_ant = datetime(year, mes_ant + 1, 1) - timedelta(days=1)
-                    fecha_fin_ant = ultimo_dia_ant.strftime('%Y-%m-%d')
-                
-                fecha_ini_ano_ant = f"{year - 1}-{str(mes_min).zfill(2)}-01"
-                if mes_max == 12:
-                    ultimo_dia_ano_ant = datetime(year, 1, 1) - timedelta(days=1)
-                else:
-                    ultimo_dia_ano_ant = datetime(year - 1, mes_max + 1, 1) - timedelta(days=1)
-                fecha_fin_ano_ant = ultimo_dia_ano_ant.strftime('%Y-%m-%d')
+            # Comparativos correctos para uno o varios meses.
+            span_meses = mes_max - mes_min + 1
+            dia_corte_actual = int(fecha_fin[-2:])
+
+            # Mismo período del año anterior.
+            fecha_ini_ano_ant = f"{year - 1}-{mes_min:02d}-01"
+            if tipo_comparacion == "dias_equiv" and es_mes_actual:
+                dia_ano_ant = min(
+                    dia_corte_actual,
+                    calendar.monthrange(year - 1, mes_max)[1],
+                )
+                fecha_fin_ano_ant = f"{year - 1}-{mes_max:02d}-{dia_ano_ant:02d}"
             else:
-                fecha_ini_ant = "PENDIENTE"
-                fecha_fin_ant = "PENDIENTE"
-                fecha_ini_ano_ant = "PENDIENTE"
-                fecha_fin_ano_ant = "PENDIENTE"
-            
+                fecha_fin_ano_ant = (
+                    f"{year - 1}-{mes_max:02d}-"
+                    f"{calendar.monthrange(year - 1, mes_max)[1]:02d}"
+                )
+
+            # Período inmediatamente anterior con la misma cantidad de meses.
+            indice_inicio = year * 12 + (mes_min - 1)
+            indice_inicio_ant = indice_inicio - span_meses
+            indice_fin_ant = indice_inicio - 1
+            anio_ini_ant, mes_ini_ant_0 = divmod(indice_inicio_ant, 12)
+            anio_fin_ant, mes_fin_ant_0 = divmod(indice_fin_ant, 12)
+            mes_ini_ant = mes_ini_ant_0 + 1
+            mes_fin_ant = mes_fin_ant_0 + 1
+            fecha_ini_ant = f"{anio_ini_ant}-{mes_ini_ant:02d}-01"
+            if tipo_comparacion == "dias_equiv" and es_mes_actual:
+                dia_fin_ant = min(
+                    dia_corte_actual,
+                    calendar.monthrange(anio_fin_ant, mes_fin_ant)[1],
+                )
+            else:
+                dia_fin_ant = calendar.monthrange(anio_fin_ant, mes_fin_ant)[1]
+            fecha_fin_ant = f"{anio_fin_ant}-{mes_fin_ant:02d}-{dia_fin_ant:02d}"
+
             logging.info(f"Comercial Dashboard (multiselección): {server['name']} - Meses: {lista_meses} Año: {year} ({fecha_ini} a {fecha_fin}) - Tipo: {tipo_comparacion}")
             
             # ============= GUARD CLAUSE: Rango invertido (primer día del mes actual) =============
