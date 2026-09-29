@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "REMOTE_AHEAD_ONLY",
   "development_sha": "9ab05603340c9a3451d6ce5bc775e17d0f0316cc",
-  "generated_at_utc": "2026-09-29T04:09:34Z",
+  "generated_at_utc": "2026-09-29T04:10:49Z",
   "history": {
     "done_total_local": 1147,
     "pending_total_local": 0,
@@ -16,103 +16,103 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2049,
+      "age_seconds": 2124,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-ELIGIBILITY-AUDIT-NATIVE-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1728,
+      "age_seconds": 1804,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-ELIGIBILITY-AUDIT-NATIVE-READONLY-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2913,
+      "age_seconds": 2988,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-ELIGIBILITY-CONTRACT-HARDENING-PATCH-R5",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3465,
+      "age_seconds": 3540,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-ELIGIBILITY-CONTRACT-HARDENING-POSTAUDIT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2328,
+      "age_seconds": 2403,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-ELIGIBILITY-CONTRACT-HARDENING-POSTAUDIT-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3336,
+      "age_seconds": 3411,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-ELIGIBILITY-DECISION-SEMANTIC-RERUN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2326,
+      "age_seconds": 2401,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-ELIGIBILITY-DECISION-SEMANTIC-RERUN-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1941,
+      "age_seconds": 2016,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-NATIVE-DECISION-CAPABILITY-GAP-AUDIT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1738,
+      "age_seconds": 1813,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-NATIVE-DECISION-CAPABILITY-PATCH-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1735,
+      "age_seconds": 1810,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-NATIVE-DECISION-CAPABILITY-POSTAUDIT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1168,
+      "age_seconds": 1243,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-OPEN-CRITERIA-REVIEW-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2839,
+      "age_seconds": 2914,
       "job_id": "EDARSAHUB-WORKER-MATERIALIZATION-V2-BOOTSTRAP-R1A3-CONTRACT-HARDENING-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2143,
+      "age_seconds": 2218,
       "job_id": "EDARSAHUB-WORKER-MATERIALIZATION-V2-BOOTSTRAP-R1B-WIRING-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1789,
+      "age_seconds": 1864,
       "job_id": "EDARSAHUB-WORKER-MATERIALIZATION-V2-R1C1-POSITIVE-IDEMPOTENCY-LEGACY-CANARY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2766,
+      "age_seconds": 2841,
       "job_id": "WORKER-REPAIR-43bbc713377c98cef96c-A1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1134,
+      "age_seconds": 1209,
       "job_id": "WORKER-REPAIR-4b288e47c2a75112eb33-A1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1007,
+      "age_seconds": 1082,
       "job_id": "WORKER-REPAIR-5ce99513418825204c0f-A1",
       "reason": null,
       "state": "RESULT_READY"
@@ -132,8 +132,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-29T04:09:27Z",
-    "last_receive_utc": "2026-09-29T04:09:31Z",
+    "last_cycle_utc": "2026-09-29T04:10:47Z",
+    "last_receive_utc": "2026-09-29T04:10:48Z",
     "last_terminal_utc": "2026-09-29T03:52:46Z",
     "pid": "849",
     "runtime_fingerprint": {
