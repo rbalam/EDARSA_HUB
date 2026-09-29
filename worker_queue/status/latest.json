@@ -4,37 +4,43 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "0641ede68934e3f5c752a77f27133591e12355de",
-  "generated_at_utc": "2026-09-29T15:08:56Z",
+  "generated_at_utc": "2026-09-29T15:10:11Z",
   "history": {
     "done_total_local": 1150,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1020,
-    "results_total_local": 1974
+    "rejected_total_local": 1021,
+    "results_total_local": 1975
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 757,
+      "age_seconds": 832,
       "job_id": "BOS-AGENT-HARNESS-V1-RH-TIPOS-INCIDENCIA-REGISTRY-GAP-GATE31-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 754,
+      "age_seconds": 829,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE5-CAMPAIGN-ORCHESTRATOR-CONTRACT-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 580,
+      "age_seconds": 656,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-FINAL-CERT-R8-CARLOS-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 752,
+      "age_seconds": 10,
+      "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-HANG-DIAG-R9-CARLOS-20260929",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 827,
       "job_id": "RRR-GATE4E-R10-R6-RUNTIME-ORG-RESOLUTION-FIX-20260928",
       "reason": null,
       "state": "RESULT_READY"
@@ -48,15 +54,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 4,
+  "queue_result_ready_recent": 5,
   "queue_running": 0,
   "remote_development_sha": "0641ede68934e3f5c752a77f27133591e12355de",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-29T15:08:52Z",
-    "last_receive_utc": "2026-09-29T15:08:54Z",
-    "last_terminal_utc": "2026-09-29T14:59:15Z",
+    "last_cycle_utc": "2026-09-29T15:10:04Z",
+    "last_receive_utc": "2026-09-29T15:10:06Z",
+    "last_terminal_utc": "2026-09-29T15:10:00Z",
     "pid": "10030",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "9fca18f2512942ff4674b8b1d6e4f6bc28ae993f",
