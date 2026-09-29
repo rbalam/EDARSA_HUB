@@ -1,0 +1,63 @@
+{
+  "actions": [
+    {
+      "content": "from __future__ import annotations\n\nimport hashlib\nimport re\nfrom pathlib import Path\nfrom typing import Any\n\nV2_ACTIONS = {\n    \"replace_text\",\n    \"insert_before\",\n    \"insert_after\",\n    \"append_once\",\n}\n\n\ndef _sha(raw: bytes) -> str:\n    return hashlib.sha256(raw).hexdigest()\n\n\ndef _valid_sha(value: Any) -> bool:\n    return (\n        isinstance(value, str)\n        and re.fullmatch(r\"[0-9a-f]{64}\", value) is not None\n    )\n\n\ndef _atomic_write(target: Path, raw: bytes) -> None:\n    tmp = target.with_name(target.name + \".mutation-v2.tmp\")\n    try:\n        tmp.write_bytes(raw)\n        tmp.replace(target)\n    finally:\n        if tmp.exists():\n            tmp.unlink()\n\n\ndef apply_mutation(target: Path, action: dict[str, Any]) -> dict[str, Any]:\n    kind = str(action.get(\"type\") or \"\")\n    if kind not in V2_ACTIONS:\n        raise RuntimeError(\"UNSUPPORTED_V2_ACTION\")\n\n    if not target.is_file():\n        raise RuntimeError(\"MUTATION_TARGET_MISSING\")\n\n    raw_before = target.read_bytes()\n    text_before = raw_before.decode(\"utf-8\")\n\n    source_actual = _sha(raw_before)\n    source_expected = str(action.get(\"source_sha256\") or \"\")\n    replacement = action.get(\"replacement\")\n    expected = int(action.get(\"expected_occurrences\", 1))\n\n    if not isinstance(replacement, str):\n        raise RuntimeError(\"REPLACEMENT_REQUIRED\")\n\n    anchor = action.get(\"anchor\")\n    old_text = action.get(\"old_text\")\n\n    already_applied = False\n\n    if kind == \"append_once\":\n        already_applied = replacement in text_before\n    elif kind == \"insert_before\":\n        already_applied = (\n            isinstance(anchor, str)\n            and replacement + anchor in text_before\n        )\n    elif kind == \"insert_after\":\n        already_applied = (\n            isinstance(anchor, str)\n            and anchor + replacement in text_before\n        )\n    elif kind == \"replace_text\":\n        already_applied = (\n            isinstance(old_text, str)\n            and old_text not in text_before\n            and replacement in text_before\n        )\n\n    if already_applied:\n        return {\n            \"operation\": kind,\n            \"state\": \"ALREADY_APPLIED\",\n            \"source_sha256_expected\": source_expected,\n            \"source_sha256_actual\": source_actual,\n            \"source_integrity_valid\": source_actual == source_expected,\n            \"anchor_occurrences_expected\": expected,\n            \"anchor_occurrences_actual\": 0,\n            \"transformation_applied\": False,\n            \"duplicate_mutation\": False,\n            \"final_sha256\": source_actual,\n            \"bytes_before\": len(raw_before),\n            \"bytes_after\": len(raw_before),\n        }\n\n    if not _valid_sha(source_expected):\n        raise RuntimeError(\"SOURCE_SHA_INVALID\")\n\n    if source_actual != source_expected:\n        raise RuntimeError(\"SOURCE_SHA_MISMATCH\")\n\n    if kind == \"append_once\":\n        actual = text_before.count(replacement)\n        if actual != 0:\n            raise RuntimeError(\"APPEND_ONCE_OCCURRENCE_MISMATCH\")\n        text_after = text_before + replacement\n\n    elif kind in {\"insert_before\", \"insert_after\"}:\n        if not isinstance(anchor, str) or not anchor:\n            raise RuntimeError(\"ANCHOR_REQUIRED\")\n\n        actual = text_before.count(anchor)\n\n        if actual == 0:\n            raise RuntimeError(\"ANCHOR_NOT_FOUND\")\n\n        if actual != expected:\n            raise RuntimeError(\"ANCHOR_OCCURRENCE_MISMATCH\")\n\n        if kind == \"insert_before\":\n            text_after = text_before.replace(\n                anchor, replacement + anchor\n            )\n        else:\n            text_after = text_before.replace(\n                anchor, anchor + replacement\n            )\n\n    else:\n        if not isinstance(old_text, str) or not old_text:\n            raise RuntimeError(\"OLD_TEXT_REQUIRED\")\n\n        actual = text_before.count(old_text)\n\n        if actual == 0:\n            raise RuntimeError(\"OLD_TEXT_NOT_FOUND\")\n\n        if actual != expected:\n            raise RuntimeError(\"OLD_TEXT_OCCURRENCE_MISMATCH\")\n\n        text_after = text_before.replace(old_text, replacement)\n\n    raw_after = text_after.encode(\"utf-8\")\n    _atomic_write(target, raw_after)\n\n    return {\n        \"operation\": kind,\n        \"state\": \"APPLIED\",\n        \"source_sha256_expected\": source_expected,\n        \"source_sha256_actual\": source_actual,\n        \"source_integrity_valid\": True,\n        \"anchor_occurrences_expected\": expected,\n        \"anchor_occurrences_actual\": actual,\n        \"transformation_applied\": True,\n        \"duplicate_mutation\": False,\n        \"final_sha256\": _sha(raw_after),\n        \"bytes_before\": len(raw_before),\n        \"bytes_after\": len(raw_after),\n    }\n",
+      "expected_sha256": "c983566b08f3bd975649d44065b5dac22ac3f3bcac32a0eb3e7db851766543f3",
+      "path": "tools/mirror_sync/worker_mutation_materializer.py",
+      "type": "write_file"
+    },
+    {
+      "content": "from __future__ import annotations\n\nimport hashlib\n\nimport pytest\n\nfrom tools.mirror_sync.worker_mutation_materializer import apply_mutation\n\n\ndef sha(path):\n    return hashlib.sha256(path.read_bytes()).hexdigest()\n\n\ndef test_insert_after_positive_and_replay(tmp_path):\n    p = tmp_path / \"a.py\"\n    p.write_text(\"a\\nanchor\\nz\\n\", encoding=\"utf-8\")\n\n    action = {\n        \"type\": \"insert_after\",\n        \"source_sha256\": sha(p),\n        \"anchor\": \"anchor\\n\",\n        \"expected_occurrences\": 1,\n        \"replacement\": \"new\\n\",\n    }\n\n    first = apply_mutation(p, action)\n    second = apply_mutation(p, action)\n\n    assert first[\"state\"] == \"APPLIED\"\n    assert first[\"source_integrity_valid\"] is True\n    assert first[\"transformation_applied\"] is True\n    assert first[\"final_sha256\"] == sha(p)\n\n    assert second[\"state\"] == \"ALREADY_APPLIED\"\n    assert second[\"transformation_applied\"] is False\n    assert second[\"duplicate_mutation\"] is False\n\n    assert p.read_text(encoding=\"utf-8\") == (\n        \"a\\nanchor\\nnew\\nz\\n\"\n    )\n\n\ndef test_bad_sha_fail_closed(tmp_path):\n    p = tmp_path / \"a.py\"\n    p.write_text(\"anchor\\n\", encoding=\"utf-8\")\n    before = p.read_bytes()\n\n    with pytest.raises(RuntimeError, match=\"SOURCE_SHA_MISMATCH\"):\n        apply_mutation(\n            p,\n            {\n                \"type\": \"insert_after\",\n                \"source_sha256\": \"0\" * 64,\n                \"anchor\": \"anchor\\n\",\n                \"expected_occurrences\": 1,\n                \"replacement\": \"new\\n\",\n            },\n        )\n\n    assert p.read_bytes() == before\n\n\ndef test_anchor_not_found(tmp_path):\n    p = tmp_path / \"a.py\"\n    p.write_text(\"a\\nz\\n\", encoding=\"utf-8\")\n\n    with pytest.raises(RuntimeError, match=\"ANCHOR_NOT_FOUND\"):\n        apply_mutation(\n            p,\n            {\n                \"type\": \"insert_before\",\n                \"source_sha256\": sha(p),\n                \"anchor\": \"missing\\n\",\n                \"expected_occurrences\": 1,\n                \"replacement\": \"new\\n\",\n            },\n        )\n\n\ndef test_occurrence_mismatch(tmp_path):\n    p = tmp_path / \"a.py\"\n    p.write_text(\"anchor\\nanchor\\n\", encoding=\"utf-8\")\n\n    with pytest.raises(\n        RuntimeError, match=\"ANCHOR_OCCURRENCE_MISMATCH\"\n    ):\n        apply_mutation(\n            p,\n            {\n                \"type\": \"insert_after\",\n                \"source_sha256\": sha(p),\n                \"anchor\": \"anchor\\n\",\n                \"expected_occurrences\": 1,\n                \"replacement\": \"new\\n\",\n            },\n        )\n\n\ndef test_append_once(tmp_path):\n    p = tmp_path / \"a.py\"\n    p.write_text(\"a\\n\", encoding=\"utf-8\")\n\n    action = {\n        \"type\": \"append_once\",\n        \"source_sha256\": sha(p),\n        \"expected_occurrences\": 1,\n        \"replacement\": \"z\\n\",\n    }\n\n    assert apply_mutation(p, action)[\"state\"] == \"APPLIED\"\n    assert apply_mutation(p, action)[\"state\"] == \"ALREADY_APPLIED\"\n    assert p.read_text(encoding=\"utf-8\") == \"a\\nz\\n\"\n\n\ndef test_replace_text(tmp_path):\n    p = tmp_path / \"a.py\"\n    p.write_text(\"alpha old omega\\n\", encoding=\"utf-8\")\n\n    result = apply_mutation(\n        p,\n        {\n            \"type\": \"replace_text\",\n            \"source_sha256\": sha(p),\n            \"old_text\": \"old\",\n            \"expected_occurrences\": 1,\n            \"replacement\": \"new\",\n        },\n    )\n\n    assert result[\"state\"] == \"APPLIED\"\n    assert result[\"operation\"] == \"replace_text\"\n    assert p.read_text(encoding=\"utf-8\") == \"alpha new omega\\n\"\n",
+      "expected_sha256": "c8b40ba8c7635f8a891f47ca21c0d0eacbc1b85cae85e587fc78daeb40f34993",
+      "path": "backend/tests/test_worker_mutation_materializer.py",
+      "type": "write_file"
+    }
+  ],
+  "allowed_paths": [
+    "tools/mirror_sync/worker_mutation_materializer.py",
+    "backend/tests/test_worker_mutation_materializer.py"
+  ],
+  "base_sha": "4f9af5fc46ac1e7b7a4d7d93682ee389a14a5a8c",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/worker_mutation_materializer.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_mutation_materializer.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-WORKER-MATERIALIZATION-V2-BOOTSTRAP-R1A3-CONTRACT-HARDENING-R1",
+  "mode": "MUTATION",
+  "objective": "Completar Mutation Materialization V2 con replace_text, insert_before, insert_after, append_once, integridad source_sha256, idempotencia, atomic write y evidencia estructurada.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Bitacoras de Parrilla",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "13. Produccion",
+    "source": "chatgpt-classic"
+  },
+  "scheduling": {
+    "bounded_context": "13. Produccion",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "13. Produccion",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
