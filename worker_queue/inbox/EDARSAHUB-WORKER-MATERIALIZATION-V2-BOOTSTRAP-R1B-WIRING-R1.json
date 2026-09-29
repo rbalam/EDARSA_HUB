@@ -1,0 +1,115 @@
+{
+  "actions": [
+    {
+      "expected_count": 1,
+      "expected_sha256": "092f8cd6acb4d654749846d6ac6373b14012b7a6974be5e791cacdb2f5cf5ef0",
+      "new": "try:\n    from tools.mirror_sync.worker_deliverable_contract import normalize_deliverable_specs, normalize_required_deliverables\n    from tools.mirror_sync.worker_mutation_materializer import V2_ACTIONS\nexcept ModuleNotFoundError:\n    from worker_deliverable_contract import normalize_deliverable_specs, normalize_required_deliverables\n    from worker_mutation_materializer import V2_ACTIONS\n",
+      "old": "try:\n    from tools.mirror_sync.worker_deliverable_contract import normalize_deliverable_specs, normalize_required_deliverables\nexcept ModuleNotFoundError:\n    from worker_deliverable_contract import normalize_deliverable_specs, normalize_required_deliverables\n",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "ALLOWED_ACTIONS = {\"replace_text\", \"write_file\", \"delete_file\", \"insert_before\", \"insert_after\", \"append_once\"}",
+      "old": "ALLOWED_ACTIONS = {\"replace_text\", \"write_file\", \"delete_file\"}",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "    if kind not in ALLOWED_ACTIONS:\n        errors.append(f\"{prefix}_INVALID_TYPE\")\n        return errors\n    if not safe_repo_path(action.get(\"path\")):\n        errors.append(f\"{prefix}_INVALID_PATH\")\n\n    is_v2 = (\n        kind in V2_ACTIONS\n        and (\n            kind != \"replace_text\"\n            or \"source_sha256\" in action\n            or \"old_text\" in action\n        )\n    )\n\n    if is_v2:\n        source_sha = action.get(\"source_sha256\")\n        if not isinstance(source_sha, str) or not re.fullmatch(r\"[0-9a-f]{64}\", source_sha):\n            errors.append(f\"{prefix}_SOURCE_SHA256_REQUIRED_OR_INVALID\")\n\n        replacement = action.get(\"replacement\")\n        if not isinstance(replacement, str):\n            errors.append(f\"{prefix}_REPLACEMENT_REQUIRED\")\n\n        expected_occurrences = action.get(\"expected_occurrences\", 1)\n        if (\n            not isinstance(expected_occurrences, int)\n            or expected_occurrences < 1\n            or expected_occurrences > 1000\n        ):\n            errors.append(f\"{prefix}_INVALID_EXPECTED_OCCURRENCES\")\n\n        if kind in {\"insert_before\", \"insert_after\"}:\n            anchor = action.get(\"anchor\")\n            if not isinstance(anchor, str) or not anchor:\n                errors.append(f\"{prefix}_ANCHOR_REQUIRED\")\n\n        if kind == \"replace_text\":\n            old_text = action.get(\"old_text\")\n            if not isinstance(old_text, str) or not old_text:\n                errors.append(f\"{prefix}_OLD_TEXT_REQUIRED\")\n\n        return errors\n",
+      "old": "    if kind not in ALLOWED_ACTIONS:\n        errors.append(f\"{prefix}_INVALID_TYPE\")\n        return errors\n    if not safe_repo_path(action.get(\"path\")):\n        errors.append(f\"{prefix}_INVALID_PATH\")\n",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "expected_sha256": "b23190e7149c96b9d3d4aef8760dfcc5edb9112e9eeb810cf3530f817cd1f64b",
+      "new": "try:\n    from tools.mirror_sync.worker_deliverable_contract import evaluate_deliverables, materialize_deliverables, normalize_deliverable_specs, normalize_required_deliverables\n    from tools.mirror_sync.worker_mutation_materializer import V2_ACTIONS, apply_mutation\nexcept ModuleNotFoundError:\n    from worker_deliverable_contract import evaluate_deliverables, materialize_deliverables, normalize_deliverable_specs, normalize_required_deliverables\n    from worker_mutation_materializer import V2_ACTIONS, apply_mutation\n",
+      "old": "try:\n    from tools.mirror_sync.worker_deliverable_contract import evaluate_deliverables, materialize_deliverables, normalize_deliverable_specs, normalize_required_deliverables\nexcept ModuleNotFoundError:\n    from worker_deliverable_contract import evaluate_deliverables, materialize_deliverables, normalize_deliverable_specs, normalize_required_deliverables\n",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "ALLOWED_ACTIONS = {\"replace_text\", \"write_file\", \"delete_file\", \"insert_before\", \"insert_after\", \"append_once\"}",
+      "old": "ALLOWED_ACTIONS = {\"replace_text\", \"write_file\", \"delete_file\"}",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "    is_v2 = (\n        kind in V2_ACTIONS\n        and (\n            kind != \"replace_text\"\n            or \"source_sha256\" in action\n            or \"old_text\" in action\n        )\n    )\n\n    if is_v2:\n        evidence = apply_mutation(target, action)\n        return {\n            \"path\": relative,\n            **evidence,\n        }\n\n    verify_expected_hash(target, action)\n    if kind == \"replace_text\":\n",
+      "old": "    verify_expected_hash(target, action)\n    if kind == \"replace_text\":\n",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "new": "            allowed_files: set[str] = set()\n            mutation_evidence: list[dict[str, Any]] = []\n\n            for action in job.get(\"actions\") or []:\n                applied = apply_action(worktree, action)\n\n                if isinstance(applied, dict):\n                    relative = str(applied.get(\"path\") or \"\")\n                    if not relative:\n                        raise RuntimeError(\"MUTATION_EVIDENCE_PATH_MISSING\")\n                    mutation_evidence.append(applied)\n                else:\n                    relative = str(applied)\n\n                allowed_files.add(relative)\n\n            if mutation_evidence:\n                result[\"mutation_evidence\"] = mutation_evidence\n",
+      "old": "            allowed_files: set[str] = set()\n            for action in job.get(\"actions\") or []:\n                relative = apply_action(worktree, action)\n                allowed_files.add(relative)\n",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "expected_sha256": "e571a79697ab2a1f200e9ac0fab19908a774aff45bb2c47c43b369cdf1c85d40",
+      "new": "ALLOWED_ACTIONS = {\n    \"replace_text\",\n    \"write_file\",\n    \"delete_file\",\n    \"insert_before\",\n    \"insert_after\",\n    \"append_once\",\n}\n",
+      "old": "ALLOWED_ACTIONS = {\n    \"replace_text\",\n    \"write_file\",\n    \"delete_file\",\n}\n",
+      "path": "tools/mirror_sync/gate_chain_publisher.py",
+      "type": "replace_text"
+    }
+  ],
+  "allowed_paths": [
+    "tools/mirror_sync/universal_job_bridge.py",
+    "tools/mirror_sync/universal_job_dispatcher.py",
+    "tools/mirror_sync/gate_chain_publisher.py"
+  ],
+  "base_sha": "1ee6af68c829d7b7d27c5d4ba3de62f3617893b2",
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/gate_chain_publisher.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_mutation_materializer.py",
+        "backend/tests/test_universal_worker_control_plane_hardening_r1.py",
+        "backend/tests/test_worker_generic_readonly.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-WORKER-MATERIALIZATION-V2-BOOTSTRAP-R1B-WIRING-R1",
+  "mode": "MUTATION",
+  "objective": "Conectar Mutation Materialization V2 al Universal Worker: validacion bridge, dispatch al materializer, mutation_evidence estructurada y allowlist publisher, preservando acciones legacy.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Bitacoras de Parrilla",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "13. Produccion",
+    "source": "chatgpt-classic"
+  },
+  "scheduling": {
+    "bounded_context": "13. Produccion",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "13. Produccion",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
