@@ -16,6 +16,7 @@ Repository mutation remains exclusively the responsibility of Universal Worker.
 from __future__ import annotations
 
 import hashlib
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +30,32 @@ RESULTS_DIR = ROOT / ".git" / "universal-worker-queue" / "results"
 
 TARGET_REPO = "rbalam/EDARSA_HUB"
 TARGET_BRANCH = "Edarsahub_Desarrollo"
+
+
+def _result_completed_epoch(
+    payload: dict[str, Any],
+) -> float | None:
+    value = payload.get(
+        "completed_at_utc"
+    )
+
+    if not isinstance(value, str):
+        return None
+
+    value = value.strip()
+
+    if not value:
+        return None
+
+    try:
+        return datetime.fromisoformat(
+            value.replace(
+                "Z",
+                "+00:00",
+            )
+        ).timestamp()
+    except ValueError:
+        return None
 
 
 def deterministic_repair_job_id(
@@ -277,6 +304,11 @@ def reconcile_repair_result(
     decision = maintenance.register_repair_result(
         incident_id,
         repair_result,
+        now_epoch=(
+            _result_completed_epoch(
+                payload
+            )
+        ),
     )
 
     return {

@@ -360,10 +360,32 @@ def build_deterministic_repair_job(
             "INCIDENT_NOT_DECLARED"
         )
 
-    if incident.state != "REPAIR_REQUIRED":
+    if incident.state not in {
+        "REPAIR_REQUIRED",
+        "REJECTED",
+    }:
         raise ValueError(
-            "INCIDENT_NOT_REPAIR_REQUIRED"
+            "INCIDENT_NOT_REPAIRABLE"
         )
+
+    capability = (
+        _resolve_capability(
+            incident_id,
+            capability_code,
+        )
+    )
+
+    allowed, reason = (
+        maintenance.repair_attempt_allowed(
+            incident_id
+        )
+    )
+
+    if (
+        not allowed
+        and not incident.repair_job_id
+    ):
+        raise ValueError(reason)
 
     convergence = (
         convergence_state()
@@ -376,13 +398,6 @@ def build_deterministic_repair_job(
         raise ValueError(
             "DEV_MIRROR_NOT_CONVERGED"
         )
-
-    capability = (
-        _resolve_capability(
-            incident_id,
-            capability_code,
-        )
-    )
 
     context = {
         "base_sha": convergence[

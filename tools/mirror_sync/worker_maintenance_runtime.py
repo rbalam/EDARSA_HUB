@@ -410,10 +410,76 @@ def register_repair_result(
     )
 
     if decision.state is MaintenanceState.REJECTED:
-        now_value = time.time() if now_epoch is None else float(now_epoch)
-        state["cooldown_until_epoch"] = (
-            now_value + REPAIR_COOLDOWN_SECONDS
+        history = state.get(
+            "repair_job_history"
         )
+
+        if not isinstance(history, list):
+            history = []
+
+        current_job_id = str(
+            state.get("repair_job_id")
+            or ""
+        ).strip()
+
+        if current_job_id:
+            already_archived = any(
+                isinstance(item, dict)
+                and str(
+                    item.get("job_id")
+                    or ""
+                ).strip()
+                == current_job_id
+                for item in history
+            )
+
+            if not already_archived:
+                history.append(
+                    {
+                        "job_id": current_job_id,
+                        "attempt": int(
+                            state.get("attempts")
+                            or 0
+                        ),
+                        "publication_state": (
+                            state.get(
+                                "repair_publication_state"
+                            )
+                        ),
+                        "publication_commit": (
+                            state.get(
+                                "repair_publication_commit"
+                            )
+                        ),
+                        "terminal_state": (
+                            MaintenanceState.REJECTED.value
+                        ),
+                    }
+                )
+
+            state[
+                "repair_job_history"
+            ] = history
+
+        state["repair_job_id"] = None
+        state[
+            "repair_publication_state"
+        ] = None
+        state[
+            "repair_publication_commit"
+        ] = None
+
+        now_value = (
+            time.time()
+            if now_epoch is None
+            else float(now_epoch)
+        )
+
+        state["cooldown_until_epoch"] = (
+            now_value
+            + REPAIR_COOLDOWN_SECONDS
+        )
+
     else:
         state["cooldown_until_epoch"] = None
 
