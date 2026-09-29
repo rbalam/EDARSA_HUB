@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "0641ede68934e3f5c752a77f27133591e12355de",
-  "generated_at_utc": "2026-09-29T15:27:12Z",
+  "generated_at_utc": "2026-09-29T15:34:21Z",
   "history": {
     "done_total_local": 1150,
     "pending_total_local": 0,
@@ -16,37 +16,37 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1853,
+      "age_seconds": 2282,
       "job_id": "BOS-AGENT-HARNESS-V1-RH-TIPOS-INCIDENCIA-REGISTRY-GAP-GATE31-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1850,
+      "age_seconds": 2280,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE5-CAMPAIGN-ORCHESTRATOR-CONTRACT-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1676,
+      "age_seconds": 2106,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-FINAL-CERT-R8-CARLOS-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1031,
+      "age_seconds": 1460,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-HANG-DIAG-R9-CARLOS-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 5,
+      "age_seconds": 435,
       "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-NONBLOCKING-R11-CARLOS-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1848,
+      "age_seconds": 2277,
       "job_id": "RRR-GATE4E-R10-R6-RUNTIME-ORG-RESOLUTION-FIX-20260928",
       "reason": null,
       "state": "RESULT_READY"
@@ -66,10 +66,10 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-29T15:27:09Z",
-    "last_receive_utc": "2026-09-29T15:27:11Z",
+    "last_cycle_utc": "2026-09-29T15:34:15Z",
+    "last_receive_utc": "2026-09-29T15:34:20Z",
     "last_terminal_utc": "2026-09-29T15:27:06Z",
-    "pid": "10030",
+    "pid": "414",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "9fca18f2512942ff4674b8b1d6e4f6bc28ae993f",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
