@@ -1,0 +1,130 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "MEJORA-TABEJE-FUENTES-DETALLE-DIA-R2-CARLOS-20260929T2345Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "labels": [
+    "Mejora-TABEJE",
+    "Tablero Ejecutivo",
+    "FUENTES-DETALLE-DIA",
+    "READ_ONLY",
+    "CARLOS"
+  ],
+  "tracking": {
+    "project_label": "Mejora-TABEJE",
+    "display_label": "Mejora-TABEJE | FUENTES-DETALLE-DIA | MEJORA-TABEJE-FUENTES-DETALLE-DIA-R2-CARLOS-20260929T2345Z",
+    "status_legend": {
+      "VERDE": [
+        "DONE",
+        "PASS",
+        "CERTIFIED",
+        "CERTIFIED_READ_ONLY",
+        "CERTIFIED_OPERATIONAL"
+      ],
+      "AMARILLO": [
+        "PENDING",
+        "PROCESSING",
+        "RESULT_READY",
+        "WAITING",
+        "IN_PROGRESS"
+      ],
+      "ROJO": [
+        "REJECTED",
+        "ERROR",
+        "FAILED",
+        "BLOCKED"
+      ]
+    }
+  },
+  "objective": "[Mejora-TABEJE | FUENTES-DETALLE-DIA] Determinar, sin modificar ningun proceso de sincronizacion, que tablas/vistas YA existentes en EDARSAHUB contienen detalle de folio/PAX/importe y hora de apertura para Ventas del Dia del Tablero Ejecutivo. Validar cobertura del 2026-09-29 para las cinco unidades y confirmar si Sync_PAX_Detalle, Sync_Movimientos_Detalle, Sync_Ventas_PorHora o Sync_Mesas permiten construir los drilldowns y Ventas por Hora. Prohibido ejecutar o modificar Scheduler, sync_comercial_abiertas_v2, Sync_Sales, Sync_PAX, ISCAM, backfills o cualquier escritura de datos. Solo lectura EDARSAHUB y auditoria de codigo.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "scheduling": {
+    "project_id": "Mejora-TABEJE",
+    "bounded_context": "Tablero Ejecutivo",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/scripts/ddl_sync_comercial_tablas.sql",
+          "backend/modules/comercial/routes.py",
+          "backend/modules/comercial_analytics/repository_tickets.py",
+          "backend/modules/inteligencia_comercial/routes.py",
+          "backend/modules/sync_historicos/sync_ventas.py",
+          "backend/modules/sync_historicos/repository.py",
+          "frontend/src/pages/TableroEjecutivo.js"
+        ],
+        "search_terms": [
+          "Sync_PAX_Detalle",
+          "Sync_Movimientos_Detalle",
+          "Sync_Ventas_PorHora",
+          "Sync_Mesas",
+          "CuentaFolio",
+          "NumeroComensales",
+          "VentaCuenta",
+          "HoraEntrada",
+          "HoraAperturaCuenta",
+          "FechaHora",
+          "Cancelado"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.sql"
+        ],
+        "exclude_patterns": [],
+        "max_results": 180
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "unidades_activas",
+          "sql": "SELECT codigo,nombre,CONVERT(varchar(36),id) AS unidad_pk,CONVERT(varchar(36),server_id) AS server_id,sucursal_origen_id,system_type FROM dbo.Unidades_Negocio WITH (NOLOCK) WHERE ISNULL(activo,0)=1 ORDER BY codigo"
+        },
+        {
+          "name": "pax_detalle_20260929",
+          "sql": "SELECT ServerID,SucursalID,SucursalNombre,COUNT(*) AS filas,COUNT(DISTINCT ISNULL(CuentaID,CuentaFolio)) AS cuentas,SUM(ISNULL(NumeroComensales,0)) AS pax,SUM(ISNULL(VentaCuenta,0)) AS venta,MIN(FechaHora) AS primera_fecha,MAX(FechaHora) AS ultima_fecha,MIN(HoraEntrada) AS primera_hora_entrada,MAX(HoraEntrada) AS ultima_hora_entrada FROM dbo.Sync_PAX_Detalle WITH (NOLOCK) WHERE FechaOperacion='2026-09-29' GROUP BY ServerID,SucursalID,SucursalNombre ORDER BY SucursalNombre"
+        },
+        {
+          "name": "movimientos_detalle_20260929",
+          "sql": "SELECT ServerID,SucursalID,COUNT(*) AS filas,COUNT(DISTINCT ISNULL(CuentaID,CuentaFolio)) AS cuentas,SUM(ISNULL(Total,0)) AS venta,MIN(FechaHora) AS primera_fecha,MAX(FechaHora) AS ultima_fecha,SUM(CASE WHEN ISNULL(Cancelado,0)=1 THEN 1 ELSE 0 END) AS filas_canceladas FROM dbo.Sync_Movimientos_Detalle WITH (NOLOCK) WHERE FechaOperacion='2026-09-29' GROUP BY ServerID,SucursalID ORDER BY ServerID,SucursalID"
+        },
+        {
+          "name": "ventas_por_hora_20260929",
+          "sql": "SELECT ServerID,EmpresaID,SucursalID,UnidadNegocioID,SystemType,Hora,VentaHora,NumTicketsHora,SourceStatus,SourceType FROM dbo.Sync_Ventas_PorHora WITH (NOLOCK) WHERE FechaOperacion='2026-09-29' ORDER BY ServerID,SucursalID,Hora"
+        },
+        {
+          "name": "mesas_20260929",
+          "sql": "SELECT ServerID,SucursalID,SucursalNombre,COUNT(*) AS mesas,COUNT(CASE WHEN CuentaActualID IS NOT NULL THEN 1 END) AS mesas_con_cuenta,MIN(HoraAperturaCuenta) AS primera_apertura,MAX(HoraAperturaCuenta) AS ultima_apertura,SUM(ISNULL(TotalCuentas,0)) AS cuentas,SUM(ISNULL(TotalComensales,0)) AS pax,SUM(ISNULL(VentaTotal,0)) AS venta FROM dbo.Sync_Mesas WITH (NOLOCK) WHERE FechaOperacion='2026-09-29' GROUP BY ServerID,SucursalID,SucursalNombre ORDER BY SucursalNombre"
+        },
+        {
+          "name": "detalle_canonico_20260928",
+          "sql": "WITH tk AS (SELECT unidad_negocio_id,numero_ticket,MAX(ISNULL(pax,0)) AS pax,SUM(ISNULL(importe_neto,0)) AS venta,MIN(fecha_hora) AS apertura FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK) WHERE fecha_operacion='2026-09-28' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 GROUP BY unidad_negocio_id,numero_ticket) SELECT unidad_negocio_id,COUNT(*) AS cheques,SUM(pax) AS pax,SUM(venta) AS venta,MIN(apertura) AS primera_apertura,MAX(apertura) AS ultima_apertura FROM tk GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
