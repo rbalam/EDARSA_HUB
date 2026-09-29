@@ -1,0 +1,97 @@
+{
+  "actions": [
+    {
+      "content": "alpha\nanchor\nomega\n",
+      "path": "backend/tests/fixtures/worker_mutation_v2_canary.txt",
+      "type": "write_file"
+    },
+    {
+      "anchor": "anchor\n",
+      "expected_occurrences": 1,
+      "path": "backend/tests/fixtures/worker_mutation_v2_canary.txt",
+      "replacement": "insert_after\n",
+      "source_sha256": "f42fd592fed2c64e7cc487737839cce196dc57f89e31148c217e944a0a622469",
+      "type": "insert_after"
+    },
+    {
+      "anchor": "anchor\n",
+      "expected_occurrences": 1,
+      "path": "backend/tests/fixtures/worker_mutation_v2_canary.txt",
+      "replacement": "insert_after\n",
+      "source_sha256": "f42fd592fed2c64e7cc487737839cce196dc57f89e31148c217e944a0a622469",
+      "type": "insert_after"
+    },
+    {
+      "anchor": "alpha\n",
+      "expected_occurrences": 1,
+      "path": "backend/tests/fixtures/worker_mutation_v2_canary.txt",
+      "replacement": "insert_before\n",
+      "source_sha256": "2b8f886133d438417cd7ea67bc6de07c86a78035fbd95b170bf5036ef28f8a4b",
+      "type": "insert_before"
+    },
+    {
+      "expected_occurrences": 1,
+      "path": "backend/tests/fixtures/worker_mutation_v2_canary.txt",
+      "replacement": "append_once\n",
+      "source_sha256": "b329fda452c8603bb11293fb815f561f96ef58bac1c9a8675fbe93327c6eb665",
+      "type": "append_once"
+    },
+    {
+      "expected_occurrences": 1,
+      "old_text": "alpha\n",
+      "path": "backend/tests/fixtures/worker_mutation_v2_canary.txt",
+      "replacement": "ALPHA_V2\n",
+      "source_sha256": "30b96e8c705eb7f96d833acc8ab1c656cc302d08373e7af795c89e0e2dc4ac53",
+      "type": "replace_text"
+    },
+    {
+      "expected_count": 1,
+      "expected_sha256": "f5b13f26e2a0745a0a8b4ba2079b2d90544ed5ad87f6157ce5881233a065d8ea",
+      "new": "OMEGA_LEGACY\n",
+      "old": "omega\n",
+      "path": "backend/tests/fixtures/worker_mutation_v2_canary.txt",
+      "type": "replace_text"
+    }
+  ],
+  "allowed_paths": [
+    "backend/tests/fixtures/worker_mutation_v2_canary.txt"
+  ],
+  "base_sha": "ac23c8979c5e3fa0292f64aca40df3f313b8fe20",
+  "checks": [
+    {
+      "paths": [
+        "backend/tests/test_worker_mutation_materializer.py",
+        "backend/tests/test_universal_worker_control_plane_hardening_r1.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-WORKER-MATERIALIZATION-V2-R1C1-POSITIVE-IDEMPOTENCY-LEGACY-CANARY-R1",
+  "mode": "MUTATION",
+  "objective": "Certificar end-to-end Mutation Materialization V2 mediante canary determinista: positive apply, replay ALREADY_APPLIED, insert_before, insert_after, append_once, replace_text V2, compatibilidad replace_text legacy y mutation_evidence.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Bitacoras de Parrilla",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "13. Produccion",
+    "source": "chatgpt-classic"
+  },
+  "scheduling": {
+    "bounded_context": "13. Produccion",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "13. Produccion",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
