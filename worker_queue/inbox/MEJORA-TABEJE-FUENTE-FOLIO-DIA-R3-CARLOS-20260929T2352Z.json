@@ -1,0 +1,115 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "MEJORA-TABEJE-FUENTE-FOLIO-DIA-R3-CARLOS-20260929T2352Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "labels": [
+    "Mejora-TABEJE",
+    "Tablero Ejecutivo",
+    "FUENTE-FOLIO-DIA",
+    "READ_ONLY",
+    "CARLOS"
+  ],
+  "tracking": {
+    "project_label": "Mejora-TABEJE",
+    "display_label": "Mejora-TABEJE | FUENTE-FOLIO-DIA | MEJORA-TABEJE-FUENTE-FOLIO-DIA-R3-CARLOS-20260929T2352Z",
+    "status_legend": {
+      "VERDE": [
+        "DONE",
+        "PASS",
+        "CERTIFIED",
+        "CERTIFIED_READ_ONLY",
+        "CERTIFIED_OPERATIONAL"
+      ],
+      "AMARILLO": [
+        "PENDING",
+        "PROCESSING",
+        "RESULT_READY",
+        "WAITING",
+        "IN_PROGRESS"
+      ],
+      "ROJO": [
+        "REJECTED",
+        "ERROR",
+        "FAILED",
+        "BLOCKED"
+      ]
+    }
+  },
+  "objective": "[Mejora-TABEJE | FUENTE-FOLIO-DIA] Identificar la fuente de SOLO LECTURA ya existente en EDARSAHUB que pueda entregar folio, fecha/hora de apertura, PAX e importe para Ventas del Dia del 2026-09-29, sin modificar ni ejecutar ningun procedimiento de sincronizacion. Revisar especialmente Comercial_Ventas_Dia_Abiertas_v2 y descubrir tablas/vistas existentes con columnas de folio/cuenta y metricas. Prohibido cualquier escritura, Scheduler, Sync_Sales, Sync_PAX, ISCAM, backfill o acceso POS live.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "scheduling": {
+    "project_id": "Mejora-TABEJE",
+    "bounded_context": "Tablero Ejecutivo",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+          "backend/modules/comercial/service.py",
+          "backend/modules/comercial/routes.py",
+          "backend/modules/comercial_v2/repository_readonly.py",
+          "backend/database/migrations/009_crear_inteligencia_comercial_vistas_tablas.sql"
+        ],
+        "search_terms": [
+          "Comercial_Ventas_Dia_Abiertas_v2",
+          "folio",
+          "tickets_abiertos",
+          "pax",
+          "ventas_cerradas",
+          "ventas_abiertas",
+          "snapshot_timestamp"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sql"
+        ],
+        "exclude_patterns": [],
+        "max_results": 120
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "schema_comercial_ventas_dia_abiertas_v2",
+          "sql": "SELECT COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Comercial_Ventas_Dia_Abiertas_v2' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "muestra_comercial_ventas_dia_abiertas_20260929",
+          "sql": "SELECT TOP 20 * FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK) WHERE fecha_operacion='2026-09-29' ORDER BY fecha_ultima_actualizacion DESC"
+        },
+        {
+          "name": "objetos_con_folio_o_cuenta",
+          "sql": "SELECT c.TABLE_SCHEMA,c.TABLE_NAME,STRING_AGG(c.COLUMN_NAME, ', ') WITHIN GROUP (ORDER BY c.ORDINAL_POSITION) AS columnas FROM INFORMATION_SCHEMA.COLUMNS c WHERE c.TABLE_SCHEMA='dbo' AND (LOWER(c.COLUMN_NAME) LIKE '%folio%' OR LOWER(c.COLUMN_NAME) LIKE '%cuenta%' OR LOWER(c.COLUMN_NAME) LIKE '%ticket%') GROUP BY c.TABLE_SCHEMA,c.TABLE_NAME ORDER BY c.TABLE_NAME"
+        },
+        {
+          "name": "objetos_con_fecha_pax_importe",
+          "sql": "SELECT c.TABLE_SCHEMA,c.TABLE_NAME,COUNT(*) AS coincidencias FROM INFORMATION_SCHEMA.COLUMNS c WHERE c.TABLE_SCHEMA='dbo' AND (LOWER(c.COLUMN_NAME) LIKE '%fecha%' OR LOWER(c.COLUMN_NAME) LIKE '%pax%' OR LOWER(c.COLUMN_NAME) LIKE '%persona%' OR LOWER(c.COLUMN_NAME) LIKE '%venta%' OR LOWER(c.COLUMN_NAME) LIKE '%importe%') GROUP BY c.TABLE_SCHEMA,c.TABLE_NAME HAVING COUNT(*)>=3 ORDER BY COUNT(*) DESC,c.TABLE_NAME"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
