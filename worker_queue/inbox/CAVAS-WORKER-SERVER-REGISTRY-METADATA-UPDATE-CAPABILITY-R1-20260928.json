@@ -1,0 +1,106 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "CAVAS-WORKER-SERVER-REGISTRY-METADATA-UPDATE-CAPABILITY-R1-20260928",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "33563ce5af637d3739ca7c0644a2e12a3db340e0",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Agregar capability cerrada SERVER_REGISTRY_METADATA_UPDATE al Universal Worker para actualizar exclusivamente database_name de una conexion por ServerID usando core.server_registry.update_server, con preflight/post-audit READ_ONLY, sin SQL inline, sin secretos, sin username/password, sin Mongo y sin Produccion.",
+  "mode": "MUTATION",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "ISCAM_PAYMENTS_ONLY_RESYNC_MODE = \"ISCAM_PAYMENTS_ONLY_RESYNC\"\nSQL_MIGRATION_DEVELOPMENT_MODE = \"SQL_MIGRATION_DEVELOPMENT\"\n",
+      "new": "ISCAM_PAYMENTS_ONLY_RESYNC_MODE = \"ISCAM_PAYMENTS_ONLY_RESYNC\"\nSERVER_REGISTRY_METADATA_UPDATE_MODE = \"SERVER_REGISTRY_METADATA_UPDATE\"\nSQL_MIGRATION_DEVELOPMENT_MODE = \"SQL_MIGRATION_DEVELOPMENT\"\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_bridge.py",
+      "old": "    elif mode == SQL_MIGRATION_DEVELOPMENT_MODE:\n",
+      "new": "    elif mode == SERVER_REGISTRY_METADATA_UPDATE_MODE:\n        if actions not in (None, []):\n            errors.append(\"SERVER_REGISTRY_METADATA_UPDATE_ACTIONS_FORBIDDEN\")\n        for forbidden_field in (\"sql\", \"command\", \"shell\", \"script\", \"path\", \"password\", \"secret\", \"username\"):\n            if job.get(forbidden_field) is not None:\n                errors.append(f\"SERVER_REGISTRY_METADATA_UPDATE_FORBIDDEN_FIELD:{forbidden_field}\")\n        server_id = str(job.get(\"server_id\") or \"\").strip()\n        if not re.fullmatch(r\"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\", server_id):\n            errors.append(\"SERVER_REGISTRY_METADATA_UPDATE_SERVER_ID_INVALID\")\n        database_name = str(job.get(\"database_name\") or \"\").strip()\n        if not re.fullmatch(r\"[A-Za-z0-9_]{1,128}\", database_name):\n            errors.append(\"SERVER_REGISTRY_METADATA_UPDATE_DATABASE_NAME_INVALID\")\n        if job.get(\"confirm_server_registry_metadata_update\") is not True:\n            errors.append(\"SERVER_REGISTRY_METADATA_UPDATE_CONFIRMATION_REQUIRED\")\n        preflight_checks = job.get(\"preflight_checks\")\n        if not isinstance(preflight_checks, list) or not preflight_checks:\n            errors.append(\"SERVER_REGISTRY_METADATA_UPDATE_PREFLIGHT_REQUIRED\")\n        elif any(not isinstance(c, dict) or c.get(\"type\") != \"sql_readonly_audit\" for c in preflight_checks):\n            errors.append(\"SERVER_REGISTRY_METADATA_UPDATE_PREFLIGHT_ONLY_SQL_AUDIT_ALLOWED\")\n        else:\n            for index, check in enumerate(preflight_checks, 1):\n                errors.extend(validate_check(check, index))\n    elif mode == SQL_MIGRATION_DEVELOPMENT_MODE:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "ISCAM_PAYMENTS_ONLY_RESYNC_MODE = \"ISCAM_PAYMENTS_ONLY_RESYNC\"\nSQL_MIGRATION_DEVELOPMENT_MODE = \"SQL_MIGRATION_DEVELOPMENT\"\n",
+      "new": "ISCAM_PAYMENTS_ONLY_RESYNC_MODE = \"ISCAM_PAYMENTS_ONLY_RESYNC\"\nSERVER_REGISTRY_METADATA_UPDATE_MODE = \"SERVER_REGISTRY_METADATA_UPDATE\"\nSQL_MIGRATION_DEVELOPMENT_MODE = \"SQL_MIGRATION_DEVELOPMENT\"\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        if mode == SQL_MIGRATION_DEVELOPMENT_MODE:\n",
+      "new": "        if mode == SERVER_REGISTRY_METADATA_UPDATE_MODE:\n            if expected_base and expected_base != current_head:\n                raise RuntimeError(f\"BASE_SHA_MISMATCH_OPERATIONAL_MODE:expected={expected_base}:actual={current_head}\")\n            if job.get(\"actions\") not in (None, []):\n                raise RuntimeError(\"SERVER_REGISTRY_METADATA_UPDATE_ACTIONS_FORBIDDEN\")\n            for forbidden_field in (\"sql\", \"command\", \"shell\", \"script\", \"path\", \"password\", \"secret\", \"username\"):\n                if job.get(forbidden_field) is not None:\n                    raise RuntimeError(f\"SERVER_REGISTRY_METADATA_UPDATE_FORBIDDEN_FIELD:{forbidden_field}\")\n            server_id = str(job.get(\"server_id\") or \"\").strip()\n            database_name = str(job.get(\"database_name\") or \"\").strip()\n            if not re.fullmatch(r\"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\", server_id):\n                raise RuntimeError(\"SERVER_REGISTRY_METADATA_UPDATE_SERVER_ID_INVALID\")\n            if not re.fullmatch(r\"[A-Za-z0-9_]{1,128}\", database_name):\n                raise RuntimeError(\"SERVER_REGISTRY_METADATA_UPDATE_DATABASE_NAME_INVALID\")\n            if job.get(\"confirm_server_registry_metadata_update\") is not True:\n                raise RuntimeError(\"SERVER_REGISTRY_METADATA_UPDATE_CONFIRMATION_REQUIRED\")\n            preflight_checks = job.get(\"preflight_checks\") or []\n            if not preflight_checks or any(not isinstance(c, dict) or c.get(\"type\") != \"sql_readonly_audit\" for c in preflight_checks):\n                raise RuntimeError(\"SERVER_REGISTRY_METADATA_UPDATE_PREFLIGHT_REQUIRED\")\n            preflight_results = []\n            for check in preflight_checks:\n                check_result = run_check(ROOT, check)\n                preflight_results.append(check_result)\n                if check_result[\"status\"] != \"PASS\":\n                    result[\"blockers\"].append(\"check_failed:server_registry_metadata_preflight\")\n                    break\n            result[\"preflight_checks\"] = preflight_results\n            script = ROOT / \"backend\" / \"scripts\" / \"update_server_registry_metadata.py\"\n            if not script.is_file():\n                raise RuntimeError(\"SERVER_REGISTRY_METADATA_UPDATE_SCRIPT_NOT_FOUND\")\n            backend = ROOT / \"backend\"\n            if not result[\"blockers\"]:\n                execution = run(\n                    [PYTHON_BIN, str(script), \"--server-id\", server_id, \"--database-name\", database_name, \"--confirm\"],\n                    cwd=ROOT,\n                    timeout=MAX_SECONDS,\n                    env_extra={**load_backend_runtime_env(), \"PYTHONPATH\": str(backend)},\n                )\n                result[\"operation\"] = SERVER_REGISTRY_METADATA_UPDATE_MODE\n                result[\"canonical_sql_mutation\"] = True\n                result[\"operation_output\"] = (execution.stdout or \"\")[-12000:]\n                if execution.returncode != 0:\n                    result[\"blockers\"].append(f\"server_registry_metadata_update_failed:rc={execution.returncode}\")\n            result[\"files_changed\"] = []\n            checks = job.get(\"checks\") or []\n            check_results = []\n            if not result[\"blockers\"]:\n                if not checks or any(not isinstance(c, dict) or c.get(\"type\") != \"sql_readonly_audit\" for c in checks):\n                    result[\"blockers\"].append(\"SERVER_REGISTRY_METADATA_UPDATE_POST_AUDIT_REQUIRED\")\n                else:\n                    for check in checks:\n                        check_result = run_check(ROOT, check)\n                        check_results.append(check_result)\n                        if check_result[\"status\"] != \"PASS\":\n                            result[\"blockers\"].append(\"check_failed:server_registry_metadata_post_audit\")\n                            break\n            result[\"checks\"] = check_results\n            result[\"tests\"] = \"PASS\" if (preflight_results and check_results and all(x[\"status\"] == \"PASS\" for x in preflight_results + check_results)) else \"FAIL\"\n            result[\"quality_gate\"] = \"PASS\" if not result[\"blockers\"] else \"FAIL\"\n            if not result[\"blockers\"]:\n                result[\"status\"] = \"OPERATIONAL_COMPLETE\"\n                result[\"percent_complete\"] = 100\n                result[\"certification\"] = \"CERTIFIED_OPERATIONAL\"\n                result[\"summary_es\"] = \"El Worker actualizo exclusivamente metadata permitida de Servidores_Conexiones mediante server_registry, con preflight y post-audit SQL de solo lectura, sin SQL inline, secretos ni Produccion.\"\n            else:\n                result[\"percent_complete\"] = 0\n                result[\"certification\"] = \"NOT_CERTIFIED\"\n            return 0\n\n        if mode == SQL_MIGRATION_DEVELOPMENT_MODE:\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/git_divergence_guard.py",
+      "old": "    return str(mode or \"MUTATION\") not in {\"READ_ONLY\",\"READ_ONLY_SQL\",\"SOFTRESTAURANT_FULL_HISTORY_RESYNC\",\"MPRO_FULL_HISTORY_RESYNC\",\"ISCAM_DETAIL_BACKFILL\",\"ISCAM_PAYMENTS_ONLY_RESYNC\",\"SQL_MIGRATION_DEVELOPMENT\",\"FRONTEND_BUILD_CERTIFICATION\"}",
+      "new": "    return str(mode or \"MUTATION\") not in {\"READ_ONLY\",\"READ_ONLY_SQL\",\"SOFTRESTAURANT_FULL_HISTORY_RESYNC\",\"MPRO_FULL_HISTORY_RESYNC\",\"ISCAM_DETAIL_BACKFILL\",\"ISCAM_PAYMENTS_ONLY_RESYNC\",\"SERVER_REGISTRY_METADATA_UPDATE\",\"SQL_MIGRATION_DEVELOPMENT\",\"FRONTEND_BUILD_CERTIFICATION\"}",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/scripts/update_server_registry_metadata.py",
+      "content": "#!/usr/bin/env python3\nfrom __future__ import annotations\n\nimport argparse\nimport asyncio\nimport json\nimport re\nimport sys\nfrom pathlib import Path\n\nBACKEND = Path(__file__).resolve().parents[1]\nif str(BACKEND) not in sys.path:\n    sys.path.insert(0, str(BACKEND))\n\nfrom core.server_registry import _get_server_by_id_from_sql, update_server\n\nUUID_RE = re.compile(r\"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$\")\nDB_RE = re.compile(r\"^[A-Za-z0-9_]{1,128}$\")\n\n\ndef main() -> int:\n    parser = argparse.ArgumentParser()\n    parser.add_argument(\"--server-id\", required=True)\n    parser.add_argument(\"--database-name\", required=True)\n    parser.add_argument(\"--confirm\", action=\"store_true\")\n    args = parser.parse_args()\n\n    server_id = args.server_id.strip()\n    database_name = args.database_name.strip()\n    if not UUID_RE.fullmatch(server_id):\n        print(json.dumps({\"status\": \"FAIL\", \"error\": \"SERVER_ID_INVALID\"}))\n        return 2\n    if not DB_RE.fullmatch(database_name):\n        print(json.dumps({\"status\": \"FAIL\", \"error\": \"DATABASE_NAME_INVALID\"}))\n        return 2\n    if not args.confirm:\n        print(json.dumps({\"status\": \"FAIL\", \"error\": \"CONFIRMATION_REQUIRED\"}))\n        return 2\n\n    before = _get_server_by_id_from_sql(server_id, include_inactive=True)\n    if not before:\n        print(json.dumps({\"status\": \"FAIL\", \"error\": \"SERVER_NOT_FOUND\"}))\n        return 3\n\n    before_active = bool(before.get(\"activo\"))\n    before_database = before.get(\"database_name\")\n    result = asyncio.run(update_server(server_id, {\"database_name\": database_name}))\n    if not result.get(\"success\"):\n        print(json.dumps({\"status\": \"FAIL\", \"error\": str(result.get(\"sync_status\") or \"UPDATE_FAILED\")}))\n        return 4\n\n    after = _get_server_by_id_from_sql(server_id, include_inactive=True)\n    if not after:\n        print(json.dumps({\"status\": \"FAIL\", \"error\": \"POST_UPDATE_SERVER_NOT_FOUND\"}))\n        return 5\n    if str(after.get(\"database_name\") or \"\") != database_name:\n        print(json.dumps({\"status\": \"FAIL\", \"error\": \"POST_UPDATE_DATABASE_MISMATCH\"}))\n        return 6\n    if bool(after.get(\"activo\")) != before_active:\n        print(json.dumps({\"status\": \"FAIL\", \"error\": \"ACTIVE_STATE_CHANGED\"}))\n        return 7\n\n    print(json.dumps({\n        \"status\": \"PASS\",\n        \"server_id\": server_id,\n        \"database_name_before\": before_database,\n        \"database_name_after\": after.get(\"database_name\"),\n        \"active_preserved\": True,\n        \"sync_status\": result.get(\"sync_status\"),\n        \"secrets_exposed\": False,\n    }))\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_server_registry_metadata_update_capability.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nBRIDGE = ROOT / \"tools\" / \"mirror_sync\" / \"universal_job_bridge.py\"\nDISPATCHER = ROOT / \"tools\" / \"mirror_sync\" / \"universal_job_dispatcher.py\"\nGUARD = ROOT / \"tools\" / \"mirror_sync\" / \"git_divergence_guard.py\"\nSCRIPT = ROOT / \"backend\" / \"scripts\" / \"update_server_registry_metadata.py\"\n\n\ndef test_mode_is_closed_and_forbids_secrets_and_inline_sql():\n    bridge = BRIDGE.read_text(encoding=\"utf-8\")\n    dispatcher = DISPATCHER.read_text(encoding=\"utf-8\")\n    assert 'SERVER_REGISTRY_METADATA_UPDATE_MODE = \"SERVER_REGISTRY_METADATA_UPDATE\"' in bridge\n    assert 'SERVER_REGISTRY_METADATA_UPDATE_MODE = \"SERVER_REGISTRY_METADATA_UPDATE\"' in dispatcher\n    for forbidden in ('\"sql\"', '\"command\"', '\"shell\"', '\"script\"', '\"path\"', '\"password\"', '\"secret\"', '\"username\"'):\n        assert forbidden in bridge\n        assert forbidden in dispatcher\n    assert \"confirm_server_registry_metadata_update\" in bridge\n    assert \"confirm_server_registry_metadata_update\" in dispatcher\n\n\ndef test_mode_requires_readonly_preflight_and_post_audit():\n    text = DISPATCHER.read_text(encoding=\"utf-8\")\n    block = text.split(\"if mode == SERVER_REGISTRY_METADATA_UPDATE_MODE:\", 1)[1].split(\"if mode == SQL_MIGRATION_DEVELOPMENT_MODE:\", 1)[0]\n    assert \"sql_readonly_audit\" in block\n    assert \"preflight_checks\" in block\n    assert 'result[\"checks\"]' in block\n    assert \"CERTIFIED_OPERATIONAL\" in block\n    assert \"canonical_sql_mutation\" in block\n\n\ndef test_runtime_uses_canonical_server_registry_helper_and_preserves_active():\n    text = SCRIPT.read_text(encoding=\"utf-8\")\n    assert \"update_server(server_id, {\\\"database_name\\\": database_name})\" in text\n    assert \"_get_server_by_id_from_sql(server_id, include_inactive=True)\" in text\n    assert \"ACTIVE_STATE_CHANGED\" in text\n    assert \"password\" not in text.lower()\n    assert \"pymssql\" not in text.lower()\n\n\ndef test_operational_mode_does_not_require_git_writer_lock():\n    text = GUARD.read_text(encoding=\"utf-8\")\n    assert '\"SERVER_REGISTRY_METADATA_UPDATE\"' in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/git_divergence_guard.py",
+        "backend/scripts/update_server_registry_metadata.py",
+        "backend/tests/test_worker_server_registry_metadata_update_capability.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_server_registry_metadata_update_capability.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "No SQL execution in this gate",
+    "No CAVAS-specific logic in Worker Core",
+    "No password or secret inputs",
+    "No username mutation",
+    "Only database_name metadata update capability",
+    "Use canonical core.server_registry.update_server",
+    "No Mongo",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "Socios Cavas",
+    "chat": "Cavas Personales 8"
+  },
+  "scheduling": {
+    "project_id": "CAVAS_PERSONALES",
+    "bounded_context": "WORKER_INFRASTRUCTURE",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
