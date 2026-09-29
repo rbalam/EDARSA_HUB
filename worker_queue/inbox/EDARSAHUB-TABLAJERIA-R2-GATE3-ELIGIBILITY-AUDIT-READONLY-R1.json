@@ -1,0 +1,115 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-ELIGIBILITY-AUDIT-READONLY-R1",
+  "title": "Tablajeria R2 Gate3 eligibility audit readonly R1",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS / Tablajeria",
+    "chat": "Tablajerias 4"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "81cd02e181ce286c3ab541d4821798b064557770",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "sql_allowed": false,
+  "human_summary_language": "es",
+  "priority": "P0",
+  "depends_on": {
+    "gate3_decision_job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-DECISION-READONLY-R1",
+    "gate3_decision_status": "READ_ONLY_COMPLETE",
+    "gate3_decision_certification": "CERTIFIED_READ_ONLY",
+    "gate3_decision_quality_gate": "PASS",
+    "gate3_decision_result": "gate3_allowed=false"
+  },
+  "objective": "Auditar en modo READ_ONLY la elegibilidad real de Tablajeria R2 para Gate3 usando evidencia de repositorio, no SQL y no Produccion. Emitir una decision nativa de elegibilidad con: gate3_allowed, last_gate_executed, last_gate_certified, real_implementation_percent, next_allowed_gate, blocking_reason_if_any, blockers concretos y evidencia por archivo/modulo. No abrir Gate3 automaticamente. Si la evidencia no es suficiente para autorizar Gate3, dejar gate3_allowed=false y mantener Gate3 en HOLD.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend",
+          "frontend",
+          "docs",
+          "tools/mirror_sync",
+          "worker_queue/results"
+        ],
+        "search_terms": [
+          "tablajeria",
+          "tablaje",
+          "tableria",
+          "gate3",
+          "produccion",
+          "operaciones",
+          "inventario",
+          "movimientos",
+          "costo",
+          "merma",
+          "rendimiento",
+          "gate3_allowed",
+          "next_allowed_gate",
+          "blocking_reason_if_any",
+          "SOURCE_SEMANTIC_FIELDS_MISSING"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.json",
+          "*.md"
+        ],
+        "exclude_patterns": [
+          "*.png",
+          "*.jpg",
+          "*.jpeg",
+          "*.gif",
+          "*.mp4",
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          ".git/*"
+        ],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "expected_native_decision": {
+    "gate3_allowed": "boolean",
+    "last_gate_executed": "string_or_null",
+    "last_gate_certified": "boolean_or_null",
+    "real_implementation_percent": "number_or_null",
+    "next_allowed_gate": "string_or_null",
+    "blocking_reason_if_any": "string_or_null",
+    "blockers_concretos": "array",
+    "evidencia_por_archivo_modulo": "array"
+  },
+  "decision_rules": {
+    "gate3_default": "HOLD",
+    "gate3_allowed_true_requires_native_evidence": true,
+    "do_not_infer_from_percent_complete_status_quality_gate_or_certification": true,
+    "repo_audit_pass_is_not_gate3_authorization_by_itself": true,
+    "if_evidence_missing_or_incomplete": {
+      "gate3_allowed": false,
+      "next_allowed_gate": "GATE3_HOLD_PENDING_EXPLICIT_ELIGIBILITY_EVIDENCE",
+      "blocking_reason_if_any": "GATE3_ELIGIBILITY_EVIDENCE_INSUFFICIENT"
+    }
+  },
+  "hard_fail_conditions": [
+    "No repository mutation is allowed.",
+    "No SQL execution is allowed.",
+    "No Production touch is allowed.",
+    "No Gate3 opening is allowed from this job.",
+    "Fail if any tracked file changes.",
+    "Fail if audit cannot read repository evidence.",
+    "Fail if result lacks a clear eligibility decision or blockers explaining why Gate3 remains HOLD."
+  ],
+  "next_after_success": "Read the result. If gate3_allowed is false, keep Gate3 on HOLD and use blockers to define the next READ_ONLY audit or repair plan. If gate3_allowed is true, only prepare a separate Gate3 plan request; do not open Gate3 automatically.",
+  "next_after_failure": "Report exact blocker and keep Gate3 on HOLD."
+}
