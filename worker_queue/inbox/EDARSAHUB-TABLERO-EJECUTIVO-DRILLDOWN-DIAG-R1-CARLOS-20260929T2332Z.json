@@ -1,0 +1,93 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TABLERO-EJECUTIVO-DRILLDOWN-DIAG-R1-CARLOS-20260929T2332Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Tablero Ejecutivo: diagnosticar y definir la implementacion de drill-down por doble click para Ventas, PAX y Cheques; corregir el Comparativo en modo Ventas del Dia para mostrar dia anterior y mismo dia del anio anterior; y habilitar Ventas por Hora usando exclusivamente la hora de apertura de la cuenta/comanda y excluyendo canceladas. Restriccion absoluta: NO modificar ni ejecutar procedimientos de sincronizacion, actualizacion, Scheduler, ISCAM, Sync_Sales, Sync_PAX, backfills ni fuentes POS live. Usar solamente datos ya existentes en EDARSAHUB y vistas/reportes actuales. No tocar Produccion. Mantener sin cambios el grafico Ventas por Dia de la Semana cuando el periodo sea dia.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/TableroEjecutivo.js",
+          "frontend/src/pages/commercialPeriodContract.js",
+          "backend/modules/comercial_v2/periodos.py",
+          "backend/modules/comercial_v2/periodos_routes.py",
+          "backend/modules/comercial_v2/routes.py",
+          "backend/modules/comercial_v2/repository_readonly.py",
+          "backend/modules/comercial_analytics/repository_tickets.py",
+          "backend/modules/inteligencia_comercial/routes.py",
+          "backend/modules/reporteador_bi/routes.py"
+        ],
+        "search_terms": [
+          "DetalleUnidad",
+          "Comercial_Inteligencia_VentasDetalleProducto",
+          "fecha_hora",
+          "cancelado_origen",
+          "es_kpi_valido",
+          "_real_tickets",
+          "_real_horario",
+          "list_tickets",
+          "vw_Comercial_KPIs_Diarios_v2_Runtime",
+          "resolver_periodos_comparables",
+          "ventas_ant",
+          "ventas_año",
+          "fecha_corte_datos"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js"
+        ],
+        "exclude_patterns": [],
+        "max_results": 160
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "schema_detalle_canonico",
+          "sql": "SELECT COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Comercial_Inteligencia_VentasDetalleProducto' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "schema_kpi_runtime",
+          "sql": "SELECT COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='vw_Comercial_KPIs_Diarios_v2_Runtime' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "schema_ventas_por_hora_existente",
+          "sql": "SELECT COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Sync_Ventas_PorHora' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "comparativo_cienfuegos_dia_actual_anterior_anual",
+          "sql": "SELECT fecha_operacion,SUM(ISNULL(ventas_total,0)) AS ventas,SUM(ISNULL(pax_total,0)) AS pax,SUM(ISNULL(tickets_total,0)) AS cheques FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WITH (NOLOCK) WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion IN ('2026-09-29','2026-09-28','2025-09-29') GROUP BY fecha_operacion ORDER BY fecha_operacion DESC"
+        },
+        {
+          "name": "detalle_vs_kpi_5_unidades_20260929",
+          "sql": "WITH tk AS (SELECT unidad_negocio_id,fecha_operacion,id_transaccion,numero_ticket,MIN(fecha_hora) AS fecha_apertura,MAX(ISNULL(pax,0)) AS pax,SUM(ISNULL(importe_neto,0)) AS ventas FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK) WHERE unidad_negocio_id IN ('CIENFUEGOS','ORIGEN','ESTELAR','130MID','130QRO') AND fecha_operacion='2026-09-29' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 GROUP BY unidad_negocio_id,fecha_operacion,id_transaccion,numero_ticket), det AS (SELECT unidad_negocio_id,COUNT(*) AS cheques_det,SUM(pax) AS pax_det,SUM(ventas) AS ventas_det FROM tk GROUP BY unidad_negocio_id), kpi AS (SELECT unidad_negocio_id,SUM(ISNULL(tickets_total,0)) AS cheques_kpi,SUM(ISNULL(pax_total,0)) AS pax_kpi,SUM(ISNULL(ventas_total,0)) AS ventas_kpi FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WITH (NOLOCK) WHERE unidad_negocio_id IN ('CIENFUEGOS','ORIGEN','ESTELAR','130MID','130QRO') AND fecha_operacion='2026-09-29' GROUP BY unidad_negocio_id) SELECT COALESCE(kpi.unidad_negocio_id,det.unidad_negocio_id) AS unidad,ISNULL(det.cheques_det,0) AS cheques_det,ISNULL(kpi.cheques_kpi,0) AS cheques_kpi,ISNULL(det.pax_det,0) AS pax_det,ISNULL(kpi.pax_kpi,0) AS pax_kpi,ISNULL(det.ventas_det,0) AS ventas_det,ISNULL(kpi.ventas_kpi,0) AS ventas_kpi,ISNULL(det.ventas_det,0)-ISNULL(kpi.ventas_kpi,0) AS delta_ventas FROM det FULL OUTER JOIN kpi ON kpi.unidad_negocio_id=det.unidad_negocio_id ORDER BY unidad"
+        },
+        {
+          "name": "cienfuegos_ventas_por_hora_apertura_20260929",
+          "sql": "WITH tk AS (SELECT id_transaccion,numero_ticket,MIN(fecha_hora) AS fecha_apertura,MAX(ISNULL(pax,0)) AS pax,SUM(ISNULL(importe_neto,0)) AS ventas FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK) WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion='2026-09-29' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 GROUP BY id_transaccion,numero_ticket) SELECT DATEPART(HOUR,fecha_apertura) AS hora,COUNT(*) AS cheques,SUM(pax) AS pax,SUM(ventas) AS ventas FROM tk WHERE fecha_apertura IS NOT NULL GROUP BY DATEPART(HOUR,fecha_apertura) ORDER BY hora"
+        },
+        {
+          "name": "detalle_cobertura_fechas_comparables_cienfuegos",
+          "sql": "WITH tk AS (SELECT fecha_operacion,id_transaccion,numero_ticket,MAX(ISNULL(pax,0)) AS pax,SUM(ISNULL(importe_neto,0)) AS ventas FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK) WHERE unidad_negocio_id='CIENFUEGOS' AND fecha_operacion IN ('2026-09-29','2026-09-28','2025-09-29') AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 GROUP BY fecha_operacion,id_transaccion,numero_ticket) SELECT fecha_operacion,COUNT(*) AS cheques,SUM(pax) AS pax,SUM(ventas) AS ventas FROM tk GROUP BY fecha_operacion ORDER BY fecha_operacion DESC"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
