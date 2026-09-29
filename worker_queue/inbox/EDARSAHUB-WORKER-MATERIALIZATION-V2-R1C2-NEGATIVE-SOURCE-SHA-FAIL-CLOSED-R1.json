@@ -1,0 +1,46 @@
+{
+  "actions": [
+    {
+      "anchor": "anchor\n",
+      "expected_occurrences": 1,
+      "path": "backend/tests/fixtures/worker_mutation_v2_canary.txt",
+      "replacement": "MUST_NOT_BE_APPLIED\n",
+      "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "type": "insert_after"
+    }
+  ],
+  "allowed_paths": [
+    "backend/tests/fixtures/worker_mutation_v2_canary.txt"
+  ],
+  "base_sha": "0641ede68934e3f5c752a77f27133591e12355de",
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-WORKER-MATERIALIZATION-V2-R1C2-NEGATIVE-SOURCE-SHA-FAIL-CLOSED-R1",
+  "mode": "MUTATION",
+  "objective": "Certificar fail-closed end-to-end de Mutation Materialization V2: una accion insert_after con source_sha256 incorrecto debe fallar con SOURCE_SHA_MISMATCH antes de modificar el archivo, sin integrar commit y sin tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Bitacoras de Parrilla",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "13. Produccion",
+    "source": "chatgpt-classic"
+  },
+  "scheduling": {
+    "bounded_context": "13. Produccion",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "13. Produccion",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
