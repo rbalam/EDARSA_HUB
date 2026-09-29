@@ -1,0 +1,754 @@
+{
+  "base_sha": "0f446003d78fa677f8f39560d4f86b999f4161d4",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-29T22:46:48Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-RBAC-DIAGNOSTICO-READONLY-R2-CARLOS-20260929T2220Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-29T22:48:33Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.user_access_context.py",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.access_context.sql_context",
+              "core.corporate_filters.service",
+              "core.rbac_sql.service",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "dataclasses",
+              "datetime",
+              "logging",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "fuente_acceso",
+              "has_server_access",
+              "publicuuid",
+              "resolve_user_access_context",
+              "superadmin",
+              "tiene_acceso_global",
+              "usuario_servidoresasignacion",
+              "usuario_sucursalesasignacion"
+            ],
+            "path": "backend/core/user_access_context.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "UserAccessContext",
+              "_extract_ids",
+              "_get_all_empresas_sql",
+              "_get_all_servers_sql",
+              "_get_servers_from_empresas_sql",
+              "_get_sql_connection",
+              "_get_user_almacenes_sql",
+              "_get_user_empresas_sql",
+              "_get_user_id_sql",
+              "_get_user_role_sql",
+              "_get_user_servers_sql",
+              "_get_user_sucursales_sql",
+              "_resolver_acceso_global_sql",
+              "filter_empresas",
+              "filter_results_by_almacen",
+              "filter_servers",
+              "get_almacenes_permitidos",
+              "get_almacenes_sql_filter",
+              "get_almacenes_sql_filter_like",
+              "has_almacen_access",
+              "has_empresa_access",
+              "has_permiso",
+              "has_server_access",
+              "resolve_user_access_context",
+              "to_dict",
+              "validate_almacen_in_scope"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac_sql",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.sql_first.db"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "usuario_servidoresasignacion",
+              "usuario_sucursalesasignacion"
+            ],
+            "path": "backend/core/rbac_sql/service.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACSQLService",
+              "build_context",
+              "can_access_empresa",
+              "can_access_permission",
+              "can_access_servidor",
+              "can_access_sucursal",
+              "can_access_unidad",
+              "can_access_unit_metadata",
+              "get_effective_permissions",
+              "get_empresas",
+              "get_permission_scope_by_code",
+              "get_roles",
+              "get_scope_assignment_state",
+              "get_servidores",
+              "get_sucursales",
+              "get_unidades"
+            ],
+            "tables_referenced": [
+              "Unidades_Negocio",
+              "Usuario_Acciones",
+              "Usuario_EmpresasAsignacion",
+              "Usuario_Modulos",
+              "Usuario_PermisosRolModulo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion",
+              "Usuario_ServidoresAsignacion",
+              "Usuario_SucursalesAsignacion"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.security.py",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "bcrypt",
+              "core.access_context.sql_context",
+              "core.auth.user_repository_sql",
+              "core.corporate_filters.service",
+              "core.mongo_stub",
+              "core.rbac_helper_sql",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "dataclasses",
+              "datetime",
+              "fastapi",
+              "fastapi.security",
+              "jwt",
+              "logging",
+              "modules.auth.repository",
+              "os",
+              "pymssql",
+              "re",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "has_server_access",
+              "publicuuid",
+              "superadmin"
+            ],
+            "path": "backend/core/security.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/protected"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "SQLSanitizer",
+              "SQLValidationResult",
+              "_get_all_empresas_sql",
+              "_get_user_sql_only",
+              "_normalize_sql",
+              "_p5_extract_usuario_id_from_payload",
+              "_safe_user_for_log",
+              "_validate_sql_user_structure",
+              "clear_auth_cookie",
+              "compare_user_mongo_vs_sql_passive",
+              "create_access_token",
+              "create_token",
+              "dependency",
+              "filter_by_user_context",
+              "filter_servers_by_permissions",
+              "filter_sucursales_by_permissions",
+              "get_current_user",
+              "get_current_user_dual",
+              "get_current_user_dual_dependency",
+              "get_db",
+              "get_servers_for_empresas",
+              "get_user_empresas_permitidas",
+              "hash_password",
+              "init_security",
+              "log_auth_preflight_status",
+              "log_blocked_sql",
+              "quick_validate",
+              "set_auth_cookie",
+              "to_dict",
+              "user_has_empresa_access",
+              "user_has_server_access",
+              "validate",
+              "validate_for_catalog",
+              "validate_for_explorer",
+              "validate_sql_detailed",
+              "validate_sql_safe",
+              "verify_password",
+              "verify_token"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.sql_first.db",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "publicuuid",
+              "superadmin"
+            ],
+            "path": "backend/modules/auth/repository.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "Usuario_RolesContexto"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AuthRepository",
+              "_normalize_role",
+              "_normalize_user",
+              "_row_as_dict",
+              "_rows_as_dicts",
+              "build_user_response",
+              "count_users_with_role",
+              "create_default_roles",
+              "create_role",
+              "create_user",
+              "deactivate_user",
+              "delete_role",
+              "delete_user",
+              "find_role_by_id",
+              "find_role_by_name",
+              "find_user_by_email",
+              "find_user_by_id",
+              "get_all_roles",
+              "get_all_users",
+              "get_db",
+              "get_user_by_email",
+              "get_user_by_id",
+              "get_users_by_empresas",
+              "init_auth_repository",
+              "update_role",
+              "update_user"
+            ],
+            "tables_referenced": [
+              "Usuario_Catalogo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion",
+              "Usuario_RolesContexto"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "calendar",
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.security",
+              "core.server_registry",
+              "core.source_resolver",
+              "core.system_type_utils",
+              "core.unidades_registry",
+              "core.unidades_service",
+              "core.user_access_context",
+              "core.utils.date_filters",
+              "core.utils.operational_window",
+              "datetime",
+              "fastapi",
+              "logging",
+              "modules.comercial.adapters",
+              "modules.comercial.cache_service",
+              "modules.comercial.queries.mpro",
+              "modules.comercial.queries.softrestaurant",
+              "modules.comercial.repository",
+              "modules.comercial.service",
+              "modules.comercial_v2.repository_readonly",
+              "pymssql",
+              "pytz",
+              "service",
+              "typing",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "dashboard/{server_id}",
+              "fuente_acceso",
+              "has_server_access",
+              "precios-constantes",
+              "reporte-pax",
+              "resolve_user_access_context",
+              "tiene_acceso_global",
+              "validate_server_access_rbac"
+            ],
+            "path": "backend/modules/comercial/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/comercial/dashboard/{server_id}",
+              "/comercial/detalle-movimientos/{server_id}",
+              "/comercial/mesas/{server_id}",
+              "/comercial/metas/{server_id}",
+              "/comercial/precios-constantes/{server_id}",
+              "/comercial/reporte-pax/{server_id}",
+              "/comercial/sucursales/{server_id}",
+              "/comercial/tablero-ejecutivo",
+              "/comercial/ticket-perfecto/{server_id}",
+              "/comercial/ventas-tiempo/{server_id}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_agrupar_por_unidad",
+              "_empty_mesas_unidad",
+              "_filtrar_server",
+              "_safe_float",
+              "_safe_int",
+              "_tablero_ejecutivo_internal",
+              "check_live_guard_rail",
+              "comercial_dashboard",
+              "comercial_detalle_movimientos",
+              "comercial_mesas",
+              "comercial_metas",
+              "comercial_reporte_pax",
+              "comercial_ticket_perfecto",
+              "comercial_ventas_tiempo",
+              "empty_response",
+              "get_user_context_or_403",
+              "get_ventas_dia_snapshot_from_edarsahub",
+              "obtener_sucursales",
+              "resolver_codigo_dedup",
+              "sql_fecha",
+              "tablero_ejecutivo",
+              "validate_server_access_rbac",
+              "ventas_precios_constantes"
+            ],
+            "tables_referenced": [
+              "Sync_Mesas"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 5,
+          "scanned_files": 5,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "UsuarioID",
+              "Email",
+              "NombreCompleto",
+              "Username",
+              "Activo",
+              "PublicUUID"
+            ],
+            "name": "usuario_ricardo_identidad",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                "Ricardo Balam Garcia",
+                "ricardo@edarsa.com.mx",
+                true,
+                "1E18A085-4092-40D8-AEFA-BBAFD1CDB939"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "Email",
+              "RolID",
+              "CodigoRol",
+              "NombreRol",
+              "RolActivo",
+              "AsignacionActiva"
+            ],
+            "name": "usuario_ricardo_roles_basicos",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                42,
+                "ALERTAS_CRITICAS_RECIBIR",
+                "Receptor de Alertas Críticas",
+                true,
+                true
+              ],
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                6,
+                "SUPERADMIN",
+                "SuperAdministrador",
+                true,
+                true
+              ],
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                6,
+                "SUPERADMIN",
+                "SuperAdministrador",
+                true,
+                false
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "COLUMN_NAME",
+              "DATA_TYPE"
+            ],
+            "name": "usuario_roles_columnas",
+            "row_count_returned": 9,
+            "rows": [
+              [
+                "RolID",
+                "int"
+              ],
+              [
+                "CodigoRol",
+                "varchar"
+              ],
+              [
+                "NombreRol",
+                "varchar"
+              ],
+              [
+                "Descripcion",
+                "varchar"
+              ],
+              [
+                "EsRolSistema",
+                "bit"
+              ],
+              [
+                "Activo",
+                "bit"
+              ],
+              [
+                "FechaAlta",
+                "datetime2"
+              ],
+              [
+                "FechaModificacion",
+                "datetime2"
+              ],
+              [
+                "NivelJerarquia",
+                "int"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "Email",
+              "ServidorID",
+              "Activo"
+            ],
+            "name": "usuario_ricardo_scope_servidores",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                null,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UsuarioID",
+              "Email",
+              "ServidorID",
+              "SucursalCodigo",
+              "Activo"
+            ],
+            "name": "usuario_ricardo_scope_sucursales",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                8,
+                "ricardo@edarsa.com.mx",
+                null,
+                null,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocioID",
+              "codigo",
+              "nombre",
+              "ServidorID",
+              "SucursalOrigenID",
+              "system_type",
+              "Activo"
+            ],
+            "name": "unidad_130_merida_metadata",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "19E076FB-C6DE-4EA5-84AB-1CAA9E86082C",
+                "130MID",
+                "130° MERIDA",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                null,
+                "SoftRestaurant",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "CodigoRol",
+              "CodigoModulo",
+              "CodigoAccion",
+              "Permitido",
+              "RestriccionSucursal",
+              "PermisoActivo"
+            ],
+            "name": "usuario_ricardo_permisos_comercial",
+            "row_count_returned": 19,
+            "rows": [
+              [
+                "SUPERADMIN",
+                "comercial",
+                "VER",
+                true,
+                false,
+                true
+              ],
+              [
+                "SUPERADMIN",
+                "comercial.benchmark",
+                "VALIDAR",
+                false,
+                false,
+                false
+              ],
+              [
+                "SUPERADMIN",
+                "comercial.benchmark",
+                "VER",
+                true,
+                false,
+                true
+              ],
+              [
+                "SUPERADMIN",
+                "comercial.competidores",
+                "CREAR",
+                false,
+                false,
+                false
+              ],
+              [
+                "SUPERADMIN",
+                "comercial.competidores",
+                "EDITAR",
+                false,
+                false,
+                false
+              ],
+              [
+                "SUPERADMIN",
+                "comercial.competidores",
+                "ELIMINAR",
+                false,
+                false,
+                false
+              ],
+              [
+                "SUPERADMIN",
+                "comercial.competidores",
+                "INACTIVAR",
+                false,
+                false,
+                false
+              ],
+              [
+                "SUPERADMIN",
+                "comercial.competidores",
+                "VER",
+                true,
+                false,
+                true
+              ],
+              [
+                "SUPERADMIN",
+                "comercial.costos_margenes",
+                "CONFIGURAR",
+                true,
+                false,
+                true
+              ],
+              [
+                "SUPERADMIN",
+                "comercial.costos_margenes",
+                "VER",
+                true,
+                false,
+                true
+              ],
+              [
+                "SUPERADMIN",
+                "comercial.perfil_unidad",
+                "EDITAR",
+                false,
+                false,
+                false
+              ],
+              [
+                "SUPERADMIN",
+                "comercial.perfil_unidad",
+                "VER",
+                true,
+                false,
+                true
+              ],
+              [
+                "SUPERADMIN",
+                "comercial.precios_sugeridos",
+                "GENERAR",
+                false,
+                false,
+                false
+              ],
+              [
+                "SUPERADMIN",
+                "comercial.precios_sugeridos",
+                "VER",
+                true,
+                false,
+                true
+              ],
+              [
+                "SUPERADMIN",
+                "comercial.precios_sugeridos",
+                "VER_IA",
+                false,
+                false,
+                false
+              ],
+              [
+                "SUPERADMIN",
+                "INTELIGENCIA_COMERCIAL",
+                "CONFIGURAR",
+                false,
+                false,
+                false
+              ],
+              [
+                "SUPERADMIN",
+                "INTELIGENCIA_COMERCIAL",
+                "EXPORTAR",
+                false,
+                false,
+                false
+              ],
+              [
+                "SUPERADMIN",
+                "INTELIGENCIA_COMERCIAL",
+                "GESTIONAR",
+                false,
+                false,
+                false
+              ],
+              [
+                "SUPERADMIN",
+                "INTELIGENCIA_COMERCIAL",
+                "VER",
+                true,
+                false,
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-29T22:46:47Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
