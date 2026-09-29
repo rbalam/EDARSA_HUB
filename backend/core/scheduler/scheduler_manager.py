@@ -585,7 +585,17 @@ class SchedulerManager:
         
         try:
             logger.info("[SYNC_COMERCIAL_V2] Iniciando sincronización incremental de KPIs comerciales V2")
-            result = await execute_sync_comercial_v2(self.db)
+
+            # El sincronizador realiza I/O POS/SQL sincrono. Si corre directo
+            # dentro del AsyncIOScheduler bloquea el event loop del backend y
+            # puede disparar reinicios antes de completar las cinco unidades.
+            # Ejecutarlo en un thread dedicado mantiene health, scheduler y
+            # heartbeat del lock responsivos durante todo el ciclo.
+            result = await asyncio.to_thread(
+                lambda: asyncio.run(
+                    execute_sync_comercial_v2()
+                )
+            )
             
             # Finalizar log con éxito
             await job_logger.finish_execution(
