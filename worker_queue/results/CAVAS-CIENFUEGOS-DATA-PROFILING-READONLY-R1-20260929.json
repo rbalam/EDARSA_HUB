@@ -1,0 +1,938 @@
+{
+  "base_sha": "db21afe0615e845fc82d1c1ef7916577981be9ea",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-29T19:46:49Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "CAVAS-CIENFUEGOS-DATA-PROFILING-READONLY-R1-20260929",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-29T19:47:20Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "server_registry+get_external_sql_connection",
+        "evidence": [
+          {
+            "columns": [
+              "total_clients",
+              "active_clients",
+              "vip_clients",
+              "without_email",
+              "without_phone",
+              "created_min",
+              "created_max",
+              "last_visit_min",
+              "last_visit_max"
+            ],
+            "name": "CAVAS_CLIENTS_PROFILE",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "376",
+                362,
+                3,
+                73,
+                5,
+                "2022-08-23 10:02:22",
+                "2026-08-27 17:37:04",
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "email_normalized",
+              "rows_count"
+            ],
+            "name": "CAVAS_CLIENT_DUPLICATE_EMAILS",
+            "row_count_returned": 13,
+            "rows": [
+              [
+                "asafarn@outlook.com",
+                "2"
+              ],
+              [
+                "aureagomez230@gmail.com",
+                "2"
+              ],
+              [
+                "batjp@gmail.com",
+                "2"
+              ],
+              [
+                "carloscardonasouza@gmail.com",
+                "2"
+              ],
+              [
+                "cbm@baeza.com.mx",
+                "2"
+              ],
+              [
+                "corporativo_soma@hotmail.com",
+                "2"
+              ],
+              [
+                "gildarconde11@gmail.com",
+                "2"
+              ],
+              [
+                "mariola.cmolins@gmail.com",
+                "2"
+              ],
+              [
+                "mayracanseco@hotmail.com",
+                "2"
+              ],
+              [
+                "mvila2al@gmail.com",
+                "2"
+              ],
+              [
+                "prietorubio@hotmail.com",
+                "2"
+              ],
+              [
+                "rodrigomenendezc@gmail.com",
+                "2"
+              ],
+              [
+                "urias1142@hotmail.com",
+                "2"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "type",
+              "relation_type",
+              "rows_count"
+            ],
+            "name": "CAVAS_CLIENT_TYPES",
+            "row_count_returned": 6,
+            "rows": [
+              [
+                "primary",
+                "not-defined",
+                "207"
+              ],
+              [
+                "secondary",
+                "not-defined",
+                "104"
+              ],
+              [
+                "secondary",
+                "spouse",
+                "51"
+              ],
+              [
+                "secondary",
+                "partner",
+                "7"
+              ],
+              [
+                "primary",
+                "spouse",
+                "6"
+              ],
+              [
+                "primary",
+                "partner",
+                "1"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_cellars",
+              "active_cellars",
+              "stored_bottle_count",
+              "stored_client_count",
+              "created_min",
+              "created_max"
+            ],
+            "name": "CAVAS_CELLARS_PROFILE",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "75",
+                74,
+                884,
+                229,
+                "2022-08-04 19:37:00",
+                "2026-04-17 15:33:16"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "links_total",
+              "linked_cellars",
+              "linked_clients",
+              "null_cellar",
+              "null_client"
+            ],
+            "name": "CAVAS_CELLARS_CLIENTS_CARDINALITY",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "229",
+                "69",
+                "228",
+                0,
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "cellar_id",
+              "clients_count"
+            ],
+            "name": "CAVAS_CELLARS_WITH_MULTIPLE_CLIENTS",
+            "row_count_returned": 61,
+            "rows": [
+              [
+                70,
+                "40"
+              ],
+              [
+                4,
+                "4"
+              ],
+              [
+                6,
+                "4"
+              ],
+              [
+                14,
+                "4"
+              ],
+              [
+                22,
+                "4"
+              ],
+              [
+                24,
+                "4"
+              ],
+              [
+                25,
+                "4"
+              ],
+              [
+                30,
+                "4"
+              ],
+              [
+                32,
+                "4"
+              ],
+              [
+                35,
+                "4"
+              ],
+              [
+                46,
+                "4"
+              ],
+              [
+                47,
+                "4"
+              ],
+              [
+                55,
+                "4"
+              ],
+              [
+                68,
+                "4"
+              ],
+              [
+                77,
+                "4"
+              ],
+              [
+                79,
+                "4"
+              ],
+              [
+                85,
+                "4"
+              ],
+              [
+                94,
+                "4"
+              ],
+              [
+                98,
+                "4"
+              ],
+              [
+                109,
+                "4"
+              ],
+              [
+                110,
+                "4"
+              ],
+              [
+                113,
+                "4"
+              ],
+              [
+                1,
+                "3"
+              ],
+              [
+                2,
+                "3"
+              ],
+              [
+                10,
+                "3"
+              ],
+              [
+                11,
+                "3"
+              ],
+              [
+                12,
+                "3"
+              ],
+              [
+                15,
+                "3"
+              ],
+              [
+                23,
+                "3"
+              ],
+              [
+                27,
+                "3"
+              ],
+              [
+                37,
+                "3"
+              ],
+              [
+                38,
+                "3"
+              ],
+              [
+                41,
+                "3"
+              ],
+              [
+                45,
+                "3"
+              ],
+              [
+                50,
+                "3"
+              ],
+              [
+                53,
+                "3"
+              ],
+              [
+                54,
+                "3"
+              ],
+              [
+                61,
+                "3"
+              ],
+              [
+                76,
+                "3"
+              ],
+              [
+                93,
+                "3"
+              ],
+              [
+                97,
+                "3"
+              ],
+              [
+                13,
+                "2"
+              ],
+              [
+                20,
+                "2"
+              ],
+              [
+                28,
+                "2"
+              ],
+              [
+                29,
+                "2"
+              ],
+              [
+                31,
+                "2"
+              ],
+              [
+                33,
+                "2"
+              ],
+              [
+                34,
+                "2"
+              ],
+              [
+                36,
+                "2"
+              ],
+              [
+                39,
+                "2"
+              ],
+              [
+                42,
+                "2"
+              ],
+              [
+                48,
+                "2"
+              ],
+              [
+                49,
+                "2"
+              ],
+              [
+                57,
+                "2"
+              ],
+              [
+                58,
+                "2"
+              ],
+              [
+                60,
+                "2"
+              ],
+              [
+                91,
+                "2"
+              ],
+              [
+                99,
+                "2"
+              ],
+              [
+                105,
+                "2"
+              ],
+              [
+                108,
+                "2"
+              ],
+              [
+                112,
+                "2"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "client_id",
+              "cellars_count"
+            ],
+            "name": "CAVAS_CLIENTS_WITH_MULTIPLE_CELLARS",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                74,
+                "2"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_bottles",
+              "cellars_with_bottles",
+              "bottles_without_cellar",
+              "created_min",
+              "created_max"
+            ],
+            "name": "CAVAS_BOTTLES_PROFILE",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "884",
+                "71",
+                0,
+                "2022-08-04 22:00:00",
+                "2026-09-09 12:53:38"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "status",
+              "rows_count"
+            ],
+            "name": "CAVAS_BOTTLE_STATUS",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "in",
+                "879"
+              ],
+              [
+                "out",
+                "5"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "capacity",
+              "rows_count"
+            ],
+            "name": "CAVAS_BOTTLE_CAPACITY",
+            "row_count_returned": 8,
+            "rows": [
+              [
+                "750",
+                "618"
+              ],
+              [
+                "700",
+                "212"
+              ],
+              [
+                "1000",
+                "36"
+              ],
+              [
+                "1250",
+                "8"
+              ],
+              [
+                "500",
+                "4"
+              ],
+              [
+                "350",
+                "2"
+              ],
+              [
+                "375",
+                "2"
+              ],
+              [
+                "695",
+                "2"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "orphan_bottles"
+            ],
+            "name": "CAVAS_BOTTLES_ORPHAN_CELLAR",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "0"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "action",
+              "rows_count",
+              "created_min",
+              "created_max"
+            ],
+            "name": "CAVAS_BOTTLE_LOG_ACTIONS",
+            "row_count_returned": 3,
+            "rows": [
+              [
+                "out",
+                "14879",
+                "2022-09-27 17:59:14",
+                "2026-09-09 22:03:03"
+              ],
+              [
+                "in",
+                "14830",
+                "2022-09-27 17:59:21",
+                "2026-09-09 22:47:16"
+              ],
+              [
+                "add",
+                "8333",
+                "2022-09-27 17:52:45",
+                "2026-09-09 12:53:38"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_logs",
+              "bottles_logged",
+              "cellars_logged",
+              "clients_logged",
+              "users_logged",
+              "attendances_logged",
+              "without_bottle",
+              "without_client",
+              "without_attendance",
+              "created_min",
+              "created_max"
+            ],
+            "name": "CAVAS_BOTTLE_LOG_PROFILE",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "38042",
+                "8637",
+                "93",
+                "303",
+                "59",
+                "3527",
+                0,
+                8333,
+                9267,
+                "2022-09-27 17:52:45",
+                "2026-09-09 22:47:16"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "orphan_bottle_refs",
+              "orphan_cellar_refs",
+              "orphan_client_refs",
+              "orphan_attendance_refs"
+            ],
+            "name": "CAVAS_BOTTLE_LOG_ORPHANS",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                35600,
+                4244,
+                514,
+                203
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_attendances",
+              "clients_with_attendance",
+              "without_client",
+              "ticket_total_sum",
+              "person_amount_sum",
+              "created_min",
+              "created_max"
+            ],
+            "name": "CAVAS_ATTENDANCES_PROFILE",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "4017",
+                "292",
+                0,
+                "5145588.2550",
+                2293,
+                "2022-11-08 19:44:33",
+                "2026-09-09 22:02:19"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "orphan_attendances"
+            ],
+            "name": "CAVAS_ATTENDANCE_CLIENT_ORPHANS",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "86"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_notes",
+              "clients_with_notes",
+              "users_authoring_notes",
+              "created_min",
+              "created_max"
+            ],
+            "name": "CAVAS_CLIENT_NOTES_PROFILE",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "139",
+                "72",
+                "3",
+                "2022-08-23 16:00:57",
+                "2024-06-20 16:05:25"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total_users",
+              "active_users",
+              "role_ids",
+              "created_min",
+              "created_max",
+              "latest_login"
+            ],
+            "name": "CAVAS_USERS_PROFILE",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "31",
+                30,
+                "5",
+                "2022-09-06 12:07:16",
+                "2025-12-06 14:19:30",
+                "2026-09-09 22:41:52"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "model",
+              "collection",
+              "type",
+              "rows_count"
+            ],
+            "name": "CAVAS_MEDIA_MODEL_USAGE",
+            "row_count_returned": 4,
+            "rows": [
+              [
+                "Client",
+                "profile",
+                "image",
+                "263"
+              ],
+              [
+                "User",
+                "profile",
+                "image",
+                "7"
+              ],
+              [
+                "Configuration",
+                "image",
+                "svg",
+                "2"
+              ],
+              [
+                "Configuration",
+                "image",
+                "image",
+                "1"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "model",
+              "action",
+              "rows_count"
+            ],
+            "name": "CAVAS_LOG_MODEL_ACTION_USAGE",
+            "row_count_returned": 29,
+            "rows": [
+              [
+                "BottleLog",
+                "CREATE",
+                "38087"
+              ],
+              [
+                "Bottle",
+                "UPDATE",
+                "31257"
+              ],
+              [
+                "User",
+                "LOGIN",
+                "14091"
+              ],
+              [
+                "BottleLog",
+                "UPDATE",
+                "12120"
+              ],
+              [
+                "User",
+                "SWITCH",
+                "10208"
+              ],
+              [
+                "Bottle",
+                "CREATE",
+                "8342"
+              ],
+              [
+                "Bottle",
+                "DELETE",
+                "8182"
+              ],
+              [
+                "User",
+                "LOGOUT",
+                "6321"
+              ],
+              [
+                "Client",
+                "UPDATE",
+                "5129"
+              ],
+              [
+                "Attendance",
+                "CREATE",
+                "4103"
+              ],
+              [
+                "Cellar",
+                "UPDATE",
+                "1544"
+              ],
+              [
+                "Attendance",
+                "UPDATE",
+                "1320"
+              ],
+              [
+                "Client",
+                "CREATE",
+                "284"
+              ],
+              [
+                "ClientNote",
+                "CREATE",
+                "150"
+              ],
+              [
+                "User",
+                "UPDATE",
+                "129"
+              ],
+              [
+                "User",
+                "CREATE",
+                "56"
+              ],
+              [
+                "Cellar",
+                "CREATE",
+                "55"
+              ],
+              [
+                "Attendance",
+                "DELETE",
+                "54"
+              ],
+              [
+                "Cellar",
+                "DELETE",
+                "48"
+              ],
+              [
+                "User",
+                "DELETE",
+                "42"
+              ],
+              [
+                "Client",
+                "DELETE",
+                "16"
+              ],
+              [
+                "ClientNote",
+                "UPDATE",
+                "14"
+              ],
+              [
+                "Configuration",
+                "UPDATE",
+                "13"
+              ],
+              [
+                "ClientNote",
+                "DELETE",
+                "10"
+              ],
+              [
+                "Role",
+                "UPDATE",
+                "8"
+              ],
+              [
+                "Module",
+                "CREATE",
+                "8"
+              ],
+              [
+                "Role",
+                "CREATE",
+                "3"
+              ],
+              [
+                "Module",
+                "UPDATE",
+                "1"
+              ],
+              [
+                "Module",
+                "DELETE",
+                "1"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-29T19:46:46Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
