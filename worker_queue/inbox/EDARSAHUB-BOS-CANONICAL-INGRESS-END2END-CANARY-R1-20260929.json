@@ -1,0 +1,33 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-CANONICAL-INGRESS-END2END-CANARY-R1-20260929",
+  "mode": "READ_ONLY",
+  "objective": "Certificar end-to-end Canonical Job Ingress hacia Universal Worker.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Cavas Personales",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
