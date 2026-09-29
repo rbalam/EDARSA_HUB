@@ -1,0 +1,51 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "RRR-GATE4E-R10-R6-RUNTIME-ORG-RESOLUTION-FIX-20260928",
+  "created_at_utc": "2026-09-29T05:26:00Z",
+  "requested_by": "chatgpt",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "0641ede68934e3f5c752a77f27133591e12355de",
+  "production_allowed": false,
+  "objective": "Corregir quirurgicamente el bug de runtime de Gate4E-R10 en _resolve_org: no usar get_server_connection_info como si fuera sincrono ni depender de EmpresaID ausente en ese helper. Resolver UnidadNegocioID con CorporateFilterService, recuperar la unidad con UnidadesService, validar que su server_id coincide con el payload/token y resolver EmpresaID con core.empresa_resolver.resolve_empresa_by_alias sobre el codigo canonico de unidad. Agregar prueba unitaria de esta resolucion. Sin DDL, sin Customer360 V3, sin tocar Produccion.",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/rrr/attribution_service.py",
+      "old": "from core.corporate_filters.service import CorporateFilterService\nfrom core.server_registry import get_server_connection_info\nfrom core.sql_first.db import get_sql_connection\n",
+      "new": "from core.corporate_filters.service import CorporateFilterService\nfrom core.unidades_service import UnidadesService\nfrom core.empresa_resolver import resolve_empresa_by_alias\nfrom core.sql_first.db import get_sql_connection\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/rrr/attribution_service.py",
+      "old": "def _resolve_org(payload: AttributionTransactionRequest) -> Dict[str, Any]:\n    server = get_server_connection_info(payload.server_id)\n    if not server:\n        raise AttributionOrgScopeError(\"server_id no registrado\")\n\n    unit = CorporateFilterService.resolver_unidad(payload.unit_source_id)\n    unidad_pk = unit.get(\"pk\")\n    if not unidad_pk:\n        raise AttributionOrgScopeError(\"unidad no resoluble canonicamente\")\n\n    empresa_id = server.get(\"empresa_id\") or server.get(\"EmpresaID\")\n    if empresa_id is None:\n        raise AttributionOrgScopeError(\"empresa no resoluble desde server_id\")\n\n    return {\n        \"empresa_id\": int(empresa_id),\n        \"unidad_negocio_id\": str(unidad_pk),\n    }\n",
+      "new": "def _resolve_org(payload: AttributionTransactionRequest) -> Dict[str, Any]:\n    unit = CorporateFilterService.resolver_unidad(payload.unit_source_id)\n    unidad_pk = unit.get(\"pk\")\n    if not unidad_pk:\n        raise AttributionOrgScopeError(\"unidad no resoluble canonicamente\")\n\n    unidad = UnidadesService.get_by_pk(unidad_pk)\n    if not unidad:\n        raise AttributionOrgScopeError(\"unidad canonica no encontrada\")\n\n    unidad_server_id = str(unidad.get(\"server_id\") or \"\").strip()\n    payload_server_id = str(payload.server_id or \"\").strip()\n    if not unidad_server_id or unidad_server_id != payload_server_id:\n        raise AttributionOrgScopeError(\"server_id no corresponde a la unidad canonica\")\n\n    empresa = resolve_empresa_by_alias(unidad.get(\"codigo\"))\n    if not empresa:\n        raise AttributionOrgScopeError(\"empresa no resoluble desde la unidad canonica\")\n\n    return {\n        \"empresa_id\": int(empresa.empresa_id),\n        \"unidad_negocio_id\": str(unidad_pk),\n    }\n"
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_rrr_attribution_org_resolution.py",
+      "content": "from datetime import datetime, timezone\nfrom types import SimpleNamespace\n\nimport pytest\n\nfrom modules.rrr import attribution_service as svc\nfrom modules.rrr.schemas import AttributionTransactionRequest\n\n\ndef _payload(server_id=\"server-1\", unit_source_id=\"130MID\"):\n    return AttributionTransactionRequest(\n        server_id=server_id,\n        source_transaction_uuid=\"uuid-org-test\",\n        source_system=\"COMANDERO\",\n        occurred_at_utc=datetime.now(timezone.utc),\n        unit_source_id=unit_source_id,\n    )\n\n\ndef test_resolve_org_uses_canonical_unit_and_company(monkeypatch):\n    unidad_pk = \"11111111-1111-1111-1111-111111111111\"\n    monkeypatch.setattr(\n        svc.CorporateFilterService,\n        \"resolver_unidad\",\n        lambda value: {\"pk\": unidad_pk, \"codigo\": \"130MID\", \"nombre\": \"130 MERIDA\"},\n    )\n    monkeypatch.setattr(\n        svc.UnidadesService,\n        \"get_by_pk\",\n        lambda value: {\"unidad_negocio_pk\": unidad_pk, \"codigo\": \"130MID\", \"server_id\": \"server-1\"},\n    )\n    monkeypatch.setattr(\n        svc,\n        \"resolve_empresa_by_alias\",\n        lambda codigo: SimpleNamespace(empresa_id=7),\n    )\n\n    resolved = svc._resolve_org(_payload())\n\n    assert resolved == {\"empresa_id\": 7, \"unidad_negocio_id\": unidad_pk}\n\n\ndef test_resolve_org_rejects_server_mismatch(monkeypatch):\n    unidad_pk = \"11111111-1111-1111-1111-111111111111\"\n    monkeypatch.setattr(\n        svc.CorporateFilterService,\n        \"resolver_unidad\",\n        lambda value: {\"pk\": unidad_pk, \"codigo\": \"130MID\", \"nombre\": \"130 MERIDA\"},\n    )\n    monkeypatch.setattr(\n        svc.UnidadesService,\n        \"get_by_pk\",\n        lambda value: {\"unidad_negocio_pk\": unidad_pk, \"codigo\": \"130MID\", \"server_id\": \"server-2\"},\n    )\n\n    with pytest.raises(svc.AttributionOrgScopeError, match=\"server_id no corresponde\"):\n        svc._resolve_org(_payload(server_id=\"server-1\"))\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/rrr/attribution_service.py",
+        "backend/tests/test_rrr_attribution_org_resolution.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_rrr_attribution_contract.py",
+        "backend/tests/test_rrr_attribution_org_resolution.py"
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer"
+}
