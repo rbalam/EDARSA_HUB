@@ -1,0 +1,68 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "BOS-AGENT-HARNESS-V1-RH-TIPOS-INCIDENCIA-REGISTRY-GAP-GATE31-R1",
+  "title": "RH tipos incidencia canonical registry gap Gate31",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS / Agent Harness RH",
+    "chat": "Worker Avanzado"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "81cd02e181ce286c3ab541d4821798b064557770",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Gate31 READ_ONLY para resolver el ultimo gap canonico previo a sustituir backend/modules/rh/solicitudes_catalogo.py. Determinar si RH_Cat_Tipos_Incidencias es una entidad fisica existente que solo falta registrar en Sistema_CatalogosConfig, o si existe otro CodigoCatalogo canonico equivalente ya registrado. Auditar exclusivamente migrations/validation del registry, RH repository/service/routes, catalogos_workflow_sql, admin_sql y tests. No crear tabla fisica, no DDL, no SQL Live, no Mongo, no Production. Entregar un unico veredicto: (A) REGISTRY_ONLY_GAP con codigo exacto recomendado para registrar la tabla existente, (B) EXISTING_CANONICAL_CODE con codigo exacto reutilizable, o (C) BLOCKED si la evidencia no permite mapear sin nueva arquitectura. Ademas confirmar que puestos/departamentos/sucursales mantienen sus codigos RH_Cat_* actuales y que el futuro adapter legacy puede usar el workflow SQL existente sin duplicar solicitudes.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/database/migrations",
+          "backend/database/validation",
+          "backend/modules/rh/repository.py",
+          "backend/modules/rh/service.py",
+          "backend/modules/rh/routes.py",
+          "backend/modules/rh/solicitudes_catalogo.py",
+          "backend/modules/catalogos_workflow_sql/repository.py",
+          "backend/modules/catalogos_workflow_compat/routes.py",
+          "backend/modules/admin_sql/routes.py",
+          "backend/tests/test_catalogos_rbac_registry_canonical.py",
+          "backend/tests/test_catalogos_runtime_canonical_universe.py",
+          "backend/tests/test_catalogos_rrhh.py"
+        ],
+        "search_terms": [
+          "RH_Cat_Tipos_Incidencias",
+          "RH_Cat_TiposIncidencias",
+          "tipos_incidencia",
+          "Sistema_CatalogosConfig",
+          "CATALOGO_WORKFLOW",
+          "RH_Cat_Puestos",
+          "RH_Cat_Departamentos",
+          "RH_Cat_Sucursales",
+          "CatalogosWorkflowSQLRepository",
+          "Sistema_CatalogosSolicitudes"
+        ],
+        "include_patterns": ["*.py", "*.sql"],
+        "exclude_patterns": ["*.pyc", "__pycache__/*"],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "scheduling": {
+    "project_id": "EDARSAHUB_BOS_AGENT_HARNESS",
+    "bounded_context": "RH_CANONICALIZATION",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": ["GLOBAL_GIT_WRITER"]
+  },
+  "human_summary_level": "13yo-non-programmer"
+}
