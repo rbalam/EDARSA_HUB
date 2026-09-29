@@ -1,0 +1,82 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "paths": [
+        "tools/mirror_sync/gate_chain_publisher.py",
+        "backend/tests/test_worker_canonical_job_ingress_contract.py"
+      ],
+      "type": "py_compile"
+    },
+    {
+      "paths": [
+        "backend/tests/test_worker_canonical_job_ingress_contract.py"
+      ],
+      "type": "pytest"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          ".git/*",
+          "__pycache__/*"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "max_results": 200,
+        "paths": [
+          "tools/mirror_sync/gate_chain_publisher.py",
+          "backend/tests/test_worker_canonical_job_ingress_contract.py"
+        ],
+        "search_terms": [
+          "def submit(",
+          "validate_template",
+          "READ_ONLY_SQL",
+          "FORBIDDEN_TEMPLATE_KEY",
+          "sql_readonly_audit",
+          "checks",
+          "queries",
+          "production_touched",
+          "authorize_requester",
+          "publish("
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "expected_result": {
+    "files_changed": [],
+    "production_touched": false,
+    "quality_gate": "PASS",
+    "status": "READ_ONLY_COMPLETE",
+    "tests": "PASS"
+  },
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-CANONICAL-JOB-INGRESS-POSTAUDIT-READONLY-R1",
+  "mode": "READ_ONLY",
+  "objective": "Post-audit READ_ONLY del commit 0f446003d78fa677f8f39560d4f86b999f4161d4. Validar que CANONICAL_JOB_INGRESS submit(job_spec) existe, que READ_ONLY_SQL sólo permite sql dentro de checks.queries[].sql, que no abrió permisos peligrosos, que no tocó Producción y que tests pasan.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Worker Repair Planner",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt-classic"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
