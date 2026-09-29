@@ -14,9 +14,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -130,9 +132,50 @@ def validate_template(template: dict[str, Any]) -> dict[str, Any]:
     if template.get("production_allowed") is not False:
         raise ValueError("PRODUCTION_FORBIDDEN")
 
-    for key, _ in _walk(template):
-        if key in FORBIDDEN_KEYS:
-            raise ValueError(f"FORBIDDEN_TEMPLATE_KEY:{key}")
+    def walk_with_path(
+        value: Any,
+        path: tuple[Any, ...] = (),
+    ):
+        if isinstance(value, dict):
+            for raw_key, item in value.items():
+                key = str(raw_key).lower()
+                child = path + (str(raw_key),)
+                yield child, key, item
+                yield from walk_with_path(
+                    item,
+                    child,
+                )
+        elif isinstance(value, list):
+            for index, item in enumerate(value):
+                yield from walk_with_path(
+                    item,
+                    path + (index,),
+                )
+
+    for path, key, _ in walk_with_path(
+        template
+    ):
+        readonly_sql_query = (
+            key == "sql"
+            and str(
+                template.get("mode") or ""
+            ).strip().upper()
+            == "READ_ONLY_SQL"
+            and len(path) == 5
+            and path[0] == "checks"
+            and isinstance(path[1], int)
+            and path[2] == "queries"
+            and isinstance(path[3], int)
+            and path[4] == "sql"
+        )
+
+        if (
+            key in FORBIDDEN_KEYS
+            and not readonly_sql_query
+        ):
+            raise ValueError(
+                f"FORBIDDEN_TEMPLATE_KEY:{key}"
+            )
 
     for action in template.get("actions") or []:
         if (
@@ -743,6 +786,395 @@ def publish(
                 "QUEUE_PUBLISHER_CLEANUP_FAILED:"
                 + "|".join(cleanup_errors)
             )
+
+
+
+STATE = (
+    ROOT
+    / ".git"
+    / "universal-worker-queue"
+)
+
+DRAFTS = STATE / "drafts"
+PENDING = STATE / "pending"
+PROCESSING = STATE / "processing"
+RESULTS = STATE / "results"
+DONE = STATE / "done"
+REJECTED = STATE / "rejected"
+
+
+def _atomic_submit_draft(
+    job: dict[str, Any],
+) -> Path:
+
+    DRAFTS.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    path = (
+        DRAFTS
+        / f"{job['job_id']}.json"
+    )
+
+    serialized = (
+        json.dumps(
+            job,
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
+    )
+
+    if path.is_file():
+        current = path.read_text(
+            encoding="utf-8"
+        )
+
+        if current != serialized:
+            raise ValueError(
+                "JOB_DRAFT_IDEMPOTENCY_CONFLICT"
+            )
+
+        return path
+
+    with tempfile.NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        dir=DRAFTS,
+        delete=False,
+    ) as handle:
+
+        handle.write(serialized)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+        temporary = Path(
+            handle.name
+        )
+
+    os.replace(
+        temporary,
+        path,
+    )
+
+    return path
+
+
+def _submit_local_lifecycle(
+    job_id: str,
+) -> str | None:
+
+    name = f"{job_id}.json"
+
+    if (
+        (RESULTS / name).is_file()
+        or (DONE / name).is_file()
+    ):
+        return "ALREADY_COMPLETED"
+
+    if (PROCESSING / name).is_file():
+        return "ALREADY_PROCESSING"
+
+    if (PENDING / name).is_file():
+        return "ALREADY_SUBMITTED"
+
+    if (REJECTED / name).is_file():
+        return "INVALID_JOB"
+
+    return None
+
+
+def _submit_remote_exists(
+    job_id: str,
+    *,
+    remote: str,
+    queue_branch: str,
+) -> bool:
+
+    rel = (
+        "worker_queue/inbox/"
+        f"{job_id}.json"
+    )
+
+    fetched = git(
+        "fetch",
+        remote,
+        queue_branch,
+        check=False,
+    )
+
+    if fetched.returncode != 0:
+        return False
+
+    return (
+        git(
+            "cat-file",
+            "-e",
+            f"{remote}/{queue_branch}:{rel}",
+            check=False,
+        ).returncode
+        == 0
+    )
+
+
+def _submit_convergence(
+    *,
+    remote: str,
+) -> dict[str, Any]:
+
+    for branch in (
+        "Edarsahub_Desarrollo",
+        "mirror/emergent-live",
+    ):
+        fetched = git(
+            "fetch",
+            remote,
+            branch,
+            check=False,
+        )
+
+        if fetched.returncode != 0:
+            return {
+                "converged": False,
+                "reason": "FETCH_FAILED",
+            }
+
+    local = git(
+        "rev-parse",
+        "HEAD",
+        check=False,
+    ).stdout.strip()
+
+    development = git(
+        "rev-parse",
+        f"{remote}/Edarsahub_Desarrollo",
+        check=False,
+    ).stdout.strip()
+
+    mirror = git(
+        "rev-parse",
+        f"{remote}/mirror/emergent-live",
+        check=False,
+    ).stdout.strip()
+
+    return {
+        "local": local,
+        "development": development,
+        "mirror": mirror,
+        "converged": bool(
+            local
+            and local
+            == development
+            == mirror
+        ),
+    }
+
+
+def _submit_failure_status(
+    error: Exception,
+) -> str:
+
+    message = (
+        f"{type(error).__name__}:{error}"
+    ).upper()
+
+    if (
+        "REMOTE_MOVED_RETRY_REQUIRED"
+        in message
+    ):
+        return "REMOTE_MOVED_RETRYABLE"
+
+    if "GIT_LOCK_BUSY" in message:
+        return "WRITER_BUSY"
+
+    if (
+        "CLAIM" in message
+        and "BUSY" in message
+    ):
+        return "CLAIM_BUSY"
+
+    if (
+        "WRITER" in message
+        and "BUSY" in message
+    ):
+        return "WRITER_BUSY"
+
+    return "RECOVERY_REQUIRED"
+
+
+def submit(
+    job_spec: dict[str, Any],
+    *,
+    remote: str = "origin",
+    queue_branch: str = "worker/requests",
+) -> dict[str, Any]:
+
+    try:
+        template = validate_template(
+            job_spec
+        )
+
+        from tools.mirror_sync.universal_job_bridge import (
+            validate as validate_worker_job,
+        )
+
+        errors = validate_worker_job(
+            template
+        )
+
+        if errors:
+            return {
+                "status": "INVALID_JOB",
+                "errors": errors,
+                "production_touched": False,
+            }
+
+    except Exception as exc:
+        return {
+            "status": "INVALID_JOB",
+            "reason": (
+                f"{type(exc).__name__}:{exc}"
+            ),
+            "production_touched": False,
+        }
+
+    job_id = str(
+        template["job_id"]
+    )
+
+    try:
+        draft = _atomic_submit_draft(
+            template
+        )
+    except Exception as exc:
+        return {
+            "status": "RECOVERY_REQUIRED",
+            "job_id": job_id,
+            "reason": (
+                f"{type(exc).__name__}:{exc}"
+            ),
+            "production_touched": False,
+        }
+
+    lifecycle = _submit_local_lifecycle(
+        job_id
+    )
+
+    if lifecycle:
+        return {
+            "status": lifecycle,
+            "job_id": job_id,
+            "draft_path": str(draft),
+            "production_touched": False,
+        }
+
+    if _submit_remote_exists(
+        job_id,
+        remote=remote,
+        queue_branch=queue_branch,
+    ):
+        return {
+            "status": "ALREADY_SUBMITTED",
+            "job_id": job_id,
+            "draft_path": str(draft),
+            "production_touched": False,
+        }
+
+    try:
+        from tools.mirror_sync.worker_requester_rbac import (
+            authorize_requester,
+        )
+
+        authorization = authorize_requester(
+            template["requester"]
+        )
+
+    except Exception as exc:
+        return {
+            "status": "REQUESTER_DENIED",
+            "job_id": job_id,
+            "reason": (
+                f"{type(exc).__name__}:{exc}"
+            ),
+            "production_touched": False,
+        }
+
+    if (
+        authorization.get("allowed")
+        is not True
+    ):
+        return {
+            "status": "REQUESTER_DENIED",
+            "job_id": job_id,
+            "reason": authorization.get(
+                "reason"
+            ),
+            "production_touched": False,
+        }
+
+    convergence = _submit_convergence(
+        remote=remote
+    )
+
+    if (
+        convergence.get("converged")
+        is not True
+    ):
+        return {
+            "status": "WAITING_FOR_CONVERGENCE",
+            "job_id": job_id,
+            "draft_path": str(draft),
+            "convergence": convergence,
+            "production_touched": False,
+        }
+
+    plan = {
+        "status": "READY_TO_PUBLISH",
+        "job_id": job_id,
+        "template": template,
+    }
+
+    try:
+        publication = publish(
+            plan,
+            remote=remote,
+            queue_branch=queue_branch,
+        )
+
+    except Exception as exc:
+        return {
+            "status": _submit_failure_status(
+                exc
+            ),
+            "job_id": job_id,
+            "draft_path": str(draft),
+            "reason": (
+                f"{type(exc).__name__}:{exc}"
+            ),
+            "production_touched": False,
+        }
+
+    publication_status = str(
+        publication.get("status")
+        or ""
+    ).strip()
+
+    if publication_status == "PUBLISHED":
+        final = "SUBMITTED"
+    elif publication_status == "EXISTS":
+        final = "ALREADY_SUBMITTED"
+    else:
+        final = "RECOVERY_REQUIRED"
+
+    return {
+        "status": final,
+        "job_id": job_id,
+        "draft_path": str(draft),
+        "publication": publication,
+        "production_touched": False,
+    }
 
 
 def main() -> int:
