@@ -5,7 +5,7 @@
   "target_branch": "Edarsahub_Desarrollo",
   "production_allowed": false,
   "mode": "READ_ONLY",
-  "objective": "Tablero Ejecutivo: diagnosticar y definir la implementacion de drill-down por doble click para Ventas, PAX y Cheques; corregir el Comparativo en modo Ventas del Dia para mostrar dia anterior y mismo dia del anio anterior; y habilitar Ventas por Hora usando exclusivamente la hora de apertura de la cuenta/comanda y excluyendo canceladas. Restriccion absoluta: NO modificar ni ejecutar procedimientos de sincronizacion, actualizacion, Scheduler, ISCAM, Sync_Sales, Sync_PAX, backfills ni fuentes POS live. Usar solamente datos ya existentes en EDARSAHUB y vistas/reportes actuales. No tocar Produccion. Mantener sin cambios el grafico Ventas por Dia de la Semana cuando el periodo sea dia.",
+  "objective": "[Mejora-TABEJE | DRILLDOWN-COMPARATIVO-HORARIO] Tablero Ejecutivo: diagnosticar y definir la implementacion de drill-down por doble click para Ventas, PAX y Cheques; corregir el Comparativo en modo Ventas del Dia para mostrar dia anterior y mismo dia del anio anterior; y habilitar Ventas por Hora usando exclusivamente la hora de apertura de la cuenta/comanda y excluyendo canceladas. Restriccion absoluta: NO modificar ni ejecutar procedimientos de sincronizacion, actualizacion, Scheduler, ISCAM, Sync_Sales, Sync_PAX, backfills ni fuentes POS live. Usar solamente datos ya existentes en EDARSAHUB y vistas/reportes actuales. No tocar Produccion. Mantener sin cambios el grafico Ventas por Dia de la Semana cuando el periodo sea dia.",
   "human_summary_language": "es",
   "requester": {
     "email": "carlosruz@edarsa.com.mx",
@@ -89,5 +89,49 @@
     {
       "type": "git_diff_check"
     }
-  ]
+  ],
+  "labels": [
+    "Mejora-TABEJE",
+    "Tablero Ejecutivo",
+    "DRILLDOWN-COMPARATIVO-HORARIO",
+    "READ_ONLY",
+    "CARLOS"
+  ],
+  "tracking": {
+    "display_label": "Mejora-TABEJE | DRILLDOWN-COMPARATIVO-HORARIO | EDARSAHUB-TABLERO-EJECUTIVO-DRILLDOWN-DIAG-R1-CARLOS-20260929T2332Z",
+    "project_label": "Mejora-TABEJE",
+    "status_legend": {
+      "VERDE": [
+        "DONE",
+        "PASS",
+        "CERTIFIED",
+        "CERTIFIED_READ_ONLY",
+        "CERTIFIED_OPERATIONAL"
+      ],
+      "AMARILLO": [
+        "PENDING",
+        "PROCESSING",
+        "RESULT_READY",
+        "WAITING",
+        "IN_PROGRESS"
+      ],
+      "ROJO": [
+        "REJECTED",
+        "ERROR",
+        "FAILED",
+        "BLOCKED"
+      ]
+    }
+  },
+  "scheduling": {
+    "project_id": "Mejora-TABEJE",
+    "bounded_context": "Tablero Ejecutivo",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
 }
