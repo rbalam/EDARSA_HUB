@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "33563ce5af637d3739ca7c0644a2e12a3db340e0",
-  "generated_at_utc": "2026-09-29T01:13:25Z",
+  "generated_at_utc": "2026-09-29T01:14:43Z",
   "history": {
     "done_total_local": 1124,
     "pending_total_local": 0,
@@ -16,55 +16,55 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3512,
+      "age_seconds": 3591,
       "job_id": "CAVAS-SERVER-REGISTRY-INACTIVE-UPDATE-FIX-R1-20260928",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2391,
+      "age_seconds": 2469,
       "job_id": "CAVAS-SERVER-REGISTRY-INACTIVE-UPDATE-FIX-R2-20260928",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2137,
+      "age_seconds": 2215,
       "job_id": "CAVAS-SERVER-REGISTRY-INACTIVE-UPDATE-FIX-R3-20260928",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1743,
+      "age_seconds": 1821,
       "job_id": "CAVAS-SERVER-REGISTRY-INACTIVE-UPDATE-FIX-R4-20260928",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 35,
+      "age_seconds": 114,
       "job_id": "CAVAS-WORKER-SERVER-REGISTRY-METADATA-UPDATE-CAPABILITY-R1-20260928",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 162,
+      "age_seconds": 240,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-SEMANTIC-EXTRACT-READONLY-R5",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3086,
+      "age_seconds": 3165,
       "job_id": "EDARSAHUB-WORKER-DISPATCHER-PUSH-CHANNEL-DIAGNOSTIC-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1855,
+      "age_seconds": 1933,
       "job_id": "EDARSAHUB-WORKER-RESULT-SEMANTIC-EXTRACT-FAIL-CLOSED-MUTATION-R3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1217,
+      "age_seconds": 1295,
       "job_id": "EDARSAHUB-WORKER-RESULT-SEMANTIC-EXTRACT-FAIL-CLOSED-MUTATION-R4",
       "reason": null,
       "state": "RESULT_READY"
@@ -84,8 +84,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-29T01:13:17Z",
-    "last_receive_utc": "2026-09-29T01:13:22Z",
+    "last_cycle_utc": "2026-09-29T01:14:39Z",
+    "last_receive_utc": "2026-09-29T01:14:42Z",
     "last_terminal_utc": "2026-09-29T01:12:49Z",
     "pid": "691",
     "runtime_fingerprint": {
