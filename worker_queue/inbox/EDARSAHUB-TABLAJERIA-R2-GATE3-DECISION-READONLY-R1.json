@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-DECISION-READONLY-R1",
+  "title": "Tablajeria R2 Gate3 decision readonly R1",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS / Tablajeria",
+    "chat": "Tablajerias 4"
+  },
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "33563ce5af637d3739ca7c0644a2e12a3db340e0",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "sql_allowed": false,
+  "human_summary_language": "es",
+  "priority": "P0",
+  "depends_on": {
+    "semantic_extract_job_id": "EDARSAHUB-TABLAJERIA-R2-SEMANTIC-EXTRACT-READONLY-R5",
+    "semantic_extract_status": "READ_ONLY_COMPLETE",
+    "semantic_extract_certification": "CERTIFIED_READ_ONLY",
+    "semantic_extract_quality_gate": "PASS",
+    "semantic_extract_blob_sha": "cbbf32ce26a17f8324cb4a0d2bba15f36b0d965c"
+  },
+  "objective": "Emitir una decision explicita de Gate3 usando como fuente semantica certificada el resultado R5. No abrir Gate3 automaticamente. Si R5 dice gate3_allowed=false, conservar Gate3 en HOLD y reportar el motivo exacto. No mutar repositorio, SQL, Produccion, Scheduler, NetPay ni logica de Tablajeria.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "worker_result_semantic_extract",
+      "request": {
+        "source_result": {
+          "job_id": "EDARSAHUB-TABLAJERIA-R2-SEMANTIC-EXTRACT-READONLY-R5",
+          "path": "worker_queue/results/EDARSAHUB-TABLAJERIA-R2-SEMANTIC-EXTRACT-READONLY-R5.json",
+          "branch": "worker/results",
+          "blob_sha": "cbbf32ce26a17f8324cb4a0d2bba15f36b0d965c"
+        },
+        "required_semantic_fields": [
+          "gate3_allowed",
+          "last_gate_executed",
+          "last_gate_certified",
+          "real_implementation_percent",
+          "next_allowed_gate",
+          "blocking_reason_if_any"
+        ],
+        "decision_contract": {
+          "source_must_be_certified_r5": true,
+          "gate3_must_remain_hold_unless_gate3_allowed_true": true,
+          "do_not_infer_from_generic_percent": true,
+          "do_not_infer_from_certification_or_quality_gate": true,
+          "explicit_false_is_a_valid_decision": true
+        }
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "expected_decision": {
+    "gate3_allowed": false,
+    "last_gate_executed": "EDARSAHUB-TABLAJERIA-RECOVERY-AUDIT-WORKER-JOB-V2-R2",
+    "last_gate_certified": false,
+    "real_implementation_percent": null,
+    "next_allowed_gate": "GATE3_HOLD_PENDING_EXPLICIT_SEMANTIC_FIELDS",
+    "blocking_reason_if_any": "SOURCE_SEMANTIC_FIELDS_MISSING"
+  },
+  "hard_fail_conditions": [
+    "No repository mutation is allowed.",
+    "No SQL execution is allowed.",
+    "No Production touch is allowed.",
+    "No Gate3 opening is allowed from this job.",
+    "Fail if R5 cannot be read from worker/results.",
+    "Fail if R5 is not CERTIFIED_READ_ONLY and PASS.",
+    "Fail if output lacks gate3_allowed, semantic_fields, next_allowed_step, source_semantic_fields_complete, or source_missing_semantic_fields.",
+    "Fail if gate3_allowed is inferred true from percent_complete, status, quality_gate, certification, or work_completion.",
+    "Fail if any tracked file changes."
+  ],
+  "next_after_success": "If gate3_allowed is false, keep Gate3 on HOLD and publish no mutation. If gate3_allowed is true, only prepare a separate Gate3 plan request; do not open Gate3 automatically.",
+  "next_after_failure": "Report exact blocker and keep Gate3 on HOLD."
+}
