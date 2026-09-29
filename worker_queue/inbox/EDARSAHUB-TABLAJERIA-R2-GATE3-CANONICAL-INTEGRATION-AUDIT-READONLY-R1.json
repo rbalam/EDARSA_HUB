@@ -1,0 +1,85 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "request": {
+        "exclude_patterns": [
+          ".git/*",
+          "__pycache__/*",
+          "node_modules/*",
+          "dist/*",
+          "build/*"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.ts",
+          "*.tsx",
+          "*.js",
+          "*.jsx"
+        ],
+        "max_results": 500,
+        "paths": [
+          "backend/modules/tablajeria",
+          "backend/tests",
+          "frontend/src"
+        ],
+        "search_terms": [
+          "Inventario_Movimientos",
+          "Inventario_MovimientosDetalle",
+          "Inventario_TipoMovimiento",
+          "Operaciones_Tablaje_EventosContables",
+          "Tablajeria_MovimientosInventario",
+          "Tablajeria_PolizasContables",
+          "Tablajeria_PolizasDetalle",
+          "Tablajeria_CosteoProduccion",
+          "Tablajeria_CosteoDetalle",
+          "afectar_inventario_orden",
+          "calcular_costeo_orden",
+          "generar_poliza_produccion",
+          "procesar_cierre_completo",
+          "crear_movimiento",
+          "ReferenciaTipo",
+          "ReferenciaID",
+          "ReferenciaDetalleTipo",
+          "ReferenciaDetalleID",
+          "TipoEvento",
+          "EstatusContable"
+        ]
+      },
+      "type": "repository_contract_audit"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "expected_result": {
+    "files_changed": [],
+    "production_touched": false,
+    "status": "READ_ONLY_COMPLETE"
+  },
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-CANONICAL-INTEGRATION-AUDIT-READONLY-R1",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en READ_ONLY repositorio si Tablajeria R2 usa las tablas canonicas Inventario_Movimientos, Inventario_MovimientosDetalle y Operaciones_Tablaje_EventosContables como fuente operativa, o si usa Tablajeria_MovimientosInventario, Tablajeria_PolizasContables o Tablajeria_PolizasDetalle como doble autoridad. No modificar archivos, no ejecutar SQL, no tocar Produccion.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Tablajerias 5",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt-classic"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
