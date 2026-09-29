@@ -1,0 +1,66 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-VENTAS-CERRADAS-HANG-DIAG-R9-CARLOS-20260929",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "0641ede68934e3f5c752a77f27133591e12355de",
+  "mode": "READ_ONLY",
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "objective": "Diagnosticar en solo lectura por que sync_comercial_v2 sigue sin terminar despues de R7 aunque HEADER-FIRST y heartbeat estan integrados. Identificar en que sucursal se detiene cada INCR reciente, el orden efectivo de avance y si existe lock/ejecucion colgada. No modificar codigo ni datos. No tocar sync_comercial_abiertas_v2. Etiqueta: Sincronizador.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "recent_auto_run_unit_sequence",
+          "sql": "SELECT TOP (100) s.run_id,s.run_timestamp,u.codigo,u.nombre,s.fecha_inicio,s.fecha_fin,s.status,s.source_connection_status,s.error_code,s.error_message FROM dbo.Comercial_SyncLog_v2 s LEFT JOIN dbo.Unidades_Negocio u ON CONVERT(varchar(36),u.id)=CONVERT(varchar(36),s.unidad_negocio_id) WHERE s.run_type='INCREMENTAL' AND s.run_id LIKE 'INCR-%' AND s.run_timestamp>=DATEADD(hour,-8,SYSUTCDATETIME()) ORDER BY s.run_timestamp DESC"
+        },
+        {
+          "name": "recent_run_counts_named",
+          "sql": "WITH x AS (SELECT s.run_id,MIN(s.run_timestamp) AS inicio,MAX(s.run_timestamp) AS fin,COUNT(DISTINCT s.unidad_negocio_id) AS unidades,STRING_AGG(COALESCE(u.codigo,CONVERT(varchar(36),s.unidad_negocio_id)),',') WITHIN GROUP (ORDER BY s.run_timestamp) AS secuencia FROM dbo.Comercial_SyncLog_v2 s LEFT JOIN dbo.Unidades_Negocio u ON CONVERT(varchar(36),u.id)=CONVERT(varchar(36),s.unidad_negocio_id) WHERE s.run_type='INCREMENTAL' AND s.run_id LIKE 'INCR-%' AND s.run_timestamp>=DATEADD(hour,-8,SYSUTCDATETIME()) GROUP BY s.run_id) SELECT TOP (30) run_id,inicio,fin,unidades,secuencia FROM x ORDER BY inicio DESC"
+        },
+        {
+          "name": "scheduler_unfinished_latest",
+          "sql": "WITH x AS (SELECT RunID,MAX(CASE WHEN Accion='START' THEN FechaAccion END) AS started,MAX(CASE WHEN Accion='FINISH' THEN FechaAccion END) AS finished FROM dbo.Scheduler_BitacoraJobs WHERE JobName='sync_comercial_v2' AND FechaAccion>=DATEADD(hour,-8,SYSUTCDATETIME()) GROUP BY RunID) SELECT TOP (30) RunID,started,finished,DATEDIFF(second,started,SYSUTCDATETIME()) AS age_seconds FROM x ORDER BY started DESC"
+        },
+        {
+          "name": "scheduler_lock_rows",
+          "sql": "SELECT TOP (50) * FROM dbo.Scheduler_DistributedLocks WHERE JobName='sync_comercial_v2' ORDER BY ExpiresAtUtc DESC"
+        },
+        {
+          "name": "unit_config_current",
+          "sql": "SELECT codigo,nombre,system_type,CONVERT(varchar(36),server_id) AS server_id,sucursal_origen_id,activo FROM dbo.Unidades_Negocio WHERE codigo IN ('130MID','CIENFUEGOS','ESTELAR','130QRO','ORIGEN') ORDER BY nombre"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ],
+  "constraints": [
+    "READ_ONLY only",
+    "Do not modify backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+    "No DDL/DML",
+    "No Production"
+  ],
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-CONCILIACIONES",
+    "chat": "Sincronizador Ventas Cerradas"
+  },
+  "scheduling": {
+    "project_id": "EDARSAHUB_CONCILIACIONES",
+    "bounded_context": "SINCRONIZADOR",
+    "priority_class": "HIGH",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  }
+}
