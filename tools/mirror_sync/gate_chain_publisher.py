@@ -72,14 +72,48 @@ VENV_PYTHON = ROOT / ".venv" / "bin" / "python"
 PYTHON_BIN = str(VENV_PYTHON if VENV_PYTHON.is_file() else Path(sys.executable))
 
 
-def _walk(value: Any):
+def _walk(
+    value: Any,
+    *,
+    allow_direct_sql: bool = False,
+):
+    """Walk keys while permitting SQL only in readonly audit query objects."""
     if isinstance(value, dict):
+        readonly_check = (
+            str(value.get("type") or "")
+            == "sql_readonly_audit"
+        )
+
         for key, item in value.items():
-            yield str(key).lower(), item
-            yield from _walk(item)
+            normalized_key = str(key).lower()
+
+            if normalized_key == "sql" and allow_direct_sql:
+                continue
+
+            yield normalized_key, item
+
+            if (
+                normalized_key == "queries"
+                and readonly_check
+                and isinstance(item, list)
+            ):
+                for query in item:
+                    yield from _walk(
+                        query,
+                        allow_direct_sql=isinstance(query, dict),
+                    )
+            else:
+                yield from _walk(
+                    item,
+                    allow_direct_sql=False,
+                )
+
     elif isinstance(value, list):
         for item in value:
-            yield from _walk(item)
+            yield from _walk(
+                item,
+                allow_direct_sql=False,
+            )
 
 
 def validate_template(template: dict[str, Any]) -> dict[str, Any]:
