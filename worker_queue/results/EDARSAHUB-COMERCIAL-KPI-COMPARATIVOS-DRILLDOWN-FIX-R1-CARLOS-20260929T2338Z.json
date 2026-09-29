@@ -1,0 +1,337 @@
+{
+  "base_sha": "6d32b613fd9d5df64f80efd6b16fca90736f60d9",
+  "blockers": [],
+  "candidate_sha": "aa799300859ba58be213a872fed8fdb593ceaed6",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-29T23:39:04Z",
+  "development_sha": "aa799300859ba58be213a872fed8fdb593ceaed6",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/modules/comercial/routes.py",
+    "backend/modules/comercial/service.py",
+    "frontend/src/pages/Comercial.js"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-KPI-COMPARATIVOS-DRILLDOWN-FIX-R1-CARLOS-20260929T2338Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-29T23:39:25Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "calendar",
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.empresa_resolver",
+              "core.kpis_canonicos",
+              "core.server_registry",
+              "core.source_resolver",
+              "core.sql_first.connection_factory",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "core.utils.date_filters",
+              "core.utils.operational_window",
+              "datetime",
+              "fastapi",
+              "logging",
+              "modules.comercial",
+              "modules.comercial.adapters",
+              "modules.comercial.queries.mpro",
+              "modules.comercial.queries.softrestaurant",
+              "os",
+              "pymssql",
+              "pytz",
+              "time",
+              "typing",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "cheque_vs_ano_anterior",
+              "cheques_total_vs_ano",
+              "pax_promedio",
+              "pax_total_vs_ano",
+              "pax_vs_ano_anterior",
+              "presupuesto_disponible",
+              "rotacion_vs_ano"
+            ],
+            "path": "backend/modules/comercial/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CacheStatus",
+              "DataStatus",
+              "LiveStatus",
+              "SourceRealStatus",
+              "SourceUsed",
+              "_calcular_variacion_pct",
+              "_cargar_catalogo_unidades_negocio",
+              "_fecha_fin_exclusiva",
+              "_get_edarsahub_tablero_config",
+              "_get_kpis_periodo_edarsahub",
+              "_get_ultimo_dia_con_datos_edarsahub",
+              "_get_ventas_abiertas_edarsahub",
+              "_mapear_codigo_a_unidad_negocio_pk",
+              "_metricas_periodo",
+              "_normalizar_clave_unidad",
+              "_obtener_codigo_canonico_mpro",
+              "_obtener_config_mpro_canonica",
+              "_obtener_kpis_tablero_desde_edarsahub",
+              "_obtener_servidor_conexion",
+              "_obtener_sucursales_mpro_desde_resolver",
+              "_pct",
+              "_query_edarsahub_tablero",
+              "_resolver_unidad_pks_dashboard",
+              "_ventas_periodo_canonicas",
+              "add_pk",
+              "agregar_totales",
+              "build_unit_response",
+              "calcular_consumo_promedio",
+              "calcular_porcentaje_cumplimiento",
+              "calcular_ticket_promedio",
+              "classify_connection_error",
+              "get_dashboard_kpis_from_edarsahub",
+              "get_kpis_mpro",
+              "get_kpis_mpro_con_estado",
+              "get_kpis_mpro_por_sucursal",
+              "get_kpis_softrestaurant",
+              "get_last_valid_snapshot_edarsahub",
+              "guardar_metas",
+              "obtener_metas",
+              "obtener_sucursales_servidor",
+              "obtener_unidad_negocio_edarsahub",
+              "procesar_ventas_sucursal",
+              "resolver_unidad_pks_dashboard"
+            ],
+            "tables_referenced": [
+              "Comercial_KPIs_Diarios_v2",
+              "Servidores_Conexiones",
+              "Sync_Metas_Comerciales",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "calendar",
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.rbac_sql.service",
+              "core.security",
+              "core.server_registry",
+              "core.source_resolver",
+              "core.system_type_utils",
+              "core.unidades_registry",
+              "core.unidades_service",
+              "core.user_access_context",
+              "core.utils.date_filters",
+              "core.utils.operational_window",
+              "datetime",
+              "fastapi",
+              "logging",
+              "modules.comercial.adapters",
+              "modules.comercial.cache_service",
+              "modules.comercial.queries.mpro",
+              "modules.comercial.queries.softrestaurant",
+              "modules.comercial.repository",
+              "modules.comercial.service",
+              "modules.comercial_v2.repository_readonly",
+              "pymssql",
+              "pytz",
+              "service",
+              "typing",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "comercial_inteligencia_ventasdetalleproducto",
+              "pax_promedio"
+            ],
+            "path": "backend/modules/comercial/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/comercial/dashboard/{server_id}",
+              "/comercial/detalle-movimientos/{server_id}",
+              "/comercial/mesas/{server_id}",
+              "/comercial/metas/{server_id}",
+              "/comercial/precios-constantes/{server_id}",
+              "/comercial/reporte-pax/{server_id}",
+              "/comercial/sucursales/{server_id}",
+              "/comercial/tablero-ejecutivo",
+              "/comercial/ticket-perfecto/{server_id}",
+              "/comercial/ventas-tiempo/{server_id}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_agrupar_por_unidad",
+              "_empty_mesas_unidad",
+              "_filtrar_server",
+              "_safe_float",
+              "_safe_int",
+              "_tablero_ejecutivo_internal",
+              "check_live_guard_rail",
+              "comercial_dashboard",
+              "comercial_detalle_movimientos",
+              "comercial_mesas",
+              "comercial_metas",
+              "comercial_reporte_pax",
+              "comercial_ticket_perfecto",
+              "comercial_ventas_tiempo",
+              "empty_response",
+              "get_user_context_or_403",
+              "get_ventas_dia_snapshot_from_edarsahub",
+              "obtener_sucursales",
+              "resolver_codigo_dedup",
+              "sql_fecha",
+              "tablero_ejecutivo",
+              "validate_server_access_rbac",
+              "ventas_precios_constantes"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Sync_Mesas",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "cheque_vs_ano_anterior",
+              "cheques_total_vs_ano",
+              "pax_promedio",
+              "pax_total_vs_ano",
+              "pax_vs_ano_anterior",
+              "presupuesto_disponible",
+              "rotacion_vs_ano",
+              "sin presupuesto"
+            ],
+            "path": "frontend/src/pages/Comercial.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 3,
+          "scanned_files": 3,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "folios",
+              "pax",
+              "venta"
+            ],
+            "name": "cobertura_detalle_5_unidades",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                748,
+                2023,
+                "3266142.0056"
+              ],
+              [
+                "130QRO",
+                706,
+                2127,
+                "3818060.0000"
+              ],
+              [
+                "CIENFUEGOS",
+                1049,
+                3090,
+                "4123284.1889"
+              ],
+              [
+                "ESTELAR",
+                1683,
+                4613,
+                "2398366.9900"
+              ],
+              [
+                "ORIGEN",
+                859,
+                2370,
+                "1870821.0905"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "registros_con_presupuesto"
+            ],
+            "name": "presupuesto_2026",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-29T23:38:58Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
