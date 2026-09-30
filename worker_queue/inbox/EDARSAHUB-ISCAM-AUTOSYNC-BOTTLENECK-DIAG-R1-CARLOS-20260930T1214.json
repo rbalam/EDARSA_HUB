@@ -1,0 +1,41 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-AUTOSYNC-BOTTLENECK-DIAG-R1-CARLOS-20260930T1214",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "objective": "Identificar en solo lectura el punto exacto donde sync_comercial_v2 se queda atorado después de R4. Correlacionar el orden de unidades activas con los logs recientes de Comercial_SyncLog_v2 y la cobertura de detalle/pagos del 29/09. Determinar si CIENFUEGOS es la primera unidad que bloquea la fase P1 antes de que ESTELAR sea procesada. No modificar datos ni Producción.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY_SQL",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "active_units_order",
+          "sql": "SELECT codigo, nombre, system_type, sucursal_origen_id FROM dbo.Unidades_Negocio WHERE ISNULL(activo,1)=1 ORDER BY CASE WHEN UPPER(system_type) LIKE '%SOFTRESTAURANT%' THEN 0 ELSE 1 END, nombre"
+        },
+        {
+          "name": "recent_comercial_synclog",
+          "sql": "SELECT TOP (40) run_timestamp, run_id, run_type, unidad_negocio_id, server_id, sucursal_id, fecha_inicio, fecha_fin, status, records_processed, records_inserted, records_updated, records_skipped, records_errored, error_code, error_message, duration_seconds, source_connection_status FROM dbo.Comercial_SyncLog_v2 WHERE run_timestamp >= '2026-09-30T17:10:00' ORDER BY run_timestamp DESC"
+        },
+        {
+          "name": "payments_latest_by_unit",
+          "sql": "SELECT UnidadNegocio, MAX(CAST(FechaHora AS date)) AS latest_payment_date, COUNT(*) AS payment_rows FROM dbo.Finanzas_CortesCaja_DetallePagos WHERE FechaHora >= '2026-09-28' AND FechaHora < '2026-09-30' AND ISNULL(Activo,1)=1 GROUP BY UnidadNegocio ORDER BY UnidadNegocio"
+        },
+        {
+          "name": "detail_29_status",
+          "sql": "WITH r AS (SELECT unidad_negocio_id, SUM(CAST(ISNULL(ventas_total,0) AS decimal(18,4))) ventas, SUM(CAST(ISNULL(tickets_total,0) AS bigint)) tickets, SUM(CAST(ISNULL(pax_total,0) AS bigint)) pax FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE CAST(fecha_operacion AS date)='2026-09-29' GROUP BY unidad_negocio_id), d0 AS (SELECT unidad_negocio_id, numero_ticket, SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) venta, MAX(CAST(ISNULL(pax,0) AS bigint)) pax FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE CAST(fecha_operacion AS date)='2026-09-29' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY unidad_negocio_id, numero_ticket), d AS (SELECT unidad_negocio_id, SUM(venta) ventas, COUNT(*) tickets, SUM(pax) pax FROM d0 GROUP BY unidad_negocio_id) SELECT r.unidad_negocio_id, r.ventas ventas_header, ISNULL(d.ventas,0) ventas_detalle, r.tickets tickets_header, ISNULL(d.tickets,0) tickets_detalle, r.pax pax_header, ISNULL(d.pax,0) pax_detalle FROM r LEFT JOIN d ON d.unidad_negocio_id=r.unidad_negocio_id ORDER BY r.unidad_negocio_id"
+        }
+      ]
+    }
+  ]
+}
