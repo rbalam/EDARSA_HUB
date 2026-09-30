@@ -17,6 +17,8 @@ import re
 import subprocess
 import sys
 import time
+import urllib.error
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -62,6 +64,37 @@ WAKE_ROUTE_VERSION = "r34-startup-selfheal"
 _SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 
 
+def _github_api_queue_sha() -> str:
+    request = urllib.request.Request(
+        "https://api.github.com/repos/rbalam/EDARSA_HUB/git/ref/heads/worker/requests",
+        headers={
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "EDARSAHUB-Universal-Worker-Wake",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+        method="GET",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=15) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (OSError, urllib.error.URLError, ValueError, json.JSONDecodeError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="worker queue head unavailable [github-api]",
+        ) from exc
+
+    value = str(
+        ((payload.get("object") or {}).get("sha"))
+        or ""
+    ).strip().lower()
+    if not _SHA_RE.fullmatch(value):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="worker queue head unavailable [github-api-invalid-sha]",
+        )
+    return value
+
+
 def _remote_queue_sha() -> str:
     last_error: Exception | None = None
     attempts: list[str] = []
@@ -95,14 +128,16 @@ def _remote_queue_sha() -> str:
             return fields[0].lower()
         attempts.append(f"{label}=rc{completed.returncode}")
 
-    diagnostic = ",".join(attempts) if attempts else "no-attempt"
-    raise HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail=f"worker queue head unavailable [{diagnostic}]",
-    ) from last_error
-
-
-def _runtime_git(*args: str, timeout: int = 30) -> subprocess.CompletedProcess[str]:
+    try:
+        return _github_api_queue_sha()
+    except HTTPException as exc:
+        attempts.append("github-api=failed")
+        diagnostic = ",".join(attempts) if attempts else "no-attempt"
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"worker queue head unavailable [{diagnostic}]",
+        ) from exc
+t = 30) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(
             ["git", *args],
