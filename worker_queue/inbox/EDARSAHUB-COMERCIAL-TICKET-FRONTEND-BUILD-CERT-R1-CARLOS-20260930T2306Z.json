@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-TICKET-FRONTEND-BUILD-CERT-R1-CARLOS-20260930T2306Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "FRONTEND_BUILD_CERTIFICATION",
+  "objective": "Certificar el build del frontend que contiene el nuevo drilldown Folio -> Ticket de Venta de Comercial. No modificar archivos ni tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/Comercial.js"
+        ],
+        "search_terms": [
+          "TicketVentaModal",
+          "TICKET DE SERVICIO",
+          "/comercial/ticket-venta/",
+          "Selecciona un folio"
+        ],
+        "include_patterns": [
+          "*.js"
+        ],
+        "exclude_patterns": [],
+        "max_results": 50
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
