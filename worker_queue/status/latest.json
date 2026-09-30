@@ -4,49 +4,49 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "aa799300859ba58be213a872fed8fdb593ceaed6",
-  "generated_at_utc": "2026-09-30T00:03:27Z",
+  "generated_at_utc": "2026-09-30T00:04:41Z",
   "history": {
-    "done_total_local": 1179,
+    "done_total_local": 1180,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1032,
-    "results_total_local": 2014
+    "results_total_local": 2015
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1462,
+      "age_seconds": 29,
+      "job_id": "EDARSAHUB-COMERCIAL-DRILLDOWN-ERROR-DIAG-R2-CARLOS-20260929T2359Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1536,
       "job_id": "EDARSAHUB-COMERCIAL-KPI-COMPARATIVOS-DRILLDOWN-FIX-R1-CARLOS-20260929T2338Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2031,
+      "age_seconds": 2105,
       "job_id": "EDARSAHUB-COMERCIAL-KPI-DRILLDOWN-DIAG-R1-CARLOS-20260929T2315Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3573,
-      "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-CANONICAL-INTEGRATION-AUDIT-READONLY-R1",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1686,
+      "age_seconds": 1761,
       "job_id": "EDARSAHUB-TABLERO-EJECUTIVO-DRILLDOWN-DIAG-R1-CARLOS-20260929T2332Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 701,
+      "age_seconds": 776,
       "job_id": "MEJORA-TABEJE-FUENTE-FOLIO-DIA-R3-CARLOS-20260929T2352Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1196,
+      "age_seconds": 1270,
       "job_id": "MEJORA-TABEJE-FUENTES-DETALLE-DIA-R2-CARLOS-20260929T2345Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -66,9 +66,9 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-30T00:03:22Z",
-    "last_receive_utc": "2026-09-30T00:03:24Z",
-    "last_terminal_utc": "2026-09-29T23:51:45Z",
+    "last_cycle_utc": "2026-09-30T00:04:41Z",
+    "last_receive_utc": "2026-09-30T00:04:36Z",
+    "last_terminal_utc": "2026-09-30T00:04:12Z",
     "pid": "705",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "da89a1c0ffde568341e99eb227a7ad72fcecdcbd",
