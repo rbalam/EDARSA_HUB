@@ -1,0 +1,58 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927-RETRY2",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6c1638180de49f4eddf8c0aae534763199a96f2f",
+  "objective": "Reintento idempotente del mismo R1 de Servidores despues de saneamiento canonico del runtime Preview y alineacion LOCAL=DEV=MIRROR. Restaurar exclusivamente el contrato del tab SQL Servers: GET /api/servers DATA_SOURCE-only, excluir API_LOCAL y CORE. Sin tocar datos SQL, Produccion, RBAC, Scheduler ni NetPay.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS / Servidores Integraciones Conexiones Comunicaciones",
+    "chat": "Conexiones y Comunicaciones 2"
+  },
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "retry_of": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/server.py",
+      "old": "    CORRECCIÓN 2026-05-20: Las conexiones CORE (ej. EDARSAHUB SQL) ahora aparecen\n    en el listado del menú administrativo de servidores.\n",
+      "new": "    CONTRATO UI: este endpoint alimenta exclusivamente el tab SQL Servers.\n    API_LOCAL se administra por /api/api-connections y CORE por su flujo administrativo dedicado.\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/server.py",
+      "old": "        filter_visible_listado=True,\n        exclude_core=False,\n        mask_secrets=True\n    )\n\n    return servers\n",
+      "new": "        filter_visible_listado=True,\n        exclude_core=True,\n        mask_secrets=True\n    )\n\n    # Contrato del tab SQL: nunca mezclar API_LOCAL ni CORE en /api/servers.\n    servers = [s for s in servers if s.get(\"tipo_conexion\") == \"DATA_SOURCE\"]\n\n    return servers\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_server_sucursales_rbac_canonical.py",
+      "old": "def test_legacy_filter_still_exists_but_has_no_server_consumer():\n",
+      "new": "def test_get_servers_contract_is_datasource_only():\n    source = _get_function_source(SERVER, \"get_servers\")\n    assert \"exclude_core=True\" in source\n    assert \"s.get(\\\"tipo_conexion\\\") == \\\"DATA_SOURCE\\\"\" in source\n    assert \"API_LOCAL\" not in source\n\n\ndef test_legacy_filter_still_exists_but_has_no_server_consumer():\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/server.py",
+        "backend/tests/test_server_sucursales_rbac_canonical.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_server_sucursales_rbac_canonical.py"
+      ]
+    }
+  ]
+}
