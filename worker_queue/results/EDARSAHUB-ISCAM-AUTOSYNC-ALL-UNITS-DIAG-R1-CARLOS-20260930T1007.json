@@ -1,0 +1,1112 @@
+{
+  "base_sha": "bc8dab31464e0067cdcd4c4ab4bcd4c6d0bf9f73",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-30T16:17:01Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-AUTOSYNC-ALL-UNITS-DIAG-R1-CARLOS-20260930T1007",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-30T16:17:19Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.scheduler.jobs.inteligencia_comercial_enrich",
+              "core.scheduler.locks",
+              "core.unidades_service",
+              "core.utils.operational_window",
+              "datetime",
+              "json",
+              "logging",
+              "modules.comercial_v2.schemas",
+              "modules.comercial_v2.sync_comercial_edarsahub",
+              "os",
+              "pathlib",
+              "scripts.poblar_ventas_detalle_producto_canonico",
+              "subprocess",
+              "sys",
+              "types",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "_sync_detalle_post_header",
+              "no_probar_abierto_real",
+              "ok_header_canonico",
+              "sync_comercial_v2",
+              "unidadesservice"
+            ],
+            "path": "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_get_unidades_from_edarsahub",
+              "_resolve_estatus_general",
+              "_run_header_sync_isolated",
+              "_run_manual_locked",
+              "_sync_detalle_post_header",
+              "_sync_pagos_post_header",
+              "_unit_selected",
+              "execute_sync_comercial_v2",
+              "run_sync_comercial_v2_manual"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "apscheduler.events",
+              "apscheduler.schedulers.asyncio",
+              "apscheduler.triggers.cron",
+              "apscheduler.triggers.interval",
+              "asyncio",
+              "config",
+              "core.mongo_stub",
+              "datetime",
+              "job_logger",
+              "jobs.alertas_excepciones_job",
+              "jobs.auditorias_job",
+              "jobs.bos_direction_status_job",
+              "jobs.catalogo_ampliado_alertas_job",
+              "jobs.cava_socios_monthly_job",
+              "jobs.crm_sync_job",
+              "jobs.cxp_sync_job",
+              "jobs.inteligencia_comercial_sync_job",
+              "jobs.inventarios_detector_job",
+              "jobs.netpay_sync_job",
+              "jobs.notifications_job",
+              "jobs.pedidos_detector_job",
+              "jobs.resumen_diario_excepciones_job",
+              "jobs.sla_job",
+              "jobs.sync_comercial_abiertas_v2_job",
+              "jobs.sync_comercial_v2_job",
+              "jobs.sync_compras_job",
+              "jobs.sync_ingresos_job",
+              "jobs.sync_nightly_comercial_job",
+              "jobs.sync_propinas_tpv_job",
+              "jobs.sync_short_comercial_job",
+              "jobs.vtiger_sync_job",
+              "locks",
+              "logging",
+              "modules.economia.service",
+              "os",
+              "persistent_state_repository",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "netpay",
+              "sap",
+              "softrestaurant",
+              "twilio",
+              "vtiger"
+            ],
+            "matched_terms": [
+              "sync_comercial_v2"
+            ],
+            "path": "backend/core/scheduler/scheduler_manager.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "APScheduler",
+              "AsyncIOScheduler",
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [
+              "SchedulerManager",
+              "__init__",
+              "__new__",
+              "_create_scheduler",
+              "_normalize_comercial_sync_status",
+              "_on_job_error",
+              "_on_job_executed",
+              "_on_job_missed",
+              "_run_alertas_excepciones_notifier_job",
+              "_run_auditorias_job",
+              "_run_bos_direction_status_job",
+              "_run_catalogo_ampliado_alertas_job",
+              "_run_cava_socios_monthly_job",
+              "_run_crm_actividades_vencidas_job",
+              "_run_crm_sla_check_job",
+              "_run_crm_sync_job",
+              "_run_economia_sync_job",
+              "_run_inteligencia_comercial_sync_job",
+              "_run_inventarios_detector_job",
+              "_run_netpay_sync_diario_job",
+              "_run_notifications_job",
+              "_run_pedidos_detector_job",
+              "_run_resumen_diario_excepciones_job",
+              "_run_sla_job",
+              "_run_sync_comercial_abiertas_v2_job",
+              "_run_sync_comercial_v2_job",
+              "_run_sync_compras_job",
+              "_run_sync_cxp_facturas_job",
+              "_run_sync_ingresos_incremental_job",
+              "_run_sync_nightly_comercial_job",
+              "_run_sync_propinas_tpv_incremental_job",
+              "_run_sync_short_comercial_job",
+              "_run_vtiger_sync_job",
+              "get_job_info",
+              "get_scheduler_manager",
+              "get_status",
+              "pause_job",
+              "register_jobs",
+              "reset_scheduler_manager",
+              "resume_job",
+              "retry_inventario_error_by_id",
+              "run_job_now",
+              "start",
+              "start_scheduler",
+              "stop",
+              "stop_scheduler"
+            ],
+            "tables_referenced": [
+              "Finanzas_CxP_Sync"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "os",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "netpay",
+              "sap",
+              "softrestaurant",
+              "twilio",
+              "vtiger"
+            ],
+            "matched_terms": [
+              "scheduler_sync_comercial_v2_enabled",
+              "sync_comercial_v2"
+            ],
+            "path": "backend/core/scheduler/config.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "Config",
+              "JobConfig",
+              "SchedulerConfig",
+              "from_env",
+              "get_scheduler_config",
+              "reload_scheduler_config"
+            ],
+            "tables_referenced": [
+              "Finanzas_CxP_Sync"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "__future__",
+              "argparse",
+              "collections",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "decimal",
+              "hashlib",
+              "json",
+              "pymssql",
+              "sys",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "comercial_inteligencia_ventasdetalleproducto",
+              "no_cuadra_revisar",
+              "no_probar_abierto_real",
+              "ok_header_canonico",
+              "vw_comercial_kpis_diarios_v2_runtime"
+            ],
+            "path": "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_as_date",
+              "_cfg_values",
+              "_d",
+              "_daterange",
+              "_extract_mpro",
+              "_extract_soft",
+              "_first",
+              "_hash_row",
+              "_insert_rows",
+              "_int_eq",
+              "_load_runtime_rows",
+              "_materialize_rows",
+              "_money_eq",
+              "_mpro_operational_datetime_range",
+              "_mpro_row_es_kpi_valido",
+              "_object_columns",
+              "_parse_sql_server_host_port",
+              "_prorratear_mpro_por_ticket",
+              "_q4",
+              "_query_edarsahub_dicts",
+              "_row_unit_values",
+              "_runtime_for",
+              "_runtime_metrics",
+              "_s",
+              "_safe_print",
+              "_secret_value",
+              "_sistema",
+              "_soft_add_ticket_adjustments",
+              "_soft_operational_datetime_range",
+              "_table_has_col",
+              "_unidad_operativa_id_for_window",
+              "_validate",
+              "get_pos_config_for_unidad",
+              "get_pos_connection",
+              "get_unidades_negocio_pos",
+              "main",
+              "sync_detalle_producto_canonico_dia"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Servidores_Conexiones",
+              "Unidades_Negocio",
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.query_catalog",
+              "core.rbac.middleware",
+              "core.scheduler.jobs.inteligencia_comercial_enrich",
+              "core.scheduler.jobs.netpay_sync_job",
+              "core.scheduler.jobs.sync_compras_job",
+              "core.security",
+              "core.server_registry",
+              "core.sql_first.db",
+              "core.system_type_utils",
+              "datetime",
+              "fastapi",
+              "json",
+              "logging",
+              "modules.comercial_v2.schemas",
+              "modules.comercial_v2.sync_comercial_edarsahub",
+              "modules.compras.sync_service",
+              "modules.sistema.sync_catalogo_service",
+              "os",
+              "pydantic",
+              "pymssql",
+              "scripts.backfill_detalle_producto_pendientes",
+              "time",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "netpay",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "iscam-detail/jobs",
+              "no_cuadra_revisar"
+            ],
+            "path": "backend/api/admin_scheduler_resync.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/resync/catalogo",
+              "/resync/catalogo/{codigo}",
+              "/resync/catalogo/{codigo}/toggle",
+              "/resync/execute",
+              "/resync/history",
+              "/resync/iscam-detail/active",
+              "/resync/iscam-detail/jobs",
+              "/resync/iscam-detail/jobs/{job_id}",
+              "/resync/options",
+              "/resync/resolve",
+              "/resync/retry-all",
+              "/resync/retry/{log_id}",
+              "/resync/validate"
+            ],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "IscamDetailBatchRequest",
+              "ResolveRequest",
+              "ResyncExecuteRequest",
+              "ResyncResponse",
+              "ResyncValidateRequest",
+              "RetryAllRequest",
+              "SyncTipoUpsert",
+              "_ejecutar_backfill_detalle_iscam",
+              "_ejecutar_dry_run",
+              "_ejecutar_resync_inventarios_fisicos",
+              "_ejecutar_sync_real",
+              "_execute_edarsahub_query",
+              "_get_edarsahub_config",
+              "_get_netpay_report_types",
+              "_get_tipo_sync_config",
+              "_get_unidad_config",
+              "_is_netpay_sync",
+              "_iscam_batch_create",
+              "_iscam_batch_day_outcome",
+              "_iscam_batch_find_active",
+              "_iscam_batch_is_transient",
+              "_iscam_batch_mark_stale",
+              "_iscam_batch_now_iso",
+              "_iscam_batch_payload_from_row",
+              "_iscam_batch_read",
+              "_iscam_batch_update",
+              "_parse_fecha",
+              "_registrar_en_bitacora",
+              "_registrar_resync_log",
+              "_run_iscam_detail_batch_job",
+              "_run_netpay_resync_background",
+              "_validar_conectividad",
+              "_validar_dias_existentes",
+              "_validar_rango",
+              "_verificar_syncs_recientes",
+              "actualizar_tipo_sync",
+              "crear_iscam_detail_batch_job",
+              "crear_tipo_sync",
+              "ejecutar_resync",
+              "listar_catalogo_sync",
+              "listar_resync_fallidos_pendientes",
+              "obtener_historial_resync",
+              "obtener_iscam_detail_batch_activo",
+              "obtener_iscam_detail_batch_job",
+              "obtener_opciones_resync",
+              "reintentar_resync_fallido",
+              "reintentar_todos_resync_fallidos",
+              "resolver_dependencias_sync",
+              "toggle_tipo_sync",
+              "validar_resync"
+            ],
+            "tables_referenced": [
+              "Sistema_Sync_Catalogo",
+              "Sistema_Sync_ResyncLog"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.inteligencia_comercial",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "calendar",
+              "core.kpis_canonicos",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "logging",
+              "typing",
+              "zoneinfo"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "comercial_inteligencia_ventasdetalleproducto",
+              "unidadesservice",
+              "vw_comercial_kpis_diarios_v2_runtime"
+            ],
+            "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/comandas",
+              "/cuentas",
+              "/cuentas/detalle",
+              "/formas-pago",
+              "/formas-pago/por-ticket",
+              "/freshness",
+              "/ventas-periodos",
+              "/ventas-periodos/productos",
+              "/ventas-periodos/tickets",
+              "/ventas-periodos/tipos-servicio"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_detail_coverage",
+              "_f",
+              "_formas_pago_desde_detalle",
+              "_iso",
+              "_nombre_unidad",
+              "_period_floor",
+              "_period_label",
+              "_period_next",
+              "_period_sql",
+              "_period_windows",
+              "_q",
+              "_rango_fechas",
+              "_shift_months",
+              "comandas_venta",
+              "cuenta_detalle",
+              "formas_pago_por_ticket",
+              "iscam_freshness",
+              "resumen_cuentas",
+              "ventas_formas_pago",
+              "ventas_periodos",
+              "ventas_periodos_productos",
+              "ventas_periodos_tickets",
+              "ventas_periodos_tipos_servicio"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Finanzas_CortesCaja",
+              "Finanzas_CortesCaja_DetallePagos",
+              "Sync_Sales",
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "iscam-detail/jobs",
+              "sincronizar faltantes"
+            ],
+            "path": "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.unidades_service.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.db",
+              "logging",
+              "modules.comercial_v2.repository_comercial_edarsahub",
+              "os",
+              "time"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "unidadesservice"
+            ],
+            "path": "backend/core/unidades_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "UnidadesService",
+              "_get_connection",
+              "clear_cache",
+              "get_all",
+              "get_by_codigo",
+              "get_by_id",
+              "get_by_pk",
+              "get_codigos",
+              "get_codigos_set",
+              "get_ids",
+              "get_nombre",
+              "get_pks",
+              "resolver_codigo",
+              "resolver_pk"
+            ],
+            "tables_referenced": [
+              "Unidades_Negocio"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 8,
+          "scanned_files": 8,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "FechaAccion",
+              "JobName",
+              "RunID",
+              "Accion",
+              "Exito",
+              "MensajeError",
+              "DetallesJSON"
+            ],
+            "name": "sync_comercial_v2_recent_runs",
+            "row_count_returned": 12,
+            "rows": [
+              [
+                "2026-09-30T16:13:01.400000",
+                "sync_comercial_v2",
+                "cefc0411fe95",
+                "START",
+                null,
+                null,
+                "{\"id\": \"2dd25f93-2206-442f-9088-8c1b67f1e1f2\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"cefc0411fe95\", \"started_at\": \"2026-09-30T16:13:01.190192+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "2026-09-30T15:55:16.700000",
+                "sync_comercial_v2",
+                "39135d8af8ef",
+                "START",
+                null,
+                null,
+                "{\"id\": \"bee5ca7a-b375-42ae-a621-a18e7a41dbb3\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"39135d8af8ef\", \"started_at\": \"2026-09-30T15:55:16.469341+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "2026-09-30T15:37:16.510000",
+                "sync_comercial_v2",
+                "719f7ed4eca3",
+                "START",
+                null,
+                null,
+                "{\"id\": \"861e5e9f-0132-4f11-8c86-3e37bedf75ce\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"719f7ed4eca3\", \"started_at\": \"2026-09-30T15:37:16.279539+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "2026-09-30T15:19:20.700000",
+                "sync_comercial_v2",
+                "ea1a6a2a4acb",
+                "START",
+                null,
+                null,
+                "{\"id\": \"fb502072-7a59-43a7-88f0-72f7b1ce7a63\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"ea1a6a2a4acb\", \"started_at\": \"2026-09-30T15:19:20.469276+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "2026-09-30T15:01:22.837000",
+                "sync_comercial_v2",
+                "3179bbc42386",
+                "START",
+                null,
+                null,
+                "{\"id\": \"8053c6cb-3281-44f6-a012-38a8ae93ca8d\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"3179bbc42386\", \"started_at\": \"2026-09-30T15:01:22.614433+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "2026-09-30T14:43:27.413000",
+                "sync_comercial_v2",
+                "df5c5e08d40b",
+                "START",
+                null,
+                null,
+                "{\"id\": \"71b2509c-e545-4f60-b55b-fbb2a188df86\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"df5c5e08d40b\", \"started_at\": \"2026-09-30T14:43:27.203157+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "2026-09-30T14:25:15.893000",
+                "sync_comercial_v2",
+                "6c91b3f9d42b",
+                "START",
+                null,
+                null,
+                "{\"id\": \"3a64bddc-e21e-4543-bc65-26fb4701bc1c\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"6c91b3f9d42b\", \"started_at\": \"2026-09-30T14:25:15.680891+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "2026-09-30T14:07:11.953000",
+                "sync_comercial_v2",
+                "131ad62e9e83",
+                "START",
+                null,
+                null,
+                "{\"id\": \"59df1587-7348-4e28-bcf1-f2268bfad52c\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"131ad62e9e83\", \"started_at\": \"2026-09-30T14:07:11.651667+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "2026-09-30T13:48:32.417000",
+                "sync_comercial_v2",
+                "70f3d6d34116",
+                "START",
+                null,
+                null,
+                "{\"id\": \"be4c947f-213a-408a-b055-e57306c76db8\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"70f3d6d34116\", \"started_at\": \"2026-09-30T13:48:32.025583+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "2026-09-30T13:30:19.287000",
+                "sync_comercial_v2",
+                "8e50a8d27b58",
+                "START",
+                null,
+                null,
+                "{\"id\": \"8180c9f9-10d5-4046-9bd3-55653f0d03d9\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"8e50a8d27b58\", \"started_at\": \"2026-09-30T13:30:19.064183+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "2026-09-30T13:12:18.013000",
+                "sync_comercial_v2",
+                "3fff3605e9f4",
+                "START",
+                null,
+                null,
+                "{\"id\": \"74873a12-9037-4829-ae81-69a39b35d1c3\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"3fff3605e9f4\", \"started_at\": \"2026-09-30T13:12:17.715263+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "2026-09-30T12:54:17.920000",
+                "sync_comercial_v2",
+                "0b4bb3f72bce",
+                "START",
+                null,
+                null,
+                "{\"id\": \"d2479850-77aa-4ef1-9508-2e150b692dfa\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"0b4bb3f72bce\", \"started_at\": \"2026-09-30T12:54:17.700976+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "ventas_runtime",
+              "ventas_detalle",
+              "delta_ventas",
+              "tickets_runtime",
+              "tickets_detalle",
+              "delta_tickets",
+              "pax_runtime",
+              "pax_detalle",
+              "delta_pax",
+              "detalle_estado"
+            ],
+            "name": "iscam_header_detail_last_closed_days",
+            "row_count_returned": 23,
+            "rows": [
+              [
+                "130MID",
+                "2026-09-29",
+                "42838.0000",
+                "42838.0000",
+                "0.0000",
+                "14",
+                14,
+                "0",
+                "31",
+                "31",
+                "0",
+                "OK"
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-29",
+                "116279.0000",
+                "0.0000",
+                "116279.0000",
+                "31",
+                0,
+                "31",
+                "94",
+                "0",
+                "94",
+                "MISSING"
+              ],
+              [
+                "ESTELAR",
+                "2026-09-29",
+                "24610.0000",
+                "0.0000",
+                "24610.0000",
+                "1",
+                0,
+                "1",
+                "1",
+                "0",
+                "1",
+                "MISSING"
+              ],
+              [
+                "130MID",
+                "2026-09-28",
+                "94344.0000",
+                "94344.0000",
+                "0.0000",
+                "28",
+                28,
+                "0",
+                "60",
+                "60",
+                "0",
+                "OK"
+              ],
+              [
+                "130QRO",
+                "2026-09-28",
+                "49199.0000",
+                "49199.0000",
+                "0.0000",
+                "12",
+                12,
+                "0",
+                "34",
+                "34",
+                "0",
+                "OK"
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-28",
+                "78100.0000",
+                "78100.0000",
+                "0.0000",
+                "23",
+                23,
+                "0",
+                "65",
+                "65",
+                "0",
+                "OK"
+              ],
+              [
+                "ESTELAR",
+                "2026-09-28",
+                "20065.0000",
+                "20065.0000",
+                "0.0000",
+                "24",
+                24,
+                "0",
+                "49",
+                "49",
+                "0",
+                "OK"
+              ],
+              [
+                "ORIGEN",
+                "2026-09-28",
+                "35944.3900",
+                "35944.3900",
+                "0.0000",
+                "22",
+                22,
+                "0",
+                "48",
+                "48",
+                "0",
+                "OK"
+              ],
+              [
+                "130MID",
+                "2026-09-27",
+                "116922.0000",
+                "116922.0000",
+                "0.0000",
+                "28",
+                28,
+                "0",
+                "81",
+                "81",
+                "0",
+                "OK"
+              ],
+              [
+                "130QRO",
+                "2026-09-27",
+                "62311.0000",
+                "62311.0000",
+                "0.0000",
+                "12",
+                12,
+                "0",
+                "37",
+                "37",
+                "0",
+                "OK"
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-27",
+                "84503.0000",
+                "84503.0000",
+                "0.0000",
+                "25",
+                25,
+                "0",
+                "74",
+                "74",
+                "0",
+                "OK"
+              ],
+              [
+                "ESTELAR",
+                "2026-09-27",
+                "27425.0000",
+                "27425.0000",
+                "0.0000",
+                "20",
+                20,
+                "0",
+                "55",
+                "55",
+                "0",
+                "OK"
+              ],
+              [
+                "ORIGEN",
+                "2026-09-27",
+                "47016.4300",
+                "47016.4300",
+                "0.0000",
+                "26",
+                26,
+                "0",
+                "72",
+                "72",
+                "0",
+                "OK"
+              ],
+              [
+                "130MID",
+                "2026-09-26",
+                "222317.0000",
+                "222317.0000",
+                "0.0000",
+                "52",
+                52,
+                "0",
+                "140",
+                "140",
+                "0",
+                "OK"
+              ],
+              [
+                "130QRO",
+                "2026-09-26",
+                "342175.0000",
+                "342175.0000",
+                "0.0000",
+                "53",
+                53,
+                "0",
+                "170",
+                "170",
+                "0",
+                "OK"
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-26",
+                "166236.0000",
+                "166236.0000",
+                "0.0000",
+                "53",
+                53,
+                "0",
+                "135",
+                "135",
+                "0",
+                "OK"
+              ],
+              [
+                "ESTELAR",
+                "2026-09-26",
+                "272483.0000",
+                "272483.0000",
+                "0.0000",
+                "169",
+                169,
+                "0",
+                "519",
+                "519",
+                "0",
+                "OK"
+              ],
+              [
+                "ORIGEN",
+                "2026-09-26",
+                "98775.9000",
+                "98775.9000",
+                "0.0000",
+                "46",
+                46,
+                "0",
+                "128",
+                "128",
+                "0",
+                "OK"
+              ],
+              [
+                "130MID",
+                "2026-09-25",
+                "147049.0000",
+                "147049.0000",
+                "0.0000",
+                "35",
+                35,
+                "0",
+                "89",
+                "89",
+                "0",
+                "OK"
+              ],
+              [
+                "130QRO",
+                "2026-09-25",
+                "175291.0000",
+                "175291.0000",
+                "0.0000",
+                "31",
+                31,
+                "0",
+                "103",
+                "103",
+                "0",
+                "OK"
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-25",
+                "155008.0000",
+                "155008.0000",
+                "0.0000",
+                "50",
+                50,
+                "0",
+                "123",
+                "123",
+                "0",
+                "OK"
+              ],
+              [
+                "ESTELAR",
+                "2026-09-25",
+                "110915.0000",
+                "110915.0000",
+                "0.0000",
+                "99",
+                99,
+                "0",
+                "257",
+                "257",
+                "0",
+                "OK"
+              ],
+              [
+                "ORIGEN",
+                "2026-09-25",
+                "79541.5200",
+                "79541.5200",
+                "0.0000",
+                "31",
+                31,
+                "0",
+                "90",
+                "90",
+                "0",
+                "OK"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "latest_header",
+              "latest_detail",
+              "detail_lag_days"
+            ],
+            "name": "iscam_latest_header_vs_detail_by_unit",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                "2026-09-29",
+                "2026-09-29",
+                0
+              ],
+              [
+                "130QRO",
+                "2026-09-28",
+                "2026-09-28",
+                0
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-29",
+                "2026-09-28",
+                1
+              ],
+              [
+                "ESTELAR",
+                "2026-09-29",
+                "2026-09-28",
+                1
+              ],
+              [
+                "ORIGEN",
+                "2026-09-28",
+                "2026-09-28",
+                0
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-30T16:16:49Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
