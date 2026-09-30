@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "REMOTE_AHEAD_ONLY",
   "development_sha": "97e1f11816efc811e65b2d1b1e6f01faf21532bc",
-  "generated_at_utc": "2026-09-30T19:49:12Z",
+  "generated_at_utc": "2026-09-30T19:50:29Z",
   "history": {
     "done_total_local": 1197,
     "pending_total_local": 0,
@@ -16,49 +16,49 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1808,
+      "age_seconds": 1885,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-AUDIT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1663,
+      "age_seconds": 1740,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-AUDIT-READONLY-R2-NARROW",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1905,
+      "age_seconds": 1982,
       "job_id": "EDARSAHUB-COMERCIAL-VENTAS-HIERARCHY-DRILLDOWN-R2-CARLOS-20260930T1905Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1141,
+      "age_seconds": 1218,
       "job_id": "EDARSAHUB-COMERCIAL-VENTAS-HIERARCHY-DRILLDOWN-R3-CARLOS-20260930T1926Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 615,
+      "age_seconds": 692,
       "job_id": "EDARSAHUB-COMERCIAL-VENTAS-HIERARCHY-DRILLDOWN-R4-CARLOS-20260930T1932Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1738,
+      "age_seconds": 1815,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927-RETRY2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1485,
+      "age_seconds": 1562,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927-RETRY3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 76,
+      "age_seconds": 153,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927-RETRY4",
       "reason": null,
       "state": "RESULT_READY"
@@ -78,8 +78,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-30T19:49:09Z",
-    "last_receive_utc": "2026-09-30T19:49:04Z",
+    "last_cycle_utc": "2026-09-30T19:50:28Z",
+    "last_receive_utc": "2026-09-30T19:50:23Z",
     "last_terminal_utc": "2026-09-30T19:47:55Z",
     "pid": "545",
     "runtime_fingerprint": {
