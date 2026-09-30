@@ -44,7 +44,9 @@
       ]
     },
     "retry_of": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6C-CARLOS-20260930T0102Z",
-    "runtime_fix_dependency": "MEJORA-TABEJE-WORKER-MODE-DEFAULT-FIX-R8-CARLOS-20260930T0115Z"
+    "runtime_fix_dependency": "MEJORA-TABEJE-WORKER-MODE-DEFAULT-FIX-R8-CARLOS-20260930T0115Z",
+    "rewake_reason": "Emergent agent was asleep; re-wake same existing job without duplication",
+    "rewake_requested_at_utc": "2026-09-30T15:58:00Z"
   },
   "scheduling": {
     "project_id": "Mejora-TABEJE",
