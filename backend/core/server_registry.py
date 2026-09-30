@@ -296,9 +296,9 @@ def _get_servers_from_sql(
         if exclude_core:
             conditions.append("(tipo_conexion != 'CORE' OR tipo_conexion IS NULL)")
         
-        # Excluir conexiones API_LOCAL (tienen su propio endpoint /api/api-connections)
-        # R10A: El listado administrativo debe incluir API_LOCAL cuando visible_en_listado=true.
-        # Operaciones conserva su filtro propio en get_visible_servers_for_operaciones().
+        # API_LOCAL tiene endpoint y tab propios: /api/api-connections.
+        # El listado /api/servers alimenta exclusivamente el tab SQL Servers.
+        conditions.append("(tipo_conexion != 'API_LOCAL' OR tipo_conexion IS NULL)")
         
         where_clause = " AND ".join(conditions) if conditions else "1=1"
         
