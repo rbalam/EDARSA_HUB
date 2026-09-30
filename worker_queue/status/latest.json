@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "d1e6f4a0b7ef9b74334a9f691bf9e7ca2b1ed1d1",
-  "generated_at_utc": "2026-09-30T23:13:34Z",
+  "generated_at_utc": "2026-09-30T23:14:55Z",
   "history": {
     "done_total_local": 1213,
     "pending_total_local": 0,
@@ -16,127 +16,127 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3433,
+      "age_seconds": 3515,
       "job_id": "EDARSA-LOGISTICS-GATE3C-MULTIMODAL-PHYSICAL-SCHEMA-DESIGN-DOSSIER-R4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1649,
+      "age_seconds": 1730,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-RUNTIME-MENU-SOURCE-AUDIT-READONLY-R6",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1067,
+      "age_seconds": 1148,
       "job_id": "EDARSAHUB-BOS-WORKER-SELFHEAL-INDEXLOCK-FASTFORWARD-R2-RETRY1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1045,
+      "age_seconds": 1126,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-DRILLDOWN-R1-CARLOS-20260930T2252Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 493,
+      "age_seconds": 574,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-FRONTEND-BUILD-CERT-R1-CARLOS-20260930T2306Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 475,
+      "age_seconds": 557,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-OPEN-DETAIL-DDL-FIX-R2-CARLOS-20260930T2310Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 607,
+      "age_seconds": 689,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-OPEN-DETAIL-DDL-R1-CARLOS-20260930T2304Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3104,
+      "age_seconds": 3185,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-SOURCE-AUDIT-READONLY-R3-CARLOS-20260930T2216Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2874,
+      "age_seconds": 2955,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-HIERARCHY-UI-R11B-CARLOS-20260930T2225Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1767,
+      "age_seconds": 1849,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-HIERARCHY-UI-R11C-CARLOS-20260930T2245Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1471,
+      "age_seconds": 1553,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-HIERARCHY-UI-R11D-CARLOS-20260930T2255Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2641,
+      "age_seconds": 2723,
       "job_id": "RRHH-CUSTODIA-GATE3-MINIMAL-DDL-DESIGN-R6",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1122,
+      "age_seconds": 1204,
       "job_id": "RRHH-CUSTODIA-GATE3B-SQL-DDL-PREFLIGHT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 776,
+      "age_seconds": 857,
       "job_id": "RRHH-CUSTODIA-GATE3B-SQL-DIAGNOSTIC-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3418,
+      "age_seconds": 3500,
       "job_id": "RRR-GATE4E-R10-R6-R1-RUNTIME-ORG-RESOLUTION-FIX-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1304,
+      "age_seconds": 1386,
       "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-READONLY-R2-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 690,
+      "age_seconds": 771,
       "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-READONLY-R3-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 880,
+      "age_seconds": 962,
       "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-SCHEMA-DIAGNOSTIC-READONLY-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3234,
+      "age_seconds": 3315,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2654,
+      "age_seconds": 2735,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-ROOT-CAUSE-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2317,
+      "age_seconds": 2399,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-ROOT-CAUSE-R2-20260930",
       "reason": null,
       "state": "RESULT_READY"
@@ -156,8 +156,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-30T23:13:26Z",
-    "last_receive_utc": "2026-09-30T23:13:31Z",
+    "last_cycle_utc": "2026-09-30T23:14:47Z",
+    "last_receive_utc": "2026-09-30T23:14:52Z",
     "last_terminal_utc": "2026-09-30T23:05:38Z",
     "pid": "331353",
     "runtime_fingerprint": {
