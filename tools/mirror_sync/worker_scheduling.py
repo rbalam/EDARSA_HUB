@@ -62,7 +62,7 @@ def normalize_metadata(job: dict[str, Any]) -> SchedulingMeta:
         priority_class=priority,
         fairness_weight=_safe_int(sched.get("fairness_weight"), 1),
         max_parallelism=_safe_int(sched.get("max_parallelism"), 1),
-        mode=str(job.get("mode") or "").upper().strip(),
+        mode=str(job.get("mode") or "MUTATION").upper().strip(),
         legacy_defaults=legacy,
     )
 

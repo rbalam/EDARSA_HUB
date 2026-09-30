@@ -792,7 +792,7 @@ def process_one(path: Path, *, already_claimed: bool = False) -> int:
             raise ValueError("UNSUPPORTED_JOB_SCHEMA")
 
         requested_paths = sorted({str(action.get("path")) for action in (job.get("actions") or []) if action.get("path")})
-        mode = str(job.get("mode") or "")
+        mode = str(job.get("mode") or "MUTATION").upper().strip()
         scheduling = normalize_metadata(job)
         slot_class = "READ_ONLY" if mode in {READ_ONLY_MODE, "READ_ONLY_SQL", FRONTEND_BUILD_CERTIFICATION_MODE} else "MUTATION"
         slot_id = "readonly-1" if slot_class == "READ_ONLY" else "mutation-1"
