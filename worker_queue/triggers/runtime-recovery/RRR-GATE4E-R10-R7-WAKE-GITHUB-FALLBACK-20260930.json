@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "RRR-GATE4E-R10-R7-RUNTIME-ORG-RESOLUTION-FIX-20260930",
+  "reason": "retry after Python GitHub queue-head fallback in wake router",
+  "production_touched": false
+}
