@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-TICKET-OPEN-DETAIL-DDL-R3-CARLOS-20260930T2316Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "objective": "Aplicar en Development la migracion corregida y versionada que agrega detalle_abiertas_json a dbo.Comercial_Ventas_Dia_Abiertas_v2 para soportar el ticket de ventas abiertas del dia. Ejecutar preflight y post-audit SQL de solo lectura. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "migration_path": "backend/database/migrations/20260930_002_comercial_ticket_open_detail_json.sql",
+  "migration_sha256": "ca71a191984c94f48bfda09df000ea6d08043cc0492bb8d9b327faca6600d421",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": true,
+  "preflight_checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "preflight_ticket_open_detail_column",
+          "sql": "SELECT CASE WHEN COL_LENGTH('dbo.Comercial_Ventas_Dia_Abiertas_v2','detalle_abiertas_json') IS NULL THEN 0 ELSE 1 END AS columna_existe"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "post_ticket_open_detail_column",
+          "sql": "SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Comercial_Ventas_Dia_Abiertas_v2' AND COLUMN_NAME='detalle_abiertas_json'"
+        },
+        {
+          "name": "post_ticket_open_detail_constraint",
+          "sql": "SELECT name,is_disabled,is_not_trusted FROM sys.check_constraints WHERE parent_object_id=OBJECT_ID('dbo.Comercial_Ventas_Dia_Abiertas_v2') AND name='CK_Comercial_Ventas_Dia_Abiertas_v2_DetalleJson'"
+        }
+      ]
+    }
+  ]
+}
