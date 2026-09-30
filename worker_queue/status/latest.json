@@ -4,11 +4,11 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "6c1638180de49f4eddf8c0aae534763199a96f2f",
-  "generated_at_utc": "2026-09-30T19:25:48Z",
+  "generated_at_utc": "2026-09-30T19:27:11Z",
   "history": {
     "done_total_local": 1196,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 1058,
     "results_total_local": 2057
   },
@@ -16,76 +16,82 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 404,
+      "age_seconds": 487,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-AUDIT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 259,
+      "age_seconds": 342,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-AUDIT-READONLY-R2-NARROW",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2831,
+      "age_seconds": 2914,
       "job_id": "EDARSAHUB-COMERCIAL-VENTAS-HIERARCHY-DRILLDOWN-R1-CARLOS-20260930T1825Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 501,
+      "age_seconds": 584,
       "job_id": "EDARSAHUB-COMERCIAL-VENTAS-HIERARCHY-DRILLDOWN-R2-CARLOS-20260930T1905Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3048,
+      "age_seconds": 3131,
       "job_id": "MEJORA-TABEJE-PREVIEW-ALL-UNITS-SMOKE-R10D-CARLOS-20260930T1822Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2738,
+      "age_seconds": 2821,
       "job_id": "MEJORA-TABEJE-PREVIEW-FRONTEND-BUILD-R10C-CARLOS-20260930T1822Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2664,
+      "age_seconds": 2747,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927-RETRY1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 335,
+      "age_seconds": 418,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927-RETRY2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 81,
+      "age_seconds": 164,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927-RETRY3",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 82,
+      "job_id": "EDARSAHUB-COMERCIAL-VENTAS-HIERARCHY-DRILLDOWN-R3-CARLOS-20260930T1926Z",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "local_development_sha": "6c1638180de49f4eddf8c0aae534763199a96f2f",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 9,
-  "queue_running": 0,
+  "queue_running": 1,
   "remote_development_sha": "6c1638180de49f4eddf8c0aae534763199a96f2f",
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "EDARSAHUB-COMERCIAL-VENTAS-HIERARCHY-DRILLDOWN-R3-CARLOS-20260930T1926Z",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-30T19:25:47Z",
-    "last_receive_utc": "2026-09-30T19:25:42Z",
+    "last_cycle_utc": "2026-09-30T19:27:06Z",
+    "last_receive_utc": "2026-09-30T19:27:10Z",
     "last_terminal_utc": "2026-09-30T19:24:26Z",
     "pid": "570",
     "runtime_fingerprint": {
