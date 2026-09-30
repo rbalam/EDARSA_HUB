@@ -1,0 +1,23 @@
+{
+  "base_sha": "f2ba2c4c5f273fffd98f317805a7a84374305aa7",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:REPLACE_COUNT_MISMATCH:frontend/src/pages/TableroEjecutivo.js:expected=1:actual=0"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-30T22:25:40Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "MEJORA-TABEJE-EJECUTIVO-HIERARCHY-UI-R11B-CARLOS-20260930T2225Z",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-30T22:26:02Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-30T22:25:38Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
