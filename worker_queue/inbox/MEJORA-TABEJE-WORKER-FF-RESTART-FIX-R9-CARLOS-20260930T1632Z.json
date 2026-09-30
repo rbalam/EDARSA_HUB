@@ -1,0 +1,66 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "MEJORA-TABEJE-WORKER-FF-RESTART-FIX-R9-CARLOS-20260930T1632Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "[Mejora-TABEJE | WORKER-FF-RESTART-FIX-R9] Corregir de forma persistente el ciclo que causa GIT_DIVERGENCE_BLOCKED/NEEDS_FAST_FORWARD_REFRESH. Cuando el bootstrap-watchdog aplique un fast-forward de /app hacia Edarsahub_Desarrollo, debe reiniciar tambien edarsahub-universal-worker para que el proceso cargue el mismo codigo que el HEAD local. Conservar el reinicio existente de mirror-sync, no tocar Produccion y no modificar logica de negocio.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "labels": [
+    "Mejora-TABEJE",
+    "Worker Runtime",
+    "GIT_DIVERGENCE",
+    "FF-RESTART-FIX-R9",
+    "MUTATION",
+    "CARLOS"
+  ],
+  "tracking": {
+    "project_label": "Mejora-TABEJE",
+    "display_label": "Mejora-TABEJE | WORKER-FF-RESTART-FIX-R9 | MEJORA-TABEJE-WORKER-FF-RESTART-FIX-R9-CARLOS-20260930T1632Z",
+    "root_cause": "Watchdog fast-forward restarted mirror-sync but not edarsahub-universal-worker, leaving active worker code stale after repository convergence.",
+    "related_jobs": [
+      "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6D-CARLOS-20260930T0158Z",
+      "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6E-CARLOS-20260930T1615Z"
+    ]
+  },
+  "scheduling": {
+    "project_id": "Mejora-TABEJE",
+    "bounded_context": "Worker Runtime",
+    "priority_class": "P0",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [
+      "tools/bootstrap/edarsahub_bootstrap_watchdog.py"
+    ],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/bootstrap/edarsahub_bootstrap_watchdog.py",
+      "old": "    if auth[\"authorized\"] and ff.get(\"state\") == \"FF_APPLIED\":\n        restarted = supervisor_restart(\"FAST_FORWARD_APPLIED\")\n    if stale:\n",
+      "new": "    if auth[\"authorized\"] and ff.get(\"state\") == \"FF_APPLIED\":\n        mirror_restarted = supervisor_restart(\"FAST_FORWARD_APPLIED\")\n        worker_restarted = supervisor_restart(\n            \"FAST_FORWARD_APPLIED\",\n            WORKER_SERVICE,\n        )\n        restarted = mirror_restarted or worker_restarted\n        audit(\n            \"UNIVERSAL_WORKER_FF_RELOAD\",\n            service=WORKER_SERVICE,\n            restarted=worker_restarted,\n            reason=\"FAST_FORWARD_APPLIED\",\n        )\n    if stale:\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/bootstrap/edarsahub_bootstrap_watchdog.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
