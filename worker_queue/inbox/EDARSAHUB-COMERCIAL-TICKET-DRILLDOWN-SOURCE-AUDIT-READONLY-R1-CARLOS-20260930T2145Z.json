@@ -1,0 +1,76 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-TICKET-DRILLDOWN-SOURCE-AUDIT-READONLY-R1-CARLOS-20260930T2145Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Auditar en solo lectura las fuentes ya sincronizadas necesarias para construir el siguiente drilldown Ticket de Venta desde Comercial. Confirmar campos disponibles para ventas cerradas usando el pipeline canonico sync_comercial_v2 (encabezado + detalle canonico), y para ventas del dia usando sync_comercial_abiertas_v2. NO modificar ni ejecutar sincronizadores. NO tocar Inteligencia Comercial, Tablero Ejecutivo, Scheduler ni Produccion. El campo de autorizacion de descuento queda EXCLUIDO del contrato y de la UI.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+          "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+          "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+          "backend/modules/comercial_v2/schemas.py",
+          "backend/modules/comercial/queries/softrestaurant.py"
+        ],
+        "search_terms": [
+          "Header-first",
+          "sync_detalle_post_header",
+          "Comercial_Inteligencia_VentasDetalleProducto",
+          "Comercial_Ventas_Dia_Abiertas_v2",
+          "tempcheques",
+          "tempcheqdet",
+          "cheqdet",
+          "Comanda_Detalle",
+          "numero_ticket",
+          "producto_nombre",
+          "cantidad",
+          "precio_unitario",
+          "descuento",
+          "pax"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 200
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "schema_detalle_canonico",
+          "sql": "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Comercial_Inteligencia_VentasDetalleProducto' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "schema_ventas_dia_snapshot",
+          "sql": "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Comercial_Ventas_Dia_Abiertas_v2' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "schema_sync_sales_actual",
+          "sql": "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Sync_Sales' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "sample_closed_ticket_fields_cienfuegos",
+          "sql": "SELECT TOP 20 fecha_operacion,fecha_hora,numero_ticket,id_transaccion,producto_codigo_fuente,producto_nombre,cantidad,precio_unitario,importe_bruto,importe_neto,descuento,propina,pax FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK) WHERE unidad_negocio_id='CIENFUEGOS' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 ORDER BY fecha_operacion DESC, fecha_hora DESC"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
