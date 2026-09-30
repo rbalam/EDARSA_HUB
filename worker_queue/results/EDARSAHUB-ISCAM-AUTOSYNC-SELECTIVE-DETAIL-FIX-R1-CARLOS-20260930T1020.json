@@ -1,0 +1,23 @@
+{
+  "base_sha": "55256bcf7bf245f3f2f5930a1b059221046a9d6d",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:WRITE_EXISTING_REQUIRES_EXPECTED_SHA256:backend/core/scheduler/jobs/sync_comercial_v2_job.py"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-30T16:20:45Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-AUTOSYNC-SELECTIVE-DETAIL-FIX-R1-CARLOS-20260930T1020",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-30T16:21:19Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-30T16:20:43Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
