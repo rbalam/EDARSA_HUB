@@ -161,11 +161,157 @@ const formatPercent = (num) => {
 };
 
 // ============ MODAL DE DETALLE DE MOVIMIENTOS (Drill-down) ============
+function TicketVentaModal({ isOpen, onClose, serverId, sucursal, seleccion }) {
+  const [loading, setLoading] = useState(false);
+  const [ticket, setTicket] = useState(null);
+
+  useEffect(() => {
+    if (!isOpen || !serverId || !seleccion?.folio || !seleccion?.fecha) {
+      return;
+    }
+
+    const cargarTicket = async () => {
+      setLoading(true);
+      setTicket(null);
+      try {
+        const response = await api.get('/comercial/ticket-venta/' + serverId, {
+          params: {
+            sucursal,
+            folio: seleccion.folio,
+            fecha: seleccion.fecha
+          },
+          timeout: 30000
+        });
+        setTicket(response.data?.ticket || null);
+      } catch (error) {
+        logger.error('Error cargando ticket de venta:', error);
+        toast.error('Error al cargar el ticket de venta');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargarTicket();
+  }, [isOpen, serverId, sucursal, seleccion]);
+
+  if (!isOpen) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-lg max-h-[92vh] overflow-auto bg-zinc-100">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Receipt className="h-5 w-5 text-zinc-700" />
+            Ticket de Venta
+          </DialogTitle>
+        </DialogHeader>
+
+        {loading ? (
+          <div className="flex justify-center py-14">
+            <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+          </div>
+        ) : ticket ? (
+          <div className="mx-auto w-full max-w-sm bg-white border border-zinc-300 shadow-sm px-6 py-7 font-mono text-[13px] text-zinc-900">
+            <div className="text-center">
+              <p className="text-lg font-bold tracking-wide">{ticket.unidad}</p>
+              <p className="font-semibold mt-1">TICKET DE SERVICIO</p>
+              <p className="text-xs mt-1">{ticket.estado === 'ABIERTA' ? 'VENTA EN CURSO' : 'VENTA CERRADA'}</p>
+            </div>
+
+            <div className="border-t border-dashed border-zinc-500 mt-4 pt-3 space-y-1">
+              <div className="flex justify-between gap-3">
+                <span>FOLIO:</span>
+                <span className="font-bold">{ticket.folio}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span>FECHA:</span>
+                <span className="text-right">{ticket.fecha_hora}</span>
+              </div>
+              {Number(ticket.pax || 0) > 0 && (
+                <div className="flex justify-between gap-3">
+                  <span>PAX:</span>
+                  <span>{ticket.pax}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-dashed border-zinc-500 mt-3 pt-3">
+              <div className="grid grid-cols-[44px_1fr_88px] gap-2 font-bold pb-2">
+                <span>CANT</span>
+                <span>DESCRIPCIÓN</span>
+                <span className="text-right">IMPORTE</span>
+              </div>
+
+              <div className="space-y-2">
+                {(ticket.items || []).map((item, idx) => (
+                  <div key={idx} className="grid grid-cols-[44px_1fr_88px] gap-2 items-start">
+                    <span>{Number(item.cantidad || 0).toLocaleString('es-MX', { maximumFractionDigits: 3 })}</span>
+                    <div>
+                      <p className="uppercase leading-tight">{item.descripcion}</p>
+                      {Number(item.precio_unitario || 0) > 0 && Number(item.cantidad || 0) !== 1 && (
+                        <p className="text-[11px] text-zinc-500">
+                          @ {formatCurrency(item.precio_unitario)}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-right">{formatCurrency(item.importe)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t border-dashed border-zinc-500 mt-4 pt-3 space-y-1">
+              <div className="flex justify-between">
+                <span>SUBTOTAL</span>
+                <span>{formatCurrency(ticket.subtotal)}</span>
+              </div>
+              {Number(ticket.descuento || 0) > 0.005 && (
+                <div className="flex justify-between">
+                  <span>DESCUENTO</span>
+                  <span>-{formatCurrency(ticket.descuento)}</span>
+                </div>
+              )}
+              {ticket.impuesto != null && (
+                <div className="flex justify-between">
+                  <span>IMPUESTO</span>
+                  <span>{formatCurrency(ticket.impuesto)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-base font-bold border-t border-zinc-900 mt-2 pt-2">
+                <span>TOTAL VENTA</span>
+                <span>{formatCurrency(ticket.total)}</span>
+              </div>
+              {Number(ticket.propina || 0) > 0.005 && (
+                <div className="flex justify-between">
+                  <span>PROPINA</span>
+                  <span>{formatCurrency(ticket.propina)}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-dashed border-zinc-500 mt-5 pt-4 text-center text-[11px] text-zinc-500">
+              <p>EDARSA HUB · CONSULTA DE VENTA</p>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-12 text-zinc-500">
+            <Receipt className="h-10 w-10 mx-auto mb-3 opacity-30" />
+            <p>No se encontró información para este folio.</p>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
+// ============ MODAL DE DETALLE DE MOVIMIENTOS (Drill-down) ============
 function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo, tipoKpi, selectedMeses, selectedAnios }) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
   const [page, setPage] = useState(1);
   const [ventasTree, setVentasTree] = useState({});
+  const [ticketSeleccionado, setTicketSeleccionado] = useState(null);
 
   const titulos = {
     ventas: { titulo: 'Detalle de Ventas', icono: DollarSign, color: 'text-green-600' },
@@ -184,6 +330,7 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
   useEffect(() => {
     setPage(1);
     setVentasTree({});
+    setTicketSeleccionado(null);
   }, [tipoKpi, selectedMeses, selectedAnios, periodo]);
 
   useEffect(() => {
@@ -284,6 +431,12 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
     }
   };
 
+  const abrirTicket = (item) => {
+    const fecha = String(item?.fecha || '').slice(0, 10);
+    if (!item?.folio || !fecha) return;
+    setTicketSeleccionado({ folio: item.folio, fecha });
+  };
+
   const renderVentasRows = (items, depth = 0) => (items || []).map((item, idx) => {
     const esDetalle = item.nivel === 'detalle';
     const state = item.clave ? ventasTree[item.clave] : null;
@@ -292,8 +445,18 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
     return (
       <React.Fragment key={rowKey}>
         <tr
-          className={'border-b transition-colors ' + (item.expandible ? 'hover:bg-zinc-50 cursor-pointer' : 'hover:bg-zinc-50')}
-          onClick={() => item.expandible && toggleGrupoVentas(item)}
+          className={
+            'border-b transition-colors ' +
+            ((item.expandible || esDetalle) ? 'hover:bg-zinc-50 cursor-pointer' : 'hover:bg-zinc-50')
+          }
+          onClick={() => {
+            if (esDetalle) {
+              abrirTicket(item);
+            } else if (item.expandible) {
+              toggleGrupoVentas(item);
+            }
+          }}
+          title={esDetalle ? 'Abrir ticket de venta' : undefined}
         >
           <td className="py-2 px-3">
             <div className="flex items-center gap-1" style={{ paddingLeft: (depth * 18) + 'px' }}>
@@ -305,10 +468,12 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
                 ) : (
                   <ChevronRight className="h-4 w-4 text-zinc-500 flex-shrink-0" />
                 )
+              ) : esDetalle ? (
+                <Receipt className="h-4 w-4 text-zinc-400 flex-shrink-0" />
               ) : (
                 <span className="w-4" />
               )}
-              <span className={esDetalle ? 'font-mono text-xs font-medium' : 'font-semibold'}>
+              <span className={esDetalle ? 'font-mono text-xs font-medium underline decoration-dotted underline-offset-2' : 'font-semibold'}>
                 {esDetalle ? item.folio : item.label}
               </span>
             </div>
@@ -342,131 +507,147 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
   const hayDatos = esVentas ? ventasItems.length > 0 : data?.movimientos?.length > 0;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[88vh] overflow-hidden flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <IconComponent className={'h-5 w-5 ' + config.color} />
-            {config.titulo}
-            {data?.servidor && <span className="text-sm font-normal text-zinc-500">• {data.servidor}</span>}
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-5xl max-h-[88vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <IconComponent className={'h-5 w-5 ' + config.color} />
+              {config.titulo}
+              {data?.servidor && <span className="text-sm font-normal text-zinc-500">• {data.servidor}</span>}
+            </DialogTitle>
+          </DialogHeader>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
-          </div>
-        ) : hayDatos ? (
-          <div className="flex-1 overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between mb-3 px-1">
-              <span className="text-sm text-zinc-500">
-                Período: {data.periodo?.inicio} a {data.periodo?.fin}
-              </span>
-              <span className="text-sm font-medium">
-                {esVentas
-                  ? (formatNumber(data.resumen_periodo?.folios || 0) + ' folio(s)')
-                  : (data.total + ' ' + (esRotacion ? 'mes(es)' : 'folio(s)'))}
-              </span>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
             </div>
+          ) : hayDatos ? (
+            <div className="flex-1 overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between mb-3 px-1">
+                <span className="text-sm text-zinc-500">
+                  Período: {data.periodo?.inicio} a {data.periodo?.fin}
+                </span>
+                <span className="text-sm font-medium">
+                  {esVentas
+                    ? (formatNumber(data.resumen_periodo?.folios || 0) + ' folio(s)')
+                    : (data.total + ' ' + (esRotacion ? 'mes(es)' : 'folio(s)'))}
+                </span>
+              </div>
 
-            <div className="flex-1 overflow-auto border rounded-lg">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-zinc-800 text-white z-10">
-                  {esVentas ? (
-                    <tr>
-                      <th className="py-2 px-3 text-left">Período / Folio</th>
-                      <th className="py-2 px-3 text-left">Fecha</th>
-                      <th className="py-2 px-3 text-right">Folios</th>
-                      <th className="py-2 px-3 text-center">PAX</th>
-                      <th className="py-2 px-3 text-right">Total Venta</th>
-                    </tr>
-                  ) : esRotacion ? (
-                    <tr>
-                      <th className="py-2 px-3 text-left">Mes</th>
-                      <th className="py-2 px-3 text-right">Rotación</th>
-                      <th className="py-2 px-3 text-right">Cheques</th>
-                      <th className="py-2 px-3 text-right">PAX</th>
-                    </tr>
-                  ) : (
-                    <tr>
-                      <th className="py-2 px-3 text-left">Folio</th>
-                      <th className="py-2 px-3 text-left">Fecha</th>
-                      <th className="py-2 px-3 text-center">PAX</th>
-                      <th className="py-2 px-3 text-right">Total Venta</th>
-                      {esPaxPromedio && <th className="py-2 px-3 text-right">PAX Promedio</th>}
-                    </tr>
-                  )}
-                </thead>
-                <tbody>
-                  {esVentas ? renderVentasRows(ventasItems) : data.movimientos.map((mov, idx) => (
-                    esRotacion ? (
-                      <tr key={mov.folio || ('rot-' + idx)} className="border-b hover:bg-zinc-50 transition-colors">
-                        <td className="py-2 px-3 font-medium">{mov.mes_label || mov.fecha}</td>
-                        <td className="py-2 px-3 text-right font-semibold">{Number(mov.rotacion || 0).toFixed(2)}x</td>
-                        <td className="py-2 px-3 text-right">{formatNumber(mov.cheques)}</td>
-                        <td className="py-2 px-3 text-right">{formatNumber(mov.pax)}</td>
+              {esVentas && (
+                <p className="text-xs text-zinc-500 mb-2 px-1">
+                  Selecciona un folio para abrir el ticket de venta.
+                </p>
+              )}
+
+              <div className="flex-1 overflow-auto border rounded-lg">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-zinc-800 text-white z-10">
+                    {esVentas ? (
+                      <tr>
+                        <th className="py-2 px-3 text-left">Período / Folio</th>
+                        <th className="py-2 px-3 text-left">Fecha</th>
+                        <th className="py-2 px-3 text-right">Folios</th>
+                        <th className="py-2 px-3 text-center">PAX</th>
+                        <th className="py-2 px-3 text-right">Total Venta</th>
+                      </tr>
+                    ) : esRotacion ? (
+                      <tr>
+                        <th className="py-2 px-3 text-left">Mes</th>
+                        <th className="py-2 px-3 text-right">Rotación</th>
+                        <th className="py-2 px-3 text-right">Cheques</th>
+                        <th className="py-2 px-3 text-right">PAX</th>
                       </tr>
                     ) : (
-                      <tr key={(mov.folio || 'mov') + '-' + idx} className="border-b hover:bg-zinc-50 transition-colors">
-                        <td className="py-2 px-3 font-mono text-xs font-medium">{mov.folio}</td>
-                        <td className="py-2 px-3 text-zinc-600">{mov.fecha}</td>
-                        <td className="py-2 px-3 text-center">
-                          {mov.pax > 0 ? (
-                            <span className="inline-flex items-center gap-1">
-                              <Users className="h-3 w-3 text-purple-500" />
-                              {mov.pax}
-                            </span>
-                          ) : '-'}
-                        </td>
-                        <td className="py-2 px-3 text-right font-semibold text-green-600">
-                          {formatCurrency(mov.importe)}
-                        </td>
-                        {esPaxPromedio && (
-                          <td className="py-2 px-3 text-right font-semibold text-purple-600">
-                            {mov.pax_promedio == null ? '-' : formatCurrency(mov.pax_promedio)}
-                          </td>
-                        )}
+                      <tr>
+                        <th className="py-2 px-3 text-left">Folio</th>
+                        <th className="py-2 px-3 text-left">Fecha</th>
+                        <th className="py-2 px-3 text-center">PAX</th>
+                        <th className="py-2 px-3 text-right">Total Venta</th>
+                        {esPaxPromedio && <th className="py-2 px-3 text-right">PAX Promedio</th>}
                       </tr>
-                    )
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    )}
+                  </thead>
+                  <tbody>
+                    {esVentas ? renderVentasRows(ventasItems) : data.movimientos.map((mov, idx) => (
+                      esRotacion ? (
+                        <tr key={mov.folio || ('rot-' + idx)} className="border-b hover:bg-zinc-50 transition-colors">
+                          <td className="py-2 px-3 font-medium">{mov.mes_label || mov.fecha}</td>
+                          <td className="py-2 px-3 text-right font-semibold">{Number(mov.rotacion || 0).toFixed(2)}x</td>
+                          <td className="py-2 px-3 text-right">{formatNumber(mov.cheques)}</td>
+                          <td className="py-2 px-3 text-right">{formatNumber(mov.pax)}</td>
+                        </tr>
+                      ) : (
+                        <tr key={(mov.folio || 'mov') + '-' + idx} className="border-b hover:bg-zinc-50 transition-colors">
+                          <td className="py-2 px-3 font-mono text-xs font-medium">{mov.folio}</td>
+                          <td className="py-2 px-3 text-zinc-600">{mov.fecha}</td>
+                          <td className="py-2 px-3 text-center">
+                            {mov.pax > 0 ? (
+                              <span className="inline-flex items-center gap-1">
+                                <Users className="h-3 w-3 text-purple-500" />
+                                {mov.pax}
+                              </span>
+                            ) : '-'}
+                          </td>
+                          <td className="py-2 px-3 text-right font-semibold text-green-600">
+                            {formatCurrency(mov.importe)}
+                          </td>
+                          {esPaxPromedio && (
+                            <td className="py-2 px-3 text-right font-semibold text-purple-600">
+                              {mov.pax_promedio == null ? '-' : formatCurrency(mov.pax_promedio)}
+                            </td>
+                          )}
+                        </tr>
+                      )
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-            {esVentas && (
-              <div className="mt-3 rounded-lg border bg-zinc-50 px-4 py-3 flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-zinc-500">Total del período seleccionado</p>
-                  <p className="text-xs text-zinc-500">
-                    {formatNumber(data.resumen_periodo?.folios || 0)} folio(s) • {formatNumber(data.resumen_periodo?.pax || 0)} PAX
+              {esVentas && (
+                <div className="mt-3 rounded-lg border bg-zinc-50 px-4 py-3 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-zinc-500">Total del período seleccionado</p>
+                    <p className="text-xs text-zinc-500">
+                      {formatNumber(data.resumen_periodo?.folios || 0)} folio(s) • {formatNumber(data.resumen_periodo?.pax || 0)} PAX
+                    </p>
+                  </div>
+                  <p className="text-xl font-bold text-green-600">
+                    {formatCurrency(data.resumen_periodo?.total_venta || 0)}
                   </p>
                 </div>
-                <p className="text-xl font-bold text-green-600">
-                  {formatCurrency(data.resumen_periodo?.total_venta || 0)}
-                </p>
-              </div>
-            )}
+              )}
 
-            {!esVentas && !esRotacion && data.pages > 1 && (
-              <div className="flex items-center justify-between pt-3 border-t mt-3">
-                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>
-                  <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
-                </Button>
-                <span className="text-sm text-zinc-500">Página {page} de {data.pages}</span>
-                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(data.pages, p + 1))} disabled={page >= data.pages}>
-                  Siguiente <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="text-center py-12 text-zinc-500">
-            <Receipt className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p>No hay movimientos en este período</p>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+              {!esVentas && !esRotacion && data.pages > 1 && (
+                <div className="flex items-center justify-between pt-3 border-t mt-3">
+                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+                  </Button>
+                  <span className="text-sm text-zinc-500">Página {page} de {data.pages}</span>
+                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(data.pages, p + 1))} disabled={page >= data.pages}>
+                    Siguiente <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-zinc-500">
+              <Receipt className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p>No hay movimientos en este período</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <TicketVentaModal
+        isOpen={Boolean(ticketSeleccionado)}
+        onClose={() => setTicketSeleccionado(null)}
+        serverId={serverId}
+        sucursal={sucursal}
+        seleccion={ticketSeleccionado}
+      />
+    </>
   );
 }
 

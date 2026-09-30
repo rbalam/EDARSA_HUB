@@ -86,6 +86,7 @@ from core.user_access_context import (
     UserAccessContext,
 )
 from core.rbac_sql.service import RBACSQLService
+from .ticket_service import build_ticket_venta, merge_open_snapshot_tickets
 from core.source_resolver import QueryStatus, SourceQueryResult
 from core.db import (
     check_column_exists, 
@@ -3483,8 +3484,22 @@ async def comercial_detalle_ventas_agrupado(
                     "expandible": False, "siguiente_nivel": None,
                 })
 
+        if periodo == "dia" and nivel_resuelto == "detalle":
+            items = merge_open_snapshot_tickets(
+                items,
+                unidad_codigo,
+                safe_sucursal,
+                fecha_ini,
+            )
+            total_folios_periodo = len(items)
+            total_pax_periodo = sum(int(item.get("pax") or 0) for item in items)
+            total_venta_periodo = sum(
+                float(item.get("total_venta") or 0)
+                for item in items
+            )
+
         total_nivel = len(items)
-        if nivel_resuelto == "detalle" and rows:
+        if nivel_resuelto == "detalle" and rows and periodo != "dia":
             total_nivel = int(rows[0].get("total_folios") or len(items))
 
         return {
@@ -3515,6 +3530,64 @@ async def comercial_detalle_ventas_agrupado(
             "page": page, "limit": limit, "pages": 0,
             "resumen_periodo": {"folios": 0, "pax": 0, "total_venta": 0},
         }
+
+
+@router.get("/comercial/ticket-venta/{server_id}")
+async def comercial_ticket_venta(
+    server_id: str,
+    sucursal: str = Query(default=""),
+    folio: str = Query(..., min_length=1, max_length=128),
+    fecha: str = Query(..., min_length=10, max_length=10),
+    current_user: Dict = Depends(get_current_user),
+):
+    """Reconstruye un ticket desde EDARSAHUB; nunca consulta el POS."""
+    server = await get_server_by_id(server_id)
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+
+    await validate_server_access_rbac(current_user, server_id)
+
+    try:
+        datetime.strptime(fecha, "%Y-%m-%d")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Fecha de ticket invalida") from exc
+
+    from .service import _query_edarsahub_tablero
+
+    safe_server = str(server_id).replace("'", "''")
+    safe_sucursal = str(sucursal or "").replace("'", "''")
+    unidad_query = f"""
+    SELECT TOP 1 codigo, nombre
+    FROM dbo.Unidades_Negocio WITH (NOLOCK)
+    WHERE CONVERT(varchar(100), server_id) = '{safe_server}'
+      AND ISNULL(activo,1) = 1
+    """
+    if safe_sucursal and safe_sucursal.upper() not in ("DEFAULT", "ALL", "TODAS"):
+        unidad_query += f"""
+          AND (
+                CONVERT(varchar(100), sucursal_origen_id) = '{safe_sucursal}'
+             OR UPPER(ISNULL(codigo,'')) = UPPER('{safe_sucursal}')
+             OR UPPER(ISNULL(nombre,'')) = UPPER('{safe_sucursal}')
+          )
+        """
+    unidad_query += " ORDER BY nombre"
+    unidades = _query_edarsahub_tablero(unidad_query)
+    if not unidades:
+        raise HTTPException(status_code=404, detail="Unidad de negocio no encontrada")
+
+    unidad_codigo = str(unidades[0].get("codigo") or "")
+    unidad_nombre = unidades[0].get("nombre") or server.get("name")
+
+    payload = build_ticket_venta(
+        unidad_codigo,
+        unidad_nombre,
+        safe_sucursal,
+        folio,
+        fecha,
+    )
+    if not payload:
+        raise HTTPException(status_code=404, detail="Ticket no encontrado")
+    return payload
 
 
 @router.get("/comercial/detalle-movimientos/{server_id}")

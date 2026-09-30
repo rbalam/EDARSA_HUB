@@ -37,6 +37,11 @@ import uuid
 import logging
 import requests
 import pytz
+from modules.comercial_v2.ticket_snapshot import (
+    QUERY_SOFTRESTAURANT_DETALLE_ABIERTAS,
+    QUERY_MPRO_DETALLE_ABIERTAS,
+    serialize_open_detail_rows,
+)
 from datetime import datetime, date, timezone, timedelta
 from decimal import Decimal
 from typing import Dict, List, Any, Optional, Tuple
@@ -1283,6 +1288,40 @@ async def execute_sync_comercial_abiertas_v2(
                 else:
                     source_status = "DATA_OK"
 
+                detalle_abiertas_json = None
+                detalle_abiertas_filas = 0
+                if tickets_abiertos == 0:
+                    detalle_abiertas_json = "[]"
+                else:
+                    try:
+                        query_detalle_abiertas = (
+                            QUERY_SOFTRESTAURANT_DETALLE_ABIERTAS.format(
+                                fecha_operacion=fecha_operacion_str
+                            )
+                        )
+                        detalle_rows, detalle_status = execute_query_on_server(
+                            server_config,
+                            query_detalle_abiertas,
+                            context="jobs",
+                        )
+                        if detalle_status == ConnectionStatus.ONLINE:
+                            detalle_abiertas_json = serialize_open_detail_rows(
+                                detalle_rows or []
+                            )
+                            detalle_abiertas_filas = len(detalle_rows or [])
+                        else:
+                            logger.warning(
+                                "[SYNC_ABIERTAS_V2] %s: detalle abierto no disponible: %s",
+                                nombre,
+                                detalle_status,
+                            )
+                    except Exception as detalle_exc:
+                        logger.warning(
+                            "[SYNC_ABIERTAS_V2] %s: detalle abierto no fatal: %s",
+                            nombre,
+                            detalle_exc,
+                        )
+
                 # Determinar fuente original
                 if ventas_abiertas > 0 and ventas_cerradas_dia > 0:
                     fuente = FuenteOriginal.MIXTA
@@ -1329,7 +1368,8 @@ async def execute_sync_comercial_abiertas_v2(
                     propinas_total=propinas_total,
                     fuente_original=fuente,
                     sync_run_id=run_id,
-                    source_status=source_status
+                    source_status=source_status,
+                    detalle_abiertas_json=detalle_abiertas_json
                 )
             
                 upsert_result = upsert_ventas_dia_abiertas(ventas_model)
@@ -1345,7 +1385,8 @@ async def execute_sync_comercial_abiertas_v2(
                     "source_status": source_status,
                     "fecha_operacion": fecha_operacion_str,  # Agregar para debug
                     "ventas_abiertas": float(ventas_abiertas),
-                    "total_estimado_dia": float(total_estimado_dia)
+                    "total_estimado_dia": float(total_estimado_dia),
+                    "detalle_abiertas_filas": detalle_abiertas_filas
                 })
             
                 logger.info(f"[SYNC_ABIERTAS_V2] {nombre}: fecha_op={fecha_operacion_str}, total=${total_estimado_dia:,.2f}")
@@ -1644,6 +1685,40 @@ async def execute_sync_comercial_abiertas_v2(
                 propinas_total = propinas_abiertas + propinas_cerradas_dia
 
                 total_estimado_dia = ventas_abiertas + ventas_cerradas_dia
+
+                detalle_abiertas_json = None
+                detalle_abiertas_filas = 0
+                if tickets_abiertos == 0:
+                    detalle_abiertas_json = "[]"
+                else:
+                    try:
+                        query_detalle_abiertas = (
+                            QUERY_MPRO_DETALLE_ABIERTAS.format(
+                                sucursal_id=sucursal_id,
+                                fecha_operacion=fecha_operacion_str,
+                            )
+                        )
+                        detalle_rows, detalle_status = _execute_query_via_api_local(
+                            api_config,
+                            query_detalle_abiertas,
+                        )
+                        if detalle_status == "API_LOCAL_OK":
+                            detalle_abiertas_json = serialize_open_detail_rows(
+                                detalle_rows or []
+                            )
+                            detalle_abiertas_filas = len(detalle_rows or [])
+                        else:
+                            logger.warning(
+                                "[SYNC_ABIERTAS_V2] %s: detalle abierto no disponible: %s",
+                                nombre,
+                                detalle_status,
+                            )
+                    except Exception as detalle_exc:
+                        logger.warning(
+                            "[SYNC_ABIERTAS_V2] %s: detalle abierto no fatal: %s",
+                            nombre,
+                            detalle_exc,
+                        )
             
                 # FIX 2026-05-15: Log detallado para QRO (diagnóstico de bug $0)
                 if unidad_id == '130QRO':
@@ -1692,7 +1767,8 @@ async def execute_sync_comercial_abiertas_v2(
                     total_estimado_dia=total_estimado_dia,
                     fuente_original=FuenteOriginal.API_LOCAL,
                     sync_run_id=run_id,
-                    source_status=source_status
+                    source_status=source_status,
+                    detalle_abiertas_json=detalle_abiertas_json
                 )
             
                 upsert_result = upsert_ventas_dia_abiertas(ventas_model)
@@ -1713,7 +1789,8 @@ async def execute_sync_comercial_abiertas_v2(
                     ),
                     "fecha_operacion": fecha_operacion_str,  # Agregar para debug
                     "ventas_abiertas": float(ventas_abiertas),
-                    "total_estimado_dia": float(total_estimado_dia)
+                    "total_estimado_dia": float(total_estimado_dia),
+                    "detalle_abiertas_filas": detalle_abiertas_filas
                 })
             
                 logger.info(
