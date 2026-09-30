@@ -570,7 +570,18 @@ def cycle() -> dict:
     # Mirror lifecycle is enabled only after explicit authorization. Pod restart
     # itself is never authorization.
     if auth["authorized"] and ff.get("state") == "FF_APPLIED":
-        restarted = supervisor_restart("FAST_FORWARD_APPLIED")
+        mirror_restarted = supervisor_restart("FAST_FORWARD_APPLIED")
+        worker_restarted = supervisor_restart(
+            "FAST_FORWARD_APPLIED",
+            WORKER_SERVICE,
+        )
+        restarted = mirror_restarted or worker_restarted
+        audit(
+            "UNIVERSAL_WORKER_FF_RELOAD",
+            service=WORKER_SERVICE,
+            restarted=worker_restarted,
+            reason="FAST_FORWARD_APPLIED",
+        )
     if stale:
         restarted = supervisor_restart("WORKER_HEARTBEAT_STALE", WORKER_SERVICE) or restarted
         audit(
