@@ -2,8 +2,11 @@
   "base_sha": "e065d070c537e7ed77c0f9807b1da3b9c81d7845",
   "blockers": [],
   "candidate_sha": "f1aa50e2e812ae8b63fcacc521399f00e8494d9a",
-  "certification": "PENDING_AUDIT_EVIDENCE",
+  "certification": "CERTIFIED",
+  "certification_basis": "SHA_BOUND_ATTESTATION_PLUS_DESCENDANT_CONVERGENCE",
+  "certified_source_sha": "f1aa50e2e812ae8b63fcacc521399f00e8494d9a",
   "completed_at_utc": "2026-09-30T18:12:04Z",
+  "converged_head": "f1aa50e2e812ae8b63fcacc521399f00e8494d9a",
   "development_sha": "f1aa50e2e812ae8b63fcacc521399f00e8494d9a",
   "executor": "chatgpt-deterministic",
   "files_changed": [
@@ -14,9 +17,9 @@
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6H-CARLOS-20260930T1810Z",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-09-30T18:13:09Z",
+  "published_at_utc": "2026-09-30T18:14:27Z",
   "quality_gate": "PASS",
   "schema": "edarsahub.worker-result.v2",
   "source_branch": "Edarsahub_Desarrollo",
@@ -25,5 +28,5 @@
   "status": "INTEGRATED",
   "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
   "tests": "PASS",
-  "work_completion": "PENDING_CERTIFICATION"
+  "work_completion": "COMPLETE"
 }
