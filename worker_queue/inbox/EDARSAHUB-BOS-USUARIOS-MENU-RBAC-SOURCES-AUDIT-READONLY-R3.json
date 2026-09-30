@@ -1,0 +1,110 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "request": {
+        "max_results": 60,
+        "paths": [
+          "backend/modules/auth/routes.py",
+          "backend/core/rbac/service.py",
+          "backend/core/rbac/repository_sql.py",
+          "backend/core/rbac_sql/service.py",
+          "backend/core/user_access_context.py",
+          "backend/modules/sistema/menu_service.py",
+          "frontend/src/hooks/useMenusByContext.js",
+          "frontend/src/pages/Layout.js",
+          "frontend/src/pages/Usuarios.js"
+        ],
+        "search_terms": [
+          "get_user_permissions",
+          "get_rbac_user_permissions",
+          "MENU_PERMISSION_MAP",
+          "SISTEMA_USUARIOS_VER",
+          "USUARIOS_VER",
+          "permissions_flat",
+          "permisos_modulos",
+          "_normalize_permission_codes",
+          "_build_menu_permissions",
+          "_build_effective_permissions_payload",
+          "RBACSQLService",
+          "get_effective_permissions",
+          "can_access_permission",
+          "RBACRepositorySQL",
+          "get_roles_usuario",
+          "get_permisos_usuario",
+          "Usuario_RolesAsignacion",
+          "Usuario_PermisosRolModulo",
+          "Usuario_Modulos",
+          "Usuario_Acciones",
+          "Sistema_Modulos",
+          "useMenusByContext",
+          "visible",
+          "MenuService",
+          "menus",
+          "context"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "created_at_utc": "2026-09-30T19:48:18.291894+00:00",
+  "domain": "usuarios_rbac_menu",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-SOURCES-AUDIT-READONLY-R3",
+  "known_context": {
+    "confirmed": [
+      "Usuarios.js manda role por PUT /users/{id}",
+      "service.update_user pasa role a repo.update_user",
+      "repo.update_user persiste Usuario_RolesAsignacion",
+      "PUT /users/{id}/permissions solo maneja alcance operativo",
+      "MENU_PERMISSION_MAP usuarios espera SISTEMA_USUARIOS_VER o USUARIOS_VER",
+      "Layout.js consume /auth/me/menu-permissions y tambien useMenusByContext",
+      "RBACSQLService.get_effective_permissions usa Usuario_RolesAsignacion, Usuario_PermisosRolModulo, Usuario_Modulos, Usuario_Acciones"
+    ],
+    "suspected_root_cause": "/auth/me/menu-permissions importa core.rbac.service.get_user_permissions como get_rbac_user_permissions; puede no estar usando el motor SQL canonico RBACSQLService.get_effective_permissions o puede estar normalizando distinto. Ademas useMenusByContext puede estar sobreescribiendo visibilidad del menu."
+  },
+  "mode": "READ_ONLY",
+  "objective": "R3 READ_ONLY quirurgico para cerrar causa raiz de regresion Menu Usuarios/RBAC. Auditar la fuente real de permisos de /auth/me/menu-permissions, el mapa MENU_PERMISSION_MAP, core.rbac.service.get_user_permissions, RBACRepositorySQL, RBACSQLService, useMenusByContext y endpoint backend de menus por contexto. No modificar archivos, no SQL, no MongoDB, no Produccion.",
+  "priority": "P0",
+  "production_allowed": false,
+  "requester": {
+    "chat": "",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "",
+    "source": "chatgpt"
+  },
+  "required_findings": [
+    "definicion_exacta_de_core_rbac_service_get_user_permissions",
+    "si_core_rbac_service_get_user_permissions_delega_a_RBACSQLService_get_effective_permissions",
+    "si_core_rbac_service_get_user_permissions_usa_RBACRepositorySQL_o_fallback_legacy",
+    "si_los_permisos_generados_son_SISTEMA_USUARIOS_VER_o_USUARIOS_VER",
+    "entrada_exacta_MENU_PERMISSION_MAP_para_usuarios",
+    "si__normalize_permission_codes_convierte_puntos_a_guiones_bajos",
+    "si__group_permissions_by_module_tiene_bug_de_separador",
+    "endpoint_backend_usado_por_useMenusByContext",
+    "si_useMenusByContext_sobrescribe_auth_me_menu_permissions",
+    "si_menu_contextual_incluye_o_excluye_usuarios",
+    "causa_raiz_final_priorizada",
+    "parche_minimo_recomendado",
+    "archivos_exactos_para_mutacion_R4",
+    "riesgos_y_pruebas_requeridas"
+  ],
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
