@@ -1,0 +1,64 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-HOY-SR-OPEN-DETAIL-DIAG-R1-CARLOS-20260930T2334Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Diagnosticar en solo lectura por que periodo Hoy usa rango mensual y por que los folios abiertos SoftRestaurant (LA ESTELAR, CIENFUEGOS, 130MID) no aparecen en Detalle de Ventas. No modificar ni ejecutar sincronizadores. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "schema_ventas_dia_keys",
+          "sql": "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Comercial_Ventas_Dia_Abiertas_v2' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "snapshots_softrestaurant_actuales",
+          "sql": "SELECT unidad_negocio_id,unidad_negocio_nombre,server_id,sucursal_id,sistema_origen,fecha_operacion,snapshot_timestamp,ventas_abiertas,tickets_abiertos,pax_abiertos,ventas_cerradas_dia,tickets_cerrados_dia,pax_cerrados_dia,total_estimado_dia,source_status,LEN(detalle_abiertas_json) AS detalle_json_len,CASE WHEN detalle_abiertas_json IS NULL THEN 'NULL' WHEN detalle_abiertas_json='[]' THEN 'EMPTY' WHEN ISJSON(detalle_abiertas_json)=1 THEN 'JSON' ELSE 'INVALID' END AS detalle_json_status,LEFT(detalle_abiertas_json,1200) AS detalle_json_sample FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK) WHERE UPPER(ISNULL(unidad_negocio_id,'')) IN ('LA ESTELAR','ESTELAR','CIENFUEGOS','130MID') OR UPPER(ISNULL(unidad_negocio_nombre,'')) LIKE '%ESTELAR%' OR UPPER(ISNULL(unidad_negocio_nombre,'')) LIKE '%CIENFUEGOS%' OR UPPER(ISNULL(unidad_negocio_id,''))='130MID' ORDER BY fecha_operacion DESC,snapshot_timestamp DESC"
+        },
+        {
+          "name": "sync_logs_softrestaurant_recientes",
+          "sql": "SELECT TOP 30 unidad_negocio_id,server_id,fecha_inicio,fecha_fin,status,records_processed,records_inserted,records_updated,error_code,error_message,run_timestamp FROM dbo.Comercial_SyncLog_v2 WITH (NOLOCK) WHERE UPPER(ISNULL(unidad_negocio_id,'')) IN ('LA ESTELAR','ESTELAR','CIENFUEGOS','130MID') OR UPPER(ISNULL(error_message,'')) LIKE '%ESTELAR%' OR UPPER(ISNULL(error_message,'')) LIKE '%CIENFUEGOS%' ORDER BY run_timestamp DESC"
+        }
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial/routes.py",
+          "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+          "backend/modules/comercial_v2/ticket_snapshot.py",
+          "backend/modules/comercial/ticket_service.py"
+        ],
+        "search_terms": [
+          "if meses and lista_anios",
+          "periodo == \"dia\"",
+          "QUERY_SOFTRESTAURANT_DETALLE_ABIERTAS",
+          "detalle_abiertas_json",
+          "tempcheqdet",
+          "merge_open_snapshot_tickets"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 120
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
