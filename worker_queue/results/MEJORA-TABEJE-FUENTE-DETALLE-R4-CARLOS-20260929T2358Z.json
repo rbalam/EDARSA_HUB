@@ -1,0 +1,1075 @@
+{
+  "base_sha": "aa799300859ba58be213a872fed8fdb593ceaed6",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-30T00:08:12Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "MEJORA-TABEJE-FUENTE-DETALLE-R4-CARLOS-20260929T2358Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-30T00:08:13Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "calendar",
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.rbac_sql.service",
+              "core.security",
+              "core.server_registry",
+              "core.source_resolver",
+              "core.system_type_utils",
+              "core.unidades_registry",
+              "core.unidades_service",
+              "core.user_access_context",
+              "core.utils.date_filters",
+              "core.utils.operational_window",
+              "datetime",
+              "fastapi",
+              "logging",
+              "modules.comercial.adapters",
+              "modules.comercial.cache_service",
+              "modules.comercial.queries.mpro",
+              "modules.comercial.queries.softrestaurant",
+              "modules.comercial.repository",
+              "modules.comercial.service",
+              "modules.comercial_v2.repository_readonly",
+              "pymssql",
+              "pytz",
+              "service",
+              "typing",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "fecha_operacion",
+              "folio",
+              "pax",
+              "venta_encabezado"
+            ],
+            "path": "backend/modules/comercial/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/comercial/dashboard/{server_id}",
+              "/comercial/detalle-movimientos/{server_id}",
+              "/comercial/mesas/{server_id}",
+              "/comercial/metas/{server_id}",
+              "/comercial/precios-constantes/{server_id}",
+              "/comercial/reporte-pax/{server_id}",
+              "/comercial/sucursales/{server_id}",
+              "/comercial/tablero-ejecutivo",
+              "/comercial/ticket-perfecto/{server_id}",
+              "/comercial/ventas-tiempo/{server_id}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_agrupar_por_unidad",
+              "_empty_mesas_unidad",
+              "_filtrar_server",
+              "_safe_float",
+              "_safe_int",
+              "_tablero_ejecutivo_internal",
+              "check_live_guard_rail",
+              "comercial_dashboard",
+              "comercial_detalle_movimientos",
+              "comercial_mesas",
+              "comercial_metas",
+              "comercial_reporte_pax",
+              "comercial_ticket_perfecto",
+              "comercial_ventas_tiempo",
+              "empty_response",
+              "get_user_context_or_403",
+              "get_ventas_dia_snapshot_from_edarsahub",
+              "obtener_sucursales",
+              "resolver_codigo_dedup",
+              "sql_fecha",
+              "tablero_ejecutivo",
+              "validate_server_access_rbac",
+              "ventas_precios_constantes"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Sync_Mesas",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "calendar",
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.empresa_resolver",
+              "core.kpis_canonicos",
+              "core.server_registry",
+              "core.source_resolver",
+              "core.sql_first.connection_factory",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "core.utils.date_filters",
+              "core.utils.operational_window",
+              "datetime",
+              "fastapi",
+              "logging",
+              "modules.comercial",
+              "modules.comercial.adapters",
+              "modules.comercial.queries.mpro",
+              "modules.comercial.queries.softrestaurant",
+              "os",
+              "pymssql",
+              "pytz",
+              "time",
+              "typing",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "fecha_operacion",
+              "folio",
+              "pax",
+              "personas",
+              "venta_encabezado"
+            ],
+            "path": "backend/modules/comercial/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CacheStatus",
+              "DataStatus",
+              "LiveStatus",
+              "SourceRealStatus",
+              "SourceUsed",
+              "_calcular_variacion_pct",
+              "_cargar_catalogo_unidades_negocio",
+              "_fecha_fin_exclusiva",
+              "_get_edarsahub_tablero_config",
+              "_get_kpis_periodo_edarsahub",
+              "_get_ultimo_dia_con_datos_edarsahub",
+              "_get_ventas_abiertas_edarsahub",
+              "_mapear_codigo_a_unidad_negocio_pk",
+              "_metricas_periodo",
+              "_normalizar_clave_unidad",
+              "_obtener_codigo_canonico_mpro",
+              "_obtener_config_mpro_canonica",
+              "_obtener_kpis_tablero_desde_edarsahub",
+              "_obtener_servidor_conexion",
+              "_obtener_sucursales_mpro_desde_resolver",
+              "_pct",
+              "_query_edarsahub_tablero",
+              "_resolver_unidad_pks_dashboard",
+              "_ventas_periodo_canonicas",
+              "add_pk",
+              "agregar_totales",
+              "build_unit_response",
+              "calcular_consumo_promedio",
+              "calcular_porcentaje_cumplimiento",
+              "calcular_ticket_promedio",
+              "classify_connection_error",
+              "get_dashboard_kpis_from_edarsahub",
+              "get_kpis_mpro",
+              "get_kpis_mpro_con_estado",
+              "get_kpis_mpro_por_sucursal",
+              "get_kpis_softrestaurant",
+              "get_last_valid_snapshot_edarsahub",
+              "guardar_metas",
+              "obtener_metas",
+              "obtener_sucursales_servidor",
+              "obtener_unidad_negocio_edarsahub",
+              "procesar_ventas_sucursal",
+              "resolver_unidad_pks_dashboard"
+            ],
+            "tables_referenced": [
+              "Comercial_KPIs_Diarios_v2",
+              "Servidores_Conexiones",
+              "Sync_Metas_Comerciales",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial_v2",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.db",
+              "core.kpis_canonicos.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "decimal",
+              "logging",
+              "os",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "fecha_operacion",
+              "pax"
+            ],
+            "path": "backend/modules/comercial_v2/repository_readonly.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_execute_readonly_query",
+              "_resolver_unidades_abiertas",
+              "_sql_quote",
+              "_unidad_filter_abiertas",
+              "_unidad_filter_runtime",
+              "check_v2_health",
+              "get_comparativos_diarios",
+              "get_kpis_diarios",
+              "get_kpis_diarios_agregados",
+              "get_kpis_mensuales",
+              "get_kpis_por_unidad",
+              "get_last_sync_by_unidad",
+              "get_sync_status",
+              "get_ultimas_fechas_operacion_abiertas",
+              "get_unidades_disponibles",
+              "get_ventas_dia_abiertas"
+            ],
+            "tables_referenced": [
+              "Comercial_KPIs_Diarios_v2",
+              "Comercial_Ventas_Dia_Abiertas_v2",
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "fecha_operacion",
+              "folio",
+              "pax",
+              "sync_sales"
+            ],
+            "path": "backend/database/validation/phase3_comercial_kpi_cross_menu_source_audit.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Sync_PAX_Detalle",
+              "Sync_Sales",
+              "Unidades_Negocio",
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "fecha_operacion",
+              "pax",
+              "sync_sales"
+            ],
+            "path": "backend/database/migrations/031_diagnostico_sync_sales_pax_detalle.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": [
+              "Comercial_KPIs_Diarios_v2",
+              "Comercial_Ventas_Dia_Abiertas_v2",
+              "Sistema_Scheduler_Jobs",
+              "Sistema_VW_Servidores_Conexiones_Publico",
+              "Sync_PAX_Detalle",
+              "Sync_Sales",
+              "Sys_Scheduler_Jobs",
+              "Unidades_Negocio"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 5,
+          "scanned_files": 5,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "COLUMN_NAME",
+              "DATA_TYPE"
+            ],
+            "name": "schema_vw_sync_sales_unified",
+            "row_count_returned": 11,
+            "rows": [
+              [
+                "Id",
+                "int"
+              ],
+              [
+                "UnidadNegocio",
+                "varchar"
+              ],
+              [
+                "TenantID",
+                "int"
+              ],
+              [
+                "FechaHora",
+                "date"
+              ],
+              [
+                "Periodo",
+                "nvarchar"
+              ],
+              [
+                "IdProducto",
+                "int"
+              ],
+              [
+                "Cantidad",
+                "decimal"
+              ],
+              [
+                "ImporteNeto",
+                "decimal"
+              ],
+              [
+                "Propina",
+                "decimal"
+              ],
+              [
+                "Pax",
+                "int"
+              ],
+              [
+                "Estatus",
+                "varchar"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "COLUMN_NAME",
+              "DATA_TYPE"
+            ],
+            "name": "schema_sync_sales",
+            "row_count_returned": 18,
+            "rows": [
+              [
+                "id",
+                "varchar"
+              ],
+              [
+                "branch",
+                "nvarchar"
+              ],
+              [
+                "customer_id",
+                "varchar"
+              ],
+              [
+                "items",
+                "nvarchar"
+              ],
+              [
+                "total",
+                "numeric"
+              ],
+              [
+                "currency",
+                "varchar"
+              ],
+              [
+                "status",
+                "varchar"
+              ],
+              [
+                "created_at",
+                "datetime"
+              ],
+              [
+                "last_modified",
+                "datetime"
+              ],
+              [
+                "sync_hash",
+                "varchar"
+              ],
+              [
+                "IdTransaccion",
+                "varchar"
+              ],
+              [
+                "UnidadNegocio",
+                "nvarchar"
+              ],
+              [
+                "MontoTotal",
+                "numeric"
+              ],
+              [
+                "Pax",
+                "int"
+              ],
+              [
+                "NumeroTicket",
+                "varchar"
+              ],
+              [
+                "FechaHora",
+                "datetime"
+              ],
+              [
+                "TipoServicioID",
+                "nvarchar"
+              ],
+              [
+                "TipoServicio",
+                "nvarchar"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "COLUMN_NAME",
+              "DATA_TYPE"
+            ],
+            "name": "schema_venta_encabezado",
+            "row_count_returned": 27,
+            "rows": [
+              [
+                "VentaID",
+                "bigint"
+              ],
+              [
+                "Serie",
+                "varchar"
+              ],
+              [
+                "Folio",
+                "varchar"
+              ],
+              [
+                "FechaVenta",
+                "datetime2"
+              ],
+              [
+                "FechaVencimiento",
+                "date"
+              ],
+              [
+                "ClienteID",
+                "int"
+              ],
+              [
+                "ClienteDireccionID",
+                "int"
+              ],
+              [
+                "ListaPrecioID",
+                "int"
+              ],
+              [
+                "CondicionPagoID",
+                "smallint"
+              ],
+              [
+                "MonedaID",
+                "smallint"
+              ],
+              [
+                "TipoCambio",
+                "decimal"
+              ],
+              [
+                "EstatusVentaID",
+                "tinyint"
+              ],
+              [
+                "Subtotal",
+                "decimal"
+              ],
+              [
+                "DescuentoTotal",
+                "decimal"
+              ],
+              [
+                "ImpuestoTotal",
+                "decimal"
+              ],
+              [
+                "Total",
+                "decimal"
+              ],
+              [
+                "TotalPagado",
+                "decimal"
+              ],
+              [
+                "SaldoPendiente",
+                "decimal"
+              ],
+              [
+                "Observaciones",
+                "varchar"
+              ],
+              [
+                "ReferenciaExterna",
+                "varchar"
+              ],
+              [
+                "NumeroFactura",
+                "varchar"
+              ],
+              [
+                "UUIDFactura",
+                "varchar"
+              ],
+              [
+                "Activo",
+                "bit"
+              ],
+              [
+                "CreatedAt",
+                "datetime2"
+              ],
+              [
+                "CreatedBy",
+                "varchar"
+              ],
+              [
+                "ModifiedAt",
+                "datetime2"
+              ],
+              [
+                "ModifiedBy",
+                "varchar"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "COLUMN_NAME",
+              "DATA_TYPE"
+            ],
+            "name": "schema_venta_detalle",
+            "row_count_returned": 17,
+            "rows": [
+              [
+                "DetalleVentaID",
+                "bigint"
+              ],
+              [
+                "VentaID",
+                "bigint"
+              ],
+              [
+                "Renglon",
+                "int"
+              ],
+              [
+                "ProductoID",
+                "int"
+              ],
+              [
+                "PresentacionProductoID",
+                "bigint"
+              ],
+              [
+                "Cantidad",
+                "decimal"
+              ],
+              [
+                "PrecioUnitario",
+                "decimal"
+              ],
+              [
+                "DescuentoPorcentaje",
+                "decimal"
+              ],
+              [
+                "DescuentoImporte",
+                "decimal"
+              ],
+              [
+                "TasaImpuesto",
+                "decimal"
+              ],
+              [
+                "ImpuestoImporte",
+                "decimal"
+              ],
+              [
+                "SubtotalLinea",
+                "decimal"
+              ],
+              [
+                "TotalLinea",
+                "decimal"
+              ],
+              [
+                "Observaciones",
+                "varchar"
+              ],
+              [
+                "Activo",
+                "bit"
+              ],
+              [
+                "CreatedAt",
+                "datetime2"
+              ],
+              [
+                "CreatedBy",
+                "varchar"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "TABLE_NAME",
+              "COLUMN_NAME",
+              "DATA_TYPE"
+            ],
+            "name": "objetos_candidatos_columnas",
+            "row_count_returned": 73,
+            "rows": [
+              [
+                "Sync_Sales",
+                "id",
+                "varchar"
+              ],
+              [
+                "Sync_Sales",
+                "branch",
+                "nvarchar"
+              ],
+              [
+                "Sync_Sales",
+                "customer_id",
+                "varchar"
+              ],
+              [
+                "Sync_Sales",
+                "items",
+                "nvarchar"
+              ],
+              [
+                "Sync_Sales",
+                "total",
+                "numeric"
+              ],
+              [
+                "Sync_Sales",
+                "currency",
+                "varchar"
+              ],
+              [
+                "Sync_Sales",
+                "status",
+                "varchar"
+              ],
+              [
+                "Sync_Sales",
+                "created_at",
+                "datetime"
+              ],
+              [
+                "Sync_Sales",
+                "last_modified",
+                "datetime"
+              ],
+              [
+                "Sync_Sales",
+                "sync_hash",
+                "varchar"
+              ],
+              [
+                "Sync_Sales",
+                "IdTransaccion",
+                "varchar"
+              ],
+              [
+                "Sync_Sales",
+                "UnidadNegocio",
+                "nvarchar"
+              ],
+              [
+                "Sync_Sales",
+                "MontoTotal",
+                "numeric"
+              ],
+              [
+                "Sync_Sales",
+                "Pax",
+                "int"
+              ],
+              [
+                "Sync_Sales",
+                "NumeroTicket",
+                "varchar"
+              ],
+              [
+                "Sync_Sales",
+                "FechaHora",
+                "datetime"
+              ],
+              [
+                "Sync_Sales",
+                "TipoServicioID",
+                "nvarchar"
+              ],
+              [
+                "Sync_Sales",
+                "TipoServicio",
+                "nvarchar"
+              ],
+              [
+                "Venta_Detalle",
+                "DetalleVentaID",
+                "bigint"
+              ],
+              [
+                "Venta_Detalle",
+                "VentaID",
+                "bigint"
+              ],
+              [
+                "Venta_Detalle",
+                "Renglon",
+                "int"
+              ],
+              [
+                "Venta_Detalle",
+                "ProductoID",
+                "int"
+              ],
+              [
+                "Venta_Detalle",
+                "PresentacionProductoID",
+                "bigint"
+              ],
+              [
+                "Venta_Detalle",
+                "Cantidad",
+                "decimal"
+              ],
+              [
+                "Venta_Detalle",
+                "PrecioUnitario",
+                "decimal"
+              ],
+              [
+                "Venta_Detalle",
+                "DescuentoPorcentaje",
+                "decimal"
+              ],
+              [
+                "Venta_Detalle",
+                "DescuentoImporte",
+                "decimal"
+              ],
+              [
+                "Venta_Detalle",
+                "TasaImpuesto",
+                "decimal"
+              ],
+              [
+                "Venta_Detalle",
+                "ImpuestoImporte",
+                "decimal"
+              ],
+              [
+                "Venta_Detalle",
+                "SubtotalLinea",
+                "decimal"
+              ],
+              [
+                "Venta_Detalle",
+                "TotalLinea",
+                "decimal"
+              ],
+              [
+                "Venta_Detalle",
+                "Observaciones",
+                "varchar"
+              ],
+              [
+                "Venta_Detalle",
+                "Activo",
+                "bit"
+              ],
+              [
+                "Venta_Detalle",
+                "CreatedAt",
+                "datetime2"
+              ],
+              [
+                "Venta_Detalle",
+                "CreatedBy",
+                "varchar"
+              ],
+              [
+                "Venta_Encabezado",
+                "VentaID",
+                "bigint"
+              ],
+              [
+                "Venta_Encabezado",
+                "Serie",
+                "varchar"
+              ],
+              [
+                "Venta_Encabezado",
+                "Folio",
+                "varchar"
+              ],
+              [
+                "Venta_Encabezado",
+                "FechaVenta",
+                "datetime2"
+              ],
+              [
+                "Venta_Encabezado",
+                "FechaVencimiento",
+                "date"
+              ],
+              [
+                "Venta_Encabezado",
+                "ClienteID",
+                "int"
+              ],
+              [
+                "Venta_Encabezado",
+                "ClienteDireccionID",
+                "int"
+              ],
+              [
+                "Venta_Encabezado",
+                "ListaPrecioID",
+                "int"
+              ],
+              [
+                "Venta_Encabezado",
+                "CondicionPagoID",
+                "smallint"
+              ],
+              [
+                "Venta_Encabezado",
+                "MonedaID",
+                "smallint"
+              ],
+              [
+                "Venta_Encabezado",
+                "TipoCambio",
+                "decimal"
+              ],
+              [
+                "Venta_Encabezado",
+                "EstatusVentaID",
+                "tinyint"
+              ],
+              [
+                "Venta_Encabezado",
+                "Subtotal",
+                "decimal"
+              ],
+              [
+                "Venta_Encabezado",
+                "DescuentoTotal",
+                "decimal"
+              ],
+              [
+                "Venta_Encabezado",
+                "ImpuestoTotal",
+                "decimal"
+              ],
+              [
+                "Venta_Encabezado",
+                "Total",
+                "decimal"
+              ],
+              [
+                "Venta_Encabezado",
+                "TotalPagado",
+                "decimal"
+              ],
+              [
+                "Venta_Encabezado",
+                "SaldoPendiente",
+                "decimal"
+              ],
+              [
+                "Venta_Encabezado",
+                "Observaciones",
+                "varchar"
+              ],
+              [
+                "Venta_Encabezado",
+                "ReferenciaExterna",
+                "varchar"
+              ],
+              [
+                "Venta_Encabezado",
+                "NumeroFactura",
+                "varchar"
+              ],
+              [
+                "Venta_Encabezado",
+                "UUIDFactura",
+                "varchar"
+              ],
+              [
+                "Venta_Encabezado",
+                "Activo",
+                "bit"
+              ],
+              [
+                "Venta_Encabezado",
+                "CreatedAt",
+                "datetime2"
+              ],
+              [
+                "Venta_Encabezado",
+                "CreatedBy",
+                "varchar"
+              ],
+              [
+                "Venta_Encabezado",
+                "ModifiedAt",
+                "datetime2"
+              ],
+              [
+                "Venta_Encabezado",
+                "ModifiedBy",
+                "varchar"
+              ],
+              [
+                "Vw_Sync_Sales_Unified",
+                "Id",
+                "int"
+              ],
+              [
+                "Vw_Sync_Sales_Unified",
+                "UnidadNegocio",
+                "varchar"
+              ],
+              [
+                "Vw_Sync_Sales_Unified",
+                "TenantID",
+                "int"
+              ],
+              [
+                "Vw_Sync_Sales_Unified",
+                "FechaHora",
+                "date"
+              ],
+              [
+                "Vw_Sync_Sales_Unified",
+                "Periodo",
+                "nvarchar"
+              ],
+              [
+                "Vw_Sync_Sales_Unified",
+                "IdProducto",
+                "int"
+              ],
+              [
+                "Vw_Sync_Sales_Unified",
+                "Cantidad",
+                "decimal"
+              ],
+              [
+                "Vw_Sync_Sales_Unified",
+                "ImporteNeto",
+                "decimal"
+              ],
+              [
+                "Vw_Sync_Sales_Unified",
+                "Propina",
+                "decimal"
+              ],
+              [
+                "Vw_Sync_Sales_Unified",
+                "Pax",
+                "int"
+              ],
+              [
+                "Vw_Sync_Sales_Unified",
+                "Estatus",
+                "varchar"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-30T00:08:11Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
