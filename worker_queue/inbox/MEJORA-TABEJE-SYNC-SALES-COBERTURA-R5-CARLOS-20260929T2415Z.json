@@ -1,0 +1,123 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "MEJORA-TABEJE-SYNC-SALES-COBERTURA-R5-CARLOS-20260929T2415Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "labels": [
+    "Mejora-TABEJE",
+    "Tablero Ejecutivo",
+    "SYNC-SALES-COBERTURA-R5",
+    "READ_ONLY",
+    "CARLOS"
+  ],
+  "tracking": {
+    "project_label": "Mejora-TABEJE",
+    "display_label": "Mejora-TABEJE | SYNC-SALES-COBERTURA-R5 | MEJORA-TABEJE-SYNC-SALES-COBERTURA-R5-CARLOS-20260929T2415Z",
+    "status_legend": {
+      "VERDE": [
+        "DONE",
+        "PASS",
+        "CERTIFIED",
+        "CERTIFIED_READ_ONLY",
+        "CERTIFIED_OPERATIONAL"
+      ],
+      "AMARILLO": [
+        "PENDING",
+        "PROCESSING",
+        "RESULT_READY",
+        "WAITING",
+        "IN_PROGRESS"
+      ],
+      "ROJO": [
+        "REJECTED",
+        "ERROR",
+        "FAILED",
+        "BLOCKED"
+      ]
+    }
+  },
+  "objective": "[Mejora-TABEJE | SYNC-SALES-COBERTURA-R5] Validar en solo lectura si dbo.Sync_Sales es una fuente existente suficiente para implementar el drilldown del Tablero Ejecutivo y Ventas por Hora sin modificar sincronizaciones. Confirmar para 2026-09-29 y las cinco unidades que existen NumeroTicket, FechaHora, Pax, MontoTotal e IdTransaccion; comparar totales y conteos contra vw_Comercial_KPIs_Diarios_v2_Runtime; validar distribucion de status y ausencia de duplicados por unidad/ticket; confirmar que FechaHora representa apertura para SoftRestaurant segun codigo existente y documentar la limitacion en MPRO. Prohibido ejecutar o modificar Scheduler, Sync_Sales, Sync_PAX, ISCAM, backfills, POS live o cualquier escritura.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "scheduling": {
+    "project_id": "Mejora-TABEJE",
+    "bounded_context": "Tablero Ejecutivo",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/scripts/pilot_backfill_sync_sales.py",
+          "backend/tools/sync_sales_dry_run.py",
+          "backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py",
+          "backend/modules/inteligencia_comercial/iscam_routes.py",
+          "frontend/src/pages/TableroEjecutivo.js"
+        ],
+        "search_terms": [
+          "t.apertura AS FechaHora",
+          "Vn_Fecha AS FechaHora",
+          "NumeroTicket",
+          "MontoTotal",
+          "Pax",
+          "COMPLETED",
+          "CANCELLED"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js"
+        ],
+        "exclude_patterns": [],
+        "max_results": 120
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "sync_sales_20260929_resumen_unidad",
+          "sql": "SELECT UnidadNegocio,COUNT(*) AS filas,COUNT(DISTINCT CONCAT(ISNULL(IdTransaccion,''),'|',ISNULL(NumeroTicket,''))) AS cheques,SUM(ISNULL(Pax,0)) AS pax,SUM(ISNULL(MontoTotal,0)) AS ventas,MIN(FechaHora) AS primera_fecha_hora,MAX(FechaHora) AS ultima_fecha_hora FROM dbo.Sync_Sales WITH (NOLOCK) WHERE FechaHora>='2026-09-29' AND FechaHora<'2026-09-30' AND UnidadNegocio IN ('130MID','130QRO','CIENFUEGOS','ESTELAR','ORIGEN') AND UPPER(ISNULL(status,'COMPLETED')) NOT IN ('CANCELLED','CANCELED','CANCELADO') GROUP BY UnidadNegocio ORDER BY UnidadNegocio"
+        },
+        {
+          "name": "kpi_20260929_resumen_unidad",
+          "sql": "SELECT unidad_negocio_id AS UnidadNegocio,SUM(ISNULL(tickets_total,0)) AS cheques,SUM(ISNULL(pax_total,0)) AS pax,SUM(ISNULL(ventas_total,0)) AS ventas FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WITH (NOLOCK) WHERE fecha_operacion='2026-09-29' AND unidad_negocio_id IN ('130MID','130QRO','CIENFUEGOS','ESTELAR','ORIGEN') GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        },
+        {
+          "name": "sync_sales_20260929_status",
+          "sql": "SELECT UnidadNegocio,ISNULL(status,'(NULL)') AS status,COUNT(*) AS filas,SUM(ISNULL(MontoTotal,0)) AS ventas FROM dbo.Sync_Sales WITH (NOLOCK) WHERE FechaHora>='2026-09-29' AND FechaHora<'2026-09-30' AND UnidadNegocio IN ('130MID','130QRO','CIENFUEGOS','ESTELAR','ORIGEN') GROUP BY UnidadNegocio,ISNULL(status,'(NULL)') ORDER BY UnidadNegocio,status"
+        },
+        {
+          "name": "sync_sales_20260929_duplicados",
+          "sql": "SELECT UnidadNegocio,IdTransaccion,NumeroTicket,COUNT(*) AS repeticiones,SUM(ISNULL(MontoTotal,0)) AS suma_importes FROM dbo.Sync_Sales WITH (NOLOCK) WHERE FechaHora>='2026-09-29' AND FechaHora<'2026-09-30' AND UnidadNegocio IN ('130MID','130QRO','CIENFUEGOS','ESTELAR','ORIGEN') AND UPPER(ISNULL(status,'COMPLETED')) NOT IN ('CANCELLED','CANCELED','CANCELADO') GROUP BY UnidadNegocio,IdTransaccion,NumeroTicket HAVING COUNT(*)>1 ORDER BY repeticiones DESC,UnidadNegocio"
+        },
+        {
+          "name": "sync_sales_20260929_muestra",
+          "sql": "SELECT TOP 40 UnidadNegocio,IdTransaccion,NumeroTicket,FechaHora,Pax,MontoTotal,status FROM dbo.Sync_Sales WITH (NOLOCK) WHERE FechaHora>='2026-09-29' AND FechaHora<'2026-09-30' AND UnidadNegocio IN ('130MID','130QRO','CIENFUEGOS','ESTELAR','ORIGEN') ORDER BY UnidadNegocio,FechaHora,NumeroTicket"
+        },
+        {
+          "name": "sync_sales_cienfuegos_hora_20260929",
+          "sql": "SELECT DATEPART(HOUR,FechaHora) AS hora,COUNT(*) AS cheques,SUM(ISNULL(Pax,0)) AS pax,SUM(ISNULL(MontoTotal,0)) AS ventas FROM dbo.Sync_Sales WITH (NOLOCK) WHERE UnidadNegocio='CIENFUEGOS' AND FechaHora>='2026-09-29' AND FechaHora<'2026-09-30' AND UPPER(ISNULL(status,'COMPLETED')) NOT IN ('CANCELLED','CANCELED','CANCELADO') GROUP BY DATEPART(HOUR,FechaHora) ORDER BY hora"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
