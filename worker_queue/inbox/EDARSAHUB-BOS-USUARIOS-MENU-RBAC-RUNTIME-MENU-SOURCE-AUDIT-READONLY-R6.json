@@ -1,0 +1,100 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/sistema/routes.py",
+          "backend/modules/sistema/menu_service.py",
+          "backend/modules/auth/routes.py",
+          "backend/core/rbac/service.py",
+          "backend/core/rbac_sql/service.py",
+          "backend/core/user_access_context.py",
+          "frontend/src/hooks/useMenusByContext.js",
+          "frontend/src/pages/Layout.js"
+        ],
+        "search_terms": [
+          "MenuService",
+          "get_menu_service",
+          "obtener_menus_current_user",
+          "obtener_menus_usuario",
+          "obtener_menus_usuario_por_unidad",
+          "obtener_permisos_usuario",
+          "obtener_permisos_usuario_por_unidad",
+          "_menu_autorizado",
+          "_obtener_modulos_permitidos_usuario",
+          "_rutas_menu_permitidas_usuario",
+          "Usuario_RolesContexto",
+          "Usuario_RolesAsignacion",
+          "Usuario_PermisosRolModulo",
+          "Usuario_Modulos",
+          "Usuario_Acciones",
+          "Sistema_Modulos",
+          "Sistema_ModulosMenus",
+          "useMenusByContext",
+          "api.get(",
+          "visible",
+          "/auth/me/menu-permissions",
+          "permisos_modulos",
+          "MENU_PERMISSION_MAP",
+          "SISTEMA_USUARIOS_VER",
+          "USUARIOS_VER",
+          "get_user_permissions",
+          "get_effective_permissions",
+          "RBACSQLService"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "created_at_utc": "2026-09-30T22:29:26.605180+00:00",
+  "domain": "usuarios_rbac_menu",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-RUNTIME-MENU-SOURCE-AUDIT-READONLY-R6",
+  "mode": "READ_ONLY",
+  "objective": "Ultima auditoria READ_ONLY antes de mutacion. Cerrar exclusivamente la fuente runtime que construye los menus SQL consumidos por Layout/useMenusByContext. Identificar endpoint backend, MenuService y metodo exacto de autorizacion. Comparar esa fuente con /auth/me/menu-permissions y determinar si ambas pueden producir resultados diferentes. No modificar archivos, no SQL, no MongoDB, no Produccion.",
+  "priority": "P0",
+  "production_allowed": false,
+  "requester": {
+    "chat": "",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "",
+    "source": "chatgpt"
+  },
+  "required_findings": [
+    "exact_backend_endpoint_consumed_by_useMenusByContext",
+    "exact_MenuService_method_called_by_that_endpoint",
+    "exact_authorization_method_used_by_MenuService",
+    "tables_used_by_context_menu_authorization",
+    "whether_MenuService_uses_Usuario_RolesContexto",
+    "whether_MenuService_uses_canonical_RBACSQLService",
+    "whether_MenuService_uses_legacy_role_or_fallback",
+    "exact_auth_me_menu_permissions_source",
+    "exact_difference_between_both_menu_sources",
+    "whether_Layout_prioritizes_context_menus",
+    "whether_usuarios_menu_can_be_hidden_by_context_source_even_if_menu_permissions_allows_it",
+    "single_source_of_truth_violation",
+    "exact_root_cause",
+    "minimal_mutation_files",
+    "R7_mutation_job"
+  ],
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
