@@ -2,8 +2,11 @@
   "base_sha": "6c1638180de49f4eddf8c0aae534763199a96f2f",
   "blockers": [],
   "candidate_sha": "97e1f11816efc811e65b2d1b1e6f01faf21532bc",
-  "certification": "PENDING_AUDIT_EVIDENCE",
+  "certification": "CERTIFIED",
+  "certification_basis": "SHA_BOUND_ATTESTATION_PLUS_DESCENDANT_CONVERGENCE",
+  "certified_source_sha": "97e1f11816efc811e65b2d1b1e6f01faf21532bc",
   "completed_at_utc": "2026-09-30T19:38:56Z",
+  "converged_head": "97e1f11816efc811e65b2d1b1e6f01faf21532bc",
   "development_sha": "97e1f11816efc811e65b2d1b1e6f01faf21532bc",
   "executor": "chatgpt-deterministic",
   "files_changed": [
@@ -13,9 +16,9 @@
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "EDARSAHUB-COMERCIAL-VENTAS-HIERARCHY-DRILLDOWN-R4-CARLOS-20260930T1932Z",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-09-30T19:39:34Z",
+  "published_at_utc": "2026-09-30T20:55:51Z",
   "quality_gate": "PASS",
   "repository_contract_evidence": {
     "checks": [
@@ -189,5 +192,5 @@
   "status": "INTEGRATED",
   "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
   "tests": "PASS",
-  "work_completion": "PENDING_CERTIFICATION"
+  "work_completion": "COMPLETE"
 }
