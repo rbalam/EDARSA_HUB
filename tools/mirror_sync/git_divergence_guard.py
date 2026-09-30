@@ -251,23 +251,124 @@ def post_push_verify(repo: Path, expected_sha: str) -> dict[str,Any]:
     if local != expected_sha or remote != expected_sha or ahead != 0 or behind != 0: raise GitGuardError("GIT_PUSH_FAILED", evidence)
     evidence["terminal_status"]="CERTIFIED_GIT_SYNC"; return evidence
 
+INDEX_LOCK_MIN_AGE_SECONDS = 30
+
+def _index_lock_owner_pids(lock_path: Path) -> list[int]:
+    owners: list[int] = []
+    try:
+        target = lock_path.resolve()
+    except OSError:
+        return owners
+    proc = Path("/proc")
+    if not proc.is_dir():
+        return owners
+    for entry in proc.iterdir():
+        if not entry.name.isdigit():
+            continue
+        fd_dir = entry / "fd"
+        if not fd_dir.is_dir():
+            continue
+        try:
+            fds = list(fd_dir.iterdir())
+        except OSError:
+            continue
+        for fd in fds:
+            try:
+                if fd.resolve() == target:
+                    owners.append(int(entry.name))
+                    break
+            except (OSError, RuntimeError, ValueError):
+                continue
+    return sorted(set(owners))
+
+def recover_orphan_index_lock(repo: Path) -> dict[str, Any]:
+    git_dir = _git_dir(repo.resolve())
+    lock_path = git_dir / "index.lock"
+    if not lock_path.exists():
+        return {"state": "ABSENT"}
+    try:
+        stat = lock_path.stat()
+    except OSError as exc:
+        raise GitGuardError(
+            "GIT_INDEX_LOCK_BUSY",
+            {"reason": "INDEX_LOCK_STAT_FAILED", "path": str(lock_path)},
+        ) from exc
+    age_seconds = max(0.0, time.time() - stat.st_mtime)
+    owners = _index_lock_owner_pids(lock_path)
+    if owners or age_seconds < INDEX_LOCK_MIN_AGE_SECONDS:
+        raise GitGuardError(
+            "GIT_INDEX_LOCK_BUSY",
+            {
+                "reason": "INDEX_LOCK_ACTIVE_OR_FRESH",
+                "path": str(lock_path),
+                "owner_pids": owners,
+                "age_seconds": age_seconds,
+            },
+        )
+    dirty = _status_counts(repo)
+    if dirty["worktree_dirty"]:
+        raise GitGuardError(
+            "GIT_WORKTREE_NOT_CLEAN",
+            {"reason": "INDEX_LOCK_RECOVERY_REQUIRES_CLEAN_WORKTREE", **dirty},
+        )
+    recovery_dir = git_dir / "edarsahub-recovery"
+    recovery_dir.mkdir(parents=True, exist_ok=True)
+    preserved = recovery_dir / (
+        "index.lock.stale."
+        f"{int(time.time())}."
+        f"{os.getpid()}"
+    )
+    os.replace(lock_path, preserved)
+    return {
+        "state": "ORPHAN_INDEX_LOCK_QUARANTINED",
+        "path": str(lock_path),
+        "preserved_at": str(preserved),
+        "age_seconds": age_seconds,
+        "owner_pids": owners,
+    }
+
 def fast_forward_refresh(repo: Path, *, expected_remote: str, job_id: str, owner: str, owner_pid: int | None=None) -> dict[str,Any]:
     token=acquire_writer_lock(repo,job_id=job_id,owner=owner,owner_pid=owner_pid)
     try:
+        index_lock_recovery = recover_orphan_index_lock(repo)
         state=inspect_repository(repo,fetch=True)
-        if state["remote_head"] != expected_remote: raise GitGuardError("REMOTE_MOVED_RETRY_REQUIRED", {"expected_remote":expected_remote,"actual_remote":state["remote_head"]})
-        if state["worktree_dirty"]: raise GitGuardError("GIT_WORKTREE_NOT_CLEAN", state)
-        if state["classification"] == "SYNC": return state
-        if state["classification"] != "REMOTE_AHEAD_ONLY" or state["merge_base"] != state["local_head"]: raise GitGuardError("GIT_DIVERGENCE_BLOCKED", state)
-        local=state["local_head"]; remote=state["remote_head"]; rt=_run(repo,"read-tree","-u","-m",local,remote,check=False)
-        if rt.returncode != 0: raise GitGuardError("GIT_DIVERGENCE_BLOCKED", {"reason":"FAST_FORWARD_WORKTREE_APPLY_FAILED","output":(rt.stdout or "")[-2000:]})
+        state["index_lock_recovery"] = index_lock_recovery
+        if state["remote_head"] != expected_remote:
+            raise GitGuardError("REMOTE_MOVED_RETRY_REQUIRED", {"expected_remote":expected_remote,"actual_remote":state["remote_head"]})
+        if state["worktree_dirty"]:
+            raise GitGuardError("GIT_WORKTREE_NOT_CLEAN", state)
+        if state["classification"] == "SYNC":
+            return state
+        if state["classification"] != "REMOTE_AHEAD_ONLY" or state["merge_base"] != state["local_head"]:
+            raise GitGuardError("GIT_DIVERGENCE_BLOCKED", state)
+        local=state["local_head"]
+        remote=state["remote_head"]
+        rt=_run(repo,"read-tree","-u","-m",local,remote,check=False)
+        if rt.returncode != 0:
+            raise GitGuardError("GIT_DIVERGENCE_BLOCKED", {
+                "reason":"FAST_FORWARD_WORKTREE_APPLY_FAILED",
+                "output":(rt.stdout or "")[-2000:],
+                "index_lock_recovery":index_lock_recovery,
+            })
         ur=_run(repo,"update-ref",f"refs/heads/{DEV_BRANCH}",remote,local,check=False)
         if ur.returncode != 0:
-            _run(repo,"read-tree","-u","-m",remote,local,check=False); raise GitGuardError("GIT_DIVERGENCE_BLOCKED", {"reason":"FAST_FORWARD_REF_CAS_FAILED","output":(ur.stdout or "")[-2000:]})
+            _run(repo,"read-tree","-u","-m",remote,local,check=False)
+            raise GitGuardError("GIT_DIVERGENCE_BLOCKED", {
+                "reason":"FAST_FORWARD_REF_CAS_FAILED",
+                "output":(ur.stdout or "")[-2000:],
+                "index_lock_recovery":index_lock_recovery,
+            })
         final=inspect_repository(repo,fetch=False)
-        if final["classification"] != "SYNC" or final["worktree_dirty"]: raise GitGuardError("GIT_DIVERGENCE_BLOCKED", {"reason":"FAST_FORWARD_POSTCHECK_FAILED","state":final})
+        final["index_lock_recovery"] = index_lock_recovery
+        if final["classification"] != "SYNC" or final["worktree_dirty"]:
+            raise GitGuardError("GIT_DIVERGENCE_BLOCKED", {
+                "reason":"FAST_FORWARD_POSTCHECK_FAILED",
+                "state":final,
+            })
         return final
-    finally: release_writer_lock(repo,token)
+    finally:
+        release_writer_lock(repo,token)
+
 
 def main() -> int:
     p=argparse.ArgumentParser(); sub=p.add_subparsers(dest="command",required=True)
