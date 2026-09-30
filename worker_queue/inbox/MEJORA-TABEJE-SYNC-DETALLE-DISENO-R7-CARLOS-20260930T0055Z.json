@@ -1,0 +1,117 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "MEJORA-TABEJE-SYNC-DETALLE-DISENO-R7-CARLOS-20260930T0055Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "labels": [
+    "Mejora-TABEJE",
+    "Tablero Ejecutivo",
+    "SYNC-DETALLE-DISENO-R7",
+    "READ_ONLY",
+    "CARLOS"
+  ],
+  "tracking": {
+    "project_label": "Mejora-TABEJE",
+    "display_label": "Mejora-TABEJE | SYNC-DETALLE-DISENO-R7 | MEJORA-TABEJE-SYNC-DETALLE-DISENO-R7-CARLOS-20260930T0055Z",
+    "status_legend": {
+      "VERDE": [
+        "DONE",
+        "PASS",
+        "CERTIFIED",
+        "CERTIFIED_READ_ONLY",
+        "CERTIFIED_OPERATIONAL"
+      ],
+      "AMARILLO": [
+        "PENDING",
+        "PROCESSING",
+        "RESULT_READY",
+        "WAITING",
+        "IN_PROGRESS"
+      ],
+      "ROJO": [
+        "REJECTED",
+        "ERROR",
+        "FAILED",
+        "BLOCKED"
+      ]
+    }
+  },
+  "objective": "[Mejora-TABEJE | SYNC-DETALLE-DISENO-R7] Diseñar y certificar en solo lectura la arquitectura de un NUEVO sincronizador independiente de detalle de ventas para Tablero Ejecutivo, sin modificar ni reutilizar internamente los sincronizadores actuales validados. Debe almacenar solo cuentas cerradas con unidad, fecha_operacion, id_transaccion, numero_ticket, fecha_apertura, fecha_cierre si existe, pax, importe_total, estatus/cancelado, sistema_origen, server_id, sucursal_id, synced_at y source_hash. Revisar consultas ya existentes para SoftRestaurant y MPRO que permitan obtener esos campos, confirmar que SoftRestaurant usa t.apertura y que MPRO usa la mejor fecha de apertura disponible. Proponer tabla nueva Comercial_Ventas_Dia_Detalle_v1, llave idempotente y puntos de registro scheduler aislados. Prohibido modificar o ejecutar sync_comercial_abiertas_v2, Sync_Sales, Sync_PAX, ISCAM, Comercial_KPIs, Reporte Comercial o cualquier sincronizador existente. No tocar Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "scheduling": {
+    "project_id": "Mejora-TABEJE",
+    "bounded_context": "Tablero Ejecutivo",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+          "backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py",
+          "backend/scripts/pilot_backfill_sync_sales.py",
+          "backend/tools/sync_sales_dry_run.py",
+          "backend/core/scheduler/config.py",
+          "backend/core/scheduler/scheduler_manager.py",
+          "backend/modules/comercial_analytics/repository_operational.py",
+          "backend/modules/comercial_analytics/repository_tickets.py"
+        ],
+        "search_terms": [
+          "t.apertura",
+          "t.cierre",
+          "ch.cancelado",
+          "ch.nopersonas",
+          "ch.total",
+          "Vn_Fecha",
+          "Es_Cve_Estado",
+          "Vn_Folio",
+          "sync_comercial_abiertas_v2",
+          "register_jobs",
+          "run_job_now"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 220
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "tabla_destino_no_existe",
+          "sql": "SELECT OBJECT_ID('dbo.Comercial_Ventas_Dia_Detalle_v1') AS object_id"
+        },
+        {
+          "name": "unidades_activas_origen",
+          "sql": "SELECT codigo,nombre,system_type,CONVERT(varchar(36),server_id) AS server_id,sucursal_origen_id FROM dbo.Unidades_Negocio WITH (NOLOCK) WHERE ISNULL(activo,0)=1 ORDER BY codigo"
+        },
+        {
+          "name": "columnas_servidores_config",
+          "sql": "SELECT COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Servidores_Conexiones' ORDER BY ORDINAL_POSITION"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
