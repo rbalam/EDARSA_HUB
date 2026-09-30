@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSA-LOGISTICS-GATE4A0-PREDDL-EXACT-CONTRACT-AUDIT-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "6e8071a6e28d58f729dad98b070f4d8ca1727d0f",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "human_summary_language": "es",
+  "objective": "Gate 4A0 PRE-DDL de EDARSA Logistics. Cerrar exclusivamente los pendientes exactos de Gate 3C certificado antes de materializar scripts fisicos: tipos PK/FK canonicos para Empresa/Unidad/Sucursal/Usuario/Persona/Cliente/Proveedor/Producto/Almacen/Documento; owner fisico de activos y sus PK; catalogos reales de moneda/pais/timezone; patrones reales de auditoria/rowversion; capacidades de Gobierno Documental para relaciones genericas; patrones de catalogos de estados; y colisiones actuales Logistica_*. Solo metadatos SQL y estructura, sin datos sensibles, sin DDL, sin mutaciones, sin migraciones, sin codigo y sin Produccion.",
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "canonical_reference_exact_types",
+          "sql": "SELECT TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,NUMERIC_PRECISION,NUMERIC_SCALE,IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE (TABLE_NAME='Sistema_Empresas' AND COLUMN_NAME='EmpresaID') OR (TABLE_NAME='Sistema_Sucursales' AND COLUMN_NAME='SucursalID') OR (TABLE_NAME='Unidades_Negocio' AND COLUMN_NAME='id') OR (TABLE_NAME='Usuario_Catalogo' AND COLUMN_NAME='UsuarioID') OR (TABLE_NAME='Gobierno_Persona' AND COLUMN_NAME='PersonaID') OR (TABLE_NAME='Cliente_Catalogo' AND COLUMN_NAME='ClienteID') OR (TABLE_NAME='Proveedor_Catalogo' AND COLUMN_NAME='ProveedorID') OR (TABLE_NAME='Producto_Catalogo' AND COLUMN_NAME='ProductoID') OR (TABLE_NAME='Inventario_Almacenes' AND COLUMN_NAME='AlmacenID') OR (TABLE_NAME='Gobierno_Documento' AND COLUMN_NAME='DocumentoID') ORDER BY TABLE_NAME,COLUMN_NAME"
+        },
+        {
+          "name": "asset_owner_candidates_columns",
+          "sql": "SELECT c.TABLE_NAME,c.COLUMN_NAME,c.DATA_TYPE,c.CHARACTER_MAXIMUM_LENGTH,c.IS_NULLABLE,c.ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS c WHERE c.TABLE_NAME LIKE 'ActivoFijo_%' OR c.TABLE_NAME LIKE 'Activo_%' ORDER BY c.TABLE_NAME,c.ORDINAL_POSITION"
+        },
+        {
+          "name": "asset_owner_primary_keys",
+          "sql": "SELECT t.name AS table_name,c.name AS column_name,ty.name AS data_type,ic.key_ordinal FROM sys.tables t JOIN sys.indexes i ON i.object_id=t.object_id AND i.is_primary_key=1 JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE t.name LIKE 'ActivoFijo_%' OR t.name LIKE 'Activo_%' ORDER BY t.name,ic.key_ordinal"
+        },
+        {
+          "name": "currency_country_timezone_catalog_candidates",
+          "sql": "SELECT TABLE_SCHEMA,TABLE_NAME,TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE '%Moneda%' OR TABLE_NAME LIKE '%Pais%' OR TABLE_NAME LIKE '%Country%' OR TABLE_NAME LIKE '%Timezone%' OR TABLE_NAME LIKE '%ZonaHoraria%' OR TABLE_NAME LIKE '%HusoHorario%' ORDER BY TABLE_NAME"
+        },
+        {
+          "name": "currency_country_timezone_columns",
+          "sql": "SELECT TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,IS_NULLABLE,ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN (SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE '%Moneda%' OR TABLE_NAME LIKE '%Pais%' OR TABLE_NAME LIKE '%Country%' OR TABLE_NAME LIKE '%Timezone%' OR TABLE_NAME LIKE '%ZonaHoraria%' OR TABLE_NAME LIKE '%HusoHorario%') ORDER BY TABLE_NAME,ORDINAL_POSITION"
+        },
+        {
+          "name": "rowversion_audit_patterns",
+          "sql": "SELECT TABLE_NAME,COLUMN_NAME,DATA_TYPE,IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE DATA_TYPE IN ('timestamp','rowversion') OR COLUMN_NAME IN ('FechaAlta','FechaAltaUTC','CreatedAt','CreatedAtUTC','FechaCreacion','FechaModificacion','FechaModificacionUTC','UpdatedAt','UpdatedAtUTC','UsuarioAltaID','UsuarioCreacionID','CreatedBy','UsuarioModificacionID','ModifiedBy') ORDER BY TABLE_NAME,COLUMN_NAME"
+        },
+        {
+          "name": "government_document_relation_capabilities",
+          "sql": "SELECT TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,IS_NULLABLE,ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME LIKE 'Gobierno_Documento%' OR TABLE_NAME LIKE 'Gobierno_%Documento%' ORDER BY TABLE_NAME,ORDINAL_POSITION"
+        },
+        {
+          "name": "status_catalog_patterns",
+          "sql": "SELECT TABLE_SCHEMA,TABLE_NAME,TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE '%Estatus%' OR TABLE_NAME LIKE '%Estado%' ORDER BY TABLE_NAME"
+        },
+        {
+          "name": "logistica_collision_recheck",
+          "sql": "SELECT TABLE_SCHEMA,TABLE_NAME,TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE 'Logistica_%' ORDER BY TABLE_NAME"
+        }
+      ]
+    }
+  ],
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS / EDARSA Logistics",
+    "chat": "EDARSA Logistics Gate4A0 pre-DDL exact contract audit"
+  }
+}
