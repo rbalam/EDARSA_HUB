@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "REMOTE_AHEAD_ONLY",
   "development_sha": "df8339955daf64970992e09754200d98b48caf22",
-  "generated_at_utc": "2026-09-30T01:31:15Z",
+  "generated_at_utc": "2026-09-30T01:32:36Z",
   "history": {
     "done_total_local": 1185,
     "pending_total_local": 0,
@@ -16,31 +16,31 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1771,
+      "age_seconds": 1853,
       "job_id": "EDARSAHUB-COMERCIAL-DRILLDOWN-TIMEOUT-FIX-R3-CARLOS-20260930T0015Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2366,
+      "age_seconds": 2447,
       "job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6B-CARLOS-20260930T0048Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1999,
+      "age_seconds": 2081,
       "job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6C-CARLOS-20260930T0102Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2323,
+      "age_seconds": 2405,
       "job_id": "MEJORA-TABEJE-SYNC-DETALLE-DISENO-R7-CARLOS-20260930T0055Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1797,
+      "age_seconds": 1879,
       "job_id": "MEJORA-TABEJE-WORKER-MODE-DEFAULT-FIX-R8-CARLOS-20260930T0115Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -60,8 +60,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-30T01:31:12Z",
-    "last_receive_utc": "2026-09-30T01:31:14Z",
+    "last_cycle_utc": "2026-09-30T01:32:31Z",
+    "last_receive_utc": "2026-09-30T01:32:35Z",
     "last_terminal_utc": "2026-09-30T01:01:17Z",
     "pid": "674",
     "runtime_fingerprint": {
