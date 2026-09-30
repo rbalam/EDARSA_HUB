@@ -1,0 +1,64 @@
+{
+  "base_sha": "8f7c5db59c8cd61707cc1b9dd07fe90bf4b88c6e",
+  "blockers": [],
+  "candidate_sha": "d1e6f4a0b7ef9b74334a9f691bf9e7ca2b1ed1d1",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-30T23:05:38Z",
+  "development_sha": "d1e6f4a0b7ef9b74334a9f691bf9e7ca2b1ed1d1",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "backend/database/migrations/20260930_002_comercial_ticket_open_detail_json.sql"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-TICKET-OPEN-DETAIL-DDL-FIX-R2-CARLOS-20260930T2310Z",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-30T23:06:18Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "ck_comercial_ventas_dia_abiertas_v2_detallejson",
+              "detalle_abiertas_json",
+              "exec(n",
+              "isjson"
+            ],
+            "path": "backend/database/migrations/20260930_002_comercial_ticket_open_detail_json.sql",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": [
+              "Comercial_Ventas_Dia_Abiertas_v2"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 1,
+          "scanned_files": 1,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-30T23:05:31Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
