@@ -587,7 +587,7 @@ const UnidadCard = ({ unidad, onClick, esMultiMes = false, modoVentasDia = false
 };
 
 // Detalle de Unidad (Drill-down)
-const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) => {
+const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false, temporalSelection = null }) => {
   const [detalleData, setDetalleData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [kpiDrilldown, setKpiDrilldown] = useState(null);
@@ -907,6 +907,7 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
           modoVentasDia={modoVentasDia}
           mes={mes}
           anio={anio}
+          temporalSelection={temporalSelection}
         />
       )}
     </Dialog>
@@ -2014,6 +2015,7 @@ responseData.unidades.sort(
           onClose={() => setUnidadSeleccionada(null)}
           mes={selectedMeses.length > 0 ? selectedMeses[0] : null}
           anio={selectedAnios.length > 0 ? selectedAnios[0] : null}
+          temporalSelection={temporalSelection}
           modoVentasDia={data?.periodo?.modo_ventas_dia || false}
         />
       )}
