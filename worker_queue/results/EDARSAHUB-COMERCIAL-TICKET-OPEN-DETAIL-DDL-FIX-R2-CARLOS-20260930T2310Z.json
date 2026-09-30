@@ -2,8 +2,11 @@
   "base_sha": "8f7c5db59c8cd61707cc1b9dd07fe90bf4b88c6e",
   "blockers": [],
   "candidate_sha": "d1e6f4a0b7ef9b74334a9f691bf9e7ca2b1ed1d1",
-  "certification": "PENDING_AUDIT_EVIDENCE",
+  "certification": "CERTIFIED",
+  "certification_basis": "SHA_BOUND_ATTESTATION_PLUS_DESCENDANT_CONVERGENCE",
+  "certified_source_sha": "d1e6f4a0b7ef9b74334a9f691bf9e7ca2b1ed1d1",
   "completed_at_utc": "2026-09-30T23:05:38Z",
+  "converged_head": "d1e6f4a0b7ef9b74334a9f691bf9e7ca2b1ed1d1",
   "development_sha": "d1e6f4a0b7ef9b74334a9f691bf9e7ca2b1ed1d1",
   "executor": "chatgpt-deterministic",
   "files_changed": [
@@ -12,9 +15,9 @@
   "human_summary_language": "es",
   "human_summary_level": "13yo-non-programmer",
   "job_id": "EDARSAHUB-COMERCIAL-TICKET-OPEN-DETAIL-DDL-FIX-R2-CARLOS-20260930T2310Z",
-  "percent_complete": 95,
+  "percent_complete": 100,
   "production_touched": false,
-  "published_at_utc": "2026-09-30T23:06:18Z",
+  "published_at_utc": "2026-09-30T23:07:13Z",
   "quality_gate": "PASS",
   "repository_contract_evidence": {
     "checks": [
@@ -60,5 +63,5 @@
   "status": "INTEGRATED",
   "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
   "tests": "PASS",
-  "work_completion": "PENDING_CERTIFICATION"
+  "work_completion": "COMPLETE"
 }
