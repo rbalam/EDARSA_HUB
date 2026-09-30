@@ -1,0 +1,434 @@
+{
+  "base_sha": "15ac45d200852c74ad1c1f808c76215c0d419065",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-30T00:13:55Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "MEJORA-TABEJE-SYNC-SALES-COBERTURA-R5-CARLOS-20260929T2415Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-30T00:14:21Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "argparse",
+              "core.scheduler.jobs.inteligencia_comercial_sync_job",
+              "core.sql_first.db",
+              "json",
+              "os",
+              "pathlib",
+              "pymssql",
+              "sys",
+              "time",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "completed",
+              "montototal",
+              "numeroticket",
+              "pax",
+              "t.apertura as fechahora",
+              "vn_fecha as fechahora"
+            ],
+            "path": "backend/scripts/pilot_backfill_sync_sales.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_attach_items",
+              "_connect_pos",
+              "_count_items",
+              "extract_from_pos",
+              "extract_mpro_twopass",
+              "extract_softrestaurant_twopass",
+              "kpi_canonical_compare",
+              "load_env",
+              "load_to_sync_sales",
+              "main"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "argparse",
+              "collections",
+              "core.db",
+              "core.secret_manager",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "sys",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "completed",
+              "montototal",
+              "numeroticket",
+              "pax",
+              "t.apertura as fechahora",
+              "vn_fecha as fechahora"
+            ],
+            "path": "backend/tools/sync_sales_dry_run.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ConnectionStatus",
+              "_execute_query",
+              "_safe_float",
+              "_safe_int",
+              "build_sales_from_flat_rows",
+              "calculate_softrestaurant_item_total",
+              "check_duplicates_in_sync_sales",
+              "execute_query_on_server",
+              "extract_sales_from_pos",
+              "generate_report",
+              "get_kpis_count",
+              "get_mpro_query",
+              "get_server_connection_config",
+              "get_softrestaurant_query",
+              "get_sync_sales_count",
+              "get_unidad_config",
+              "insert_sales_to_sync_sales",
+              "main",
+              "parse_sql_server_host",
+              "print_report",
+              "validate_importes",
+              "validate_json_items"
+            ],
+            "tables_referenced": [
+              "Sync_Sales"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.scheduler.jobs.inteligencia_comercial_enrich",
+              "core.sql_first.connection_factory",
+              "core.sql_first.db",
+              "datetime",
+              "json",
+              "logging",
+              "modules.comercial_v2.sync_comercial_edarsahub",
+              "os",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "cancelled",
+              "completed",
+              "montototal",
+              "numeroticket",
+              "pax",
+              "t.apertura as fechahora",
+              "vn_fecha as fechahora"
+            ],
+            "path": "backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_syncpos_literal",
+              "actualizar_syncpos_config_estado",
+              "audit_syncpos_canonical_configs",
+              "detectar_faltantes_syncpos",
+              "extract_sales_from_pos",
+              "get_edarsahub_connection",
+              "get_mpro_query",
+              "get_pos_config_for_unidad",
+              "get_pos_connection",
+              "get_softrestaurant_query",
+              "get_syncpos_config",
+              "get_unidades_negocio_pos",
+              "insert_into_sync_sales",
+              "job_inteligencia_comercial_sync",
+              "registrar_syncpos_bitacora",
+              "should_run_syncpos_now",
+              "update_job_status",
+              "update_kpis_diarios"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Sistema_SyncPOS_Bitacora",
+              "Sistema_SyncPOS_Config",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.inteligencia_comercial",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "calendar",
+              "core.kpis_canonicos",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "logging",
+              "typing",
+              "zoneinfo"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "completed",
+              "montototal",
+              "numeroticket",
+              "pax"
+            ],
+            "path": "backend/modules/inteligencia_comercial/iscam_routes.py",
+            "rbac_contracts": [],
+            "routes": [
+              "/comandas",
+              "/cuentas",
+              "/cuentas/detalle",
+              "/formas-pago",
+              "/formas-pago/por-ticket",
+              "/freshness",
+              "/ventas-periodos",
+              "/ventas-periodos/productos",
+              "/ventas-periodos/tickets",
+              "/ventas-periodos/tipos-servicio"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_detail_coverage",
+              "_f",
+              "_formas_pago_desde_detalle",
+              "_iso",
+              "_nombre_unidad",
+              "_period_floor",
+              "_period_label",
+              "_period_next",
+              "_period_sql",
+              "_period_windows",
+              "_q",
+              "_rango_fechas",
+              "_shift_months",
+              "comandas_venta",
+              "cuenta_detalle",
+              "formas_pago_por_ticket",
+              "iscam_freshness",
+              "resumen_cuentas",
+              "ventas_formas_pago",
+              "ventas_periodos",
+              "ventas_periodos_productos",
+              "ventas_periodos_tickets",
+              "ventas_periodos_tipos_servicio"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Finanzas_CortesCaja",
+              "Finanzas_CortesCaja_DetallePagos",
+              "Sync_Sales",
+              "vw_Comercial_KPIs_Diarios_v2_Runtime"
+            ]
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "pax"
+            ],
+            "path": "frontend/src/pages/TableroEjecutivo.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 5,
+          "scanned_files": 5,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "UnidadNegocio",
+              "filas",
+              "cheques",
+              "pax",
+              "ventas",
+              "primera_fecha_hora",
+              "ultima_fecha_hora"
+            ],
+            "name": "sync_sales_20260929_resumen_unidad",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocio",
+              "cheques",
+              "pax",
+              "ventas"
+            ],
+            "name": "kpi_20260929_resumen_unidad",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                8,
+                16,
+                "20205.70"
+              ],
+              [
+                "130QRO",
+                7,
+                11,
+                "48277.00"
+              ],
+              [
+                "CIENFUEGOS",
+                13,
+                38,
+                "45327.85"
+              ],
+              [
+                "ESTELAR",
+                10,
+                21,
+                "30909.50"
+              ],
+              [
+                "ORIGEN",
+                8,
+                19,
+                "11323.03"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocio",
+              "status",
+              "filas",
+              "ventas"
+            ],
+            "name": "sync_sales_20260929_status",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocio",
+              "IdTransaccion",
+              "NumeroTicket",
+              "repeticiones",
+              "suma_importes"
+            ],
+            "name": "sync_sales_20260929_duplicados",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocio",
+              "IdTransaccion",
+              "NumeroTicket",
+              "FechaHora",
+              "Pax",
+              "MontoTotal",
+              "status"
+            ],
+            "name": "sync_sales_20260929_muestra",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "hora",
+              "cheques",
+              "pax",
+              "ventas"
+            ],
+            "name": "sync_sales_cienfuegos_hora_20260929",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-30T00:13:54Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
