@@ -1,0 +1,202 @@
+{
+  "base_sha": "1de8efbc240fb7eeb99e8a12497b5ad014a79d09",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-30T22:58:53Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-SCHEMA-DIAGNOSTIC-READONLY-R1-20260930",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-30T22:59:19Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "TableName",
+              "ColumnName",
+              "ColumnExists"
+            ],
+            "name": "api_local_homologation_schema_contract",
+            "row_count_returned": 31,
+            "rows": [
+              [
+                "Servidores_Conexiones",
+                "activo",
+                1
+              ],
+              [
+                "Servidores_Conexiones",
+                "api_url",
+                1
+              ],
+              [
+                "Servidores_Conexiones",
+                "database_name",
+                1
+              ],
+              [
+                "Servidores_Conexiones",
+                "empresa_id",
+                1
+              ],
+              [
+                "Servidores_Conexiones",
+                "EmpresaID",
+                1
+              ],
+              [
+                "Servidores_Conexiones",
+                "id",
+                1
+              ],
+              [
+                "Servidores_Conexiones",
+                "nombre",
+                1
+              ],
+              [
+                "Servidores_Conexiones",
+                "system_type",
+                1
+              ],
+              [
+                "Servidores_Conexiones",
+                "tipo_conexion",
+                1
+              ],
+              [
+                "Servidores_Conexiones",
+                "visible_en_listado",
+                1
+              ],
+              [
+                "Servidores_Conexiones",
+                "visible_en_operaciones",
+                1
+              ],
+              [
+                "Sistema_Empresas",
+                "Activo",
+                1
+              ],
+              [
+                "Sistema_Empresas",
+                "CodigoEmpresa",
+                1
+              ],
+              [
+                "Sistema_Empresas",
+                "EmpresaID",
+                1
+              ],
+              [
+                "Sistema_Empresas",
+                "NombreComercial",
+                1
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                "EmpresaID",
+                1
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                "NumeroSucursalSistema",
+                1
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                "RolConexion",
+                1
+              ],
+              [
+                "Sistema_EmpresasServidores",
+                "ServidorID",
+                1
+              ],
+              [
+                "Sistema_UnidadesNegocioPerfilDigital",
+                "EmpresaID",
+                1
+              ],
+              [
+                "Sistema_UnidadesNegocioPerfilDigital",
+                "Moneda",
+                1
+              ],
+              [
+                "Sistema_UnidadesNegocioPerfilDigital",
+                "NombreComercial",
+                1
+              ],
+              [
+                "Sistema_UnidadesNegocioPerfilDigital",
+                "Pais",
+                1
+              ],
+              [
+                "Sistema_UnidadesNegocioPerfilDigital",
+                "ServerID",
+                1
+              ],
+              [
+                "Sistema_UnidadesNegocioPerfilDigital",
+                "UnidadNegocioID",
+                1
+              ],
+              [
+                "Unidades_Negocio",
+                "activo",
+                1
+              ],
+              [
+                "Unidades_Negocio",
+                "codigo",
+                1
+              ],
+              [
+                "Unidades_Negocio",
+                "EmpresaID",
+                0
+              ],
+              [
+                "Unidades_Negocio",
+                "id",
+                1
+              ],
+              [
+                "Unidades_Negocio",
+                "nombre",
+                1
+              ],
+              [
+                "Unidades_Negocio",
+                "server_id",
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-30T22:58:52Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
