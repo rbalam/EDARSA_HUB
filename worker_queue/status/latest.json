@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "899064f7bb61cbb3569eaa113c50113194bc4276",
-  "generated_at_utc": "2026-09-30T18:46:51Z",
+  "generated_at_utc": "2026-09-30T18:48:05Z",
   "history": {
     "done_total_local": 1194,
     "pending_total_local": 0,
@@ -16,49 +16,49 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 494,
+      "age_seconds": 567,
       "job_id": "EDARSAHUB-COMERCIAL-VENTAS-HIERARCHY-DRILLDOWN-R1-CARLOS-20260930T1825Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2165,
+      "age_seconds": 2238,
       "job_id": "EDARSAHUB-IA-READONLY-SYSTEM-BRIDGE-R1-CARLOS-20260930T1142",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1546,
+      "age_seconds": 1620,
       "job_id": "EDARSAHUB-ISCAM-AUTOSYNC-BOTTLENECK-DIAG-R1-CARLOS-20260930T1214",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3449,
+      "age_seconds": 3523,
       "job_id": "EDARSAHUB-ISCAM-AUTOSYNC-POST-R4-VERIFY-R1-CARLOS-20260930T1118",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2087,
+      "age_seconds": 2161,
       "job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6H-CARLOS-20260930T1810Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 711,
+      "age_seconds": 785,
       "job_id": "MEJORA-TABEJE-PREVIEW-ALL-UNITS-SMOKE-R10D-CARLOS-20260930T1822Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 401,
+      "age_seconds": 475,
       "job_id": "MEJORA-TABEJE-PREVIEW-FRONTEND-BUILD-R10C-CARLOS-20260930T1822Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 327,
+      "age_seconds": 401,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927-RETRY1",
       "reason": null,
       "state": "RESULT_READY"
@@ -78,8 +78,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-30T18:46:46Z",
-    "last_receive_utc": "2026-09-30T18:45:51Z",
+    "last_cycle_utc": "2026-09-30T18:47:59Z",
+    "last_receive_utc": "2026-09-30T18:48:01Z",
     "last_terminal_utc": "2026-09-30T18:41:23Z",
     "pid": "487",
     "runtime_fingerprint": {
