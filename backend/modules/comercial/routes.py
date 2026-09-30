@@ -3207,6 +3207,316 @@ async def comercial_mesas(
         }
 
 
+@router.get("/comercial/detalle-ventas-agrupado/{server_id}")
+async def comercial_detalle_ventas_agrupado(
+    server_id: str,
+    sucursal: str = Query(default=""),
+    periodo: str = Query(default="mes"),
+    meses: str = Query(default=""),
+    anios: str = Query(default=""),
+    nivel: str = Query(default="auto"),
+    anio_filtro: int = Query(default=0, ge=0),
+    mes_filtro: int = Query(default=0, ge=0, le=12),
+    fecha_filtro: str = Query(default=""),
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=5000, ge=1, le=5000),
+    current_user: Dict = Depends(get_current_user),
+):
+    """Jerarquia de ventas del drill-down Comercial. Solo EDARSAHUB SQL."""
+    server = await get_server_by_id(server_id)
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    await validate_server_access_rbac(current_user, server_id)
+
+    try:
+        from .service import _query_edarsahub_tablero
+
+        hoy = datetime.now()
+        hoy_inicio = datetime(hoy.year, hoy.month, hoy.day)
+        lista_anios = sorted(set(
+            int(a.strip()) for a in anios.split(",")
+            if a.strip() and a.strip().isdigit()
+        )) if anios else [hoy.year]
+        lista_anios = [a for a in lista_anios if 2000 <= a <= 2100] or [hoy.year]
+        lista_meses = sorted(set(
+            int(m.strip()) for m in meses.split(",")
+            if m.strip() and m.strip().isdigit()
+        )) if meses else [hoy.month]
+        lista_meses = [m for m in lista_meses if 1 <= m <= 12] or [hoy.month]
+
+        if periodo == "dia":
+            fecha_ini_dt = hoy_inicio
+            fecha_fin_excl_dt = hoy_inicio + timedelta(days=1)
+            lista_anios = [hoy.year]
+            lista_meses = [hoy.month]
+        elif periodo == "semana":
+            fecha_ini_dt = hoy_inicio - timedelta(days=hoy.weekday())
+            fecha_fin_excl_dt = hoy_inicio + timedelta(days=1)
+            lista_anios = sorted(set([fecha_ini_dt.year, hoy.year]))
+            lista_meses = sorted(set([fecha_ini_dt.month, hoy.month]))
+        else:
+            anio_min = min(lista_anios)
+            anio_max = max(lista_anios)
+            mes_min = min(lista_meses)
+            mes_max = max(lista_meses)
+            fecha_ini_dt = datetime(anio_min, mes_min, 1)
+            fecha_fin_excl_dt = (
+                datetime(anio_max + 1, 1, 1)
+                if mes_max == 12 else datetime(anio_max, mes_max + 1, 1)
+            )
+            if hoy.year in lista_anios and hoy.month in lista_meses:
+                fecha_fin_excl_dt = min(fecha_fin_excl_dt, hoy_inicio)
+
+        fecha_ini = fecha_ini_dt.strftime("%Y-%m-%d")
+        fecha_fin_excl = fecha_fin_excl_dt.strftime("%Y-%m-%d")
+        fecha_fin = (
+            (fecha_fin_excl_dt - timedelta(days=1)).strftime("%Y-%m-%d")
+            if fecha_fin_excl_dt > fecha_ini_dt else fecha_ini
+        )
+
+        safe_server = str(server_id).replace("'", "''")
+        safe_sucursal = str(sucursal or "").replace("'", "''")
+        unidad_query = f"""
+        SELECT TOP 1 codigo, nombre
+        FROM dbo.Unidades_Negocio WITH (NOLOCK)
+        WHERE CONVERT(VARCHAR(100), server_id) = '{safe_server}'
+          AND ISNULL(activo,1) = 1
+        """
+        if safe_sucursal and safe_sucursal.upper() not in ("DEFAULT", "ALL", "TODAS"):
+            unidad_query += f"""
+              AND (
+                    CONVERT(VARCHAR(100), sucursal_origen_id) = '{safe_sucursal}'
+                 OR UPPER(ISNULL(codigo,'')) = UPPER('{safe_sucursal}')
+                 OR UPPER(ISNULL(nombre,'')) = UPPER('{safe_sucursal}')
+              )
+            """
+        unidad_query += " ORDER BY nombre"
+        unidad_rows = _query_edarsahub_tablero(unidad_query)
+        if not unidad_rows:
+            raise ValueError("No se pudo resolver la unidad de negocio del servidor")
+
+        unidad_codigo = str(unidad_rows[0].get("codigo") or "").replace("'", "''")
+        unidad_nombre = unidad_rows[0].get("nombre") or server.get("name")
+        anios_sql = ",".join(str(a) for a in lista_anios)
+        meses_sql = ",".join(str(m) for m in lista_meses)
+
+        filtro_base = f"""
+            unidad_negocio_id = '{unidad_codigo}'
+            AND ISNULL(activo,1) = 1
+            AND ISNULL(es_kpi_valido,1) = 1
+            AND ISNULL(cancelado_origen,0) = 0
+            AND fecha_operacion >= '{fecha_ini}'
+            AND fecha_operacion < '{fecha_fin_excl}'
+        """
+        if periodo == "mes":
+            filtro_base += f"""
+            AND YEAR(fecha_operacion) IN ({anios_sql})
+            AND MONTH(fecha_operacion) IN ({meses_sql})
+            """
+
+        def cte_para(filtro_sql: str) -> str:
+            return f"""
+            WITH tickets AS (
+                SELECT
+                    id_transaccion,
+                    numero_ticket,
+                    MIN(COALESCE(fecha_hora, CAST(fecha_operacion AS DATETIME2))) AS fecha,
+                    SUM(ISNULL(importe_neto,0)) AS total_venta,
+                    MAX(ISNULL(pax,0)) AS pax,
+                    COUNT(*) AS num_productos
+                FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK)
+                WHERE {filtro_sql}
+                GROUP BY id_transaccion, numero_ticket
+            )
+            """
+
+        resumen_rows = _query_edarsahub_tablero(
+            cte_para(filtro_base) + """
+            SELECT COUNT(*) AS folios,
+                   SUM(ISNULL(pax,0)) AS pax,
+                   SUM(ISNULL(total_venta,0)) AS total_venta
+            FROM tickets
+            """
+        )
+        resumen = resumen_rows[0] if resumen_rows else {}
+        total_folios_periodo = int(resumen.get("folios") or 0)
+        total_pax_periodo = int(resumen.get("pax") or 0)
+        total_venta_periodo = float(resumen.get("total_venta") or 0)
+
+        if nivel == "auto":
+            if periodo == "dia":
+                nivel_resuelto = "detalle"
+            elif len(lista_anios) > 1:
+                nivel_resuelto = "anio"
+            elif len(lista_meses) > 1:
+                nivel_resuelto = "mes"
+            else:
+                nivel_resuelto = "dia"
+        elif nivel in {"anio", "mes", "dia", "detalle"}:
+            nivel_resuelto = nivel
+        else:
+            raise HTTPException(status_code=400, detail="Nivel de agrupacion invalido")
+
+        filtro_drill = filtro_base
+        if anio_filtro:
+            filtro_drill += f" AND YEAR(fecha_operacion) = {int(anio_filtro)}"
+        if mes_filtro:
+            filtro_drill += f" AND MONTH(fecha_operacion) = {int(mes_filtro)}"
+        if fecha_filtro:
+            try:
+                fecha_obj = datetime.strptime(fecha_filtro, "%Y-%m-%d")
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail="Fecha de detalle invalida") from exc
+            fecha_siguiente = (fecha_obj + timedelta(days=1)).strftime("%Y-%m-%d")
+            filtro_drill += (
+                f" AND fecha_operacion >= '{fecha_obj.strftime('%Y-%m-%d')}'"
+                f" AND fecha_operacion < '{fecha_siguiente}'"
+            )
+
+        cte_drill = cte_para(filtro_drill)
+        nombres_meses = [
+            "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ]
+        items = []
+        rows = []
+
+        if nivel_resuelto == "anio":
+            rows = _query_edarsahub_tablero(
+                cte_drill + """
+                SELECT YEAR(fecha) AS anio, COUNT(*) AS folios,
+                       SUM(ISNULL(pax,0)) AS pax,
+                       SUM(ISNULL(total_venta,0)) AS total_venta
+                FROM tickets
+                GROUP BY YEAR(fecha)
+                ORDER BY anio ASC
+                """
+            )
+            for row in rows or []:
+                anio_row = int(row.get("anio") or 0)
+                items.append({
+                    "nivel": "anio", "clave": f"anio:{anio_row}",
+                    "label": str(anio_row), "anio": anio_row, "mes": None,
+                    "fecha": None, "folios": int(row.get("folios") or 0),
+                    "pax": int(row.get("pax") or 0),
+                    "total_venta": float(row.get("total_venta") or 0),
+                    "expandible": True, "siguiente_nivel": "mes",
+                })
+        elif nivel_resuelto == "mes":
+            rows = _query_edarsahub_tablero(
+                cte_drill + """
+                SELECT YEAR(fecha) AS anio, MONTH(fecha) AS mes,
+                       COUNT(*) AS folios, SUM(ISNULL(pax,0)) AS pax,
+                       SUM(ISNULL(total_venta,0)) AS total_venta
+                FROM tickets
+                GROUP BY YEAR(fecha), MONTH(fecha)
+                ORDER BY anio ASC, mes ASC
+                """
+            )
+            for row in rows or []:
+                anio_row = int(row.get("anio") or 0)
+                mes_row = int(row.get("mes") or 0)
+                items.append({
+                    "nivel": "mes", "clave": f"mes:{anio_row}:{mes_row:02d}",
+                    "label": f"{nombres_meses[mes_row]} {anio_row}",
+                    "anio": anio_row, "mes": mes_row, "fecha": None,
+                    "folios": int(row.get("folios") or 0),
+                    "pax": int(row.get("pax") or 0),
+                    "total_venta": float(row.get("total_venta") or 0),
+                    "expandible": True, "siguiente_nivel": "dia",
+                })
+        elif nivel_resuelto == "dia":
+            rows = _query_edarsahub_tablero(
+                cte_drill + """
+                SELECT CAST(fecha AS DATE) AS fecha_dia, COUNT(*) AS folios,
+                       SUM(ISNULL(pax,0)) AS pax,
+                       SUM(ISNULL(total_venta,0)) AS total_venta
+                FROM tickets
+                GROUP BY CAST(fecha AS DATE)
+                ORDER BY fecha_dia ASC
+                """
+            )
+            for row in rows or []:
+                fecha_row = row.get("fecha_dia")
+                fecha_texto = (
+                    fecha_row.strftime("%Y-%m-%d")
+                    if hasattr(fecha_row, "strftime") else str(fecha_row)[:10]
+                )
+                items.append({
+                    "nivel": "dia", "clave": f"dia:{fecha_texto}",
+                    "label": fecha_texto, "anio": int(fecha_texto[:4]),
+                    "mes": int(fecha_texto[5:7]), "fecha": fecha_texto,
+                    "folios": int(row.get("folios") or 0),
+                    "pax": int(row.get("pax") or 0),
+                    "total_venta": float(row.get("total_venta") or 0),
+                    "expandible": True, "siguiente_nivel": "detalle",
+                })
+        else:
+            offset = (page - 1) * limit
+            rows = _query_edarsahub_tablero(
+                cte_drill + f"""
+                SELECT numero_ticket, fecha, total_venta, pax, num_productos,
+                       COUNT(*) OVER() AS total_folios
+                FROM tickets
+                ORDER BY
+                    CASE WHEN TRY_CONVERT(BIGINT, numero_ticket) IS NULL THEN 1 ELSE 0 END,
+                    TRY_CONVERT(BIGINT, numero_ticket) ASC,
+                    numero_ticket ASC, fecha ASC
+                OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
+                """
+            )
+            for row in rows or []:
+                fecha_row = row.get("fecha")
+                fecha_texto = (
+                    fecha_row.strftime("%Y-%m-%d %H:%M:%S")
+                    if hasattr(fecha_row, "strftime") else str(fecha_row)
+                )
+                items.append({
+                    "nivel": "detalle", "clave": None,
+                    "label": str(row.get("numero_ticket") or ""),
+                    "folio": str(row.get("numero_ticket") or ""),
+                    "fecha": fecha_texto, "folios": 1,
+                    "pax": int(row.get("pax") or 0),
+                    "total_venta": float(row.get("total_venta") or 0),
+                    "importe": float(row.get("total_venta") or 0),
+                    "num_productos": int(row.get("num_productos") or 0),
+                    "expandible": False, "siguiente_nivel": None,
+                })
+
+        total_nivel = len(items)
+        if nivel_resuelto == "detalle" and rows:
+            total_nivel = int(rows[0].get("total_folios") or len(items))
+
+        return {
+            "source_status": "SUCCESS" if total_folios_periodo > 0 else "NO_DATA",
+            "source_message": "Ventas agrupadas desde detalle canonico EDARSAHUB",
+            "source": "Comercial_Inteligencia_VentasDetalleProducto",
+            "nivel": nivel_resuelto, "items": items, "movimientos": items,
+            "total": total_nivel, "page": page, "limit": limit,
+            "pages": (
+                (total_nivel + limit - 1) // limit
+                if nivel_resuelto == "detalle" and total_nivel > 0 else 1
+            ),
+            "periodo": {"inicio": fecha_ini, "fin": fecha_fin},
+            "resumen_periodo": {
+                "folios": total_folios_periodo, "pax": total_pax_periodo,
+                "total_venta": total_venta_periodo,
+            },
+            "servidor": server.get("name"), "unidad": unidad_nombre,
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logging.exception("[DETALLE_VENTAS_AGRUPADO] Error consultando EDARSAHUB")
+        return {
+            "source_status": "ERROR", "source_message": str(exc)[:300],
+            "source": "Comercial_Inteligencia_VentasDetalleProducto",
+            "nivel": nivel, "items": [], "movimientos": [], "total": 0,
+            "page": page, "limit": limit, "pages": 0,
+            "resumen_periodo": {"folios": 0, "pax": 0, "total_venta": 0},
+        }
+
+
 @router.get("/comercial/detalle-movimientos/{server_id}")
 async def comercial_detalle_movimientos(
     server_id: str,

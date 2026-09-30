@@ -165,6 +165,7 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
   const [page, setPage] = useState(1);
+  const [ventasTree, setVentasTree] = useState({});
 
   const titulos = {
     ventas: { titulo: 'Detalle de Ventas', icono: DollarSign, color: 'text-green-600' },
@@ -178,10 +179,12 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
   const IconComponent = config.icono;
   const esRotacion = tipoKpi === 'rotacion';
   const esPaxPromedio = tipoKpi === 'pax_promedio';
+  const esVentas = tipoKpi === 'ventas';
 
   useEffect(() => {
     setPage(1);
-  }, [tipoKpi, selectedMeses, selectedAnios]);
+    setVentasTree({});
+  }, [tipoKpi, selectedMeses, selectedAnios, periodo]);
 
   useEffect(() => {
     if (isOpen && serverId && sucursal) {
@@ -190,26 +193,31 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, serverId, sucursal, page, periodo, tipoKpi, selectedMeses, selectedAnios]);
 
+  const baseParams = () => ({
+    sucursal,
+    periodo,
+    meses: selectedMeses?.join(',') || '',
+    anios: selectedAnios?.join(',') || ''
+  });
+
   const cargarDetalle = async () => {
     setLoading(true);
     try {
-      const response = await api.get(`/comercial/detalle-movimientos/${serverId}`, {
-        params: {
-          sucursal,
-          tipo: tipoKpi,
-          periodo,
-          page,
-          limit: 50,
-          meses: selectedMeses?.join(',') || '',
-          anios: selectedAnios?.join(',') || ''
-        },
-        timeout: 30000
-      });
+      const endpoint = esVentas
+        ? '/comercial/detalle-ventas-agrupado/' + serverId
+        : '/comercial/detalle-movimientos/' + serverId;
+
+      const params = esVentas
+        ? { ...baseParams(), nivel: 'auto', page: 1, limit: 5000 }
+        : { ...baseParams(), tipo: tipoKpi, page, limit: 50 };
+
+      const response = await api.get(endpoint, { params, timeout: 30000 });
       const payload = response.data || {};
       if (payload.source_status === 'ERROR') {
         throw new Error(payload.source_message || 'Error al consultar detalle');
       }
       setData(payload);
+      if (esVentas) setVentasTree({});
     } catch (error) {
       logger.error('Error cargando detalle:', error);
       toast.error('Error al cargar detalle de movimientos');
@@ -218,14 +226,127 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
     }
   };
 
+  const toggleGrupoVentas = async (grupo) => {
+    if (!grupo?.expandible || !grupo?.clave) return;
+
+    const actual = ventasTree[grupo.clave];
+    if (actual?.open) {
+      setVentasTree(prev => ({
+        ...prev,
+        [grupo.clave]: { ...prev[grupo.clave], open: false }
+      }));
+      return;
+    }
+
+    if (actual?.children) {
+      setVentasTree(prev => ({
+        ...prev,
+        [grupo.clave]: { ...prev[grupo.clave], open: true }
+      }));
+      return;
+    }
+
+    setVentasTree(prev => ({
+      ...prev,
+      [grupo.clave]: { open: true, loading: true, children: null }
+    }));
+
+    try {
+      const params = { ...baseParams(), nivel: grupo.siguiente_nivel, page: 1, limit: 5000 };
+      if (grupo.anio) params.anio_filtro = grupo.anio;
+      if (grupo.mes) params.mes_filtro = grupo.mes;
+      if (grupo.fecha) params.fecha_filtro = grupo.fecha;
+
+      const response = await api.get(
+        '/comercial/detalle-ventas-agrupado/' + serverId,
+        { params, timeout: 30000 }
+      );
+      const payload = response.data || {};
+      if (payload.source_status === 'ERROR') {
+        throw new Error(payload.source_message || 'Error al consultar el grupo');
+      }
+
+      setVentasTree(prev => ({
+        ...prev,
+        [grupo.clave]: {
+          open: true,
+          loading: false,
+          children: payload.items || payload.movimientos || []
+        }
+      }));
+    } catch (error) {
+      logger.error('Error cargando grupo de ventas:', error);
+      setVentasTree(prev => ({
+        ...prev,
+        [grupo.clave]: { open: false, loading: false, children: null }
+      }));
+      toast.error('Error al abrir el detalle del período');
+    }
+  };
+
+  const renderVentasRows = (items, depth = 0) => (items || []).map((item, idx) => {
+    const esDetalle = item.nivel === 'detalle';
+    const state = item.clave ? ventasTree[item.clave] : null;
+    const rowKey = item.clave || ((item.folio || 'venta') + '-' + (item.fecha || idx) + '-' + depth);
+
+    return (
+      <React.Fragment key={rowKey}>
+        <tr
+          className={'border-b transition-colors ' + (item.expandible ? 'hover:bg-zinc-50 cursor-pointer' : 'hover:bg-zinc-50')}
+          onClick={() => item.expandible && toggleGrupoVentas(item)}
+        >
+          <td className="py-2 px-3">
+            <div className="flex items-center gap-1" style={{ paddingLeft: (depth * 18) + 'px' }}>
+              {item.expandible ? (
+                state?.loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-zinc-400 flex-shrink-0" />
+                ) : state?.open ? (
+                  <ChevronDown className="h-4 w-4 text-zinc-500 flex-shrink-0" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-zinc-500 flex-shrink-0" />
+                )
+              ) : (
+                <span className="w-4" />
+              )}
+              <span className={esDetalle ? 'font-mono text-xs font-medium' : 'font-semibold'}>
+                {esDetalle ? item.folio : item.label}
+              </span>
+            </div>
+          </td>
+          <td className="py-2 px-3 text-zinc-600">
+            {esDetalle ? item.fecha : (item.nivel === 'dia' ? item.fecha : '-')}
+          </td>
+          <td className="py-2 px-3 text-right">
+            {esDetalle ? '-' : formatNumber(item.folios)}
+          </td>
+          <td className="py-2 px-3 text-center">
+            {Number(item.pax || 0) > 0 ? (
+              <span className="inline-flex items-center gap-1">
+                <Users className="h-3 w-3 text-purple-500" />
+                {formatNumber(item.pax)}
+              </span>
+            ) : '-'}
+          </td>
+          <td className="py-2 px-3 text-right font-semibold text-green-600">
+            {formatCurrency(item.total_venta ?? item.importe)}
+          </td>
+        </tr>
+        {state?.open && state?.children && renderVentasRows(state.children, depth + 1)}
+      </React.Fragment>
+    );
+  });
+
   if (!isOpen) return null;
+
+  const ventasItems = data?.items || data?.movimientos || [];
+  const hayDatos = esVentas ? ventasItems.length > 0 : data?.movimientos?.length > 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-5xl max-h-[88vh] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
-            <IconComponent className={`h-5 w-5 ${config.color}`} />
+            <IconComponent className={'h-5 w-5 ' + config.color} />
             {config.titulo}
             {data?.servidor && <span className="text-sm font-normal text-zinc-500">• {data.servidor}</span>}
           </DialogTitle>
@@ -235,21 +356,31 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
           </div>
-        ) : data?.movimientos?.length > 0 ? (
+        ) : hayDatos ? (
           <div className="flex-1 overflow-hidden flex flex-col">
             <div className="flex items-center justify-between mb-3 px-1">
               <span className="text-sm text-zinc-500">
                 Período: {data.periodo?.inicio} a {data.periodo?.fin}
               </span>
               <span className="text-sm font-medium">
-                {data.total} {esRotacion ? 'mes(es)' : 'folio(s)'}
+                {esVentas
+                  ? (formatNumber(data.resumen_periodo?.folios || 0) + ' folio(s)')
+                  : (data.total + ' ' + (esRotacion ? 'mes(es)' : 'folio(s)'))}
               </span>
             </div>
 
             <div className="flex-1 overflow-auto border rounded-lg">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-zinc-800 text-white">
-                  {esRotacion ? (
+                <thead className="sticky top-0 bg-zinc-800 text-white z-10">
+                  {esVentas ? (
+                    <tr>
+                      <th className="py-2 px-3 text-left">Período / Folio</th>
+                      <th className="py-2 px-3 text-left">Fecha</th>
+                      <th className="py-2 px-3 text-right">Folios</th>
+                      <th className="py-2 px-3 text-center">PAX</th>
+                      <th className="py-2 px-3 text-right">Total Venta</th>
+                    </tr>
+                  ) : esRotacion ? (
                     <tr>
                       <th className="py-2 px-3 text-left">Mes</th>
                       <th className="py-2 px-3 text-right">Rotación</th>
@@ -267,16 +398,16 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
                   )}
                 </thead>
                 <tbody>
-                  {data.movimientos.map((mov, idx) => (
+                  {esVentas ? renderVentasRows(ventasItems) : data.movimientos.map((mov, idx) => (
                     esRotacion ? (
-                      <tr key={mov.folio || `rot-${idx}`} className="border-b hover:bg-zinc-50 transition-colors">
+                      <tr key={mov.folio || ('rot-' + idx)} className="border-b hover:bg-zinc-50 transition-colors">
                         <td className="py-2 px-3 font-medium">{mov.mes_label || mov.fecha}</td>
                         <td className="py-2 px-3 text-right font-semibold">{Number(mov.rotacion || 0).toFixed(2)}x</td>
                         <td className="py-2 px-3 text-right">{formatNumber(mov.cheques)}</td>
                         <td className="py-2 px-3 text-right">{formatNumber(mov.pax)}</td>
                       </tr>
                     ) : (
-                      <tr key={`${mov.folio || 'mov'}-${idx}`} className="border-b hover:bg-zinc-50 transition-colors">
+                      <tr key={(mov.folio || 'mov') + '-' + idx} className="border-b hover:bg-zinc-50 transition-colors">
                         <td className="py-2 px-3 font-mono text-xs font-medium">{mov.folio}</td>
                         <td className="py-2 px-3 text-zinc-600">{mov.fecha}</td>
                         <td className="py-2 px-3 text-center">
@@ -302,7 +433,21 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
               </table>
             </div>
 
-            {!esRotacion && data.pages > 1 && (
+            {esVentas && (
+              <div className="mt-3 rounded-lg border bg-zinc-50 px-4 py-3 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-zinc-500">Total del período seleccionado</p>
+                  <p className="text-xs text-zinc-500">
+                    {formatNumber(data.resumen_periodo?.folios || 0)} folio(s) • {formatNumber(data.resumen_periodo?.pax || 0)} PAX
+                  </p>
+                </div>
+                <p className="text-xl font-bold text-green-600">
+                  {formatCurrency(data.resumen_periodo?.total_venta || 0)}
+                </p>
+              </div>
+            )}
+
+            {!esVentas && !esRotacion && data.pages > 1 && (
               <div className="flex items-center justify-between pt-3 border-t mt-3">
                 <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>
                   <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
