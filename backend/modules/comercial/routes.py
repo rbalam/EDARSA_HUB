@@ -3222,6 +3222,12 @@ async def comercial_detalle_movimientos(
     """
     Drill-down del Dashboard Comercial exclusivamente desde EDARSAHUB.
     No abre conexiones LIVE ni ejecuta sincronizadores.
+
+    R3:
+    - filtros de fecha sargables;
+    - una sola agregación/paginación para evitar timeout;
+    - total de folios con COUNT(*) OVER();
+    - conserva separación por unidad para servidores MPRO compartidos.
     """
     server = await get_server_by_id(server_id)
     if not server:
@@ -3249,13 +3255,17 @@ async def comercial_detalle_movimientos(
         mes_min = min(lista_meses)
         mes_max = max(lista_meses)
         fecha_ini = f"{year}-{mes_min:02d}-01"
+
         if year == hoy.year and mes_max == hoy.month:
-            fecha_fin = (hoy - timedelta(days=1)).strftime("%Y-%m-%d")
+            fecha_fin_inclusiva = hoy - timedelta(days=1)
         else:
-            fecha_fin = (
-                f"{year}-{mes_max:02d}-"
-                f"{calendar.monthrange(year, mes_max)[1]:02d}"
+            fecha_fin_inclusiva = datetime(
+                year,
+                mes_max,
+                calendar.monthrange(year, mes_max)[1],
             )
+        fecha_fin = fecha_fin_inclusiva.strftime("%Y-%m-%d")
+        fecha_fin_excl = (fecha_fin_inclusiva + timedelta(days=1)).strftime("%Y-%m-%d")
 
         safe_server = str(server_id).replace("'", "''")
         safe_sucursal = str(sucursal or "").replace("'", "''")
@@ -3293,38 +3303,45 @@ async def comercial_detalle_movimientos(
         unidad_codigo = str(unidad_rows[0].get("codigo") or "").replace("'", "''")
         unidad_nombre = unidad_rows[0].get("nombre") or server.get("name")
         meses_sql = ",".join(str(m) for m in lista_meses)
-        filtro_periodo = (
-            f"YEAR(fecha_operacion) = {year} "
-            f"AND MONTH(fecha_operacion) IN ({meses_sql}) "
-            f"AND fecha_operacion >= '{fecha_ini}' "
-            f"AND fecha_operacion <= '{fecha_fin}'"
-        )
+
+        # Mantener IN(meses) para selecciones no contiguas, pero usar rango sargable
+        # como primer filtro para que SQL Server pueda usar índice por fecha.
         filtro_base = f"""
             unidad_negocio_id = '{unidad_codigo}'
             AND ISNULL(activo,1) = 1
             AND ISNULL(es_kpi_valido,1) = 1
             AND ISNULL(cancelado_origen,0) = 0
-            AND {filtro_periodo}
+            AND fecha_operacion >= '{fecha_ini}'
+            AND fecha_operacion < '{fecha_fin_excl}'
+            AND MONTH(fecha_operacion) IN ({meses_sql})
         """
 
         if tipo == "rotacion":
             rows = _query_edarsahub_tablero(
                 f"""
                 WITH tickets AS (
-                    SELECT YEAR(fecha_operacion) AS anio,
-                           MONTH(fecha_operacion) AS mes,
-                           id_transaccion,
-                           numero_ticket,
-                           MAX(ISNULL(pax,0)) AS pax
+                    SELECT
+                        YEAR(fecha_operacion) AS anio,
+                        MONTH(fecha_operacion) AS mes,
+                        id_transaccion,
+                        numero_ticket,
+                        MAX(ISNULL(pax,0)) AS pax
                     FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK)
                     WHERE {filtro_base}
-                    GROUP BY YEAR(fecha_operacion), MONTH(fecha_operacion),
-                             id_transaccion, numero_ticket
+                    GROUP BY
+                        YEAR(fecha_operacion),
+                        MONTH(fecha_operacion),
+                        id_transaccion,
+                        numero_ticket
                 )
-                SELECT anio, mes, COUNT(*) AS cheques, SUM(pax) AS pax,
-                       CASE WHEN SUM(pax) > 0
-                            THEN CAST(COUNT(*) AS DECIMAL(18,6)) / SUM(pax)
-                            ELSE 0 END AS rotacion
+                SELECT
+                    anio,
+                    mes,
+                    COUNT(*) AS cheques,
+                    SUM(pax) AS pax,
+                    CASE WHEN SUM(pax) > 0
+                         THEN CAST(COUNT(*) AS DECIMAL(18,6)) / SUM(pax)
+                         ELSE 0 END AS rotacion
                 FROM tickets
                 GROUP BY anio, mes
                 ORDER BY anio ASC, mes ASC
@@ -3380,36 +3397,36 @@ async def comercial_detalle_movimientos(
         elif tipo == "ticket":
             order_sql = "ORDER BY total_venta DESC, fecha ASC, numero_ticket ASC"
 
-        cte_tickets = f"""
+        offset = (page - 1) * limit
+        rows = _query_edarsahub_tablero(
+            f"""
             WITH tickets AS (
-                SELECT id_transaccion,
-                       numero_ticket,
-                       MIN(COALESCE(fecha_hora, CAST(fecha_operacion AS DATETIME2))) AS fecha,
-                       SUM(ISNULL(importe_neto,0)) AS total_venta,
-                       MAX(ISNULL(pax,0)) AS pax,
-                       COUNT(*) AS num_productos
+                SELECT
+                    id_transaccion,
+                    numero_ticket,
+                    MIN(COALESCE(fecha_hora, CAST(fecha_operacion AS DATETIME2))) AS fecha,
+                    SUM(ISNULL(importe_neto,0)) AS total_venta,
+                    MAX(ISNULL(pax,0)) AS pax,
+                    COUNT(*) AS num_productos
                 FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK)
                 WHERE {filtro_base}
                 GROUP BY id_transaccion, numero_ticket
             )
-        """
-
-        total_rows = _query_edarsahub_tablero(
-            cte_tickets + " SELECT COUNT(*) AS total FROM tickets"
-        )
-        total = int(total_rows[0].get("total") or 0) if total_rows else 0
-        offset = (page - 1) * limit
-        rows = _query_edarsahub_tablero(
-            cte_tickets
-            + f"""
-            SELECT numero_ticket, fecha, total_venta, pax, num_productos,
-                   CASE WHEN pax > 0 THEN total_venta / pax ELSE NULL END AS pax_promedio
+            SELECT
+                numero_ticket,
+                fecha,
+                total_venta,
+                pax,
+                num_productos,
+                CASE WHEN pax > 0 THEN total_venta / pax ELSE NULL END AS pax_promedio,
+                COUNT(*) OVER() AS total_folios
             FROM tickets
             {order_sql}
             OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY
             """
         )
 
+        total = int(rows[0].get("total_folios") or 0) if rows else 0
         movimientos = []
         for r in rows or []:
             fecha = r.get("fecha")
@@ -3446,13 +3463,12 @@ async def comercial_detalle_movimientos(
         }
 
     except Exception as e:
-        logging.error(
-            "[DETALLE_COMERCIAL_CANONICO] Error consultando detalle EDARSAHUB: %s",
-            e,
+        logging.exception(
+            "[DETALLE_COMERCIAL_CANONICO] Error consultando detalle EDARSAHUB"
         )
         return {
             "source_status": "ERROR",
-            "source_message": str(e),
+            "source_message": str(e)[:300],
             "source": "Comercial_Inteligencia_VentasDetalleProducto",
             "movimientos": [],
             "items": [],

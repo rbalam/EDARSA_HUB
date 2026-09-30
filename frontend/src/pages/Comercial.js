@@ -202,9 +202,14 @@ function DetalleMovimientosModal({ isOpen, onClose, serverId, sucursal, periodo,
           limit: 50,
           meses: selectedMeses?.join(',') || '',
           anios: selectedAnios?.join(',') || ''
-        }
+        },
+        timeout: 30000
       });
-      setData(response.data);
+      const payload = response.data || {};
+      if (payload.source_status === 'ERROR') {
+        throw new Error(payload.source_message || 'Error al consultar detalle');
+      }
+      setData(payload);
     } catch (error) {
       logger.error('Error cargando detalle:', error);
       toast.error('Error al cargar detalle de movimientos');
