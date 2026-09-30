@@ -1,0 +1,99 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "MEJORA-TABEJE-PREVIEW-ALL-UNITS-SMOKE-R10D-CARLOS-20260930T1822Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "[Mejora-TABEJE | PREVIEW-ALL-UNITS-SMOKE-R10D] Validar en Preview, despues de R6H integrado, las cinco sucursales 130MID, 130QRO, CIENFUEGOS, ESTELAR y ORIGEN: contrato del drilldown, pruebas backend de tickets, existencia de columnas usadas por el filtro, snapshots operativos actuales y disponibilidad de detalle canonico. Solo lectura; no POS live, no sincronizadores, no Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "labels": [
+    "Mejora-TABEJE",
+    "Tablero Ejecutivo",
+    "Preview",
+    "ALL-UNITS",
+    "SMOKE-R10D",
+    "READ_ONLY",
+    "CARLOS"
+  ],
+  "tracking": {
+    "project_label": "Mejora-TABEJE",
+    "display_label": "Mejora-TABEJE | PREVIEW-ALL-UNITS-SMOKE-R10D",
+    "depends_on": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6H-CARLOS-20260930T1810Z",
+    "units": [
+      "130MID",
+      "130QRO",
+      "CIENFUEGOS",
+      "ESTELAR",
+      "ORIGEN"
+    ]
+  },
+  "scheduling": {
+    "project_id": "Mejora-TABEJE",
+    "bounded_context": "Tablero Ejecutivo Preview Validation",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": []
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+          "frontend/src/pages/TableroEjecutivo.js",
+          "backend/modules/comercial_analytics/repository_tickets.py"
+        ],
+        "search_terms": [
+          "KpiDrilldownDialog",
+          "onDoubleClick",
+          "cheques_cerrados",
+          "pax_cerrados",
+          "ventas_cerradas",
+          "Cuentas no cerradas",
+          "Cuentas cerradas pendientes de detalle",
+          "TOTAL KPI",
+          "es_kpi_valido",
+          "cancelado_origen"
+        ],
+        "max_results": 50
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_analytics_tickets.py"
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "detalle_columnas_requeridas",
+          "sql": "SELECT c.name AS columna FROM sys.columns c INNER JOIN sys.objects o ON o.object_id=c.object_id WHERE o.name='Comercial_Inteligencia_VentasDetalleProducto' AND c.name IN ('es_kpi_valido','cancelado_origen','activo','numero_ticket','fecha_operacion','unidad_negocio_id','fecha_hora','pax','importe_neto') ORDER BY c.name"
+        },
+        {
+          "name": "operacion_actual_5_unidades",
+          "sql": "WITH latest AS (SELECT unidad_negocio_id, unidad_negocio_nombre, fecha_operacion, ventas_abiertas, tickets_abiertos, pax_abiertos, ventas_cerradas_dia, tickets_cerrados_dia, pax_cerrados_dia, total_estimado_dia, snapshot_timestamp, ROW_NUMBER() OVER (PARTITION BY unidad_negocio_id ORDER BY snapshot_timestamp DESC, id DESC) AS rn FROM Comercial_Ventas_Dia_Abiertas_v2 WHERE unidad_negocio_id IN ('130MID','130QRO','CIENFUEGOS','ESTELAR','ORIGEN')) SELECT unidad_negocio_id, unidad_negocio_nombre, fecha_operacion, ventas_cerradas_dia, tickets_cerrados_dia, pax_cerrados_dia, ventas_abiertas, tickets_abiertos, pax_abiertos, total_estimado_dia, snapshot_timestamp FROM latest WHERE rn=1 ORDER BY unidad_negocio_id"
+        },
+        {
+          "name": "ultima_fecha_detalle_5_unidades",
+          "sql": "SELECT unidad_negocio_id, MAX(fecha_operacion) AS ultima_fecha_detalle, COUNT(DISTINCT numero_ticket) AS tickets_en_tabla FROM Comercial_Inteligencia_VentasDetalleProducto WHERE unidad_negocio_id IN ('130MID','130QRO','CIENFUEGOS','ESTELAR','ORIGEN') AND ISNULL(activo,1)=1 AND numero_ticket IS NOT NULL GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
