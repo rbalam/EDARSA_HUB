@@ -1,0 +1,670 @@
+{
+  "base_sha": "15ac45d200852c74ad1c1f808c76215c0d419065",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-30T00:52:31Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "MEJORA-TABEJE-SYNC-DETALLE-DISENO-R7-CARLOS-20260930T0055Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-30T00:53:06Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "asyncio",
+              "core.empresa_resolver",
+              "core.secret_manager",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "core.utils.operational_window",
+              "datetime",
+              "decimal",
+              "logging",
+              "modules.comercial_v2.repository_comercial_edarsahub",
+              "modules.comercial_v2.schemas",
+              "modules.comercial_v2.sync_comercial_edarsahub",
+              "modules.integrations_runtime.sync_ledger",
+              "os",
+              "pytz",
+              "requests",
+              "typing",
+              "uuid",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "es_cve_estado",
+              "sync_comercial_abiertas_v2",
+              "vn_fecha"
+            ],
+            "path": "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_acquire_sync_lock_sync",
+              "_coerce_mx_datetime",
+              "_execute_query_via_api_local",
+              "_get_api_local_config",
+              "_get_existing_ventas_dia",
+              "_get_unidades_from_edarsahub",
+              "_release_sync_lock_sync",
+              "execute_sync_comercial_abiertas_v2",
+              "run_sync_comercial_abiertas_v2_manual",
+              "select_mpro_closed_sales"
+            ],
+            "tables_referenced": [
+              "Comercial_Ventas_Dia_Abiertas_v2",
+              "Servidores_Conexiones",
+              "Sync_Control_Ejecuciones",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.scheduler.jobs.inteligencia_comercial_enrich",
+              "core.sql_first.connection_factory",
+              "core.sql_first.db",
+              "datetime",
+              "json",
+              "logging",
+              "modules.comercial_v2.sync_comercial_edarsahub",
+              "os",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "ch.cancelado",
+              "ch.nopersonas",
+              "ch.total",
+              "es_cve_estado",
+              "t.apertura",
+              "vn_fecha",
+              "vn_folio"
+            ],
+            "path": "backend/core/scheduler/jobs/inteligencia_comercial_sync_job.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_syncpos_literal",
+              "actualizar_syncpos_config_estado",
+              "audit_syncpos_canonical_configs",
+              "detectar_faltantes_syncpos",
+              "extract_sales_from_pos",
+              "get_edarsahub_connection",
+              "get_mpro_query",
+              "get_pos_config_for_unidad",
+              "get_pos_connection",
+              "get_softrestaurant_query",
+              "get_syncpos_config",
+              "get_unidades_negocio_pos",
+              "insert_into_sync_sales",
+              "job_inteligencia_comercial_sync",
+              "registrar_syncpos_bitacora",
+              "should_run_syncpos_now",
+              "update_job_status",
+              "update_kpis_diarios"
+            ],
+            "tables_referenced": [
+              "Servidores_Conexiones",
+              "Sistema_SyncPOS_Bitacora",
+              "Sistema_SyncPOS_Config",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "argparse",
+              "core.scheduler.jobs.inteligencia_comercial_sync_job",
+              "core.sql_first.db",
+              "json",
+              "os",
+              "pathlib",
+              "pymssql",
+              "sys",
+              "time",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "ch.cancelado",
+              "ch.nopersonas",
+              "ch.total",
+              "es_cve_estado",
+              "t.apertura",
+              "vn_fecha",
+              "vn_folio"
+            ],
+            "path": "backend/scripts/pilot_backfill_sync_sales.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_attach_items",
+              "_connect_pos",
+              "_count_items",
+              "extract_from_pos",
+              "extract_mpro_twopass",
+              "extract_softrestaurant_twopass",
+              "kpi_canonical_compare",
+              "load_env",
+              "load_to_sync_sales",
+              "main"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "argparse",
+              "collections",
+              "core.db",
+              "core.secret_manager",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "sys",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "ch.cancelado",
+              "ch.nopersonas",
+              "ch.total",
+              "t.apertura",
+              "vn_fecha",
+              "vn_folio"
+            ],
+            "path": "backend/tools/sync_sales_dry_run.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ConnectionStatus",
+              "_execute_query",
+              "_safe_float",
+              "_safe_int",
+              "build_sales_from_flat_rows",
+              "calculate_softrestaurant_item_total",
+              "check_duplicates_in_sync_sales",
+              "execute_query_on_server",
+              "extract_sales_from_pos",
+              "generate_report",
+              "get_kpis_count",
+              "get_mpro_query",
+              "get_server_connection_config",
+              "get_softrestaurant_query",
+              "get_sync_sales_count",
+              "get_unidad_config",
+              "insert_sales_to_sync_sales",
+              "main",
+              "parse_sql_server_host",
+              "print_report",
+              "validate_importes",
+              "validate_json_items"
+            ],
+            "tables_referenced": [
+              "Sync_Sales"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "os",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "netpay",
+              "sap",
+              "softrestaurant",
+              "twilio",
+              "vtiger"
+            ],
+            "matched_terms": [
+              "sync_comercial_abiertas_v2"
+            ],
+            "path": "backend/core/scheduler/config.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "Config",
+              "JobConfig",
+              "SchedulerConfig",
+              "from_env",
+              "get_scheduler_config",
+              "reload_scheduler_config"
+            ],
+            "tables_referenced": [
+              "Finanzas_CxP_Sync"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.scheduler",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "apscheduler.events",
+              "apscheduler.schedulers.asyncio",
+              "apscheduler.triggers.cron",
+              "apscheduler.triggers.interval",
+              "asyncio",
+              "config",
+              "core.mongo_stub",
+              "datetime",
+              "job_logger",
+              "jobs.alertas_excepciones_job",
+              "jobs.auditorias_job",
+              "jobs.bos_direction_status_job",
+              "jobs.catalogo_ampliado_alertas_job",
+              "jobs.cava_socios_monthly_job",
+              "jobs.crm_sync_job",
+              "jobs.cxp_sync_job",
+              "jobs.inteligencia_comercial_sync_job",
+              "jobs.inventarios_detector_job",
+              "jobs.netpay_sync_job",
+              "jobs.notifications_job",
+              "jobs.pedidos_detector_job",
+              "jobs.resumen_diario_excepciones_job",
+              "jobs.sla_job",
+              "jobs.sync_comercial_abiertas_v2_job",
+              "jobs.sync_comercial_v2_job",
+              "jobs.sync_compras_job",
+              "jobs.sync_ingresos_job",
+              "jobs.sync_nightly_comercial_job",
+              "jobs.sync_propinas_tpv_job",
+              "jobs.sync_short_comercial_job",
+              "jobs.vtiger_sync_job",
+              "locks",
+              "logging",
+              "modules.economia.service",
+              "os",
+              "persistent_state_repository",
+              "typing"
+            ],
+            "integrations": [
+              "mpro",
+              "netpay",
+              "sap",
+              "softrestaurant",
+              "twilio",
+              "vtiger"
+            ],
+            "matched_terms": [
+              "register_jobs",
+              "run_job_now",
+              "sync_comercial_abiertas_v2"
+            ],
+            "path": "backend/core/scheduler/scheduler_manager.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "APScheduler",
+              "AsyncIOScheduler",
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [
+              "SchedulerManager",
+              "__init__",
+              "__new__",
+              "_create_scheduler",
+              "_normalize_comercial_sync_status",
+              "_on_job_error",
+              "_on_job_executed",
+              "_on_job_missed",
+              "_run_alertas_excepciones_notifier_job",
+              "_run_auditorias_job",
+              "_run_bos_direction_status_job",
+              "_run_catalogo_ampliado_alertas_job",
+              "_run_cava_socios_monthly_job",
+              "_run_crm_actividades_vencidas_job",
+              "_run_crm_sla_check_job",
+              "_run_crm_sync_job",
+              "_run_economia_sync_job",
+              "_run_inteligencia_comercial_sync_job",
+              "_run_inventarios_detector_job",
+              "_run_netpay_sync_diario_job",
+              "_run_notifications_job",
+              "_run_pedidos_detector_job",
+              "_run_resumen_diario_excepciones_job",
+              "_run_sla_job",
+              "_run_sync_comercial_abiertas_v2_job",
+              "_run_sync_comercial_v2_job",
+              "_run_sync_compras_job",
+              "_run_sync_cxp_facturas_job",
+              "_run_sync_ingresos_incremental_job",
+              "_run_sync_nightly_comercial_job",
+              "_run_sync_propinas_tpv_incremental_job",
+              "_run_sync_short_comercial_job",
+              "_run_vtiger_sync_job",
+              "get_job_info",
+              "get_scheduler_manager",
+              "get_status",
+              "pause_job",
+              "register_jobs",
+              "reset_scheduler_manager",
+              "resume_job",
+              "retry_inventario_error_by_id",
+              "run_job_now",
+              "start",
+              "start_scheduler",
+              "stop",
+              "stop_scheduler"
+            ],
+            "tables_referenced": [
+              "Finanzas_CxP_Sync"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 6,
+          "scanned_files": 8,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "object_id"
+            ],
+            "name": "tabla_destino_no_existe",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "codigo",
+              "nombre",
+              "system_type",
+              "server_id",
+              "sucursal_origen_id"
+            ],
+            "name": "unidades_activas_origen",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                "130° MERIDA",
+                "SoftRestaurant",
+                "a5547321-1139-4d2b-9d53-182ca737b6b6",
+                null
+              ],
+              [
+                "130QRO",
+                "130° QUERETARO",
+                "MPRO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0021"
+              ],
+              [
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "SoftRestaurant",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                null
+              ],
+              [
+                "ESTELAR",
+                "LA ESTELAR",
+                "SoftRestaurant",
+                "a5ff0e25-f029-43db-b634-d4ac814c904f",
+                null
+              ],
+              [
+                "ORIGEN",
+                "ORIGEN",
+                "MPRO",
+                "1b230a06-ffaf-4c70-bd27-b1be3579dea6",
+                "0023"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "COLUMN_NAME",
+              "DATA_TYPE"
+            ],
+            "name": "columnas_servidores_config",
+            "row_count_returned": 36,
+            "rows": [
+              [
+                "id",
+                "uniqueidentifier"
+              ],
+              [
+                "nombre",
+                "nvarchar"
+              ],
+              [
+                "system_type",
+                "nvarchar"
+              ],
+              [
+                "tipo_conexion",
+                "nvarchar"
+              ],
+              [
+                "host",
+                "nvarchar"
+              ],
+              [
+                "port",
+                "int"
+              ],
+              [
+                "database_name",
+                "nvarchar"
+              ],
+              [
+                "username",
+                "nvarchar"
+              ],
+              [
+                "password_encrypted",
+                "nvarchar"
+              ],
+              [
+                "api_url",
+                "nvarchar"
+              ],
+              [
+                "api_key_encrypted",
+                "nvarchar"
+              ],
+              [
+                "activo",
+                "bit"
+              ],
+              [
+                "visible_en_operaciones",
+                "bit"
+              ],
+              [
+                "visible_en_listado",
+                "bit"
+              ],
+              [
+                "es_editable_ui",
+                "bit"
+              ],
+              [
+                "es_eliminable_ui",
+                "bit"
+              ],
+              [
+                "empresa_id",
+                "nvarchar"
+              ],
+              [
+                "sucursales",
+                "nvarchar"
+              ],
+              [
+                "categorias",
+                "nvarchar"
+              ],
+              [
+                "departamentos",
+                "nvarchar"
+              ],
+              [
+                "date_calculation_method",
+                "nvarchar"
+              ],
+              [
+                "queries_configured",
+                "bit"
+              ],
+              [
+                "query_ventas",
+                "nvarchar"
+              ],
+              [
+                "query_inventario",
+                "nvarchar"
+              ],
+              [
+                "query_movimientos",
+                "nvarchar"
+              ],
+              [
+                "created_at",
+                "datetime"
+              ],
+              [
+                "updated_at",
+                "datetime"
+              ],
+              [
+                "created_by",
+                "nvarchar"
+              ],
+              [
+                "updated_by",
+                "nvarchar"
+              ],
+              [
+                "mongodb_id",
+                "nvarchar"
+              ],
+              [
+                "EmpresaID",
+                "int"
+              ],
+              [
+                "tipos_movimiento",
+                "nvarchar"
+              ],
+              [
+                "fecha_ultima_sincronizacion",
+                "datetime2"
+              ],
+              [
+                "source_status",
+                "varchar"
+              ],
+              [
+                "ultimo_error_sync",
+                "nvarchar"
+              ],
+              [
+                "sistema_version_id",
+                "uniqueidentifier"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-30T00:52:30Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
