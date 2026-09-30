@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "RRR-GATE4E-R10-R7-RUNTIME-ORG-RESOLUTION-FIX-20260930",
+  "reason": "wake retry after canonical runtime URL restoration",
+  "production_touched": false
+}
