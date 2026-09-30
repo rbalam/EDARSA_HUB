@@ -1,0 +1,60 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260930",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "97e1f11816efc811e65b2d1b1e6f01faf21532bc",
+  "objective": "Cerrar el fix del tab SQL de Servidores. GET /api/servers debe devolver exclusivamente DATA_SOURCE; excluir CORE mediante exclude_core=True; API_LOCAL debe permanecer en /api/api-connections; CORE no debe contaminar el tab SQL. Corregir el test para resolver la raiz del repositorio desde __file__ en el worktree aislado del Universal Worker. Sin tocar API_LOCAL, CAVAS, RBAC, SQL, Scheduler, NetPay ni Produccion.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS / Servidores Integraciones Conexiones Comunicaciones",
+    "chat": "Conexiones y Comunicaciones 2"
+  },
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/server.py",
+      "old_text": "        filter_visible_listado=True,\n        exclude_core=False,\n        mask_secrets=True\n    )\n\n    return servers\n",
+      "replacement": "        filter_visible_listado=True,\n        exclude_core=True,\n        mask_secrets=True\n    )\n\n    # Contrato del tab SQL: nunca mezclar API_LOCAL ni CORE en /api/servers.\n    servers = [s for s in servers if s.get(\"tipo_conexion\") == \"DATA_SOURCE\"]\n\n    return servers\n",
+      "source_sha256": "7ac6f922e4f92e07224c6d50200c4598069ca232d62703f42a0b55c0bc096771",
+      "expected_occurrences": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/tests/test_server_sucursales_rbac_canonical.py",
+      "old_text": "ROOT = Path(\"/app\")",
+      "replacement": "ROOT = Path(__file__).resolve().parents[2]",
+      "source_sha256": "341acdea0eb18023fd9d38fb76f8d550bb686583d4e3f9ce45a1cbb5c3efee5c",
+      "expected_occurrences": 1
+    },
+    {
+      "type": "insert_before",
+      "path": "backend/tests/test_server_sucursales_rbac_canonical.py",
+      "anchor": "def test_legacy_filter_still_exists_but_has_no_server_consumer():\n",
+      "replacement": "def test_get_servers_contract_is_datasource_only():\n    source = _get_function_source(SERVER, \"get_servers\")\n    assert \"exclude_core=True\" in source\n    assert 's.get(\"tipo_conexion\") == \"DATA_SOURCE\"' in source\n\n\n",
+      "source_sha256": "341acdea0eb18023fd9d38fb76f8d550bb686583d4e3f9ce45a1cbb5c3efee5c",
+      "expected_occurrences": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/server.py",
+        "backend/tests/test_server_sucursales_rbac_canonical.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_server_sucursales_rbac_canonical.py"
+      ]
+    }
+  ]
+}
