@@ -4,6 +4,7 @@ import { clearSession } from '../services/authStorage';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 // AUDITORIA-TABLEROS-KPIS-FILTROS-01: Migrado de axios directo a api centralizado
 import api from '../lib/api';
+import KpiDrilldownDialog from '../components/comercial/KpiDrilldownDialog';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -589,6 +590,7 @@ const UnidadCard = ({ unidad, onClick, esMultiMes = false, modoVentasDia = false
 const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) => {
   const [detalleData, setDetalleData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [kpiDrilldown, setKpiDrilldown] = useState(null);
 
   // CORRECCIÓN GLOBAL: Leyendas dinámicas según selector de periodo
   const leyendasComparativo = modoVentasDia
@@ -709,7 +711,11 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
           <div className="space-y-4">
             {/* KPIs principales */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Card className="bg-green-50 border-green-200">
+              <Card
+                className="bg-green-50 border-green-200 cursor-pointer select-none"
+                onDoubleClick={() => setKpiDrilldown('ventas')}
+                title="Doble clic para ver el detalle de cuentas cerradas"
+              >
                 <CardContent className="p-3 text-center">
                   <div className="flex items-center justify-center gap-2 mb-1">
                     <DollarSign className="h-4 w-4 text-green-600" />
@@ -723,7 +729,11 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
                 </CardContent>
               </Card>
 
-              <Card className="bg-blue-50 border-blue-200">
+              <Card
+                className="bg-blue-50 border-blue-200 cursor-pointer select-none"
+                onDoubleClick={() => setKpiDrilldown('pax')}
+                title="Doble clic para ver el detalle de cuentas cerradas"
+              >
                 <CardContent className="p-3 text-center">
                   <div className="flex items-center justify-center gap-2 mb-1">
                     <Users className="h-4 w-4 text-blue-600" />
@@ -739,7 +749,11 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
                 </CardContent>
               </Card>
 
-              <Card className="bg-purple-50 border-purple-200">
+              <Card
+                className="bg-purple-50 border-purple-200 cursor-pointer select-none"
+                onDoubleClick={() => setKpiDrilldown('cheques')}
+                title="Doble clic para ver el detalle de cuentas cerradas"
+              >
                 <CardContent className="p-3 text-center">
                   <div className="flex items-center justify-center gap-2 mb-1">
                     <Receipt className="h-4 w-4 text-purple-600" />
@@ -883,6 +897,18 @@ const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) =>
           </div>
         )}
       </DialogContent>
+
+      {kpiDrilldown && (
+        <KpiDrilldownDialog
+          open={true}
+          onClose={() => setKpiDrilldown(null)}
+          tipo={kpiDrilldown}
+          unidad={unidad}
+          modoVentasDia={modoVentasDia}
+          mes={mes}
+          anio={anio}
+        />
+      )}
     </Dialog>
   );
 };

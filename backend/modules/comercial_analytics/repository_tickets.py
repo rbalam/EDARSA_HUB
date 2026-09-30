@@ -148,6 +148,8 @@ def list_tickets(
 
     where_sql = f"""
         ISNULL(d.activo, 1) = 1
+        AND ISNULL(d.es_kpi_valido, 1) = 1
+        AND ISNULL(d.cancelado_origen, 0) = 0
         AND d.numero_ticket IS NOT NULL
         AND d.fecha_operacion BETWEEN %s AND %s
         AND d.unidad_negocio_id IN ({placeholders})
@@ -333,6 +335,8 @@ def get_ticket_detail(
             ON e.producto_id = d.producto_id
         WHERE
             ISNULL(d.activo, 1) = 1
+            AND ISNULL(d.es_kpi_valido, 1) = 1
+            AND ISNULL(d.cancelado_origen, 0) = 0
             AND d.unidad_negocio_id = %s
             AND d.fecha_operacion = %s
             AND d.numero_ticket = %s
