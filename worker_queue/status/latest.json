@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "aa799300859ba58be213a872fed8fdb593ceaed6",
-  "generated_at_utc": "2026-09-29T23:59:43Z",
+  "generated_at_utc": "2026-09-30T00:00:58Z",
   "history": {
     "done_total_local": 1179,
     "pending_total_local": 0,
@@ -16,43 +16,43 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3389,
+      "age_seconds": 3463,
       "job_id": "EDARSAHUB-BOS-PRODUCCION-TRANSFORMACION-GATE1-CANONICAL-CONTRACTS-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1238,
+      "age_seconds": 1313,
       "job_id": "EDARSAHUB-COMERCIAL-KPI-COMPARATIVOS-DRILLDOWN-FIX-R1-CARLOS-20260929T2338Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1807,
+      "age_seconds": 1882,
       "job_id": "EDARSAHUB-COMERCIAL-KPI-DRILLDOWN-DIAG-R1-CARLOS-20260929T2315Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3350,
+      "age_seconds": 3424,
       "job_id": "EDARSAHUB-TABLAJERIA-R2-GATE3-CANONICAL-INTEGRATION-AUDIT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1463,
+      "age_seconds": 1537,
       "job_id": "EDARSAHUB-TABLERO-EJECUTIVO-DRILLDOWN-DIAG-R1-CARLOS-20260929T2332Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 478,
+      "age_seconds": 552,
       "job_id": "MEJORA-TABEJE-FUENTE-FOLIO-DIA-R3-CARLOS-20260929T2352Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 972,
+      "age_seconds": 1047,
       "job_id": "MEJORA-TABEJE-FUENTES-DETALLE-DIA-R2-CARLOS-20260929T2345Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -72,8 +72,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-29T23:59:43Z",
-    "last_receive_utc": "2026-09-29T23:59:38Z",
+    "last_cycle_utc": "2026-09-30T00:00:53Z",
+    "last_receive_utc": "2026-09-30T00:00:56Z",
     "last_terminal_utc": "2026-09-29T23:51:45Z",
     "pid": "705",
     "runtime_fingerprint": {
