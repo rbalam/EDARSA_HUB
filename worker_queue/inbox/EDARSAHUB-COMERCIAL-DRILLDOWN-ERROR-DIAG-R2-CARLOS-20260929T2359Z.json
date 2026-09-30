@@ -1,0 +1,68 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-DRILLDOWN-ERROR-DIAG-R2-CARLOS-20260929T2359Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Diagnosticar el error HTTP al abrir Detalle de Ventas del Dashboard Comercial, reproducido en CIENFUEGOS septiembre 2026. No modificar codigo ni SQL. PROHIBIDO tocar o ejecutar sincronizacion de Inteligencia Comercial, Sync_Sales, Sync_PAX, ISCAM, Scheduler, ventas abiertas/cerradas, Tablero Ejecutivo, Portal de Inteligencia Comercial o Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial/routes.py",
+          "frontend/src/pages/Comercial.js",
+          "backend/modules/comercial/service.py"
+        ],
+        "search_terms": [
+          "detalle-movimientos",
+          "Comercial_Inteligencia_VentasDetalleProducto",
+          "cancelado_origen",
+          "TRY_CONVERT",
+          "selectedSucursal",
+          "pax_promedio"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js"
+        ],
+        "exclude_patterns": [],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_unidad_por_server",
+          "sql": "SELECT TOP 5 codigo,nombre,CONVERT(VARCHAR(100),server_id) AS server_id,CONVERT(VARCHAR(100),sucursal_origen_id) AS sucursal_origen_id,ISNULL(activo,1) AS activo FROM dbo.Unidades_Negocio WITH (NOLOCK) WHERE CONVERT(VARCHAR(100),server_id)='6d053c22-523e-48c0-b72b-96081e2d781b' ORDER BY nombre"
+        },
+        {
+          "name": "cienfuegos_detalle_total_exact",
+          "sql": "WITH tickets AS (SELECT id_transaccion,numero_ticket,MIN(COALESCE(fecha_hora,CAST(fecha_operacion AS DATETIME2))) AS fecha,SUM(ISNULL(importe_neto,0)) AS total_venta,MAX(ISNULL(pax,0)) AS pax,COUNT(*) AS num_productos FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK) WHERE unidad_negocio_id='CIENFUEGOS' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND YEAR(fecha_operacion)=2026 AND MONTH(fecha_operacion) IN (9) AND fecha_operacion>='2026-09-01' AND fecha_operacion<='2026-09-28' GROUP BY id_transaccion,numero_ticket) SELECT COUNT(*) AS total FROM tickets"
+        },
+        {
+          "name": "cienfuegos_detalle_page_exact",
+          "sql": "WITH tickets AS (SELECT id_transaccion,numero_ticket,MIN(COALESCE(fecha_hora,CAST(fecha_operacion AS DATETIME2))) AS fecha,SUM(ISNULL(importe_neto,0)) AS total_venta,MAX(ISNULL(pax,0)) AS pax,COUNT(*) AS num_productos FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK) WHERE unidad_negocio_id='CIENFUEGOS' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND YEAR(fecha_operacion)=2026 AND MONTH(fecha_operacion) IN (9) AND fecha_operacion>='2026-09-01' AND fecha_operacion<='2026-09-28' GROUP BY id_transaccion,numero_ticket) SELECT numero_ticket,fecha,total_venta,pax,num_productos,CASE WHEN pax>0 THEN total_venta/pax ELSE NULL END AS pax_promedio FROM tickets ORDER BY CASE WHEN TRY_CONVERT(BIGINT,numero_ticket) IS NULL THEN 1 ELSE 0 END,TRY_CONVERT(BIGINT,numero_ticket) ASC,numero_ticket ASC,fecha ASC OFFSET 0 ROWS FETCH NEXT 50 ROWS ONLY"
+        },
+        {
+          "name": "detalle_schema_nullable",
+          "sql": "SELECT COLUMN_NAME,DATA_TYPE,IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Comercial_Inteligencia_VentasDetalleProducto' AND COLUMN_NAME IN ('unidad_negocio_id','fecha_operacion','fecha_hora','numero_ticket','id_transaccion','importe_neto','pax','activo','es_kpi_valido','cancelado_origen') ORDER BY ORDINAL_POSITION"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
