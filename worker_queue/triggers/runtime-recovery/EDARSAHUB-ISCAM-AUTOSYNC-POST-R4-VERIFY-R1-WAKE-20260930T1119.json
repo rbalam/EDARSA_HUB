@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-ISCAM-AUTOSYNC-POST-R4-VERIFY-R1-CARLOS-20260930T1118",
+  "reason": "Wake canonical Universal Worker and prefer the post-R4 READ_ONLY verification of ISCAM automatic closed-sales detail. Preserve queue identities and do not touch Production.",
+  "production_touched": false
+}
