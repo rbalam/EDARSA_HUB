@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-TICKET-OPEN-DETAIL-DDL-R1-CARLOS-20260930T2304Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "objective": "Aplicar en Development la migracion aditiva ya versionada para habilitar detalle_abiertas_json en Comercial_Ventas_Dia_Abiertas_v2. Esta columna permite al sincronizador existente de Ventas del Dia persistir el detalle de folios/productos abiertos para el drilldown Ticket de Venta. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "migration_path": "backend/database/migrations/20260930_002_comercial_ticket_open_detail_json.sql",
+  "migration_sha256": "eef005103af2972187d1ed6321817bdb514f9d7c6823e1aea2b42ff27da8ee9b",
+  "confirm_sql_migration": true,
+  "confirm_use_existing_sql_writer": true,
+  "preflight_checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "preflight_ticket_open_detail_column",
+          "sql": "SELECT CASE WHEN COL_LENGTH('dbo.Comercial_Ventas_Dia_Abiertas_v2','detalle_abiertas_json') IS NULL THEN 0 ELSE 1 END AS columna_existe"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "post_ticket_open_detail_column",
+          "sql": "SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Comercial_Ventas_Dia_Abiertas_v2' AND COLUMN_NAME='detalle_abiertas_json'"
+        },
+        {
+          "name": "post_ticket_open_detail_constraint",
+          "sql": "SELECT name,is_disabled,is_not_trusted FROM sys.check_constraints WHERE parent_object_id=OBJECT_ID('dbo.Comercial_Ventas_Dia_Abiertas_v2') AND name='CK_Comercial_Ventas_Dia_Abiertas_v2_DetalleJson'"
+        }
+      ]
+    }
+  ]
+}
