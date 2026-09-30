@@ -1,0 +1,88 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "request": {
+        "max_results": 80,
+        "paths": [
+          "frontend/src/pages",
+          "frontend/src/contexts",
+          "frontend/src/lib",
+          "backend/modules/auth",
+          "backend/core/auth",
+          "backend/core/rbac",
+          "backend/modules",
+          "backend/tests"
+        ],
+        "search_terms": [
+          "Usuarios",
+          "update_user",
+          "role",
+          "user_repository_sql",
+          "menu-permissions",
+          "effective-permissions",
+          "Usuario_RolesAsignacion",
+          "Usuario_RolesContexto",
+          "Usuario_PermisosRolModulo",
+          "Usuario_Modulos",
+          "Usuario_Acciones",
+          "Sistema_ModulosMenus",
+          "SISTEMA_USUARIOS_VER",
+          "USUARIOS_VER",
+          "sistema.usuarios.ver",
+          "sistema.usuarios.editar",
+          "/users/{user_id}/permissions",
+          "/auth/me/menu-permissions",
+          "/auth/me/effective-permissions"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "created_at_utc": "2026-09-30T19:11:32.749420+00:00",
+  "domain": "usuarios_rbac_menu",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-AUDIT-READONLY-R1",
+  "mode": "READ_ONLY",
+  "objective": "Auditar en READ_ONLY la regresion del Menu Usuarios/RBAC de EDARSAHUB. El menu Usuarios ya funcionaba y ahora esta roto. Confirmar causa raiz desde repositorio, sin reparar, sin mutar archivos, sin DDL, sin DML, sin MongoDB y sin Produccion directa.",
+  "priority": "P0",
+  "production_allowed": false,
+  "requester": {
+    "chat": "",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "",
+    "source": "chatgpt"
+  },
+  "required_findings": [
+    "branch",
+    "head",
+    "dirty_tree",
+    "update_user_role_ignored",
+    "put_users_false_success",
+    "permissions_endpoint_scope",
+    "menu_permission_mapping_status",
+    "usuarios_menu_permission_found",
+    "endpoint_menu_alignment",
+    "root_cause_priority",
+    "propuesta_reparacion_minima",
+    "siguiente_job_recomendado"
+  ],
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
