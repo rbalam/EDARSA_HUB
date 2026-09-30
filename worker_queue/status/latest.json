@@ -4,61 +4,67 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "REMOTE_AHEAD_ONLY",
   "development_sha": "bc8dab31464e0067cdcd4c4ab4bcd4c6d0bf9f73",
-  "generated_at_utc": "2026-09-30T16:11:54Z",
+  "generated_at_utc": "2026-09-30T16:13:11Z",
   "history": {
     "done_total_local": 1186,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1042,
-    "results_total_local": 2031
+    "rejected_total_local": 1043,
+    "results_total_local": 2032
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 1502,
+      "age_seconds": 1580,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE5-CAMPAIGN-ORCHESTRATOR-CONTRACT-R3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1507,
+      "age_seconds": 1585,
       "job_id": "EDARSA-LOGISTICS-GATE3C-MULTIMODAL-PHYSICAL-SCHEMA-DESIGN-DOSSIER-R3",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1494,
+      "age_seconds": 1572,
       "job_id": "EDARSAHUB-BOS-EVOLUTION-H0-ASIS-CAPABILITY-GAP-DISCOVERY-READONLY-R1-20260929",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1490,
+      "age_seconds": 1568,
       "job_id": "EDARSAHUB-COMERCIAL-ACTIVE-DRILLDOWN-ROUTE-FIX-R4-CARLOS-20260930T0110Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 664,
+      "age_seconds": 741,
       "job_id": "EDARSAHUB-COMERCIAL-ACTIVE-DRILLDOWN-ROUTE-FIX-R4-RETRY1-CARLOS-20260930T1559Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1485,
+      "age_seconds": 1562,
       "job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6D-CARLOS-20260930T0158Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1480,
+      "age_seconds": 39,
+      "job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6E-CARLOS-20260930T1615Z",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 1558,
       "job_id": "RRR-GATE4E-R10-R7-RUNTIME-ORG-RESOLUTION-FIX-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1478,
+      "age_seconds": 1555,
       "job_id": "UNIVERSAL-WORKER-D2-RUNTIME-CONVERGENCE-GUARD-D2.1-IMPLEMENTATION-R1-RETRY4",
       "reason": null,
       "state": "RESULT_READY"
@@ -72,15 +78,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 8,
+  "queue_result_ready_recent": 9,
   "queue_running": 0,
   "remote_development_sha": "bc8dab31464e0067cdcd4c4ab4bcd4c6d0bf9f73",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-30T16:11:47Z",
-    "last_receive_utc": "2026-09-30T16:11:51Z",
-    "last_terminal_utc": "2026-09-30T16:00:49Z",
+    "last_cycle_utc": "2026-09-30T16:13:08Z",
+    "last_receive_utc": "2026-09-30T16:13:10Z",
+    "last_terminal_utc": "2026-09-30T16:12:31Z",
     "pid": "390",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "da89a1c0ffde568341e99eb227a7ad72fcecdcbd",
