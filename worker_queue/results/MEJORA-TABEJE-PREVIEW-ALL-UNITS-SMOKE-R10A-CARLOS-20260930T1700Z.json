@@ -1,0 +1,60 @@
+{
+  "base_sha": "44fd0219d5b8894e72ab76c162bff030ec032993",
+  "blockers": [
+    "check_failed:sql_readonly_audit",
+    "slot_release_failed:SlotRuntimeError:SLOT_NOT_FOUND"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-30T17:12:23Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "MEJORA-TABEJE-PREVIEW-ALL-UNITS-SMOKE-R10A-CARLOS-20260930T1700Z",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-30T17:12:55Z",
+  "quality_gate": "FAIL",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "cheques_cerrados",
+              "pax_cerrados",
+              "ventas_cerradas"
+            ],
+            "path": "frontend/src/pages/TableroEjecutivo.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 1,
+          "scanned_files": 8,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-30T17:11:46Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
