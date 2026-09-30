@@ -1,0 +1,23 @@
+{
+  "base_sha": "6cc3443ddecbd31220737f0d3b4c5e4ba9ad875f",
+  "blockers": [
+    "dispatcher_exception:RuntimeError:GIT_FAILED:branch agent/worker/MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6F-CARLOS-20260930T1645Z 6cc3443ddecbd31220737f0d3b4c5e4ba9ad875f:fatal: a branch named 'agent/worker/MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6F-CARLOS-20260930T1645Z' already exists\n"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-30T17:11:23Z",
+  "executor": "chatgpt-deterministic",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6F-CARLOS-20260930T1645Z",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-30T17:13:50Z",
+  "quality_gate": "FAIL",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-30T17:11:22Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker se detuvo por un error verificable antes de certificar el trabajo. No invento una solucion adicional y Produccion no fue tocada.",
+  "work_completion": "NOT_CERTIFIED"
+}
