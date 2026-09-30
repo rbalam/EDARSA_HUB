@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "15ac45d200852c74ad1c1f808c76215c0d419065",
-  "generated_at_utc": "2026-09-30T00:53:46Z",
+  "generated_at_utc": "2026-09-30T00:55:03Z",
   "history": {
     "done_total_local": 1184,
     "pending_total_local": 0,
@@ -16,49 +16,49 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2974,
+      "age_seconds": 3051,
       "job_id": "EDARSAHUB-COMERCIAL-DRILLDOWN-ERROR-DIAG-R2-CARLOS-20260929T2359Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2559,
+      "age_seconds": 2636,
       "job_id": "EDARSAHUB-COMERCIAL-DRILLDOWN-TIMEOUT-FIX-R3-CARLOS-20260930T0015Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1706,
+      "age_seconds": 1783,
       "job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6-CARLOS-20260929T2435Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 118,
+      "age_seconds": 195,
       "job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6B-CARLOS-20260930T0048Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2734,
+      "age_seconds": 2811,
       "job_id": "MEJORA-TABEJE-FUENTE-DETALLE-R4-CARLOS-20260929T2358Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 75,
+      "age_seconds": 152,
       "job_id": "MEJORA-TABEJE-SYNC-DETALLE-DISENO-R7-CARLOS-20260930T0055Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2391,
+      "age_seconds": 2468,
       "job_id": "MEJORA-TABEJE-SYNC-SALES-COBERTURA-R5-CARLOS-20260929T2415Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 10,
+      "age_seconds": 87,
       "job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6C-CARLOS-20260930T0102Z",
       "reason": null,
       "state": "RUNNING"
@@ -78,8 +78,8 @@
   "runtime": {
     "current_job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6C-CARLOS-20260930T0102Z",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-30T00:53:41Z",
-    "last_receive_utc": "2026-09-30T00:53:45Z",
+    "last_cycle_utc": "2026-09-30T00:54:18Z",
+    "last_receive_utc": "2026-09-30T00:54:13Z",
     "last_terminal_utc": "2026-09-30T00:52:31Z",
     "pid": "705",
     "runtime_fingerprint": {
