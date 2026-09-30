@@ -267,6 +267,199 @@ const rangeLabel = (ranges, temporalSelection, modoVentasDia) => {
   return `${starts[0]} a ${ends[ends.length - 1]}${suffix}`;
 };
 
+function TicketVentaModal({ open, onClose, ticketPk }) {
+  const [loading, setLoading] = useState(false);
+  const [ticket, setTicket] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!open || !ticketPk) return;
+
+    let active = true;
+
+    const cargarTicket = async () => {
+      setLoading(true);
+      setTicket(null);
+      setError('');
+
+      try {
+        const response = await api.get(
+          `/v2/comercial/analytics/tickets/${encodeURIComponent(ticketPk)}`,
+          { timeout: 30000 }
+        );
+
+        const payload = response.data?.data || {};
+        const header = payload.ticket || null;
+        const lines = Array.isArray(payload.lines)
+          ? payload.lines
+          : (Array.isArray(payload.lineas) ? payload.lineas : []);
+
+        if (!header) {
+          throw new Error('No se encontró información para este folio.');
+        }
+
+        if (active) {
+          setTicket({
+            unidad: header.unidad,
+            folio: header.numero_ticket,
+            fecha_hora: (
+              header.fecha_hora
+              || header.fecha
+              || header.fecha_operacion
+            ),
+            pax: header.pax,
+            estado: header.estado || 'CERRADA',
+            items: lines.map((line) => ({
+              cantidad: line.cantidad,
+              descripcion: line.producto || line.descripcion,
+              precio_unitario: line.precio_unitario,
+              importe: line.importe_bruto ?? line.importe,
+            })),
+            subtotal: header.subtotal ?? header.total ?? header.ventas,
+            descuento: header.descuento ?? 0,
+            impuesto: header.impuesto ?? null,
+            total: header.total ?? header.ventas,
+            propina: header.propina ?? 0,
+          });
+        }
+      } catch (err) {
+        if (active) {
+          setError(
+            err?.response?.data?.detail
+            || err?.message
+            || 'No fue posible cargar el ticket de venta.'
+          );
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    cargarTicket();
+
+    return () => {
+      active = false;
+    };
+  }, [open, ticketPk]);
+
+  if (!open) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <DialogContent className="max-w-lg max-h-[92vh] overflow-auto bg-zinc-100">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Receipt className="h-5 w-5 text-zinc-700" />
+            Ticket de Venta
+          </DialogTitle>
+        </DialogHeader>
+
+        {loading ? (
+          <div className="flex justify-center py-14">
+            <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+          </div>
+        ) : ticket ? (
+          <div className="mx-auto w-full max-w-sm bg-white border border-zinc-300 shadow-sm px-6 py-7 font-mono text-[13px] text-zinc-900">
+            <div className="text-center">
+              <p className="text-lg font-bold tracking-wide">{ticket.unidad}</p>
+              <p className="font-semibold mt-1">TICKET DE SERVICIO</p>
+              <p className="text-xs mt-1">
+                {ticket.estado === 'ABIERTA' ? 'VENTA EN CURSO' : 'VENTA CERRADA'}
+              </p>
+            </div>
+
+            <div className="border-t border-dashed border-zinc-500 mt-4 pt-3 space-y-1">
+              <div className="flex justify-between gap-3">
+                <span>FOLIO:</span>
+                <span className="font-bold">{ticket.folio}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span>FECHA:</span>
+                <span className="text-right">{ticket.fecha_hora}</span>
+              </div>
+              {Number(ticket.pax || 0) > 0 && (
+                <div className="flex justify-between gap-3">
+                  <span>PAX:</span>
+                  <span>{ticket.pax}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-dashed border-zinc-500 mt-3 pt-3">
+              <div className="grid grid-cols-[44px_1fr_88px] gap-2 font-bold pb-2">
+                <span>CANT</span>
+                <span>DESCRIPCIÓN</span>
+                <span className="text-right">IMPORTE</span>
+              </div>
+
+              <div className="space-y-2">
+                {(ticket.items || []).map((item, idx) => (
+                  <div key={idx} className="grid grid-cols-[44px_1fr_88px] gap-2 items-start">
+                    <span>
+                      {Number(item.cantidad || 0).toLocaleString(
+                        'es-MX',
+                        { maximumFractionDigits: 3 }
+                      )}
+                    </span>
+                    <div>
+                      <p className="uppercase leading-tight">{item.descripcion}</p>
+                      {Number(item.precio_unitario || 0) > 0
+                        && Number(item.cantidad || 0) !== 1 && (
+                        <p className="text-[11px] text-zinc-500">
+                          @ {money(item.precio_unitario)}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-right">{money(item.importe)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t border-dashed border-zinc-500 mt-4 pt-3 space-y-1">
+              <div className="flex justify-between">
+                <span>SUBTOTAL</span>
+                <span>{money(ticket.subtotal)}</span>
+              </div>
+              {Number(ticket.descuento || 0) > 0.005 && (
+                <div className="flex justify-between">
+                  <span>DESCUENTO</span>
+                  <span>-{money(ticket.descuento)}</span>
+                </div>
+              )}
+              {ticket.impuesto != null && (
+                <div className="flex justify-between">
+                  <span>IMPUESTO</span>
+                  <span>{money(ticket.impuesto)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-base font-bold border-t border-zinc-900 mt-2 pt-2">
+                <span>TOTAL VENTA</span>
+                <span>{money(ticket.total)}</span>
+              </div>
+              {Number(ticket.propina || 0) > 0.005 && (
+                <div className="flex justify-between">
+                  <span>PROPINA</span>
+                  <span>{money(ticket.propina)}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-dashed border-zinc-500 mt-5 pt-4 text-center text-[11px] text-zinc-500">
+              <p>EDARSA HUB · CONSULTA DE VENTA</p>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-12 text-zinc-500">
+            <Receipt className="h-10 w-10 mx-auto mb-3 opacity-30" />
+            <p>{error || 'No se encontró información para este folio.'}</p>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function KpiDrilldownDialog({
   open,
   onClose,
@@ -288,6 +481,7 @@ export default function KpiDrilldownDialog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [expanded, setExpanded] = useState(() => new Set());
+  const [ticketSeleccionado, setTicketSeleccionado] = useState(null);
 
   const unidadCodigo = (
     unidad?.unidad_negocio_codigo
@@ -506,8 +700,16 @@ export default function KpiDrilldownDialog({
               className="flex items-center gap-1"
               style={{ paddingLeft: `${depth * 18}px` }}
             >
-              <span className="w-4" />
-              <span className="font-mono text-xs font-medium">
+              <Receipt className="h-4 w-4 text-zinc-400 flex-shrink-0" />
+              <span
+                className="font-mono text-xs font-medium underline decoration-dotted underline-offset-2 cursor-pointer"
+                onDoubleClick={() => {
+                  if (item.ticket_pk) {
+                    setTicketSeleccionado(item.ticket_pk);
+                  }
+                }}
+                title="Doble clic para abrir el ticket de venta"
+              >
                 {item.numero_ticket}
               </span>
             </div>
@@ -602,7 +804,8 @@ export default function KpiDrilldownDialog({
     : expectedClosed;
 
   return (
-    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+    <>
+      <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <DialogContent className="max-w-5xl max-h-[88vh] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
@@ -654,6 +857,10 @@ export default function KpiDrilldownDialog({
                 </p>
               </div>
             )}
+
+            <p className="text-xs text-zinc-500 mb-2 px-1">
+              Doble clic en un folio para abrir el ticket de venta.
+            </p>
 
             <div className="flex-1 overflow-auto border rounded-lg">
               <table className="w-full text-sm">
@@ -770,6 +977,15 @@ export default function KpiDrilldownDialog({
           </div>
         )}
       </DialogContent>
-    </Dialog>
+      </Dialog>
+
+      {ticketSeleccionado && (
+        <TicketVentaModal
+          open={true}
+          onClose={() => setTicketSeleccionado(null)}
+          ticketPk={ticketSeleccionado}
+        />
+      )}
+    </>
   );
 }

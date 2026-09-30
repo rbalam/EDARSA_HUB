@@ -127,6 +127,7 @@ def test_ticket_detail_uses_identity_fields():
             "sucursal": "Mérida",
             "fecha_operacion": "2026-07-15",
             "numero_ticket": "100",
+            "primera_fecha_hora": datetime(2026, 7, 15, 20, 30),
             "codigo": "P1",
             "producto": "Producto",
             "familia": "Familia",
@@ -138,7 +139,9 @@ def test_ticket_detail_uses_identity_fields():
             "es_alcoholico": False,
             "cantidad": 2,
             "precio_unitario": 100,
+            "importe_bruto": 220,
             "importe": 200,
+            "descuento": 20,
             "propina": 20,
             "pax": 3,
         }]
@@ -161,8 +164,13 @@ def test_ticket_detail_uses_identity_fields():
         "100",
     )
     assert result["ticket"]["ventas"] == 200
+    assert result["ticket"]["subtotal"] == 220
+    assert result["ticket"]["descuento"] == 20
+    assert result["ticket"]["estado"] == "CERRADA"
+    assert result["ticket"]["fecha_hora"].startswith("2026-07-15 20:30")
     assert result["ticket"]["propina"] == 20
     assert result["ticket"]["pax"] == 3
+    assert result["lines"][0]["importe_bruto"] == 220
     assert len(result["lines"]) == 1
 
 

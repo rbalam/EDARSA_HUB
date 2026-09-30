@@ -322,7 +322,9 @@ def get_ticket_detail(
             e.es_alcoholico,
             d.cantidad,
             d.precio_unitario,
+            d.importe_bruto AS importe_bruto,
             d.importe_neto AS importe,
+            d.descuento AS descuento,
             d.propina,
             d.pax
         FROM {DETAIL_TABLE} AS d
@@ -396,8 +398,21 @@ def get_ticket_detail(
                 float(row.get("precio_unitario") or 0),
                 2,
             ),
+            "importe_bruto": round(
+                float(
+                    row.get("importe_bruto")
+                    if row.get("importe_bruto") is not None
+                    else row.get("importe")
+                    or 0
+                ),
+                2,
+            ),
             "importe": round(
                 float(row.get("importe") or 0),
+                2,
+            ),
+            "descuento": round(
+                float(row.get("descuento") or 0),
                 2,
             ),
             "propina": round(
@@ -408,6 +423,14 @@ def get_ticket_detail(
         })
 
     first = rows[0]
+    subtotal = round(
+        sum(line["importe_bruto"] for line in lines),
+        2,
+    )
+    descuento = round(
+        sum(line["descuento"] for line in lines),
+        2,
+    )
     total = round(
         sum(line["importe"] for line in lines),
         2,
@@ -431,9 +454,17 @@ def get_ticket_detail(
             "sucursal": first.get("sucursal"),
             "fecha_operacion": identity.fecha_operacion,
             "fecha": identity.fecha_operacion,
+            "fecha_hora": str(
+                first.get("primera_fecha_hora")
+                or identity.fecha_operacion
+            ),
             "numero_ticket": identity.numero_ticket,
+            "estado": "CERRADA",
             "pax": pax,
             "lineas": len(lines),
+            "subtotal": subtotal,
+            "descuento": descuento,
+            "impuesto": None,
             "ventas": total,
             "total": total,
             "propina": propina,
