@@ -1,0 +1,36 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "RRHH-CUSTODIA-GATE3B-SQL-DIAGNOSTIC-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "8f7c5db59c8cd61707cc1b9dd07fe90bf4b88c6e",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Diagnosticar exclusivamente en READ_ONLY por que fallo el sql_readonly_audit del Gate3B de Custodia. No reemplaza ni clona el Gate3B funcional. No DDL/DML, no cambios de repositorio, no Produccion.",
+  "human_summary_language": "es",
+  "allowed_paths": [],
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "identity",
+          "sql": "SELECT DB_NAME() AS database_name, ORIGINAL_LOGIN() AS original_login, SUSER_SNAME() AS effective_login;"
+        },
+        {
+          "name": "metadata_tables_access",
+          "sql": "SELECT TOP (20) s.name AS schema_name, t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE s.name='dbo' ORDER BY t.name;"
+        },
+        {
+          "name": "canonical_targets_presence",
+          "sql": "SELECT t.name AS table_name FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE s.name='dbo' AND t.name IN ('RH_Colaboradores_Expediente','RH_Cat_Puestos','Producto_Catalogo','ActivoFijo_Activos','Sistema_Empresas','Unidades_Negocio','Sistema_Sucursales','Usuario_Catalogo','Gobierno_Documento','RH_Nomina_Detalle') ORDER BY t.name;"
+        },
+        {
+          "name": "permission_probe",
+          "sql": "SELECT HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE TABLE') AS can_create_table, HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER') AS can_alter_dbo, HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','VIEW DEFINITION') AS can_view_definition;"
+        }
+      ]
+    }
+  ]
+}
