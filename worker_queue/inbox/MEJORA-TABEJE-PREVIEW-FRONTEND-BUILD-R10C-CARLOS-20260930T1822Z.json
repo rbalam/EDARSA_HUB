@@ -1,0 +1,65 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "MEJORA-TABEJE-PREVIEW-FRONTEND-BUILD-R10C-CARLOS-20260930T1822Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "FRONTEND_BUILD_CERTIFICATION",
+  "objective": "[Mejora-TABEJE | PREVIEW-FRONTEND-BUILD-R10C] Certificar en Preview, ya con R6H integrado, que el frontend de Tablero Ejecutivo compila con el drilldown de Ventas/PAX/Cheques. Solo build y auditoria READ_ONLY; sin mutaciones, sincronizadores ni Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "labels": [
+    "Mejora-TABEJE",
+    "Tablero Ejecutivo",
+    "Preview",
+    "FRONTEND-BUILD",
+    "R10C",
+    "CARLOS"
+  ],
+  "tracking": {
+    "project_label": "Mejora-TABEJE",
+    "display_label": "Mejora-TABEJE | PREVIEW-FRONTEND-BUILD-R10C",
+    "depends_on": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6H-CARLOS-20260930T1810Z"
+  },
+  "scheduling": {
+    "project_id": "Mejora-TABEJE",
+    "bounded_context": "Tablero Ejecutivo Preview Validation",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": []
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+          "frontend/src/pages/TableroEjecutivo.js"
+        ],
+        "search_terms": [
+          "KpiDrilldownDialog",
+          "onDoubleClick",
+          "Cuentas no cerradas",
+          "Cuentas cerradas pendientes de detalle",
+          "TOTAL KPI"
+        ],
+        "max_results": 30
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
