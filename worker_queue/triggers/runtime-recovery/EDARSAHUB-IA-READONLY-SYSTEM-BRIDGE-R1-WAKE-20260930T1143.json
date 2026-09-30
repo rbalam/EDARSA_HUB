@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "existing_job_id": "EDARSAHUB-IA-READONLY-SYSTEM-BRIDGE-R1-CARLOS-20260930T1142",
+  "reason": "Wake canonical Universal Worker and prefer the Asistente IA EDARSAHUB read-only system bridge. Keep all mutations on Edarsahub_Desarrollo and do not touch Production.",
+  "production_touched": false
+}
