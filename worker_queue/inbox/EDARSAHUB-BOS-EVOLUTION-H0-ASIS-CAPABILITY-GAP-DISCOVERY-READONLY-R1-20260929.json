@@ -1,0 +1,98 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-BOS-EVOLUTION-H0-ASIS-CAPABILITY-GAP-DISCOVERY-READONLY-R1-20260929",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "H0 READ_ONLY AS-IS capability gap discovery for BOS V2 Continuous Intelligence & Evolution. Reuse the certified AI-1 R2 discovery and inventory only the remaining evolution gaps: Architecture Memory/ADR lifecycle, Technology Radar, Architecture Guardian, dependency/obsolescence intelligence, Decision->Outcome->Learning, continuous model/agent evaluation, benchmark lifecycle, shadow/canary/rollout governance, feature-control ownership, capability SLO/health, drift detection, retirement/deprecation lifecycle, knowledge promotion, Context Resolver/Compiler extensions, architecture/digital-twin candidates, and existing observability/budget/evidence hooks. Classify each capability as REUSE, EXTEND, ALIGN, CONSOLIDATE, CREATE_CANDIDATE, or DO_NOT_TOUCH. For any relevant object under backend/core, classify only as KEEP_CORE, EXTRACT_PLATFORM_CANDIDATE, EXTRACT_DOMAIN_CANDIDATE, or ADAPTER_CANDIDATE; do not create, move, edit, or expand backend/core. No implementation, no DDL/DML, no migrations, no frontend, no new source of truth, no duplicate registries, no new model router, no Production.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt-classic",
+    "project": "EDARSAHUB BOS V2 Continuous Intelligence & Evolution",
+    "chat": "EDARSAHUB BOS / Evolution H0"
+  },
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules",
+          "backend/core",
+          "backend/tests",
+          "tools",
+          "docs/BOS",
+          "docs/ARCHITECTURE",
+          "docs/EKS",
+          "worker_queue/config"
+        ],
+        "search_terms": [
+          "Architecture Memory",
+          "ADR",
+          "architecture decision",
+          "Technology Radar",
+          "Architecture Guardian",
+          "dependency graph",
+          "blast radius",
+          "obsolescence",
+          "deprecation",
+          "retirement",
+          "Decision Memory",
+          "recommendation_id",
+          "Outcome",
+          "Learning",
+          "benchmark",
+          "evaluation",
+          "dataset",
+          "shadow",
+          "canary",
+          "feature flag",
+          "rollout",
+          "SLO",
+          "health",
+          "drift",
+          "Control Plane",
+          "Evidence",
+          "Provenance",
+          "budget",
+          "Context Resolver",
+          "Context Compiler",
+          "knowledge",
+          "EKS",
+          "Digital Twin",
+          "Agent Registry",
+          "Skill Registry",
+          "Executor Registry",
+          "provider/model registry",
+          "model routing",
+          "Universal Worker",
+          "Capability Policy",
+          "Procedure Policy",
+          "Execution Gate"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.md",
+          "*.json",
+          "*.js",
+          "*.jsx",
+          "*.ts",
+          "*.tsx",
+          "*.sql"
+        ],
+        "exclude_patterns": [
+          "node_modules/*",
+          "dist/*",
+          "build/*",
+          ".vendor/*"
+        ],
+        "max_results": 800
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
