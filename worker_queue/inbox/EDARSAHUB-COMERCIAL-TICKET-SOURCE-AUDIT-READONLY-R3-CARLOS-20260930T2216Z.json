@@ -1,0 +1,72 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "max_results": 150,
+        "paths": [
+          "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+          "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+          "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+          "backend/modules/comercial_v2/schemas.py",
+          "backend/modules/comercial/queries/softrestaurant.py"
+        ],
+        "search_terms": [
+          "Comercial_Inteligencia_VentasDetalleProducto",
+          "Comercial_Ventas_Dia_Abiertas_v2",
+          "sync_detalle_post_header",
+          "tempcheques",
+          "tempcheqdet",
+          "cheqdet",
+          "Comanda_Detalle",
+          "numero_ticket",
+          "producto_nombre",
+          "cantidad",
+          "precio_unitario",
+          "descuento",
+          "pax"
+        ]
+      }
+    }
+  ],
+  "created_at_utc": "2026-09-30T22:16:00Z",
+  "domain": "comercial_ticket_drilldown_sources",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-TICKET-SOURCE-AUDIT-READONLY-R3-CARLOS-20260930T2216Z",
+  "mode": "READ_ONLY",
+  "objective": "Auditar sin cambios las fuentes ya existentes para construir el Ticket de Venta en Comercial. Confirmar diferencias entre ventas cerradas y ventas del dia. Excluir autorizacion de descuento. No ejecutar sincronizadores ni modificar codigo.",
+  "priority": "P0",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Soporte Worker",
+    "email": "carlosruz@edarsa.com.mx",
+    "project": "V1",
+    "source": "chatgpt"
+  },
+  "required_findings": [
+    "closed_sales_available_fields",
+    "today_sales_available_fields",
+    "missing_fields_for_ticket",
+    "whether_existing_sync_can_supply_ticket_detail",
+    "minimum_safe_change"
+  ],
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
