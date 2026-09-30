@@ -1,0 +1,121 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "request": {
+        "exclude_patterns": [
+          ".git/*",
+          "__pycache__/*",
+          "node_modules/*",
+          "dist/*",
+          "build/*"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.json"
+        ],
+        "max_results": 300,
+        "paths": [
+          "tools/mirror_sync/gate_chain_publisher.py",
+          "tools/mirror_sync/git_divergence_guard.py",
+          "tools/mirror_sync/universal_job_bridge.py",
+          "tools/mirror_sync/worker_job_factory.py",
+          "tools/mirror_sync",
+          "backend/tests",
+          "tests",
+          "worker_queue"
+        ],
+        "search_terms": [
+          "submit(",
+          "validate_template",
+          "universal_job_bridge",
+          "worker_job_factory",
+          "canonicalize_job",
+          "edarsahub.worker-job.v2",
+          "FORBIDDEN_TEMPLATE_KEY",
+          "ALLOWED_ACTIONS",
+          "ALLOWED_CHECKS",
+          "WAITING_FOR_CONVERGENCE",
+          "_submit_convergence",
+          "git_divergence_guard",
+          "mirror/emergent-live",
+          "Edarsahub_Desarrollo",
+          "merge-base",
+          "is-ancestor",
+          "authorized_push",
+          "force",
+          "reset",
+          "clean"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "created_at_utc": "2026-09-30T21:08:23.337185+00:00",
+  "domain": "worker_runtime_convergence",
+  "expected_result": {
+    "files_changed": [],
+    "production_touched": false,
+    "quality_gate": "PASS",
+    "status": "READ_ONLY_COMPLETE"
+  },
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-WORKER-CONVERGENCE-GUARD-HARDENING-READONLY-R1",
+  "known_context": {
+    "confirmed": [
+      "Payloads libres fueron rechazados por INVALID_JOB antes de llegar al Worker.",
+      "El publisher valida template y bridge antes de revisar convergencia.",
+      "El contrato valido observado usa schema edarsahub.worker-job.v2.",
+      "Los jobs validos usan actions y checks con tipos permitidos.",
+      "No debe crearse trigger manual si submit no acepta el job."
+    ],
+    "incident": [
+      "Caso base: local igual a origin/Edarsahub_Desarrollo y mirror/emergent-live atrasado.",
+      "El fast-forward seguro solo aplica si mirror/emergent-live es ancestro de Edarsahub_Desarrollo.",
+      "Si hay divergencia bidireccional debe bloquearse y pedir reconciliacion manual."
+    ]
+  },
+  "mode": "READ_ONLY",
+  "objective": "Auditar en READ_ONLY la causa raiz del incidente de Universal Worker Runtime Convergence / Mirror-Sync Convergence y del rechazo de payloads no canonicos. Confirmar el contrato exacto de gate_chain_publisher, universal_job_bridge, worker_job_factory y git_divergence_guard. No modificar archivos, no ejecutar SQL, no usar MongoDB, no tocar Produccion, no crear triggers manuales. Entregar parche minimo recomendado para que submit(job_spec) use preflight canonico de convergencia antes de publicar y autocorrija mirror solo cuando sea fast-forward seguro.",
+  "priority": "P0",
+  "production_allowed": false,
+  "requester": {
+    "chat": "Worker 111",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "EDARSAHUB-BOS",
+    "source": "chatgpt-classic"
+  },
+  "required_findings": [
+    "branch",
+    "head",
+    "dirty_tree",
+    "publisher_template_contract",
+    "bridge_validator_contract",
+    "factory_available_or_missing",
+    "current_convergence_logic",
+    "mirror_branch_handling",
+    "why_invalid_payloads_were_possible",
+    "minimum_patch_design",
+    "safe_fast_forward_preflight_design",
+    "tests_required",
+    "next_mutation_job_payload"
+  ],
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
