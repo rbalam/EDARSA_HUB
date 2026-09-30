@@ -1,0 +1,352 @@
+{
+  "base_sha": "8f7c5db59c8cd61707cc1b9dd07fe90bf4b88c6e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-30T23:02:04Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-READONLY-R3-20260930",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-30T23:02:16Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "ConexionID",
+              "nombre",
+              "system_type",
+              "tipo_conexion",
+              "activo",
+              "visible_en_listado",
+              "visible_en_operaciones",
+              "EmpresaID",
+              "empresa_id",
+              "database_name",
+              "api_url"
+            ],
+            "name": "api_local_active_scope",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "72F6E9A7-8EA2-4EB2-802E-4EE31753435E",
+                "130° QRO LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                true,
+                true,
+                true,
+                2,
+                "",
+                "QUERETARO",
+                "http://54.39.104.176:8001/query"
+              ],
+              [
+                "B597D88A-AB37-4B4E-897B-EFE68C9B3732",
+                "API ManagmentPro",
+                "MPRO",
+                "API_LOCAL",
+                true,
+                true,
+                false,
+                null,
+                "",
+                "CLOUD",
+                "http://54.39.104.176:8008/query"
+              ],
+              [
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                "CHAPUR BACKOFFICE",
+                "ENTERPRISE",
+                "API_LOCAL",
+                true,
+                true,
+                false,
+                null,
+                "",
+                "CHAPUR",
+                "http://54.39.104.176:8009/query"
+              ],
+              [
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "CHAPUR NORTE",
+                "ENTERPRISE",
+                "API_LOCAL",
+                true,
+                true,
+                true,
+                null,
+                "",
+                "CHAPUR",
+                "http://54.39.104.176:8007/query"
+              ],
+              [
+                "31D62F39-632B-4684-B735-256BD9293A8F",
+                "CIENFUEGOS NOMINPAQ",
+                "SOFTRESTAURANT_PRO",
+                "API_LOCAL",
+                true,
+                true,
+                false,
+                null,
+                "",
+                "CIENFUEGOS",
+                "http://54.39.104.176:8005/query"
+              ],
+              [
+                "2BEAD18C-73C9-4D86-AF92-2355940274F7",
+                "GARIBALDI",
+                "SOFTRESTAURANT_PRO",
+                "API_LOCAL",
+                true,
+                true,
+                true,
+                null,
+                "",
+                "GARIBALDI",
+                "http://54.39.104.176:8014/query"
+              ],
+              [
+                "817A0AA8-6170-4738-A8F6-A72AC36BA0DF",
+                "ORIGEN LOCAL",
+                "MPRO",
+                "API_LOCAL",
+                true,
+                true,
+                false,
+                1,
+                "",
+                "ORIGEN",
+                "http://54.39.104.176:8000/query"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ConexionID",
+              "ConexionNombre",
+              "EmpresaID",
+              "CodigoEmpresa",
+              "NombreComercial",
+              "RolConexion",
+              "NumeroSucursalSistema"
+            ],
+            "name": "empresa_server_links_for_api_local",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "72F6E9A7-8EA2-4EB2-802E-4EE31753435E",
+                "130° QRO LOCAL",
+                2,
+                "130QRO",
+                "130 Grados Querétaro S.A. de C.V.",
+                "VENTAS_DIA_API_LOCAL",
+                21
+              ],
+              [
+                "B597D88A-AB37-4B4E-897B-EFE68C9B3732",
+                "API ManagmentPro",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                "CHAPUR BACKOFFICE",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "CHAPUR NORTE",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "31D62F39-632B-4684-B735-256BD9293A8F",
+                "CIENFUEGOS NOMINPAQ",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2BEAD18C-73C9-4D86-AF92-2355940274F7",
+                "GARIBALDI",
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "817A0AA8-6170-4738-A8F6-A72AC36BA0DF",
+                "ORIGEN LOCAL",
+                1,
+                "ORIGEN",
+                "Restaurante Origen S.A. de C.V.",
+                "VENTAS_DIA_API_LOCAL",
+                23
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ConexionID",
+              "ConexionNombre",
+              "EmpresaID",
+              "UnidadNegocioID",
+              "PerfilServerID",
+              "NombreComercial",
+              "Pais",
+              "Moneda"
+            ],
+            "name": "unidad_profile_links_for_api_local",
+            "row_count_returned": 7,
+            "rows": [
+              [
+                "72F6E9A7-8EA2-4EB2-802E-4EE31753435E",
+                "130° QRO LOCAL",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "B597D88A-AB37-4B4E-897B-EFE68C9B3732",
+                "API ManagmentPro",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "8CBDCC89-6495-49C3-BE9C-A965DB82C77F",
+                "CHAPUR BACKOFFICE",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "D8B2D1EB-2E1F-4E43-B7D9-822BF671E315",
+                "CHAPUR NORTE",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "31D62F39-632B-4684-B735-256BD9293A8F",
+                "CIENFUEGOS NOMINPAQ",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "2BEAD18C-73C9-4D86-AF92-2355940274F7",
+                "GARIBALDI",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ],
+              [
+                "817A0AA8-6170-4738-A8F6-A72AC36BA0DF",
+                "ORIGEN LOCAL",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocioID",
+              "codigo",
+              "nombre",
+              "server_id",
+              "activo"
+            ],
+            "name": "cienfuegos_cavas_canonical_units",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "EmpresaID",
+              "CodigoEmpresa",
+              "NombreComercial",
+              "Activo"
+            ],
+            "name": "cienfuegos_cavas_company_catalog",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                3,
+                "CIENFUEGOS",
+                "Restaurante Cienfuegos S.A. de C.V.",
+                true
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-30T23:02:03Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
