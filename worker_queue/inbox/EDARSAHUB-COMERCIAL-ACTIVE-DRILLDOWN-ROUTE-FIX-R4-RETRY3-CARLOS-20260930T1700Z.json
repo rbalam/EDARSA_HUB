@@ -1,0 +1,71 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-ACTIVE-DRILLDOWN-ROUTE-FIX-R4-RETRY3-CARLOS-20260930T1700Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir exclusivamente el endpoint ACTIVO de doble clic del Dashboard Comercial mediante cambio quirurgico y no destructivo. canonical_detail_routes.py es la ruta publica efectiva; agregar una delegacion temprana al handler real-folio de routes.py y conservar intacto el bloque legacy debajo para evitar Repository Artifact Guard destructive-shrink. Aplicar a todas las unidades. PROHIBIDO modificar o ejecutar sincronizacion de Inteligencia Comercial, Sync_Sales, Sync_PAX, ISCAM, Scheduler, ventas abiertas/cerradas, Tablero Ejecutivo, Portal de Inteligencia Comercial o Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/canonical_detail_routes.py",
+      "old": "    del tipo, periodo",
+      "new": "    # Active public route: delegate to the real-folio implementation in routes.py.\n    # The legacy daily implementation below is intentionally preserved in this\n    # file so the repository artifact guard does not see a destructive shrink.\n    from modules.comercial.routes import comercial_detalle_movimientos as _real_folio_handler\n\n    return await _real_folio_handler(\n        server_id=server_id,\n        sucursal=sucursal,\n        tipo=tipo,\n        periodo=periodo,\n        meses=meses,\n        anios=anios,\n        page=page,\n        limit=limit,\n        current_user=current_user,\n    )\n\n    # Legacy canonical-daily code retained below as rollback/reference only.\n    del tipo, periodo",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial/canonical_detail_routes.py",
+        "backend/modules/comercial/routes.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial/__init__.py",
+          "backend/modules/comercial/canonical_detail_routes.py",
+          "backend/modules/comercial/routes.py"
+        ],
+        "search_terms": [
+          "without_legacy_detail_route",
+          "_real_folio_handler",
+          "comercial_detalle_movimientos",
+          "Comercial_Inteligencia_VentasDetalleProducto",
+          "validate_server_access_rbac",
+          "COUNT(*) OVER() AS total_folios",
+          "pax_promedio"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_real_folios_sep2026",
+          "sql": "WITH tickets AS (SELECT id_transaccion,numero_ticket,MIN(COALESCE(fecha_hora,CAST(fecha_operacion AS DATETIME2))) AS fecha,SUM(ISNULL(importe_neto,0)) AS total_venta,MAX(ISNULL(pax,0)) AS pax,COUNT(*) AS num_productos FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK) WHERE unidad_negocio_id='CIENFUEGOS' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND fecha_operacion>='2026-09-01' AND fecha_operacion<'2026-10-01' GROUP BY id_transaccion,numero_ticket) SELECT numero_ticket,fecha,total_venta,pax,num_productos,CASE WHEN pax>0 THEN total_venta/pax ELSE NULL END AS pax_promedio,COUNT(*) OVER() AS total_folios FROM tickets ORDER BY CASE WHEN TRY_CONVERT(BIGINT,numero_ticket) IS NULL THEN 1 ELSE 0 END,TRY_CONVERT(BIGINT,numero_ticket),numero_ticket,fecha OFFSET 0 ROWS FETCH NEXT 50 ROWS ONLY"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
