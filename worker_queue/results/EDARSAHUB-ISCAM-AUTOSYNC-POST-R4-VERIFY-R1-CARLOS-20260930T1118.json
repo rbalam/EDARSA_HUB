@@ -1,0 +1,315 @@
+{
+  "base_sha": "3496cc098af1117952b20b8aeaf680a08e2b4f96",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-30T17:49:21Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-ISCAM-AUTOSYNC-POST-R4-VERIFY-R1-CARLOS-20260930T1118",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-30T17:49:31Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "FechaAccion",
+              "JobName",
+              "RunID",
+              "Accion",
+              "Exito",
+              "MensajeError",
+              "DetallesJSON"
+            ],
+            "name": "sync_comercial_v2_runs_after_r4",
+            "row_count_returned": 2,
+            "rows": [
+              [
+                "2026-09-30T17:42:27.477000",
+                "sync_comercial_v2",
+                "af58b37e3781",
+                "START",
+                null,
+                null,
+                "{\"id\": \"923a756e-9e4a-429f-a7c9-0472a66a8a0a\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"af58b37e3781\", \"started_at\": \"2026-09-30T17:42:27.248546+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ],
+              [
+                "2026-09-30T17:24:41.527000",
+                "sync_comercial_v2",
+                "1919cda9044f",
+                "START",
+                null,
+                null,
+                "{\"id\": \"6a02d1a3-5d7b-4c83-b4d8-008cf80946c3\", \"job_name\": \"sync_comercial_v2\", \"run_id\": \"1919cda9044f\", \"started_at\": \"2026-09-30T17:24:41.310713+00:00\", \"finished_at\": null, \"duration_ms\": null, \"status\": \"running\", \"processed_count\": 0, \"success_count\": 0, \"failed_count\": 0, \"skipped_count\": 0, \"message\": null, \"error_detail\": null, \"metadata\": {}}"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "latest_header",
+              "latest_detail",
+              "detail_lag_days"
+            ],
+            "name": "latest_header_vs_detail_all_units",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                "2026-09-29",
+                "2026-09-29",
+                0
+              ],
+              [
+                "130QRO",
+                "2026-09-28",
+                "2026-09-28",
+                0
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-29",
+                "2026-09-28",
+                1
+              ],
+              [
+                "ESTELAR",
+                "2026-09-29",
+                "2026-09-28",
+                1
+              ],
+              [
+                "ORIGEN",
+                "2026-09-28",
+                "2026-09-28",
+                0
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "fecha_operacion",
+              "ventas_runtime",
+              "ventas_detalle",
+              "delta_ventas",
+              "tickets_runtime",
+              "tickets_detalle",
+              "delta_tickets",
+              "pax_runtime",
+              "pax_detalle",
+              "delta_pax",
+              "detalle_estado"
+            ],
+            "name": "header_detail_recent_closed_days",
+            "row_count_returned": 13,
+            "rows": [
+              [
+                "130MID",
+                "2026-09-29",
+                "42838.0000",
+                "42838.0000",
+                "0.0000",
+                "14",
+                14,
+                "0",
+                "31",
+                "31",
+                "0",
+                "OK"
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-29",
+                "116279.0000",
+                "0.0000",
+                "116279.0000",
+                "31",
+                0,
+                "31",
+                "94",
+                "0",
+                "94",
+                "MISSING"
+              ],
+              [
+                "ESTELAR",
+                "2026-09-29",
+                "24610.0000",
+                "0.0000",
+                "24610.0000",
+                "1",
+                0,
+                "1",
+                "1",
+                "0",
+                "1",
+                "MISSING"
+              ],
+              [
+                "130MID",
+                "2026-09-28",
+                "94344.0000",
+                "94344.0000",
+                "0.0000",
+                "28",
+                28,
+                "0",
+                "60",
+                "60",
+                "0",
+                "OK"
+              ],
+              [
+                "130QRO",
+                "2026-09-28",
+                "49199.0000",
+                "49199.0000",
+                "0.0000",
+                "12",
+                12,
+                "0",
+                "34",
+                "34",
+                "0",
+                "OK"
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-28",
+                "78100.0000",
+                "78100.0000",
+                "0.0000",
+                "23",
+                23,
+                "0",
+                "65",
+                "65",
+                "0",
+                "OK"
+              ],
+              [
+                "ESTELAR",
+                "2026-09-28",
+                "20065.0000",
+                "20065.0000",
+                "0.0000",
+                "24",
+                24,
+                "0",
+                "49",
+                "49",
+                "0",
+                "OK"
+              ],
+              [
+                "ORIGEN",
+                "2026-09-28",
+                "35944.3900",
+                "35944.3900",
+                "0.0000",
+                "22",
+                22,
+                "0",
+                "48",
+                "48",
+                "0",
+                "OK"
+              ],
+              [
+                "130MID",
+                "2026-09-27",
+                "116922.0000",
+                "116922.0000",
+                "0.0000",
+                "28",
+                28,
+                "0",
+                "81",
+                "81",
+                "0",
+                "OK"
+              ],
+              [
+                "130QRO",
+                "2026-09-27",
+                "62311.0000",
+                "62311.0000",
+                "0.0000",
+                "12",
+                12,
+                "0",
+                "37",
+                "37",
+                "0",
+                "OK"
+              ],
+              [
+                "CIENFUEGOS",
+                "2026-09-27",
+                "84503.0000",
+                "84503.0000",
+                "0.0000",
+                "25",
+                25,
+                "0",
+                "74",
+                "74",
+                "0",
+                "OK"
+              ],
+              [
+                "ESTELAR",
+                "2026-09-27",
+                "27425.0000",
+                "27425.0000",
+                "0.0000",
+                "20",
+                20,
+                "0",
+                "55",
+                "55",
+                "0",
+                "OK"
+              ],
+              [
+                "ORIGEN",
+                "2026-09-27",
+                "47016.4300",
+                "47016.4300",
+                "0.0000",
+                "26",
+                26,
+                "0",
+                "72",
+                "72",
+                "0",
+                "OK"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-30T17:49:20Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
