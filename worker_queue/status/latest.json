@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "5f6a32e606708df91967b447405663854e7c9443",
-  "generated_at_utc": "2026-09-30T22:50:12Z",
+  "generated_at_utc": "2026-09-30T22:51:38Z",
   "history": {
     "done_total_local": 1207,
     "pending_total_local": 0,
@@ -16,85 +16,85 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2031,
+      "age_seconds": 2118,
       "job_id": "EDARSA-LOGISTICS-GATE3C-MULTIMODAL-PHYSICAL-SCHEMA-DESIGN-DOSSIER-R4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2204,
+      "age_seconds": 2290,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-RUNTIME-DELEGATION-AUDIT-READONLY-R5",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 246,
+      "age_seconds": 333,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-RUNTIME-MENU-SOURCE-AUDIT-READONLY-R6",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3017,
+      "age_seconds": 3104,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-RUNTIME-PATH-AUDIT-READONLY-R4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1702,
+      "age_seconds": 1788,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-SOURCE-AUDIT-READONLY-R3-CARLOS-20260930T2216Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2245,
+      "age_seconds": 2332,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-HIERARCHY-UI-R11-CARLOS-20260930T2155Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1472,
+      "age_seconds": 1558,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-HIERARCHY-UI-R11B-CARLOS-20260930T2225Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 365,
+      "age_seconds": 451,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-HIERARCHY-UI-R11C-CARLOS-20260930T2245Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 69,
+      "age_seconds": 155,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-HIERARCHY-UI-R11D-CARLOS-20260930T2255Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1239,
+      "age_seconds": 1326,
       "job_id": "RRHH-CUSTODIA-GATE3-MINIMAL-DDL-DESIGN-R6",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2016,
+      "age_seconds": 2103,
       "job_id": "RRR-GATE4E-R10-R6-R1-RUNTIME-ORG-RESOLUTION-FIX-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1831,
+      "age_seconds": 1918,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1251,
+      "age_seconds": 1338,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-ROOT-CAUSE-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 915,
+      "age_seconds": 1002,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-ROOT-CAUSE-R2-20260930",
       "reason": null,
       "state": "RESULT_READY"
@@ -114,8 +114,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-30T22:50:11Z",
-    "last_receive_utc": "2026-09-30T22:50:06Z",
+    "last_cycle_utc": "2026-09-30T22:51:31Z",
+    "last_receive_utc": "2026-09-30T22:51:36Z",
     "last_terminal_utc": "2026-09-30T22:49:02Z",
     "pid": "294849",
     "runtime_fingerprint": {
