@@ -1,0 +1,66 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-ISCAM-AUTOSYNC-ALL-UNITS-DIAG-R1-CARLOS-20260930T1007",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "objective": "Diagnosticar en PREVIEW/Edarsahub_Desarrollo por que Reportes ISCAM actualiza automaticamente el encabezado canonico pero deja detalle historico pendiente en algunas unidades, comparando ORIGEN contra 130QRO, 130MID, CIENFUEGOS y ESTELAR. Verificar ejecuciones reales recientes de sync_comercial_v2, cobertura header vs Comercial_Inteligencia_VentasDetalleProducto por dia cerrado, estados de detalle y configuracion/registro del scheduler. Determinar la causa exacta sin modificar codigo, SQL ni Produccion. La salida debe identificar el mismo proceso automatico que actualmente funciona y que deberia aplicarse de forma uniforme a todas las unidades.",
+  "human_summary_language": "es",
+  "mode": "READ_ONLY",
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/core/scheduler/jobs/sync_comercial_v2_job.py",
+          "backend/core/scheduler/scheduler_manager.py",
+          "backend/core/scheduler/config.py",
+          "backend/scripts/poblar_ventas_detalle_producto_canonico.py",
+          "backend/api/admin_scheduler_resync.py",
+          "backend/modules/inteligencia_comercial/iscam_routes.py",
+          "frontend/src/portal-inteligencia/pages/ReportesISCAMPage.jsx",
+          "backend/core/unidades_service.py"
+        ],
+        "search_terms": [
+          "sync_comercial_v2",
+          "_sync_detalle_post_header",
+          "OK_HEADER_CANONICO",
+          "NO_CUADRA_REVISAR",
+          "NO_PROBAR_ABIERTO_REAL",
+          "iscam-detail/jobs",
+          "Sincronizar faltantes",
+          "Comercial_Inteligencia_VentasDetalleProducto",
+          "vw_Comercial_KPIs_Diarios_v2_Runtime",
+          "SCHEDULER_SYNC_COMERCIAL_V2_ENABLED",
+          "UnidadesService"
+        ],
+        "max_results": 500
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "sync_comercial_v2_recent_runs",
+          "sql": "SELECT TOP (12) FechaAccion, JobName, RunID, Accion, Exito, MensajeError, DetallesJSON FROM dbo.Scheduler_BitacoraJobs WHERE JobName = 'sync_comercial_v2' ORDER BY FechaAccion DESC"
+        },
+        {
+          "name": "iscam_header_detail_last_closed_days",
+          "sql": "WITH runtime AS (SELECT unidad_negocio_id, CAST(fecha_operacion AS date) AS fecha_operacion, SUM(CAST(ISNULL(ventas_total,0) AS decimal(18,4))) AS ventas_runtime, SUM(CAST(ISNULL(tickets_total,0) AS bigint)) AS tickets_runtime, SUM(CAST(ISNULL(pax_total,0) AS bigint)) AS pax_runtime FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE fecha_operacion >= DATEADD(DAY,-5,CAST(GETDATE() AS date)) AND fecha_operacion < CAST(GETDATE() AS date) GROUP BY unidad_negocio_id, CAST(fecha_operacion AS date)), detalle_ticket AS (SELECT unidad_negocio_id, CAST(fecha_operacion AS date) AS fecha_operacion, numero_ticket, SUM(CAST(ISNULL(importe_neto,0) AS decimal(18,4))) AS ventas_ticket, MAX(CAST(ISNULL(pax,0) AS bigint)) AS pax_ticket FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE fecha_operacion >= DATEADD(DAY,-5,CAST(GETDATE() AS date)) AND fecha_operacion < CAST(GETDATE() AS date) AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY unidad_negocio_id, CAST(fecha_operacion AS date), numero_ticket), detalle AS (SELECT unidad_negocio_id, fecha_operacion, SUM(ventas_ticket) AS ventas_detalle, COUNT(*) AS tickets_detalle, SUM(pax_ticket) AS pax_detalle FROM detalle_ticket GROUP BY unidad_negocio_id, fecha_operacion) SELECT r.unidad_negocio_id, r.fecha_operacion, r.ventas_runtime, ISNULL(d.ventas_detalle,0) AS ventas_detalle, r.ventas_runtime-ISNULL(d.ventas_detalle,0) AS delta_ventas, r.tickets_runtime, ISNULL(d.tickets_detalle,0) AS tickets_detalle, r.tickets_runtime-ISNULL(d.tickets_detalle,0) AS delta_tickets, r.pax_runtime, ISNULL(d.pax_detalle,0) AS pax_detalle, r.pax_runtime-ISNULL(d.pax_detalle,0) AS delta_pax, CASE WHEN d.fecha_operacion IS NULL THEN 'MISSING' WHEN ABS(r.ventas_runtime-ISNULL(d.ventas_detalle,0)) > 0.05 OR r.tickets_runtime <> ISNULL(d.tickets_detalle,0) OR r.pax_runtime <> ISNULL(d.pax_detalle,0) THEN 'MISMATCH' ELSE 'OK' END AS detalle_estado FROM runtime r LEFT JOIN detalle d ON d.unidad_negocio_id=r.unidad_negocio_id AND d.fecha_operacion=r.fecha_operacion ORDER BY r.fecha_operacion DESC, r.unidad_negocio_id"
+        },
+        {
+          "name": "iscam_latest_header_vs_detail_by_unit",
+          "sql": "WITH h AS (SELECT unidad_negocio_id, MAX(CAST(fecha_operacion AS date)) AS latest_header FROM dbo.vw_Comercial_KPIs_Diarios_v2_Runtime WHERE fecha_operacion < CAST(GETDATE() AS date) GROUP BY unidad_negocio_id), d AS (SELECT unidad_negocio_id, MAX(CAST(fecha_operacion AS date)) AS latest_detail FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WHERE fecha_operacion < CAST(GETDATE() AS date) AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 GROUP BY unidad_negocio_id) SELECT h.unidad_negocio_id, h.latest_header, d.latest_detail, DATEDIFF(DAY,d.latest_detail,h.latest_header) AS detail_lag_days FROM h LEFT JOIN d ON d.unidad_negocio_id=h.unidad_negocio_id ORDER BY h.unidad_negocio_id"
+        }
+      ]
+    }
+  ]
+}
