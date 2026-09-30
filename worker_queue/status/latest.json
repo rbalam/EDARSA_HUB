@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "d6acb06171e72d4c12ff7912f37bef659190579e",
-  "generated_at_utc": "2026-09-30T23:39:39Z",
+  "generated_at_utc": "2026-09-30T23:41:00Z",
   "history": {
     "done_total_local": 1215,
     "pending_total_local": 0,
@@ -16,97 +16,97 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3214,
+      "age_seconds": 3294,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-RUNTIME-MENU-SOURCE-AUDIT-READONLY-R6",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2632,
+      "age_seconds": 2712,
       "job_id": "EDARSAHUB-BOS-WORKER-SELFHEAL-INDEXLOCK-FASTFORWARD-R2-RETRY1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 275,
+      "age_seconds": 355,
       "job_id": "EDARSAHUB-COMERCIAL-HOY-SR-OPEN-DETAIL-DIAG-R1-CARLOS-20260930T2334Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2610,
+      "age_seconds": 2690,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-DRILLDOWN-R1-CARLOS-20260930T2252Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2058,
+      "age_seconds": 2139,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-FRONTEND-BUILD-CERT-R1-CARLOS-20260930T2306Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2041,
+      "age_seconds": 2121,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-OPEN-DETAIL-DDL-FIX-R2-CARLOS-20260930T2310Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2173,
+      "age_seconds": 2253,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-OPEN-DETAIL-DDL-R1-CARLOS-20260930T2304Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1284,
+      "age_seconds": 1364,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-OPEN-DETAIL-DDL-R3-CARLOS-20260930T2316Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3333,
+      "age_seconds": 3413,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-HIERARCHY-UI-R11C-CARLOS-20260930T2245Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3037,
+      "age_seconds": 3117,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-HIERARCHY-UI-R11D-CARLOS-20260930T2255Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 47,
+      "age_seconds": 127,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-DRILLDOWN-R12-CARLOS-20260930T2315Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2688,
+      "age_seconds": 2768,
       "job_id": "RRHH-CUSTODIA-GATE3B-SQL-DDL-PREFLIGHT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2341,
+      "age_seconds": 2421,
       "job_id": "RRHH-CUSTODIA-GATE3B-SQL-DIAGNOSTIC-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2870,
+      "age_seconds": 2950,
       "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-READONLY-R2-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2255,
+      "age_seconds": 2335,
       "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-READONLY-R3-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2446,
+      "age_seconds": 2526,
       "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-SCHEMA-DIAGNOSTIC-READONLY-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
@@ -126,8 +126,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-30T23:39:36Z",
-    "last_receive_utc": "2026-09-30T23:39:39Z",
+    "last_cycle_utc": "2026-09-30T23:40:52Z",
+    "last_receive_utc": "2026-09-30T23:40:56Z",
     "last_terminal_utc": "2026-09-30T23:38:52Z",
     "pid": "331353",
     "runtime_fingerprint": {
