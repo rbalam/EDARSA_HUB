@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-READONLY-R3-20260930",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "8f7c5db59c8cd61707cc1b9dd07fe90bf4b88c6e",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Auditar las relaciones canonicas Empresa/Unidad/Conexion de API_LOCAL activas. Esta version corrige exclusivamente el contrato de auditoria eliminando la referencia inexistente Unidades_Negocio.EmpresaID, confirmada por schema diagnostic. No mutar, no secretos, no APIs externas, no Produccion.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "api_local_active_scope",
+          "sql": "SELECT CONVERT(varchar(36),sc.id) AS ConexionID,sc.nombre,sc.system_type,sc.tipo_conexion,sc.activo,sc.visible_en_listado,sc.visible_en_operaciones,sc.EmpresaID,sc.empresa_id,sc.database_name,sc.api_url FROM dbo.Servidores_Conexiones sc WHERE sc.tipo_conexion='API_LOCAL' AND sc.activo=1 ORDER BY sc.nombre"
+        },
+        {
+          "name": "empresa_server_links_for_api_local",
+          "sql": "SELECT CONVERT(varchar(36),sc.id) AS ConexionID,sc.nombre AS ConexionNombre,es.EmpresaID,e.CodigoEmpresa,e.NombreComercial,es.RolConexion,es.NumeroSucursalSistema FROM dbo.Servidores_Conexiones sc LEFT JOIN dbo.Sistema_EmpresasServidores es ON es.ServidorID=sc.id LEFT JOIN dbo.Sistema_Empresas e ON e.EmpresaID=es.EmpresaID WHERE sc.tipo_conexion='API_LOCAL' AND sc.activo=1 ORDER BY sc.nombre,es.EmpresaID"
+        },
+        {
+          "name": "unidad_profile_links_for_api_local",
+          "sql": "SELECT CONVERT(varchar(36),sc.id) AS ConexionID,sc.nombre AS ConexionNombre,p.EmpresaID,CONVERT(varchar(36),p.UnidadNegocioID) AS UnidadNegocioID,CONVERT(varchar(36),p.ServerID) AS PerfilServerID,p.NombreComercial,p.Pais,p.Moneda FROM dbo.Servidores_Conexiones sc LEFT JOIN dbo.Sistema_UnidadesNegocioPerfilDigital p ON p.ServerID=sc.id WHERE sc.tipo_conexion='API_LOCAL' AND sc.activo=1 ORDER BY sc.nombre,p.UnidadNegocioID"
+        },
+        {
+          "name": "cienfuegos_cavas_canonical_units",
+          "sql": "SELECT CONVERT(varchar(36),u.id) AS UnidadNegocioID,u.codigo,u.nombre,u.server_id,u.activo FROM dbo.Unidades_Negocio u WHERE UPPER(ISNULL(u.codigo,'')) LIKE '%CIENFUEGOS%' OR UPPER(ISNULL(u.nombre,'')) LIKE '%CIENFUEGOS%' OR UPPER(ISNULL(u.codigo,'')) LIKE '%CAVA%' OR UPPER(ISNULL(u.nombre,'')) LIKE '%CAVA%' ORDER BY u.nombre"
+        },
+        {
+          "name": "cienfuegos_cavas_company_catalog",
+          "sql": "SELECT EmpresaID,CodigoEmpresa,NombreComercial,Activo FROM dbo.Sistema_Empresas WHERE UPPER(ISNULL(CodigoEmpresa,'')) LIKE '%CIENFUEGOS%' OR UPPER(ISNULL(NombreComercial,'')) LIKE '%CIENFUEGOS%' OR UPPER(ISNULL(CodigoEmpresa,'')) LIKE '%CAVA%' OR UPPER(ISNULL(NombreComercial,'')) LIKE '%CAVA%' ORDER BY EmpresaID"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS / Servidores Integraciones Conexiones Comunicaciones",
+    "chat": "Conexiones y Comunicaciones 2"
+  }
+}
