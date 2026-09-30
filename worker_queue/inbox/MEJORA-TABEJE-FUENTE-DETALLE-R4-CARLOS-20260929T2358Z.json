@@ -1,0 +1,120 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "MEJORA-TABEJE-FUENTE-DETALLE-R4-CARLOS-20260929T2358Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "labels": [
+    "Mejora-TABEJE",
+    "Tablero Ejecutivo",
+    "FUENTE-DETALLE-R4",
+    "READ_ONLY",
+    "CARLOS"
+  ],
+  "tracking": {
+    "project_label": "Mejora-TABEJE",
+    "display_label": "Mejora-TABEJE | FUENTE-DETALLE-R4 | MEJORA-TABEJE-FUENTE-DETALLE-R4-CARLOS-20260929T2358Z",
+    "status_legend": {
+      "VERDE": [
+        "DONE",
+        "PASS",
+        "CERTIFIED",
+        "CERTIFIED_READ_ONLY",
+        "CERTIFIED_OPERATIONAL"
+      ],
+      "AMARILLO": [
+        "PENDING",
+        "PROCESSING",
+        "RESULT_READY",
+        "WAITING",
+        "IN_PROGRESS"
+      ],
+      "ROJO": [
+        "REJECTED",
+        "ERROR",
+        "FAILED",
+        "BLOCKED"
+      ]
+    }
+  },
+  "objective": "[Mejora-TABEJE | FUENTE-DETALLE-R4] Continuar la identificacion de una fuente existente de SOLO LECTURA en EDARSAHUB que permita el drilldown diario del Tablero Ejecutivo. Revisar especialmente Vw_Sync_Sales_Unified, Sync_Sales, Venta_Encabezado y Venta_Detalle para confirmar si contienen folio/ticket, fecha de operacion o apertura, PAX/personas e importe para el 2026-09-29. No modificar ni ejecutar sincronizaciones, Scheduler, ISCAM, backfills ni accesos POS live. No tocar Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "scheduling": {
+    "project_id": "Mejora-TABEJE",
+    "bounded_context": "Tablero Ejecutivo",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial/routes.py",
+          "backend/modules/comercial/service.py",
+          "backend/modules/comercial_v2/repository_readonly.py",
+          "backend/database/validation/phase3_comercial_kpi_cross_menu_source_audit.sql",
+          "backend/database/migrations/031_diagnostico_sync_sales_pax_detalle.sql"
+        ],
+        "search_terms": [
+          "Vw_Sync_Sales_Unified",
+          "Sync_Sales",
+          "Venta_Encabezado",
+          "Venta_Detalle",
+          "folio",
+          "pax",
+          "personas",
+          "fecha_operacion"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.sql"
+        ],
+        "exclude_patterns": [],
+        "max_results": 140
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "schema_vw_sync_sales_unified",
+          "sql": "SELECT COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Vw_Sync_Sales_Unified' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "schema_sync_sales",
+          "sql": "SELECT COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Sync_Sales' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "schema_venta_encabezado",
+          "sql": "SELECT COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Venta_Encabezado' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "schema_venta_detalle",
+          "sql": "SELECT COLUMN_NAME,DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='dbo' AND TABLE_NAME='Venta_Detalle' ORDER BY ORDINAL_POSITION"
+        },
+        {
+          "name": "objetos_candidatos_columnas",
+          "sql": "SELECT c.TABLE_NAME,c.COLUMN_NAME,c.DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS c WHERE c.TABLE_SCHEMA='dbo' AND c.TABLE_NAME IN ('Vw_Sync_Sales_Unified','Sync_Sales','Venta_Encabezado','Venta_Detalle') ORDER BY c.TABLE_NAME,c.ORDINAL_POSITION"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
