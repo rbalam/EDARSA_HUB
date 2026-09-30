@@ -137,7 +137,9 @@ def _remote_queue_sha() -> str:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"worker queue head unavailable [{diagnostic}]",
         ) from exc
-t = 30) -> subprocess.CompletedProcess[str]:
+
+
+def _runtime_git(*args: str, timeout: int = 30) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(
             ["git", *args],
