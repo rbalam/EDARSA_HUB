@@ -1,0 +1,117 @@
+{
+  "base_sha": "899064f7bb61cbb3569eaa113c50113194bc4276",
+  "blockers": [
+    "check_failed:sql_readonly_audit",
+    "slot_release_failed:SlotRuntimeError:SLOT_NOT_FOUND"
+  ],
+  "certification": "NOT_CERTIFIED",
+  "completed_at_utc": "2026-09-30T18:35:00Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "MEJORA-TABEJE-PREVIEW-ALL-UNITS-SMOKE-R10D-CARLOS-20260930T1822Z",
+  "percent_complete": 0,
+  "production_touched": false,
+  "published_at_utc": "2026-09-30T18:35:29Z",
+  "quality_gate": "FAIL",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "cheques_cerrados",
+              "cuentas cerradas pendientes de detalle",
+              "cuentas no cerradas",
+              "kpidrilldowndialog",
+              "pax_cerrados",
+              "total kpi",
+              "ventas_cerradas"
+            ],
+            "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "cheques_cerrados",
+              "kpidrilldowndialog",
+              "ondoubleclick",
+              "pax_cerrados",
+              "ventas_cerradas"
+            ],
+            "path": "frontend/src/pages/TableroEjecutivo.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial_analytics",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.db",
+              "core.server_registry",
+              "datetime",
+              "ticket_identity",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "cancelado_origen",
+              "es_kpi_valido"
+            ],
+            "path": "backend/modules/comercial_analytics/repository_tickets.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_date_string",
+              "_ensure_unit_allowed",
+              "_execute",
+              "_execute_readonly_query_params",
+              "_normalize_allowed_units",
+              "_required",
+              "get_ticket_detail",
+              "list_tickets"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 3,
+          "scanned_files": 3,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-30T18:34:26Z",
+  "status": "BLOCKED",
+  "summary_es": "El worker recibio una orden exacta de ChatGPT y la proceso sin pedir instrucciones a otra inteligencia artificial.",
+  "tests": "FAIL",
+  "work_completion": "NOT_CERTIFIED"
+}
