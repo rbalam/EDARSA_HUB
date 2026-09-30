@@ -1,0 +1,200 @@
+{
+  "base_sha": "8f7c5db59c8cd61707cc1b9dd07fe90bf4b88c6e",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-30T23:00:38Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "RRHH-CUSTODIA-GATE3B-SQL-DIAGNOSTIC-READONLY-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-30T23:01:19Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "database_name",
+              "original_login",
+              "effective_login"
+            ],
+            "name": "identity",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "EDARSAHUB",
+                "HRLectura",
+                "HRLectura"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "schema_name",
+              "table_name"
+            ],
+            "name": "metadata_tables_access",
+            "row_count_returned": 20,
+            "rows": [
+              [
+                "dbo",
+                "ActivoFijo_ActivoMedidores"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_Activos"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_ActivosLibros"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_Alertas"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_Archivos"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_Autorizaciones"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_BajasActivos"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_ClaseActivo"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_Cotizaciones"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_DepreciacionMovimientos"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_EstadoUsoActivo"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_EstatusActivo"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_EstatusOT"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_HistorialAsignaciones"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_LecturasMedidor"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_LibrosDepreciacion"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_Medidores"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_MetodosDepreciacion"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_MovimientosActivo"
+              ],
+              [
+                "dbo",
+                "ActivoFijo_OrdenesTrabajo"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "table_name"
+            ],
+            "name": "canonical_targets_presence",
+            "row_count_returned": 10,
+            "rows": [
+              [
+                "ActivoFijo_Activos"
+              ],
+              [
+                "Gobierno_Documento"
+              ],
+              [
+                "Producto_Catalogo"
+              ],
+              [
+                "RH_Cat_Puestos"
+              ],
+              [
+                "RH_Colaboradores_Expediente"
+              ],
+              [
+                "RH_Nomina_Detalle"
+              ],
+              [
+                "Sistema_Empresas"
+              ],
+              [
+                "Sistema_Sucursales"
+              ],
+              [
+                "Unidades_Negocio"
+              ],
+              [
+                "Usuario_Catalogo"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "can_create_table",
+              "can_alter_dbo",
+              "can_view_definition"
+            ],
+            "name": "permission_probe",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1,
+                1,
+                1
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-30T23:00:37Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
