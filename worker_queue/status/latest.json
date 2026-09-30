@@ -4,62 +4,68 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "6c1638180de49f4eddf8c0aae534763199a96f2f",
-  "generated_at_utc": "2026-09-30T19:23:09Z",
+  "generated_at_utc": "2026-09-30T19:24:29Z",
   "history": {
     "done_total_local": 1196,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1057,
-    "results_total_local": 2056
+    "rejected_total_local": 1058,
+    "results_total_local": 2057
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 245,
+      "age_seconds": 325,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-AUDIT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 100,
+      "age_seconds": 180,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-AUDIT-READONLY-R2-NARROW",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2672,
+      "age_seconds": 2752,
       "job_id": "EDARSAHUB-COMERCIAL-VENTAS-HIERARCHY-DRILLDOWN-R1-CARLOS-20260930T1825Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 342,
+      "age_seconds": 422,
       "job_id": "EDARSAHUB-COMERCIAL-VENTAS-HIERARCHY-DRILLDOWN-R2-CARLOS-20260930T1905Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2889,
+      "age_seconds": 2969,
       "job_id": "MEJORA-TABEJE-PREVIEW-ALL-UNITS-SMOKE-R10D-CARLOS-20260930T1822Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2579,
+      "age_seconds": 2659,
       "job_id": "MEJORA-TABEJE-PREVIEW-FRONTEND-BUILD-R10C-CARLOS-20260930T1822Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2506,
+      "age_seconds": 2585,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927-RETRY1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 176,
+      "age_seconds": 255,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927-RETRY2",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2,
+      "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260927-RETRY3",
       "reason": null,
       "state": "RESULT_READY"
     }
@@ -72,15 +78,15 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 8,
+  "queue_result_ready_recent": 9,
   "queue_running": 0,
   "remote_development_sha": "6c1638180de49f4eddf8c0aae534763199a96f2f",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-30T19:23:02Z",
-    "last_receive_utc": "2026-09-30T19:23:06Z",
-    "last_terminal_utc": "2026-09-30T19:21:29Z",
+    "last_cycle_utc": "2026-09-30T19:24:22Z",
+    "last_receive_utc": "2026-09-30T19:24:27Z",
+    "last_terminal_utc": "2026-09-30T19:24:26Z",
     "pid": "570",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "2ded6a35b1d62fa46db3825661382a2ee5009d81",
