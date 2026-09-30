@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "3496cc098af1117952b20b8aeaf680a08e2b4f96",
-  "generated_at_utc": "2026-09-30T17:46:38Z",
+  "generated_at_utc": "2026-09-30T17:48:11Z",
   "history": {
     "done_total_local": 1190,
     "pending_total_local": 0,
@@ -16,43 +16,43 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2094,
+      "age_seconds": 2187,
       "job_id": "EDARSAHUB-COMERCIAL-ACTIVE-DRILLDOWN-ROUTE-FIX-R4-RETRY3-CARLOS-20260930T1700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3034,
+      "age_seconds": 3127,
       "job_id": "EDARSAHUB-ISCAM-AUTOSYNC-SELECTIVE-DETAIL-FIX-R3-CARLOS-20260930T1045",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1939,
+      "age_seconds": 2032,
       "job_id": "EDARSAHUB-ISCAM-AUTOSYNC-SELECTIVE-DETAIL-FIX-R4-CARLOS-20260930T1108",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2114,
+      "age_seconds": 2207,
       "job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6F-CARLOS-20260930T1645Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1640,
+      "age_seconds": 1733,
       "job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6G-CARLOS-20260930T1720Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2055,
+      "age_seconds": 2148,
       "job_id": "MEJORA-TABEJE-PREVIEW-ALL-UNITS-SMOKE-R10A-CARLOS-20260930T1700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2079,
+      "age_seconds": 2172,
       "job_id": "MEJORA-TABEJE-PREVIEW-FRONTEND-BUILD-R10B-CARLOS-20260930T1700Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -72,8 +72,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-30T17:46:33Z",
-    "last_receive_utc": "2026-09-30T17:46:35Z",
+    "last_cycle_utc": "2026-09-30T17:47:43Z",
+    "last_receive_utc": "2026-09-30T17:47:38Z",
     "last_terminal_utc": "2026-09-30T17:19:17Z",
     "pid": "537",
     "runtime_fingerprint": {
