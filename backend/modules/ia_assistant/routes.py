@@ -9,14 +9,17 @@ from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
+    Request,
 )
 from pydantic import BaseModel, Field
 
 from core.rbac.middleware import (
     require_explicit_permission,
 )
+from modules.ia_assistant import query_bridge
 from modules.ia_assistant import repository
 from modules.ia_assistant import service
+from modules.ia_assistant.worker_routes import router as worker_router
 
 IA_PERMISSION = "IA_ASSISTANT_VER"
 
@@ -24,6 +27,7 @@ router = APIRouter(
     prefix="/ia",
     tags=["Asistente IA"],
 )
+router.include_router(worker_router)
 
 
 class CrearSesionRequest(BaseModel):
@@ -256,6 +260,7 @@ async def eliminar_sesion(
 @router.post("/chat")
 async def chat(
     request: ChatRequest,
+    http_request: Request,
     current_user: dict = Depends(
         require_explicit_permission(
             IA_PERMISSION
@@ -273,12 +278,29 @@ async def chat(
                 "estar vacío"
             )
 
+        session_id = str(request.sesion_id)
+        catalog = query_bridge.build_readonly_catalog(http_request.app)
+        prompt_catalog = query_bridge.catalog_for_prompt(catalog, message)
+        planned = await service.plan_system_queries(
+            session_id,
+            message,
+            prompt_catalog,
+        )
+        system_context = await query_bridge.execute_planned_queries(
+            http_request.app,
+            catalog,
+            planned,
+            authorization=http_request.headers.get("authorization"),
+            cookie=http_request.headers.get("cookie"),
+        )
+
         return await service.enviar_mensaje(
-            str(request.sesion_id),
+            session_id,
             _current_email(
                 current_user
             ),
             message,
+            system_context=system_context,
         )
 
     except Exception as exc:
