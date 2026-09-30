@@ -1,0 +1,6 @@
+{
+  "schema": "edarsahub.runtime-recovery-trigger.v1",
+  "reason": "Wake the canonical Universal Worker to consume the already-published READ_ONLY_SQL job RRHH-CUSTODIA-GATE3B-SQL-DDL-PREFLIGHT-READONLY-R1 from worker_queue/inbox. Do not clone, rename, modify, or re-emit the job. Preserve original job_id and request. Require safe runtime convergence, fail closed on unsafe git state, and do not touch Production.",
+  "existing_job_id": "RRHH-CUSTODIA-GATE3B-SQL-DDL-PREFLIGHT-READONLY-R1",
+  "production_touched": false
+}
