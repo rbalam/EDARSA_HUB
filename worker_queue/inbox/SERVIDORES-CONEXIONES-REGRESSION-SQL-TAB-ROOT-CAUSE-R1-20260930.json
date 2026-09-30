@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-ROOT-CAUSE-R1-20260930",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "f2ba2c4c5f273fffd98f317805a7a84374305aa7",
+  "objective": "Corregir la regresion real del menu Servidores SQL en su causa canonica: backend/core/server_registry.py dejo de excluir API_LOCAL en _get_servers_from_sql por el cambio R10A del 2026-09-18. Restaurar exclusivamente el filtro API_LOCAL en el listado /api/servers, que alimenta el tab SQL. API_LOCAL debe seguir en /api/api-connections. No tocar CORE mas alla de mantener su filtro existente, no tocar CAVAS, RBAC, SQL fisico, Scheduler, NetPay ni Produccion.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS / Servidores Integraciones Conexiones Comunicaciones",
+    "chat": "Conexiones y Comunicaciones 2"
+  },
+  "production_allowed": false,
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/core/server_registry.py",
+      "old_text": "        # Excluir conexiones API_LOCAL (tienen su propio endpoint /api/api-connections)\n        # R10A: El listado administrativo debe incluir API_LOCAL cuando visible_en_listado=true.\n        # Operaciones conserva su filtro propio en get_visible_servers_for_operaciones().\n",
+      "replacement": "        # API_LOCAL tiene endpoint y tab propios: /api/api-connections.\n        # El listado /api/servers alimenta exclusivamente el tab SQL Servers.\n        conditions.append(\"(tipo_conexion != 'API_LOCAL' OR tipo_conexion IS NULL)\")\n",
+      "source_sha256": "a6ba10c00928fcb93b423ae20fcdebadc03f58ddd128bbb483b5312ede05e08c",
+      "expected_occurrences": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_server_registry_sql_listing_contract.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[2]\nREGISTRY = ROOT / \"backend/core/server_registry.py\"\n\n\ndef test_sql_server_registry_excludes_api_local_from_generic_servers_listing():\n    source = REGISTRY.read_text(encoding=\"utf-8\")\n    assert 'conditions.append(\"(tipo_conexion != \\'API_LOCAL\\' OR tipo_conexion IS NULL)\")' in source\n    assert \"R10A: El listado administrativo debe incluir API_LOCAL\" not in source\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/core/server_registry.py",
+        "backend/tests/test_server_registry_sql_listing_contract.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_server_registry_sql_listing_contract.py"
+      ]
+    }
+  ]
+}
