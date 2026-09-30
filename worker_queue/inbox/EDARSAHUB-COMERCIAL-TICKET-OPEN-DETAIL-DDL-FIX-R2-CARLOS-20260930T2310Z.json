@@ -1,0 +1,49 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-TICKET-OPEN-DETAIL-DDL-FIX-R2-CARLOS-20260930T2310Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir exclusivamente la migracion aditiva del detalle de ventas abiertas para que el CHECK que referencia la columna recien agregada se compile mediante SQL dinamico en un segundo contexto. Mantener idempotencia y no tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/database/migrations/20260930_002_comercial_ticket_open_detail_json.sql",
+      "old": "SET XACT_ABORT ON;\nSET NOCOUNT ON;\n\nIF COL_LENGTH('dbo.Comercial_Ventas_Dia_Abiertas_v2', 'detalle_abiertas_json') IS NULL\nBEGIN\n    ALTER TABLE dbo.Comercial_Ventas_Dia_Abiertas_v2\n    ADD detalle_abiertas_json NVARCHAR(MAX) NULL;\nEND;\n\nIF NOT EXISTS (\n    SELECT 1\n    FROM sys.check_constraints\n    WHERE name = 'CK_Comercial_Ventas_Dia_Abiertas_v2_DetalleJson'\n      AND parent_object_id = OBJECT_ID('dbo.Comercial_Ventas_Dia_Abiertas_v2')\n)\nBEGIN\n    ALTER TABLE dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH NOCHECK\n    ADD CONSTRAINT CK_Comercial_Ventas_Dia_Abiertas_v2_DetalleJson\n    CHECK (detalle_abiertas_json IS NULL OR ISJSON(detalle_abiertas_json) = 1);\nEND;\n",
+      "new": "SET XACT_ABORT ON;\nSET NOCOUNT ON;\n\nIF COL_LENGTH('dbo.Comercial_Ventas_Dia_Abiertas_v2', 'detalle_abiertas_json') IS NULL\nBEGIN\n    ALTER TABLE dbo.Comercial_Ventas_Dia_Abiertas_v2\n    ADD detalle_abiertas_json NVARCHAR(MAX) NULL;\nEND;\n\nIF NOT EXISTS (\n    SELECT 1\n    FROM sys.check_constraints\n    WHERE name = 'CK_Comercial_Ventas_Dia_Abiertas_v2_DetalleJson'\n      AND parent_object_id = OBJECT_ID('dbo.Comercial_Ventas_Dia_Abiertas_v2')\n)\nBEGIN\n    EXEC(N'\n        ALTER TABLE dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH NOCHECK\n        ADD CONSTRAINT CK_Comercial_Ventas_Dia_Abiertas_v2_DetalleJson\n        CHECK (\n            detalle_abiertas_json IS NULL\n            OR ISJSON(detalle_abiertas_json) = 1\n        );\n    ');\nEND;\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/database/migrations/20260930_002_comercial_ticket_open_detail_json.sql"
+        ],
+        "search_terms": [
+          "detalle_abiertas_json",
+          "EXEC(N",
+          "CK_Comercial_Ventas_Dia_Abiertas_v2_DetalleJson",
+          "ISJSON"
+        ],
+        "include_patterns": [
+          "*.sql"
+        ],
+        "exclude_patterns": [],
+        "max_results": 50
+      }
+    }
+  ]
+}
