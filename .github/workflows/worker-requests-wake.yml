@@ -46,7 +46,13 @@ jobs:
             exit 14
           fi
 
-          RUNTIME_URL='https://erp-crm-enterprise-1.preview.emergentagent.com'
+          git fetch --quiet origin Edarsahub_Desarrollo:refs/remotes/origin/Edarsahub_Desarrollo
+          RUNTIME_URL="$(git show origin/Edarsahub_Desarrollo:worker_queue/config/runtime-recovery.json | jq -r '.canonical_public_url // empty')"
+          if [ -z "$RUNTIME_URL" ] || [[ "$RUNTIME_URL" != https://* ]]; then
+            echo 'INVALID_CANONICAL_RUNTIME_URL'
+            exit 13
+          fi
+          RUNTIME_URL="${RUNTIME_URL%/}"
           RESULT_PATH="worker_queue/results/${JOB_ID}.json"
 
           job_is_terminal() {
