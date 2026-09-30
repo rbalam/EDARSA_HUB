@@ -1,0 +1,107 @@
+{
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "request": {
+        "max_results": 100,
+        "paths": [
+          "backend/modules/auth/routes.py",
+          "backend/core/rbac/service.py",
+          "backend/core/rbac/repository_sql.py",
+          "backend/core/rbac_sql/service.py",
+          "backend/core/user_access_context.py",
+          "backend/modules/sistema/menu_service.py",
+          "frontend/src/hooks/useMenusByContext.js",
+          "frontend/src/pages/Layout.js",
+          "frontend/src/pages/Usuarios.js"
+        ],
+        "search_terms": [
+          "def get_user_permissions",
+          "get_user_permissions",
+          "get_permisos_usuario",
+          "get_roles_usuario",
+          "get_effective_permissions",
+          "RBACSQLService",
+          "RBACRepositorySQL",
+          "get_rbac_user_permissions",
+          "MENU_PERMISSION_MAP",
+          "SISTEMA_USUARIOS_VER",
+          "USUARIOS_VER",
+          "_normalize_permission_codes",
+          "_build_menu_permissions",
+          "_build_effective_permissions_payload",
+          "/auth/me/menu-permissions",
+          "permisos_modulos",
+          "useMenusByContext",
+          "menus-by-context",
+          "obtener_menus_current_user",
+          "obtener_menus_usuario",
+          "obtener_permisos_usuario",
+          "obtener_permisos_usuario_por_unidad",
+          "_menu_autorizado",
+          "_obtener_modulos_permitidos_usuario",
+          "_rutas_menu_permitidas_usuario",
+          "visible",
+          "Usuario_RolesAsignacion",
+          "Usuario_RolesContexto",
+          "Usuario_PermisosRolModulo",
+          "Usuario_Modulos",
+          "Usuario_Acciones",
+          "Sistema_Modulos",
+          "Sistema_ModulosMenus"
+        ]
+      },
+      "type": "repository_contract_audit"
+    }
+  ],
+  "created_at_utc": "2026-09-30T21:58:36.736811+00:00",
+  "domain": "usuarios_rbac_menu",
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-RUNTIME-PATH-AUDIT-READONLY-R4",
+  "mode": "READ_ONLY",
+  "objective": "Cerrar la ruta runtime exacta de autorizacion y visibilidad del Menu Usuarios. No reparar todavia. No modificar archivos. No SQL. No MongoDB. No Produccion. Determinar cual es la fuente efectiva que decide la visibilidad de Usuarios y si existen rutas RBAC/menu paralelas que produzcan resultados diferentes.",
+  "priority": "P0",
+  "production_allowed": false,
+  "requester": {
+    "chat": "",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "",
+    "source": "chatgpt"
+  },
+  "required_findings": [
+    "runtime_path_auth_me_menu_permissions",
+    "runtime_path_useMenusByContext",
+    "exact_definition_core_rbac_service_get_user_permissions",
+    "repository_used_by_get_user_permissions",
+    "whether_get_user_permissions_uses_canonical_rbac_sql",
+    "whether_get_user_permissions_delegates_to_RBACSQLService",
+    "exact_permission_code_required_for_usuarios_menu",
+    "exact_normalization_of_usuarios_permission",
+    "whether_menu_service_is_second_authorization_engine",
+    "whether_Usuario_RolesContexto_changes_menu_visibility",
+    "whether_Layout_overwrites_or_bypasses_menu_permissions",
+    "single_runtime_source_of_truth_or_multiple",
+    "exact_root_cause",
+    "minimal_mutation_files",
+    "required_regression_tests",
+    "recommended_R5_mutation_job"
+  ],
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
