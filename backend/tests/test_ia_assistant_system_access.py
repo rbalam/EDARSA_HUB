@@ -23,14 +23,20 @@ for key, value in {
 }.items():
     os.environ.setdefault(key, value)
 
-from modules.ia_assistant import query_bridge  # noqa: E402
-from modules.ia_assistant import repository  # noqa: E402
-from modules.ia_assistant import service  # noqa: E402
-from modules.ia_assistant import worker_routes  # noqa: E402
+from modules.ia_assistant import (
+    query_bridge,
+    repository,
+    service,
+    worker_routes,
+)
 
 
 def _demo_app() -> FastAPI:
     app = FastAPI()
+
+    @app.get("/api/demo/run", operation_id="run_demo")
+    async def run_demo():
+        return {"ok": True}
 
     @app.get("/api/demo/{item_id}", operation_id="read_demo")
     async def read_demo(item_id: str, q: str | None = None):
@@ -51,10 +57,6 @@ def _demo_app() -> FastAPI:
 
     @app.get("/api/admin/status", operation_id="admin_status")
     async def admin_status():
-        return {"ok": True}
-
-    @app.get("/api/demo/run", operation_id="run_demo")
-    async def run_demo():
         return {"ok": True}
 
     return app

@@ -1,10 +1,8 @@
 import importlib.util
 import os
 import sys
-import os
 from pathlib import Path
 from types import SimpleNamespace
-
 
 ROOT = Path(__file__).resolve().parents[2]
 DISPATCHER = ROOT / "tools/mirror_sync/universal_job_dispatcher.py"
@@ -125,7 +123,7 @@ def test_py_compile_uses_canonical_python(
         "/canonical/python",
     )
 
-    result = module.run_check(
+    module.run_check(
         tmp_path,
         {
             "type": "py_compile",
@@ -164,7 +162,7 @@ def test_pytest_uses_canonical_python(
 
     (tmp_path / "backend").mkdir()
 
-    result = module.run_check(
+    module.run_check(
         tmp_path,
         {
             "type": "pytest",
