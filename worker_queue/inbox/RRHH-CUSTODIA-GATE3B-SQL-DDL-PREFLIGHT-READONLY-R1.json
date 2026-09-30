@@ -1,0 +1,48 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "RRHH-CUSTODIA-GATE3B-SQL-DDL-PREFLIGHT-READONLY-R1",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "5f6a32e606708df91967b447405663854e7c9443",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Certificar en SQL Server real, exclusivamente READ_ONLY, que el DDL diseñado por RRHH-CUSTODIA-GATE3-MINIMAL-DDL-DESIGN-R6 puede avanzar a una futura migracion de Desarrollo sin colisionar objetos existentes, sin incompatibilidades de tipos FK y con permisos DDL observables. No ejecutar DDL/DML, no modificar repositorio, no tocar frontend ni Produccion.",
+  "human_summary_language": "es",
+  "allowed_paths": [],
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "custodia_target_table_collisions",
+          "sql": "SELECT s.name AS schema_name, t.name AS table_name, t.object_id FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id WHERE s.name='dbo' AND t.name IN ('Custodia_Recurso','Custodia_Resguardo','Custodia_Movimiento','Custodia_Devolucion','Custodia_Incidencia','Custodia_CargoPropuesto','RH_UniformePolitica','RH_UniformePoliticaDetalle') ORDER BY t.name;"
+        },
+        {
+          "name": "custodia_constraint_name_collisions",
+          "sql": "SELECT o.type_desc, o.name, OBJECT_SCHEMA_NAME(o.parent_object_id) AS parent_schema, OBJECT_NAME(o.parent_object_id) AS parent_object FROM sys.objects o WHERE o.name IN ('PK_Custodia_Recurso','FK_Custodia_Recurso_Empresa','FK_Custodia_Recurso_Unidad','FK_Custodia_Recurso_Sucursal','FK_Custodia_Recurso_Producto','FK_Custodia_Recurso_ActivoFijo','FK_Custodia_Recurso_Usuario','CK_Custodia_Recurso_Origen','CK_Custodia_Recurso_Cantidad','PK_Custodia_Resguardo','FK_Custodia_Resguardo_Recurso','FK_Custodia_Resguardo_Colaborador','FK_Custodia_Resguardo_Empresa','FK_Custodia_Resguardo_Unidad','FK_Custodia_Resguardo_Sucursal','FK_Custodia_Resguardo_Entrega','FK_Custodia_Resguardo_Recepcion','FK_Custodia_Resguardo_Responsiva','UQ_Custodia_Resguardo_Idempotency','CK_Custodia_Resguardo_Cantidad','CK_Custodia_Resguardo_Fechas','PK_Custodia_Movimiento','FK_Custodia_Movimiento_Resguardo','FK_Custodia_Movimiento_Usuario','FK_Custodia_Movimiento_Documento','UQ_Custodia_Movimiento_Idempotency','PK_Custodia_Devolucion','FK_Custodia_Devolucion_Resguardo','FK_Custodia_Devolucion_Usuario','FK_Custodia_Devolucion_Documento','UQ_Custodia_Devolucion_Idempotency','CK_Custodia_Devolucion_Cantidad','PK_Custodia_Incidencia','FK_Custodia_Incidencia_Resguardo','FK_Custodia_Incidencia_Usuario','FK_Custodia_Incidencia_Documento','UQ_Custodia_Incidencia_Idempotency','CK_Custodia_Incidencia_Monto','PK_Custodia_CargoPropuesto','FK_Custodia_Cargo_Incidencia','FK_Custodia_Cargo_Propone','FK_Custodia_Cargo_Autoriza','FK_Custodia_Cargo_NominaDetalle','UQ_Custodia_Cargo_Idempotency','CK_Custodia_Cargo_Monto','PK_RH_UniformePolitica','FK_RH_UniformePolitica_Empresa','FK_RH_UniformePolitica_Unidad','FK_RH_UniformePolitica_Puesto','FK_RH_UniformePolitica_Usuario','UQ_RH_UniformePolitica_ContextoVersion','CK_RH_UniformePolitica_Version','CK_RH_UniformePolitica_Vigencia','PK_RH_UniformePoliticaDetalle','FK_RH_UniformeDetalle_Politica','FK_RH_UniformeDetalle_Producto','UQ_RH_UniformeDetalle_PoliticaProducto','CK_RH_UniformeDetalle_Cantidad','CK_RH_UniformeDetalle_Periodicidad','CK_RH_UniformeDetalle_VidaUtil') ORDER BY o.name;"
+        },
+        {
+          "name": "custodia_index_name_collisions",
+          "sql": "SELECT OBJECT_SCHEMA_NAME(i.object_id) AS schema_name, OBJECT_NAME(i.object_id) AS table_name, i.name AS index_name FROM sys.indexes i WHERE i.name IN ('UX_Custodia_Recurso_ActivoID','IX_Custodia_Recurso_ProductoID','IX_Custodia_Recurso_Contexto','UX_Custodia_Resguardo_RecursoVigente','IX_Custodia_Resguardo_ColaboradorEstado','IX_Custodia_Resguardo_Contexto','IX_Custodia_Resguardo_FechaOperacion','IX_Custodia_Movimiento_ResguardoFecha','IX_Custodia_Devolucion_ResguardoFecha','IX_Custodia_Incidencia_ResguardoEstado','IX_Custodia_Cargo_IncidenciaEstado') ORDER BY i.name;"
+        },
+        {
+          "name": "custodia_fk_target_types",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,ty.name AS data_type,c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND ((t.name='RH_Colaboradores_Expediente' AND c.name='ColaboradorID') OR (t.name='RH_Cat_Puestos' AND c.name='PuestoID') OR (t.name='Producto_Catalogo' AND c.name='ProductoID') OR (t.name='ActivoFijo_Activos' AND c.name='ActivoID') OR (t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Sistema_Sucursales' AND c.name='SucursalID') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID') OR (t.name='Gobierno_Documento' AND c.name='DocumentoID') OR (t.name='RH_Nomina_Detalle' AND c.name='NominaDetalleID')) ORDER BY t.name,c.name;"
+        },
+        {
+          "name": "custodia_fk_targets_keys",
+          "sql": "SELECT s.name AS schema_name,t.name AS table_name,c.name AS column_name,kc.name AS key_constraint,kc.type_desc FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.index_columns ic ON ic.object_id=t.object_id JOIN sys.columns c ON c.object_id=t.object_id AND c.column_id=ic.column_id JOIN sys.indexes i ON i.object_id=t.object_id AND i.index_id=ic.index_id LEFT JOIN sys.key_constraints kc ON kc.parent_object_id=t.object_id AND kc.unique_index_id=i.index_id WHERE s.name='dbo' AND i.is_unique=1 AND ((t.name='RH_Colaboradores_Expediente' AND c.name='ColaboradorID') OR (t.name='RH_Cat_Puestos' AND c.name='PuestoID') OR (t.name='Producto_Catalogo' AND c.name='ProductoID') OR (t.name='ActivoFijo_Activos' AND c.name='ActivoID') OR (t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Sistema_Sucursales' AND c.name='SucursalID') OR (t.name='Usuario_Catalogo' AND c.name='UsuarioID') OR (t.name='Gobierno_Documento' AND c.name='DocumentoID') OR (t.name='RH_Nomina_Detalle' AND c.name='NominaDetalleID')) ORDER BY t.name,c.name;"
+        },
+        {
+          "name": "custodia_ddl_permissions_observed",
+          "sql": "SELECT DB_NAME() AS database_name, ORIGINAL_LOGIN() AS original_login, SUSER_SNAME() AS effective_login, HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','CREATE TABLE') AS can_create_table, HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER') AS can_alter_dbo, HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','VIEW DEFINITION') AS can_view_definition;"
+        },
+        {
+          "name": "custodia_scope_columns_presence",
+          "sql": "SELECT t.name AS table_name, c.name AS column_name, ty.name AS data_type, c.is_nullable FROM sys.tables t JOIN sys.schemas s ON s.schema_id=t.schema_id JOIN sys.columns c ON c.object_id=t.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id WHERE s.name='dbo' AND ((t.name='Sistema_Empresas' AND c.name='EmpresaID') OR (t.name='Unidades_Negocio' AND c.name='id') OR (t.name='Sistema_Sucursales' AND c.name='SucursalID')) ORDER BY t.name;"
+        }
+      ]
+    }
+  ]
+}
