@@ -1,0 +1,29 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-SCHEMA-DIAGNOSTIC-READONLY-R1-20260930",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "5f6a32e606708df91967b447405663854e7c9443",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "objective": "Diagnosticar exclusivamente por metadata READ_ONLY por que fallo la auditoria de homologacion API_LOCAL. Verificar existencia de tablas y columnas usadas por el contrato, sin leer secretos, sin DML/DDL, sin mutaciones y sin Produccion. No modificar el auditor.",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "queries": [
+        {
+          "name": "api_local_homologation_schema_contract",
+          "sql": "SELECT v.TableName,v.ColumnName,CASE WHEN c.COLUMN_NAME IS NULL THEN 0 ELSE 1 END AS ColumnExists FROM (VALUES ('dbo','Servidores_Conexiones','id'),('dbo','Servidores_Conexiones','nombre'),('dbo','Servidores_Conexiones','system_type'),('dbo','Servidores_Conexiones','tipo_conexion'),('dbo','Servidores_Conexiones','activo'),('dbo','Servidores_Conexiones','visible_en_listado'),('dbo','Servidores_Conexiones','visible_en_operaciones'),('dbo','Servidores_Conexiones','EmpresaID'),('dbo','Servidores_Conexiones','empresa_id'),('dbo','Servidores_Conexiones','database_name'),('dbo','Servidores_Conexiones','api_url'),('dbo','Sistema_EmpresasServidores','ServidorID'),('dbo','Sistema_EmpresasServidores','EmpresaID'),('dbo','Sistema_EmpresasServidores','RolConexion'),('dbo','Sistema_EmpresasServidores','NumeroSucursalSistema'),('dbo','Sistema_Empresas','EmpresaID'),('dbo','Sistema_Empresas','CodigoEmpresa'),('dbo','Sistema_Empresas','NombreComercial'),('dbo','Sistema_Empresas','Activo'),('dbo','Sistema_UnidadesNegocioPerfilDigital','ServerID'),('dbo','Sistema_UnidadesNegocioPerfilDigital','EmpresaID'),('dbo','Sistema_UnidadesNegocioPerfilDigital','UnidadNegocioID'),('dbo','Sistema_UnidadesNegocioPerfilDigital','NombreComercial'),('dbo','Sistema_UnidadesNegocioPerfilDigital','Pais'),('dbo','Sistema_UnidadesNegocioPerfilDigital','Moneda'),('dbo','Unidades_Negocio','id'),('dbo','Unidades_Negocio','codigo'),('dbo','Unidades_Negocio','nombre'),('dbo','Unidades_Negocio','EmpresaID'),('dbo','Unidades_Negocio','server_id'),('dbo','Unidades_Negocio','activo')) v(SchemaName,TableName,ColumnName) LEFT JOIN INFORMATION_SCHEMA.COLUMNS c ON c.TABLE_SCHEMA=v.SchemaName AND c.TABLE_NAME=v.TableName AND c.COLUMN_NAME=v.ColumnName ORDER BY v.TableName,v.ColumnName"
+        }
+      ]
+    }
+  ],
+  "human_summary_language": "es",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS / Servidores Integraciones Conexiones Comunicaciones",
+    "chat": "Conexiones y Comunicaciones 2"
+  }
+}
