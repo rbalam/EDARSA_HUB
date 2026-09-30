@@ -1,0 +1,87 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "MEJORA-TABEJE-WORKER-MODE-DEFAULT-FIX-R8-CARLOS-20260930T0115Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "[Mejora-TABEJE | WORKER-MODE-DEFAULT-FIX-R8] Corregir la causa raiz de los bloqueos R6/R6B: universal_job_bridge interpreta un job sin mode como MUTATION, pero universal_job_dispatcher y worker_scheduling lo convertian a cadena vacia, provocando SlotRuntimeError:MODE_INVALID antes de ejecutar acciones. Unificar el contrato para que la ausencia de mode use MUTATION, normalizado en mayusculas, y agregar prueba de regresion. No tocar Produccion ni funcionalidades de negocio.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "labels": [
+    "Mejora-TABEJE",
+    "Tablero Ejecutivo",
+    "WORKER-MODE-DEFAULT-FIX-R8",
+    "MUTATION",
+    "CARLOS"
+  ],
+  "tracking": {
+    "project_label": "Mejora-TABEJE",
+    "display_label": "Mejora-TABEJE | WORKER-MODE-DEFAULT-FIX-R8 | MEJORA-TABEJE-WORKER-MODE-DEFAULT-FIX-R8-CARLOS-20260930T0115Z",
+    "related_failed_jobs": [
+      "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6-CARLOS-20260929T2435Z",
+      "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6B-CARLOS-20260930T0048Z"
+    ],
+    "root_cause": "bridge defaults missing mode to MUTATION but dispatcher/scheduling defaulted it to empty string"
+  },
+  "scheduling": {
+    "project_id": "Mejora-TABEJE",
+    "bounded_context": "Worker Runtime",
+    "priority_class": "P0",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [
+      "tools/mirror_sync/universal_job_dispatcher.py",
+      "tools/mirror_sync/worker_scheduling.py",
+      "backend/tests/test_worker_mutation_mode_default.py"
+    ],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/universal_job_dispatcher.py",
+      "old": "        mode = str(job.get(\"mode\") or \"\")\n",
+      "new": "        mode = str(job.get(\"mode\") or \"MUTATION\").upper().strip()\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "tools/mirror_sync/worker_scheduling.py",
+      "old": "        mode=str(job.get(\"mode\") or \"\").upper().strip(),\n",
+      "new": "        mode=str(job.get(\"mode\") or \"MUTATION\").upper().strip(),\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_worker_mutation_mode_default.py",
+      "content": "from pathlib import Path\nimport sys\n\nROOT = Path(__file__).resolve().parents[2]\n\nif str(ROOT) not in sys.path:\n    sys.path.insert(0, str(ROOT))\n\nfrom tools.mirror_sync.worker_scheduling import normalize_metadata\n\n\ndef test_missing_mode_defaults_to_mutation_in_scheduling():\n    metadata = normalize_metadata({\n        \"scheduling\": {\n            \"project_id\": \"TEST\",\n            \"bounded_context\": \"TEST\",\n        }\n    })\n\n    assert metadata.mode == \"MUTATION\"\n\n\ndef test_dispatcher_missing_mode_defaults_to_mutation():\n    dispatcher = (\n        ROOT\n        / \"tools\"\n        / \"mirror_sync\"\n        / \"universal_job_dispatcher.py\"\n    ).read_text(encoding=\"utf-8\")\n\n    assert (\n        'mode = str(job.get(\"mode\") or \"MUTATION\").upper().strip()'\n        in dispatcher\n    )\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "tools/mirror_sync/worker_scheduling.py",
+        "backend/tests/test_worker_mutation_mode_default.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_mutation_mode_default.py"
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
