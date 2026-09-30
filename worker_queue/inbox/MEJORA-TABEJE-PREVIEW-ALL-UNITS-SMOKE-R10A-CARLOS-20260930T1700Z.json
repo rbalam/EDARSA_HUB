@@ -1,0 +1,99 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "MEJORA-TABEJE-PREVIEW-ALL-UNITS-SMOKE-R10A-CARLOS-20260930T1700Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "[Mejora-TABEJE | PREVIEW-ALL-UNITS-SMOKE-R10A] Certificar en Preview, sin escrituras, que el drilldown de Ventas/PAX/Cheques queda cableado de forma generica para todas las sucursales activas (130MID, 130QRO, CIENFUEGOS, ESTELAR, ORIGEN), que el backend de tickets conserva RBAC/filtros validos y que los datos operativos actuales permiten reconciliar cuentas cerradas + abiertas con el KPI. No consultar POS live, no ejecutar sincronizadores y no tocar Produccion.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "labels": [
+    "Mejora-TABEJE",
+    "Tablero Ejecutivo",
+    "Preview",
+    "ALL-UNITS",
+    "SMOKE-R10A",
+    "READ_ONLY",
+    "CARLOS"
+  ],
+  "tracking": {
+    "project_label": "Mejora-TABEJE",
+    "display_label": "Mejora-TABEJE | PREVIEW-ALL-UNITS-SMOKE-R10A",
+    "depends_on": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6F-CARLOS-20260930T1645Z",
+    "units": [
+      "130MID",
+      "130QRO",
+      "CIENFUEGOS",
+      "ESTELAR",
+      "ORIGEN"
+    ]
+  },
+  "scheduling": {
+    "project_id": "Mejora-TABEJE",
+    "bounded_context": "Tablero Ejecutivo Preview Validation",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": []
+  },
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/components/comercial",
+          "frontend/src/pages/TableroEjecutivo.js",
+          "backend/modules/comercial_analytics/repository_tickets.py"
+        ],
+        "search_terms": [
+          "KpiDrilldownDialog",
+          "onDoubleClick",
+          "cheques_cerrados",
+          "pax_cerrados",
+          "ventas_cerradas",
+          "Cuentas no cerradas",
+          "Cuentas cerradas pendientes de detalle",
+          "TOTAL KPI",
+          "es_kpi_valido",
+          "cancelado_origen"
+        ],
+        "max_results": 50
+      }
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_analytics_tickets.py"
+      ]
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "preview_operacion_actual_5_unidades",
+          "sql": "WITH latest AS (SELECT unidad_negocio_id, unidad_negocio_nombre, fecha_operacion, ventas_abiertas, tickets_abiertos, pax_abiertos, ventas_cerradas_dia, tickets_cerrados_dia, pax_cerrados_dia, total_estimado_dia, snapshot_timestamp, ROW_NUMBER() OVER (PARTITION BY unidad_negocio_id ORDER BY snapshot_timestamp DESC, id DESC) AS rn FROM Comercial_Ventas_Dia_Abiertas_v2 WHERE fecha_operacion = '2026-09-30' AND unidad_negocio_id IN ('130MID','130QRO','CIENFUEGOS','ESTELAR','ORIGEN')) SELECT unidad_negocio_id, unidad_negocio_nombre, fecha_operacion, ventas_cerradas_dia, tickets_cerrados_dia, pax_cerrados_dia, ventas_abiertas, tickets_abiertos, pax_abiertos, total_estimado_dia, snapshot_timestamp FROM latest WHERE rn = 1 ORDER BY unidad_negocio_id"
+        },
+        {
+          "name": "preview_detalle_actual_5_unidades",
+          "sql": "WITH tickets AS (SELECT d.unidad_negocio_id, d.numero_ticket, MIN(d.fecha_hora) AS fecha_hora, MAX(ISNULL(d.pax,0)) AS pax, SUM(ISNULL(d.importe_neto,0)) AS ventas FROM Comercial_Inteligencia_VentasDetalleProducto d WHERE d.fecha_operacion = '2026-09-30' AND d.unidad_negocio_id IN ('130MID','130QRO','CIENFUEGOS','ESTELAR','ORIGEN') AND ISNULL(d.activo,1)=1 AND ISNULL(d.es_kpi_valido,1)=1 AND ISNULL(d.cancelado_origen,0)=0 AND d.numero_ticket IS NOT NULL GROUP BY d.unidad_negocio_id,d.numero_ticket) SELECT unidad_negocio_id, COUNT(*) AS cheques_detalle, SUM(pax) AS pax_detalle, SUM(ventas) AS ventas_detalle, MIN(fecha_hora) AS primera_apertura, MAX(fecha_hora) AS ultima_apertura FROM tickets GROUP BY unidad_negocio_id ORDER BY unidad_negocio_id"
+        },
+        {
+          "name": "preview_ultima_fecha_con_detalle_5_unidades",
+          "sql": "WITH maxd AS (SELECT unidad_negocio_id, MAX(fecha_operacion) AS fecha_detalle FROM Comercial_Inteligencia_VentasDetalleProducto WHERE fecha_operacion <= '2026-09-30' AND unidad_negocio_id IN ('130MID','130QRO','CIENFUEGOS','ESTELAR','ORIGEN') AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND numero_ticket IS NOT NULL GROUP BY unidad_negocio_id), tickets AS (SELECT d.unidad_negocio_id,d.fecha_operacion,d.numero_ticket,MAX(ISNULL(d.pax,0)) AS pax,SUM(ISNULL(d.importe_neto,0)) AS ventas FROM Comercial_Inteligencia_VentasDetalleProducto d INNER JOIN maxd m ON m.unidad_negocio_id=d.unidad_negocio_id AND m.fecha_detalle=d.fecha_operacion WHERE ISNULL(d.activo,1)=1 AND ISNULL(d.es_kpi_valido,1)=1 AND ISNULL(d.cancelado_origen,0)=0 AND d.numero_ticket IS NOT NULL GROUP BY d.unidad_negocio_id,d.fecha_operacion,d.numero_ticket) SELECT unidad_negocio_id,fecha_operacion,COUNT(*) AS cheques_detalle,SUM(pax) AS pax_detalle,SUM(ventas) AS ventas_detalle FROM tickets GROUP BY unidad_negocio_id,fecha_operacion ORDER BY unidad_negocio_id"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
