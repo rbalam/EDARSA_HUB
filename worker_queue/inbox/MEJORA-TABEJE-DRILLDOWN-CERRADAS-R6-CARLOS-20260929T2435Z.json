@@ -1,0 +1,142 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6-CARLOS-20260929T2435Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "objective": "[Mejora-TABEJE | DRILLDOWN-CERRADAS-R6] Implementar en Tablero Ejecutivo el drilldown de Ventas, PAX y Cheques restringido a cuentas cerradas. En Ventas del Dia: si no hay cuentas cerradas, mostrar el mensaje de que las cuentas no estan cerradas y no se puede ver el detalle; si hay cerradas y abiertas, mostrar detalle solo de las cerradas y despues del total agregar una fila agregada de cuentas no cerradas para cuadrar el KPI. Si el KPI reporta cuentas cerradas cuyo detalle aun no esta disponible en la vista canonica, mostrarlas solo como agregado 'cerradas pendientes de detalle' para no inventar folios. Permitir ordenar por Folio, Fecha, PAX e Importe Total; PAX por defecto descendente y Cheques por importe descendente. No modificar ni ejecutar sincronizacion, Scheduler, ISCAM, Sync_Sales, Sync_PAX, backfills ni POS live. Solo frontend y consultas de reporte existentes EDARSAHUB.",
+  "human_summary_language": "es",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "labels": [
+    "Mejora-TABEJE",
+    "Tablero Ejecutivo",
+    "DRILLDOWN-CERRADAS-R6",
+    "MUTATION",
+    "CARLOS"
+  ],
+  "tracking": {
+    "project_label": "Mejora-TABEJE",
+    "display_label": "Mejora-TABEJE | DRILLDOWN-CERRADAS-R6 | MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6-CARLOS-20260929T2435Z",
+    "status_legend": {
+      "VERDE": [
+        "DONE",
+        "PASS",
+        "CERTIFIED",
+        "CERTIFIED_OPERATIONAL"
+      ],
+      "AMARILLO": [
+        "PENDING",
+        "PROCESSING",
+        "RESULT_READY",
+        "WAITING",
+        "IN_PROGRESS"
+      ],
+      "ROJO": [
+        "REJECTED",
+        "ERROR",
+        "FAILED",
+        "BLOCKED"
+      ]
+    }
+  },
+  "scheduling": {
+    "project_id": "Mejora-TABEJE",
+    "bounded_context": "Tablero Ejecutivo",
+    "priority_class": "NORMAL",
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "resource_claims": [],
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ]
+  },
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "frontend/src/components/comercial/KpiDrilldownDialog.jsx",
+      "content": "import React, { useEffect, useMemo, useState } from 'react';\nimport api from '../../lib/api';\nimport { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';\nimport { Loader2, AlertTriangle, ArrowUpDown } from 'lucide-react';\n\nconst money = (value) => new Intl.NumberFormat('es-MX', {\n  style: 'currency',\n  currency: 'MXN',\n  minimumFractionDigits: 2,\n  maximumFractionDigits: 2,\n}).format(Number(value || 0));\n\nconst toNumber = (value) => Number(value || 0);\n\nconst monthRange = (yearValue, monthValue) => {\n  const year = Number(yearValue);\n  const month = Number(monthValue);\n\n  if (!year || !month) return null;\n\n  const start = `${year}-${String(month).padStart(2, '0')}-01`;\n  const lastDay = new Date(year, month, 0).getDate();\n  const end = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;\n\n  return { start, end };\n};\n\nconst compareFolio = (a, b) => {\n  const av = String(a?.numero_ticket || '');\n  const bv = String(b?.numero_ticket || '');\n  const an = Number(av);\n  const bn = Number(bv);\n\n  if (Number.isFinite(an) && Number.isFinite(bn)) {\n    return an - bn;\n  }\n\n  return av.localeCompare(bv, 'es', { numeric: true });\n};\n\nexport default function KpiDrilldownDialog({\n  open,\n  onClose,\n  tipo,\n  unidad,\n  modoVentasDia = false,\n  mes = null,\n  anio = null,\n}) {\n  const initialSort = tipo === 'pax'\n    ? { key: 'pax', direction: 'desc' }\n    : tipo === 'cheques'\n      ? { key: 'importe', direction: 'desc' }\n      : { key: 'folio', direction: 'asc' };\n\n  const [sort, setSort] = useState(initialSort);\n  const [rows, setRows] = useState([]);\n  const [loading, setLoading] = useState(false);\n  const [error, setError] = useState('');\n\n  const unidadCodigo = (\n    unidad?.unidad_negocio_codigo\n    || unidad?.unidad_negocio_id\n    || unidad?.id\n    || ''\n  );\n\n  const expectedClosed = useMemo(() => ({\n    cheques: modoVentasDia\n      ? toNumber(unidad?.cheques_cerrados)\n      : toNumber(unidad?.cheques),\n    pax: modoVentasDia\n      ? toNumber(unidad?.pax_cerrados)\n      : toNumber(unidad?.pax),\n    ventas: modoVentasDia\n      ? toNumber(unidad?.ventas_cerradas)\n      : toNumber(unidad?.ventas),\n  }), [modoVentasDia, unidad]);\n\n  const openTotals = useMemo(() => ({\n    cheques: modoVentasDia ? toNumber(unidad?.cheques_abiertos) : 0,\n    pax: modoVentasDia ? toNumber(unidad?.pax_abiertos) : 0,\n    ventas: modoVentasDia ? toNumber(unidad?.ventas_abiertas) : 0,\n  }), [modoVentasDia, unidad]);\n\n  const kpiTotals = useMemo(() => ({\n    cheques: toNumber(unidad?.cheques),\n    pax: toNumber(unidad?.pax),\n    ventas: toNumber(unidad?.ventas),\n  }), [unidad]);\n\n  useEffect(() => {\n    setSort(\n      tipo === 'pax'\n        ? { key: 'pax', direction: 'desc' }\n        : tipo === 'cheques'\n          ? { key: 'importe', direction: 'desc' }\n          : { key: 'folio', direction: 'asc' }\n    );\n  }, [tipo]);\n\n  useEffect(() => {\n    if (!open) return;\n\n    let active = true;\n\n    const load = async () => {\n      setLoading(true);\n      setError('');\n      setRows([]);\n\n      try {\n        if (!unidadCodigo) {\n          throw new Error('No se pudo identificar la unidad de negocio.');\n        }\n\n        if (modoVentasDia && expectedClosed.cheques <= 0) {\n          if (active) setRows([]);\n          return;\n        }\n\n        let range = null;\n\n        if (modoVentasDia) {\n          const operationDate = String(unidad?.fecha_operacion || '').slice(0, 10);\n          if (!operationDate) {\n            throw new Error('No se pudo resolver la fecha operativa de la unidad.');\n          }\n          range = { start: operationDate, end: operationDate };\n        } else {\n          range = monthRange(anio, mes);\n          if (!range) {\n            throw new Error('No se pudo resolver el periodo del detalle.');\n          }\n        }\n\n        const allRows = [];\n        let page = 1;\n        let hasMore = true;\n\n        while (hasMore) {\n          const response = await api.get('/v2/comercial/analytics/tickets', {\n            params: {\n              fecha_inicio: range.start,\n              fecha_fin: range.end,\n              unidad_negocio_id: unidadCodigo,\n              page,\n              page_size: 200,\n            },\n            timeout: 30000,\n          });\n\n          const payload = response.data?.data || {};\n          const pageRows = Array.isArray(payload.items) ? payload.items : [];\n          allRows.push(...pageRows);\n          hasMore = Boolean(payload.has_more);\n          page += 1;\n\n          if (page > 100) {\n            throw new Error('El detalle excede el límite seguro de paginación.');\n          }\n        }\n\n        if (active) {\n          setRows(allRows);\n        }\n      } catch (err) {\n        if (active) {\n          setError(\n            err?.response?.data?.detail\n            || err?.message\n            || 'No fue posible cargar el detalle.'\n          );\n        }\n      } finally {\n        if (active) setLoading(false);\n      }\n    };\n\n    load();\n\n    return () => {\n      active = false;\n    };\n  }, [\n    open,\n    unidadCodigo,\n    unidad?.fecha_operacion,\n    modoVentasDia,\n    mes,\n    anio,\n    expectedClosed.cheques,\n  ]);\n\n  const closedDetailTotals = useMemo(() => rows.reduce(\n    (acc, row) => ({\n      cheques: acc.cheques + 1,\n      pax: acc.pax + toNumber(row?.pax),\n      ventas: acc.ventas + toNumber(row?.ventas),\n    }),\n    { cheques: 0, pax: 0, ventas: 0 }\n  ), [rows]);\n\n  const missingClosed = useMemo(() => ({\n    cheques: Math.max(0, expectedClosed.cheques - closedDetailTotals.cheques),\n    pax: Math.max(0, expectedClosed.pax - closedDetailTotals.pax),\n    ventas: Math.max(0, expectedClosed.ventas - closedDetailTotals.ventas),\n  }), [expectedClosed, closedDetailTotals]);\n\n  const hasMissingClosed = (\n    missingClosed.cheques > 0\n    || missingClosed.pax > 0\n    || missingClosed.ventas > 0.01\n  );\n\n  const sortedRows = useMemo(() => {\n    const next = rows.slice();\n\n    next.sort((a, b) => {\n      let result = 0;\n\n      if (sort.key === 'folio') {\n        result = compareFolio(a, b);\n      } else if (sort.key === 'fecha') {\n        const av = `${a?.fecha_operacion || a?.fecha || ''} ${a?.hora || ''}`;\n        const bv = `${b?.fecha_operacion || b?.fecha || ''} ${b?.hora || ''}`;\n        result = av.localeCompare(bv);\n      } else if (sort.key === 'pax') {\n        result = toNumber(a?.pax) - toNumber(b?.pax);\n      } else if (sort.key === 'importe') {\n        result = toNumber(a?.ventas) - toNumber(b?.ventas);\n      }\n\n      return sort.direction === 'asc' ? result : -result;\n    });\n\n    return next;\n  }, [rows, sort]);\n\n  const toggleSort = (key) => {\n    setSort((current) => (\n      current.key === key\n        ? {\n          key,\n          direction: current.direction === 'asc' ? 'desc' : 'asc',\n        }\n        : { key, direction: key === 'folio' || key === 'fecha' ? 'asc' : 'desc' }\n    ));\n  };\n\n  const title = tipo === 'pax'\n    ? 'Detalle de PAX - cuentas cerradas'\n    : tipo === 'cheques'\n      ? 'Detalle de Cheques - cuentas cerradas'\n      : 'Detalle de Ventas - cuentas cerradas';\n\n  const onlyOpen = (\n    modoVentasDia\n    && expectedClosed.cheques <= 0\n    && openTotals.cheques > 0\n  );\n\n  return (\n    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>\n      <DialogContent className=\"max-w-5xl max-h-[90vh] overflow-y-auto\">\n        <DialogHeader>\n          <DialogTitle>{title}</DialogTitle>\n        </DialogHeader>\n\n        <div className=\"text-sm text-zinc-600 mb-3\">\n          {unidad?.unidad || unidad?.unidad_negocio_nombre || unidadCodigo}\n        </div>\n\n        {loading ? (\n          <div className=\"flex items-center justify-center py-12\">\n            <Loader2 className=\"h-8 w-8 animate-spin text-zinc-400\" />\n          </div>\n        ) : error ? (\n          <div className=\"p-4 rounded border border-red-200 bg-red-50 text-red-700\">\n            {error}\n          </div>\n        ) : onlyOpen ? (\n          <div className=\"space-y-4\">\n            <div className=\"p-4 rounded border border-amber-200 bg-amber-50 text-amber-800 flex gap-2\">\n              <AlertTriangle className=\"h-5 w-5 shrink-0 mt-0.5\" />\n              <p>\n                Las cuentas de la operación todavía no están cerradas, por lo que\n                no se puede mostrar el detalle por folio. Se presenta únicamente\n                el total agregado de las cuentas no cerradas para cuadrar el KPI.\n              </p>\n            </div>\n\n            <div className=\"overflow-x-auto\">\n              <table className=\"w-full text-sm border-collapse\">\n                <thead>\n                  <tr className=\"bg-zinc-100\">\n                    <th className=\"text-left p-2 border\">Concepto</th>\n                    <th className=\"text-right p-2 border\">PAX</th>\n                    <th className=\"text-right p-2 border\">Importe total</th>\n                  </tr>\n                </thead>\n                <tbody>\n                  <tr className=\"bg-amber-50 font-semibold\">\n                    <td className=\"p-2 border\">\n                      Cuentas no cerradas ({openTotals.cheques})\n                    </td>\n                    <td className=\"p-2 border text-right\">\n                      {openTotals.pax.toLocaleString('es-MX')}\n                    </td>\n                    <td className=\"p-2 border text-right\">\n                      {money(openTotals.ventas)}\n                    </td>\n                  </tr>\n                  <tr className=\"font-bold\">\n                    <td className=\"p-2 border\">TOTAL KPI</td>\n                    <td className=\"p-2 border text-right\">\n                      {kpiTotals.pax.toLocaleString('es-MX')}\n                    </td>\n                    <td className=\"p-2 border text-right\">\n                      {money(kpiTotals.ventas)}\n                    </td>\n                  </tr>\n                </tbody>\n              </table>\n            </div>\n          </div>\n        ) : (\n          <div className=\"space-y-3\">\n            {modoVentasDia && expectedClosed.cheques > 0 && rows.length === 0 && (\n              <div className=\"p-3 rounded border border-amber-200 bg-amber-50 text-amber-800 flex gap-2\">\n                <AlertTriangle className=\"h-5 w-5 shrink-0 mt-0.5\" />\n                <p>\n                  Existen cuentas cerradas en el KPI, pero su detalle por folio\n                  todavía no está disponible en la vista de reportes. No se consulta\n                  el POS ni se modifica la sincronización; el total cerrado se\n                  presenta de forma agregada para mantener la conciliación.\n                </p>\n              </div>\n            )}\n\n            <div className=\"overflow-x-auto max-h-[55vh] overflow-y-auto border rounded\">\n              <table className=\"w-full text-sm border-collapse\">\n                <thead className=\"sticky top-0 bg-zinc-100 z-10\">\n                  <tr>\n                    <th\n                      className=\"text-left p-2 border cursor-pointer select-none\"\n                      onClick={() => toggleSort('folio')}\n                    >\n                      <span className=\"inline-flex items-center gap-1\">\n                        Folio <ArrowUpDown className=\"h-3 w-3\" />\n                      </span>\n                    </th>\n                    <th\n                      className=\"text-left p-2 border cursor-pointer select-none\"\n                      onClick={() => toggleSort('fecha')}\n                    >\n                      <span className=\"inline-flex items-center gap-1\">\n                        Fecha <ArrowUpDown className=\"h-3 w-3\" />\n                      </span>\n                    </th>\n                    <th\n                      className=\"text-right p-2 border cursor-pointer select-none\"\n                      onClick={() => toggleSort('pax')}\n                    >\n                      <span className=\"inline-flex items-center gap-1 justify-end w-full\">\n                        PAX <ArrowUpDown className=\"h-3 w-3\" />\n                      </span>\n                    </th>\n                    <th\n                      className=\"text-right p-2 border cursor-pointer select-none\"\n                      onClick={() => toggleSort('importe')}\n                    >\n                      <span className=\"inline-flex items-center gap-1 justify-end w-full\">\n                        Importe total <ArrowUpDown className=\"h-3 w-3\" />\n                      </span>\n                    </th>\n                  </tr>\n                </thead>\n                <tbody>\n                  {sortedRows.map((row) => (\n                    <tr key={row.ticket_pk || `${row.fecha_operacion}-${row.numero_ticket}`}>\n                      <td className=\"p-2 border\">{row.numero_ticket}</td>\n                      <td className=\"p-2 border\">\n                        {row.fecha_operacion || row.fecha}\n                        {row.hora ? ` ${row.hora}` : ''}\n                      </td>\n                      <td className=\"p-2 border text-right\">\n                        {toNumber(row.pax).toLocaleString('es-MX')}\n                      </td>\n                      <td className=\"p-2 border text-right\">\n                        {money(row.ventas)}\n                      </td>\n                    </tr>\n                  ))}\n\n                  <tr className=\"font-bold bg-zinc-50\">\n                    <td className=\"p-2 border\">\n                      Total detalle cuentas cerradas ({closedDetailTotals.cheques})\n                    </td>\n                    <td className=\"p-2 border\" />\n                    <td className=\"p-2 border text-right\">\n                      {closedDetailTotals.pax.toLocaleString('es-MX')}\n                    </td>\n                    <td className=\"p-2 border text-right\">\n                      {money(closedDetailTotals.ventas)}\n                    </td>\n                  </tr>\n\n                  {hasMissingClosed && (\n                    <tr className=\"font-semibold bg-orange-50\">\n                      <td className=\"p-2 border\">\n                        Cuentas cerradas pendientes de detalle ({missingClosed.cheques})\n                      </td>\n                      <td className=\"p-2 border\">Sin detalle disponible</td>\n                      <td className=\"p-2 border text-right\">\n                        {missingClosed.pax.toLocaleString('es-MX')}\n                      </td>\n                      <td className=\"p-2 border text-right\">\n                        {money(missingClosed.ventas)}\n                      </td>\n                    </tr>\n                  )}\n\n                  {modoVentasDia && openTotals.cheques > 0 && (\n                    <tr className=\"font-semibold bg-amber-50\">\n                      <td className=\"p-2 border\">\n                        Cuentas no cerradas ({openTotals.cheques})\n                      </td>\n                      <td className=\"p-2 border\">Sin detalle por folio</td>\n                      <td className=\"p-2 border text-right\">\n                        {openTotals.pax.toLocaleString('es-MX')}\n                      </td>\n                      <td className=\"p-2 border text-right\">\n                        {money(openTotals.ventas)}\n                      </td>\n                    </tr>\n                  )}\n\n                  <tr className=\"font-bold bg-zinc-100\">\n                    <td className=\"p-2 border\">TOTAL KPI</td>\n                    <td className=\"p-2 border\" />\n                    <td className=\"p-2 border text-right\">\n                      {kpiTotals.pax.toLocaleString('es-MX')}\n                    </td>\n                    <td className=\"p-2 border text-right\">\n                      {money(kpiTotals.ventas)}\n                    </td>\n                  </tr>\n                </tbody>\n              </table>\n            </div>\n\n            <p className=\"text-xs text-zinc-500\">\n              El detalle individual muestra únicamente cuentas cerradas disponibles\n              en las vistas de reporte. Las cuentas no cerradas se muestran solo\n              de forma agregada para conservar la conciliación con el KPI.\n            </p>\n          </div>\n        )}\n      </DialogContent>\n    </Dialog>\n  );\n}\n"
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/TableroEjecutivo.js",
+      "old": "import api from '../lib/api';\n",
+      "new": "import api from '../lib/api';\nimport KpiDrilldownDialog from '../components/comercial/KpiDrilldownDialog';\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/TableroEjecutivo.js",
+      "old": "const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) => {\n  const [detalleData, setDetalleData] = useState(null);\n  const [loading, setLoading] = useState(true);\n",
+      "new": "const DetalleUnidad = ({ unidad, onClose, mes, anio, modoVentasDia = false }) => {\n  const [detalleData, setDetalleData] = useState(null);\n  const [loading, setLoading] = useState(true);\n  const [kpiDrilldown, setKpiDrilldown] = useState(null);\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/TableroEjecutivo.js",
+      "old": "<Card className=\"bg-green-50 border-green-200\">\n                <CardContent className=\"p-3 text-center\">",
+      "new": "<Card\n                className=\"bg-green-50 border-green-200 cursor-pointer select-none\"\n                onDoubleClick={() => setKpiDrilldown('ventas')}\n                title=\"Doble clic para ver el detalle de cuentas cerradas\"\n              >\n                <CardContent className=\"p-3 text-center\">",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/TableroEjecutivo.js",
+      "old": "<Card className=\"bg-blue-50 border-blue-200\">\n                <CardContent className=\"p-3 text-center\">",
+      "new": "<Card\n                className=\"bg-blue-50 border-blue-200 cursor-pointer select-none\"\n                onDoubleClick={() => setKpiDrilldown('pax')}\n                title=\"Doble clic para ver el detalle de cuentas cerradas\"\n              >\n                <CardContent className=\"p-3 text-center\">",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/TableroEjecutivo.js",
+      "old": "<Card className=\"bg-purple-50 border-purple-200\">\n                <CardContent className=\"p-3 text-center\">",
+      "new": "<Card\n                className=\"bg-purple-50 border-purple-200 cursor-pointer select-none\"\n                onDoubleClick={() => setKpiDrilldown('cheques')}\n                title=\"Doble clic para ver el detalle de cuentas cerradas\"\n              >\n                <CardContent className=\"p-3 text-center\">",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/TableroEjecutivo.js",
+      "old": "      </DialogContent>\n    </Dialog>\n  );\n};\n\nexport default function TableroEjecutivo()",
+      "new": "      </DialogContent>\n\n      {kpiDrilldown && (\n        <KpiDrilldownDialog\n          open={true}\n          onClose={() => setKpiDrilldown(null)}\n          tipo={kpiDrilldown}\n          unidad={unidad}\n          modoVentasDia={modoVentasDia}\n          mes={mes}\n          anio={anio}\n        />\n      )}\n    </Dialog>\n  );\n};\n\nexport default function TableroEjecutivo()",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_analytics/repository_tickets.py",
+      "old": "        ISNULL(d.activo, 1) = 1\n        AND d.numero_ticket IS NOT NULL\n",
+      "new": "        ISNULL(d.activo, 1) = 1\n        AND ISNULL(d.es_kpi_valido, 1) = 1\n        AND ISNULL(d.cancelado_origen, 0) = 0\n        AND d.numero_ticket IS NOT NULL\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_analytics/repository_tickets.py",
+      "old": "            ISNULL(d.activo, 1) = 1\n            AND d.unidad_negocio_id = %s\n",
+      "new": "            ISNULL(d.activo, 1) = 1\n            AND ISNULL(d.es_kpi_valido, 1) = 1\n            AND ISNULL(d.cancelado_origen, 0) = 0\n            AND d.unidad_negocio_id = %s\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial_analytics/repository_tickets.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_analytics_tickets.py"
+      ]
+    },
+    {
+      "type": "frontend_build",
+      "directory": "frontend"
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
