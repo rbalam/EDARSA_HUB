@@ -1,0 +1,855 @@
+{
+  "base_sha": "d6acb06171e72d4c12ff7912f37bef659190579e",
+  "blockers": [],
+  "candidate_sha": "54c22d98aae42b5163127b356d616229df199c8c",
+  "certification": "PENDING_AUDIT_EVIDENCE",
+  "completed_at_utc": "2026-09-30T23:46:09Z",
+  "development_sha": "54c22d98aae42b5163127b356d616229df199c8c",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [
+    "docs/BOS/BOS_V2_CONTINUOUS_INTELLIGENCE_EVOLUTION_MASTER_ARCHITECTURE_V1.md"
+  ],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-EVOLUTION-H1-MASTER-ARCHITECTURE-CONTRACT-R1-20260930",
+  "percent_complete": 95,
+  "production_touched": false,
+  "published_at_utc": "2026-09-30T23:46:52Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "control plane",
+              "evidence"
+            ],
+            "path": "docs/BOS/BOS_AGENT_HARNESS_AH10_E2E_SIMULATION_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "agent registry",
+              "skill registry"
+            ],
+            "path": "docs/BOS/BOS_AGENT_HARNESS_AH2_REGISTRY_FOUNDATION_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "docs/BOS/BOS_AGENT_HARNESS_AH4_WORKER_COMPILER_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "docs/BOS/BOS_AGENT_HARNESS_AH5_EVIDENCE_PROVENANCE_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "control plane"
+            ],
+            "path": "docs/BOS/BOS_AGENT_HARNESS_AH8_MOBILE_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "control plane",
+              "evidence"
+            ],
+            "path": "docs/BOS/BOS_AGENT_HARNESS_AH9_CONTROL_PLANE_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "sap"
+            ],
+            "matched_terms": [
+              "agent registry",
+              "control plane",
+              "evidence",
+              "skill registry"
+            ],
+            "path": "docs/BOS/BOS_AGENT_HARNESS_MASTER_ARCHITECTURE_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "agent registry",
+              "skill registry"
+            ],
+            "path": "docs/BOS/BOS_CORE_SLIMMING_POLICY_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "docs/BOS/BOS_DIRECTION_EVIDENCE_COLLECTOR.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "banorte",
+              "bbva",
+              "dynamics",
+              "mpro",
+              "netpay",
+              "oracle",
+              "sap",
+              "softrestaurant",
+              "twilio",
+              "vtiger"
+            ],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "docs/BOS/BOS_ENTERPRISE_CAPABILITY_MAP_GATE1_DOSSIER_V1.md",
+            "rbac_contracts": [
+              "menu-permissions"
+            ],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler",
+              "scheduler_manager"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "docs/BOS/BOS_STATUS_ENGINE_CONTRACT.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "agent registry",
+              "architecture guardian",
+              "bos v2",
+              "control plane",
+              "evidence",
+              "no new functional growth",
+              "skill registry",
+              "technology radar"
+            ],
+            "path": "docs/BOS/BOS_V2_CONTINUOUS_INTELLIGENCE_EVOLUTION_MASTER_ARCHITECTURE_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "docs/BOS/EDARSAHUB_SERVICES_GATE1_CAPABILITY_OWNERSHIP_MAP_R1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "docs/BOS/EDARSAHUB_SERVICES_GATE2_DOMAIN_DATA_CONTRACT_R1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "docs/BOS/EDARSAHUB_SERVICES_GATE3B_PHYSICAL_SCHEMA_DDL_DOSSIER_R1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "banorte",
+              "bbva"
+            ],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "docs/BOS/UNIVERSAL_BANKING_GATE1_CANONICAL_MINIMAL_DOMAIN_DESIGN.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": [
+              "Economia_Paises",
+              "Finanzas_Cat_CuentasBancarias",
+              "Finanzas_CxP_DecisionesPago",
+              "Finanzas_CxP_PagosOrigenQueue",
+              "Finanzas_CxP_Sync",
+              "Finanzas_EstatusPago",
+              "Finanzas_Pagos",
+              "Finanzas_SaldosBancarios",
+              "Global_Cat_Bancos",
+              "Proveedor_CuentasBancarias",
+              "Proveedor_Monedas",
+              "Servidores_ConexionEstado",
+              "Servidores_Conexiones",
+              "Sistema_Capacidades",
+              "Sistema_IdentificadoresExternos",
+              "Sistema_Sync_Capacidades",
+              "Sistema_Tipos",
+              "Sistema_VersionesSistemas",
+              "Sync_Control_Ejecuciones",
+              "Sync_Control_Evidencias",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "docs/BOS/certifications/BOS_V1_GATE_C_FUNCTIONAL_COVERAGE_CERTIFICATION.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "docs/BOS/certifications/BOS_V1_GATE_D_GOVERNANCE_CERTIFICATION.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "docs/BOS/certifications/BOS_V1_GATE_E_E2_MINIMAL_IMPLEMENTATION_PLAN_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "docs/BOS/certifications/BOS_V1_GATE_E_EXECUTIVE_BOS_DESIGN_CONTRACT_V1.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "docs/BOS/certifications/BOS_V1_GATE_E_EXECUTIVE_BOS_GAP_MATRIX_V2.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "docs/BOS/certifications/BOS_V1_GATE_F_INTELLIGENCE_CERTIFICATION.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "docs/BOS/certifications/BOS_V1_MASTER_STATUS_GLOBAL_PROGRESS.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.agent_external_research_service.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.agent_capability_policy",
+              "core.agent_execution_gate",
+              "core.agent_reach_public_search_executor",
+              "core.agent_runtime_activation",
+              "dataclasses",
+              "hashlib",
+              "pathlib",
+              "time"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "backend/core/agent_external_research_service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "ExternalResearchEvidence",
+              "ExternalResearchExecution",
+              "execute_external_research"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.bos_direction_e2e_certification.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.bos_direction_status_cycle",
+              "core.bos_evidence_collector",
+              "json",
+              "pathlib",
+              "shutil",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "backend/core/bos_direction_e2e_certification.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "certify_direction_e2e",
+              "stage_required_evidence"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.bos_direction_snapshot_publisher.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.bos_evidence_collector",
+              "json",
+              "os",
+              "pathlib",
+              "tempfile"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "backend/core/bos_direction_snapshot_publisher.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_to_json_native",
+              "publish_direction_snapshot",
+              "render_direction_snapshot",
+              "serialize_direction_snapshot"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.bos_evidence_collector.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.bos_program_manifest",
+              "core.bos_program_status",
+              "dataclasses",
+              "json",
+              "pathlib",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "backend/core/bos_evidence_collector.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_load_result_file",
+              "build_direction_snapshot",
+              "build_program_status",
+              "collect_evidence",
+              "required_job_ids"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.bos_program_manifest.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.bos_program_status"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "backend/core/bos_program_manifest.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "bos_v1_fronts"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.bos_program_status.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "backend/core/bos_program_status.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "FrontSpec",
+              "FrontStatus",
+              "MilestoneSpec",
+              "MilestoneStatus",
+              "ProgramStatus",
+              "_is_certified_result",
+              "evaluate_front",
+              "evaluate_milestone",
+              "evaluate_program"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.centro_control",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "core.sql_first.connection_factory",
+              "datetime",
+              "json",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "backend/core/centro_control/sql_store.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "_conn",
+              "_dt",
+              "_execute",
+              "_fetchall",
+              "_fetchone",
+              "_now_id",
+              "acknowledge_alert",
+              "active_alert_count",
+              "bitacora_summary",
+              "blindaje_registry_status",
+              "create_alert",
+              "latest_event_timestamp",
+              "list_alerts",
+              "list_bitacora",
+              "list_events",
+              "metrics",
+              "record_bitacora",
+              "record_event"
+            ],
+            "tables_referenced": [
+              "Alertas_Sistema",
+              "Scheduler_BitacoraJobs"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.regression_checker.py",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.connection_resolver",
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "dataclasses",
+              "datetime",
+              "enum",
+              "logging",
+              "modules.comercial.service",
+              "time",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "backend/core/regression_checker.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BaseRegressionCheck",
+              "CheckResult",
+              "CheckStatus",
+              "ConexionesResolverCheck",
+              "ModuleName",
+              "RegressionChecker",
+              "RegressionReport",
+              "Severity",
+              "TableroComparativosCheck",
+              "TableroFuentesCheck",
+              "TableroVentasAcumuladasCheck",
+              "__init__",
+              "_register_default_checks",
+              "add_result",
+              "get_regression_checker",
+              "register_check",
+              "run",
+              "run_all_checks",
+              "run_module_checks",
+              "run_module_regression_checks",
+              "run_regression_checks",
+              "to_dict"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "backend/modules/agent_harness/control_plane.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "BudgetEnvelope",
+              "ControlPlane",
+              "ControlPlaneError",
+              "ControlPlaneSnapshot",
+              "EvidenceSummary",
+              "GateState",
+              "__post_init__",
+              "_required",
+              "blockers",
+              "certified_gates",
+              "healthy",
+              "remaining",
+              "snapshot"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "control_plane",
+              "dataclasses",
+              "evidence",
+              "planner",
+              "registry",
+              "router",
+              "typing",
+              "worker_compiler"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "backend/modules/agent_harness/e2e_simulation.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AgentHarnessSimulation",
+              "SimulationError",
+              "SimulationResult",
+              "run"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.agent_harness",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "__future__",
+              "dataclasses",
+              "hashlib",
+              "json",
+              "planner",
+              "registry",
+              "router",
+              "typing",
+              "worker_compiler"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "evidence"
+            ],
+            "path": "backend/modules/agent_harness/evidence.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "EvidenceBuilder",
+              "EvidenceError",
+              "EvidenceRecord",
+              "_token",
+              "build",
+              "canonical_sha256",
+              "is_certified_success"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 34,
+          "scanned_files": 241,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-30T23:46:01Z",
+  "status": "INTEGRATED",
+  "summary_es": "ChatGPT envio cambios exactos; el Worker uso worktree aislado, writer lock y compare-and-swap remoto, publico solo fast-forward y certifico topology 0/0 sin merge, rebase ni force. Produccion no fue tocada.",
+  "tests": "PASS",
+  "work_completion": "PENDING_CERTIFICATION"
+}
