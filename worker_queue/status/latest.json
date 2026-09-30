@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "f1aa50e2e812ae8b63fcacc521399f00e8494d9a",
-  "generated_at_utc": "2026-09-30T18:15:20Z",
+  "generated_at_utc": "2026-09-30T18:16:41Z",
   "history": {
     "done_total_local": 1193,
     "pending_total_local": 0,
@@ -16,25 +16,25 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 274,
+      "age_seconds": 355,
       "job_id": "EDARSAHUB-IA-READONLY-SYSTEM-BRIDGE-R1-CARLOS-20260930T1142",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1558,
+      "age_seconds": 1640,
       "job_id": "EDARSAHUB-ISCAM-AUTOSYNC-POST-R4-VERIFY-R1-CARLOS-20260930T1118",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3362,
+      "age_seconds": 3443,
       "job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6G-CARLOS-20260930T1720Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 196,
+      "age_seconds": 277,
       "job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6H-CARLOS-20260930T1810Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -54,8 +54,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-30T18:15:20Z",
-    "last_receive_utc": "2026-09-30T18:15:15Z",
+    "last_cycle_utc": "2026-09-30T18:16:40Z",
+    "last_receive_utc": "2026-09-30T18:16:35Z",
     "last_terminal_utc": "2026-09-30T18:12:04Z",
     "pid": "15771",
     "runtime_fingerprint": {
