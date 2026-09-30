@@ -1,0 +1,779 @@
+{
+  "base_sha": "aa799300859ba58be213a872fed8fdb593ceaed6",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-30T00:04:12Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-DRILLDOWN-ERROR-DIAG-R2-CARLOS-20260929T2359Z",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-30T00:04:12Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "calendar",
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.rbac_sql.service",
+              "core.security",
+              "core.server_registry",
+              "core.source_resolver",
+              "core.system_type_utils",
+              "core.unidades_registry",
+              "core.unidades_service",
+              "core.user_access_context",
+              "core.utils.date_filters",
+              "core.utils.operational_window",
+              "datetime",
+              "fastapi",
+              "logging",
+              "modules.comercial.adapters",
+              "modules.comercial.cache_service",
+              "modules.comercial.queries.mpro",
+              "modules.comercial.queries.softrestaurant",
+              "modules.comercial.repository",
+              "modules.comercial.service",
+              "modules.comercial_v2.repository_readonly",
+              "pymssql",
+              "pytz",
+              "service",
+              "typing",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "cancelado_origen",
+              "comercial_inteligencia_ventasdetalleproducto",
+              "detalle-movimientos",
+              "pax_promedio",
+              "try_convert"
+            ],
+            "path": "backend/modules/comercial/routes.py",
+            "rbac_contracts": [
+              "get_current_user"
+            ],
+            "routes": [
+              "/comercial/dashboard/{server_id}",
+              "/comercial/detalle-movimientos/{server_id}",
+              "/comercial/mesas/{server_id}",
+              "/comercial/metas/{server_id}",
+              "/comercial/precios-constantes/{server_id}",
+              "/comercial/reporte-pax/{server_id}",
+              "/comercial/sucursales/{server_id}",
+              "/comercial/tablero-ejecutivo",
+              "/comercial/ticket-perfecto/{server_id}",
+              "/comercial/ventas-tiempo/{server_id}"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_agrupar_por_unidad",
+              "_empty_mesas_unidad",
+              "_filtrar_server",
+              "_safe_float",
+              "_safe_int",
+              "_tablero_ejecutivo_internal",
+              "check_live_guard_rail",
+              "comercial_dashboard",
+              "comercial_detalle_movimientos",
+              "comercial_mesas",
+              "comercial_metas",
+              "comercial_reporte_pax",
+              "comercial_ticket_perfecto",
+              "comercial_ventas_tiempo",
+              "empty_response",
+              "get_user_context_or_403",
+              "get_ventas_dia_snapshot_from_edarsahub",
+              "obtener_sucursales",
+              "resolver_codigo_dedup",
+              "sql_fecha",
+              "tablero_ejecutivo",
+              "validate_server_access_rbac",
+              "ventas_precios_constantes"
+            ],
+            "tables_referenced": [
+              "Comercial_Inteligencia_VentasDetalleProducto",
+              "Sync_Mesas",
+              "Unidades_Negocio"
+            ]
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "detalle-movimientos",
+              "pax_promedio",
+              "selectedsucursal"
+            ],
+            "path": "frontend/src/pages/Comercial.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.comercial",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "calendar",
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.db",
+              "core.empresa_resolver",
+              "core.kpis_canonicos",
+              "core.server_registry",
+              "core.source_resolver",
+              "core.sql_first.connection_factory",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "core.utils.date_filters",
+              "core.utils.operational_window",
+              "datetime",
+              "fastapi",
+              "logging",
+              "modules.comercial",
+              "modules.comercial.adapters",
+              "modules.comercial.queries.mpro",
+              "modules.comercial.queries.softrestaurant",
+              "os",
+              "pymssql",
+              "pytz",
+              "time",
+              "typing",
+              "zoneinfo"
+            ],
+            "integrations": [
+              "mpro",
+              "softrestaurant"
+            ],
+            "matched_terms": [
+              "pax_promedio"
+            ],
+            "path": "backend/modules/comercial/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "CacheStatus",
+              "DataStatus",
+              "LiveStatus",
+              "SourceRealStatus",
+              "SourceUsed",
+              "_calcular_variacion_pct",
+              "_cargar_catalogo_unidades_negocio",
+              "_fecha_fin_exclusiva",
+              "_get_edarsahub_tablero_config",
+              "_get_kpis_periodo_edarsahub",
+              "_get_ultimo_dia_con_datos_edarsahub",
+              "_get_ventas_abiertas_edarsahub",
+              "_mapear_codigo_a_unidad_negocio_pk",
+              "_metricas_periodo",
+              "_normalizar_clave_unidad",
+              "_obtener_codigo_canonico_mpro",
+              "_obtener_config_mpro_canonica",
+              "_obtener_kpis_tablero_desde_edarsahub",
+              "_obtener_servidor_conexion",
+              "_obtener_sucursales_mpro_desde_resolver",
+              "_pct",
+              "_query_edarsahub_tablero",
+              "_resolver_unidad_pks_dashboard",
+              "_ventas_periodo_canonicas",
+              "add_pk",
+              "agregar_totales",
+              "build_unit_response",
+              "calcular_consumo_promedio",
+              "calcular_porcentaje_cumplimiento",
+              "calcular_ticket_promedio",
+              "classify_connection_error",
+              "get_dashboard_kpis_from_edarsahub",
+              "get_kpis_mpro",
+              "get_kpis_mpro_con_estado",
+              "get_kpis_mpro_por_sucursal",
+              "get_kpis_softrestaurant",
+              "get_last_valid_snapshot_edarsahub",
+              "guardar_metas",
+              "obtener_metas",
+              "obtener_sucursales_servidor",
+              "obtener_unidad_negocio_edarsahub",
+              "procesar_ventas_sucursal",
+              "resolver_unidad_pks_dashboard"
+            ],
+            "tables_referenced": [
+              "Comercial_KPIs_Diarios_v2",
+              "Servidores_Conexiones",
+              "Sync_Metas_Comerciales",
+              "Unidades_Negocio"
+            ]
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 3,
+          "scanned_files": 3,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "codigo",
+              "nombre",
+              "server_id",
+              "sucursal_origen_id",
+              "activo"
+            ],
+            "name": "cienfuegos_unidad_por_server",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                null,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "total"
+            ],
+            "name": "cienfuegos_detalle_total_exact",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                1049
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "numero_ticket",
+              "fecha",
+              "total_venta",
+              "pax",
+              "num_productos",
+              "pax_promedio"
+            ],
+            "name": "cienfuegos_detalle_page_exact",
+            "row_count_returned": 50,
+            "rows": [
+              [
+                "105115",
+                "2026-09-01 13:24:24.0000000",
+                "0.0000",
+                1,
+                3,
+                "0.000000"
+              ],
+              [
+                "105116",
+                "2026-09-01 13:25:56.0000000",
+                "0.0000",
+                1,
+                2,
+                "0.000000"
+              ],
+              [
+                "105117",
+                "2026-09-01 13:54:33.0000000",
+                "2404.0000",
+                2,
+                9,
+                "1202.000000"
+              ],
+              [
+                "105118",
+                "2026-09-01 14:08:07.0000000",
+                "13710.0000",
+                10,
+                32,
+                "1371.000000"
+              ],
+              [
+                "105119",
+                "2026-09-01 14:47:08.0000000",
+                "500.0000",
+                1,
+                1,
+                "500.000000"
+              ],
+              [
+                "105120",
+                "2026-09-01 14:55:43.0000000",
+                "7680.0000",
+                3,
+                20,
+                "2560.000000"
+              ],
+              [
+                "105121",
+                "2026-09-01 15:50:06.0000000",
+                "5997.0003",
+                5,
+                22,
+                "1199.400060"
+              ],
+              [
+                "105122",
+                "2026-09-01 17:12:53.0000000",
+                "905.0000",
+                2,
+                4,
+                "452.500000"
+              ],
+              [
+                "105124",
+                "2026-09-01 18:11:16.0000000",
+                "600.0000",
+                1,
+                5,
+                "600.000000"
+              ],
+              [
+                "105125",
+                "2026-09-01 18:25:57.0000000",
+                "9780.0003",
+                9,
+                26,
+                "1086.666700"
+              ],
+              [
+                "105126",
+                "2026-09-01 18:58:20.0000000",
+                "1200.0001",
+                2,
+                7,
+                "600.000050"
+              ],
+              [
+                "105128",
+                "2026-09-01 19:19:25.0000000",
+                "3940.0000",
+                3,
+                17,
+                "1313.333333"
+              ],
+              [
+                "105129",
+                "2026-09-01 19:20:13.0000000",
+                "2820.0000",
+                2,
+                8,
+                "1410.000000"
+              ],
+              [
+                "105130",
+                "2026-09-01 19:34:51.0000000",
+                "810.0001",
+                1,
+                5,
+                "810.000100"
+              ],
+              [
+                "105131",
+                "2026-09-01 19:49:51.0000000",
+                "3243.0000",
+                2,
+                11,
+                "1621.500000"
+              ],
+              [
+                "105132",
+                "2026-09-01 20:02:23.0000000",
+                "3050.0001",
+                3,
+                8,
+                "1016.666700"
+              ],
+              [
+                "105133",
+                "2026-09-01 20:09:49.0000000",
+                "16084.0005",
+                8,
+                37,
+                "2010.500062"
+              ],
+              [
+                "105134",
+                "2026-09-01 20:39:27.0000000",
+                "1320.0001",
+                1,
+                5,
+                "1320.000100"
+              ],
+              [
+                "105135",
+                "2026-09-01 20:49:02.0000000",
+                "2980.0001",
+                4,
+                17,
+                "745.000025"
+              ],
+              [
+                "105136",
+                "2026-09-01 21:17:58.0000000",
+                "410.0000",
+                4,
+                3,
+                "102.500000"
+              ],
+              [
+                "105137",
+                "2026-09-01 21:30:14.0000000",
+                "0.0000",
+                1,
+                2,
+                "0.000000"
+              ],
+              [
+                "105138",
+                "2026-09-01 22:10:43.0000000",
+                "465.0000",
+                2,
+                4,
+                "232.500000"
+              ],
+              [
+                "105139",
+                "2026-09-01 22:24:47.0000000",
+                "1190.0000",
+                2,
+                6,
+                "595.000000"
+              ],
+              [
+                "105140",
+                "2026-09-01 22:31:25.0000000",
+                "4204.9998",
+                2,
+                14,
+                "2102.499900"
+              ],
+              [
+                "105141",
+                "2026-09-01 22:38:16.0000000",
+                "1665.0000",
+                1,
+                2,
+                "1665.000000"
+              ],
+              [
+                "105142",
+                "2026-09-01 19:07:09.0000000",
+                "13684.0001",
+                8,
+                21,
+                "1710.500012"
+              ],
+              [
+                "105144",
+                "2026-09-02 13:19:00.0000000",
+                "2153.0001",
+                2,
+                13,
+                "1076.500050"
+              ],
+              [
+                "105145",
+                "2026-09-02 14:29:47.0000000",
+                "7422.0000",
+                6,
+                29,
+                "1237.000000"
+              ],
+              [
+                "105146",
+                "2026-09-02 14:44:24.0000000",
+                "9318.0002",
+                3,
+                16,
+                "3106.000066"
+              ],
+              [
+                "105147",
+                "2026-09-02 14:46:35.0000000",
+                "915.0000",
+                2,
+                4,
+                "457.500000"
+              ],
+              [
+                "105148",
+                "2026-09-02 14:55:44.0000000",
+                "8259.9999",
+                5,
+                23,
+                "1651.999980"
+              ],
+              [
+                "105149",
+                "2026-09-02 15:03:07.0000000",
+                "2508.0001",
+                3,
+                14,
+                "836.000033"
+              ],
+              [
+                "105150",
+                "2026-09-02 16:06:59.0000000",
+                "8021.9998",
+                4,
+                24,
+                "2005.499950"
+              ],
+              [
+                "105151",
+                "2026-09-02 16:56:55.0000000",
+                "2899.9999",
+                2,
+                14,
+                "1449.999950"
+              ],
+              [
+                "105152",
+                "2026-09-02 17:03:41.0000000",
+                "4754.9999",
+                2,
+                13,
+                "2377.499950"
+              ],
+              [
+                "105153",
+                "2026-09-02 17:48:32.0000000",
+                "1634.9998",
+                4,
+                10,
+                "408.749950"
+              ],
+              [
+                "105154",
+                "2026-09-02 17:50:00.0000000",
+                "1120.0000",
+                1,
+                9,
+                "1120.000000"
+              ],
+              [
+                "105155",
+                "2026-09-02 18:20:45.0000000",
+                "1850.0001",
+                2,
+                8,
+                "925.000050"
+              ],
+              [
+                "105156",
+                "2026-09-02 18:27:38.0000000",
+                "765.0000",
+                1,
+                3,
+                "765.000000"
+              ],
+              [
+                "105157",
+                "2026-09-02 19:04:13.0000000",
+                "4581.0000",
+                4,
+                11,
+                "1145.250000"
+              ],
+              [
+                "105158",
+                "2026-09-02 19:14:35.0000000",
+                "760.0000",
+                1,
+                7,
+                "760.000000"
+              ],
+              [
+                "105159",
+                "2026-09-02 19:46:33.0000000",
+                "1950.0000",
+                2,
+                12,
+                "975.000000"
+              ],
+              [
+                "105160",
+                "2026-09-02 19:56:00.0000000",
+                "9980.0000",
+                2,
+                16,
+                "4990.000000"
+              ],
+              [
+                "105162",
+                "2026-09-02 20:21:16.0000000",
+                "14482.0002",
+                4,
+                24,
+                "3620.500050"
+              ],
+              [
+                "105163",
+                "2026-09-02 20:34:18.0000000",
+                "1764.9999",
+                2,
+                12,
+                "882.499950"
+              ],
+              [
+                "105164",
+                "2026-09-02 20:35:53.0000000",
+                "5379.9999",
+                6,
+                23,
+                "896.666650"
+              ],
+              [
+                "105165",
+                "2026-09-02 20:54:49.0000000",
+                "965.0000",
+                1,
+                2,
+                "965.000000"
+              ],
+              [
+                "105166",
+                "2026-09-02 21:16:45.0000000",
+                "3965.0001",
+                2,
+                5,
+                "1982.500050"
+              ],
+              [
+                "105167",
+                "2026-09-02 21:48:24.0000000",
+                "95.0000",
+                1,
+                2,
+                "95.000000"
+              ],
+              [
+                "105168",
+                "2026-09-02 21:52:01.0000000",
+                "3700.0000",
+                1,
+                4,
+                "3700.000000"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "COLUMN_NAME",
+              "DATA_TYPE",
+              "IS_NULLABLE"
+            ],
+            "name": "detalle_schema_nullable",
+            "row_count_returned": 10,
+            "rows": [
+              [
+                "unidad_negocio_id",
+                "nvarchar",
+                "YES"
+              ],
+              [
+                "fecha_operacion",
+                "date",
+                "NO"
+              ],
+              [
+                "fecha_hora",
+                "datetime2",
+                "YES"
+              ],
+              [
+                "numero_ticket",
+                "nvarchar",
+                "NO"
+              ],
+              [
+                "id_transaccion",
+                "nvarchar",
+                "NO"
+              ],
+              [
+                "importe_neto",
+                "decimal",
+                "YES"
+              ],
+              [
+                "pax",
+                "int",
+                "YES"
+              ],
+              [
+                "activo",
+                "bit",
+                "NO"
+              ],
+              [
+                "cancelado_origen",
+                "bit",
+                "YES"
+              ],
+              [
+                "es_kpi_valido",
+                "bit",
+                "YES"
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-09-30T00:04:11Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
