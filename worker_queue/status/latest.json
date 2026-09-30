@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "9ff04d14e815cc7a58340434aed6039f43fc81d1",
-  "generated_at_utc": "2026-09-30T22:33:07Z",
+  "generated_at_utc": "2026-09-30T22:34:25Z",
   "history": {
     "done_total_local": 1204,
     "pending_total_local": 0,
@@ -16,7 +16,7 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2691,
+      "age_seconds": 2768,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-DRILLDOWN-SOURCE-AUDIT-READONLY-R1-CARLOS-20260930T2145Z",
       "reasons": [
         "READ_ONLY_ACTIONS_MUST_BE_EMPTY_LIST"
@@ -25,67 +25,67 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1007,
+      "age_seconds": 1084,
       "job_id": "EDARSA-LOGISTICS-GATE3C-MULTIMODAL-PHYSICAL-SCHEMA-DESIGN-DOSSIER-R4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1179,
+      "age_seconds": 1257,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-RUNTIME-DELEGATION-AUDIT-READONLY-R5",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1993,
+      "age_seconds": 2070,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-RUNTIME-PATH-AUDIT-READONLY-R4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2849,
+      "age_seconds": 2926,
       "job_id": "EDARSAHUB-BOS-WORKER-SELFHEAL-INDEXLOCK-FASTFORWARD-R2-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 677,
+      "age_seconds": 755,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-SOURCE-AUDIT-READONLY-R3-CARLOS-20260930T2216Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1221,
+      "age_seconds": 1298,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-HIERARCHY-UI-R11-CARLOS-20260930T2155Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 447,
+      "age_seconds": 524,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-HIERARCHY-UI-R11B-CARLOS-20260930T2225Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 215,
+      "age_seconds": 292,
       "job_id": "RRHH-CUSTODIA-GATE3-MINIMAL-DDL-DESIGN-R6",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 992,
+      "age_seconds": 1069,
       "job_id": "RRR-GATE4E-R10-R6-R1-RUNTIME-ORG-RESOLUTION-FIX-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 807,
+      "age_seconds": 884,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 227,
+      "age_seconds": 304,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-ROOT-CAUSE-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
@@ -105,8 +105,8 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-30T22:33:01Z",
-    "last_receive_utc": "2026-09-30T22:33:05Z",
+    "last_cycle_utc": "2026-09-30T22:34:21Z",
+    "last_receive_utc": "2026-09-30T22:34:24Z",
     "last_terminal_utc": "2026-09-30T22:29:32Z",
     "pid": "658",
     "runtime_fingerprint": {
