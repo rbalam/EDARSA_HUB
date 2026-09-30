@@ -4,19 +4,19 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "fa5069ad3fea5ae7a56c048ba6778117d34ee9ad",
-  "generated_at_utc": "2026-09-30T22:44:45Z",
+  "generated_at_utc": "2026-09-30T22:46:06Z",
   "history": {
-    "done_total_local": 1205,
+    "done_total_local": 1206,
     "pending_total_local": 0,
     "processing_total_local": 0,
     "rejected_total_local": 1069,
-    "results_total_local": 2075
+    "results_total_local": 2076
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3388,
+      "age_seconds": 3469,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-DRILLDOWN-SOURCE-AUDIT-READONLY-R1-CARLOS-20260930T2145Z",
       "reasons": [
         "READ_ONLY_ACTIONS_MUST_BE_EMPTY_LIST"
@@ -25,79 +25,79 @@
       "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
     },
     {
-      "age_seconds": 1704,
+      "age_seconds": 1785,
       "job_id": "EDARSA-LOGISTICS-GATE3C-MULTIMODAL-PHYSICAL-SCHEMA-DESIGN-DOSSIER-R4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1877,
+      "age_seconds": 1958,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-RUNTIME-DELEGATION-AUDIT-READONLY-R5",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2690,
+      "age_seconds": 1,
+      "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-RUNTIME-MENU-SOURCE-AUDIT-READONLY-R6",
+      "reason": null,
+      "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 2771,
       "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-RUNTIME-PATH-AUDIT-READONLY-R4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3546,
-      "job_id": "EDARSAHUB-BOS-WORKER-SELFHEAL-INDEXLOCK-FASTFORWARD-R2-20260930",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1375,
+      "age_seconds": 1456,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-SOURCE-AUDIT-READONLY-R3-CARLOS-20260930T2216Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1918,
+      "age_seconds": 2000,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-HIERARCHY-UI-R11-CARLOS-20260930T2155Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1145,
+      "age_seconds": 1226,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-HIERARCHY-UI-R11B-CARLOS-20260930T2225Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 38,
+      "age_seconds": 119,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-HIERARCHY-UI-R11C-CARLOS-20260930T2245Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 912,
+      "age_seconds": 993,
       "job_id": "RRHH-CUSTODIA-GATE3-MINIMAL-DDL-DESIGN-R6",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1689,
+      "age_seconds": 1770,
       "job_id": "RRR-GATE4E-R10-R6-R1-RUNTIME-ORG-RESOLUTION-FIX-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1505,
+      "age_seconds": 1586,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-FIX-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 925,
+      "age_seconds": 1006,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-ROOT-CAUSE-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 588,
+      "age_seconds": 669,
       "job_id": "SERVIDORES-CONEXIONES-REGRESSION-SQL-TAB-ROOT-CAUSE-R2-20260930",
       "reason": null,
       "state": "RESULT_READY"
@@ -117,9 +117,9 @@
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-30T22:44:43Z",
-    "last_receive_utc": "2026-09-30T22:44:45Z",
-    "last_terminal_utc": "2026-09-30T22:44:06Z",
+    "last_cycle_utc": "2026-09-30T22:46:01Z",
+    "last_receive_utc": "2026-09-30T22:46:06Z",
+    "last_terminal_utc": "2026-09-30T22:46:05Z",
     "pid": "658",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "2ded6a35b1d62fa46db3825661382a2ee5009d81",
