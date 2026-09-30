@@ -183,13 +183,7 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
         UnidadNegocioConfig,
         SistemaOrigen
     )
-    from scripts.poblar_ventas_detalle_producto_canonico import (
-        get_unidades_negocio_pos,
-        get_pos_config_for_unidad,
-        _load_runtime_rows,
-        _runtime_for,
-        sync_detalle_producto_canonico_dia,
-    )
+    from scripts.backfill_detalle_producto_pendientes import ejecutar_backfill
     
     logger.info(f"[SYNC_COMERCIAL_V2] Iniciando sincronización incremental ({SYNC_INCREMENTAL_DAYS} días)")
     
@@ -237,73 +231,56 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
         detalle_unidad,
     ):
         """
-        Ejecuta detalle únicamente después de que el header/KPI
-        canónico de la unidad haya sincronizado correctamente.
+        Repara detalle ISCAM después del header usando el mismo backfill
+        selectivo que utiliza el botón manual "Sincronizar faltantes".
 
-        El fallo del detalle se registra de forma independiente.
-        No invalida un header ya confirmado.
+        El backfill consulta primero el detalle ya conciliado y evita volver a
+        extraer del POS los días que ya están completos. Así cada ciclo
+        automático concentra el trabajo únicamente en faltantes reales y una
+        unidad no obliga a reprocesar el histórico reciente de todas las demás.
         """
         try:
-            unidad_rows = get_unidades_negocio_pos(
-                [unidad_codigo]
+            _, resumen_detalle = ejecutar_backfill(
+                fecha_inicio=dia,
+                fecha_fin=dia + timedelta(days=1),
+                unidades=[unidad_codigo],
+                commit=detail_commit,
             )
 
-            if len(unidad_rows) != 1:
+            unidades_detalle = resumen_detalle.get("unidades") or []
+            if len(unidades_detalle) != 1:
                 raise RuntimeError(
-                    "Contexto POS canónico no único para "
-                    f"unidad={unidad_codigo!r}"
+                    "Backfill ISCAM no devolvió contexto único para "
+                    f"unidad={unidad_codigo!r} fecha_operacion={dia}"
                 )
 
-            cfg = get_pos_config_for_unidad(
-                unidad_rows[0]
-            )
-
-            runtime_rows = _load_runtime_rows(
-                dia,
-                dia + timedelta(days=1),
-                unidad_codigo,
-            )
-
-            runtime_row = _runtime_for(
-                runtime_rows,
-                cfg,
-                dia,
-            )
-
-            if runtime_row is None:
+            dias_detalle = unidades_detalle[0].get("dias") or []
+            if len(dias_detalle) != 1:
                 raise RuntimeError(
-                    "Runtime V2 no disponible para "
-                    f"unidad={unidad_codigo!r} "
-                    f"fecha_operacion={dia}"
+                    "Backfill ISCAM no devolvió un resultado diario único para "
+                    f"unidad={unidad_codigo!r} fecha_operacion={dia}"
                 )
 
-            detail_result = (
-                sync_detalle_producto_canonico_dia(
-                    cfg=cfg,
-                    dia=dia,
-                    runtime_row=runtime_row,
-                    run_id=run_id,
-                    commit=detail_commit,
-                    excluir_abiertas=True,
-                )
+            detail_result = dias_detalle[0]
+            status = str(detail_result.get("status") or "ERROR")
+            filas_insertadas = int(
+                detail_result.get("filas_insertadas") or 0
             )
-
-            status = detail_result.get("status")
 
             detail_trace = {
                 "fecha_operacion": dia.isoformat(),
                 "status": status,
-                "filas_insertadas": int(
-                    detail_result.get(
-                        "filas_insertadas"
-                    ) or 0
-                ),
-                "filas_preparadas": int(
-                    detail_result.get(
-                        "filas_destino_preparadas"
-                    ) or 0
-                ),
+                "filas_insertadas": filas_insertadas,
+                "filas_preparadas": filas_insertadas,
             }
+            if detail_result.get("error_code"):
+                detail_trace["error_code"] = str(
+                    detail_result.get("error_code")
+                )
+            if detail_result.get("error_type"):
+                detail_trace["error_type"] = str(
+                    detail_result.get("error_type")
+                )
 
             detalle_unidad.setdefault(
                 "detalle_producto_dias",
@@ -327,16 +304,16 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
                 ]
             )
 
-            if status == "OK_HEADER_CANONICO":
+            if status in {
+                "OK_HEADER_CANONICO",
+                "YA_CONCILIADO",
+            }:
                 results[
                     "detalle_producto_exitosos"
                 ] += 1
-
                 results[
                     "detalle_producto_filas_insertadas"
-                ] += detalle_unidad[
-                    "detalle_producto_filas_insertadas"
-                ]
+                ] += filas_insertadas
 
             elif status == "NO_PROBAR_ABIERTO_REAL":
                 results[
@@ -347,24 +324,20 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
                 results[
                     "detalle_producto_fallidos"
                 ] += 1
-
                 detalle_unidad[
                     "detalle_producto_error"
-                ] = status
+                ] = detail_result.get("error_code") or status
 
         except Exception as exc:
             results[
                 "detalle_producto_fallidos"
             ] += 1
-
             detalle_unidad[
                 "detalle_producto_status"
             ] = "ERROR"
-
             detalle_unidad[
                 "detalle_producto_error"
             ] = str(exc)
-
             detalle_unidad.setdefault(
                 "detalle_producto_dias",
                 [],
@@ -374,7 +347,6 @@ async def execute_sync_comercial_v2(db=None, detail_commit: bool = True, solo_un
                 "filas_insertadas": 0,
                 "error": str(exc),
             })
-
             logger.exception(
                 "[SYNC_COMERCIAL_V2] "
                 "Fallo detalle producto "
