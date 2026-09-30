@@ -1,0 +1,71 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-ACTIVE-DRILLDOWN-ROUTE-FIX-R4-RETRY2-CARLOS-20260930T1630Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir exclusivamente el endpoint ACTIVO de doble clic del Dashboard Comercial. Hallazgo: modules/comercial/__init__.py registra canonical_detail_routes antes del router principal y filtra /comercial/detalle-movimientos de routes.py, por lo que R3 no era el handler servido. Delegar el handler activo canonical_detail_routes al comercial_detalle_movimientos de routes.py, que ya implementa folios reales, RBAC global corregido y ordenamientos requeridos. REINTENTO 2: runtime /app confirmado convergido con origin/Edarsahub_Desarrollo en df3c1d84b7f501887eeb1ca4ef0021f9dba8714a y topologia 0/0 antes del envio. PROHIBIDO modificar o ejecutar sincronizacion de Inteligencia Comercial, Sync_Sales, Sync_PAX, ISCAM, Scheduler, ventas abiertas/cerradas, Tablero Ejecutivo, Portal de Inteligencia Comercial o Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1.0",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/canonical_detail_routes.py",
+      "old": "@router.get(\"/comercial/detalle-movimientos/{server_id}\")\nasync def comercial_detalle_movimientos_canonical(\n    server_id: str,\n    sucursal: str = Query(default=\"\"),\n    tipo: str = Query(default=\"ventas\"),\n    periodo: str = Query(default=\"mes\"),\n    meses: str = Query(default=\"\"),\n    anios: str = Query(default=\"\"),\n    page: int = Query(default=1, ge=1),\n    limit: int = Query(default=50, ge=1, le=200),\n    current_user: Dict = Depends(get_current_user),\n):\n    \"\"\"Return one canonical daily row per selected commercial unit.\n\n    `tipo` and `periodo` remain accepted for API compatibility. Historical\n    figures always come from vw_Comercial_KPIs_Diarios_v2_Runtime and are\n    filtered by the resolved canonical `unidad_negocio_id`.\n    \"\"\"\n\n    del tipo, periodo\n\n    server = await get_server_by_id(server_id)\n    if not server:\n        raise HTTPException(status_code=404, detail=\"Servidor no encontrado\")\n\n    access_context = await _validate_server_scope(current_user, server_id)\n    date_from, date_to = _resolve_period(meses, anios)\n    offset = (page - 1) * limit\n\n    try:\n        unit = resolve_canonical_unit(\n            _execute_edarsahub_parameterized,\n            server_id,\n            sucursal,\n        )\n        allowed_unit_pks = frozenset()\n        if not access_context.tiene_acceso_global:\n            assigned_units = await get_user_unidades_negocio(current_user)\n            allowed_unit_pks = resolve_allowed_canonical_unit_pks(\n                assigned_units,\n                UnidadesService.get_all(),\n            )\n        assert_canonical_unit_access(\n            unit,\n            allowed_unit_pks,\n            allowed_source_branch_ids=(\n                access_context.sucursales_por_server.get(\n                    server_id.strip().casefold(),\n                    [],\n                )\n            ),\n            has_global_access=access_context.tiene_acceso_global,\n        )\n\n        total_query = build_daily_kpi_total_query(\n            unit.codigo,\n            date_from,\n            date_to,\n        )\n        total_rows = _execute_edarsahub_parameterized(\n            total_query.statement,\n            total_query.params,\n        )\n        summary = total_rows[0] if total_rows else {}\n        assert_one_row_per_operation_date(summary)\n\n        detail_query = build_daily_kpi_detail_query(\n            unit.codigo,\n            date_from,\n            date_to,\n            offset=offset,\n            limit=limit,\n        )\n        rows = _execute_edarsahub_parameterized(\n            detail_query.statement,\n            detail_query.params,\n        )\n\n        movements = []\n        for row in rows:\n            operation_date = row.get(\"fecha_operacion\")\n            date_text = (\n                operation_date.strftime(\"%Y-%m-%d\")\n                if hasattr(operation_date, \"strftime\")\n                else str(operation_date)[:10]\n            )\n            movements.append(\n                {\n                    \"folio\": build_daily_folio(unit.codigo, date_text),\n                    \"fecha\": date_text,\n                    \"importe\": float(row.get(\"ventas_total\") or 0),\n                    \"pax\": int(row.get(\"pax_total\") or 0),\n                    \"descuento\": 0,\n                    \"propina\": 0,\n                    \"tipo_servicio\": row.get(\"sistema_origen\") or \"EDARSAHUB\",\n                    \"num_productos\": int(row.get(\"tickets_total\") or 0),\n                    \"unidad_negocio_pk\": unit.unidad_negocio_pk,\n                    \"unidad_negocio_codigo\": unit.codigo,\n                    \"unidad_negocio_nombre\": unit.nombre,\n                }\n            )\n\n        total = int(summary.get(\"total\") or 0)\n        logging.info(\n            \"[DETALLE_CANONICO] server=%s unit=%s range=%s/%s rows=%s\",\n            server_id,\n            unit.codigo,\n            date_from,\n            date_to,\n            len(movements),\n        )\n\n        return {\n            \"source_status\": \"SUCCESS\" if total else \"NO_DATA\",\n            \"source_message\": \"Detalle canónico desde EDARSAHUB SQL\",\n            \"source\": \"EDARSAHUB_SQL_RUNTIME\",\n            \"movimientos\": movements,\n            \"items\": movements,\n            \"total\": total,\n            \"page\": page,\n            \"limit\": limit,\n            \"pages\": (total + limit - 1) // limit if total else 0,\n            \"periodo\": {\"inicio\": date_from, \"fin\": date_to},\n            \"servidor\": server.get(\"name\"),\n            \"unidad\": {\n                \"unidad_negocio_pk\": unit.unidad_negocio_pk,\n                \"codigo\": unit.codigo,\n                \"nombre\": unit.nombre,\n                \"server_id\": unit.server_id,\n                \"sucursal_origen_id\": unit.sucursal_origen_id,\n                \"system_type\": unit.system_type,\n            },\n            \"resumen\": {\n                \"venta_total\": float(summary.get(\"venta_total\") or 0),\n                \"cheques_total\": int(summary.get(\"cheques_total\") or 0),\n                \"pax_total\": int(summary.get(\"pax_total\") or 0),\n            },\n        }\n    except CanonicalUnitAccessError as exc:\n        logging.warning(\n            \"[DETALLE_CANONICO] Acceso denegado server=%s: %s\",\n            server_id,\n            exc,\n        )\n        raise HTTPException(\n            status_code=403,\n            detail={\n                \"code\": \"CANONICAL_UNIT_ACCESS_DENIED\",\n                \"message\": \"No tiene acceso a la unidad solicitada\",\n            },\n        ) from exc\n    except CanonicalUnitResolutionError as exc:\n        logging.error(\"[DETALLE_CANONICO] Resolución de unidad fallida: %s\", exc)\n        raise HTTPException(\n            status_code=409,\n            detail={\n                \"code\": \"CANONICAL_UNIT_RESOLUTION_FAILED\",\n                \"message\": str(exc),\n            },\n        ) from exc\n    except CanonicalDailyDuplicateError as exc:\n        logging.error(\"[DETALLE_CANONICO] Duplicidad Runtime: %s\", exc)\n        raise HTTPException(\n            status_code=409,\n            detail={\n                \"code\": \"CANONICAL_UNIT_DATE_DUPLICATE\",\n                \"message\": str(exc),\n            },\n        ) from exc\n    except HTTPException:\n        raise\n    except Exception as exc:\n        logging.exception(\"[DETALLE_CANONICO] Error EDARSAHUB SQL\")\n        raise HTTPException(\n            status_code=500,\n            detail={\n                \"code\": \"EDARSAHUB_CANONICAL_DETAIL_ERROR\",\n                \"message\": str(exc)[:180],\n            },\n        ) from exc\n",
+      "new": "@router.get(\"/comercial/detalle-movimientos/{server_id}\")\nasync def comercial_detalle_movimientos_canonical(\n    server_id: str,\n    sucursal: str = Query(default=\"\"),\n    tipo: str = Query(default=\"ventas\"),\n    periodo: str = Query(default=\"mes\"),\n    meses: str = Query(default=\"\"),\n    anios: str = Query(default=\"\"),\n    page: int = Query(default=1, ge=1),\n    limit: int = Query(default=50, ge=1, le=200),\n    current_user: Dict = Depends(get_current_user),\n):\n    \"\"\"Active public drill-down delegates to the real-folio Comercial handler.\n\n    The package router intentionally registers this canonical route before the\n    legacy router and filters the duplicate path. Therefore this handler is the\n    one that actually serves Preview. Delegate to the current implementation in\n    routes.py so the active path uses:\n    - canonical EDARSAHUB real ticket folios;\n    - the Comercial global RBAC validation already fixed for users without\n      explicit server/branch assignments;\n    - ventas / pax / pax_promedio / ticket / rotacion ordering semantics;\n    - no LIVE POS access and no synchronization.\n    \"\"\"\n    from modules.comercial.routes import comercial_detalle_movimientos\n\n    return await comercial_detalle_movimientos(\n        server_id=server_id,\n        sucursal=sucursal,\n        tipo=tipo,\n        periodo=periodo,\n        meses=meses,\n        anios=anios,\n        page=page,\n        limit=limit,\n        current_user=current_user,\n    )\n",
+      "expected_count": 1
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial/canonical_detail_routes.py",
+        "backend/modules/comercial/routes.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial/__init__.py",
+          "backend/modules/comercial/canonical_detail_routes.py",
+          "backend/modules/comercial/routes.py"
+        ],
+        "search_terms": [
+          "canonical_detail_router",
+          "without_legacy_detail_route",
+          "comercial_detalle_movimientos",
+          "Comercial_Inteligencia_VentasDetalleProducto",
+          "validate_server_access_rbac",
+          "pax_promedio",
+          "COUNT(*) OVER() AS total_folios"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 100
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "cienfuegos_active_real_folios_sep2026",
+          "sql": "WITH tickets AS (SELECT id_transaccion,numero_ticket,MIN(COALESCE(fecha_hora,CAST(fecha_operacion AS DATETIME2))) AS fecha,SUM(ISNULL(importe_neto,0)) AS total_venta,MAX(ISNULL(pax,0)) AS pax,COUNT(*) AS num_productos FROM dbo.Comercial_Inteligencia_VentasDetalleProducto WITH (NOLOCK) WHERE unidad_negocio_id='CIENFUEGOS' AND ISNULL(activo,1)=1 AND ISNULL(es_kpi_valido,1)=1 AND ISNULL(cancelado_origen,0)=0 AND fecha_operacion>='2026-09-01' AND fecha_operacion<'2026-09-30' AND MONTH(fecha_operacion) IN (9) GROUP BY id_transaccion,numero_ticket) SELECT numero_ticket,fecha,total_venta,pax,num_productos,CASE WHEN pax>0 THEN total_venta/pax ELSE NULL END AS pax_promedio,COUNT(*) OVER() AS total_folios FROM tickets ORDER BY CASE WHEN TRY_CONVERT(BIGINT,numero_ticket) IS NULL THEN 1 ELSE 0 END,TRY_CONVERT(BIGINT,numero_ticket),numero_ticket,fecha OFFSET 0 ROWS FETCH NEXT 50 ROWS ONLY"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
