@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "3496cc098af1117952b20b8aeaf680a08e2b4f96",
-  "generated_at_utc": "2026-09-30T17:19:33Z",
+  "generated_at_utc": "2026-09-30T17:20:52Z",
   "history": {
     "done_total_local": 1190,
     "pending_total_local": 0,
@@ -16,67 +16,61 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 2174,
+      "age_seconds": 2253,
       "job_id": "EDARSAHUB-COMERCIAL-ACTIVE-DRILLDOWN-ROUTE-FIX-R4-RETRY2-CARLOS-20260930T1630Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 469,
+      "age_seconds": 548,
       "job_id": "EDARSAHUB-COMERCIAL-ACTIVE-DRILLDOWN-ROUTE-FIX-R4-RETRY3-CARLOS-20260930T1700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3528,
-      "job_id": "EDARSAHUB-ISCAM-AUTOSYNC-SELECTIVE-DETAIL-FIX-R1-CARLOS-20260930T1020",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3108,
+      "age_seconds": 3187,
       "job_id": "EDARSAHUB-ISCAM-AUTOSYNC-SELECTIVE-DETAIL-FIX-R2-CARLOS-20260930T1030",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1409,
+      "age_seconds": 1488,
       "job_id": "EDARSAHUB-ISCAM-AUTOSYNC-SELECTIVE-DETAIL-FIX-R3-CARLOS-20260930T1045",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 314,
+      "age_seconds": 393,
       "job_id": "EDARSAHUB-ISCAM-AUTOSYNC-SELECTIVE-DETAIL-FIX-R4-CARLOS-20260930T1108",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 489,
+      "age_seconds": 568,
       "job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6F-CARLOS-20260930T1645Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 15,
+      "age_seconds": 94,
       "job_id": "MEJORA-TABEJE-DRILLDOWN-CERRADAS-R6G-CARLOS-20260930T1720Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 430,
+      "age_seconds": 509,
       "job_id": "MEJORA-TABEJE-PREVIEW-ALL-UNITS-SMOKE-R10A-CARLOS-20260930T1700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 454,
+      "age_seconds": 533,
       "job_id": "MEJORA-TABEJE-PREVIEW-FRONTEND-BUILD-R10B-CARLOS-20260930T1700Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2985,
+      "age_seconds": 3064,
       "job_id": "MEJORA-TABEJE-WORKER-FF-RESTART-FIX-R9-CARLOS-20260930T1632Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -90,14 +84,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 11,
+  "queue_result_ready_recent": 10,
   "queue_running": 0,
   "remote_development_sha": "3496cc098af1117952b20b8aeaf680a08e2b4f96",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-09-30T17:19:33Z",
-    "last_receive_utc": "2026-09-30T17:19:28Z",
+    "last_cycle_utc": "2026-09-30T17:20:49Z",
+    "last_receive_utc": "2026-09-30T17:20:44Z",
     "last_terminal_utc": "2026-09-30T17:19:17Z",
     "pid": "20369",
     "runtime_fingerprint": {
