@@ -1,0 +1,653 @@
+{
+  "base_sha": "6c1638180de49f4eddf8c0aae534763199a96f2f",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-09-30T19:21:29Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-AUDIT-READONLY-R2-NARROW",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-09-30T19:21:45Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "allowed_servers",
+              "allowed_sucursales",
+              "allowed_warehouses",
+              "effective-permissions",
+              "permissions",
+              "role",
+              "sistema_usuarios_ver",
+              "usuarios_ver"
+            ],
+            "path": "frontend/src/pages/Usuarios.js",
+            "rbac_contracts": [
+              "Sistema_RBAC"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "menu-permissions",
+              "permissions",
+              "role"
+            ],
+            "path": "frontend/src/pages/Layout.js",
+            "rbac_contracts": [
+              "menu-permissions"
+            ],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "role"
+            ],
+            "path": "frontend/src/contexts/AuthContext.jsx",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "frontend",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "role"
+            ],
+            "path": "frontend/src/lib/auth.js",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [
+              "sql_first"
+            ],
+            "helpers": [],
+            "imports": [
+              "core.alcance_helper",
+              "core.corporate_filters.service",
+              "core.rbac_helper",
+              "core.security",
+              "core.sql_first.connection_factory",
+              "core.unidades_service",
+              "datetime",
+              "fastapi",
+              "logging",
+              "modules.auth",
+              "modules.auth.password_reset",
+              "modules.auth.schemas",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "allowed_servers",
+              "allowed_sucursales",
+              "allowed_warehouses",
+              "permissions",
+              "role",
+              "sistema_usuarios_ver",
+              "update_user",
+              "usuario_acciones",
+              "usuario_modulos",
+              "usuario_permisosrolmodulo",
+              "usuario_rolesasignacion",
+              "usuarios_ver"
+            ],
+            "path": "backend/modules/auth/service.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_can_manage_user",
+              "_get_role_level",
+              "_p5_extract_usuario_id_from_payload",
+              "create_role",
+              "create_user_admin",
+              "delete_role",
+              "delete_user",
+              "get_roles",
+              "get_user_by_id",
+              "get_users",
+              "login_user",
+              "register_user",
+              "update_role",
+              "update_user",
+              "update_user_permissions"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.sql_first.db",
+              "logging",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "role",
+              "update_user",
+              "usuario_rolesasignacion",
+              "usuario_rolescontexto"
+            ],
+            "path": "backend/modules/auth/repository.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "Usuario_RolesContexto"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AuthRepository",
+              "_normalize_role",
+              "_normalize_user",
+              "_row_as_dict",
+              "_rows_as_dicts",
+              "build_user_response",
+              "count_users_with_role",
+              "create_default_roles",
+              "create_role",
+              "create_user",
+              "deactivate_user",
+              "delete_role",
+              "delete_user",
+              "find_role_by_id",
+              "find_role_by_name",
+              "find_user_by_email",
+              "find_user_by_id",
+              "get_all_roles",
+              "get_all_users",
+              "get_db",
+              "get_user_by_email",
+              "get_user_by_id",
+              "get_users_by_empresas",
+              "init_auth_repository",
+              "update_role",
+              "update_user"
+            ],
+            "tables_referenced": [
+              "Usuario_Catalogo",
+              "Usuario_Roles",
+              "Usuario_RolesAsignacion",
+              "Usuario_RolesContexto"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.core.auth",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_current_user",
+              "role",
+              "update_user",
+              "usuario_rolesasignacion"
+            ],
+            "path": "backend/core/auth/user_repository_sql.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "get_current_user"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "AuthRepositorySQL",
+              "__init__",
+              "_build_user_dict",
+              "_get_all_active_empresas",
+              "_get_connection",
+              "_get_user_empresas",
+              "_get_user_rol",
+              "compare_user_mongo_vs_sql",
+              "create_user_sql",
+              "deactivate_user_sql",
+              "find_user_by_email_sql",
+              "find_user_by_id_sql",
+              "get_user_auth_context_sql",
+              "get_user_by_email_sql",
+              "get_user_by_public_uuid_sql",
+              "list_all_users_sql",
+              "update_user_sql",
+              "validate_superadmin_rule"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.unidades_service",
+              "logging",
+              "repository",
+              "schemas",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "check_permission",
+              "permissions",
+              "require_permission",
+              "role"
+            ],
+            "path": "backend/core/rbac/service.py",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "PermisoDenegadoError",
+              "RBACService",
+              "__init__",
+              "_get_permisos_from_legacy_role",
+              "asignar_rol_a_usuario",
+              "check_all_permissions",
+              "check_any_permission",
+              "check_permission",
+              "create_rol",
+              "delete_rol",
+              "ensure_initialized",
+              "get_all_permisos",
+              "get_all_roles",
+              "get_audit_logs",
+              "get_rbac_service",
+              "get_rol",
+              "get_user_permissions",
+              "initialize",
+              "require_permission",
+              "revocar_rol_de_usuario",
+              "update_rol"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "json",
+              "logging",
+              "os",
+              "pymssql",
+              "typing",
+              "uuid"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "require_permission",
+              "role",
+              "usuario_acciones",
+              "usuario_modulos",
+              "usuario_permisosrolmodulo",
+              "usuario_rolesasignacion"
+            ],
+            "path": "backend/core/rbac/repository_sql.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "RBACRepositorySQL",
+              "__init__",
+              "_get_connection",
+              "_invalidate_cache",
+              "_is_cache_valid",
+              "asignar_rol",
+              "create_rol",
+              "delete_rol",
+              "get_all_permisos",
+              "get_all_roles",
+              "get_audit_logs",
+              "get_nivel_jerarquia_usuario",
+              "get_permiso_by_codigo",
+              "get_permisos_usuario",
+              "get_rbac_repository_sql",
+              "get_rol_by_id",
+              "get_rol_by_nombre",
+              "get_roles_usuario",
+              "log_verificacion",
+              "revocar_rol",
+              "seed_permisos",
+              "seed_roles",
+              "update_rol"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac_helper.py",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.sql_first.db",
+              "starlette.concurrency",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "role",
+              "usuario_permisosrolmodulo",
+              "usuario_rolescontexto"
+            ],
+            "path": "backend/core/rbac_helper.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "Usuario_RolesContexto"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_extract_current_user",
+              "_extract_permiso",
+              "_extract_role",
+              "_extract_usuario_id",
+              "_has_bypass_role_sql",
+              "_has_permission_sql",
+              "_module_candidates_from_permiso",
+              "_norm",
+              "_verificar_sql",
+              "verificar_permiso_rbac"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.core.rbac_helper_sql.py",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.config.edarsahub_config",
+              "core.corporate_filters.service",
+              "core.sql_first.db",
+              "core.unidades_service",
+              "datetime",
+              "logging",
+              "os",
+              "pymssql",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "role"
+            ],
+            "path": "backend/core/rbac_helper_sql.py",
+            "rbac_contracts": [
+              "Usuario_Roles"
+            ],
+            "routes": [],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_get_connection",
+              "_is_cache_valid",
+              "_load_roles_from_sql",
+              "es_admin",
+              "es_aprobador",
+              "es_superadmin",
+              "es_supervisor_o_superior",
+              "get_role_code",
+              "get_role_level",
+              "get_role_names_with_full_access",
+              "get_roles_with_full_access",
+              "has_full_access",
+              "invalidate_cache",
+              "puede_solicitar_comercial",
+              "tiene_acceso_lectura_comercial"
+            ],
+            "tables_referenced": [
+              "Usuario_Roles"
+            ]
+          },
+          {
+            "candidate_ownership": "backend.modules.auth",
+            "connections": [],
+            "helpers": [],
+            "imports": [
+              "asyncio",
+              "core.corporate_filters.service",
+              "core.rbac.service",
+              "core.refresh_tokens",
+              "core.security",
+              "core.unidades_service",
+              "core.user_access_context",
+              "fastapi",
+              "logging",
+              "modules.auth",
+              "modules.auth.password_reset",
+              "modules.auth.schemas",
+              "modules.auth.service",
+              "os",
+              "pydantic",
+              "typing"
+            ],
+            "integrations": [
+              "mpro"
+            ],
+            "matched_terms": [
+              "allowed_servers",
+              "allowed_sucursales",
+              "allowed_warehouses",
+              "effective-permissions",
+              "get_current_user",
+              "menu-permissions",
+              "permissions",
+              "role",
+              "sistema_usuarios_ver",
+              "update_user",
+              "usuarios_ver"
+            ],
+            "path": "backend/modules/auth/routes.py",
+            "rbac_contracts": [
+              "get_current_user",
+              "menu-permissions"
+            ],
+            "routes": [
+              "/auth/context",
+              "/auth/empresas",
+              "/auth/forgot-password",
+              "/auth/login",
+              "/auth/logout",
+              "/auth/logout-all",
+              "/auth/me",
+              "/auth/me/access-context",
+              "/auth/me/context",
+              "/auth/me/effective-permissions",
+              "/auth/me/menu-permissions",
+              "/auth/refresh",
+              "/auth/register",
+              "/auth/reset-password",
+              "/roles",
+              "/roles/modulos",
+              "/roles/{role_id}",
+              "/users",
+              "/users/{user_id}",
+              "/users/{user_id}/permissions"
+            ],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [
+              "ForgotPasswordRequest",
+              "ResetPasswordRequest",
+              "_build_effective_permissions_payload",
+              "_build_menu_permissions",
+              "_group_permissions_by_module",
+              "_normalize_permission_codes",
+              "_p5_extract_usuario_id_from_payload",
+              "change_context",
+              "create_role",
+              "create_user_admin",
+              "delete_role",
+              "delete_user",
+              "forgot_password",
+              "get_me",
+              "get_modulos_disponibles",
+              "get_my_access_context",
+              "get_my_context",
+              "get_my_effective_permissions",
+              "get_my_empresas",
+              "get_my_menu_permissions",
+              "get_roles",
+              "get_user_dual",
+              "get_users",
+              "login",
+              "logout",
+              "logout_all_sessions",
+              "refresh_tokens",
+              "register",
+              "reset_password_endpoint",
+              "update_role",
+              "update_user",
+              "update_user_permissions"
+            ],
+            "tables_referenced": []
+          },
+          {
+            "candidate_ownership": "backend.modules.rbac_context_sql",
+            "connections": [
+              "get_sql_connection",
+              "sql_first"
+            ],
+            "helpers": [
+              "get_sql_connection"
+            ],
+            "imports": [
+              "core.auth.sql_user_identity",
+              "core.security",
+              "core.sql_first.db",
+              "fastapi",
+              "typing"
+            ],
+            "integrations": [],
+            "matched_terms": [
+              "get_current_user",
+              "role",
+              "usuario_permisosrolmodulo",
+              "usuario_rolescontexto"
+            ],
+            "path": "backend/modules/rbac_context_sql/routes.py",
+            "rbac_contracts": [
+              "Usuario_Roles",
+              "Usuario_RolesContexto",
+              "get_current_user"
+            ],
+            "routes": [
+              "/rbac-context/roles-contexto/{usuario_rol_contexto_id}",
+              "/rbac-context/usuarios/{usuario_id}/permisos-efectivos",
+              "/rbac-context/usuarios/{usuario_id}/roles-contexto"
+            ],
+            "scheduler_contracts": [],
+            "symbols": [
+              "_fetch_all",
+              "_fetch_one",
+              "actualizar_rol_contexto",
+              "crear_rol_contexto_usuario",
+              "listar_roles_contexto_usuario",
+              "obtener_permisos_efectivos_usuario"
+            ],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 13,
+          "scanned_files": 13,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-09-30T19:21:29Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
