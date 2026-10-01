@@ -1,0 +1,108 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-BOS-USUARIOS-MENU-RBAC-REGRESSION-R8-CONTRACT-READONLY-20261001",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY_SQL",
+  "human_summary_language": "es",
+  "human_summary_level": "detailed",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB-BOS",
+    "chat": "Usuarios Produccion"
+  },
+  "objective": "Confirmar mediante auditoria READ_ONLY si la regresion del Menu Usuarios es un desacoplamiento de contratos entre RBAC SQL canonico y frontend: SQL/menu resuelve USUARIOS_VER desde Usuario_Modulos(CodigoModulo=usuarios)+Usuario_Acciones(VER), mientras Usuarios.js exige SISTEMA_USUARIOS_VER. No reparar todavia. No modificar archivos. No DDL. No DML. No MongoDB. No Produccion. Determinar contrato canonico vigente y proponer reparacion minima sin ejecutarla.",
+  "required_findings": [
+    "contrato exacto de GET /auth/me/effective-permissions: source, permissions_flat y normalizacion de permisos",
+    "contrato exacto de GET /api/sistema/menus/usuario y como MenuService autoriza sistema.usuarios",
+    "contrato de frontend/src/pages/Usuarios.js para visibilidad de tab Usuarios",
+    "existencia fisica de CodigoModulo USUARIOS y/o SISTEMA_USUARIOS",
+    "existencia fisica de CodigoAccion VER y cualquier accion equivalente",
+    "combinaciones activas Permitido=1 para USUARIOS_VER y SISTEMA_USUARIOS_VER",
+    "roles activos que otorgan cada combinacion",
+    "usuarios activos afectados por cada combinacion",
+    "si USUARIOS_VER llega a permissions_flat como USUARIOS_VER, SISTEMA_USUARIOS_VER o ambos",
+    "si MENU_PERMISSION_MAP ya reconoce USUARIOS_VER como permiso canonico del menu Usuarios",
+    "clasificacion final: CONTRACT_REGRESSION, DATA_REGRESSION, RBAC_ASSIGNMENT_REGRESSION, CONTEXT_REGRESSION o NONE",
+    "reparacion minima sugerida sin ejecutarla"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "frontend/src/pages/Usuarios.js",
+          "frontend/src/pages/Layout.js",
+          "frontend/src/components/navigation/EnterpriseNavigationMenu.jsx",
+          "frontend/src/config/enterpriseNavigationRegistry.json",
+          "backend/modules/auth/routes.py",
+          "backend/modules/auth/service.py",
+          "backend/core/rbac/service.py",
+          "backend/core/rbac/repository_sql.py",
+          "backend/modules/sistema/menu_service.py",
+          "backend/modules/sistema/menu_routes.py"
+        ],
+        "search_terms": [
+          "SISTEMA_USUARIOS_VER",
+          "USUARIOS_VER",
+          "permissions_flat",
+          "MENU_PERMISSION_MAP",
+          "TAB_PERMISSIONS",
+          "canViewUsuarios",
+          "effective-permissions",
+          "sistema.usuarios",
+          "RequierePermiso",
+          "_obtener_modulos_permitidos_usuario"
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js",
+          "*.jsx",
+          "*.json"
+        ],
+        "exclude_patterns": [
+          ".git/*",
+          "__pycache__/*",
+          "*.pyc"
+        ],
+        "max_results": 300
+      }
+    },
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "usuarios_permission_contract",
+          "sql": "SELECT m.ModuloID,m.CodigoModulo,m.NombreModulo,m.Activo AS ModuloActivo,a.AccionID,a.CodigoAccion,a.NombreAccion,a.Activo AS AccionActiva,prm.Permitido,prm.Activo AS PermisoActivo,r.RolID,r.CodigoRol,r.NombreRol,r.NivelJerarquia,r.Activo AS RolActivo FROM dbo.Usuario_Modulos m INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.ModuloID=m.ModuloID INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID INNER JOIN dbo.Usuario_Roles r ON r.RolID=prm.RolID WHERE ISNULL(m.Activo,1)=1 AND ISNULL(a.Activo,1)=1 AND ISNULL(prm.Activo,1)=1 AND ISNULL(prm.Permitido,1)=1 AND UPPER(REPLACE(REPLACE(m.CodigoModulo,'-','_'),' ','_')) IN (N'USUARIOS',N'SISTEMA_USUARIOS') AND UPPER(REPLACE(REPLACE(a.CodigoAccion,'-','_'),' ','_')) IN (N'VER',N'VISUALIZAR',N'VIEW') ORDER BY m.CodigoModulo,r.NivelJerarquia DESC,r.CodigoRol"
+        },
+        {
+          "name": "usuarios_permission_assignments",
+          "sql": "SELECT DISTINCT u.UsuarioID,u.Email,u.Username,u.NombreCompleto,r.RolID,r.CodigoRol,r.NombreRol,r.NivelJerarquia,m.CodigoModulo,a.CodigoAccion,CONCAT(UPPER(REPLACE(REPLACE(m.CodigoModulo,'-','_'),' ','_')),N'_',UPPER(REPLACE(REPLACE(a.CodigoAccion,'-','_'),' ','_'))) AS PermisoEfectivo FROM dbo.Usuario_Catalogo u INNER JOIN dbo.Usuario_RolesAsignacion ura ON ura.UsuarioID=u.UsuarioID AND ISNULL(ura.Activo,1)=1 INNER JOIN dbo.Usuario_Roles r ON r.RolID=ura.RolID AND ISNULL(r.Activo,1)=1 INNER JOIN dbo.Usuario_PermisosRolModulo prm ON prm.RolID=r.RolID AND ISNULL(prm.Activo,1)=1 AND ISNULL(prm.Permitido,1)=1 INNER JOIN dbo.Usuario_Modulos m ON m.ModuloID=prm.ModuloID AND ISNULL(m.Activo,1)=1 INNER JOIN dbo.Usuario_Acciones a ON a.AccionID=prm.AccionID AND ISNULL(a.Activo,1)=1 WHERE ISNULL(u.Activo,1)=1 AND CONCAT(UPPER(REPLACE(REPLACE(m.CodigoModulo,'-','_'),' ','_')),N'_',UPPER(REPLACE(REPLACE(a.CodigoAccion,'-','_'),' ','_'))) IN (N'USUARIOS_VER',N'SISTEMA_USUARIOS_VER') ORDER BY u.UsuarioID,r.NivelJerarquia DESC"
+        },
+        {
+          "name": "users_menu_permission_alignment",
+          "sql": "SELECT smm.MenuID,smm.Codigo,smm.Nombre,smm.Ruta,smm.RequierePermiso,sm.Codigo AS SistemaModuloCodigo,sm.Nombre AS SistemaModuloNombre,smm.Activo AS MenuActivo,sm.Activo AS SistemaModuloActivo FROM dbo.Sistema_ModulosMenus smm LEFT JOIN dbo.Sistema_Modulos sm ON sm.ModuloID=smm.ModuloID WHERE smm.Codigo=N'sistema.usuarios' OR smm.Ruta=N'/usuarios' ORDER BY smm.MenuID"
+        },
+        {
+          "name": "users_permission_recent_changes",
+          "sql": "SELECT 'Usuario_Modulos' AS Fuente,CAST(ModuloID AS NVARCHAR(100)) AS ID,CodigoModulo AS Codigo,Activo,FechaAlta,FechaModificacion FROM dbo.Usuario_Modulos WHERE FechaAlta>='2026-08-30' OR FechaModificacion>='2026-08-30' UNION ALL SELECT 'Usuario_Roles',CAST(RolID AS NVARCHAR(100)),CodigoRol,Activo,FechaAlta,FechaModificacion FROM dbo.Usuario_Roles WHERE FechaAlta>='2026-08-30' OR FechaModificacion>='2026-08-30' UNION ALL SELECT 'Usuario_PermisosRolModulo',CAST(PermisoRolModuloID AS NVARCHAR(100)),CONCAT(ModuloID,N'/',AccionID),Activo,FechaAlta,FechaModificacion FROM dbo.Usuario_PermisosRolModulo WHERE FechaAlta>='2026-08-30' OR FechaModificacion>='2026-08-30' ORDER BY FechaModificacion DESC,FechaAlta DESC"
+        }
+      ]
+    }
+  ],
+  "scheduling": {
+    "bounded_context": "EDARSAHUB-BOS",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB-BOS",
+    "resource_claims": []
+  }
+}
