@@ -1,0 +1,38 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-BOS-CAPABILITY-API-LOCAL-EMPRESA-HOMOLOGATION-R1-20261001",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "012921ebc92508c8b76891931bc5720344a7055c",
+  "production_allowed": false,
+  "mode": "CAPABILITY_DEVELOPMENT",
+  "objective": "Crear y certificar una capability atomica para homologar EmpresaID de una sola conexion API_LOCAL. Reutilizar el patron canonico de SERVER_REGISTRY_METADATA_UPDATE, sin ampliar esa capability existente. La nueva capability debe exigir preflight SQL READ_ONLY, permitir exclusivamente ConexionID + EmpresaID objetivo, validar que la conexion sea API_LOCAL y activa, que EmpresaID objetivo exista y este activa, y que EmpresaID actual sea NULL. Debe mutar exclusivamente Servidores_Conexiones.EmpresaID mediante helper canonico parametrizado, preservar toda la demas metadata, y ejecutar post-audit SQL READ_ONLY. Prohibir SQL inline, shell, secretos, password, api_key, database_name, URL, activo, ServerID, UnidadNegocioID y cualquier otro campo. Agregar tests de contrato y de seguridad. No ejecutar aun la capability contra ninguna conexion; solo desarrollar y certificar el mecanismo.",
+  "requester": {
+    "email": "ricardo@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "EDARSAHUB BOS",
+    "chat": "Conexiones y Comunicaciones 2"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "git_diff_check"
+    },
+    {
+      "type": "py_compile",
+      "paths": [
+        "tools/mirror_sync/universal_job_bridge.py",
+        "tools/mirror_sync/universal_job_dispatcher.py",
+        "backend/scripts/update_api_local_empresa.py",
+        "backend/tests/test_worker_api_local_empresa_homologation_capability.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_worker_api_local_empresa_homologation_capability.py"
+      ]
+    }
+  ]
+}
