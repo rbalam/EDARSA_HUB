@@ -1,0 +1,179 @@
+{
+  "base_sha": "dad52803270f8e3348c32a9b45e5705be1ff9aeb",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-10-01T06:08:38Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-COMERCIAL-HIST-202609-D01-05-ALL5-R5A-CARLOS",
+  "operation": "COMERCIAL_RANGE_RESYNC",
+  "operation_summary": {
+    "fecha_fin": "2026-09-05",
+    "fecha_inicio": "2026-09-01",
+    "unidades": [
+      {
+        "detail_success": true,
+        "header_success": true,
+        "records_errored": 0,
+        "records_inserted": 0,
+        "records_processed": 5,
+        "records_skipped": 5,
+        "records_updated": 0,
+        "returncode": 0,
+        "stage": "HEADER_KPI",
+        "success": true,
+        "unidad": "ESTELAR",
+        "warning": ""
+      },
+      {
+        "detail_success": true,
+        "header_success": true,
+        "records_errored": 0,
+        "records_inserted": 0,
+        "records_processed": 5,
+        "records_skipped": 5,
+        "records_updated": 0,
+        "returncode": 0,
+        "stage": "HEADER_KPI",
+        "success": true,
+        "unidad": "CIENFUEGOS",
+        "warning": ""
+      },
+      {
+        "detail_success": true,
+        "header_success": true,
+        "records_errored": 0,
+        "records_inserted": 0,
+        "records_processed": 5,
+        "records_skipped": 5,
+        "records_updated": 0,
+        "returncode": 0,
+        "stage": "HEADER_KPI",
+        "success": true,
+        "unidad": "130MID",
+        "warning": ""
+      },
+      {
+        "detail_success": true,
+        "header_success": true,
+        "records_errored": 0,
+        "records_inserted": 0,
+        "records_processed": 5,
+        "records_skipped": 5,
+        "records_updated": 0,
+        "returncode": 0,
+        "stage": "HEADER_KPI",
+        "success": true,
+        "unidad": "ORIGEN",
+        "warning": ""
+      },
+      {
+        "detail_success": true,
+        "header_success": true,
+        "records_errored": 0,
+        "records_inserted": 0,
+        "records_processed": 5,
+        "records_skipped": 5,
+        "records_updated": 0,
+        "returncode": 0,
+        "stage": "HEADER_KPI",
+        "success": true,
+        "unidad": "130QRO",
+        "warning": ""
+      }
+    ],
+    "unidades_fallidas": [],
+    "unidades_ok": 5,
+    "unidades_total": 5
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T06:08:53Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "unidad_negocio_id",
+              "filas",
+              "tickets",
+              "filas_con_vendedor",
+              "filas_con_descuento_pct",
+              "dias"
+            ],
+            "name": "hist_202609_01_05_all5",
+            "row_count_returned": 5,
+            "rows": [
+              [
+                "130MID",
+                2056,
+                153,
+                2056,
+                2056,
+                5
+              ],
+              [
+                "130QRO",
+                2149,
+                162,
+                2149,
+                0,
+                5
+              ],
+              [
+                "CIENFUEGOS",
+                2573,
+                220,
+                2573,
+                2573,
+                5
+              ],
+              [
+                "ESTELAR",
+                2373,
+                325,
+                2373,
+                2373,
+                5
+              ],
+              [
+                "ORIGEN",
+                2033,
+                184,
+                2033,
+                0,
+                5
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-01T05:59:55Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto la re-sincronizacion comercial cerrada para todas las unidades y el rango autorizados usando el handler oficial; proceso cada sucursal de forma secuencial, valido header KPI y detalle ISCAM y certifico el bloque con SQL de solo lectura. No toco Produccion.",
+  "tests": "PASS",
+  "units": [
+    "ESTELAR",
+    "CIENFUEGOS",
+    "130MID",
+    "ORIGEN",
+    "130QRO"
+  ],
+  "work_completion": "COMPLETE"
+}
