@@ -4,83 +4,65 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "627c9cb62e4b8b81c774faeb3051bb86e9b467c9",
-  "generated_at_utc": "2026-10-01T00:45:33Z",
+  "generated_at_utc": "2026-10-01T00:46:53Z",
   "history": {
     "done_total_local": 1220,
     "pending_total_local": 0,
-    "processing_total_local": 1,
-    "rejected_total_local": 1076,
-    "results_total_local": 2097
+    "processing_total_local": 0,
+    "rejected_total_local": 1077,
+    "results_total_local": 2098
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3561,
-      "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE5-CAMPAIGN-ORCHESTRATOR-CONTRACT-R4",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3575,
-      "job_id": "EDARSA-LOGISTICS-GATE4A0-PREDDL-EXACT-CONTRACT-AUDIT-READONLY-R1",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3564,
-      "job_id": "EDARSAHUB-BOS-EVOLUTION-H1-MASTER-ARCHITECTURE-CONTRACT-R1-20260930",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 124,
+      "age_seconds": 204,
       "job_id": "EDARSAHUB-COMERCIAL-HOY-MX-TZ-AND-SR-OPEN-DETAIL-FIX-R2-CARLOS-20261001T0045Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2575,
+      "age_seconds": 2654,
       "job_id": "EDARSAHUB-COMERCIAL-HOY-RANGE-FIX-R1-CARLOS-20260930T2350Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1983,
+      "age_seconds": 2063,
       "job_id": "EDARSAHUB-COMERCIAL-SR-OPEN-DETAIL-DIAG-R2-CARLOS-20261001T0006Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 573,
-      "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-FALLBACK-R13-CARLOS-20260930T2350Z",
+      "age_seconds": 57,
+      "job_id": "EDARSAHUB-SINCRONIZADOR-DETALLE-130MID-202603-R20-CARLOS-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 0,
-      "job_id": "EDARSAHUB-SINCRONIZADOR-DETALLE-130MID-202603-R20-CARLOS-20260930",
+      "age_seconds": 653,
+      "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-FALLBACK-R13-CARLOS-20260930T2350Z",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
     }
   ],
   "local_development_sha": "627c9cb62e4b8b81c774faeb3051bb86e9b467c9",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 7,
-  "queue_running": 1,
+  "queue_result_ready_recent": 5,
+  "queue_running": 0,
   "remote_development_sha": "627c9cb62e4b8b81c774faeb3051bb86e9b467c9",
   "runtime": {
-    "current_job_id": "EDARSAHUB-SINCRONIZADOR-DETALLE-130MID-202603-R20-CARLOS-20260930",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T00:45:29Z",
-    "last_receive_utc": "2026-10-01T00:45:33Z",
-    "last_terminal_utc": "2026-10-01T00:43:29Z",
+    "last_cycle_utc": "2026-10-01T00:46:45Z",
+    "last_receive_utc": "2026-10-01T00:46:49Z",
+    "last_terminal_utc": "2026-10-01T00:45:55Z",
     "pid": "610203",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "d68b475192c3c688137911a09b06144faf578fa4",
