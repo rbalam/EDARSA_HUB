@@ -3,84 +3,84 @@
   "behind_count": 0,
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
-  "development_sha": "d8b839a8722c807a8f15e7b2deb15000e66b3469",
-  "generated_at_utc": "2026-10-01T21:11:09Z",
+  "development_sha": "58bb35b78e248f514fa124188fdad9b8706b856c",
+  "generated_at_utc": "2026-10-01T21:11:49Z",
   "history": {
-    "done_total_local": 1270,
+    "done_total_local": 1271,
     "pending_total_local": 0,
-    "processing_total_local": 1,
+    "processing_total_local": 0,
     "rejected_total_local": 1129,
-    "results_total_local": 2195
+    "results_total_local": 2196
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 708,
+      "age_seconds": 747,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-EMPRESA-MAPPING-DISCOVERY-READONLY-SQL-R1F-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 596,
+      "age_seconds": 635,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-EMPRESA-MAPPING-MATRIX-READONLY-SQL-R1G-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 335,
+      "age_seconds": 374,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-RBAC-AUTH-MATRIX-READONLY-SQL-R1I-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 953,
+      "age_seconds": 992,
       "job_id": "EDARSAHUB-BOS-SERVIDORES-API-RBAC-SCOPE-ACTUAL-COLUMNS-READONLY-SQL-R1E-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 852,
+      "age_seconds": 892,
       "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-RETRY-NOT-CERTIFIED-INFRASTRUCTURE-R1-RETRY1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 881,
-      "job_id": "MEJORA-TABEJE-VENTAS-DIA-SYNC-CANONICO-R16C-CARLOS-20261001T2000Z",
+      "age_seconds": 36,
+      "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-RETRY-NOT-CERTIFIED-INFRASTRUCTURE-R1-RETRY2-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 5,
-      "job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-RETRY-NOT-CERTIFIED-INFRASTRUCTURE-R1-RETRY2-20261001",
+      "age_seconds": 920,
+      "job_id": "MEJORA-TABEJE-VENTAS-DIA-SYNC-CANONICO-R16C-CARLOS-20261001T2000Z",
       "reason": null,
-      "state": "RUNNING"
+      "state": "RESULT_READY"
     }
   ],
-  "local_development_sha": "d8b839a8722c807a8f15e7b2deb15000e66b3469",
+  "local_development_sha": "58bb35b78e248f514fa124188fdad9b8706b856c",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 1,
+  "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 6,
-  "queue_running": 1,
-  "remote_development_sha": "d8b839a8722c807a8f15e7b2deb15000e66b3469",
+  "queue_result_ready_recent": 7,
+  "queue_running": 0,
+  "remote_development_sha": "58bb35b78e248f514fa124188fdad9b8706b856c",
   "runtime": {
-    "current_job_id": "EDARSAHUB-BOS-WORKER-LIFECYCLE-RETRY-NOT-CERTIFIED-INFRASTRUCTURE-R1-RETRY2-20261001",
+    "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T21:11:01Z",
-    "last_receive_utc": "2026-10-01T21:11:07Z",
-    "last_terminal_utc": "2026-10-01T21:05:34Z",
-    "pid": "614",
+    "last_cycle_utc": "2026-10-01T21:11:36Z",
+    "last_receive_utc": "2026-10-01T21:11:46Z",
+    "last_terminal_utc": "2026-10-01T21:11:12Z",
+    "pid": "103337",
     "runtime_fingerprint": {
       "active_worker_code_tree_sha": "33216964c521aa8ba1385a9d5d92814269cd2ce9",
       "actual_generation": "20260827-universal-job-worker-selfheal-v3",
       "branch": "Edarsahub_Desarrollo",
-      "development_sha": "d8b839a8722c807a8f15e7b2deb15000e66b3469",
+      "development_sha": "58bb35b78e248f514fa124188fdad9b8706b856c",
       "expected_generation": "20260827-universal-job-worker-selfheal-v3",
       "generation_aligned": true,
       "production_touched": false,
@@ -94,8 +94,8 @@
         "production_fail_closed"
       ],
       "schema": "edarsahub.worker-runtime-fingerprint.v1",
-      "worker_code_tree_aligned": true,
-      "worker_code_tree_sha": "33216964c521aa8ba1385a9d5d92814269cd2ce9"
+      "worker_code_tree_aligned": false,
+      "worker_code_tree_sha": "a0a92a73a79fe793335ee51fa0845f00591119e2"
     }
   },
   "schema": "edarsahub.worker-health.v3",
