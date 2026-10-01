@@ -1,0 +1,48 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-CLOSED-TICKET-SCHEMA-R1-CARLOS-20261001T0332Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "012921ebc92508c8b76891931bc5720344a7055c",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Agregar una migracion idempotente en Development para extender el detalle canonico de tickets cerrados con vendedor_id, vendedor_nombre y descuento_pct, y ampliar la clave unica para permitir bandas de descuento del mismo producto. No ejecutar la migracion en este job y no tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "write_file",
+      "path": "backend/database/migrations/20261001_001_comercial_ticket_closed_enrichment.sql",
+      "content": "/*\n  EDARSAHUB V1.0\n  Comercial - enriquecimiento de Ticket de Venta cerrado.\n\n  Objetivo:\n  - Persistir vendedor/mesero ya disponible en el POS al sincronizar detalle cerrado.\n  - Persistir porcentaje de descuento por linea/grupo de producto.\n  - Permitir mas de una banda de descuento del mismo producto en un ticket.\n  - No recalcular KPIs ni tocar Produccion.\n*/\n\nIF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'vendedor_id') IS NULL\nBEGIN\n    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto\n    ADD vendedor_id nvarchar(100) NULL;\nEND\nGO\n\nIF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'vendedor_nombre') IS NULL\nBEGIN\n    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto\n    ADD vendedor_nombre nvarchar(200) NULL;\nEND\nGO\n\nIF COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto', 'descuento_pct') IS NULL\nBEGIN\n    ALTER TABLE dbo.Comercial_Inteligencia_VentasDetalleProducto\n    ADD descuento_pct decimal(9,4) NULL;\nEND\nGO\n\nIF EXISTS (\n    SELECT 1\n    FROM sys.indexes\n    WHERE object_id = OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto')\n      AND name = 'UX_Comercial_Intel_VentasDetalle_NoDup'\n)\nBEGIN\n    DROP INDEX UX_Comercial_Intel_VentasDetalle_NoDup\n    ON dbo.Comercial_Inteligencia_VentasDetalleProducto;\nEND\nGO\n\nCREATE UNIQUE INDEX UX_Comercial_Intel_VentasDetalle_NoDup\nON dbo.Comercial_Inteligencia_VentasDetalleProducto(\n    id_transaccion,\n    numero_ticket,\n    producto_codigo_fuente,\n    descuento_pct,\n    fecha_operacion\n);\nGO\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/database/migrations/20261001_001_comercial_ticket_closed_enrichment.sql"
+        ],
+        "search_terms": [
+          "vendedor_id",
+          "vendedor_nombre",
+          "descuento_pct",
+          "UX_Comercial_Intel_VentasDetalle_NoDup"
+        ],
+        "include_patterns": [
+          "*.sql"
+        ],
+        "exclude_patterns": [],
+        "max_results": 50
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
