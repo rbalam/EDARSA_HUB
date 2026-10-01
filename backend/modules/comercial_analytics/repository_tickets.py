@@ -96,6 +96,134 @@ def _execute(
     return list(executor(sql, params) or [])
 
 
+def _fallback_ticket_from_comercial(
+    identity: TicketIdentity,
+) -> dict[str, Any] | None:
+    """Reusa la reconstrucción certificada de Comercial cuando el lookup
+    analytics no encuentra el folio con su predicado tipado.
+    """
+    from core.server_registry import get_server_by_unidad_codigo
+    from modules.comercial.ticket_service import build_ticket_venta
+
+    unidad = (
+        get_server_by_unidad_codigo(identity.unidad_negocio_id)
+        or {}
+    )
+    unidad_nombre = (
+        unidad.get("unidad_negocio_nombre")
+        or identity.unidad_negocio_id
+    )
+    sucursal_id = str(
+        unidad.get("sucursal_origen_id")
+        or ""
+    ).strip()
+
+    payload = build_ticket_venta(
+        identity.unidad_negocio_id,
+        unidad_nombre,
+        sucursal_id,
+        identity.numero_ticket,
+        identity.fecha_operacion,
+    )
+
+    source_ticket = (payload or {}).get("ticket")
+    if not source_ticket:
+        return None
+
+    source_items = list(source_ticket.get("items") or [])
+    lines = []
+
+    for index, item in enumerate(source_items, start=1):
+        importe = round(float(item.get("importe") or 0), 2)
+        lines.append({
+            "linea_pk": (
+                f"{identity.numero_ticket}:fallback:{index}"
+            ),
+            "codigo": "",
+            "producto": str(
+                item.get("descripcion")
+                or "VENTA SIN DETALLE DE PRODUCTO"
+            ),
+            "familia": "",
+            "subfamilia": "",
+            "clasificacion": "",
+            "casa": "",
+            "marca": "",
+            "grado_alcohol": None,
+            "es_alcoholico": False,
+            "cantidad": round(
+                float(item.get("cantidad") or 0),
+                2,
+            ),
+            "precio_unitario": round(
+                float(item.get("precio_unitario") or 0),
+                2,
+            ),
+            "importe_bruto": importe,
+            "importe": importe,
+            "descuento": 0.0,
+            "propina": 0.0,
+            "pax": int(source_ticket.get("pax") or 0),
+        })
+
+    total = round(float(source_ticket.get("total") or 0), 2)
+    subtotal = round(
+        float(source_ticket.get("subtotal") or total),
+        2,
+    )
+    descuento = round(
+        float(source_ticket.get("descuento") or 0),
+        2,
+    )
+    propina = round(
+        float(source_ticket.get("propina") or 0),
+        2,
+    )
+
+    return {
+        "ticket": {
+            "unidad_negocio_id": identity.unidad_negocio_id,
+            "unidad": (
+                source_ticket.get("unidad")
+                or unidad_nombre
+            ),
+            "sucursal": sucursal_id or None,
+            "fecha_operacion": identity.fecha_operacion,
+            "fecha": identity.fecha_operacion,
+            "fecha_hora": str(
+                source_ticket.get("fecha_hora")
+                or identity.fecha_operacion
+            ),
+            "numero_ticket": str(
+                source_ticket.get("folio")
+                or identity.numero_ticket
+            ),
+            "estado": (
+                source_ticket.get("estado")
+                or "CERRADA"
+            ),
+            "pax": int(source_ticket.get("pax") or 0),
+            "lineas": len(lines),
+            "subtotal": subtotal,
+            "descuento": descuento,
+            "impuesto": source_ticket.get("impuesto"),
+            "ventas": total,
+            "total": total,
+            "propina": propina,
+        },
+        "lines": lines,
+        "lineas": lines,
+        "traceability": {
+            "source": (payload or {}).get("source")
+            or "modules.comercial.ticket_service",
+            "temporal_field": "fecha_operacion",
+            "live": False,
+            "identity_version": identity.version,
+            "fallback": "COMERCIAL_TICKET_CERTIFIED_PATH",
+        },
+    }
+
+
 def list_tickets(
     *,
     fecha_inicio: Any,
@@ -341,7 +469,7 @@ def get_ticket_detail(
             AND ISNULL(d.cancelado_origen, 0) = 0
             AND d.unidad_negocio_id = %s
             AND d.fecha_operacion = %s
-            AND d.numero_ticket = %s
+            AND CONVERT(varchar(128), d.numero_ticket) = %s
         ORDER BY
             d.importe_neto DESC,
             d.producto_nombre
@@ -358,6 +486,9 @@ def get_ticket_detail(
     )
 
     if not rows:
+        fallback = _fallback_ticket_from_comercial(identity)
+        if fallback:
+            return fallback
         raise LookupError("Ticket no encontrado")
 
     lines = []

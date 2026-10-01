@@ -163,6 +163,7 @@ def test_ticket_detail_uses_identity_fields():
         "2026-07-15",
         "100",
     )
+    assert "CONVERT(varchar(128), d.numero_ticket) = %s" in captured["sql"]
     assert result["ticket"]["ventas"] == 200
     assert result["ticket"]["subtotal"] == 220
     assert result["ticket"]["descuento"] == 20
@@ -234,4 +235,69 @@ def test_default_executor_uses_parameterized_edarsahub_query(monkeypatch):
         "2026-07-01",
         "2026-07-31",
         "CIENFUEGOS",
+    )
+
+
+def test_ticket_detail_falls_back_to_certified_comercial_ticket(monkeypatch):
+    ticket_pk = create_ticket_pk(
+        unidad_negocio_id="CIENFUEGOS",
+        fecha_operacion="2026-09-01",
+        numero_ticket="105118",
+    )
+
+    def fallback(identity):
+        assert identity.unidad_negocio_id == "CIENFUEGOS"
+        assert identity.fecha_operacion == "2026-09-01"
+        assert identity.numero_ticket == "105118"
+        return {
+            "ticket": {
+                "unidad_negocio_id": "CIENFUEGOS",
+                "unidad": "CIENFUEGOS",
+                "fecha_operacion": "2026-09-01",
+                "fecha": "2026-09-01",
+                "fecha_hora": "2026-09-01 14:08:07",
+                "numero_ticket": "105118",
+                "estado": "CERRADA",
+                "pax": 10,
+                "lineas": 1,
+                "subtotal": 13710,
+                "descuento": 0,
+                "impuesto": None,
+                "ventas": 13710,
+                "total": 13710,
+                "propina": 0,
+            },
+            "lines": [{
+                "linea_pk": "105118:fallback:1",
+                "producto": "PRODUCTO",
+                "cantidad": 1,
+                "precio_unitario": 13710,
+                "importe_bruto": 13710,
+                "importe": 13710,
+                "pax": 10,
+            }],
+            "lineas": [],
+            "traceability": {
+                "source": "modules.comercial.ticket_service",
+                "live": False,
+                "fallback": "COMERCIAL_TICKET_CERTIFIED_PATH",
+            },
+        }
+
+    monkeypatch.setattr(
+        repository_tickets,
+        "_fallback_ticket_from_comercial",
+        fallback,
+    )
+
+    result = get_ticket_detail(
+        identity=parse_ticket_pk(ticket_pk),
+        allowed_unit_codes=["CIENFUEGOS"],
+        query_executor=lambda sql, params: [],
+    )
+
+    assert result["ticket"]["numero_ticket"] == "105118"
+    assert result["ticket"]["total"] == 13710
+    assert result["traceability"]["fallback"] == (
+        "COMERCIAL_TICKET_CERTIFIED_PATH"
     )
