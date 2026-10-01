@@ -1,0 +1,167 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-SR-ZERO-DISCOUNT-TICKET-FIX-R5-CARLOS-20261001T0153Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir integralmente tickets abiertos SoftRestaurant en Comercial. No omitir cuentas con total=0; numcheque 103659 demuestra un folio valido con producto 6 x $5000 y descuento 100%. Incluir tickets no cancelados con total >= 0 tanto en el agregado del sincronizador diario como en el snapshot de detalle. Persistir el porcentaje de descuento de tempcheqdet.descuento, importe descontado por producto e importe neto por producto. En Ticket de Venta mostrar importe neto del producto, bruto, porcentaje e importe descontado, separar DESC. PRODUCTOS y DESC. CUENTA, y usar el total del encabezado como cifra autoritativa para conciliacion. Mantener numcheque como folio visible y ch.folio solo como llave tecnica. No ejecutar manualmente sincronizadores, no tocar Inteligencia Comercial, Tablero Ejecutivo ni Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/ticket_snapshot.py",
+      "old": "    MAX(ISNULL(ch.propina, 0)) AS propina,\n    MAX(\n        CASE\n            WHEN ISNULL(ch.total, 0) >= ISNULL(ch.propina, 0)\n            THEN ISNULL(ch.total, 0) - ISNULL(ch.propina, 0)\n            ELSE ISNULL(ch.total, 0)\n        END\n    ) AS total_ticket,\n",
+      "new": "    MAX(ISNULL(ch.propina, 0)) AS propina,\n    MAX(ISNULL(ch.total, 0)) AS total_ticket,\n    MAX(ISNULL(ch.descuentoimporte, 0)) AS descuento_encabezado_reportado,\n    MAX(ISNULL(ch.totaldescuentos, 0)) AS descuento_total_reportado,\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/ticket_snapshot.py",
+      "old": "    SUM(\n        CAST(\n            ISNULL(d.cantidad, 0) * ISNULL(d.precio, 0)\n            AS decimal(18,4)\n        )\n    ) AS importe_bruto\nFROM tempcheques ch\n",
+      "new": "    SUM(\n        CAST(\n            ISNULL(d.cantidad, 0) * ISNULL(d.precio, 0)\n            AS decimal(18,4)\n        )\n    ) AS importe_bruto,\n    MAX(CAST(ISNULL(d.descuento, 0) AS decimal(18,4))) AS descuento_pct,\n    SUM(\n        CAST(\n            ISNULL(d.cantidad, 0)\n            * ISNULL(d.precio, 0)\n            * (ISNULL(d.descuento, 0) / 100.0)\n            AS decimal(18,4)\n        )\n    ) AS descuento_producto,\n    SUM(\n        CAST(\n            ISNULL(d.cantidad, 0)\n            * ISNULL(d.precio, 0)\n            * (1 - (ISNULL(d.descuento, 0) / 100.0))\n            AS decimal(18,4)\n        )\n    ) AS importe_neto_producto\nFROM tempcheques ch\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/ticket_snapshot.py",
+      "old": "WHERE ISNULL(ch.cancelado, 0) = 0\n  AND ISNULL(ch.total, 0) > 0\n",
+      "new": "WHERE ISNULL(ch.cancelado, 0) = 0\n  AND ISNULL(ch.total, 0) >= 0\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/ticket_snapshot.py",
+      "old": "    COALESCE(\n        NULLIF(CONVERT(varchar(100), d.idproducto), ''),\n        'SIN_CODIGO'\n    )\nORDER BY ch.folio, producto_codigo\n",
+      "new": "    COALESCE(\n        NULLIF(CONVERT(varchar(100), d.idproducto), ''),\n        'SIN_CODIGO'\n    ),\n    CAST(ISNULL(d.descuento, 0) AS decimal(18,4))\nORDER BY ch.folio, producto_codigo\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial_v2/ticket_snapshot.py",
+      "old": "            \"precio_unitario\": _number(row.get(\"precio_unitario\")),\n            \"importe_bruto\": _number(row.get(\"importe_bruto\")),\n",
+      "new": "            \"precio_unitario\": _number(row.get(\"precio_unitario\")),\n            \"importe_bruto\": _number(row.get(\"importe_bruto\")),\n            \"descuento_pct\": _number(row.get(\"descuento_pct\")),\n            \"descuento_producto\": _number(row.get(\"descuento_producto\")),\n            \"importe_neto_producto\": _number(row.get(\"importe_neto_producto\")),\n            \"descuento_encabezado_reportado\": _number(\n                row.get(\"descuento_encabezado_reportado\")\n            ),\n            \"descuento_total_reportado\": _number(\n                row.get(\"descuento_total_reportado\")\n            ),\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+      "old": "WHERE ISNULL(cancelado, 0) = 0\n  AND ISNULL(total, 0) > 0\n  AND fecha >= CONVERT(\n",
+      "new": "WHERE ISNULL(cancelado, 0) = 0\n  AND ISNULL(total, 0) >= 0\n  AND fecha >= CONVERT(\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/ticket_service.py",
+      "old": "    if closed_rows:\n        total = sum(_money(row.get(\"importe_neto\")) for row in closed_rows)\n        subtotal = sum(_money(row.get(\"importe_bruto\")) for row in closed_rows)\n        descuento = sum(_money(row.get(\"descuento\")) for row in closed_rows)\n        propina = sum(_money(row.get(\"propina\")) for row in closed_rows)\n        pax = max((_integer(row.get(\"pax\")) for row in closed_rows), default=0)\n        items = []\n        for row in closed_rows:\n            if not _real_product_row(row):\n                continue\n            items.append({\n                \"cantidad\": _money(row.get(\"cantidad\")),\n                \"descripcion\": str(\n                    row.get(\"producto_nombre\") or \"VENTA SIN DETALLE DE PRODUCTO\"\n                ),\n                \"precio_unitario\": _money(row.get(\"precio_unitario\")),\n                \"importe\": _money(row.get(\"importe_bruto\")),\n            })\n",
+      "new": "    if closed_rows:\n        total = sum(_money(row.get(\"importe_neto\")) for row in closed_rows)\n        subtotal = sum(\n            _money(row.get(\"importe_bruto\"))\n            for row in closed_rows\n            if _real_product_row(row)\n        )\n        descuento = sum(_money(row.get(\"descuento\")) for row in closed_rows)\n        propina = sum(_money(row.get(\"propina\")) for row in closed_rows)\n        pax = max((_integer(row.get(\"pax\")) for row in closed_rows), default=0)\n        items = []\n        descuento_productos = 0.0\n        for row in closed_rows:\n            if not _real_product_row(row):\n                continue\n            bruto = _money(row.get(\"importe_bruto\"))\n            neto = _money(row.get(\"importe_neto\"))\n            descuento_linea = max(0.0, _money(row.get(\"descuento\")))\n            descuento_productos += descuento_linea\n            descuento_pct = (\n                (descuento_linea / bruto) * 100.0\n                if bruto > 0 and descuento_linea > 0\n                else 0.0\n            )\n            items.append({\n                \"cantidad\": _money(row.get(\"cantidad\")),\n                \"descripcion\": str(\n                    row.get(\"producto_nombre\") or \"VENTA SIN DETALLE DE PRODUCTO\"\n                ),\n                \"precio_unitario\": _money(row.get(\"precio_unitario\")),\n                \"importe\": bruto,\n                \"descuento_pct\": descuento_pct,\n                \"descuento_importe\": descuento_linea,\n                \"importe_neto\": neto,\n            })\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/ticket_service.py",
+      "old": "            items = [{\n                \"cantidad\": 1,\n                \"descripcion\": \"VENTA SIN DETALLE DE PRODUCTO\",\n                \"precio_unitario\": total,\n                \"importe\": total,\n            }]\n        return {\n",
+      "new": "            items = [{\n                \"cantidad\": 1,\n                \"descripcion\": \"VENTA SIN DETALLE DE PRODUCTO\",\n                \"precio_unitario\": total,\n                \"importe\": total,\n                \"descuento_pct\": 0.0,\n                \"descuento_importe\": 0.0,\n                \"importe_neto\": total,\n            }]\n        descuento_cuenta = max(0.0, descuento - descuento_productos)\n        return {\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/ticket_service.py",
+      "old": "                \"items\": items,\n                \"subtotal\": subtotal,\n                \"descuento\": descuento,\n                \"impuesto\": None,\n                \"total\": total,\n",
+      "new": "                \"items\": items,\n                \"subtotal\": subtotal,\n                \"descuento_productos\": descuento_productos,\n                \"descuento_cuenta\": descuento_cuenta,\n                \"descuento\": descuento,\n                \"impuesto\": None,\n                \"total\": total,\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/ticket_service.py",
+      "old": "    subtotal = sum(_money(row.get(\"importe_bruto\")) for row in open_rows)\n    total = max((_money(row.get(\"total_ticket\")) for row in open_rows), default=0)\n    propina = max((_money(row.get(\"propina\")) for row in open_rows), default=0)\n    pax = max((_integer(row.get(\"pax\")) for row in open_rows), default=0)\n    descuento = max(0.0, subtotal - total)\n    return {\n",
+      "new": "    subtotal = sum(_money(row.get(\"importe_bruto\")) for row in open_rows)\n    descuento_productos = sum(\n        max(0.0, _money(row.get(\"descuento_producto\")))\n        for row in open_rows\n    )\n    neto_productos = sum(\n        _money(\n            row.get(\"importe_neto_producto\")\n            if row.get(\"importe_neto_producto\") is not None\n            else (\n                _money(row.get(\"importe_bruto\"))\n                - _money(row.get(\"descuento_producto\"))\n            )\n        )\n        for row in open_rows\n    )\n    total = max((_money(row.get(\"total_ticket\")) for row in open_rows), default=0)\n    propina = max((_money(row.get(\"propina\")) for row in open_rows), default=0)\n    pax = max((_integer(row.get(\"pax\")) for row in open_rows), default=0)\n\n    # El encabezado final es autoritativo. Cualquier reducción adicional\n    # después de aplicar descuentos de producto se presenta como descuento\n    # de cuenta/encabezado para que el ticket concilie exactamente.\n    descuento_cuenta = max(0.0, neto_productos - total)\n    descuento = descuento_productos + descuento_cuenta\n    return {\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/ticket_service.py",
+      "old": "                {\n                    \"cantidad\": _money(row.get(\"cantidad\")),\n                    \"descripcion\": str(\n                        row.get(\"producto_nombre\")\n                        or \"VENTA SIN DETALLE DE PRODUCTO\"\n                    ),\n                    \"precio_unitario\": _money(row.get(\"precio_unitario\")),\n                    \"importe\": _money(row.get(\"importe_bruto\")),\n                }\n",
+      "new": "                {\n                    \"cantidad\": _money(row.get(\"cantidad\")),\n                    \"descripcion\": str(\n                        row.get(\"producto_nombre\")\n                        or \"VENTA SIN DETALLE DE PRODUCTO\"\n                    ),\n                    \"precio_unitario\": _money(row.get(\"precio_unitario\")),\n                    \"importe\": _money(row.get(\"importe_bruto\")),\n                    \"descuento_pct\": _money(row.get(\"descuento_pct\")),\n                    \"descuento_importe\": max(\n                        0.0,\n                        _money(row.get(\"descuento_producto\")),\n                    ),\n                    \"importe_neto\": _money(\n                        row.get(\"importe_neto_producto\")\n                        if row.get(\"importe_neto_producto\") is not None\n                        else (\n                            _money(row.get(\"importe_bruto\"))\n                            - _money(row.get(\"descuento_producto\"))\n                        )\n                    ),\n                }\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/ticket_service.py",
+      "old": "            \"subtotal\": subtotal,\n            \"descuento\": descuento,\n            \"impuesto\": None,\n",
+      "new": "            \"subtotal\": subtotal,\n            \"descuento_productos\": descuento_productos,\n            \"descuento_cuenta\": descuento_cuenta,\n            \"descuento\": descuento,\n            \"impuesto\": None,\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Comercial.js",
+      "old": "                    <span className=\"text-right\">{formatCurrency(item.importe)}</span>\n",
+      "new": "                    <div className=\"text-right\">\n                      <span>{formatCurrency(item.importe_neto ?? item.importe)}</span>\n                      {Number(item.descuento_importe || 0) > 0.005 && (\n                        <div className=\"text-[11px] mt-1\">\n                          <p className=\"text-zinc-500\">\n                            BRUTO {formatCurrency(item.importe)}\n                          </p>\n                          <p className=\"text-red-600\">\n                            DESC. {Number(item.descuento_pct || 0).toLocaleString('es-MX', { maximumFractionDigits: 2 })}%:\n                            {' '}-{formatCurrency(item.descuento_importe)}\n                          </p>\n                          <p className=\"font-semibold\">\n                            TOTAL PROD. {formatCurrency(item.importe_neto ?? 0)}\n                          </p>\n                        </div>\n                      )}\n                    </div>\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "frontend/src/pages/Comercial.js",
+      "old": "              {Number(ticket.descuento || 0) > 0.005 && (\n                <div className=\"flex justify-between\">\n                  <span>DESCUENTO</span>\n                  <span>-{formatCurrency(ticket.descuento)}</span>\n                </div>\n              )}\n",
+      "new": "              {Number(ticket.descuento_productos || 0) > 0.005 && (\n                <div className=\"flex justify-between\">\n                  <span>DESC. PRODUCTOS</span>\n                  <span>-{formatCurrency(ticket.descuento_productos)}</span>\n                </div>\n              )}\n              {Number(ticket.descuento_cuenta || 0) > 0.005 && (\n                <div className=\"flex justify-between\">\n                  <span>DESC. CUENTA</span>\n                  <span>-{formatCurrency(ticket.descuento_cuenta)}</span>\n                </div>\n              )}\n              {Number(ticket.descuento || 0) > 0.005 &&\n               Number(ticket.descuento_productos || 0) <= 0.005 &&\n               Number(ticket.descuento_cuenta || 0) <= 0.005 && (\n                <div className=\"flex justify-between\">\n                  <span>DESCUENTO</span>\n                  <span>-{formatCurrency(ticket.descuento)}</span>\n                </div>\n              )}\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_comercial_softrestaurant_zero_discount_ticket_contract.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[1]\nSNAPSHOT = ROOT / \"modules/comercial_v2/ticket_snapshot.py\"\nSYNC = ROOT / \"core/scheduler/jobs/sync_comercial_abiertas_v2_job.py\"\nSERVICE = ROOT / \"modules/comercial/ticket_service.py\"\nFRONT = ROOT.parent / \"frontend/src/pages/Comercial.js\"\n\n\ndef test_softrestaurant_zero_total_open_tickets_are_not_omitted():\n    snapshot = SNAPSHOT.read_text(encoding=\"utf-8\")\n    sync = SYNC.read_text(encoding=\"utf-8\")\n    assert \"AND ISNULL(ch.total, 0) >= 0\" in snapshot\n    assert \"AND ISNULL(total, 0) >= 0\" in sync\n    assert \"AND ISNULL(ch.total, 0) > 0\" not in snapshot\n\n\ndef test_softrestaurant_product_discount_contract_is_persisted():\n    text = SNAPSHOT.read_text(encoding=\"utf-8\")\n    assert \"d.descuento\" in text\n    assert \"AS descuento_pct\" in text\n    assert \"AS descuento_producto\" in text\n    assert \"AS importe_neto_producto\" in text\n    assert '\"descuento_pct\":' in text\n    assert '\"descuento_producto\":' in text\n    assert '\"importe_neto_producto\":' in text\n\n\ndef test_ticket_service_splits_product_and_account_discounts():\n    text = SERVICE.read_text(encoding=\"utf-8\")\n    assert '\"descuento_productos\": descuento_productos' in text\n    assert '\"descuento_cuenta\": descuento_cuenta' in text\n    assert '\"descuento_importe\":' in text\n    assert '\"importe_neto\":' in text\n\n\ndef test_ticket_ui_shows_product_and_account_discount_amounts():\n    text = FRONT.read_text(encoding=\"utf-8\")\n    assert \"DESC. PRODUCTOS\" in text\n    assert \"DESC. CUENTA\" in text\n    assert \"TOTAL PROD.\" in text\n    assert \"item.descuento_pct\" in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial_v2/ticket_snapshot.py",
+        "backend/modules/comercial/ticket_service.py",
+        "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_softrestaurant_zero_discount_ticket_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial_v2/ticket_snapshot.py",
+          "backend/core/scheduler/jobs/sync_comercial_abiertas_v2_job.py",
+          "backend/modules/comercial/ticket_service.py",
+          "frontend/src/pages/Comercial.js"
+        ],
+        "search_terms": [
+          "ISNULL(ch.total, 0) >= 0",
+          "ISNULL(total, 0) >= 0",
+          "d.descuento",
+          "descuento_producto",
+          "importe_neto_producto",
+          "DESC. PRODUCTOS",
+          "DESC. CUENTA",
+          "TOTAL PROD."
+        ],
+        "include_patterns": [
+          "*.py",
+          "*.js"
+        ],
+        "exclude_patterns": [],
+        "max_results": 120
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
