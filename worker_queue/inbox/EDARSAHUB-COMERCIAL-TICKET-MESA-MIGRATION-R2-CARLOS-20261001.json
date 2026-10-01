@@ -1,0 +1,45 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-TICKET-MESA-MIGRATION-R2-CARLOS-20261001",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "base_sha": "c6a726c4e655eb0fb6c7f0ce2984aa99174958c8",
+  "production_allowed": false,
+  "mode": "SQL_MIGRATION_DEVELOPMENT",
+  "objective": "Aplicar en EDARSAHUB Desarrollo/Preview la migracion idempotente que agrega dbo.Comercial_Inteligencia_VentasDetalleProducto.mesa. No tocar Produccion ni otros esquemas.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "migration_path": "backend/database/migrations/20261001_002_comercial_ticket_mesa.sql",
+  "migration_sha256": "d4ad41a90a5d71b3415c34cac4da036d9b401acc7d30cc210d589e069bc6a0f8",
+  "confirm_sql_migration": true,
+  "preflight_checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "mesa_column_preflight",
+          "sql": "SELECT CASE WHEN COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto','mesa') IS NULL THEN 0 ELSE 1 END AS mesa_exists"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "mesa_column_post",
+          "sql": "SELECT CASE WHEN COL_LENGTH('dbo.Comercial_Inteligencia_VentasDetalleProducto','mesa') IS NULL THEN 0 ELSE 1 END AS mesa_exists, c.max_length, t.name AS type_name FROM sys.columns c INNER JOIN sys.types t ON t.user_type_id=c.user_type_id WHERE c.object_id=OBJECT_ID('dbo.Comercial_Inteligencia_VentasDetalleProducto') AND c.name='mesa'"
+        }
+      ]
+    }
+  ]
+}
