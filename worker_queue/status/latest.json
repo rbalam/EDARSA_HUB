@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "54c22d98aae42b5163127b356d616229df199c8c",
-  "generated_at_utc": "2026-10-01T00:00:14Z",
+  "generated_at_utc": "2026-10-01T00:01:35Z",
   "history": {
     "done_total_local": 1217,
     "pending_total_local": 0,
@@ -16,67 +16,61 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 842,
+      "age_seconds": 923,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE5-CAMPAIGN-ORCHESTRATOR-CONTRACT-R4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 856,
+      "age_seconds": 937,
       "job_id": "EDARSA-LOGISTICS-GATE4A0-PREDDL-EXACT-CONTRACT-AUDIT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 845,
+      "age_seconds": 925,
       "job_id": "EDARSAHUB-BOS-EVOLUTION-H1-MASTER-ARCHITECTURE-CONTRACT-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1509,
+      "age_seconds": 1590,
       "job_id": "EDARSAHUB-COMERCIAL-HOY-SR-OPEN-DETAIL-DIAG-R1-CARLOS-20260930T2334Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3293,
+      "age_seconds": 3374,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-FRONTEND-BUILD-CERT-R1-CARLOS-20260930T2306Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3275,
+      "age_seconds": 3356,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-OPEN-DETAIL-DDL-FIX-R2-CARLOS-20260930T2310Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3407,
+      "age_seconds": 3488,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-OPEN-DETAIL-DDL-R1-CARLOS-20260930T2304Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2519,
+      "age_seconds": 2599,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-OPEN-DETAIL-DDL-R3-CARLOS-20260930T2316Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1281,
+      "age_seconds": 1362,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-DRILLDOWN-R12-CARLOS-20260930T2315Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3576,
-      "job_id": "RRHH-CUSTODIA-GATE3B-SQL-DIAGNOSTIC-READONLY-R1",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 3490,
+      "age_seconds": 3570,
       "job_id": "SERVIDORES-API-EMPRESA-HOMOLOGATION-READONLY-R3-20260930",
       "reason": null,
       "state": "RESULT_READY"
@@ -90,14 +84,14 @@
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 11,
+  "queue_result_ready_recent": 10,
   "queue_running": 0,
   "remote_development_sha": "54c22d98aae42b5163127b356d616229df199c8c",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T00:00:06Z",
-    "last_receive_utc": "2026-10-01T00:00:11Z",
+    "last_cycle_utc": "2026-10-01T00:01:27Z",
+    "last_receive_utc": "2026-10-01T00:01:31Z",
     "last_terminal_utc": "2026-09-30T23:46:11Z",
     "pid": "610203",
     "runtime_fingerprint": {
