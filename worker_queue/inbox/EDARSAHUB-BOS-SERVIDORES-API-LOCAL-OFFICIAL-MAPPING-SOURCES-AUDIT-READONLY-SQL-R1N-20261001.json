@@ -1,0 +1,80 @@
+{
+  "acceptance_criteria": [
+    "READ_ONLY_COMPLETE",
+    "CERTIFIED_READ_ONLY",
+    "production_touched=false",
+    "No DDL",
+    "No DML",
+    "No secrets exposed",
+    "All unmapped API_LOCAL connections classified by official mapping availability",
+    "Name hints not treated as authoritative"
+  ],
+  "actions": [],
+  "checks": [
+    {
+      "max_rows": 1000,
+      "queries": [
+        {
+          "name": "api_local_unmapped_current_state",
+          "sql": "SELECT sc.nombre, CONVERT(nvarchar(100), sc.id) AS connection_id, sc.tipo_conexion, sc.system_type, sc.activo, sc.visible_en_operaciones, sc.visible_en_listado, sc.EmpresaID, sc.empresa_id AS legacy_empresa_id_text FROM dbo.Servidores_Conexiones AS sc WHERE sc.tipo_conexion = 'API_LOCAL' AND sc.EmpresaID IS NULL ORDER BY sc.activo DESC, sc.visible_en_operaciones DESC, sc.nombre"
+        },
+        {
+          "name": "candidate_mapping_table_schemas",
+          "sql": "SELECT TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION, COLUMN_NAME, DATA_TYPE, IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME IN ('Sistema_Empresas', 'Sistema_EmpresasAlias', 'Sistema_EmpresasMongoMap', 'Sistema_EmpresasServidores', 'Sistema_Sucursales', 'Servidores_Conexiones', 'Unidades_Negocio', 'Usuario_ServidoresAsignacion') ORDER BY TABLE_NAME, ORDINAL_POSITION"
+        },
+        {
+          "name": "sistema_empresas_alias_rows",
+          "sql": "SELECT TOP 300 * FROM dbo.Sistema_EmpresasAlias ORDER BY 1"
+        },
+        {
+          "name": "sistema_empresas_mongo_map_rows",
+          "sql": "SELECT TOP 300 * FROM dbo.Sistema_EmpresasMongoMap ORDER BY 1"
+        },
+        {
+          "name": "sistema_sucursales_rows",
+          "sql": "SELECT TOP 300 * FROM dbo.Sistema_Sucursales ORDER BY 1"
+        },
+        {
+          "name": "unidades_negocio_linked_by_api_local_connection_id",
+          "sql": "WITH ApiLocal AS (SELECT id, nombre FROM dbo.Servidores_Conexiones WHERE tipo_conexion = 'API_LOCAL' AND EmpresaID IS NULL) SELECT a.nombre, CONVERT(nvarchar(100), a.id) AS connection_id, CONVERT(nvarchar(100), u.id) AS unidad_negocio_id, CONVERT(nvarchar(100), u.server_id) AS unidad_server_id, CONVERT(nvarchar(100), u.sucursal_origen_id) AS sucursal_origen_id, u.activo AS unidad_activa FROM ApiLocal AS a LEFT JOIN dbo.Unidades_Negocio AS u ON LOWER(CONVERT(nvarchar(100), u.server_id)) = LOWER(CONVERT(nvarchar(100), a.id)) ORDER BY a.nombre, u.activo DESC"
+        },
+        {
+          "name": "usuario_servidores_assignments_for_unmapped_api_local",
+          "sql": "WITH ApiLocal AS (SELECT id, nombre FROM dbo.Servidores_Conexiones WHERE tipo_conexion = 'API_LOCAL' AND EmpresaID IS NULL) SELECT a.nombre, CONVERT(nvarchar(100), a.id) AS connection_id, usa.UsuarioID, uc.Email, usa.Activo AS asignacion_activa FROM ApiLocal AS a LEFT JOIN dbo.Usuario_ServidoresAsignacion AS usa ON LOWER(CONVERT(nvarchar(100), usa.ServidorID)) = LOWER(CONVERT(nvarchar(100), a.id)) LEFT JOIN dbo.Usuario_Catalogo AS uc ON uc.UsuarioID = usa.UsuarioID ORDER BY a.nombre, usa.UsuarioID"
+        },
+        {
+          "name": "official_mapping_resolution_verdict",
+          "sql": "WITH ApiLocal AS (SELECT id, nombre, EmpresaID FROM dbo.Servidores_Conexiones WHERE tipo_conexion = 'API_LOCAL' AND EmpresaID IS NULL), EmpresaServidor AS (SELECT a.id, COUNT(ses.EmpresaServidorID) AS empresa_servidor_count, COUNT(DISTINCT ses.EmpresaID) AS empresa_servidor_distinct_empresas, MIN(ses.EmpresaID) AS empresa_servidor_candidate FROM ApiLocal AS a LEFT JOIN dbo.Sistema_EmpresasServidores AS ses ON LOWER(CONVERT(nvarchar(100), ses.ServidorID)) = LOWER(CONVERT(nvarchar(100), a.id)) AND ISNULL(ses.Activo, 1) = 1 GROUP BY a.id), UnidadLinks AS (SELECT a.id, COUNT(u.id) AS unidad_link_count FROM ApiLocal AS a LEFT JOIN dbo.Unidades_Negocio AS u ON LOWER(CONVERT(nvarchar(100), u.server_id)) = LOWER(CONVERT(nvarchar(100), a.id)) AND ISNULL(u.activo, 0) = 1 GROUP BY a.id) SELECT a.nombre, CONVERT(nvarchar(100), a.id) AS connection_id, es.empresa_servidor_count, es.empresa_servidor_distinct_empresas, es.empresa_servidor_candidate, ul.unidad_link_count, CASE WHEN es.empresa_servidor_distinct_empresas = 1 THEN 'OFFICIAL_EMPRESA_SERVIDOR_MAPPING_FOUND' WHEN es.empresa_servidor_distinct_empresas > 1 THEN 'AMBIGUOUS_EMPRESA_SERVIDOR_MAPPING' WHEN ISNULL(ul.unidad_link_count, 0) > 0 THEN 'UNIT_LINK_FOUND_BUT_NO_EMPRESA_MAPPING' ELSE 'NO_OFFICIAL_MAPPING_FOUND' END AS official_mapping_verdict FROM ApiLocal AS a LEFT JOIN EmpresaServidor AS es ON es.id = a.id LEFT JOIN UnidadLinks AS ul ON ul.id = a.id ORDER BY official_mapping_verdict, a.nombre"
+        }
+      ],
+      "source": "EDARSAHUB",
+      "type": "sql_readonly_audit"
+    }
+  ],
+  "human_summary_language": "es",
+  "job_id": "EDARSAHUB-BOS-SERVIDORES-API-LOCAL-OFFICIAL-MAPPING-SOURCES-AUDIT-READONLY-SQL-R1N-20261001",
+  "mode": "READ_ONLY_SQL",
+  "objective": "Find official canonical mapping sources for API_LOCAL connections that still have Servidores_Conexiones.EmpresaID NULL. Do not mutate SQL. Distinguish official relations from non-authoritative name hints.",
+  "production_allowed": false,
+  "requester": {
+    "chat": "",
+    "email": "ricardo@edarsa.com.mx",
+    "project": "",
+    "requested_at_utc": "2026-10-01T21:30:43.741113+00:00",
+    "source": "chatgpt"
+  },
+  "scheduling": {
+    "bounded_context": "EDARSAHUB",
+    "conflict_domains": [
+      "GLOBAL_GIT_WRITER"
+    ],
+    "fairness_weight": 1,
+    "max_parallelism": 1,
+    "priority_class": "NORMAL",
+    "project_id": "EDARSAHUB",
+    "resource_claims": []
+  },
+  "schema": "edarsahub.worker-job.v2",
+  "target_branch": "Edarsahub_Desarrollo",
+  "target_repo": "rbalam/EDARSA_HUB"
+}
