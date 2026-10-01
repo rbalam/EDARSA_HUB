@@ -1,0 +1,131 @@
+{
+  "base_sha": "012921ebc92508c8b76891931bc5720344a7055c",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_SQL_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-01T03:19:49Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "SERVIDORES-API-CIENFUEGOS-SERVER-BRIDGE-READONLY-R1-20261001",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T03:20:27Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "ConexionID",
+              "nombre",
+              "system_type",
+              "database_name",
+              "api_url",
+              "EmpresaID",
+              "activo"
+            ],
+            "name": "cienfuegos_api_connection",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "31D62F39-632B-4684-B735-256BD9293A8F",
+                "CIENFUEGOS NOMINPAQ",
+                "SOFTRESTAURANT_PRO",
+                "CIENFUEGOS",
+                "http://54.39.104.176:8005/query",
+                null,
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "UnidadNegocioID",
+              "codigo",
+              "nombre",
+              "server_id",
+              "activo"
+            ],
+            "name": "cienfuegos_unit_server",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "B06EE652-0370-4267-B0A8-DA6FC39B590A",
+                "CIENFUEGOS",
+                "CIENFUEGOS",
+                "6d053c22-523e-48c0-b72b-96081e2d781b",
+                true
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "nombre",
+              "system_type",
+              "tipo_conexion",
+              "activo",
+              "EmpresaID",
+              "database_name",
+              "api_url"
+            ],
+            "name": "cienfuegos_server_registry",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                "CIENFUEGOS",
+                "SOFTRESTAURANT_PRO",
+                "DATA_SOURCE",
+                true,
+                3,
+                "softrestaurant95pro",
+                null
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "ServerID",
+              "EmpresaID",
+              "CodigoEmpresa",
+              "NombreComercial",
+              "RolConexion",
+              "NumeroSucursalSistema"
+            ],
+            "name": "cienfuegos_server_company_links",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                "6D053C22-523E-48C0-B72B-96081E2D781B",
+                3,
+                "CIENFUEGOS",
+                "Restaurante Cienfuegos S.A. de C.V.",
+                "PRINCIPAL_SQL",
+                null
+              ]
+            ],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-01T03:19:48Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente auditorias SQL de solo lectura mediante la conexion canonica HRLectura, materializo todos los entregables requeridos y no modifico repositorio, base ni Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
