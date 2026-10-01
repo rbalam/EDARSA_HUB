@@ -4,7 +4,7 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "770b5a166e73399cd77e1cf7bfbc3aa8039f8bb4",
-  "generated_at_utc": "2026-10-01T15:17:53Z",
+  "generated_at_utc": "2026-10-01T15:19:11Z",
   "history": {
     "done_total_local": 1253,
     "pending_total_local": 1,
@@ -16,73 +16,73 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 404,
+      "age_seconds": 483,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-URL-PROFILE-R2-20261001T1510Z",
       "reason": "El worker no reclamo esta orden dentro del tiempo esperado.",
       "state": "BLOCKED"
     },
     {
-      "age_seconds": 1847,
+      "age_seconds": 1926,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE5-CAMPAIGN-ORCHESTRATOR-CONTRACT-R5",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 432,
+      "age_seconds": 510,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE5-CAMPAIGN-ORCHESTRATOR-POST-INTEGRATION-CERT-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1864,
+      "age_seconds": 1943,
       "job_id": "CENTRO-CONTROL-SYNC-MONITOR-GATE2-P5-RUNTIME-URL-PROFILE-R1-20260930T2350Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1862,
+      "age_seconds": 1940,
       "job_id": "EDARSA-LOGISTICS-GATE4A1-PHYSICAL-FOUNDATION-SCRIPTS-DESIGN-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 425,
+      "age_seconds": 504,
       "job_id": "EDARSA-LOGISTICS-GATE4A1-PHYSICAL-FOUNDATION-SCRIPTS-DESIGN-R2",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 947,
+      "age_seconds": 1025,
       "job_id": "EDARSAHUB-COMERCIAL-HIST-202609-D01-05-MPRO2-R6-CARLOS",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 434,
+      "age_seconds": 512,
       "job_id": "EDARSAHUB-COMERCIAL-HIST-202609-D06-10-ALL5-R7-CARLOS",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1850,
+      "age_seconds": 1928,
       "job_id": "EDARSAHUB-EDARSA-AI-FINOPS-GATE1-CAPABILITY-DISCOVERY-READONLY-R1-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1844,
+      "age_seconds": 1922,
       "job_id": "EDARSAHUB-SINCRONIZADOR-MPRO-DESCUENTO-IMPORTE-R1-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1513,
+      "age_seconds": 1591,
       "job_id": "EDARSAHUB-SINCRONIZADOR-MPRO-DESCUENTO-IMPORTE-R2-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 437,
+      "age_seconds": 515,
       "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-202604-HEADER-DETAIL-R25-CARLOS-20261001",
       "reason": null,
       "state": "RUNNING"
@@ -102,8 +102,8 @@
   "runtime": {
     "current_job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-202604-HEADER-DETAIL-R25-CARLOS-20261001",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T15:17:45Z",
-    "last_receive_utc": "2026-10-01T15:17:49Z",
+    "last_cycle_utc": "2026-10-01T15:19:07Z",
+    "last_receive_utc": "2026-10-01T15:19:11Z",
     "last_terminal_utc": "2026-10-01T15:10:47Z",
     "pid": "2867",
     "runtime_fingerprint": {
