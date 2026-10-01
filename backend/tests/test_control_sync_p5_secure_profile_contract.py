@@ -5,18 +5,23 @@ ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = ROOT / '.github/workflows/centro-control-sync-monitor-p5-runtime-e2e.yml'
 RUNTIME_TEST = ROOT / 'backend/tests/test_control_sync_p5_runtime_secure_e2e.py'
 REQUEST = ROOT / 'ops/e2e/requests/CENTRO-CONTROL-SYNC-MONITOR-P5-RUNTIME-SECURE-R1.execute'
+RUNTIME_PROFILE = ROOT / 'ops/runtime/profiles/development.json'
 
 
 def test_secure_profile_contract():
     workflow = WORKFLOW.read_text(encoding='utf-8')
     runtime = RUNTIME_TEST.read_text(encoding='utf-8')
     request = REQUEST.read_text(encoding='utf-8').strip()
+    profile = RUNTIME_PROFILE.read_text(encoding='utf-8')
 
     assert 'environment: development' in workflow
     assert 'P5_SECRET_PROFILE: P5_E2E_SUPERADMIN' in workflow
     assert '${{ secrets.TEST_SUPERADMIN_EMAIL }}' in workflow
     assert '${{ secrets.TEST_SUPERADMIN_PASSWORD }}' in workflow
     assert '${{ vars.TEST_BASE_URL }}' in workflow
+    assert 'P5_RUNTIME_PROFILE_FILE: ops/runtime/profiles/development.json' in workflow
+    assert 'Resolve canonical runtime URL' in workflow
+    assert 'https://erp-crm-enterprise-1.preview.emergentagent.com' in profile
     assert request == 'P5_E2E_SUPERADMIN'
 
     assert 'qa.superadmin@edarsa.com' not in workflow

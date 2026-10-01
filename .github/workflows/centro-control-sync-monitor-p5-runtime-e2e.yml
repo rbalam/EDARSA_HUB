@@ -19,6 +19,7 @@ jobs:
       P5_RUNTIME_ENV: development
       P5_SECRET_PROFILE: P5_E2E_SUPERADMIN
       TEST_BASE_URL: ${{ vars.TEST_BASE_URL }}
+      P5_RUNTIME_PROFILE_FILE: ops/runtime/profiles/development.json
       TEST_SUPERADMIN_EMAIL: ${{ secrets.TEST_SUPERADMIN_EMAIL }}
       TEST_SUPERADMIN_PASSWORD: ${{ secrets.TEST_SUPERADMIN_PASSWORD }}
       P5_EVIDENCE_FILE: .tmp/p5/evidence.json
@@ -28,6 +29,27 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
+      - name: Resolve canonical runtime URL
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${TEST_BASE_URL:-}" ]; then
+            RESOLVED_BASE_URL="$(python - <<'PY'
+import json, os
+from pathlib import Path
+p = Path(os.environ['P5_RUNTIME_PROFILE_FILE'])
+data = json.loads(p.read_text(encoding='utf-8'))
+assert data.get('environment') == 'development'
+assert data.get('secret') is False
+value = str(data.get('base_url') or '').strip().rstrip('/')
+assert value.startswith('https://')
+print(value)
+PY
+)"
+            test -n "$RESOLVED_BASE_URL"
+            echo "TEST_BASE_URL=$RESOLVED_BASE_URL" >> "$GITHUB_ENV"
+          fi
 
       - name: Validate secure profile reference
         shell: bash
