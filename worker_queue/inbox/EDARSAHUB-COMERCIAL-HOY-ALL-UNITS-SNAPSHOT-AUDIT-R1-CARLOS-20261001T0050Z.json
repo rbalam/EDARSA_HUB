@@ -1,0 +1,32 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-HOY-ALL-UNITS-SNAPSHOT-AUDIT-R1-CARLOS-20261001T0050Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "READ_ONLY",
+  "objective": "Auditar en solo lectura los snapshots de Hoy para todas las sucursales principales de Comercial: ESTELAR, CIENFUEGOS, 130MID, ORIGEN y 130QRO. Confirmar fecha_operacion, ventas abiertas/cerradas y presencia de detalle_abiertas_json. No ejecutar sincronizadores ni modificar codigo. No tocar Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [],
+  "checks": [
+    {
+      "type": "sql_readonly_audit",
+      "source": "EDARSAHUB",
+      "queries": [
+        {
+          "name": "snapshots_all_comercial_units",
+          "sql": "SELECT unidad_negocio_id,unidad_negocio_nombre,server_id,sucursal_id,sistema_origen,fecha_operacion,snapshot_timestamp,ventas_abiertas,tickets_abiertos,pax_abiertos,ventas_cerradas_dia,tickets_cerrados_dia,pax_cerrados_dia,total_estimado_dia,LEN(detalle_abiertas_json) AS detalle_json_len,CASE WHEN detalle_abiertas_json IS NULL THEN 'NULL' WHEN detalle_abiertas_json='[]' THEN 'EMPTY' WHEN ISJSON(detalle_abiertas_json)=1 THEN 'JSON' ELSE 'INVALID' END AS detalle_json_status FROM dbo.Comercial_Ventas_Dia_Abiertas_v2 WITH (NOLOCK) WHERE UPPER(ISNULL(unidad_negocio_id,'')) IN ('ESTELAR','LA ESTELAR','CIENFUEGOS','130MID','ORIGEN','130QRO') OR UPPER(ISNULL(unidad_negocio_nombre,'')) LIKE '%ESTELAR%' OR UPPER(ISNULL(unidad_negocio_nombre,'')) LIKE '%CIENFUEGOS%' OR UPPER(ISNULL(unidad_negocio_nombre,'')) LIKE '%MERIDA%' OR UPPER(ISNULL(unidad_negocio_nombre,'')) LIKE '%ORIGEN%' OR UPPER(ISNULL(unidad_negocio_nombre,'')) LIKE '%QUERETARO%' ORDER BY unidad_negocio_id"
+        }
+      ]
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
