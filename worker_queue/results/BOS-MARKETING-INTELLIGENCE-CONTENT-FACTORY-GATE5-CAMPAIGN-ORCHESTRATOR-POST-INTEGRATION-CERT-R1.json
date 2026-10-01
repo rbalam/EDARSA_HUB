@@ -1,0 +1,63 @@
+{
+  "base_sha": "3e77e4d89d97e6e7a8e995f54b9234804ed19705",
+  "blockers": [],
+  "certification": "CERTIFIED_READ_ONLY",
+  "certification_basis": "READ_ONLY_REPOSITORY_PASS_PLUS_SANITIZED_EVIDENCE",
+  "completed_at_utc": "2026-10-01T15:10:41Z",
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE5-CAMPAIGN-ORCHESTRATOR-POST-INTEGRATION-CERT-R1",
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T15:11:07Z",
+  "quality_gate": "PASS",
+  "repository_contract_evidence": {
+    "checks": [
+      {
+        "evidence": [
+          {
+            "candidate_ownership": "docs",
+            "connections": [],
+            "helpers": [],
+            "imports": [],
+            "integrations": [],
+            "matched_terms": [
+              "attribution/roi | defer",
+              "campaign orchestrator canonical contract",
+              "draft -> planning -> ready_for_review -> approved -> scheduled -> active -> paused -> completed | cancelled",
+              "marketingactivationrequest",
+              "marketingcampaign",
+              "publishing adapters | defer"
+            ],
+            "path": "docs/ARCHITECTURE/BOS_MARKETING_INTELLIGENCE_CONTENT_FACTORY_GATE5_CAMPAIGN_ORCHESTRATOR_CANONICAL_CONTRACT.md",
+            "rbac_contracts": [],
+            "routes": [],
+            "scheduler_contracts": [
+              "scheduler"
+            ],
+            "symbols": [],
+            "tables_referenced": []
+          }
+        ],
+        "mode": "READ_ONLY_REPOSITORY",
+        "status": "PASS",
+        "summary": {
+          "matched_files": 1,
+          "scanned_files": 1,
+          "skipped_sensitive": 0
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "started_at_utc": "2026-10-01T15:10:41Z",
+  "status": "READ_ONLY_COMPLETE",
+  "summary_es": "El Worker universal ejecuto exclusivamente checks genericos de solo lectura permitidos, materializo todos los entregables requeridos, no cambio archivos tracked y no toco Produccion.",
+  "tests": "PASS",
+  "work_completion": "COMPLETE"
+}
