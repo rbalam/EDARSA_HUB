@@ -4,11 +4,11 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "627c9cb62e4b8b81c774faeb3051bb86e9b467c9",
-  "generated_at_utc": "2026-10-01T00:44:13Z",
+  "generated_at_utc": "2026-10-01T00:45:33Z",
   "history": {
     "done_total_local": 1220,
     "pending_total_local": 0,
-    "processing_total_local": 0,
+    "processing_total_local": 1,
     "rejected_total_local": 1076,
     "results_total_local": 2097
   },
@@ -16,64 +16,70 @@
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3481,
+      "age_seconds": 3561,
       "job_id": "BOS-MARKETING-INTELLIGENCE-CONTENT-FACTORY-GATE5-CAMPAIGN-ORCHESTRATOR-CONTRACT-R4",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3495,
+      "age_seconds": 3575,
       "job_id": "EDARSA-LOGISTICS-GATE4A0-PREDDL-EXACT-CONTRACT-AUDIT-READONLY-R1",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3484,
+      "age_seconds": 3564,
       "job_id": "EDARSAHUB-BOS-EVOLUTION-H1-MASTER-ARCHITECTURE-CONTRACT-R1-20260930",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 44,
+      "age_seconds": 124,
       "job_id": "EDARSAHUB-COMERCIAL-HOY-MX-TZ-AND-SR-OPEN-DETAIL-FIX-R2-CARLOS-20261001T0045Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2494,
+      "age_seconds": 2575,
       "job_id": "EDARSAHUB-COMERCIAL-HOY-RANGE-FIX-R1-CARLOS-20260930T2350Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1903,
+      "age_seconds": 1983,
       "job_id": "EDARSAHUB-COMERCIAL-SR-OPEN-DETAIL-DIAG-R2-CARLOS-20261001T0006Z",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 493,
+      "age_seconds": 573,
       "job_id": "MEJORA-TABEJE-EJECUTIVO-TICKET-FALLBACK-R13-CARLOS-20260930T2350Z",
       "reason": null,
       "state": "RESULT_READY"
+    },
+    {
+      "age_seconds": 0,
+      "job_id": "EDARSAHUB-SINCRONIZADOR-DETALLE-130MID-202603-R20-CARLOS-20260930",
+      "reason": null,
+      "state": "RUNNING"
     }
   ],
   "local_development_sha": "627c9cb62e4b8b81c774faeb3051bb86e9b467c9",
   "oldest_pending_age_seconds": 0,
   "production_touched": false,
   "queue_blocked": 0,
-  "queue_depth": 0,
+  "queue_depth": 1,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
   "queue_rejected_recent": 0,
   "queue_result_ready_recent": 7,
-  "queue_running": 0,
+  "queue_running": 1,
   "remote_development_sha": "627c9cb62e4b8b81c774faeb3051bb86e9b467c9",
   "runtime": {
-    "current_job_id": null,
+    "current_job_id": "EDARSAHUB-SINCRONIZADOR-DETALLE-130MID-202603-R20-CARLOS-20260930",
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T00:44:07Z",
-    "last_receive_utc": "2026-10-01T00:44:11Z",
+    "last_cycle_utc": "2026-10-01T00:45:29Z",
+    "last_receive_utc": "2026-10-01T00:45:33Z",
     "last_terminal_utc": "2026-10-01T00:43:29Z",
     "pid": "610203",
     "runtime_fingerprint": {
