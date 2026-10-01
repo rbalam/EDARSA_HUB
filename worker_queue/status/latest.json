@@ -4,67 +4,58 @@
   "branch": "Edarsahub_Desarrollo",
   "convergence_status": "SYNC",
   "development_sha": "7b31362ad882c4787456cdc0414ea6ffa0308a5a",
-  "generated_at_utc": "2026-10-01T18:12:46Z",
+  "generated_at_utc": "2026-10-01T18:14:02Z",
   "history": {
     "done_total_local": 1263,
     "pending_total_local": 0,
     "processing_total_local": 0,
-    "rejected_total_local": 1116,
+    "rejected_total_local": 1117,
     "results_total_local": 2176
   },
   "intake_sla_breached": false,
   "intake_sla_seconds": 30,
   "jobs": [
     {
-      "age_seconds": 3523,
+      "age_seconds": 22,
+      "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-20260423-DETAIL-R33B-CARLOS-20261001",
+      "reasons": [
+        "ISCAM_DETAIL_BACKFILL_ONLY_SQL_AUDIT_ALLOWED"
+      ],
+      "state": "REJECTED",
+      "summary_es": "El worker recibio la orden de ChatGPT, pero la rechazo porque el contrato determinista no es valido. Consulta 'reasons' para conocer el motivo exacto."
+    },
+    {
+      "age_seconds": 3598,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-MULTIUNIT-UI-R1-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 2374,
+      "age_seconds": 2450,
       "job_id": "EDARSAHUB-COMERCIAL-RANGE-MULTIUNIT-UI-R2-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 1364,
+      "age_seconds": 1440,
       "job_id": "EDARSAHUB-COMERCIAL-TICKET-MESA-MIGRATION-R3-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3549,
-      "job_id": "EDARSAHUB-IA-CONTEXTUAL-COMERCIAL-DRILLDOWN-R1-CARLOS-20261001",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 1368,
+      "age_seconds": 1444,
       "job_id": "EDARSAHUB-IA-CONTEXTUAL-COMERCIAL-DRILLDOWN-R2-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3542,
-      "job_id": "EDARSAHUB-SINCRONIZADOR-ESTELAR-MICROPRICE-ZERO-FIX-R32B-CARLOS-20261001",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 17,
+      "age_seconds": 93,
       "job_id": "EDARSAHUB-WORKER-AGENT-GUARD-LONG-CHECK-COMMIT-R1-CARLOS-20261001",
       "reason": null,
       "state": "RESULT_READY"
     },
     {
-      "age_seconds": 3537,
-      "job_id": "MEJORA-TABEJE-VENTAS-DIA-MISMO-DETALLE-COMERCIAL-R15B-CARLOS-20261001T1715Z",
-      "reason": null,
-      "state": "RESULT_READY"
-    },
-    {
-      "age_seconds": 2056,
+      "age_seconds": 2132,
       "job_id": "MEJORA-TABEJE-VENTAS-DIA-MISMO-DETALLE-COMERCIAL-R15C-CARLOS-20261001T1728Z",
       "reason": null,
       "state": "RESULT_READY"
@@ -77,15 +68,15 @@
   "queue_depth": 0,
   "queue_done_local_recent": 0,
   "queue_pending": 0,
-  "queue_rejected_recent": 0,
-  "queue_result_ready_recent": 9,
+  "queue_rejected_recent": 1,
+  "queue_result_ready_recent": 6,
   "queue_running": 0,
   "remote_development_sha": "7b31362ad882c4787456cdc0414ea6ffa0308a5a",
   "runtime": {
     "current_job_id": null,
     "generation": "20260827-universal-job-worker-selfheal-v3",
-    "last_cycle_utc": "2026-10-01T18:12:40Z",
-    "last_receive_utc": "2026-10-01T18:12:43Z",
+    "last_cycle_utc": "2026-10-01T18:13:57Z",
+    "last_receive_utc": "2026-10-01T18:14:00Z",
     "last_terminal_utc": "2026-10-01T18:12:29Z",
     "pid": "1073444",
     "runtime_fingerprint": {
