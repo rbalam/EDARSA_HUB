@@ -1,0 +1,105 @@
+{
+  "base_sha": "31e4a8c888c7223346ea3d8210593d3972d51f2e",
+  "blockers": [],
+  "canonical_sql_mutation": true,
+  "certification": "CERTIFIED_OPERATIONAL",
+  "certification_basis": "DISPATCHER_OPERATIONAL_CERTIFICATION_PLUS_VALIDATIONS",
+  "completed_at_utc": "2026-10-01T02:24:54Z",
+  "dry_run": false,
+  "executor": "chatgpt-deterministic",
+  "files_changed": [],
+  "human_summary_language": "es",
+  "human_summary_level": "13yo-non-programmer",
+  "job_id": "EDARSAHUB-SINCRONIZADOR-CIENFUEGOS-202603-HEADER-DETAIL-R24-CARLOS-20260930",
+  "operation": "COMERCIAL_RANGE_RESYNC",
+  "operation_summary": {
+    "fecha_fin": "2026-03-31",
+    "fecha_inicio": "2026-03-01",
+    "unidades": [
+      {
+        "detail_success": true,
+        "header_success": true,
+        "records_errored": 0,
+        "records_inserted": 0,
+        "records_processed": 31,
+        "records_skipped": 2,
+        "records_updated": 29,
+        "returncode": 0,
+        "stage": "HEADER_KPI",
+        "success": true,
+        "unidad": "CIENFUEGOS",
+        "warning": ""
+      }
+    ],
+    "unidades_fallidas": [],
+    "unidades_ok": 1,
+    "unidades_total": 1
+  },
+  "percent_complete": 100,
+  "production_touched": false,
+  "published_at_utc": "2026-10-01T02:25:25Z",
+  "quality_gate": "PASS",
+  "schema": "edarsahub.worker-result.v2",
+  "source_branch": "Edarsahub_Desarrollo",
+  "source_repo": "rbalam/EDARSA_HUB",
+  "sql_readonly_evidence": {
+    "checks": [
+      {
+        "connection": "readonly_sql_connection:default",
+        "evidence": [
+          {
+            "columns": [
+              "dias_detalle",
+              "tickets",
+              "lineas",
+              "fecha_min",
+              "fecha_max",
+              "importe_detalle"
+            ],
+            "name": "cienfuegos_mar2026_detail_coverage_after_r24",
+            "row_count_returned": 1,
+            "rows": [
+              [
+                29,
+                1209,
+                14544,
+                "2026-03-01",
+                "2026-03-31",
+                "4490599.00"
+              ]
+            ],
+            "truncated": false
+          },
+          {
+            "columns": [
+              "fecha_operacion",
+              "ventas_runtime",
+              "ventas_detalle",
+              "delta_ventas",
+              "tickets_runtime",
+              "tickets_detalle",
+              "delta_tickets",
+              "pax_runtime",
+              "pax_detalle",
+              "delta_pax"
+            ],
+            "name": "cienfuegos_mar2026_mismatches_after_r24",
+            "row_count_returned": 0,
+            "rows": [],
+            "truncated": false
+          }
+        ],
+        "mode": "READ_ONLY_SQL",
+        "status": "PASS"
+      }
+    ]
+  },
+  "started_at_utc": "2026-10-01T02:24:28Z",
+  "status": "OPERATIONAL_COMPLETE",
+  "summary_es": "El Worker ejecuto la re-sincronizacion comercial cerrada para todas las unidades y el rango autorizados usando el handler oficial; proceso cada sucursal de forma secuencial, valido header KPI y detalle ISCAM y certifico el bloque con SQL de solo lectura. No toco Produccion.",
+  "tests": "PASS",
+  "units": [
+    "CIENFUEGOS"
+  ],
+  "work_completion": "COMPLETE"
+}
