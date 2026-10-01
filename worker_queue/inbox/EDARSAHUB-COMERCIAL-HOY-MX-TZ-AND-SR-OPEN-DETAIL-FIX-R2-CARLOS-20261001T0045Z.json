@@ -1,0 +1,80 @@
+{
+  "schema": "edarsahub.worker-job.v2",
+  "job_id": "EDARSAHUB-COMERCIAL-HOY-MX-TZ-AND-SR-OPEN-DETAIL-FIX-R2-CARLOS-20261001T0045Z",
+  "target_repo": "rbalam/EDARSA_HUB",
+  "target_branch": "Edarsahub_Desarrollo",
+  "production_allowed": false,
+  "mode": "MUTATION",
+  "objective": "Corregir Comercial en Preview para que periodo Hoy y el drilldown Detalle de Ventas usen la fecha local America/Mexico_City en vez del reloj UTC del runtime. Esto evita que Preview consulte 2026-10-01 mientras en Mexico sigue siendo 2026-09-30 y permite que el drilldown mezcle los folios abiertos SoftRestaurant ya sincronizados en detalle_abiertas_json para ESTELAR, CIENFUEGOS y 130MID. No modificar ni ejecutar sincronizadores. No tocar Inteligencia Comercial, Tablero Ejecutivo ni Produccion.",
+  "requester": {
+    "email": "carlosruz@edarsa.com.mx",
+    "source": "chatgpt",
+    "project": "V1",
+    "chat": "Soporte Worker"
+  },
+  "human_summary_language": "es",
+  "actions": [
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/routes.py",
+      "old": "from datetime import datetime, timedelta, timezone\n",
+      "new": "from datetime import datetime, timedelta, timezone\nfrom zoneinfo import ZoneInfo\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/routes.py",
+      "old": "        hoy = datetime.now()\n        hoy_inicio = datetime(hoy.year, hoy.month, hoy.day)\n",
+      "new": "        hoy = datetime.now(ZoneInfo(\"America/Mexico_City\"))\n        hoy_inicio = datetime(hoy.year, hoy.month, hoy.day)\n",
+      "expected_count": 1
+    },
+    {
+      "type": "replace_text",
+      "path": "backend/modules/comercial/routes.py",
+      "old": "        # Calcular fechas según período\n        hoy = datetime.now()\n",
+      "new": "        # Calcular fechas según período usando calendario de México.\n        # Preview corre en UTC y puede cruzar al día siguiente mientras en México\n        # todavía es el día operativo seleccionado por el usuario.\n        hoy = datetime.now(ZoneInfo(\"America/Mexico_City\"))\n",
+      "expected_count": 1
+    },
+    {
+      "type": "write_file",
+      "path": "backend/tests/test_comercial_hoy_mexico_timezone_contract.py",
+      "content": "from pathlib import Path\n\nROOT = Path(__file__).resolve().parents[1]\nROUTES = ROOT / \"modules/comercial/routes.py\"\n\n\ndef _function_block(text: str, name: str, next_marker: str) -> str:\n    start = text.index(name)\n    end = text.index(next_marker, start)\n    return text[start:end]\n\n\ndef test_dashboard_hoy_uses_mexico_timezone():\n    text = ROUTES.read_text(encoding=\"utf-8\")\n    block = _function_block(\n        text,\n        \"async def comercial_dashboard(\",\n        \"@router.get(\",\n    )\n    assert 'datetime.now(ZoneInfo(\"America/Mexico_City\"))' in block\n    assert 'fecha_ini = hoy.strftime(\\'%Y-%m-%d\\')' in block\n    assert 'fecha_fin = hoy.strftime(\\'%Y-%m-%d\\')' in block\n\n\ndef test_sales_drilldown_hoy_uses_mexico_timezone():\n    text = ROUTES.read_text(encoding=\"utf-8\")\n    start = text.index(\"async def comercial_detalle_ventas_agrupado(\")\n    end = text.index('@router.get(\"/comercial/ticket-venta/{server_id}\")', start)\n    block = text[start:end]\n    assert 'datetime.now(ZoneInfo(\"America/Mexico_City\"))' in block\n    assert 'if periodo == \"dia\":' in block\n    assert \"fecha_ini_dt = hoy_inicio\" in block\n    assert \"merge_open_snapshot_tickets(\" in block\n\n\ndef test_zoneinfo_import_is_present():\n    text = ROUTES.read_text(encoding=\"utf-8\")\n    assert \"from zoneinfo import ZoneInfo\" in text\n"
+    }
+  ],
+  "checks": [
+    {
+      "type": "py_compile",
+      "paths": [
+        "backend/modules/comercial/routes.py"
+      ]
+    },
+    {
+      "type": "pytest",
+      "paths": [
+        "backend/tests/test_comercial_hoy_mexico_timezone_contract.py"
+      ]
+    },
+    {
+      "type": "repository_contract_audit",
+      "request": {
+        "paths": [
+          "backend/modules/comercial/routes.py"
+        ],
+        "search_terms": [
+          "America/Mexico_City",
+          "periodo == \"dia\"",
+          "merge_open_snapshot_tickets",
+          "get_dashboard_kpis_from_edarsahub"
+        ],
+        "include_patterns": [
+          "*.py"
+        ],
+        "exclude_patterns": [],
+        "max_results": 80
+      }
+    },
+    {
+      "type": "git_diff_check"
+    }
+  ]
+}
